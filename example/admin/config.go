@@ -31,8 +31,15 @@ func NewConfig() (b *presets.Builder) {
 		SetterFunc(media_library_view.MediaBoxSetterFunc)
 
 	m := b.Model(&models.Post{})
-	ed := m.Editing("Title", "Body", "HeroImage")
-	ed.Field("HeroImage").WithContextValue(media_library_view.MediaBoxConfig, &media_library.MediaBoxConfig{AllowType: "image"})
+	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
+	ed.Field("HeroImage").
+		WithContextValue(
+			media_library_view.MediaBoxConfig,
+			&media_library.MediaBoxConfig{AllowType: "image"})
+	ed.Field("BodyImage").
+		WithContextValue(
+			media_library_view.MediaBoxConfig,
+			&media_library.MediaBoxConfig{AllowType: "image"})
 	_ = m
 	// Use m to customize the model, Or config more models here.
 	return

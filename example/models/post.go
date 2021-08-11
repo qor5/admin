@@ -11,6 +11,7 @@ type Post struct {
 	Title     string
 	Body      string
 	HeroImage media_library.MediaBox `sql:"type:text;"`
+	BodyImage media_library.MediaBox `sql:"type:text;"`
 	UpdatedAt time.Time
 	CreatedAt time.Time
 }
