@@ -27,8 +27,8 @@ func NewConfig() (b *presets.Builder) {
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).
-		ComponentFunc(media_library_view.MediaBoxComponentFunc).
-		SetterFunc(media_library_view.MediaBoxSetterFunc)
+		ComponentFunc(media_library_view.MediaBoxComponentFunc(db)).
+		SetterFunc(media_library_view.MediaBoxSetterFunc(db))
 
 	m := b.Model(&models.Post{})
 	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")

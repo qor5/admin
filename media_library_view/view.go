@@ -6,6 +6,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/jinzhu/gorm"
 	"github.com/qor/media/media_library"
 	h "github.com/theplant/htmlgo"
 )
@@ -14,32 +15,38 @@ type MediaBoxConfigKey int
 
 const MediaBoxConfig MediaBoxConfigKey = iota
 
-func MediaBoxComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	portalName := fmt.Sprintf("%s_Portal", field.Name)
-	ctx.Hub.RegisterEventFunc(portalName, fileChooser(portalName))
+func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		portalName := fmt.Sprintf("%s_Portal", field.Name)
+		ctx.Hub.RegisterEventFunc(portalName, fileChooser(db, portalName))
 
-	cfg := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
-	_ = cfg
-	return h.Components(
-		VCard(
-			VCardActions(
-				VBtn("Choose File").
-					Depressed(true).
-					Class("ml-2").
-					OnClick(portalName),
-			),
-		).Class("mb-2"),
-		web.Portal().Name(portalName),
-	)
+		cfg := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
+		_ = cfg
+		return h.Components(
+			VCard(
+				VCardActions(
+					VBtn("Choose File").
+						Depressed(true).
+						Class("ml-2").
+						OnClick(portalName),
+				),
+			).Class("mb-2"),
+			web.Portal().Name(portalName),
+		)
+	}
 }
 
-func MediaBoxSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-	return
+func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		return
+	}
 }
 
-func fileChooser(portalName string) web.EventFunc {
+func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
+		uploadEventName := fmt.Sprintf("%s_upload", portalName)
+		ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, portalName))
 
 		files := []string{
 			"https://cdn.vuetifyjs.com/images/cards/house.jpg",
@@ -57,20 +64,30 @@ func fileChooser(portalName string) web.EventFunc {
 		}
 
 		ct := VContainer().Fluid(true)
-		lastRow := VRow()
-		for i, f := range files {
-			if i%4 == 0 {
-				lastRow = VRow()
-				ct.AppendChildren(lastRow)
-			}
+		lastRow := VRow(
+			VCol(
+				VCard(
+					VCardTitle(h.Text("Upload a file")),
+					web.Bind(
+						VFileInput().
+							Class("justify-center").
+							Label("New File").
+							FieldName("NewFile").
+							HideInput(true),
+					).OnInput(uploadEventName),
+				).Height(200),
+			).Cols(3),
+		)
+		for _, f := range files {
 			lastRow.AppendChildren(
 				VCol(
 					VCard(
 						VImg().Src(f).Height(200),
 					),
-				).Attr("cols", "3"),
+				).Cols(3),
 			)
 		}
+		ct.AppendChildren(lastRow)
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
@@ -89,7 +106,6 @@ func fileChooser(portalName string) web.EventFunc {
 						MaxHeight(64).
 						Flat(true).
 						Dark(true),
-					//VFileInput().Label("New File").FieldName("NewFile"),
 
 					ct,
 				).Tile(true),
@@ -102,6 +118,12 @@ func fileChooser(portalName string) web.EventFunc {
 				Attr(web.InitContextVars, `{show: false}`),
 			AfterLoaded: "setTimeout(function(){ comp.vars.show = true }, 100)",
 		})
+		return
+	}
+}
+
+func uploadFile(db *gorm.DB, portalName string) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		return
 	}
 }
