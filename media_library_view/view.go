@@ -2,6 +2,7 @@ package media_library_view
 
 import (
 	"fmt"
+	"mime/multipart"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -42,52 +43,13 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	}
 }
 
+func dialogContentPortalName(portalName string) string {
+	return fmt.Sprintf("%s_content", portalName)
+}
+
 func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
-		uploadEventName := fmt.Sprintf("%s_upload", portalName)
-		ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, portalName))
-
-		files := []string{
-			"https://cdn.vuetifyjs.com/images/cards/house.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/road.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/plane.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/house.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/road.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/plane.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/house.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/road.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/plane.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/house.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/road.jpg",
-			"https://cdn.vuetifyjs.com/images/cards/plane.jpg",
-		}
-
-		ct := VContainer().Fluid(true)
-		lastRow := VRow(
-			VCol(
-				VCard(
-					VCardTitle(h.Text("Upload a file")),
-					web.Bind(
-						VFileInput().
-							Class("justify-center").
-							Label("New File").
-							FieldName("NewFile").
-							HideInput(true),
-					).OnInput(uploadEventName),
-				).Height(200),
-			).Cols(3),
-		)
-		for _, f := range files {
-			lastRow.AppendChildren(
-				VCol(
-					VCard(
-						VImg().Src(f).Height(200),
-					),
-				).Cols(3),
-			)
-		}
-		ct.AppendChildren(lastRow)
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
@@ -107,7 +69,9 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 						Flat(true).
 						Dark(true),
 
-					ct,
+					web.Portal(
+						fileChooserDialogContent(db, portalName, ctx),
+					).Name(dialogContentPortalName(portalName)),
 				).Tile(true),
 			).
 				Fullscreen(true).
@@ -122,8 +86,64 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 	}
 }
 
+func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventContext) h.HTMLComponent {
+	uploadEventName := fmt.Sprintf("%s_upload", portalName)
+	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, portalName))
+
+	var files []*media_library.MediaLibrary
+	db.Find(&files)
+
+	row := VRow(
+		VCol(
+			VCard(
+				VCardTitle(h.Text("Upload a file")),
+				web.Bind(
+					VFileInput().
+						Class("justify-center").
+						Label("New File").
+						FieldName("NewFiles").
+						HideInput(true),
+				).On("change").EventFunc(uploadEventName),
+			).Height(200),
+		).Cols(3),
+	)
+	for _, f := range files {
+		row.AppendChildren(
+			VCol(
+				VCard(
+					VImg().Src(f.File.URL()).Height(200),
+				),
+			).Cols(3),
+		)
+	}
+
+	return VContainer(row).Fluid(true)
+}
+
+type uploadFiles struct {
+	NewFiles []*multipart.FileHeader
+}
+
 func uploadFile(db *gorm.DB, portalName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var uf uploadFiles
+		ctx.MustUnmarshalForm(&uf)
+		for _, fh := range uf.NewFiles {
+			media := media_library.MediaLibrary{}
+			err1 := media.File.Scan(fh)
+			if err1 != nil {
+				panic(err)
+			}
+			err1 = db.Save(&media).Error
+			if err1 != nil {
+				panic(err1)
+			}
+		}
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogContentPortalName(portalName),
+			Body: fileChooserDialogContent(db, portalName, ctx),
+		})
 		return
 	}
 }
