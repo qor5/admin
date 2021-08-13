@@ -91,7 +91,7 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, portalName))
 
 	var files []*media_library.MediaLibrary
-	db.Find(&files)
+	db.Order("created_at DESC").Find(&files)
 
 	row := VRow(
 		VCol(
@@ -104,10 +104,28 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 						Multiple(true).
 						FieldName("NewFiles").
 						HideInput(true),
-				).On("change").EventFunc(uploadEventName),
+				).On("change").
+					EventFunc(uploadEventName).
+					EventScript("vars.files = $event; vars.loading = true"),
 			).Height(200),
-		).Cols(3),
-	)
+		).
+			Cols(3),
+
+		VCol(
+			VCard(
+				VProgressCircular().
+					Color("primary").
+					Indeterminate(true),
+			).
+				Class("d-flex align-center justify-center").
+				Height(200),
+		).
+			Attr("v-if", "vars.loading").
+			Attr("v-for", "f in vars.files").
+			Cols(3),
+	).
+		Attr(web.InitContextVars, `{loading: false, files: []}`)
+
 	for _, f := range files {
 		row.AppendChildren(
 			VCol(
