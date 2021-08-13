@@ -1,11 +1,15 @@
 package admin
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gormop"
 	"github.com/goplaid/x/vuetify"
+	"github.com/qor/media"
 	"github.com/qor/media/media_library"
+	"github.com/qor/media/oss"
+	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/media_library_view"
 	h "github.com/theplant/htmlgo"
@@ -13,6 +17,16 @@ import (
 
 func NewConfig() (b *presets.Builder) {
 	db := ConnectDB()
+
+	sess := session.Must(session.NewSession())
+
+	oss.Storage = s3.New(&s3.Config{
+		Bucket:  "test-juice",
+		Region:  "ap-northeast-1",
+		Session: sess,
+	})
+
+	media.RegisterCallbacks(db)
 
 	b = presets.New()
 	b.URIPrefix("/admin").
