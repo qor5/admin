@@ -65,7 +65,7 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 							),
 						VToolbarTitle("Choose a File"),
 					).Color("primary").
-						MaxHeight(64).
+						//MaxHeight(64).
 						Flat(true).
 						Dark(true),
 
@@ -75,9 +75,9 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 				).Tile(true),
 			).
 				Fullscreen(true).
-				HideOverlay(true).
+				//HideOverlay(true).
 				Transition("dialog-bottom-transition").
-				Scrollable(true).
+				//Scrollable(true).
 				Attr("v-model", "vars.show").
 				Attr(web.InitContextVars, `{show: false}`),
 			AfterLoaded: "setTimeout(function(){ comp.vars.show = true }, 100)",
@@ -101,6 +101,7 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 					VFileInput().
 						Class("justify-center").
 						Label("New File").
+						Multiple(true).
 						FieldName("NewFiles").
 						HideInput(true),
 				).On("change").EventFunc(uploadEventName),
