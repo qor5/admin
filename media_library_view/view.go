@@ -95,19 +95,26 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 
 	row := VRow(
 		VCol(
-			VCard(
-				VCardTitle(h.Text("Upload a file")),
-				web.Bind(
-					VFileInput().
-						Class("justify-center").
-						Label("New File").
-						Multiple(true).
+			h.Label("").Children(
+				VCard(
+					VCardTitle(h.Text("Upload files")),
+					VIcon("backup").XLarge(true),
+					web.Bind(
+						//VFileInput().
+						//	Class("justify-center").
+						//	Label("New Files").
+						//	Multiple(true).
+						//	FieldName("NewFiles").
+						//	PrependIcon("backup").
+						//	Height(50).
+						//	HideInput(true),
+						h.Input("").Type("file").Attr("multiple", true).Style("display:none"),
+					).On("change").
 						FieldName("NewFiles").
-						HideInput(true),
-				).On("change").
-					EventFunc(uploadEventName).
-					EventScript("vars.files = $event; vars.loading = true"),
-			).Height(200),
+						EventFunc(uploadEventName).
+						EventScript("vars.files = $event.target.files; vars.loading = true"),
+				).Height(200).Attr("v-ripple", true).Class("d-flex justify-center"),
+			),
 		).
 			Cols(3),
 
