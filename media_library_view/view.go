@@ -113,7 +113,11 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 						FieldName("NewFiles").
 						EventFunc(uploadEventName).
 						EventScript("vars.files = $event.target.files; vars.loading = true"),
-				).Height(200).Attr("v-ripple", true).Class("d-flex justify-center"),
+				).
+					Height(200).
+					Class("d-flex align-center justify-center").
+					Attr("role", "button").
+					Attr("v-ripple", true),
 			),
 		).
 			Cols(3),
