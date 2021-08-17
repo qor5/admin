@@ -1,6 +1,7 @@
 package media_library_view
 
 import (
+	"encoding/json"
 	"fmt"
 	"mime/multipart"
 
@@ -9,6 +10,7 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/media/media_library"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -18,39 +20,87 @@ const MediaBoxConfig MediaBoxConfigKey = iota
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		portalName := fmt.Sprintf("%s_Portal", field.Name)
-		ctx.Hub.RegisterEventFunc(portalName, fileChooser(db, portalName))
+		portalName := createPortalName(field)
 
 		cfg := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
-		_ = cfg
+		ctx.Hub.RegisterEventFunc(portalName, fileChooser(db, field, cfg))
+
+		mediaBox := field.Value(obj).(media_library.MediaBox)
+
 		return h.Components(
-			VCard(
-				VCardActions(
-					VBtn("Choose File").
-						Depressed(true).
-						Class("ml-2").
-						OnClick(portalName),
-				),
-			).Class("mb-2"),
-			web.Portal().Name(portalName),
+			VSheet(
+
+				h.Label(field.Label).Class("v-label theme--light"),
+				web.Portal(
+					mediaBoxThumbnails(mediaBox, field),
+				).Name(mediaBoxThumbnailsPortalName(field)),
+			).Class("pb-4").Rounded(true),
 		)
 	}
 }
 
 func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		mediaBox := media_library.MediaBox{}
+		err = reflectutils.Set(obj, field.Name, mediaBox)
+		if err != nil {
+			return
+		}
+
+		jsonValuesField := fmt.Sprintf("%s.Values", field.Name)
+
+		err = reflectutils.Set(obj, jsonValuesField, ctx.R.FormValue(jsonValuesField))
+		if err != nil {
+			return
+		}
+
 		return
 	}
 }
 
-func dialogContentPortalName(portalName string) string {
-	return fmt.Sprintf("%s_content", portalName)
+func createPortalName(field *presets.FieldContext) string {
+	return fmt.Sprintf("%s_portal", field.Name)
 }
 
-func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
+func mediaBoxThumbnailsPortalName(field *presets.FieldContext) string {
+	return fmt.Sprintf("%s_portal_thumbnails", field.Name)
+}
+
+func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldContext) h.HTMLComponent {
+	row := VRow()
+	for _, file := range mediaBox.Files {
+		row.AppendChildren(
+			VCol(
+				VCard(
+					VImg().Src(file.Url),
+				),
+			).Cols(4).Class("pl-0"),
+		)
+	}
+
+	portalName := createPortalName(field)
+	return h.Components(
+		VContainer(
+			row,
+		),
+		web.Bind(
+			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
+		).FieldName(fmt.Sprintf("%s.Values", field.Name)),
+		VBtn("Choose File").
+			Depressed(true).
+			OnClick(portalName),
+		web.Portal().Name(portalName),
+	)
+}
+
+func dialogContentPortalName(field *presets.FieldContext) string {
+	return fmt.Sprintf("%s_dialog_content", field.Name)
+}
+
+func fileChooser(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
-
+		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
 			Body: VDialog(
@@ -70,8 +120,8 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 						Dark(true),
 
 					web.Portal(
-						fileChooserDialogContent(db, portalName, ctx),
-					).Name(dialogContentPortalName(portalName)),
+						fileChooserDialogContent(db, field, ctx, cfg),
+					).Name(dialogContentPortalName(field)),
 				).Tile(true),
 			).
 				Fullscreen(true).
@@ -86,9 +136,12 @@ func fileChooser(db *gorm.DB, portalName string) web.EventFunc {
 	}
 }
 
-func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventContext) h.HTMLComponent {
-	uploadEventName := fmt.Sprintf("%s_upload", portalName)
-	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, portalName))
+func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+
+	uploadEventName := fmt.Sprintf("%s_upload", field.Name)
+	chooseEventName := fmt.Sprintf("%s_choose", field.Name)
+	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
+	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 
 	var files []*media_library.MediaLibrary
 	db.Order("created_at DESC").Find(&files)
@@ -140,9 +193,11 @@ func fileChooserDialogContent(db *gorm.DB, portalName string, ctx *web.EventCont
 	for _, f := range files {
 		row.AppendChildren(
 			VCol(
-				VCard(
-					VImg().Src(f.File.URL()).Height(200),
-				),
+				web.Bind(
+					VCard(
+						VImg().Src(f.File.URL("@qor_preview")).Height(200),
+					),
+				).OnClick(chooseEventName, fmt.Sprint(f.ID)),
 			).Cols(3),
 		)
 	}
@@ -154,7 +209,7 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB, portalName string) web.EventFunc {
+func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
@@ -171,8 +226,46 @@ func uploadFile(db *gorm.DB, portalName string) web.EventFunc {
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName(portalName),
-			Body: fileChooserDialogContent(db, portalName, ctx),
+			Name: dialogContentPortalName(field),
+			Body: fileChooserDialogContent(db, field, ctx, cfg),
+		})
+		return
+	}
+}
+
+func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.Event.ParamAsInt(0)
+
+		var media media_library.MediaLibrary
+		err = db.Find(&media, id).Error
+		if err != nil {
+			return
+		}
+
+		mediaBox := media_library.MediaBox{}
+		mediaBox.Files = append(mediaBox.Files, media_library.File{
+			ID:          json.Number(fmt.Sprint(media.ID)),
+			Url:         media.File.Url,
+			VideoLink:   "",
+			FileName:    media.File.FileName,
+			Description: media.File.Description,
+		})
+
+		for key, _ := range cfg.Sizes {
+			mediaBox.Files = append(mediaBox.Files, media_library.File{
+				ID:          json.Number(media.ID),
+				Url:         media.File.URL(key),
+				VideoLink:   "",
+				FileName:    media.File.FileName,
+				Description: media.File.Description,
+			})
+		}
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name:        mediaBoxThumbnailsPortalName(field),
+			Body:        mediaBoxThumbnails(mediaBox, field),
+			AfterLoaded: "",
 		})
 		return
 	}
