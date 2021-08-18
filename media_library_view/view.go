@@ -34,7 +34,13 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 				web.Portal(
 					mediaBoxThumbnails(mediaBox, field),
 				).Name(mediaBoxThumbnailsPortalName(field)),
-			).Class("pb-4").Rounded(true),
+				VBtn("Choose File").
+					Depressed(true).
+					OnClick(portalName),
+				web.Portal().Name(portalName),
+			).Class("pb-4").
+				Rounded(true).
+				Attr(web.InitContextVars, `{showFileChooser: false}`),
 		)
 	}
 }
@@ -78,7 +84,6 @@ func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldCon
 		)
 	}
 
-	portalName := createPortalName(field)
 	return h.Components(
 		VContainer(
 			row,
@@ -86,10 +91,6 @@ func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldCon
 		web.Bind(
 			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
 		).FieldName(fmt.Sprintf("%s.Values", field.Name)),
-		VBtn("Choose File").
-			Depressed(true).
-			OnClick(portalName),
-		web.Portal().Name(portalName),
 	)
 }
 
@@ -128,10 +129,9 @@ func fileChooser(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Me
 				//HideOverlay(true).
 				Transition("dialog-bottom-transition").
 				//Scrollable(true).
-				Attr("v-model", "vars.show").
-				Attr(web.InitContextVars, `{show: false}`),
-			AfterLoaded: "setTimeout(function(){ comp.vars.show = true }, 100)",
+				Attr("v-model", "vars.showFileChooser"),
 		})
+		r.VarsScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
 		return
 	}
 }
@@ -263,10 +263,11 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name:        mediaBoxThumbnailsPortalName(field),
-			Body:        mediaBoxThumbnails(mediaBox, field),
-			AfterLoaded: "",
+			Name: mediaBoxThumbnailsPortalName(field),
+			Body: mediaBoxThumbnails(mediaBox, field),
 		})
+		r.VarsScript = `vars.showFileChooser = false`
+
 		return
 	}
 }
