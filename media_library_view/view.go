@@ -195,16 +195,34 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 	for _, f := range files {
 		row.AppendChildren(
 			VCol(
-				web.Bind(
-					VCard(
+				VCard(
+					web.Bind(
 						VImg().Src(f.File.URL("@qor_preview")).Height(200),
+					).OnClick(chooseEventName, fmt.Sprint(f.ID)),
+					VCardText(
+						h.Text(f.File.FileName),
+						fileSizes(f),
 					),
-				).OnClick(chooseEventName, fmt.Sprint(f.ID)),
+				),
 			).Cols(3),
 		)
 	}
 
 	return VContainer(row).Fluid(true)
+}
+
+func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
+	if len(f.File.Sizes) == 0 {
+		return nil
+	}
+	g := VChipGroup().Column(true)
+	for k, size := range f.File.GetSizes() {
+		g.AppendChildren(
+			VChip(h.Text(fmt.Sprintf("%s:%dx%d", k, size.Width, size.Height))).XSmall(true),
+		)
+	}
+	return g
+
 }
 
 type uploadFiles struct {
@@ -236,6 +254,17 @@ func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 	}
 }
 
+func mergeNewSizes(media *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (r bool) {
+	for k, size := range cfg.Sizes {
+		if media.File.Sizes[k] != nil {
+			continue
+		}
+		media.File.Sizes[k] = size
+		r = true
+	}
+	return
+}
+
 func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.Event.ParamAsInt(0)
@@ -244,6 +273,13 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 		err = db.Find(&media, id).Error
 		if err != nil {
 			return
+		}
+
+		if mergeNewSizes(&media, cfg) {
+			err = db.Save(&media).Error
+			if err != nil {
+				return
+			}
 		}
 
 		mediaBox := media_library.MediaBox{}

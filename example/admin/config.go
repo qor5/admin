@@ -49,7 +49,19 @@ func NewConfig() (b *presets.Builder) {
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_library_view.MediaBoxConfig,
-			&media_library.MediaBoxConfig{AllowType: "image"})
+			&media_library.MediaBoxConfig{
+				AllowType: "image",
+				Sizes: map[string]*media.Size{
+					"thumb": &media.Size{
+						Width:  400,
+						Height: 300,
+					},
+					"main": &media.Size{
+						Width:  800,
+						Height: 500,
+					},
+				},
+			})
 	ed.Field("BodyImage").
 		WithContextValue(
 			media_library_view.MediaBoxConfig,
