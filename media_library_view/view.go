@@ -9,6 +9,7 @@ import (
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
+	"github.com/qor/media"
 	"github.com/qor/media/media_library"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -78,7 +79,7 @@ func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldCon
 		row.AppendChildren(
 			VCol(
 				VCard(
-					VImg().Src(file.Url),
+					VImg().Src(file.Url).Height(150),
 				),
 			).Cols(4).Class("pl-0"),
 		)
@@ -193,22 +194,40 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 		Attr(web.InitContextVars, `{fileChooserUploadingFiles: []}`)
 
 	for _, f := range files {
+		_, needCrop := mergeNewSizes(f, cfg)
+		croppingVar := fileCroppingVarName(f.ID)
 		row.AppendChildren(
 			VCol(
 				VCard(
 					web.Bind(
-						VImg().Src(f.File.URL("@qor_preview")).Height(200),
-					).OnClick(chooseEventName, fmt.Sprint(f.ID)),
+						h.Div(
+							VImg(
+								h.If(needCrop,
+									h.Div(
+										h.Text("Cropping"),
+									).Class("d-flex align-center justify-center v-card--reveal text-h3 white--text").
+										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
+										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
+								),
+							).Src(f.File.URL("@qor_preview")).Height(200),
+						).Attr("role", "button"),
+					).On("click").
+						EventFunc(chooseEventName, fmt.Sprint(f.ID)).
+						EventScript(fmt.Sprintf("vars.%s = true", croppingVar)),
 					VCardText(
 						h.Text(f.File.FileName),
 						fileSizes(f),
 					),
-				),
+				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(3),
 		)
 	}
 
 	return VContainer(row).Fluid(true)
+}
+
+func fileCroppingVarName(id uint) string {
+	return fmt.Sprintf("fileChooser%d_cropping", id)
 }
 
 func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
@@ -234,12 +253,12 @@ func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
-			media := media_library.MediaLibrary{}
-			err1 := media.File.Scan(fh)
+			m := media_library.MediaLibrary{}
+			err1 := m.File.Scan(fh)
 			if err1 != nil {
 				panic(err)
 			}
-			err1 = db.Save(&media).Error
+			err1 = db.Save(&m).Error
 			if err1 != nil {
 				panic(err1)
 			}
@@ -254,12 +273,14 @@ func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 	}
 }
 
-func mergeNewSizes(media *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (r bool) {
+func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (sizes map[string]*media.Size, r bool) {
+	sizes = make(map[string]*media.Size)
 	for k, size := range cfg.Sizes {
-		if media.File.Sizes[k] != nil {
+		if m.File.Sizes[k] != nil {
+			sizes[k] = m.File.Sizes[k]
 			continue
 		}
-		media.File.Sizes[k] = size
+		sizes[k] = size
 		r = true
 	}
 	return
@@ -269,14 +290,22 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.Event.ParamAsInt(0)
 
-		var media media_library.MediaLibrary
-		err = db.Find(&media, id).Error
+		var m media_library.MediaLibrary
+		err = db.Find(&m, id).Error
 		if err != nil {
 			return
 		}
+		sizes, needCrop := mergeNewSizes(&m, cfg)
 
-		if mergeNewSizes(&media, cfg) {
-			err = db.Save(&media).Error
+		if needCrop {
+			err = m.ScanMediaOptions(media_library.MediaOption{
+				Sizes: sizes,
+				Crop:  true,
+			})
+			if err != nil {
+				return
+			}
+			err = db.Save(&m).Error
 			if err != nil {
 				return
 			}
@@ -284,20 +313,20 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 
 		mediaBox := media_library.MediaBox{}
 		mediaBox.Files = append(mediaBox.Files, media_library.File{
-			ID:          json.Number(fmt.Sprint(media.ID)),
-			Url:         media.File.Url,
+			ID:          json.Number(fmt.Sprint(m.ID)),
+			Url:         m.File.Url,
 			VideoLink:   "",
-			FileName:    media.File.FileName,
-			Description: media.File.Description,
+			FileName:    m.File.FileName,
+			Description: m.File.Description,
 		})
 
 		for key, _ := range cfg.Sizes {
 			mediaBox.Files = append(mediaBox.Files, media_library.File{
-				ID:          json.Number(fmt.Sprint(media.ID)),
-				Url:         media.File.URL(key),
+				ID:          json.Number(fmt.Sprint(m.ID)),
+				Url:         m.File.URL(key),
 				VideoLink:   "",
-				FileName:    media.File.FileName,
-				Description: media.File.Description,
+				FileName:    m.File.FileName,
+				Description: m.File.Description,
 			})
 		}
 
@@ -305,7 +334,7 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(mediaBox, field),
 		})
-		r.VarsScript = `vars.showFileChooser = false`
+		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
 
 		return
 	}
