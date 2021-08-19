@@ -161,7 +161,10 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 						//	PrependIcon("backup").
 						//	Height(50).
 						//	HideInput(true),
-						h.Input("").Type("file").Attr("multiple", true).Style("display:none"),
+						h.Input("").
+							Type("file").
+							Attr("multiple", true).
+							Style("display:none"),
 					).On("change").
 						FieldName("NewFiles").
 						EventFunc(uploadEventName).
@@ -254,7 +257,7 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 
 		for key, _ := range cfg.Sizes {
 			mediaBox.Files = append(mediaBox.Files, media_library.File{
-				ID:          json.Number(media.ID),
+				ID:          json.Number(fmt.Sprint(media.ID)),
 				Url:         media.File.URL(key),
 				VideoLink:   "",
 				FileName:    media.File.FileName,
