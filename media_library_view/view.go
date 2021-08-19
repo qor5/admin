@@ -110,7 +110,7 @@ func fileChooser(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Me
 						VBtn("").
 							Icon(true).
 							Dark(true).
-							Attr("@click", "vars.show = false").
+							Attr("@click", "vars.showFileChooser = false").
 							Children(
 								VIcon("close"),
 							),
@@ -168,7 +168,7 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 					).On("change").
 						FieldName("NewFiles").
 						EventFunc(uploadEventName).
-						EventScript("vars.files = $event.target.files; vars.loading = true"),
+						EventScript("vars.fileChooserUploadingFiles = $event.target.files"),
 				).
 					Height(200).
 					Class("d-flex align-center justify-center").
@@ -187,11 +187,10 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 				Class("d-flex align-center justify-center").
 				Height(200),
 		).
-			Attr("v-if", "vars.loading").
-			Attr("v-for", "f in vars.files").
+			Attr("v-for", "f in vars.fileChooserUploadingFiles").
 			Cols(3),
 	).
-		Attr(web.InitContextVars, `{loading: false, files: []}`)
+		Attr(web.InitContextVars, `{fileChooserUploadingFiles: []}`)
 
 	for _, f := range files {
 		row.AppendChildren(
@@ -232,6 +231,7 @@ func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 			Name: dialogContentPortalName(field),
 			Body: fileChooserDialogContent(db, field, ctx, cfg),
 		})
+		r.VarsScript = `vars.fileChooserUploadingFiles = []`
 		return
 	}
 }
