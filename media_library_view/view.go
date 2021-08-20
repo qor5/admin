@@ -75,11 +75,11 @@ func mediaBoxThumbnailsPortalName(field *presets.FieldContext) string {
 
 func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldContext) h.HTMLComponent {
 	row := VRow()
-	for _, file := range mediaBox.Files {
+	for _, f := range mediaBox.Files {
 		row.AppendChildren(
 			VCol(
 				VCard(
-					VImg().Src(file.Url).Height(150),
+					VImg().Src(f.Url).Height(150),
 				),
 			).Cols(4).Class("pl-0"),
 		)
@@ -204,8 +204,9 @@ func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web
 							VImg(
 								h.If(needCrop,
 									h.Div(
-										h.Text("Cropping"),
-									).Class("d-flex align-center justify-center v-card--reveal text-h3 white--text").
+										VProgressCircular().Indeterminate(true),
+										h.Span("Cropping").Class("text-h6 pl-2"),
+									).Class("d-flex align-center justify-center v-card--reveal white--text").
 										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
 										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
 								),
@@ -237,7 +238,7 @@ func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
 	g := VChipGroup().Column(true)
 	for k, size := range f.File.GetSizes() {
 		g.AppendChildren(
-			VChip(h.Text(fmt.Sprintf("%s:%dx%d", k, size.Width, size.Height))).XSmall(true),
+			VChip(h.Text(fmt.Sprintf("%s(%dx%d)", k, size.Width, size.Height))).XSmall(true),
 		)
 	}
 	return g
