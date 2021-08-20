@@ -52,11 +52,11 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
 				Sizes: map[string]*media.Size{
-					"thumb": &media.Size{
+					"thumb": {
 						Width:  400,
 						Height: 300,
 					},
-					"main": &media.Size{
+					"main": {
 						Width:  800,
 						Height: 500,
 					},
