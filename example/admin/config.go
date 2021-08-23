@@ -44,7 +44,12 @@ func NewConfig() (b *presets.Builder) {
 		ComponentFunc(media_library_view.MediaBoxComponentFunc(db)).
 		SetterFunc(media_library_view.MediaBoxSetterFunc(db))
 
+	b.FieldDefaults(presets.LIST).
+		FieldType(media_library.MediaBox{}).
+		ComponentFunc(media_library_view.MediaBoxListFunc())
+
 	m := b.Model(&models.Post{})
+	m.Listing("Title", "HeroImage", "Body").SearchColumns("Title", "Body")
 	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(

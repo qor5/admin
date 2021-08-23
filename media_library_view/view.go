@@ -95,6 +95,13 @@ func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldCon
 	)
 }
 
+func MediaBoxListFunc() presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		mediaBox := field.Value(obj).(media_library.MediaBox)
+		return h.Td(h.Img("").Src(mediaBox.URL("@qor_preview")).Style("height: 48px;"))
+	}
+}
+
 func dialogContentPortalName(field *presets.FieldContext) string {
 	return fmt.Sprintf("%s_dialog_content", field.Name)
 }
