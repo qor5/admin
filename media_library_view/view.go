@@ -197,11 +197,13 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 }
 
 func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
-
 	uploadEventName := fmt.Sprintf("%s_upload", field)
 	chooseEventName := fmt.Sprintf("%s_choose", field)
+	updateMediaDescription := fmt.Sprintf("%s_update", field)
+
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
+	ctx.Hub.RegisterEventFunc(updateMediaDescription, updateDescription(db, field, cfg))
 
 	var files []*media_library.MediaLibrary
 	db.Order("created_at DESC").Find(&files)
@@ -276,6 +278,12 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						EventScript(fmt.Sprintf("vars.%s = true", croppingVar)),
 					VCardText(
 						h.Text(f.File.FileName),
+						web.Bind(
+							h.Input("description").
+								Style("width: 100%;").
+								Placeholder("description for accessibility").
+								Value(f.File.Description),
+						).On("change").EventFunc(updateMediaDescription, fmt.Sprint(f.ID)),
 						fileSizes(f),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
@@ -395,6 +403,24 @@ func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 			Body: mediaBoxThumbnails(&mediaBox, field),
 		})
 		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
+
+		return
+	}
+}
+
+func updateDescription(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.Event.ParamAsInt(0)
+
+		var media media_library.MediaLibrary
+		if err = db.Find(&media, id).Error; err != nil {
+			return
+		}
+
+		media.File.Description = ctx.Event.Value
+		if err = db.Save(&media).Error; err != nil {
+			return
+		}
 
 		return
 	}
