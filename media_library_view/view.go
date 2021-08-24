@@ -1,6 +1,7 @@
 package media_library_view
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -21,28 +22,12 @@ const MediaBoxConfig MediaBoxConfigKey = iota
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		portalName := createPortalName(field)
-
 		cfg := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
-		ctx.Hub.RegisterEventFunc(portalName, fileChooser(db, field, cfg))
-
 		mediaBox := field.Value(obj).(media_library.MediaBox)
-
-		return h.Components(
-			VSheet(
-
-				h.Label(field.Label).Class("v-label theme--light"),
-				web.Portal(
-					mediaBoxThumbnails(mediaBox, field),
-				).Name(mediaBoxThumbnailsPortalName(field)),
-				VBtn("Choose File").
-					Depressed(true).
-					OnClick(portalName),
-				web.Portal().Name(portalName),
-			).Class("pb-4").
-				Rounded(true).
-				Attr(web.InitContextVars, `{showFileChooser: false}`),
-		)
+		return QMediaBox(db).
+			FieldName(field.Name).
+			Value(&mediaBox).
+			Config(cfg)
 	}
 }
 
@@ -65,15 +50,82 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	}
 }
 
-func createPortalName(field *presets.FieldContext) string {
-	return fmt.Sprintf("%s_portal", field.Name)
+type QMediaBoxBuilder struct {
+	fieldName string
+	label     string
+	value     *media_library.MediaBox
+	config    *media_library.MediaBoxConfig
+	db        *gorm.DB
 }
 
-func mediaBoxThumbnailsPortalName(field *presets.FieldContext) string {
-	return fmt.Sprintf("%s_portal_thumbnails", field.Name)
+func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
+	r = &QMediaBoxBuilder{
+		db: db,
+	}
+	return
 }
 
-func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldContext) h.HTMLComponent {
+func (b *QMediaBoxBuilder) FieldName(v string) (r *QMediaBoxBuilder) {
+	b.fieldName = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Value(v *media_library.MediaBox) (r *QMediaBoxBuilder) {
+	b.value = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Label(v string) (r *QMediaBoxBuilder) {
+	b.label = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBoxBuilder) {
+	b.config = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
+	if len(b.fieldName) == 0 {
+		panic("FieldName required")
+	}
+	if b.value == nil {
+		panic("Value required")
+	}
+
+	ctx := web.MustGetEventContext(c)
+	portalName := createPortalName(b.fieldName)
+
+	ctx.Hub.RegisterEventFunc(portalName, fileChooser(b.db, b.fieldName, b.config))
+
+	return h.Components(
+		VSheet(
+			h.If(len(b.label) > 0,
+				h.Label(b.label).Class("v-label theme--light"),
+			),
+			web.Portal(
+				mediaBoxThumbnails(b.value, b.fieldName),
+			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
+			VBtn("Choose File").
+				Depressed(true).
+				OnClick(portalName),
+			web.Portal().Name(portalName),
+		).Class("pb-4").
+			Rounded(true).
+			Attr(web.InitContextVars, `{showFileChooser: false}`),
+	).MarshalHTML(c)
+
+}
+
+func createPortalName(field string) string {
+	return fmt.Sprintf("%s_portal", field)
+}
+
+func mediaBoxThumbnailsPortalName(field string) string {
+	return fmt.Sprintf("%s_portal_thumbnails", field)
+}
+
+func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string) h.HTMLComponent {
 	row := VRow()
 	for _, f := range mediaBox.Files {
 		row.AppendChildren(
@@ -88,10 +140,10 @@ func mediaBoxThumbnails(mediaBox media_library.MediaBox, field *presets.FieldCon
 	return h.Components(
 		VContainer(
 			row,
-		),
+		).Fluid(true),
 		web.Bind(
 			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
-		).FieldName(fmt.Sprintf("%s.Values", field.Name)),
+		).FieldName(fmt.Sprintf("%s.Values", field)),
 	)
 }
 
@@ -102,11 +154,11 @@ func MediaBoxListFunc() presets.FieldComponentFunc {
 	}
 }
 
-func dialogContentPortalName(field *presets.FieldContext) string {
-	return fmt.Sprintf("%s_dialog_content", field.Name)
+func dialogContentPortalName(field string) string {
+	return fmt.Sprintf("%s_dialog_content", field)
 }
 
-func fileChooser(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
 		portalName := createPortalName(field)
@@ -144,10 +196,10 @@ func fileChooser(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Me
 	}
 }
 
-func fileChooserDialogContent(db *gorm.DB, field *presets.FieldContext, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
 
-	uploadEventName := fmt.Sprintf("%s_upload", field.Name)
-	chooseEventName := fmt.Sprintf("%s_choose", field.Name)
+	uploadEventName := fmt.Sprintf("%s_upload", field)
+	chooseEventName := fmt.Sprintf("%s_choose", field)
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 
@@ -256,7 +308,7 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func uploadFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
@@ -294,7 +346,7 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 	return
 }
 
-func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.Event.ParamAsInt(0)
 
@@ -340,7 +392,7 @@ func chooseFile(db *gorm.DB, field *presets.FieldContext, cfg *media_library.Med
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(mediaBox, field),
+			Body: mediaBoxThumbnails(&mediaBox, field),
 		})
 		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
 

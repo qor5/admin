@@ -11,6 +11,7 @@ import (
 	"github.com/qor/media/oss"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/media_library_view"
 	h "github.com/theplant/htmlgo"
 )
@@ -73,5 +74,10 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{AllowType: "image"})
 	_ = m
 	// Use m to customize the model, Or config more models here.
+
+	type Setting struct {
+	}
+	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
+
 	return
 }
