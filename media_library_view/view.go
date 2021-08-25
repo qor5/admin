@@ -318,11 +318,13 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					VCardText(
 						h.Text(f.File.FileName),
 						web.Bind(
-							h.Input("description").
+							h.Input("").
 								Style("width: 100%;").
 								Placeholder("description for accessibility").
 								Value(f.File.Description),
-						).On("change").EventFunc(updateMediaDescription, fmt.Sprint(f.ID)),
+						).On("change").
+							EventFunc(updateMediaDescription, fmt.Sprint(f.ID)).
+							FieldName(fmt.Sprintf("%v[%v].description", field, f.ID)),
 						fileSizes(f),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
@@ -453,7 +455,7 @@ func updateDescription(db *gorm.DB, field string, cfg *media_library.MediaBoxCon
 			return
 		}
 
-		media.File.Description = ctx.Event.Value
+		media.File.Description = ctx.R.FormValue(fmt.Sprintf("%v[%v].description", field, id))
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
