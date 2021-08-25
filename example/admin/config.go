@@ -50,7 +50,7 @@ func NewConfig() (b *presets.Builder) {
 		ComponentFunc(media_library_view.MediaBoxListFunc())
 
 	m := b.Model(&models.Post{})
-	m.Listing("Title", "HeroImage", "Body").SearchColumns("Title", "Body")
+	m.Listing("ID", "Title", "HeroImage", "Body").SearchColumns("Title", "Body")
 	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
@@ -75,8 +75,7 @@ func NewConfig() (b *presets.Builder) {
 	_ = m
 	// Use m to customize the model, Or config more models here.
 
-	type Setting struct {
-	}
+	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
 
 	return

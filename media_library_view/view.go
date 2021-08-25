@@ -27,6 +27,7 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 		return QMediaBox(db).
 			FieldName(field.Name).
 			Value(&mediaBox).
+			Label(field.Label).
 			Config(cfg)
 	}
 }
@@ -104,7 +105,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(b.value, b.fieldName),
+				mediaBoxThumbnails(b.value, b.fieldName, b.config),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			VBtn("Choose File").
 				Depressed(true).
@@ -125,22 +126,29 @@ func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
 
-func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string) h.HTMLComponent {
-	row := VRow()
+func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+	c := VContainer().Fluid(true)
 	for _, f := range mediaBox.Files {
-		row.AppendChildren(
-			VCol(
-				VCard(
-					VImg().Src(f.Url).Height(150),
-				),
-			).Cols(4).Class("pl-0"),
-		)
+		row := VRow()
+		for k, size := range cfg.Sizes {
+			row.AppendChildren(
+				VCol(
+					VCard(
+						VImg().Src(f.URL(k)).Height(150),
+						VCardActions(
+							VBtn("").Children(
+								thumbName(k, size),
+							).Text(true).Small(true),
+						),
+					),
+				).Cols(4).Class("pl-0"),
+			)
+		}
+		c.AppendChildren(row)
 	}
 
 	return h.Components(
-		VContainer(
-			row,
-		).Fluid(true),
+		c,
 		web.Bind(
 			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
 		).FieldName(fmt.Sprintf("%s.Values", field)),
@@ -297,11 +305,15 @@ func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
 	g := VChipGroup().Column(true)
 	for k, size := range f.File.GetSizes() {
 		g.AppendChildren(
-			VChip(h.Text(fmt.Sprintf("%s(%dx%d)", k, size.Width, size.Height))).XSmall(true),
+			VChip(thumbName(k, size)).XSmall(true),
 		)
 	}
 	return g
 
+}
+
+func thumbName(name string, size *media.Size) h.HTMLComponent {
+	return h.Text(fmt.Sprintf("%s(%dx%d)", name, size.Width, size.Height))
 }
 
 type uploadFiles struct {
@@ -380,19 +392,9 @@ func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 			Description: m.File.Description,
 		})
 
-		for key, _ := range cfg.Sizes {
-			mediaBox.Files = append(mediaBox.Files, media_library.File{
-				ID:          json.Number(fmt.Sprint(m.ID)),
-				Url:         m.File.URL(key),
-				VideoLink:   "",
-				FileName:    m.File.FileName,
-				Description: m.File.Description,
-			})
-		}
-
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(&mediaBox, field),
+			Body: mediaBoxThumbnails(&mediaBox, field, cfg),
 		})
 		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
 
