@@ -197,9 +197,16 @@ func deleteFileField(db *gorm.DB, field string, config *media_library.MediaBoxCo
 	}
 }
 
+func searchKeywordName(field string) string {
+	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
+}
+
 func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
+		searchEventName := fmt.Sprintf("%s_search", field)
+		ctx.Hub.RegisterEventFunc(searchEventName, searchFile(db, field, cfg))
+
 		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
@@ -214,6 +221,19 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 								VIcon("close"),
 							),
 						VToolbarTitle("Choose a File"),
+						VSpacer(),
+						VLayout(
+							web.Bind(
+								VTextField().
+									SoloInverted(true).
+									PrependIcon("search").
+									Label("Search").
+									Flat(true).
+									Clearable(true).
+									HideDetails(true).
+									Value(""),
+							).On("keyup.enter").EventFunc(searchEventName).FieldName(searchKeywordName(field)),
+						).AlignCenter(true).Attr("style", "max-width: 650px"),
 					).Color("primary").
 						//MaxHeight(64).
 						Flat(true).
@@ -242,8 +262,13 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 
+	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
-	db.Order("created_at DESC").Find(&files)
+	if keyword == "" {
+		db.Order("created_at DESC").Find(&files)
+	} else {
+		db.Order("created_at DESC").Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword)).Find(&files)
+	}
 
 	row := VRow(
 		VCol(
@@ -432,6 +457,16 @@ func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 		})
 		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
 
+		return
+	}
+}
+
+func searchFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogContentPortalName(field),
+			Body: fileChooserDialogContent(db, field, ctx, cfg),
+		})
 		return
 	}
 }
