@@ -50,7 +50,9 @@ func NewConfig() (b *presets.Builder) {
 		ComponentFunc(media_library_view.MediaBoxListFunc())
 
 	m := b.Model(&models.Post{})
-	m.Listing("ID", "Title", "HeroImage", "Body").SearchColumns("title", "body")
+	m.Listing("ID", "Title", "HeroImage", "Body").
+		SearchColumns("title", "body").
+		PerPage(10)
 	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
