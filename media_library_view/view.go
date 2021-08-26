@@ -232,7 +232,7 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 									Clearable(true).
 									HideDetails(true).
 									Value(""),
-							).On("keyup.enter").EventFunc(searchEventName).FieldName(searchKeywordName(field)),
+							).On("keyup.enter").EventFunc(searchEventName),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
 					).Color("primary").
 						//MaxHeight(64).
@@ -262,7 +262,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 
-	keyword := ctx.R.FormValue(searchKeywordName(field))
+	keyword := ctx.Event.Value
 	var files []*media_library.MediaLibrary
 	if keyword == "" {
 		db.Order("created_at DESC").Find(&files)
