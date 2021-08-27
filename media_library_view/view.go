@@ -291,10 +291,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						Attr("multiple", true).
 						Style("display:none").
 						Attr("@change",
-							"vars.fileChooserUploadingFiles = $event.target.files; "+
-								web.Plaid().
-									FieldValue("NewFiles", web.Var("$event")).
-									EventFunc(uploadEventName).Go()),
+							web.Plaid().
+								BeforeScript("vars.fileChooserUploadingFiles = $event.target.files").
+								FieldValue("NewFiles", web.Var("$event")).
+								EventFunc(uploadEventName).Go()),
 				).
 					Height(200).
 					Class("d-flex align-center justify-center").
