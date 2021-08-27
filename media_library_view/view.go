@@ -162,9 +162,9 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 
 	return h.Components(
 		c,
-		web.Bind(
-			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
-		).FieldName(fmt.Sprintf("%s.Values", field)),
+		h.Input("").Type("hidden").
+			Value(h.JSONString(mediaBox.Files)).
+			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn("Choose File").
 			Depressed(true).
 			OnClick(createPortalName(field)),
@@ -223,16 +223,18 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 						VToolbarTitle("Choose a File"),
 						VSpacer(),
 						VLayout(
-							web.Bind(
-								VTextField().
-									SoloInverted(true).
-									PrependIcon("search").
-									Label("Search").
-									Flat(true).
-									Clearable(true).
-									HideDetails(true).
-									Value(""),
-							).On("keyup.enter").EventFunc(searchEventName),
+							VTextField().
+								SoloInverted(true).
+								PrependIcon("search").
+								Label("Search").
+								Flat(true).
+								Clearable(true).
+								HideDetails(true).
+								Value("").
+								Attr("@keyup.enter", web.Plaid().
+									EventFunc(searchEventName).
+									FieldValue(searchKeywordName(field), web.Var("$event")).
+									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
 					).Color("primary").
 						//MaxHeight(64).
@@ -262,7 +264,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 
-	keyword := ctx.Event.Value
+	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
 	if keyword == "" {
 		db.Order("created_at DESC").Find(&files)
@@ -276,23 +278,23 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				VCard(
 					VCardTitle(h.Text("Upload files")),
 					VIcon("backup").XLarge(true),
-					web.Bind(
-						//VFileInput().
-						//	Class("justify-center").
-						//	Label("New Files").
-						//	Multiple(true).
-						//	FieldName("NewFiles").
-						//	PrependIcon("backup").
-						//	Height(50).
-						//	HideInput(true),
-						h.Input("").
-							Type("file").
-							Attr("multiple", true).
-							Style("display:none"),
-					).On("change").
-						FieldName("NewFiles").
-						EventFunc(uploadEventName).
-						EventScript("vars.fileChooserUploadingFiles = $event.target.files"),
+					//VFileInput().
+					//	Class("justify-center").
+					//	Label("New Files").
+					//	Multiple(true).
+					//	FieldName("NewFiles").
+					//	PrependIcon("backup").
+					//	Height(50).
+					//	HideInput(true),
+					h.Input("").
+						Type("file").
+						Attr("multiple", true).
+						Style("display:none").
+						Attr("@change",
+							"vars.fileChooserUploadingFiles = $event.target.files; "+
+								web.Plaid().
+									FieldValue("NewFiles", web.Var("$event")).
+									EventFunc(uploadEventName).Go()),
 				).
 					Height(200).
 					Class("d-flex align-center justify-center").
@@ -322,22 +324,22 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		row.AppendChildren(
 			VCol(
 				VCard(
-					web.Bind(
-						h.Div(
-							VImg(
-								h.If(needCrop,
-									h.Div(
-										VProgressCircular().Indeterminate(true),
-										h.Span("Cropping").Class("text-h6 pl-2"),
-									).Class("d-flex align-center justify-center v-card--reveal white--text").
-										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
-										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
-								),
-							).Src(f.File.URL("@qor_preview")).Height(200),
-						).Attr("role", "button"),
-					).On("click").
-						EventFunc(chooseEventName, fmt.Sprint(f.ID)).
-						EventScript(fmt.Sprintf("vars.%s = true", croppingVar)),
+					h.Div(
+						VImg(
+							h.If(needCrop,
+								h.Div(
+									VProgressCircular().Indeterminate(true),
+									h.Span("Cropping").Class("text-h6 pl-2"),
+								).Class("d-flex align-center justify-center v-card--reveal white--text").
+									Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
+									Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
+							),
+						).Src(f.File.URL("@qor_preview")).Height(200),
+					).Attr("role", "button").
+						Attr("@click", web.Plaid().
+							BeforeScript(fmt.Sprintf("vars.%s = true", croppingVar)).
+							EventFunc(chooseEventName, fmt.Sprint(f.ID)).
+							Go()),
 					VCardText(
 						h.Text(f.File.FileName),
 						fileSizes(f),
