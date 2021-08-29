@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"strconv"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -200,12 +201,16 @@ func deleteFileField(db *gorm.DB, field string, config *media_library.MediaBoxCo
 func searchKeywordName(field string) string {
 	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
 }
-
+func searchPageName(field string) string {
+	return fmt.Sprintf("%s_file_chooser_current_page", field)
+}
+func searchEventName(field string) string {
+	return fmt.Sprintf("%s_search", field)
+}
 func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
-		searchEventName := fmt.Sprintf("%s_search", field)
-		ctx.Hub.RegisterEventFunc(searchEventName, searchFile(db, field, cfg))
+		ctx.Hub.RegisterEventFunc(searchEventName(field), searchFile(db, field, cfg))
 
 		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -232,7 +237,7 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 								HideDetails(true).
 								Value("").
 								Attr("@keyup.enter", web.Plaid().
-									EventFunc(searchEventName).
+									EventFunc(searchEventName(field)).
 									FieldValue(searchKeywordName(field), web.Var("$event")).
 									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
@@ -257,6 +262,8 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 	}
 }
 
+var MediaLibraryPerPage int64 = 39
+
 func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
 	uploadEventName := fmt.Sprintf("%s_upload", field)
 	chooseEventName := fmt.Sprintf("%s_choose", field)
@@ -268,10 +275,32 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
-	if keyword == "" {
-		db.Order("created_at DESC").Find(&files)
-	} else {
-		db.Order("created_at DESC").Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword)).Find(&files)
+	wh := db.Model(&media_library.MediaLibrary{}).Order("created_at DESC")
+
+	currentPageInt, _ := strconv.ParseInt(ctx.R.FormValue(searchPageName(field)), 10, 64)
+	if currentPageInt == 0 {
+		currentPageInt = 1
+	}
+
+	if len(keyword) > 0 {
+		wh = wh.Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
+	}
+
+	var count int
+	err := wh.Count(&count).Error
+	if err != nil {
+		panic(err)
+	}
+	perPage := MediaLibraryPerPage
+	pagesCount := int(int64(count)/perPage + 1)
+	if int64(count)%perPage == 0 {
+		pagesCount--
+	}
+
+	wh = wh.Limit(perPage).Offset((currentPageInt - 1) * perPage)
+	err = wh.Find(&files).Error
+	if err != nil {
+		panic(err)
 	}
 
 	row := VRow(
@@ -366,7 +395,22 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			Top(true).
 			Color("teal darken-1").
 			Timeout(5000),
-		VContainer(row).Fluid(true),
+		VContainer(
+			row,
+			VRow(
+				VCol().Cols(1),
+				VCol(
+					VPagination().
+						Length(pagesCount).
+						Value(int(currentPageInt)).
+						Attr("@input", web.Plaid().
+							FieldValue(searchPageName(field), web.Var("$event")).
+							EventFunc(searchEventName(field)).
+							Go()),
+				).Cols(10),
+			),
+			VCol().Cols(1),
+		).Fluid(true),
 	).Attr(web.InitContextVars, `{snackbarShow: false}`)
 }
 
