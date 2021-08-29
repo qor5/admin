@@ -258,11 +258,13 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 }
 
 func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
-
 	uploadEventName := fmt.Sprintf("%s_upload", field)
 	chooseEventName := fmt.Sprintf("%s_choose", field)
+	updateMediaDescription := fmt.Sprintf("%s_update", field)
+
 	ctx.Hub.RegisterEventFunc(uploadEventName, uploadFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
+	ctx.Hub.RegisterEventFunc(updateMediaDescription, updateDescription(db, field, cfg))
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
@@ -342,6 +344,15 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Go()),
 					VCardText(
 						h.Text(f.File.FileName),
+						h.Input("").
+							Style("width: 100%;").
+							Placeholder("description for accessibility").
+							Value(f.File.Description).
+							Attr("@change", web.Plaid().
+								EventFunc(updateMediaDescription, fmt.Sprint(f.ID)).
+								FieldValue("CurrentDescription", web.Var("$event.target.value")).
+								Go(),
+							),
 						fileSizes(f),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
@@ -349,7 +360,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		)
 	}
 
-	return VContainer(row).Fluid(true)
+	return h.Div(
+		VSnackbar(h.Text("Description Updated")).
+			Attr("v-model", "vars.snackbarShow").
+			Top(true).
+			Color("teal darken-1").
+			Timeout(5000),
+		VContainer(row).Fluid(true),
+	).Attr(web.InitContextVars, `{snackbarShow: false}`)
 }
 
 func fileCroppingVarName(id uint) string {
@@ -397,10 +415,7 @@ func uploadFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 			}
 		}
 
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName(field),
-			Body: fileChooserDialogContent(db, field, ctx, cfg),
-		})
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		r.VarsScript = `vars.fileChooserUploadingFiles = []`
 		return
 	}
@@ -463,12 +478,35 @@ func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 	}
 }
 
-func searchFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func updateDescription(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName(field),
-			Body: fileChooserDialogContent(db, field, ctx, cfg),
-		})
+		id := ctx.Event.ParamAsInt(0)
+
+		var media media_library.MediaLibrary
+		if err = db.Find(&media, id).Error; err != nil {
+			return
+		}
+
+		media.File.Description = ctx.R.FormValue("CurrentDescription")
+		if err = db.Save(&media).Error; err != nil {
+			return
+		}
+
+		r.VarsScript = `vars.snackbarShow = true;`
 		return
 	}
+}
+
+func searchFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		return
+	}
+}
+
+func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: dialogContentPortalName(field),
+		Body: fileChooserDialogContent(db, field, ctx, cfg),
+	})
 }
