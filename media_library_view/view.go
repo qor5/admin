@@ -162,9 +162,9 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 
 	return h.Components(
 		c,
-		web.Bind(
-			h.Input("").Type("hidden").Value(h.JSONString(mediaBox.Files)),
-		).FieldName(fmt.Sprintf("%s.Values", field)),
+		h.Input("").Type("hidden").
+			Value(h.JSONString(mediaBox.Files)).
+			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn("Choose File").
 			Depressed(true).
 			OnClick(createPortalName(field)),
@@ -197,9 +197,16 @@ func deleteFileField(db *gorm.DB, field string, config *media_library.MediaBoxCo
 	}
 }
 
+func searchKeywordName(field string) string {
+	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
+}
+
 func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
+		searchEventName := fmt.Sprintf("%s_search", field)
+		ctx.Hub.RegisterEventFunc(searchEventName, searchFile(db, field, cfg))
+
 		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
@@ -214,6 +221,21 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 								VIcon("close"),
 							),
 						VToolbarTitle("Choose a File"),
+						VSpacer(),
+						VLayout(
+							VTextField().
+								SoloInverted(true).
+								PrependIcon("search").
+								Label("Search").
+								Flat(true).
+								Clearable(true).
+								HideDetails(true).
+								Value("").
+								Attr("@keyup.enter", web.Plaid().
+									EventFunc(searchEventName).
+									FieldValue(searchKeywordName(field), web.Var("$event")).
+									Go()),
+						).AlignCenter(true).Attr("style", "max-width: 650px"),
 					).Color("primary").
 						//MaxHeight(64).
 						Flat(true).
@@ -244,8 +266,13 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	ctx.Hub.RegisterEventFunc(chooseEventName, chooseFile(db, field, cfg))
 	ctx.Hub.RegisterEventFunc(updateMediaDescription, updateDescription(db, field, cfg))
 
+	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
-	db.Order("created_at DESC").Find(&files)
+	if keyword == "" {
+		db.Order("created_at DESC").Find(&files)
+	} else {
+		db.Order("created_at DESC").Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword)).Find(&files)
+	}
 
 	row := VRow(
 		VCol(
@@ -253,23 +280,23 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				VCard(
 					VCardTitle(h.Text("Upload files")),
 					VIcon("backup").XLarge(true),
-					web.Bind(
-						//VFileInput().
-						//	Class("justify-center").
-						//	Label("New Files").
-						//	Multiple(true).
-						//	FieldName("NewFiles").
-						//	PrependIcon("backup").
-						//	Height(50).
-						//	HideInput(true),
-						h.Input("").
-							Type("file").
-							Attr("multiple", true).
-							Style("display:none"),
-					).On("change").
-						FieldName("NewFiles").
-						EventFunc(uploadEventName).
-						EventScript("vars.fileChooserUploadingFiles = $event.target.files"),
+					//VFileInput().
+					//	Class("justify-center").
+					//	Label("New Files").
+					//	Multiple(true).
+					//	FieldName("NewFiles").
+					//	PrependIcon("backup").
+					//	Height(50).
+					//	HideInput(true),
+					h.Input("").
+						Type("file").
+						Attr("multiple", true).
+						Style("display:none").
+						Attr("@change",
+							web.Plaid().
+								BeforeScript("vars.fileChooserUploadingFiles = $event.target.files").
+								FieldValue("NewFiles", web.Var("$event")).
+								EventFunc(uploadEventName).Go()),
 				).
 					Height(200).
 					Class("d-flex align-center justify-center").
@@ -299,32 +326,33 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		row.AppendChildren(
 			VCol(
 				VCard(
-					web.Bind(
-						h.Div(
-							VImg(
-								h.If(needCrop,
-									h.Div(
-										VProgressCircular().Indeterminate(true),
-										h.Span("Cropping").Class("text-h6 pl-2"),
-									).Class("d-flex align-center justify-center v-card--reveal white--text").
-										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
-										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
-								),
-							).Src(f.File.URL("@qor_preview")).Height(200),
-						).Attr("role", "button"),
-					).On("click").
-						EventFunc(chooseEventName, fmt.Sprint(f.ID)).
-						EventScript(fmt.Sprintf("vars.%s = true", croppingVar)),
+					h.Div(
+						VImg(
+							h.If(needCrop,
+								h.Div(
+									VProgressCircular().Indeterminate(true),
+									h.Span("Cropping").Class("text-h6 pl-2"),
+								).Class("d-flex align-center justify-center v-card--reveal white--text").
+									Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
+									Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
+							),
+						).Src(f.File.URL("@qor_preview")).Height(200),
+					).Attr("role", "button").
+						Attr("@click", web.Plaid().
+							BeforeScript(fmt.Sprintf("vars.%s = true", croppingVar)).
+							EventFunc(chooseEventName, fmt.Sprint(f.ID)).
+							Go()),
 					VCardText(
 						h.Text(f.File.FileName),
-						web.Bind(
-							h.Input("").
-								Style("width: 100%;").
-								Placeholder("description for accessibility").
-								Value(f.File.Description),
-						).On("change").
-							EventFunc(updateMediaDescription, fmt.Sprint(f.ID)).
-							FieldName(fmt.Sprintf("%v[%v].description", field, f.ID)),
+						h.Input("").
+							Style("width: 100%;").
+							Placeholder("description for accessibility").
+							Value(f.File.Description).
+							Attr("@change", web.Plaid().
+								EventFunc(updateMediaDescription, fmt.Sprint(f.ID)).
+								FieldValue("CurrentDescription", web.Var("$event.target.value")).
+								Go(),
+							),
 						fileSizes(f),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
@@ -332,7 +360,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		)
 	}
 
-	return VContainer(row).Fluid(true)
+	return h.Div(
+		VSnackbar(h.Text("Description Updated")).
+			Attr("v-model", "vars.snackbarShow").
+			Top(true).
+			Color("teal darken-1").
+			Timeout(5000),
+		VContainer(row).Fluid(true),
+	).Attr(web.InitContextVars, `{snackbarShow: false}`)
 }
 
 func fileCroppingVarName(id uint) string {
@@ -380,10 +415,7 @@ func uploadFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 			}
 		}
 
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName(field),
-			Body: fileChooserDialogContent(db, field, ctx, cfg),
-		})
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		r.VarsScript = `vars.fileChooserUploadingFiles = []`
 		return
 	}
@@ -455,11 +487,26 @@ func updateDescription(db *gorm.DB, field string, cfg *media_library.MediaBoxCon
 			return
 		}
 
-		media.File.Description = ctx.R.FormValue(fmt.Sprintf("%v[%v].description", field, id))
+		media.File.Description = ctx.R.FormValue("CurrentDescription")
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
 
+		r.VarsScript = `vars.snackbarShow = true;`
 		return
 	}
+}
+
+func searchFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		return
+	}
+}
+
+func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: dialogContentPortalName(field),
+		Body: fileChooserDialogContent(db, field, ctx, cfg),
+	})
 }
