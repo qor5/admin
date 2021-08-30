@@ -201,16 +201,20 @@ func deleteFileField(db *gorm.DB, field string, config *media_library.MediaBoxCo
 func searchKeywordName(field string) string {
 	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
 }
-func searchPageName(field string) string {
+func currentPageName(field string) string {
 	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 func searchEventName(field string) string {
 	return fmt.Sprintf("%s_search", field)
 }
+func jumpPageEventName(field string) string {
+	return fmt.Sprintf("%s_jump", field)
+}
 func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//msgr := presets.MustGetMessages(ctx.R)
 		ctx.Hub.RegisterEventFunc(searchEventName(field), searchFile(db, field, cfg))
+		ctx.Hub.RegisterEventFunc(jumpPageEventName(field), jumpPage(db, field, cfg))
 
 		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -276,8 +280,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
 	wh := db.Model(&media_library.MediaLibrary{}).Order("created_at DESC")
-
-	currentPageInt, _ := strconv.ParseInt(ctx.R.FormValue(searchPageName(field)), 10, 64)
+	currentPageInt, _ := strconv.ParseInt(ctx.R.FormValue(currentPageName(field)), 10, 64)
 	if currentPageInt == 0 {
 		currentPageInt = 1
 	}
@@ -404,8 +407,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						Length(pagesCount).
 						Value(int(currentPageInt)).
 						Attr("@input", web.Plaid().
-							FieldValue(searchPageName(field), web.Var("$event")).
-							EventFunc(searchEventName(field)).
+							FieldValue(currentPageName(field), web.Var("$event")).
+							EventFunc(jumpPageEventName(field)).
 							Go()),
 				).Cols(10),
 			),
@@ -542,6 +545,14 @@ func updateDescription(db *gorm.DB, field string, cfg *media_library.MediaBoxCon
 }
 
 func searchFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		ctx.R.Form[currentPageName(field)] = []string{"1"}
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		return
+	}
+}
+
+func jumpPage(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		return

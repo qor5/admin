@@ -48,6 +48,7 @@ func NewConfig() (b *presets.Builder) {
 	b.FieldDefaults(presets.LIST).
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(media_library_view.MediaBoxListFunc())
+	//media_library_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "HeroImage", "Body").
