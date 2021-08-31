@@ -35,13 +35,8 @@ github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gG
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe h1:lXe2qZdvpiX5WZkZR4hgp4KJVfY3nMkvmwbVkpv1rVY=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
-github.com/goplaid/web v1.1.4/go.mod h1:idnMKzk60CcrHA7S0iVf7n5RisCElHBuI8jSSph0fGw=
 github.com/goplaid/web v1.1.5-0.20210829105035-19a81079fb0a h1:wOXoyKflKy6zFKrq971N3o3nGKWXo43QAbmK1LgCMEI=
 github.com/goplaid/web v1.1.5-0.20210829105035-19a81079fb0a/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
-github.com/goplaid/x v1.0.8 h1:Zv3vmZep48hWxSP04GoTUx86qCNauX3sJ6P2UUjKTX8=
-github.com/goplaid/x v1.0.8/go.mod h1:WGEgNZmdzsOJYjRLFuNIvjD3N3HM6ua+DVBOfuEk6po=
-github.com/goplaid/x v1.0.10-0.20210829110551-4cbc4bef8275 h1:ux+z+eMeBPHJVrOsp1VtMSpOapt6j5MPjSfjudSbEgg=
-github.com/goplaid/x v1.0.10-0.20210829110551-4cbc4bef8275/go.mod h1:xYHI8ScoPhvOMYAr6Tq2afPLS/yh9OFiSh9IhqJpjqs=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
@@ -141,13 +136,11 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/sunfmin/reflectutils v0.0.0-20190925073614-f129c4f8ea2e/go.mod h1:RYcr7kALElN6qVxlIMHNf0qIK/q1XrEuyW8nwx0k96k=
 github.com/sunfmin/reflectutils v1.0.0 h1:8k8nKFRo3s8dw1NkGhwA49ai7P6B79vWoCs1nNOYfyY=
 github.com/sunfmin/reflectutils v1.0.0/go.mod h1:RYcr7kALElN6qVxlIMHNf0qIK/q1XrEuyW8nwx0k96k=
 github.com/theplant/cldr v0.0.0-20190423050709-9f76f7ce4ee8 h1:di0cR5qqo2DllBMwmP75kZpUX6dAXhsn1O2dshQfMaA=
 github.com/theplant/cldr v0.0.0-20190423050709-9f76f7ce4ee8/go.mod h1:MIL7SmF8wRAYDn+JexczVRUiJXTCi4VbQavsCKWKwXI=
 github.com/theplant/gofixtures v0.0.0-20190621102946-4b4cf9d8dabb/go.mod h1:Yn49pAdl9NzUggPNWQAt1ZXoYWR18sCC/WLX2AaX+p0=
-github.com/theplant/htmlgo v0.0.0-20200211033127-af3d4eb33a61/go.mod h1:3u52BL0jJyJuoNDlTvVjb9TjcATDTaR42E8cfCDRzHA=
 github.com/theplant/htmlgo v1.0.1 h1:WsIYJeoYDI2CT04PB8kkJYZMj3j4fQUHbN0wEDfi04I=
 github.com/theplant/htmlgo v1.0.1/go.mod h1:3u52BL0jJyJuoNDlTvVjb9TjcATDTaR42E8cfCDRzHA=
 github.com/theplant/htmltestingutils v0.0.0-20190423050759-0e06de7b6967 h1:yPrgtU8bj7Q/XbXgjjmngZtOhsUufBAraruNwxv/eXM=
