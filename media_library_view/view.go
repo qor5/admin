@@ -36,7 +36,15 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		jsonValuesField := fmt.Sprintf("%s.Values", field.Name)
-		mediaBox := media_library.MediaBox{Values: ctx.R.FormValue(jsonValuesField)}
+		mediaBox := media_library.MediaBox{}
+		err = mediaBox.Scan(ctx.R.FormValue(jsonValuesField))
+		if err != nil {
+			return
+		}
+		descriptionField := fmt.Sprintf("%s.Description", field.Name)
+		if len(mediaBox.Files) > 0 {
+			mediaBox.Files[0].Description = ctx.R.FormValue(descriptionField)
+		}
 		err = reflectutils.Set(obj, field.Name, mediaBox)
 		if err != nil {
 			return
@@ -81,26 +89,6 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 	return b
 }
 
-func syncDescription(mediaBox *media_library.MediaBox, field string) web.EventFunc {
-	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		for index, file := range mediaBox.Files {
-			file.Description = ctx.Event.Value
-			mediaBox.Files[index] = file
-		}
-
-		er.UpdatePortals = append(er.UpdatePortals,
-			&web.PortalUpdate{
-				Name: syncDescriptionName(field),
-				Body: h.Input("").Type("hidden").
-					Value(h.JSONString(mediaBox.Files)).
-					Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
-			},
-		)
-
-		return
-	}
-}
-
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if len(b.fieldName) == 0 {
 		panic("FieldName required")
@@ -114,7 +102,6 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 
 	ctx.Hub.RegisterEventFunc(portalName, fileChooser(b.db, b.fieldName, b.config))
 	ctx.Hub.RegisterEventFunc(deleteEventName(b.fieldName), deleteFileField(b.db, b.fieldName, b.config))
-	ctx.Hub.RegisterEventFunc(syncDescriptionName(b.fieldName), syncDescription(b.value, b.fieldName))
 
 	return h.Components(
 		VSheet(
@@ -141,10 +128,6 @@ func deleteEventName(field string) string {
 
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
-}
-
-func syncDescriptionName(field string) string {
-	return fmt.Sprintf("%s-file-description", field)
 }
 
 func mediaBoxThumb(f media_library.File, thumb string, size *media.Size) h.HTMLComponent {
@@ -189,13 +172,13 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 		c.AppendChildren(
 			VRow(
 				VCol(
-					VCard(
-						h.Input("").
-							Value(mediaBox.Files[0].Description).
-							Style("width: 100%;").
-							Placeholder("description for accessibility").
-							Attr("@change", web.Plaid().EventFunc(syncDescriptionName(field)).Go()),
-					),
+					VTextField().
+						Value(mediaBox.Files[0].Description).
+						Attr(web.VFieldName(fmt.Sprintf("%s.Description", field))...).
+						Label("description for accessibility").
+						Dense(true).
+						HideDetails(true).
+						Outlined(true),
 				).Cols(12).Class("pl-0 pt-0"),
 			),
 		)
@@ -203,9 +186,9 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 
 	return h.Components(
 		c,
-		web.Portal(h.Input("").Type("hidden").
+		h.Input("").Type("hidden").
 			Value(h.JSONString(mediaBox.Files)).
-			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...)).Name(syncDescriptionName(field)),
+			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn("Choose File").
 			Depressed(true).
 			OnClick(createPortalName(field)),
