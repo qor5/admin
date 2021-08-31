@@ -13,6 +13,7 @@ import (
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/media_library_view"
+	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -30,6 +31,8 @@ func NewConfig() (b *presets.Builder) {
 	media.RegisterCallbacks(db)
 
 	b = presets.New()
+	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
+	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.URIPrefix("/admin").
 		BrandTitle("example").
 		DataOperator(gormop.DataOperator(db)).
@@ -75,6 +78,10 @@ func NewConfig() (b *presets.Builder) {
 		WithContextValue(
 			media_library_view.MediaBoxConfig,
 			&media_library.MediaBoxConfig{AllowType: "image"})
+
+	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return richeditor.Redactor().Value(obj.(*models.Post).Body).Placeholder("text").Attr(web.VFieldName("Body")...)
+	})
 	_ = m
 	// Use m to customize the model, Or config more models here.
 

@@ -7,6 +7,7 @@ import (
 	"github.com/qor/media"
 	"github.com/qor/media/media_library"
 	"github.com/qor/qor5/media_library_view"
+	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -34,6 +35,9 @@ func Settings(db *gorm.DB) web.PageFunc {
 								},
 							}),
 					).Cols(6),
+				),
+				VRow(
+					VCol(richeditor.Redactor().Value("text1").Placeholder("text").Attr(web.VFieldName("Body")...)),
 				),
 			).Fluid(true),
 		)
