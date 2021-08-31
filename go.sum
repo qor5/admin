@@ -37,6 +37,8 @@ github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe h1:lXe2qZdvpiX5WZ
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
 github.com/goplaid/web v1.1.5-0.20210829105035-19a81079fb0a h1:wOXoyKflKy6zFKrq971N3o3nGKWXo43QAbmK1LgCMEI=
 github.com/goplaid/web v1.1.5-0.20210829105035-19a81079fb0a/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
+github.com/goplaid/x v1.0.10-0.20210831091751-f8a9674ea6ec h1:XlZXGvIU7ehQiXs2mYbryQ72O9sbSatlMCgNRKFpuUU=
+github.com/goplaid/x v1.0.10-0.20210831091751-f8a9674ea6ec/go.mod h1:xYHI8ScoPhvOMYAr6Tq2afPLS/yh9OFiSh9IhqJpjqs=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=

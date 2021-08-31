@@ -13,5 +13,5 @@ require (
 	github.com/theplant/htmlgo v1.0.1
 )
 
-//github.com/goplaid/web => ../../goplaid/web
-replace github.com/goplaid/x => ../../goplaid/x
+//replace github.com/goplaid/web => ../../goplaid/web
+//replace github.com/goplaid/x => ../../goplaid/x
