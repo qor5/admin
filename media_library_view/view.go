@@ -187,14 +187,16 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 
 	if len(mediaBox.Files) > 0 {
 		c.AppendChildren(
-			VCol(
-				VCard(
-					h.Input("").
-						Value(mediaBox.Files[0].Description).
-						Style("width: 100%;").
-						Placeholder("description for accessibility").
-						Attr("@change", web.Plaid().EventFunc(syncDescriptionName(field)).Go()),
-				),
+			VRow(
+				VCol(
+					VCard(
+						h.Input("").
+							Value(mediaBox.Files[0].Description).
+							Style("width: 100%;").
+							Placeholder("description for accessibility").
+							Attr("@change", web.Plaid().EventFunc(syncDescriptionName(field)).Go()),
+					),
+				).Cols(12).Class("pl-0 pt-0"),
 			),
 		)
 	}
