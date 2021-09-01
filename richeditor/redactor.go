@@ -10,6 +10,10 @@ type RedactorBuilder struct {
 	tag *h.HTMLTagBuilder
 }
 
+type RedactorConfig struct {
+	Plugins []string `json:"plugins"`
+}
+
 func Redactor() (r *RedactorBuilder) {
 	r = &RedactorBuilder{
 		tag: h.Tag("redactor"),
@@ -24,6 +28,10 @@ func (b *RedactorBuilder) Value(v string) (r *RedactorBuilder) {
 }
 func (b *RedactorBuilder) Placeholder(v string) (r *RedactorBuilder) {
 	b.tag.Attr(":placeholder", h.JSONString(v))
+	return b
+}
+func (b *RedactorBuilder) Config(v RedactorConfig) (r *RedactorBuilder) {
+	b.tag.Attr(":config", h.JSONString(v))
 	return b
 }
 
