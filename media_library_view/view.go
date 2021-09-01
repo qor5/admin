@@ -160,7 +160,7 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 				row.AppendChildren(
 					VCol(
 						mediaBoxThumb(f, k, size),
-					).Cols(6).Sm(4).Xl(3).Lg(3).Class("pl-0"),
+					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
 		}
