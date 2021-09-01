@@ -13,6 +13,7 @@ import (
 
 func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		r.PageTitle = "Settings"
 		r.Body = h.Div(
 			h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
 			VContainer(
