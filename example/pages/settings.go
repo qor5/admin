@@ -49,6 +49,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 					cropper.Cropper().
 						Src("https://agontuk.github.io/assets/images/berserk.jpg").
 						Value(cropper.Value{X: 1141, Y: 540, Width: 713, Height: 466}).
+						AspectRatio(713, 466).
 						Attr("@input", web.Plaid().
 							FieldValue("CropperEvent", web.Var("JSON.stringify($event)")).EventFunc("logInfo").Go()),
 				),

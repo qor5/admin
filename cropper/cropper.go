@@ -34,6 +34,11 @@ func (b *CropperBuilder) Src(v string) (r *CropperBuilder) {
 	return b
 }
 
+func (b *CropperBuilder) AspectRatio(width float64, height float64) (r *CropperBuilder) {
+	b.tag.Attr(":aspect-ratio", width/height)
+	return b
+}
+
 func (b *CropperBuilder) Alt(v string) (r *CropperBuilder) {
 	b.tag.Attr(":alt", h.JSONString(v))
 	return b
