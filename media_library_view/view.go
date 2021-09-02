@@ -107,6 +107,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	ctx.Hub.RegisterEventFunc(deleteEventName(b.fieldName), deleteFileField(b.db, b.fieldName, b.config))
 	ctx.Hub.RegisterEventFunc(deleteEventName(b.fieldName), deleteFileField(b.db, b.fieldName, b.config))
 	ctx.Hub.RegisterEventFunc(cropImageEventName(b.fieldName), cropImage(b.db, b.fieldName, b.config))
+	ctx.Hub.RegisterEventFunc(loadImageCropperEventName(b.fieldName), loadImageCropper(b.db, b.fieldName, b.config))
 
 	return h.Components(
 		VSheet(
@@ -135,6 +136,10 @@ func cropImageEventName(field string) string {
 	return fmt.Sprintf("%s_crop", field)
 }
 
+func loadImageCropperEventName(field string) string {
+	return fmt.Sprintf("%s_load_cropper", field)
+}
+
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
@@ -153,12 +158,7 @@ func mediaBoxThumb(f media_library.File, field string, thumb string, size *media
 
 					VCard(
 						VCardTitle(h.Text("Crop Image")),
-						cropper.Cropper().
-							Src(f.URL("original")).
-							AspectRatio(float64(size.Width), float64(size.Height)).
-							Attr("@input", web.Plaid().
-								FieldValue("CropOption", web.Var("JSON.stringify($event)")).
-								String()),
+						web.Portal().EventFunc(loadImageCropperEventName(field), fmt.Sprint(f.ID), thumb),
 						VCardActions(
 							VSpacer(),
 							VBtn("Crop").Text(true).Color("primary").
@@ -173,6 +173,45 @@ func mediaBoxThumb(f media_library.File, field string, thumb string, size *media
 	)
 }
 
+func loadImageCropper(db *gorm.DB, field string, config *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.Event.ParamAsInt(0)
+		thumb := ctx.Event.Params[1]
+
+		var m media_library.MediaLibrary
+		err = db.Find(&m, id).Error
+		if err != nil {
+			return
+		}
+
+		moption := m.GetMediaOption()
+
+		size := moption.Sizes[thumb]
+		if size == nil {
+			return
+		}
+
+		cropOption := moption.CropOptions[thumb]
+		if cropOption == nil {
+			return
+		}
+
+		r.Body = cropper.Cropper().
+			Src(m.File.URL("original")).
+			AspectRatio(float64(size.Width), float64(size.Height)).
+			Value(cropper.Value{
+				X:      float64(cropOption.X),
+				Y:      float64(cropOption.Y),
+				Width:  float64(cropOption.Width),
+				Height: float64(cropOption.Height),
+			}).
+			Attr("@input", web.Plaid().
+				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
+				String())
+		return
+	}
+
+}
 func cropImage(db *gorm.DB, field string, config *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		cropOption := ctx.R.FormValue("CropOption")
