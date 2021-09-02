@@ -3,6 +3,8 @@ package pages
 import (
 	"log"
 
+	"github.com/qor/qor5/richeditor"
+
 	"github.com/goplaid/web"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
@@ -10,11 +12,8 @@ import (
 	"github.com/qor/media/media_library"
 	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/media_library_view"
-	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
 )
-
-var Plugins = []string{"imageinsert"}
 
 func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -45,17 +44,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 				),
 				VRow(
 					VCol(
-
-						h.Div(
-
-							richeditor.Redactor().Value("text1").Config(richeditor.RedactorConfig{Plugins: Plugins}).Placeholder("text").Attr(web.VFieldName("Body")...),
-							h.Div(
-								media_library_view.QMediaBox(db).FieldName("richeditor").
-									Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
-									AllowType: "image",
-								}),
-							).Class("hidden-screen-only"),
-						).Attr("data-type", "redactor"),
+						richeditor.RichEditor(db, "Body", "text1", "Body", "text"),
 					),
 				),
 

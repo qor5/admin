@@ -91,7 +91,7 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{AllowType: "image"})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor("Body", obj.(*models.Post).Body, field.Label, "")
+		return richeditor.RichEditor(db, "Body", obj.(*models.Post).Body, field.Label, "")
 	})
 	_ = m
 	// Use m to customize the model, Or config more models here.
