@@ -49,10 +49,12 @@ func Settings(db *gorm.DB) web.PageFunc {
 						h.Div(
 
 							richeditor.Redactor().Value("text1").Config(richeditor.RedactorConfig{Plugins: Plugins}).Placeholder("text").Attr(web.VFieldName("Body")...),
-							media_library_view.QMediaBox(db).FieldName("richeditor").
-								Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
-								AllowType: "image",
-							}),
+							h.Div(
+								media_library_view.QMediaBox(db).FieldName("richeditor").
+									Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
+									AllowType: "image",
+								}),
+							).Class("hidden-lg-and-down"),
 						).Attr("data-type", "redactor"),
 					),
 				),
