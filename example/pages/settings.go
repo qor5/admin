@@ -54,7 +54,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 									Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 									AllowType: "image",
 								}),
-							).Class("hidden-lg-and-down"),
+							).Class("hidden-screen-only"),
 						).Attr("data-type", "redactor"),
 					),
 				),
