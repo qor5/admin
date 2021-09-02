@@ -14,6 +14,8 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+var Plugins = []string{"imageinsert"}
+
 func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		ctx.Hub.RegisterEventFunc("logInfo", logInfo)
@@ -46,7 +48,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 
 						h.Div(
 
-							richeditor.Redactor().Value("text1").Placeholder("text").Attr(web.VFieldName("Body")...),
+							richeditor.Redactor().Value("text1").Config(richeditor.RedactorConfig{Plugins: Plugins}).Placeholder("text").Attr(web.VFieldName("Body")...),
 							media_library_view.QMediaBox(db).FieldName("richeditor").
 								Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 								AllowType: "image",
