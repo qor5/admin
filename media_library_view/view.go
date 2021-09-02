@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"sort"
 	"strconv"
 	"time"
 
@@ -191,23 +192,23 @@ func loadImageCropper(db *gorm.DB, field string, config *media_library.MediaBoxC
 			return
 		}
 
-		cropOption := moption.CropOptions[thumb]
-		if cropOption == nil {
-			return
-		}
-
-		r.Body = cropper.Cropper().
+		c := cropper.Cropper().
 			Src(m.File.URL("original")).
 			AspectRatio(float64(size.Width), float64(size.Height)).
-			Value(cropper.Value{
+			Attr("@input", web.Plaid().
+				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
+				String())
+		cropOption := moption.CropOptions[thumb]
+		if cropOption != nil {
+			c.Value(cropper.Value{
 				X:      float64(cropOption.X),
 				Y:      float64(cropOption.Y),
 				Width:  float64(cropOption.Width),
 				Height: float64(cropOption.Height),
-			}).
-			Attr("@input", web.Plaid().
-				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
-				String())
+			})
+		}
+
+		r.Body = c
 		return
 	}
 
@@ -280,10 +281,18 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 			)
 		} else {
-			for k, size := range cfg.Sizes {
+
+			var keys []string
+			for k, _ := range cfg.Sizes {
+				keys = append(keys, k)
+			}
+
+			sort.Strings(keys)
+
+			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(f, field, k, size),
+						mediaBoxThumb(f, field, k, cfg.Sizes[k]),
 					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
