@@ -135,9 +135,9 @@ func mediaBoxThumb(f media_library.File, thumb string, size *media.Size) h.HTMLC
 		VImg().Src(f.URL(thumb)).Height(150),
 		h.If(size != nil,
 			VCardActions(
-				VBtn("").Children(
+				VChip(
 					thumbName(thumb, size),
-				).Text(true).Small(true),
+				).Small(true).Attr("@click", web.Plaid().EventFunc("abc").Go()),
 			),
 		),
 	)
