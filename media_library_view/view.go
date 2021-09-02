@@ -7,6 +7,8 @@ import (
 	"mime/multipart"
 	"strconv"
 
+	"github.com/qor/qor5/cropper"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
@@ -102,6 +104,8 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 
 	ctx.Hub.RegisterEventFunc(portalName, fileChooser(b.db, b.fieldName, b.config))
 	ctx.Hub.RegisterEventFunc(deleteEventName(b.fieldName), deleteFileField(b.db, b.fieldName, b.config))
+	ctx.Hub.RegisterEventFunc(deleteEventName(b.fieldName), deleteFileField(b.db, b.fieldName, b.config))
+	ctx.Hub.RegisterEventFunc(cropImageEventName(b.fieldName), cropImage(b.db, b.fieldName, b.config))
 
 	return h.Components(
 		VSheet(
@@ -126,21 +130,101 @@ func deleteEventName(field string) string {
 	return fmt.Sprintf("%s_delete", field)
 }
 
+func cropImageEventName(field string) string {
+	return fmt.Sprintf("%s_crop", field)
+}
+
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
 
-func mediaBoxThumb(f media_library.File, thumb string, size *media.Size) h.HTMLComponent {
+func mediaBoxThumb(f media_library.File, field string, thumb string, size *media.Size) h.HTMLComponent {
 	return VCard(
 		VImg().Src(f.URL(thumb)).Height(150),
 		h.If(size != nil,
 			VCardActions(
-				VChip(
-					thumbName(thumb, size),
-				).Small(true).Attr("@click", web.Plaid().EventFunc("abc").Go()),
+				VMenu(
+					web.Slot(
+						VChip(
+							thumbName(thumb, size),
+						).Small(true).Attr("v-on", "on").Attr("v-bind", "attrs"),
+					).Name("activator").Scope("{ on, attrs }"),
+
+					VCard(
+						VCardTitle(h.Text("Crop Image")),
+						cropper.Cropper().
+							Src(f.URL("original")).
+							AspectRatio(float64(size.Width), float64(size.Height)).
+							Attr("@input", web.Plaid().
+								FieldValue("CropOption", web.Var("JSON.stringify($event)")).
+								String()),
+						VCardActions(
+							VSpacer(),
+							VBtn("Crop").Text(true).Color("primary").
+								Attr("@click", web.Plaid().
+									EventFunc(cropImageEventName(field), fmt.Sprint(f.ID), thumb).
+									Go()),
+						),
+					).Width(600),
+				).CloseOnContentClick(false).OffsetX(true).OffsetY(true),
 			),
 		),
 	)
+}
+
+func cropImage(db *gorm.DB, field string, config *media_library.MediaBoxConfig) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		cropOption := ctx.R.FormValue("CropOption")
+		//log.Println(cropOption, ctx.Event.Params)
+		id := ctx.Event.ParamAsInt(0)
+		thumb := ctx.Event.Params[1]
+
+		if len(cropOption) == 0 {
+			return
+		}
+		cropValue := cropper.Value{}
+		err = json.Unmarshal([]byte(cropOption), &cropValue)
+		if err != nil {
+			panic(err)
+		}
+
+		var m media_library.MediaLibrary
+		err = db.Find(&m, id).Error
+		if err != nil {
+			return
+		}
+
+		moption := m.GetMediaOption()
+		if moption.CropOptions == nil {
+			moption.CropOptions = make(map[string]*media.CropOption)
+		}
+		moption.CropOptions[thumb] = &media.CropOption{
+			X:      int(cropValue.X),
+			Y:      int(cropValue.Y),
+			Width:  int(cropValue.Width),
+			Height: int(cropValue.Height),
+		}
+		moption.Crop = true
+		err = m.ScanMediaOptions(moption)
+		if err != nil {
+			return
+		}
+		err = db.Save(&m).Error
+		if err != nil {
+			return
+		}
+
+		mb := &media_library.MediaBox{}
+		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
+		if err != nil {
+			panic(err)
+		}
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: mediaBoxThumbnailsPortalName(field),
+			Body: mediaBoxThumbnails(mb, field, config),
+		})
+		return
+	}
 }
 
 func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
@@ -152,14 +236,14 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(f, "original", nil),
+					mediaBoxThumb(f, field, "original", nil),
 				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 			)
 		} else {
 			for k, size := range cfg.Sizes {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(f, k, size),
+						mediaBoxThumb(f, field, k, size),
 					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
