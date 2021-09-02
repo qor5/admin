@@ -13,17 +13,20 @@ var box embed.FS
 
 func JSComponentsPack() web.ComponentsPack {
 	var js [][]byte
-	v1, err := box.ReadFile("redactor/redactor.min.js")
+	j1, err := box.ReadFile("redactor/redactor.min.js")
 	if err != nil {
 		panic(err)
 	}
-	js = append(js, v1)
+	js = append(js, j1)
 	for _, p := range Plugins {
-		v2, err := box.ReadFile(fmt.Sprintf("redactor/%s.min.js", p))
+		pj, err := box.ReadFile(fmt.Sprintf("redactor/%s.min.js", p))
 		if err != nil {
-			panic(err)
+			continue
 		}
-		js = append(js, v2)
+		js = append(js, pj)
+	}
+	if len(PluginsJS) > 0 {
+		js = append(js, PluginsJS...)
 	}
 
 	v3, err := box.ReadFile("redactor/vue-redactor.js")
@@ -35,10 +38,14 @@ func JSComponentsPack() web.ComponentsPack {
 }
 
 func CSSComponentsPack() web.ComponentsPack {
-	v, err := box.ReadFile("redactor/redactor.min.css")
+	var css [][]byte
+	c, err := box.ReadFile("redactor/redactor.min.css")
 	if err != nil {
 		panic(err)
 	}
-
-	return web.ComponentsPack(v)
+	css = append(css, c)
+	if len(PluginsCSS) > 0 {
+		css = append(css, PluginsCSS...)
+	}
+	return web.ComponentsPack(bytes.Join(css, []byte("\n\n")))
 }

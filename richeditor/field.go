@@ -6,11 +6,16 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-// https://imperavi.com/redactor/plugins/
-// how to add more plugins
+// how to add more plugins from https://imperavi.com/redactor/plugins/
 // 1. add {{plugin}}.min.js to redactor dir
-// 2. add plugin name in below array
+// 2. add plugin name in Plugins array
+
+// how to add own plugins
+// 1. load plugin jss,css to PluginsJS,PluginsCSS
+// 2. add plugin names in Plugins array
 var Plugins = []string{"alignment", "table", "video"}
+var PluginsJS [][]byte
+var PluginsCSS [][]byte
 
 func RichEditor(name, value, label, placeholder string) h.HTMLComponent {
 	return h.Components(
