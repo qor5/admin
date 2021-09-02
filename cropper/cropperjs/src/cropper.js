@@ -101,15 +101,15 @@ export default {
     },
     zoomable: {
       type: Boolean,
-      default: true
+      default: false
     },
     zoomOnTouch: {
       type: Boolean,
-      default: true
+      default: false
     },
     zoomOnWheel: {
       type: Boolean,
-      default: true
+      default: false
     },
     wheelZoomRatio: Number,
     cropBoxMovable: {
