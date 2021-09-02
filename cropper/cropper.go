@@ -10,6 +10,17 @@ type CropperBuilder struct {
 	tag *h.HTMLTagBuilder
 }
 
+// {"x":1141.504660866477,"y":540.6135919744316,"width":713.7745472301137,"height":466.93834339488643,"rotate":0,"scaleX":1,"scaleY":1}
+type Value struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+	//Rotate float64 `json:"rotate"`
+	//ScaleX float64 `json:"scaleX"`
+	//ScaleY float64 `json:"scaleY"`
+}
+
 func Cropper() (r *CropperBuilder) {
 	r = &CropperBuilder{
 		tag: h.Tag("vue-cropper"),
@@ -28,7 +39,7 @@ func (b *CropperBuilder) Alt(v string) (r *CropperBuilder) {
 	return b
 }
 
-func (b *CropperBuilder) Value(v string) (r *CropperBuilder) {
+func (b *CropperBuilder) Value(v Value) (r *CropperBuilder) {
 	b.tag.Attr(":value", h.JSONString(v))
 	return b
 }

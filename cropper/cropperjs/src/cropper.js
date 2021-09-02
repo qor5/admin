@@ -142,7 +142,7 @@ export default {
     // zoom: Function
   },
   mounted() {
-    const { containerStyle, value, src, alt, imgStyle, ...data } = this.$options.props
+    const { containerStyle, value, src, alt, imgStyle, ...data } = this.$props
     const props = {}
 
     for (const key in data) {
