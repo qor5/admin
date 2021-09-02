@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"embed"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -17,6 +19,9 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+//go:embed assets
+var assets embed.FS
+
 func NewConfig() (b *presets.Builder) {
 	db := ConnectDB()
 
@@ -31,6 +36,9 @@ func NewConfig() (b *presets.Builder) {
 	media.RegisterCallbacks(db)
 
 	b = presets.New()
+	js, _ := assets.ReadFile("assets/fontcolor.min.js")
+	richeditor.Plugins = []string{"alignment", "video", "fontcolor"}
+	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.URIPrefix("/admin").
