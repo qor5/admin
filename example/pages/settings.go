@@ -42,7 +42,17 @@ func Settings(db *gorm.DB) web.PageFunc {
 					).Cols(6),
 				),
 				VRow(
-					VCol(richeditor.Redactor().Value("text1").Placeholder("text").Attr(web.VFieldName("Body")...)),
+					VCol(
+
+						h.Div(
+
+							richeditor.Redactor().Value("text1").Placeholder("text").Attr(web.VFieldName("Body")...),
+							media_library_view.QMediaBox(db).FieldName("richeditor").
+								Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
+								AllowType: "image",
+							}),
+						).Attr("data-type", "redactor"),
+					),
 				),
 
 				VRow(
