@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"strconv"
+	"time"
 
 	"github.com/qor/qor5/cropper"
 
@@ -140,7 +141,7 @@ func mediaBoxThumbnailsPortalName(field string) string {
 
 func mediaBoxThumb(f media_library.File, field string, thumb string, size *media.Size) h.HTMLComponent {
 	return VCard(
-		VImg().Src(f.URL(thumb)).Height(150),
+		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
 		h.If(size != nil,
 			VCardActions(
 				VMenu(
