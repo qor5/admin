@@ -116,7 +116,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(b.value, b.fieldName, b.config),
+				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
@@ -262,13 +262,13 @@ func cropImage(db *gorm.DB, field string, config *media_library.MediaBoxConfig) 
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(mb, field, config),
+			Body: mediaBoxThumbnails(ctx, mb, field, config),
 		})
 		return
 	}
 }
 
-func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
 	c := VContainer().Fluid(true)
 
 	for _, f := range mediaBox.Files {
@@ -302,12 +302,18 @@ func mediaBoxThumbnails(mediaBox *media_library.MediaBox, field string, cfg *med
 	}
 
 	if len(mediaBox.Files) > 0 {
+
+		fieldName := fmt.Sprintf("%s.Description", field)
+		value := ctx.R.FormValue(fieldName)
+		if len(value) == 0 {
+			value = mediaBox.Files[0].Description
+		}
 		c.AppendChildren(
 			VRow(
 				VCol(
 					VTextField().
-						Value(mediaBox.Files[0].Description).
-						Attr(web.VFieldName(fmt.Sprintf("%s.Description", field))...).
+						Value(value).
+						Attr(web.VFieldName(fieldName)...).
 						Label("description for accessibility").
 						Dense(true).
 						HideDetails(true).
@@ -348,7 +354,7 @@ func deleteFileField(db *gorm.DB, field string, config *media_library.MediaBoxCo
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(&media_library.MediaBox{}, field, config),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, config),
 		})
 		return
 	}
@@ -673,7 +679,7 @@ func chooseFile(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) we
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(&mediaBox, field, cfg),
+			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg),
 		})
 		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
 
