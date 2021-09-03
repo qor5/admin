@@ -36,7 +36,7 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
-	b = presets.New()
+	b = presets.New().RightDrawerWidth(700)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "video", "fontcolor", "imageinsert"}
 	richeditor.PluginsJS = [][]byte{js}
