@@ -18,6 +18,7 @@ import (
 	"github.com/qor/qor5/media_library_view"
 	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 )
 
 //go:embed assets
@@ -53,6 +54,8 @@ func NewConfig() (b *presets.Builder) {
 				h.P().Text("Change your home page here"))
 			return
 		})
+
+	b.I18n().SupportLanguages(language.English, language.SimplifiedChinese)
 
 	media_library_view.Configure(b, db)
 	//media_library_view.MediaLibraryPerPage = 3

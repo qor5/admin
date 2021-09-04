@@ -38,7 +38,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 		ComponentFunc(MediaBoxListFunc())
 
 	b.I18n().
-		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US)
+		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN)
 }
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
@@ -570,7 +571,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						h.Text(f.File.FileName),
 						h.Input("").
 							Style("width: 100%;").
-							Placeholder("description for accessibility").
+							Placeholder(msgr.DescriptionForAccessibility).
 							Value(f.File.Description).
 							Attr("@change", web.Plaid().
 								EventFunc(updateMediaDescription, fmt.Sprint(f.ID)).
