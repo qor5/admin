@@ -37,6 +37,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxListFunc())
 
+	registerEventFuncs(b.GetWebBuilder(), db)
+
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN)
@@ -122,6 +124,18 @@ const (
 	updateDescriptionEvent = "mediaLibrary_UpdateDescriptionEvent"
 )
 
+func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
+	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(db))
+	hub.RegisterEventFunc(deleteFileEvent, deleteFileField())
+	hub.RegisterEventFunc(cropImageEvent, cropImage(db))
+	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(db))
+	hub.RegisterEventFunc(imageSearchEvent, searchFile(db))
+	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(db))
+	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db))
+	hub.RegisterEventFunc(chooseFileEvent, chooseFile(db))
+	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db))
+}
+
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if len(b.fieldName) == 0 {
 		panic("FieldName required")
@@ -131,16 +145,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	}
 
 	ctx := web.MustGetEventContext(c)
-
-	ctx.Hub.RegisterEventFunc(openFileChooserEvent, fileChooser(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(deleteFileEvent, deleteFileField(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(cropImageEvent, cropImage(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(imageSearchEvent, searchFile(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(uploadFileEvent, uploadFile(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(chooseFileEvent, chooseFile(b.db, b.config))
-	ctx.Hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(b.db, b.config))
+	registerEventFuncs(ctx.Hub, b.db)
 
 	portalName := createPortalName(b.fieldName)
 
@@ -163,15 +168,13 @@ func createPortalName(field string) string {
 	return fmt.Sprintf("%s_portal", field)
 }
 
-func loadImageCropperEventName(field string) string {
-	return fmt.Sprintf("%s_load_cropper", field)
-}
-
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
 
-func mediaBoxThumb(msgr *Messages, f media_library.File, field string, thumb string, size *media.Size) h.HTMLComponent {
+func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
+	f media_library.File, field string, thumb string) h.HTMLComponent {
+	size := cfg.Sizes[thumb]
 	return VCard(
 		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
 		h.If(size != nil,
@@ -190,7 +193,7 @@ func mediaBoxThumb(msgr *Messages, f media_library.File, field string, thumb str
 							VSpacer(),
 							VBtn(msgr.Crop).Text(true).Color("primary").
 								Attr("@click", web.Plaid().
-									EventFunc(cropImageEvent, field, fmt.Sprint(f.ID), thumb).
+									EventFunc(cropImageEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
 									Go()),
 						),
 					).Width(600),
@@ -200,7 +203,7 @@ func mediaBoxThumb(msgr *Messages, f media_library.File, field string, thumb str
 	)
 }
 
-func loadImageCropper(db *gorm.DB, config *media_library.MediaBoxConfig) web.EventFunc {
+func loadImageCropper(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
@@ -240,13 +243,14 @@ func loadImageCropper(db *gorm.DB, config *media_library.MediaBoxConfig) web.Eve
 	}
 
 }
-func cropImage(db *gorm.DB, config *media_library.MediaBoxConfig) web.EventFunc {
+func cropImage(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		cropOption := ctx.R.FormValue("CropOption")
 		//log.Println(cropOption, ctx.Event.Params)
 		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
 		thumb := ctx.Event.Params[2]
+		cfg := stringToCfg(ctx.Event.Params[3])
 
 		if len(cropOption) == 0 {
 			return
@@ -290,7 +294,7 @@ func cropImage(db *gorm.DB, config *media_library.MediaBoxConfig) web.EventFunc 
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, mb, field, config),
+			Body: mediaBoxThumbnails(ctx, mb, field, cfg),
 		})
 		return
 	}
@@ -306,7 +310,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, f, field, "original", nil),
+					mediaBoxThumb(msgr, cfg, f, field, "original"),
 				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 			)
 		} else {
@@ -321,7 +325,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(msgr, f, field, k, cfg.Sizes[k]),
+						mediaBoxThumb(msgr, cfg, f, field, k),
 					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
@@ -371,11 +375,11 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn(msgr.ChooseFile).
 			Depressed(true).
-			OnClick(openFileChooserEvent, field),
+			OnClick(openFileChooserEvent, field, h.JSONString(cfg)),
 		h.If(mediaBox != nil && len(mediaBox.Files) > 0,
 			VBtn(msgr.Delete).
 				Depressed(true).
-				OnClick(deleteFileEvent, field),
+				OnClick(deleteFileEvent, field, h.JSONString(cfg)),
 		),
 	)
 }
@@ -391,12 +395,13 @@ func dialogContentPortalName(field string) string {
 	return fmt.Sprintf("%s_dialog_content", field)
 }
 
-func deleteFileField(db *gorm.DB, config *media_library.MediaBoxConfig) web.EventFunc {
+func deleteFileField() web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
+		cfg := stringToCfg(ctx.Event.Params[1])
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, config),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg),
 		})
 		return
 	}
@@ -409,10 +414,25 @@ func currentPageName(field string) string {
 	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 
-func fileChooser(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func stringToCfg(v string) *media_library.MediaBoxConfig {
+	var cfg media_library.MediaBoxConfig
+	if len(v) == 0 {
+		return &cfg
+	}
+	err := json.Unmarshal([]byte(v), &cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	return &cfg
+}
+
+func fileChooser(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field := ctx.Event.Params[0]
+		cfg := stringToCfg(ctx.Event.Params[1])
+
 		portalName := createPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
@@ -438,7 +458,7 @@ func fileChooser(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
 								HideDetails(true).
 								Value("").
 								Attr("@keyup.enter", web.Plaid().
-									EventFunc(imageSearchEvent, field).
+									EventFunc(imageSearchEvent, field, h.JSONString(cfg)).
 									FieldValue(searchKeywordName(field), web.Var("$event")).
 									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
@@ -519,7 +539,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							web.Plaid().
 								BeforeScript("vars.fileChooserUploadingFiles = $event.target.files").
 								FieldValue("NewFiles", web.Var("$event")).
-								EventFunc(uploadFileEvent, field).Go()),
+								EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
 				).
 					Height(200).
 					Class("d-flex align-center justify-center").
@@ -563,7 +583,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					).Attr("role", "button").
 						Attr("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("vars.%s = true", croppingVar)).
-							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID)).
+							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 							Go()),
 					VCardText(
 						h.Text(f.File.FileName),
@@ -599,7 +619,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						Value(int(currentPageInt)).
 						Attr("@input", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent, field).
+							EventFunc(imageJumpPageEvent, field, h.JSONString(cfg)).
 							Go()),
 				).Cols(10),
 			),
@@ -637,9 +657,11 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func uploadFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
+		cfg := stringToCfg(ctx.Event.Params[1])
+
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
@@ -673,10 +695,11 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 	return
 }
 
-func chooseFile(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func chooseFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
+		cfg := stringToCfg(ctx.Event.Params[2])
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -718,7 +741,7 @@ func chooseFile(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	}
 }
 
-func updateDescription(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func updateDescription(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		//field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
@@ -738,18 +761,21 @@ func updateDescription(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.Event
 	}
 }
 
-func searchFile(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func searchFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
+		cfg := stringToCfg(ctx.Event.Params[1])
 		ctx.R.Form[currentPageName(field)] = []string{"1"}
+
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		return
 	}
 }
 
-func jumpPage(db *gorm.DB, cfg *media_library.MediaBoxConfig) web.EventFunc {
+func jumpPage(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
+		cfg := stringToCfg(ctx.Event.Params[1])
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		return
 	}

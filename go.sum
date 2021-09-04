@@ -35,10 +35,10 @@ github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gG
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe h1:lXe2qZdvpiX5WZkZR4hgp4KJVfY3nMkvmwbVkpv1rVY=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
-github.com/goplaid/web v1.1.5 h1:hJqguuQlc5TTU2CE1JUtIOF7AsOlTGy8AW2yh9FOpwA=
-github.com/goplaid/web v1.1.5/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
-github.com/goplaid/x v1.0.10-0.20210904090034-3f51e37538d0 h1:f4D6uXS9tU8SoMR756R13RXSo9byZKaA1lt8B51sP2o=
-github.com/goplaid/x v1.0.10-0.20210904090034-3f51e37538d0/go.mod h1:almXZUqE45c862XuL0vorWM2gpOk9J+GgF9B6cVN7ao=
+github.com/goplaid/web v1.1.6-0.20210904141118-704ee18371ae h1:VqX54xjFM6EXG3rxTIFsWvrwPV1aJ2T5xpjWEd6vFMw=
+github.com/goplaid/web v1.1.6-0.20210904141118-704ee18371ae/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
+github.com/goplaid/x v1.0.10-0.20210904141651-86ea8556ab49 h1:MuNEbqwT4a/SrKQMkN1FAHiD0CXVFLK3hXymnNX3Sy8=
+github.com/goplaid/x v1.0.10-0.20210904141651-86ea8556ab49/go.mod h1:BeiauCKQbhYKcAcJ8qSVzFLKTT3RyZxkB+ISQYcvh+0=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
