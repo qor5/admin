@@ -54,14 +54,7 @@ func NewConfig() (b *presets.Builder) {
 			return
 		})
 
-	b.FieldDefaults(presets.WRITE).
-		FieldType(media_library.MediaBox{}).
-		ComponentFunc(media_library_view.MediaBoxComponentFunc(db)).
-		SetterFunc(media_library_view.MediaBoxSetterFunc(db))
-
-	b.FieldDefaults(presets.LIST).
-		FieldType(media_library.MediaBox{}).
-		ComponentFunc(media_library_view.MediaBoxListFunc())
+	media_library_view.Configure(b, db)
 	//media_library_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})

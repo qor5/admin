@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
@@ -18,11 +19,27 @@ import (
 	"github.com/qor/qor5/cropper"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 )
 
 type MediaBoxConfigKey int
 
 const MediaBoxConfig MediaBoxConfigKey = iota
+const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
+
+func Configure(b *presets.Builder, db *gorm.DB) {
+	b.FieldDefaults(presets.WRITE).
+		FieldType(media_library.MediaBox{}).
+		ComponentFunc(MediaBoxComponentFunc(db)).
+		SetterFunc(MediaBoxSetterFunc(db))
+
+	b.FieldDefaults(presets.LIST).
+		FieldType(media_library.MediaBox{}).
+		ComponentFunc(MediaBoxListFunc())
+
+	b.I18n().
+		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US)
+}
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -144,7 +161,7 @@ func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
 
-func mediaBoxThumb(f media_library.File, field string, thumb string, size *media.Size) h.HTMLComponent {
+func mediaBoxThumb(msgr *Messages, f media_library.File, field string, thumb string, size *media.Size) h.HTMLComponent {
 	return VCard(
 		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
 		h.If(size != nil,
@@ -157,11 +174,11 @@ func mediaBoxThumb(f media_library.File, field string, thumb string, size *media
 					).Name("activator").Scope("{ on, attrs }"),
 
 					VCard(
-						VCardTitle(h.Text("Crop Image")),
+						VCardTitle(h.Text(msgr.CropImage)),
 						web.Portal().EventFunc(loadImageCropperEventName(field), fmt.Sprint(f.ID), thumb),
 						VCardActions(
 							VSpacer(),
-							VBtn("Crop").Text(true).Color("primary").
+							VBtn(msgr.Crop).Text(true).Color("primary").
 								Attr("@click", web.Plaid().
 									EventFunc(cropImageEventName(field), fmt.Sprint(f.ID), thumb).
 									Go()),
@@ -268,6 +285,7 @@ func cropImage(db *gorm.DB, field string, config *media_library.MediaBoxConfig) 
 }
 
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
 	for _, f := range mediaBox.Files {
@@ -276,7 +294,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(f, field, "original", nil),
+					mediaBoxThumb(msgr, f, field, "original", nil),
 				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 			)
 		} else {
@@ -291,7 +309,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(f, field, k, cfg.Sizes[k]),
+						mediaBoxThumb(msgr, f, field, k, cfg.Sizes[k]),
 					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
@@ -313,7 +331,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 					VTextField().
 						Value(value).
 						Attr(web.VFieldName(fieldName)...).
-						Label("description for accessibility").
+						Label(msgr.DescriptionForAccessibility).
 						Dense(true).
 						HideDetails(true).
 						Outlined(true),
@@ -328,7 +346,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			h.Input("").Type("hidden").
 				Value(h.JSONString(mediaBox.Files)).
 				Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
-			VBtn("Choose File").
+			VBtn(msgr.ChooseFile).
 				Depressed(true).
 				OnClick(createPortalName(field)),
 		)
@@ -339,11 +357,11 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		h.Input("").Type("hidden").
 			Value(h.JSONString(mediaBox.Files)).
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
-		VBtn("Choose File").
+		VBtn(msgr.ChooseFile).
 			Depressed(true).
 			OnClick(createPortalName(field)),
 		h.If(mediaBox != nil && len(mediaBox.Files) > 0,
-			VBtn("Delete").
+			VBtn(msgr.Delete).
 				Depressed(true).
 				OnClick(deleteEventName(field)),
 		),
@@ -385,7 +403,7 @@ func jumpPageEventName(field string) string {
 }
 func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		//msgr := presets.MustGetMessages(ctx.R)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		ctx.Hub.RegisterEventFunc(searchEventName(field), searchFile(db, field, cfg))
 		ctx.Hub.RegisterEventFunc(jumpPageEventName(field), jumpPage(db, field, cfg))
 
@@ -402,13 +420,13 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 							Children(
 								VIcon("close"),
 							),
-						VToolbarTitle("Choose a File"),
+						VToolbarTitle(msgr.ChooseAFile),
 						VSpacer(),
 						VLayout(
 							VTextField().
 								SoloInverted(true).
 								PrependIcon("search").
-								Label("Search").
+								Label(msgr.Search).
 								Flat(true).
 								Clearable(true).
 								HideDetails(true).
@@ -442,6 +460,7 @@ func fileChooser(db *gorm.DB, field string, cfg *media_library.MediaBoxConfig) w
 var MediaLibraryPerPage int64 = 39
 
 func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	uploadEventName := fmt.Sprintf("%s_upload", field)
 	chooseEventName := fmt.Sprintf("%s_choose", field)
 	updateMediaDescription := fmt.Sprintf("%s_update", field)
@@ -483,7 +502,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		VCol(
 			h.Label("").Children(
 				VCard(
-					VCardTitle(h.Text("Upload files")),
+					VCardTitle(h.Text(msgr.UploadFiles)),
 					VIcon("backup").XLarge(true),
 					//VFileInput().
 					//	Class("justify-center").
@@ -536,7 +555,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							h.If(needCrop,
 								h.Div(
 									VProgressCircular().Indeterminate(true),
-									h.Span("Cropping").Class("text-h6 pl-2"),
+									h.Span(msgr.Cropping).Class("text-h6 pl-2"),
 								).Class("d-flex align-center justify-center v-card--reveal white--text").
 									Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
 									Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
@@ -566,7 +585,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	}
 
 	return h.Div(
-		VSnackbar(h.Text("Description Updated")).
+		VSnackbar(h.Text(msgr.DescriptionUpdated)).
 			Attr("v-model", "vars.snackbarShow").
 			Top(true).
 			Color("teal darken-1").
