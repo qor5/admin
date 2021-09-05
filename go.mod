@@ -4,8 +4,8 @@ go 1.16
 
 require (
 	github.com/aws/aws-sdk-go v1.38.62
-	github.com/goplaid/web v1.1.6-0.20210904141118-704ee18371ae
-	github.com/goplaid/x v1.0.10-0.20210904141651-86ea8556ab49
+	github.com/goplaid/web v1.1.6
+	github.com/goplaid/x v1.0.10
 	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
