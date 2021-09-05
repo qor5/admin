@@ -1,6 +1,8 @@
 package richeditor
 
 import (
+	"fmt"
+
 	"github.com/goplaid/web"
 	v "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
@@ -26,7 +28,7 @@ func RichEditor(db *gorm.DB, name, value, label, placeholder string) h.HTMLCompo
 			h.Label(label).Class("v-label theme--light"),
 			Redactor().Value(value).Placeholder(placeholder).Config(RedactorConfig{Plugins: Plugins}).Attr(web.VFieldName(name)...),
 			h.Div(
-				media_library_view.QMediaBox(db).FieldName("richeditor").
+				media_library_view.QMediaBox(db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),
