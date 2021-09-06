@@ -18,7 +18,6 @@ func Redactor() (r *RedactorBuilder) {
 	r = &RedactorBuilder{
 		tag: h.Tag("redactor"),
 	}
-
 	return
 }
 
@@ -26,10 +25,12 @@ func (b *RedactorBuilder) Value(v string) (r *RedactorBuilder) {
 	b.tag.Attr(":value", h.JSONString(v))
 	return b
 }
+
 func (b *RedactorBuilder) Placeholder(v string) (r *RedactorBuilder) {
 	b.tag.Attr(":placeholder", h.JSONString(v))
 	return b
 }
+
 func (b *RedactorBuilder) Config(v RedactorConfig) (r *RedactorBuilder) {
 	b.tag.Attr(":config", h.JSONString(v))
 	return b

@@ -39,7 +39,7 @@ func NewConfig() (b *presets.Builder) {
 
 	b = presets.New().RightDrawerWidth(700)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
-	richeditor.Plugins = []string{"alignment", "video", "fontcolor", "imageinsert"}
+	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
@@ -87,7 +87,7 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{AllowType: "image"})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body", obj.(*models.Post).Body, field.Label, "")
+		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 	_ = m
 	// Use m to customize the model, Or config more models here.
