@@ -1,4 +1,4 @@
-package media_library_view
+package views
 
 type Messages struct {
 	Crop                        string

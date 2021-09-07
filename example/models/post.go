@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/qor/media/media_library"
+	"github.com/qor/qor5/media/media_library"
 )
 
 type Post struct {

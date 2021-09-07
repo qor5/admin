@@ -3,15 +3,16 @@ package pages
 import (
 	"log"
 
+	"github.com/qor/qor5/media/media_library"
+
 	"github.com/qor/qor5/richeditor"
 
 	"github.com/goplaid/web"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
-	"github.com/qor/media"
-	"github.com/qor/media/media_library"
 	"github.com/qor/qor5/cropper"
-	"github.com/qor/qor5/media_library_view"
+	"github.com/qor/qor5/media"
+	media_view "github.com/qor/qor5/media/views"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -24,7 +25,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 			VContainer(
 				VRow(
 					VCol(
-						media_library_view.QMediaBox(db).
+						media_view.QMediaBox(db).
 							FieldName("test").
 							Value(&media_library.MediaBox{}).
 							Config(&media_library.MediaBoxConfig{

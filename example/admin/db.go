@@ -5,8 +5,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/qor/media/media_library"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/media/media_library"
 )
 
 func ConnectDB() (db *gorm.DB) {

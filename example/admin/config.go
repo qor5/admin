@@ -3,19 +3,20 @@ package admin
 import (
 	"embed"
 
+	"github.com/qor/qor5/media/media_library"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gormop"
 	"github.com/goplaid/x/vuetify"
-	"github.com/qor/media"
-	"github.com/qor/media/media_library"
-	"github.com/qor/media/oss"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
-	"github.com/qor/qor5/media_library_view"
+	"github.com/qor/qor5/media"
+	"github.com/qor/qor5/media/oss"
+	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -59,8 +60,8 @@ func NewConfig() (b *presets.Builder) {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
-	media_library_view.Configure(b, db)
-	//media_library_view.MediaLibraryPerPage = 3
+	media_view.Configure(b, db)
+	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "HeroImage", "Body").
@@ -69,7 +70,7 @@ func NewConfig() (b *presets.Builder) {
 	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
-			media_library_view.MediaBoxConfig,
+			media_view.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
 				Sizes: map[string]*media.Size{
@@ -85,7 +86,7 @@ func NewConfig() (b *presets.Builder) {
 			})
 	ed.Field("BodyImage").
 		WithContextValue(
-			media_library_view.MediaBoxConfig,
+			media_view.MediaBoxConfig,
 			&media_library.MediaBoxConfig{AllowType: "image"})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

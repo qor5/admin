@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/qor/qor5/media/media_library"
+
 	"github.com/goplaid/web"
 	v "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
-	"github.com/qor/media/media_library"
-	"github.com/qor/qor5/media_library_view"
+	media_view "github.com/qor/qor5/media/views"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -69,7 +70,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Label(b.label).Class("v-label theme--light"),
 			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p}).Attr(web.VFieldName(b.name)...),
 			h.Div(
-				media_library_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
+				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),
