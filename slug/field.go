@@ -69,13 +69,17 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 			EventFunc("slug_sync", slugTitle).Go()),
 
 		VRow(
-			web.Portal(
-				VTextField().
-					Type("text").
-					FieldName(slugTitle).
-					Label(slugTitle).
-					Value(reflectutils.MustGet(obj, slugTitle).(Slug).Slug)).Name("slug_sync_data"),
-			VCheckbox().FieldName("SlugSync").InputValue("checked").Label("Sync from "+field.Name),
+			VCol(
+				web.Portal(
+					VTextField().
+						Type("text").
+						FieldName(slugTitle).
+						Label(slugTitle).
+						Value(reflectutils.MustGet(obj, slugTitle).(Slug).Slug)).Name("slug_sync_data"),
+			).Cols(8),
+			VCol(
+				VCheckbox().FieldName("SlugSync").InputValue("checked").Label("Sync from "+field.Name),
+			).Cols(4),
 		),
 	)
 }
