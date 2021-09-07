@@ -4,6 +4,8 @@ import (
 	"embed"
 
 	"github.com/qor/qor5/media/media_library"
+	"github.com/qor/qor5/slug"
+	"github.com/sunfmin/reflectutils"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -64,10 +66,10 @@ func NewConfig() (b *presets.Builder) {
 	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
-	m.Listing("ID", "Title", "HeroImage", "Body").
+	ld := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -92,6 +94,19 @@ func NewConfig() (b *presets.Builder) {
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
+
+	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
+	ed.Field("TitleWithSlug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
+	ed.Field("TitleWithSlug").SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		v := ctx.R.FormValue(field.Name)
+		err = reflectutils.Set(obj, field.Name, slug.Slug{Slug: v})
+		if err != nil {
+			return
+		}
+		return
+	})
+	ld.Field("TitleWithSlug").ComponentFunc(slug.SlugListingComponentFunc)
+
 	_ = m
 	// Use m to customize the model, Or config more models here.
 
