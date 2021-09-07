@@ -55,7 +55,9 @@ func NewConfig() (b *presets.Builder) {
 			return
 		})
 
-	b.I18n().SupportLanguages(language.English, language.SimplifiedChinese)
+	b.I18n().
+		SupportLanguages(language.English, language.SimplifiedChinese).
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
 	media_library_view.Configure(b, db)
 	//media_library_view.MediaLibraryPerPage = 3
