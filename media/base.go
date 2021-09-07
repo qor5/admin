@@ -20,9 +20,6 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/jinzhu/inflection"
-	"github.com/qor/admin"
-	"github.com/qor/qor"
-	"github.com/qor/qor/resource"
 	"github.com/qor/qor/utils"
 )
 
@@ -245,19 +242,4 @@ func (b Base) IsVideo() bool {
 
 func (b Base) IsSVG() bool {
 	return IsSVGFormat(b.URL())
-}
-
-// ConfigureQorMetaBeforeInitialize configure this field for Qor Admin
-func (Base) ConfigureQorMetaBeforeInitialize(meta resource.Metaor) {
-	if meta, ok := meta.(*admin.Meta); ok {
-		if meta.Type == "" {
-			meta.Type = "file"
-		}
-
-		if meta.GetFormattedValuer() == nil {
-			meta.SetFormattedValuer(func(value interface{}, context *qor.Context) interface{} {
-				return utils.Stringify(meta.GetValuer()(value, context))
-			})
-		}
-	}
 }
