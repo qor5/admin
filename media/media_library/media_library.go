@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"github.com/qor/admin"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/oss"
 )
@@ -216,5 +215,4 @@ type MediaBoxConfig struct {
 	Sizes     map[string]*media.Size
 	Max       uint
 	AllowType string
-	admin.SelectManyConfig
 }

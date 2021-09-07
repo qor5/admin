@@ -8,7 +8,6 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
-	"github.com/qor/qor/utils"
 	"github.com/qor/qor5/media"
 )
 
@@ -70,7 +69,7 @@ var DefaultRetrieveHandler = func(oss OSS, path string) (media.FileInterface, er
 	if err == nil {
 		buf := []byte{}
 		if buf, err = ioutil.ReadAll(result); err == nil {
-			result := utils.ClosingReadSeeker{bytes.NewReader(buf)}
+			result := ClosingReadSeeker{bytes.NewReader(buf)}
 			result.Seek(0, 0)
 			return result, err
 		}
@@ -104,4 +103,14 @@ func (o OSS) String() string {
 	}
 
 	return newurl
+}
+
+// ClosingReadSeeker implement Closer interface for ReadSeeker
+type ClosingReadSeeker struct {
+	io.ReadSeeker
+}
+
+// Close implement Closer interface for Buffer
+func (ClosingReadSeeker) Close() error {
+	return nil
 }

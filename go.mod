@@ -8,10 +8,10 @@ require (
 	github.com/goplaid/web v1.1.6
 	github.com/goplaid/x v1.0.11-0.20210907054558-f1ccc871509a
 	github.com/gosimple/slug v1.9.0
-	github.com/jinzhu/configor v1.2.1
+	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
-	github.com/qor/admin v0.0.0-20210421035046-739414767209
+	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
 	github.com/qor/media v0.0.0-20210601073757-402011f3b027 // indirect
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
