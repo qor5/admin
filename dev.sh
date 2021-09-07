@@ -9,4 +9,4 @@ function exampleRestart() {
 
 export -f exampleRestart
 
-find . -name *.go | entr -r bash -c "exampleRestart"
+find . -name "*.go" | entr -r bash -c "exampleRestart"
