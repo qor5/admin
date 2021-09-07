@@ -75,7 +75,7 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 					FieldName(slugTitle).
 					Label(slugTitle).
 					Value(reflectutils.MustGet(obj, slugTitle).(Slug).Slug)).Name("slug_sync_data"),
-			VCheckbox().InputValue("checked").Label("Sync from "+field.Name),
+			VCheckbox().FieldName("SlugSync").InputValue("checked").Label("Sync from "+field.Name),
 		),
 	)
 }
@@ -85,7 +85,13 @@ func SlugListingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 }
 
 func syncSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
+	checked := ctx.R.FormValue("SlugSync")
+	if checked == "" {
+		return
+	}
+
 	slugTitle := ctx.Event.Params[0]
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "slug_sync_data",
 		Body: VTextField().
