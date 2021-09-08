@@ -5,7 +5,6 @@ import (
 
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/slug"
-	"github.com/sunfmin/reflectutils"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -66,7 +65,7 @@ func NewConfig() (b *presets.Builder) {
 	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
-	ld := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
 	ed := m.Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
@@ -96,16 +95,7 @@ func NewConfig() (b *presets.Builder) {
 	})
 
 	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
-	ed.Field("TitleWithSlug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
-	ed.Field("TitleWithSlug").SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		v := ctx.R.FormValue(field.Name)
-		err = reflectutils.Set(obj, field.Name, slug.Slug{Slug: v})
-		if err != nil {
-			return
-		}
-		return
-	})
-	ld.Field("TitleWithSlug").ComponentFunc(slug.SlugListingComponentFunc)
+	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 
 	_ = m
 	// Use m to customize the model, Or config more models here.

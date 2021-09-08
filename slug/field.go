@@ -1,7 +1,7 @@
 package slug
 
 import (
-	"database/sql/driver"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -14,28 +14,24 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type Slug struct {
-	Slug string
+type Slug string
+
+const (
+	convertToSlugEvent = "slug_ConvertToSlugEvent"
+)
+
+func registerEventFuncs(hub web.EventFuncHub) {
+	hub.RegisterEventFunc(convertToSlugEvent, convertToSlug)
 }
 
-// Scan scan value into Slug
-func (slug *Slug) Scan(value interface{}) error {
-	if bytes, ok := value.([]byte); ok {
-		slug.Slug = string(bytes)
-	} else if str, ok := value.(string); ok {
-		slug.Slug = str
-	} else if strs, ok := value.([]string); ok {
-		slug.Slug = strs[0]
-	}
-	return nil
+func slugPortalName(field string) string {
+	return fmt.Sprintf("%s_PortalData", field)
 }
 
-// Value get slug's Value
-func (slug Slug) Value() (driver.Value, error) {
-	return slug.Slug, nil
+func slugCheckBoxName(field string) string {
+	return fmt.Sprintf("%s_Checkbox", field)
 }
 
-// This interface method is best to be called here. https://github.com/goplaid/x/blob/master/presets/field_defaults.go#L132 It is not necessary to configure this field for each model and project.
 func (slug Slug) ConfigureField(model *presets.ModelBuilder, field reflect.StructField) error {
 	fieldName := strings.TrimSuffix(field.Name, "WithSlug")
 	editingBuilder := model.Editing()
@@ -44,22 +40,12 @@ func (slug Slug) ConfigureField(model *presets.ModelBuilder, field reflect.Struc
 	}
 
 	editingBuilder.Field(field.Name).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
-	editingBuilder.Field(field.Name).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		v := ctx.R.FormValue(field.Name)
-		err = reflectutils.Set(obj, field.Name, Slug{Slug: v})
-		if err != nil {
-			return
-		}
-		return
-	})
-
-	listingBuilder := model.Listing()
-	listingBuilder.Field(field.Name).ComponentFunc(SlugListingComponentFunc)
+	editingBuilder.Field(field.Name).SetterFunc(SlugEditingSetterFunc)
 	return nil
 }
 
 func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	ctx.Hub.RegisterEventFunc("slug_sync", syncSlug)
+	registerEventFuncs(ctx.Hub)
 
 	slugTitle := field.Name + "WithSlug"
 	return VSheet(
@@ -68,7 +54,7 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 			FieldName(field.Name).
 			Label(field.Label).
 			Value(reflectutils.MustGet(obj, field.Name).(string)).Attr("@input", web.Plaid().
-			EventFunc("slug_sync", slugTitle).Go()),
+			EventFunc(convertToSlugEvent, slugTitle).Go()),
 
 		VRow(
 			VCol(
@@ -77,29 +63,38 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 						Type("text").
 						FieldName(slugTitle).
 						Label(slugTitle).
-						Value(reflectutils.MustGet(obj, slugTitle).(Slug).Slug)).Name("slug_sync_data"),
+						Value(reflectutils.MustGet(obj, slugTitle).(Slug))).Name(slugPortalName(slugTitle)),
 			).Cols(8),
 			VCol(
-				VCheckbox().FieldName("SlugSync").InputValue("checked").Label("Sync from "+field.Name),
+				VCheckbox().FieldName(slugCheckBoxName(slugTitle)).InputValue("checked").Label("Sync from "+field.Name),
 			).Cols(4),
 		),
 	)
 }
-func SlugListingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	slug := field.Value(obj).(Slug)
-	return h.Td(h.Text(slug.Slug))
+
+func SlugEditingSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+	v := ctx.R.FormValue(field.Name)
+	err = reflectutils.Set(obj, field.Name, Slug(v))
+	if err != nil {
+		return
+	}
+	return
 }
 
-func syncSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
-	checked := ctx.R.FormValue("SlugSync")
-	if checked == "" {
+func convertToSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
+	if len(ctx.Event.Params) == 0 {
+		return
+	}
+
+	slugFieldTitle := ctx.Event.Params[0]
+	checked := ctx.R.FormValue(slugCheckBoxName(slugFieldTitle))
+	if checked != "checked" {
 		return
 	}
 
 	var (
 		regexpNonAuthorizedChars = regexp.MustCompile("[^a-zA-Z0-9-_]")
 		regexpMultipleDashes     = regexp.MustCompile("-+")
-		slugFieldTitle           = ctx.Event.Params[0]
 		slug                     = ctx.Event.Value
 	)
 
@@ -111,7 +106,7 @@ func syncSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
 	slug = strings.Trim(slug, "-_")
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: "slug_sync_data",
+		Name: slugPortalName(slugFieldTitle),
 		Body: VTextField().
 			Type("text").
 			FieldName(slugFieldTitle).
