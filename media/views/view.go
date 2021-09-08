@@ -237,18 +237,21 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 			Name: cropperPortalName(field),
 			Body: VDialog(
 				VCard(
-					VCardTitle(h.Text(msgr.CropImage)),
-					c,
-					VCardActions(
+					VToolbar(
+						VToolbarTitle(msgr.CropImage),
 						VSpacer(),
-						VBtn(msgr.Crop).Text(true).Color("primary").
-							Attr("ref", "cropBtn").
+						VBtn(msgr.Crop).Color("primary").
+							Attr(":loading", "locals.cropping").
 							Attr("@click", web.Plaid().
+								BeforeScript("locals.cropping = true").
 								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg))).
 								Go()),
-					),
+					).Flat(true),
+					c,
 				),
-			).Value(true).MaxWidth("600px"),
+			).Value(true).
+				MaxWidth("800px").
+				Attr(web.InitContextLocals, `{cropping: false}`),
 		})
 		return
 	}

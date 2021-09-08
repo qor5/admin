@@ -120,10 +120,10 @@ github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
-github.com/goplaid/web v1.1.6 h1:ZqbLW3fvlSI6hNPVF858eTjT5KHNqsqNunuzAjxmdNY=
-github.com/goplaid/web v1.1.6/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
-github.com/goplaid/x v1.0.11-0.20210907054558-f1ccc871509a h1:Z12r1jGiGVDJGFbOotjvQSBAzCOTQIE3Ivp1vzuBGro=
-github.com/goplaid/x v1.0.11-0.20210907054558-f1ccc871509a/go.mod h1:crK75zW83YaZVRzoV6Vpy1JfPUQMQsTZsh+C35TEbVE=
+github.com/goplaid/web v1.1.7 h1:jmc01GyM5Ip+7OldDsAb/aOVqqb/YfD7owpcht+V2ng=
+github.com/goplaid/web v1.1.7/go.mod h1:F1u2CIavV4FrNrGf6rCJzc7I2GoQCZxL6Tv+qZMkFFI=
+github.com/goplaid/x v1.0.11-0.20210908120943-5d255c785149 h1:wVqUv53ep38dZ0t0IpJWAIndSCADcgCJ+C8k/Rn2FbY=
+github.com/goplaid/x v1.0.11-0.20210908120943-5d255c785149/go.mod h1:hnEqDL+wlxTFbo4XAfjRJBWdGP+N6f3mmMpowaS/Xkk=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
