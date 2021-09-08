@@ -8,6 +8,7 @@ require (
 	github.com/goplaid/web v1.1.6
 	github.com/goplaid/x v1.0.11-0.20210907054558-f1ccc871509a
 	github.com/gosimple/slug v1.9.0
+	github.com/gosimple/unidecode v1.0.0
 	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0

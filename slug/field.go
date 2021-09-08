@@ -3,11 +3,13 @@ package slug
 import (
 	"database/sql/driver"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/gosimple/unidecode"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
@@ -94,15 +96,27 @@ func syncSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
 		return
 	}
 
-	slugTitle := ctx.Event.Params[0]
+	var (
+		regexpNonAuthorizedChars = regexp.MustCompile("[^a-zA-Z0-9-_]")
+		regexpMultipleDashes     = regexp.MustCompile("-+")
+		slugFieldTitle           = ctx.Event.Params[0]
+		slug                     = ctx.Event.Value
+	)
+
+	slug = strings.TrimSpace(slug)
+	slug = unidecode.Unidecode(slug)
+	slug = strings.ToLower(slug)
+	slug = regexpNonAuthorizedChars.ReplaceAllString(slug, "-")
+	slug = regexpMultipleDashes.ReplaceAllString(slug, "-")
+	slug = strings.Trim(slug, "-_")
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "slug_sync_data",
 		Body: VTextField().
 			Type("text").
-			FieldName(slugTitle).
-			Label(slugTitle).
-			Value(ctx.Event.Value),
+			FieldName(slugFieldTitle).
+			Label(slugFieldTitle).
+			Value(slug),
 	})
 	return
 }
