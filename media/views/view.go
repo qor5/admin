@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"sort"
 	"strconv"
@@ -171,6 +172,9 @@ func createPortalName(field string) string {
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
+func cropperPortalName(field string) string {
+	return fmt.Sprintf("%s_cropper_portal", field)
+}
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	f media_library.File, field string, thumb string) h.HTMLComponent {
@@ -179,25 +183,11 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
 		h.If(size != nil,
 			VCardActions(
-				VMenu(
-					web.Slot(
-						VChip(
-							thumbName(thumb, size),
-						).Small(true).Attr("v-on", "on").Attr("v-bind", "attrs"),
-					).Name("activator").Scope("{ on, attrs }"),
-
-					VCard(
-						VCardTitle(h.Text(msgr.CropImage)),
-						web.Portal().EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb),
-						VCardActions(
-							VSpacer(),
-							VBtn(msgr.Crop).Text(true).Color("primary").
-								Attr("@click", web.Plaid().
-									EventFunc(cropImageEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
-									Go()),
-						),
-					).Width(600),
-				).CloseOnContentClick(false).OffsetX(true).OffsetY(true),
+				VChip(
+					thumbName(thumb, size),
+				).Small(true).Attr("@click", web.Plaid().
+					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
+					Go()),
 			),
 		),
 	)
@@ -205,9 +195,12 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 
 func loadImageCropper(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		//field := ctx.Event.Params[0]
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		field := ctx.Event.Params[0]
+
 		id := ctx.Event.ParamAsInt(1)
 		thumb := ctx.Event.Params[2]
+		cfg := ctx.Event.Params[3]
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -223,11 +216,13 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 		}
 
 		c := cropper.Cropper().
-			Src(m.File.URL("original")).
+			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
 			AspectRatio(float64(size.Width), float64(size.Height)).
 			Attr("@input", web.Plaid().
 				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
 				String())
+			//Attr("style", "max-width: 800px; max-height: 600px;")
+
 		cropOption := moption.CropOptions[thumb]
 		if cropOption != nil {
 			c.Value(cropper.Value{
@@ -238,7 +233,23 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 			})
 		}
 
-		r.Body = c
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: cropperPortalName(field),
+			Body: VDialog(
+				VCard(
+					VCardTitle(h.Text(msgr.CropImage)),
+					c,
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Crop).Text(true).Color("primary").
+							Attr("ref", "cropBtn").
+							Attr("@click", web.Plaid().
+								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg))).
+								Go()),
+					),
+				),
+			).Value(true).MaxWidth("600px"),
+		})
 		return
 	}
 
@@ -253,6 +264,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 		cfg := stringToCfg(ctx.Event.Params[3])
 
 		if len(cropOption) == 0 {
+			log.Println("No CropOption value")
 			return
 		}
 		cropValue := cropper.Value{}
@@ -370,6 +382,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 	return h.Components(
 		c,
+		web.Portal().Name(cropperPortalName(field)),
 		h.Input("").Type("hidden").
 			Value(h.JSONString(mediaBox.Files)).
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
