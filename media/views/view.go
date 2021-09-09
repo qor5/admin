@@ -246,10 +246,10 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 								BeforeScript("locals.cropping = true").
 								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg))).
 								Go()),
-					).Flat(true),
+					).Class("pl-2 pr-2"),
 					VCardText(
 						c,
-					).Attr("style", "height: 500px"),
+					).Attr("style", "max-height: 500px"),
 				),
 			).Value(true).
 				Scrollable(true).
