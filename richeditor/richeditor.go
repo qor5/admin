@@ -68,14 +68,14 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	r := h.Components(
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
-			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p, ToolbarFixedTarget: ".v-main__wrap"}).Attr(web.VFieldName(b.name)...),
+			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p, ToolbarFixedTarget: ".v-navigation-drawer--temporary .v-navigation-drawer__content"}).Attr(web.VFieldName(b.name)...),
 			h.Div(
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),
 			).Class("hidden-screen-only"),
-		).Class("pb-4").Rounded(true).Attr("data-type", "redactor").Attr("style", "position: relative; z-index:1;"),
+		).Class("pb-4").Rounded(true).Attr("data-type", "redactor"),
 	)
 	return r.MarshalHTML(ctx)
 }
