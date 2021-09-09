@@ -75,7 +75,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 					AllowType: "image",
 				}),
 			).Class("hidden-screen-only"),
-		).Class("pb-4").Rounded(true).Attr("data-type", "redactor"),
+		).Class("pb-4").Rounded(true).Attr("data-type", "redactor").Attr("style", "position: relative; z-index:1;"),
 	)
 	return r.MarshalHTML(ctx)
 }
