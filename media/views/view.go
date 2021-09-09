@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"mime/multipart"
 	"sort"
 	"strconv"
@@ -269,40 +268,38 @@ func cropImage(db *gorm.DB) web.EventFunc {
 		thumb := ctx.Event.Params[2]
 		cfg := stringToCfg(ctx.Event.Params[3])
 
-		if len(cropOption) == 0 {
-			log.Println("No CropOption value")
-			return
-		}
-		cropValue := cropper.Value{}
-		err = json.Unmarshal([]byte(cropOption), &cropValue)
-		if err != nil {
-			panic(err)
-		}
+		if len(cropOption) > 0 {
+			cropValue := cropper.Value{}
+			err = json.Unmarshal([]byte(cropOption), &cropValue)
+			if err != nil {
+				panic(err)
+			}
 
-		var m media_library.MediaLibrary
-		err = db.Find(&m, id).Error
-		if err != nil {
-			return
-		}
+			var m media_library.MediaLibrary
+			err = db.Find(&m, id).Error
+			if err != nil {
+				return
+			}
 
-		moption := m.GetMediaOption()
-		if moption.CropOptions == nil {
-			moption.CropOptions = make(map[string]*media.CropOption)
-		}
-		moption.CropOptions[thumb] = &media.CropOption{
-			X:      int(cropValue.X),
-			Y:      int(cropValue.Y),
-			Width:  int(cropValue.Width),
-			Height: int(cropValue.Height),
-		}
-		moption.Crop = true
-		err = m.ScanMediaOptions(moption)
-		if err != nil {
-			return
-		}
-		err = db.Save(&m).Error
-		if err != nil {
-			return
+			moption := m.GetMediaOption()
+			if moption.CropOptions == nil {
+				moption.CropOptions = make(map[string]*media.CropOption)
+			}
+			moption.CropOptions[thumb] = &media.CropOption{
+				X:      int(cropValue.X),
+				Y:      int(cropValue.Y),
+				Width:  int(cropValue.Width),
+				Height: int(cropValue.Height),
+			}
+			moption.Crop = true
+			err = m.ScanMediaOptions(moption)
+			if err != nil {
+				return
+			}
+			err = db.Save(&m).Error
+			if err != nil {
+				return
+			}
 		}
 
 		mb := &media_library.MediaBox{}
