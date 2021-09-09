@@ -68,7 +68,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	r := h.Components(
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
-			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p}).Attr(web.VFieldName(b.name)...),
+			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p, ToolbarFixedTarget: ".v-main__wrap"}).Attr(web.VFieldName(b.name)...),
 			h.Div(
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{

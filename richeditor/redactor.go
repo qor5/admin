@@ -11,7 +11,8 @@ type RedactorBuilder struct {
 }
 
 type RedactorConfig struct {
-	Plugins []string `json:"plugins"`
+	Plugins            []string `json:"plugins"`
+	ToolbarFixedTarget string   `json:"toolbarFixedTarget"`
 }
 
 func Redactor() (r *RedactorBuilder) {
