@@ -649,10 +649,21 @@ func fileCroppingVarName(id uint) string {
 }
 
 func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
-	if len(f.File.Sizes) == 0 {
-		return nil
-	}
 	g := VChipGroup().Column(true)
+	text := "original"
+	if f.File.Width != 0 && f.File.Height != 0 {
+		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
+	}
+	if f.File.FileSize != 0 {
+		text = fmt.Sprintf("%s %s", text, media.ByteCountIEC(f.File.FileSize))
+	}
+	g.AppendChildren(
+		VChip(h.Text(text)).XSmall(true),
+	)
+	if len(f.File.Sizes) == 0 {
+		return g
+	}
+
 	for k, size := range f.File.GetSizes() {
 		g.AppendChildren(
 			VChip(thumbName(k, size)).XSmall(true),

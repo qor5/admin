@@ -2,6 +2,7 @@ package media
 
 import (
 	"bytes"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
@@ -99,6 +100,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	var fileBuffer bytes.Buffer
 	if fileBytes, err := ioutil.ReadAll(file); err == nil {
 		fileBuffer.Write(fileBytes)
+		SetFileSize(media, len(fileBytes))
 
 		if err = media.Store(media.URL("original"), option, &fileBuffer); err == nil {
 			file.Seek(0, 0)
@@ -152,6 +154,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 					}
 				} else {
 					if img, _, err := image.Decode(file); err == nil {
+						SetWeightHeight(media, img.Bounds().Dx(), img.Bounds().Dy())
 						// Save cropped default image
 						if cropOption := media.GetCropOption("original"); cropOption != nil {
 							var buffer bytes.Buffer
@@ -190,6 +193,16 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	}
 
 	return err
+}
+
+func SetFileSize(media Media, fileSize int) {
+	result, _ := json.Marshal(map[string]int{"FileSize": fileSize})
+	media.Scan(string(result))
+}
+
+func SetWeightHeight(media Media, width, height int) {
+	result, _ := json.Marshal(map[string]int{"Width": width, "Height": height})
+	media.Scan(string(result))
 }
 
 func init() {

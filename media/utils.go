@@ -1,6 +1,7 @@
 package media
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -65,4 +66,18 @@ func IsSVGFormat(name string) bool {
 func parseTagOption(str string) *Option {
 	option := Option(utils.ParseTagOption(str))
 	return &option
+}
+
+func ByteCountIEC(b int) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%dB", b)
+	}
+	div, exp := unit, 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f%cB",
+		float64(b)/float64(div), "KMGTPE"[exp])
 }

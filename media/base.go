@@ -52,6 +52,9 @@ type Base struct {
 	Reader      io.Reader              `json:"-"`
 	Options     map[string]string      `json:",omitempty"`
 	cropped     bool
+	Width       int `json:",omitempty"`
+	Height      int `json:",omitempty"`
+	FileSize    int `json:",omitempty"`
 }
 
 // Scan scan files, crop options, db values into struct
