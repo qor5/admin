@@ -3,9 +3,6 @@ package media_library
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
-	"path"
-	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/media"
@@ -136,83 +133,4 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 	results, err := json.Marshal(mediaLibraryStorage)
 	return string(results), err
-}
-
-type MediaBox struct {
-	Values string `json:"-" gorm:"size:4294967295;"`
-	Files  []File `json:",omitempty"`
-}
-
-func (mediaBox MediaBox) URL(styles ...string) string {
-	for _, file := range mediaBox.Files {
-		return file.URL(styles...)
-	}
-	return ""
-}
-
-func (mediaBox *MediaBox) Scan(data interface{}) (err error) {
-	switch values := data.(type) {
-	case []byte:
-		if mediaBox.Values = string(values); mediaBox.Values != "" {
-			return json.Unmarshal(values, &mediaBox.Files)
-		}
-	case string:
-		return mediaBox.Scan([]byte(values))
-	case []string:
-		for _, str := range values {
-			if err := mediaBox.Scan(str); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (mediaBox MediaBox) Value() (driver.Value, error) {
-	if len(mediaBox.Files) > 0 {
-		return json.Marshal(mediaBox.Files)
-	}
-	return mediaBox.Values, nil
-}
-
-type File struct {
-	ID          json.Number
-	Url         string
-	VideoLink   string
-	FileName    string
-	Description string
-}
-
-// IsImage return if it is an image
-func (f File) IsImage() bool {
-	return media.IsImageFormat(f.Url)
-}
-
-func (f File) IsVideo() bool {
-	return media.IsVideoFormat(f.Url)
-}
-
-func (f File) IsSVG() bool {
-	return media.IsSVGFormat(f.Url)
-}
-
-func (file File) URL(styles ...string) string {
-	if file.Url != "" && len(styles) > 0 {
-		ext := path.Ext(file.Url)
-		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(file.Url, ext), styles[0], ext)
-	}
-	return file.Url
-}
-
-const (
-	ALLOW_TYPE_FILE  = "file"
-	ALLOW_TYPE_IMAGE = "image"
-	ALLOW_TYPE_VIDEO = "video"
-)
-
-// MediaBoxConfig configure MediaBox metas
-type MediaBoxConfig struct {
-	Sizes     map[string]*media.Size
-	Max       uint
-	AllowType string
 }

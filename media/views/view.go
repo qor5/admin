@@ -65,9 +65,7 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 			return
 		}
 		descriptionField := fmt.Sprintf("%s.Description", field.Name)
-		if len(mediaBox.Files) > 0 {
-			mediaBox.Files[0].Description = ctx.R.FormValue(descriptionField)
-		}
+		mediaBox.Description = ctx.R.FormValue(descriptionField)
 		err = reflectutils.Set(obj, field.Name, mediaBox)
 		if err != nil {
 			return
@@ -176,7 +174,7 @@ func cropperPortalName(field string) string {
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
-	f media_library.File, field string, thumb string) h.HTMLComponent {
+	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	return VCard(
 		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
@@ -319,17 +317,15 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
-	for _, f := range mediaBox.Files {
+	if mediaBox.ID.String() != "" {
 		row := VRow()
-
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, cfg, f, field, "original"),
+					mediaBoxThumb(msgr, cfg, mediaBox, field, "original"),
 				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 			)
 		} else {
-
 			var keys []string
 			for k, _ := range cfg.Sizes {
 				keys = append(keys, k)
@@ -340,21 +336,18 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(msgr, cfg, f, field, k),
+						mediaBoxThumb(msgr, cfg, mediaBox, field, k),
 					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
 				)
 			}
 		}
 
 		c.AppendChildren(row)
-	}
-
-	if len(mediaBox.Files) > 0 {
 
 		fieldName := fmt.Sprintf("%s.Description", field)
 		value := ctx.R.FormValue(fieldName)
 		if len(value) == 0 {
-			value = mediaBox.Files[0].Description
+			value = mediaBox.Description
 		}
 		c.AppendChildren(
 			VRow(
@@ -370,12 +363,10 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			),
 		)
 	}
-
 	if field == "richeditor" {
 		return h.Components(
-
 			h.Input("").Type("hidden").
-				Value(h.JSONString(mediaBox.Files)).
+				Value(h.JSONString(mediaBox)).
 				Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 			VBtn(msgr.ChooseFile).
 				Depressed(true).
@@ -387,12 +378,12 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		c,
 		web.Portal().Name(cropperPortalName(field)),
 		h.Input("").Type("hidden").
-			Value(h.JSONString(mediaBox.Files)).
+			Value(h.JSONString(mediaBox)).
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn(msgr.ChooseFile).
 			Depressed(true).
 			OnClick(openFileChooserEvent, field, h.JSONString(cfg)),
-		h.If(mediaBox != nil && len(mediaBox.Files) > 0,
+		h.If(mediaBox != nil && mediaBox.ID.String() != "",
 			VBtn(msgr.Delete).
 				Depressed(true).
 				OnClick(deleteFileEvent, field, h.JSONString(cfg)),
@@ -749,14 +740,13 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 			}
 		}
 
-		mediaBox := media_library.MediaBox{}
-		mediaBox.Files = append(mediaBox.Files, media_library.File{
+		mediaBox := media_library.MediaBox{
 			ID:          json.Number(fmt.Sprint(m.ID)),
 			Url:         m.File.Url,
 			VideoLink:   "",
 			FileName:    m.File.FileName,
 			Description: m.File.Description,
-		})
+		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
