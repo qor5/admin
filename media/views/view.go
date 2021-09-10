@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"path"
 	"sort"
 	"strconv"
 	"time"
@@ -15,6 +16,7 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/cropper"
+	"github.com/qor/qor5/fileicons"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/sunfmin/reflectutils"
@@ -177,7 +179,14 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	return VCard(
-		VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
+		h.If(media.IsImageFormat(f.FileName),
+			VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
+		).Else(
+			h.Div(
+				fileThumb(f.FileName),
+				h.A().Text(f.FileName).Href(f.Url).Target("_blank").Class("pl-6"),
+			),
+		),
 		h.If(size != nil,
 			VCardActions(
 				VChip(
@@ -188,6 +197,12 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 			),
 		),
 	)
+}
+
+func fileThumb(filename string) h.HTMLComponent {
+	return h.Div(
+		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
+	).Class("d-flex align-center justify-center")
 }
 
 func loadImageCropper(db *gorm.DB) web.EventFunc {
@@ -344,34 +359,26 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 		c.AppendChildren(row)
 
-		fieldName := fmt.Sprintf("%s.Description", field)
-		value := ctx.R.FormValue(fieldName)
-		if len(value) == 0 {
-			value = mediaBox.Description
+		if media.IsImageFormat(mediaBox.FileName) {
+			fieldName := fmt.Sprintf("%s.Description", field)
+			value := ctx.R.FormValue(fieldName)
+			if len(value) == 0 {
+				value = mediaBox.Description
+			}
+			c.AppendChildren(
+				VRow(
+					VCol(
+						VTextField().
+							Value(value).
+							Attr(web.VFieldName(fieldName)...).
+							Label(msgr.DescriptionForAccessibility).
+							Dense(true).
+							HideDetails(true).
+							Outlined(true),
+					).Cols(12).Class("pl-0 pt-0"),
+				),
+			)
 		}
-		c.AppendChildren(
-			VRow(
-				VCol(
-					VTextField().
-						Value(value).
-						Attr(web.VFieldName(fieldName)...).
-						Label(msgr.DescriptionForAccessibility).
-						Dense(true).
-						HideDetails(true).
-						Outlined(true),
-				).Cols(12).Class("pl-0 pt-0"),
-			),
-		)
-	}
-	if field == "richeditor" {
-		return h.Components(
-			h.Input("").Type("hidden").
-				Value(h.JSONString(mediaBox)).
-				Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
-			VBtn(msgr.ChooseFile).
-				Depressed(true).
-				OnClick(createPortalName(field)),
-		)
 	}
 
 	return h.Components(
@@ -577,23 +584,28 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			VCol(
 				VCard(
 					h.Div(
-						VImg(
-							h.If(needCrop,
-								h.Div(
-									VProgressCircular().Indeterminate(true),
-									h.Span(msgr.Cropping).Class("text-h6 pl-2"),
-								).Class("d-flex align-center justify-center v-card--reveal white--text").
-									Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
-									Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
-							),
-						).Src(f.File.URL("@qor_preview")).Height(200),
+						h.If(
+							media.IsImageFormat(f.File.FileName),
+							VImg(
+								h.If(needCrop,
+									h.Div(
+										VProgressCircular().Indeterminate(true),
+										h.Span(msgr.Cropping).Class("text-h6 pl-2"),
+									).Class("d-flex align-center justify-center v-card--reveal white--text").
+										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
+										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
+								),
+							).Src(f.File.URL("@qor_preview")).Height(200),
+						).Else(
+							fileThumb(f.File.FileName),
+						),
 					).Attr("role", "button").
 						Attr("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("vars.%s = true", croppingVar)).
 							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 							Go()),
 					VCardText(
-						h.Text(f.File.FileName),
+						h.A().Text(f.File.FileName).Href(f.File.Url).Target("_blank"),
 						h.Input("").
 							Style("width: 100%;").
 							Placeholder(msgr.DescriptionForAccessibility).
@@ -603,7 +615,9 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
 							),
-						fileSizes(f),
+						h.If(media.IsImageFormat(f.File.FileName),
+							fileSizes(f),
+						),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(3),
@@ -727,6 +741,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 		sizes, needCrop := mergeNewSizes(&m, cfg)
 
 		if needCrop {
+			panic(needCrop)
 			err = m.ScanMediaOptions(media_library.MediaOption{
 				Sizes: sizes,
 				Crop:  true,
