@@ -6,9 +6,3 @@
   left: 0;
   top: 0;
 }
-
-/* Fix editor toolbar z-index passthrough  */
-main.v-main {
-  position: relative;
-  z-index: 1;
-}
