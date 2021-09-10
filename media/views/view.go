@@ -767,7 +767,6 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 		sizes, needCrop := mergeNewSizes(&m, cfg)
 
 		if needCrop {
-			panic(needCrop)
 			err = m.ScanMediaOptions(media_library.MediaOption{
 				Sizes: sizes,
 				Crop:  true,
