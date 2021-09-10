@@ -6,3 +6,7 @@
   left: 0;
   top: 0;
 }
+
+.redactor-air, .redactor-toolbar {
+  z-index: 1;
+}
