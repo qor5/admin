@@ -3,9 +3,6 @@ package admin
 import (
 	"embed"
 
-	"github.com/qor/qor5/media/media_library"
-	"github.com/qor/qor5/slug"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -16,9 +13,11 @@ import (
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/media"
+	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/richeditor"
+	"github.com/qor/qor5/slug"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -88,7 +87,7 @@ func NewConfig() (b *presets.Builder) {
 	ed.Field("BodyImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
-			&media_library.MediaBoxConfig{AllowType: "image"})
+			&media_library.MediaBoxConfig{})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)

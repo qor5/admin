@@ -184,8 +184,8 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),
-				h.A().Text(f.FileName).Href(f.Url).Target("_blank").Class("pl-6"),
-			),
+				h.A().Text(f.FileName).Href(f.Url).Target("_blank"),
+			).Style("text-align:center"),
 		),
 		h.If(size != nil,
 			VCardActions(
@@ -515,6 +515,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		currentPageInt = 1
 	}
 
+	if len(cfg.Sizes) > 0 {
+		cfg.AllowType = media_library.ALLOW_TYPE_IMAGE
+	}
+
+	if len(cfg.AllowType) > 0 {
+		wh = wh.Where("selected_type = ?", cfg.AllowType)
+	}
+
 	if len(keyword) > 0 {
 		wh = wh.Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
@@ -703,6 +711,14 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
 			m := media_library.MediaLibrary{}
+
+			if media.IsImageFormat(fh.Filename) {
+				m.SelectedType = media_library.ALLOW_TYPE_IMAGE
+			} else if media.IsVideoFormat(fh.Filename) {
+				m.SelectedType = media_library.ALLOW_TYPE_VIDEO
+			} else {
+				m.SelectedType = media_library.ALLOW_TYPE_FILE
+			}
 			err1 := m.File.Scan(fh)
 			if err1 != nil {
 				panic(err)
