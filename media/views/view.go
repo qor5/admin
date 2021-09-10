@@ -363,10 +363,16 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			),
 		)
 	}
+
+	mediaBoxValue := ""
+	if mediaBox.ID.String() != "" {
+		mediaBoxValue = h.JSONString(mediaBox)
+	}
+
 	if field == "richeditor" {
 		return h.Components(
 			h.Input("").Type("hidden").
-				Value(h.JSONString(mediaBox)).
+				Value(mediaBoxValue).
 				Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 			VBtn(msgr.ChooseFile).
 				Depressed(true).
@@ -378,7 +384,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		c,
 		web.Portal().Name(cropperPortalName(field)),
 		h.Input("").Type("hidden").
-			Value(h.JSONString(mediaBox)).
+			Value(mediaBoxValue).
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn(msgr.ChooseFile).
 			Depressed(true).
