@@ -1,0 +1,8 @@
+/* make setting page richeditor toolbar autofix works */
+.v-main__wrap > div {
+  height: 100%;
+  overflow: scroll;
+  position: absolute;
+  left: 0;
+  top: 0;
+}

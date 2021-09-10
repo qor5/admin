@@ -44,6 +44,12 @@ func CSSComponentsPack() web.ComponentsPack {
 		panic(err)
 	}
 	css = append(css, c)
+
+	custom, err := box.ReadFile("redactor/redactor.custom.css")
+	if err != nil {
+		panic(err)
+	}
+	css = append(css, custom)
 	if len(PluginsCSS) > 0 {
 		css = append(css, PluginsCSS...)
 	}
