@@ -24,6 +24,7 @@ type Media interface {
 	NeedCrop() bool
 	Cropped(values ...bool) bool
 	GetCropOption(name string) *image.Rectangle
+	GetFileSizes() map[string]int
 
 	Store(url string, option *Option, reader io.Reader) error
 	Retrieve(url string) (FileInterface, error)

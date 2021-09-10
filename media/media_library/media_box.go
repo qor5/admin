@@ -22,6 +22,14 @@ type MediaBox struct {
 	VideoLink   string
 	FileName    string
 	Description string
+	FileSizes   map[string]int `json:",omitempty"`
+}
+
+// MediaBoxConfig configure MediaBox metas
+type MediaBoxConfig struct {
+	Sizes     map[string]*media.Size
+	Max       uint
+	AllowType string
 }
 
 func (mediaBox *MediaBox) Scan(data interface{}) (err error) {
@@ -63,11 +71,4 @@ func (mediaBox *MediaBox) URL(styles ...string) string {
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0], ext)
 	}
 	return mediaBox.Url
-}
-
-// MediaBoxConfig configure MediaBox metas
-type MediaBoxConfig struct {
-	Sizes     map[string]*media.Size
-	Max       uint
-	AllowType string
 }

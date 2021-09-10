@@ -100,8 +100,8 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	var fileBuffer bytes.Buffer
 	if fileBytes, err := ioutil.ReadAll(file); err == nil {
 		fileBuffer.Write(fileBytes)
-		SetFileSize(media, len(fileBytes))
-
+		fileSizes := media.GetFileSizes()
+		fileSizes["original"] = len(fileBytes)
 		if err = media.Store(media.URL("original"), option, &fileBuffer); err == nil {
 			file.Seek(0, 0)
 
@@ -177,11 +177,12 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 							if cropOption := media.GetCropOption(key); cropOption != nil {
 								newImage = imaging.Crop(newImage, *cropOption)
 							}
-
 							var buffer bytes.Buffer
 							imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format)
+							fileSizes[key] = buffer.Len()
 							media.Store(media.URL(key), option, &buffer)
 						}
+						SetFileSizes(media, fileSizes)
 					} else {
 						return err
 					}
@@ -195,13 +196,13 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	return err
 }
 
-func SetFileSize(media Media, fileSize int) {
-	result, _ := json.Marshal(map[string]int{"FileSize": fileSize})
+func SetWeightHeight(media Media, width, height int) {
+	result, _ := json.Marshal(map[string]int{"Width": width, "Height": height})
 	media.Scan(string(result))
 }
 
-func SetWeightHeight(media Media, width, height int) {
-	result, _ := json.Marshal(map[string]int{"Width": width, "Height": height})
+func SetFileSizes(media Media, fileSizes map[string]int) {
+	result, _ := json.Marshal(map[string]map[string]int{"FileSizes": fileSizes})
 	media.Scan(string(result))
 }
 

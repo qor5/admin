@@ -52,9 +52,9 @@ type Base struct {
 	Reader      io.Reader              `json:"-"`
 	Options     map[string]string      `json:",omitempty"`
 	cropped     bool
-	Width       int `json:",omitempty"`
-	Height      int `json:",omitempty"`
-	FileSize    int `json:",omitempty"`
+	Width       int            `json:",omitempty"`
+	Height      int            `json:",omitempty"`
+	FileSizes   map[string]int `json:",omitempty"`
 }
 
 // Scan scan files, crop options, db values into struct
@@ -222,6 +222,14 @@ func (b *Base) GetCropOption(name string) *image.Rectangle {
 		}
 	}
 	return nil
+}
+
+// GetFileSizes get file sizes
+func (b *Base) GetFileSizes() map[string]int {
+	if b.FileSizes != nil {
+		return b.FileSizes
+	}
+	return make(map[string]int)
 }
 
 // Retrieve retrieve file content with url

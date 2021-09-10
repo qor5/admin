@@ -178,6 +178,7 @@ func cropperPortalName(field string) string {
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
+	fileSize := f.FileSizes[thumb]
 	return VCard(
 		h.If(media.IsImageFormat(f.FileName),
 			VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
@@ -190,7 +191,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		h.If(size != nil,
 			VCardActions(
 				VChip(
-					thumbName(thumb, size),
+					thumbName(thumb, size, fileSize),
 				).Small(true).Attr("@click", web.Plaid().
 					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
 					Go()),
@@ -280,7 +281,11 @@ func cropImage(db *gorm.DB) web.EventFunc {
 		id := ctx.Event.ParamAsInt(1)
 		thumb := ctx.Event.Params[2]
 		cfg := stringToCfg(ctx.Event.Params[3])
-
+		mb := &media_library.MediaBox{}
+		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
+		if err != nil {
+			panic(err)
+		}
 		if len(cropOption) > 0 {
 			cropValue := cropper.Value{}
 			err = json.Unmarshal([]byte(cropOption), &cropValue)
@@ -313,13 +318,9 @@ func cropImage(db *gorm.DB) web.EventFunc {
 			if err != nil {
 				return
 			}
+			mb.FileSizes = m.File.FileSizes
 		}
 
-		mb := &media_library.MediaBox{}
-		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
-		if err != nil {
-			panic(err)
-		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, mb, field, cfg),
@@ -629,7 +630,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								Go(),
 							),
 						h.If(media.IsImageFormat(f.File.FileName),
-							fileSizes(f),
+							fileChips(f),
 						),
 					),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
@@ -666,36 +667,40 @@ func fileCroppingVarName(id uint) string {
 	return fmt.Sprintf("fileChooser%d_cropping", id)
 }
 
-func fileSizes(f *media_library.MediaLibrary) h.HTMLComponent {
+func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 	g := VChipGroup().Column(true)
 	text := "original"
 	if f.File.Width != 0 && f.File.Height != 0 {
 		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
 	}
-	if f.File.FileSize != 0 {
-		text = fmt.Sprintf("%s %s", text, media.ByteCountIEC(f.File.FileSize))
+	if f.File.FileSizes["original"] != 0 {
+		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
 	}
 	g.AppendChildren(
 		VChip(h.Text(text)).XSmall(true),
 	)
-	if len(f.File.Sizes) == 0 {
-		return g
-	}
+	//if len(f.File.Sizes) == 0 {
+	//	return g
+	//}
 
-	for k, size := range f.File.GetSizes() {
-		g.AppendChildren(
-			VChip(thumbName(k, size)).XSmall(true),
-		)
-	}
+	//for k, size := range f.File.GetSizes() {
+	//	g.AppendChildren(
+	//		VChip(thumbName(k, size)).XSmall(true),
+	//	)
+	//}
 	return g
 
 }
 
-func thumbName(name string, size *media.Size) h.HTMLComponent {
-	if size == nil {
-		return h.Text(fmt.Sprintf("%s", name))
+func thumbName(name string, size *media.Size, fileSize int) h.HTMLComponent {
+	text := fmt.Sprintf("%s", name)
+	if size != nil {
+		text = fmt.Sprintf("%s(%dx%d)", text, size.Width, size.Height)
 	}
-	return h.Text(fmt.Sprintf("%s(%dx%d)", name, size.Width, size.Height))
+	if fileSize != 0 {
+		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))
+	}
+	return h.Text(text)
 }
 
 type uploadFiles struct {
@@ -782,6 +787,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 			VideoLink:   "",
 			FileName:    m.File.FileName,
 			Description: m.File.Description,
+			FileSizes:   m.File.FileSizes,
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

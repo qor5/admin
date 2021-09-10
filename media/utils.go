@@ -68,8 +68,8 @@ func parseTagOption(str string) *Option {
 	return &option
 }
 
-func ByteCountIEC(b int) string {
-	const unit = 1024
+func ByteCountSI(b int) string {
+	const unit = 1000
 	if b < unit {
 		return fmt.Sprintf("%dB", b)
 	}
@@ -78,6 +78,11 @@ func ByteCountIEC(b int) string {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f%cB",
-		float64(b)/float64(div), "KMGTPE"[exp])
+	format := "%.1f%cB"
+	suffix := "kMGTPE"[exp]
+	if suffix == 'k' {
+		format = "%.f%cB"
+	}
+	return fmt.Sprintf(format,
+		float64(b)/float64(div), suffix)
 }

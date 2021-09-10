@@ -64,13 +64,15 @@ type MediaLibraryStorage struct {
 	Description  string
 }
 
+var QorPeviewSize = &media.Size{Width: 200, Height: 200}
+
 func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size {
 	if len(mediaLibraryStorage.Sizes) == 0 && !(mediaLibraryStorage.GetFileHeader() != nil || mediaLibraryStorage.Crop) {
 		return map[string]*media.Size{}
 	}
 
 	var sizes = map[string]*media.Size{
-		"@qor_preview": &media.Size{Width: 200, Height: 200},
+		"@qor_preview": QorPeviewSize,
 	}
 
 	for key, value := range mediaLibraryStorage.Sizes {
