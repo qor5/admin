@@ -37,7 +37,7 @@ func (mediaBox *MediaBox) Scan(data interface{}) (err error) {
 }
 
 func (mediaBox MediaBox) Value() (driver.Value, error) {
-	if mediaBox.ID.String() == "0" {
+	if mediaBox.ID.String() == "0" || mediaBox.ID.String() == "" {
 		return nil, nil
 	}
 	results, err := json.Marshal(mediaBox)
