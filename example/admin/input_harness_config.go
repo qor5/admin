@@ -15,7 +15,28 @@ import (
 func configInputHarness(b *presets.Builder, db *gorm.DB) {
 	harness := b.Model(&models.InputHarness{})
 
-	ed := harness.Editing()
+	ed := harness.Editing(
+		"TextField1",
+		"TextArea1",
+		"Switch1",
+		"Slider1",
+		"Select1",
+		//"RangeSlider1",
+		"Radio1",
+		"FileInput1",
+		"Combobox1",
+		"Checkbox1",
+		"Autocomplete1",
+		"ButtonGroup1",
+		"ChipGroup1",
+		//"ItemGroup1",
+		//"ListItemGroup1",
+		//"SlideGroup1",
+		//"ColorPicker1",
+		"DatePicker1",
+		//"DatePickerMonth1",
+		//"TimePicker1",
+	)
 
 	//TextField1       string
 	//TextArea1        string
@@ -111,9 +132,8 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 	ed.Field("Checkbox1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return VCheckbox().Label(field.Label).
-				Value(field.Value(obj)).InputValue(field.Value(obj)).
-				//Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
-				Attr(web.VFieldName(field.Name)...)
+				InputValue(field.Value(obj)).
+				FieldName(field.Name)
 		})
 
 	ed.Field("Autocomplete1").
@@ -123,5 +143,58 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"Tokyo", "Canberra", "Hangzhou"}).
 				//Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
 				FieldName(field.Name)
+		})
+
+	ed.Field("ButtonGroup1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VInput(
+
+				VBtnToggle(
+					VBtn("Left").Value("left").ActiveClass("deep-purple white--text"),
+					VBtn("Center").Value("center").ActiveClass("deep-purple white--text"),
+					VBtn("Right").Value("right").ActiveClass("deep-purple white--text"),
+					VBtn("Justify").Value("justify").ActiveClass("deep-purple white--text"),
+				).
+					Value(field.Value(obj)).
+					Class("pl-4").
+					Attr(web.VFieldName(field.Name)...),
+			).Label(field.Label)
+		})
+
+	ed.Field("ChipGroup1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VInput(
+
+				VChipGroup(
+					VChip(h.Text("Left")).Filter(true).Value("left").ActiveClass("deep-purple white--text"),
+					VChip(h.Text("Center")).Filter(true).Value("center").ActiveClass("deep-purple white--text"),
+					VChip(h.Text("Right")).Filter(true).Value("right").ActiveClass("deep-purple white--text"),
+					VChip(h.Text("Justify")).Filter(true).Value("justify").ActiveClass("deep-purple white--text"),
+				).
+					Value(field.Value(obj)).
+					Class("pl-4").
+					Attr(web.VFieldName(field.Name)...),
+			).Label(field.Label)
+		})
+
+	ed.Field("DatePicker1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(
+				VMenu(
+					web.Slot(
+						VTextField().Label(field.Label).
+							Value(field.Value(obj)).
+							Readonly(true).
+							PrependIcon("edit_calendar").
+							Attr("v-model", fmt.Sprintf("locals.%s", field.Name)).
+							Attr("v-bind", "attrs").
+							Attr("v-on", "on"),
+					).Name("activator").Scope("{ on, attrs }"),
+
+					VDatePicker().Attr(web.VFieldName(field.Name)...).
+						Attr("@input", fmt.Sprintf("locals.menu = false; locals.%s = $event", field.Name)),
+				).MaxWidth(290).
+					Attr("v-model", "locals.menu"),
+			).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, menu: false}`, field.Name, h.JSONString(field.Value(obj))))
 		})
 }
