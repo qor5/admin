@@ -26,6 +26,8 @@ import (
 
 type MediaBoxConfigKey int
 
+var MediaLibraryPerPage int64 = 39
+
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
@@ -147,7 +149,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	ctx := web.MustGetEventContext(c)
 	registerEventFuncs(ctx.Hub, b.db)
 
-	portalName := createPortalName(b.fieldName)
+	portalName := mainPortalName(b.fieldName)
 
 	return h.Components(
 		VSheet(
@@ -164,15 +166,28 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	).MarshalHTML(c)
 }
 
-func createPortalName(field string) string {
+func mainPortalName(field string) string {
 	return fmt.Sprintf("%s_portal", field)
 }
 
 func mediaBoxThumbnailsPortalName(field string) string {
 	return fmt.Sprintf("%s_portal_thumbnails", field)
 }
+
 func cropperPortalName(field string) string {
 	return fmt.Sprintf("%s_cropper_portal", field)
+}
+
+func dialogContentPortalName(field string) string {
+	return fmt.Sprintf("%s_dialog_content", field)
+}
+
+func searchKeywordName(field string) string {
+	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
+}
+
+func currentPageName(field string) string {
+	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
@@ -339,7 +354,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			row.AppendChildren(
 				VCol(
 					mediaBoxThumb(msgr, cfg, mediaBox, field, "original"),
-				).Cols(6).Sm(4).Xl(3).Class("pl-0"),
+				).Cols(6).Sm(4).Class("pl-0"),
 			)
 		} else {
 			var keys []string
@@ -353,7 +368,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				row.AppendChildren(
 					VCol(
 						mediaBoxThumb(msgr, cfg, mediaBox, field, k),
-					).Cols(6).Sm(4).Xl(3).Class("pl-0"),
+					).Cols(6).Sm(4).Class("pl-0"),
 				)
 			}
 		}
@@ -411,10 +426,6 @@ func MediaBoxListFunc() presets.FieldComponentFunc {
 	}
 }
 
-func dialogContentPortalName(field string) string {
-	return fmt.Sprintf("%s_dialog_content", field)
-}
-
 func deleteFileField() web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
@@ -425,13 +436,6 @@ func deleteFileField() web.EventFunc {
 		})
 		return
 	}
-}
-
-func searchKeywordName(field string) string {
-	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
-}
-func currentPageName(field string) string {
-	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 
 func stringToCfg(v string) *media_library.MediaBoxConfig {
@@ -453,7 +457,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
 
-		portalName := createPortalName(field)
+		portalName := mainPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: portalName,
 			Body: VDialog(
@@ -503,8 +507,6 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 	}
 }
 
-var MediaLibraryPerPage int64 = 39
-
 func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
@@ -551,21 +553,13 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				VCard(
 					VCardTitle(h.Text(msgr.UploadFiles)),
 					VIcon("backup").XLarge(true),
-					//VFileInput().
-					//	Class("justify-center").
-					//	Label("New Files").
-					//	Multiple(true).
-					//	FieldName("NewFiles").
-					//	PrependIcon("backup").
-					//	Height(50).
-					//	HideInput(true),
 					h.Input("").
 						Type("file").
 						Attr("multiple", true).
 						Style("display:none").
 						Attr("@change",
 							web.Plaid().
-								BeforeScript("vars.fileChooserUploadingFiles = $event.target.files").
+								BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
 								FieldValue("NewFiles", web.Var("$event")).
 								EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
 				).
@@ -586,10 +580,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				Class("d-flex align-center justify-center").
 				Height(200),
 		).
-			Attr("v-for", "f in vars.fileChooserUploadingFiles").
+			Attr("v-for", "f in locals.fileChooserUploadingFiles").
 			Cols(3),
 	).
-		Attr(web.InitContextVars, `{fileChooserUploadingFiles: []}`)
+		Attr(web.InitContextLocals, `{fileChooserUploadingFiles: []}`)
 
 	for _, f := range files {
 		_, needCrop := mergeNewSizes(f, cfg)
@@ -607,7 +601,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 										h.Span(msgr.Cropping).Class("text-h6 pl-2"),
 									).Class("d-flex align-center justify-center v-card--reveal white--text").
 										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
-										Attr("v-if", fmt.Sprintf("vars.%s", croppingVar)),
+										Attr("v-if", fmt.Sprintf("locals.%s", croppingVar)),
 								),
 							).Src(f.File.URL("@qor_preview")).Height(200),
 						).Else(
@@ -615,7 +609,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						),
 					).Attr("role", "button").
 						Attr("@click", web.Plaid().
-							BeforeScript(fmt.Sprintf("vars.%s = true", croppingVar)).
+							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
 							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 							Go()),
 					VCardText(
@@ -633,7 +627,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							fileChips(f),
 						),
 					),
-				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, croppingVar)),
+				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(3),
 		)
 	}
@@ -735,7 +729,6 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 		}
 
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
-		r.VarsScript = `vars.fileChooserUploadingFiles = []`
 		return
 	}
 }
@@ -793,8 +786,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg),
 		})
-		r.VarsScript = `vars.showFileChooser = false; ` + fmt.Sprintf("vars.%s = false", fileCroppingVarName(m.ID))
-
+		r.VarsScript = `vars.showFileChooser = false`
 		return
 	}
 }
