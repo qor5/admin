@@ -95,6 +95,7 @@ func NewConfig() (b *presets.Builder) {
 
 	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
 	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
+	configInputHarness(b, db)
 
 	_ = m
 	// Use m to customize the model, Or config more models here.

@@ -18,6 +18,7 @@ func ConnectDB() (db *gorm.DB) {
 	db.LogMode(true)
 	err = db.AutoMigrate(
 		&models.Post{},
+		&models.InputHarness{},
 		&media_library.MediaLibrary{},
 	).Error
 	if err != nil {
