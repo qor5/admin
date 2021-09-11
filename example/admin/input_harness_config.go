@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"fmt"
+	"io/ioutil"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
@@ -12,28 +15,7 @@ import (
 func configInputHarness(b *presets.Builder, db *gorm.DB) {
 	harness := b.Model(&models.InputHarness{})
 
-	ed := harness.Editing(
-		"TextField1",
-		"TextArea1",
-		"Switch1",
-		"Slider1",
-		"Select1",
-		//"RangeSlider1",
-		"Radio1",
-		"FileInput1",
-		"Combobox1",
-		"Checkbox1",
-		"Autocomplete1",
-		"ButtonGroup1",
-		"ChipGroup1",
-		"ItemGroup1",
-		"ListItemGroup1",
-		"SlideGroup1",
-		"ColorPicker1",
-		"DatePicker1",
-		"DatePickerMonth1",
-		"TimePicker1",
-	)
+	ed := harness.Editing()
 
 	//TextField1       string
 	//TextArea1        string
@@ -83,11 +65,11 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"Tokyo", "Canberra", "Hangzhou"})
 		})
 
-	ed.Field("RangeSlider1").
-		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VRangeSlider().Attr(web.VFieldName(field.Name)...).
-				Label(field.Label).Value(field.Value(obj))
-		})
+	//ed.Field("RangeSlider1").
+	//	ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	//		return VRangeSlider().Attr(web.VFieldName(field.Name)...).
+	//			Label(field.Label).Value(field.Value(obj))
+	//	})
 
 	ed.Field("Radio1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -97,5 +79,49 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 				VRadio().Value("3").Label("Hangzhou"),
 			).Label(field.Label).Value(field.Value(obj)).FieldName(field.Name)
 		})
+	ed.Field("FileInput1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VFileInput().Label(field.Label).Value(field.Value(obj)).FieldName(field.Name)
+		}).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			fs := ctx.R.MultipartForm.File[field.Name]
+			if len(fs) == 0 {
+				return
+			}
+			f, err := fs[0].Open()
+			if err != nil {
+				panic(err)
+			}
+			b, err := ioutil.ReadAll(f)
+			if err != nil {
+				panic(err)
+			}
+			obj.(*models.InputHarness).FileInput1 = fmt.Sprint(len(b))
 
+			return
+		})
+
+	ed.Field("Combobox1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VCombobox().Label(field.Label).Value(field.Value(obj)).
+				Attr(web.VFieldName(field.Name)...).
+				Items([]string{"Tokyo", "Canberra", "Hangzhou"})
+		})
+
+	ed.Field("Checkbox1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VCheckbox().Label(field.Label).
+				Value(field.Value(obj)).InputValue(field.Value(obj)).
+				//Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
+				Attr(web.VFieldName(field.Name)...)
+		})
+
+	ed.Field("Autocomplete1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VAutocomplete().Label(field.Label).
+				Value(field.Value(obj)).
+				Items([]string{"Tokyo", "Canberra", "Hangzhou"}).
+				//Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
+				FieldName(field.Name)
+		})
 }
