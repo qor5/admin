@@ -9,6 +9,7 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/picker"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -34,8 +35,8 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 		//"SlideGroup1",
 		//"ColorPicker1",
 		"DatePicker1",
-		//"DatePickerMonth1",
-		//"TimePicker1",
+		"DatePickerMonth1",
+		"TimePicker1",
 	)
 
 	//TextField1       string
@@ -179,22 +180,16 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("DatePicker1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Div(
-				VMenu(
-					web.Slot(
-						VTextField().Label(field.Label).
-							Value(field.Value(obj)).
-							Readonly(true).
-							PrependIcon("edit_calendar").
-							Attr("v-model", fmt.Sprintf("locals.%s", field.Name)).
-							Attr("v-bind", "attrs").
-							Attr("v-on", "on"),
-					).Name("activator").Scope("{ on, attrs }"),
+			return picker.Picker(VDatePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+		})
 
-					VDatePicker().Attr(web.VFieldName(field.Name)...).
-						Attr("@input", fmt.Sprintf("locals.menu = false; locals.%s = $event", field.Name)),
-				).MaxWidth(290).
-					Attr("v-model", "locals.menu"),
-			).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, menu: false}`, field.Name, h.JSONString(field.Value(obj))))
+	ed.Field("DatePickerMonth1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return picker.Picker(VDatePicker().Type("month")).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+		})
+
+	ed.Field("TimePicker1").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return picker.Picker(VTimePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
 }
