@@ -115,15 +115,17 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 }
 
 const (
-	openFileChooserEvent   = "mediaLibrary_OpenFileChooserEvent"
-	deleteFileEvent        = "mediaLibrary_DeleteFileEvent"
-	cropImageEvent         = "mediaLibrary_CropImageEvent"
-	loadImageCropperEvent  = "mediaLibrary_LoadImageCropperEvent"
-	imageSearchEvent       = "mediaLibrary_ImageSearchEvent"
-	imageJumpPageEvent     = "mediaLibrary_ImageJumpPageEvent"
-	uploadFileEvent        = "mediaLibrary_UploadFileEvent"
-	chooseFileEvent        = "mediaLibrary_ChooseFileEvent"
-	updateDescriptionEvent = "mediaLibrary_UpdateDescriptionEvent"
+	openFileChooserEvent    = "mediaLibrary_OpenFileChooserEvent"
+	deleteFileEvent         = "mediaLibrary_DeleteFileEvent"
+	cropImageEvent          = "mediaLibrary_CropImageEvent"
+	loadImageCropperEvent   = "mediaLibrary_LoadImageCropperEvent"
+	imageSearchEvent        = "mediaLibrary_ImageSearchEvent"
+	imageJumpPageEvent      = "mediaLibrary_ImageJumpPageEvent"
+	uploadFileEvent         = "mediaLibrary_UploadFileEvent"
+	chooseFileEvent         = "mediaLibrary_ChooseFileEvent"
+	updateDescriptionEvent  = "mediaLibrary_UpdateDescriptionEvent"
+	deleteConfirmationEvent = "mediaLibrary_DeleteConfirmationEvent"
+	doDeleteEvent           = "mediaLibrary_DoDelete"
 )
 
 func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
@@ -136,6 +138,8 @@ func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
 	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db))
 	hub.RegisterEventFunc(chooseFileEvent, chooseFile(db))
 	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db))
+	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(db))
+	hub.RegisterEventFunc(doDeleteEvent, doDelete(db))
 }
 
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
@@ -168,6 +172,10 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 
 func mainPortalName(field string) string {
 	return fmt.Sprintf("%s_portal", field)
+}
+
+func deleteConfirmPortalName(field string) string {
+	return fmt.Sprintf("%s_deleteConfirm_portal", field)
 }
 
 func mediaBoxThumbnailsPortalName(field string) string {
@@ -219,6 +227,66 @@ func fileThumb(filename string) h.HTMLComponent {
 	return h.Div(
 		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
 	).Class("d-flex align-center justify-center")
+}
+
+func deleteConfirmation(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		field := ctx.Event.Params[0]
+		id := ctx.Event.Params[1]
+		cfg := ctx.Event.Params[2]
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: deleteConfirmPortalName(field),
+			Body: VDialog(
+				VCard(
+					VCardTitle(h.Text(msgr.DeleteConfirmationText(id))),
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Cancel).
+							Depressed(true).
+							Class("ml-2").
+							On("click", "vars.mediaLibrary_deleteConfirmation = false"),
+
+						VBtn(msgr.Delete).
+							Color("primary").
+							Depressed(true).
+							Dark(true).
+							Attr("@click", web.Plaid().
+								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg))).
+								Go()),
+					),
+				),
+			).MaxWidth("600px").
+				Attr("v-model", "vars.mediaLibrary_deleteConfirmation").
+				Attr(web.InitContextVars, `{mediaLibrary_deleteConfirmation: false}`),
+		})
+
+		r.VarsScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
+		return
+	}
+}
+func doDelete(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		field := ctx.Event.Params[0]
+		id := ctx.Event.Params[1]
+		cfg := ctx.Event.Params[2]
+
+		err = db.Delete(&media_library.MediaLibrary{}, "id = ?", id).Error
+		if err != nil {
+			panic(err)
+		}
+
+		renderFileChooserDialogContent(
+			ctx,
+			&r,
+			field,
+			db,
+			stringToCfg(cfg),
+		)
+		r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
+		return
+	}
 }
 
 func loadImageCropper(db *gorm.DB) web.EventFunc {
@@ -490,7 +558,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 						//MaxHeight(64).
 						Flat(true).
 						Dark(true),
-
+					web.Portal().Name(deleteConfirmPortalName(field)),
 					web.Portal(
 						fileChooserDialogContent(db, field, ctx, cfg),
 					).Name(dialogContentPortalName(field)),
@@ -632,6 +700,16 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						h.If(media.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
+					),
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Delete).
+							Text(true).
+							Attr("@click",
+								web.Plaid().
+									EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+									Go(),
+							),
 					),
 				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(3),
