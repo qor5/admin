@@ -3,16 +3,14 @@ package pages
 import (
 	"log"
 
-	"github.com/qor/qor5/media/media_library"
-
-	"github.com/qor/qor5/richeditor"
-
 	"github.com/goplaid/web"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/media"
+	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -43,10 +41,16 @@ func Settings(db *gorm.DB) web.PageFunc {
 							}),
 					).Cols(6),
 				),
+
 				VRow(
 					VCol(
-						richeditor.RichEditor(db, "Body").ToolbarFixedTarget(".v-main__wrap>div").Plugins([]string{"alignment", "video", "table", "imageinsert"}).Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
-						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).Label("Body").Placeholder("Place Holder"),
+						richeditor.RichEditor(db, "Body").
+							ToolbarFixedTarget(".v-main__wrap>div").
+							Plugins([]string{"alignment", "video", "table", "imageinsert"}).
+							Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
+						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).
+							Label("Body").
+							Placeholder("Place Holder"),
 					),
 				),
 

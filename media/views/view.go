@@ -547,6 +547,11 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		panic(err)
 	}
 
+	fileAccept := "*/*"
+	if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
+		fileAccept = "image/*"
+	}
+
 	row := VRow(
 		VCol(
 			h.Label("").Children(
@@ -554,6 +559,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					VCardTitle(h.Text(msgr.UploadFiles)),
 					VIcon("backup").XLarge(true),
 					h.Input("").
+						Attr("accept", fileAccept).
 						Type("file").
 						Attr("multiple", true).
 						Style("display:none").
