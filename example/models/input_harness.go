@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/qor/qor5/media/media_library"
 )
 
 type InputHarness struct {
@@ -28,6 +29,7 @@ type InputHarness struct {
 	DatePicker1      string
 	DatePickerMonth1 string
 	TimePicker1      string
+	MediaLibrary1    media_library.MediaBox `sql:"type:text;"`
 	UpdatedAt        time.Time
 	CreatedAt        time.Time
 }

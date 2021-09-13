@@ -9,6 +9,9 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/media"
+	"github.com/qor/qor5/media/media_library"
+	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/picker"
 	h "github.com/theplant/htmlgo"
 )
@@ -37,6 +40,7 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 		"DatePicker1",
 		"DatePickerMonth1",
 		"TimePicker1",
+		"MediaLibrary1",
 	)
 
 	//TextField1       string
@@ -59,6 +63,7 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 	//DatePicker1      string
 	//DatePickerMonth1 string
 	//TimePicker1      string
+	//MediaLibrary1    media_library.MediaBox
 
 	ed.Field("TextField1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -192,4 +197,21 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return picker.Picker(VTimePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
+
+	ed.Field("MediaLibrary1").
+		WithContextValue(
+			media_view.MediaBoxConfig,
+			&media_library.MediaBoxConfig{
+				AllowType: "image",
+				Sizes: map[string]*media.Size{
+					"thumb": {
+						Width:  400,
+						Height: 300,
+					},
+					"main": {
+						Width:  800,
+						Height: 500,
+					},
+				},
+			})
 }
