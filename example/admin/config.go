@@ -2,6 +2,7 @@ package admin
 
 import (
 	"embed"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -31,8 +32,8 @@ func NewConfig() (b *presets.Builder) {
 	sess := session.Must(session.NewSession())
 
 	oss.Storage = s3.New(&s3.Config{
-		Bucket:  "test-juice",
-		Region:  "ap-northeast-1",
+		Bucket:  os.Getenv("S3_Bucket"),
+		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
 
