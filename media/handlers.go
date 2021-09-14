@@ -15,6 +15,7 @@ import (
 )
 
 var mediaHandlers = make(map[string]MediaHandler)
+var DefaultSizeKey = "default"
 
 // MediaHandler media library handler interface, defined which files could be handled, and the handler
 type MediaHandler interface {
@@ -97,19 +98,20 @@ func resizeImageTo(img image.Image, size *Size, format imaging.Format) image.Ima
 }
 
 func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err error) {
-	var fileBuffer bytes.Buffer
 	if fileBytes, err := ioutil.ReadAll(file); err == nil {
-		fileBuffer.Write(fileBytes)
 		fileSizes := media.GetFileSizes()
-		fileSizes["original"] = len(fileBytes)
-		if err = media.Store(media.URL("original"), option, &fileBuffer); err == nil {
+		originalFileSize := len(fileBytes)
+		fileSizes["original"] = originalFileSize
+		file.Seek(0, 0)
+		if err = media.Store(media.URL("original"), option, file); err == nil {
 			file.Seek(0, 0)
 
 			if format, err := GetImageFormat(media.URL()); err == nil {
 				if *format == imaging.GIF {
 					var buffer bytes.Buffer
 					if g, err := gif.DecodeAll(file); err == nil {
-						if cropOption := media.GetCropOption("original"); cropOption != nil {
+						SetWeightHeight(media, g.Config.Width, g.Config.Height)
+						if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
 							for i := range g.Image {
 								img := imaging.Crop(g.Image[i], *cropOption)
 								g.Image[i] = image.NewPaletted(img.Rect, g.Image[i].Palette)
@@ -122,6 +124,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 						}
 
 						gif.EncodeAll(&buffer, g)
+						fileSizes[DefaultSizeKey] = buffer.Len()
 						media.Store(media.URL(), option, &buffer)
 					} else {
 						return err
@@ -129,7 +132,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 
 					// save sizes image
 					for key, size := range media.GetSizes() {
-						if key == "original" {
+						if key == DefaultSizeKey {
 							continue
 						}
 
@@ -145,31 +148,33 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 								draw.Draw(g.Image[i], image.Rect(0, 0, size.Width, size.Height), img, image.Pt(0, 0), draw.Src)
 							}
 
-							var result bytes.Buffer
+							var buffer bytes.Buffer
 							g.Config.Width = size.Width
 							g.Config.Height = size.Height
-							gif.EncodeAll(&result, g)
-							media.Store(media.URL(key), option, &result)
+							gif.EncodeAll(&buffer, g)
+							fileSizes[key] = buffer.Len()
+							media.Store(media.URL(key), option, &buffer)
 						}
 					}
 				} else {
 					if img, _, err := image.Decode(file); err == nil {
 						SetWeightHeight(media, img.Bounds().Dx(), img.Bounds().Dy())
 						// Save cropped default image
-						if cropOption := media.GetCropOption("original"); cropOption != nil {
+						if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
 							var buffer bytes.Buffer
 							imaging.Encode(&buffer, imaging.Crop(img, *cropOption), *format)
+							fileSizes[DefaultSizeKey] = buffer.Len()
 							media.Store(media.URL(), option, &buffer)
 						} else {
+							file.Seek(0, 0)
 							// Save default image
-							var buffer bytes.Buffer
-							imaging.Encode(&buffer, img, *format)
-							media.Store(media.URL(), option, &buffer)
+							fileSizes[DefaultSizeKey] = originalFileSize
+							media.Store(media.URL(), option, file)
 						}
 
 						// save sizes image
 						for key, size := range media.GetSizes() {
-							if key == "original" {
+							if key == DefaultSizeKey {
 								continue
 							}
 
@@ -182,7 +187,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 							fileSizes[key] = buffer.Len()
 							media.Store(media.URL(key), option, &buffer)
 						}
-						SetFileSizes(media, fileSizes)
+
 					} else {
 						return err
 					}
@@ -191,6 +196,7 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 		} else {
 			return err
 		}
+		SetFileSizes(media, fileSizes)
 	}
 
 	return err

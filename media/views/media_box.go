@@ -143,19 +143,23 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
+	url := f.URL(thumb)
+	if thumb == media.DefaultSizeKey {
+		url = f.URL()
+	}
 	return VCard(
 		h.If(media.IsImageFormat(f.FileName),
-			VImg().Src(fmt.Sprintf("%s?%d", f.URL(thumb), time.Now().UnixNano())).Height(150),
+			VImg().Src(fmt.Sprintf("%s?%d", url, time.Now().UnixNano())).Height(150),
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),
 				h.A().Text(f.FileName).Href(f.Url).Target("_blank"),
 			).Style("text-align:center"),
 		),
-		h.If(size != nil,
+		h.If(size != nil || thumb == media.DefaultSizeKey,
 			VCardActions(
 				VChip(
-					thumbName(thumb, size, fileSize),
+					thumbName(thumb, size, fileSize, f),
 				).Small(true).Attr("@click", web.Plaid().
 					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
 					Go()),
@@ -239,7 +243,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, cfg, mediaBox, field, "original"),
+					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey),
 				).Cols(6).Sm(4).Class("pl-0"),
 			)
 		} else {
@@ -337,35 +341,13 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 	return &cfg
 }
 
-func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
-	g := VChipGroup().Column(true)
-	text := "original"
-	if f.File.Width != 0 && f.File.Height != 0 {
-		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
-	}
-	if f.File.FileSizes["original"] != 0 {
-		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
-	}
-	g.AppendChildren(
-		VChip(h.Text(text)).XSmall(true),
-	)
-	//if len(f.File.Sizes) == 0 {
-	//	return g
-	//}
-
-	//for k, size := range f.File.GetSizes() {
-	//	g.AppendChildren(
-	//		VChip(thumbName(k, size)).XSmall(true),
-	//	)
-	//}
-	return g
-
-}
-
-func thumbName(name string, size *media.Size, fileSize int) h.HTMLComponent {
-	text := fmt.Sprintf("%s", name)
+func thumbName(name string, size *media.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
+	text := name
 	if size != nil {
 		text = fmt.Sprintf("%s(%dx%d)", text, size.Width, size.Height)
+	}
+	if name == media.DefaultSizeKey {
+		text = fmt.Sprintf("%s(%dx%d)", text, f.Width, f.Height)
 	}
 	if fileSize != 0 {
 		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))

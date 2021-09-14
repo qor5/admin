@@ -23,6 +23,9 @@ type MediaBox struct {
 	FileName    string
 	Description string
 	FileSizes   map[string]int `json:",omitempty"`
+	// for default image
+	Width  int `json:",omitempty"`
+	Height int `json:",omitempty"`
 }
 
 // MediaBoxConfig configure MediaBox metas

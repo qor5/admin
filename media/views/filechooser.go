@@ -183,7 +183,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 							Go()),
 					VCardText(
-						h.A().Text(f.File.FileName).Href(f.File.Url).Target("_blank"),
+						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
 						h.Input("").
 							Style("width: 100%;").
 							Placeholder(msgr.DescriptionForAccessibility).
@@ -235,6 +235,31 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			VCol().Cols(1),
 		).Fluid(true),
 	).Attr(web.InitContextVars, `{snackbarShow: false}`)
+}
+
+func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
+	g := VChipGroup().Column(true)
+	text := "original"
+	if f.File.Width != 0 && f.File.Height != 0 {
+		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
+	}
+	if f.File.FileSizes["original"] != 0 {
+		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
+	}
+	g.AppendChildren(
+		VChip(h.Text(text)).XSmall(true),
+	)
+	//if len(f.File.Sizes) == 0 {
+	//	return g
+	//}
+
+	//for k, size := range f.File.GetSizes() {
+	//	g.AppendChildren(
+	//		VChip(thumbName(k, size)).XSmall(true),
+	//	)
+	//}
+	return g
+
 }
 
 type uploadFiles struct {
@@ -320,6 +345,8 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 			FileName:    m.File.FileName,
 			Description: m.File.Description,
 			FileSizes:   m.File.FileSizes,
+			Width:       m.File.Width,
+			Height:      m.File.Height,
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

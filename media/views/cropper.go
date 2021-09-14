@@ -33,16 +33,18 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 		moption := m.GetMediaOption()
 
 		size := moption.Sizes[thumb]
-		if size == nil {
+		if size == nil && thumb != media.DefaultSizeKey {
 			return
 		}
 
 		c := cropper.Cropper().
 			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
-			AspectRatio(float64(size.Width), float64(size.Height)).
 			Attr("@input", web.Plaid().
 				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
 				String())
+		if size != nil {
+			c.AspectRatio(float64(size.Width), float64(size.Height))
+		}
 		//Attr("style", "max-width: 800px; max-height: 600px;")
 
 		cropOption := moption.CropOptions[thumb]
@@ -128,6 +130,10 @@ func cropImage(db *gorm.DB) web.EventFunc {
 				return
 			}
 			mb.FileSizes = m.File.FileSizes
+			if thumb == media.DefaultSizeKey {
+				mb.Width = int(cropValue.Width)
+				mb.Height = int(cropValue.Height)
+			}
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

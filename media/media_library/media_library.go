@@ -3,11 +3,17 @@ package media_library
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
+	"path"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/oss"
 )
+
+var QorPeviewSizeName = "@qor_preview"
+var QorPeviewSize = &media.Size{Width: 200, Height: 200}
 
 type MediaLibrary struct {
 	gorm.Model
@@ -64,15 +70,13 @@ type MediaLibraryStorage struct {
 	Description  string
 }
 
-var QorPeviewSize = &media.Size{Width: 200, Height: 200}
-
 func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size {
 	if len(mediaLibraryStorage.Sizes) == 0 && !(mediaLibraryStorage.GetFileHeader() != nil || mediaLibraryStorage.Crop) {
 		return map[string]*media.Size{}
 	}
 
 	var sizes = map[string]*media.Size{
-		"@qor_preview": QorPeviewSize,
+		QorPeviewSizeName: QorPeviewSize,
 	}
 
 	for key, value := range mediaLibraryStorage.Sizes {
@@ -104,17 +108,23 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 				// }
 
 				for key, value := range sizeOptions {
-					if key != "original" {
-						if _, ok := mediaLibraryStorage.Sizes[key]; !ok {
-							mediaLibraryStorage.Sizes[key] = value
-						}
+					if key == media.DefaultSizeKey {
+						continue
 					}
+					if _, ok := mediaLibraryStorage.Sizes[key]; !ok {
+						mediaLibraryStorage.Sizes[key] = value
+					}
+
 				}
 
 				for key, value := range mediaLibraryStorage.CropOptions {
+					if key == media.DefaultSizeKey {
+						continue
+					}
 					if _, ok := mediaLibraryStorage.Sizes[key]; !ok {
 						mediaLibraryStorage.Sizes[key] = &media.Size{Width: value.Width, Height: value.Height}
 					}
+
 				}
 			}
 		}
@@ -135,4 +145,12 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 	results, err := json.Marshal(mediaLibraryStorage)
 	return string(results), err
+}
+
+func (mediaLibraryStorage MediaLibraryStorage) URL(styles ...string) string {
+	if mediaLibraryStorage.Url != "" && len(styles) > 0 {
+		ext := path.Ext(mediaLibraryStorage.Url)
+		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0], ext)
+	}
+	return mediaLibraryStorage.Url
 }
