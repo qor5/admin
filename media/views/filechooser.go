@@ -15,10 +15,6 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-func fileCroppingVarName(id uint) string {
-	return fmt.Sprintf("fileChooser%d_cropping", id)
-}
-
 func fileChooser(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)

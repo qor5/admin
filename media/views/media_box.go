@@ -111,34 +111,6 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 	return b
 }
 
-const (
-	openFileChooserEvent    = "mediaLibrary_OpenFileChooserEvent"
-	deleteFileEvent         = "mediaLibrary_DeleteFileEvent"
-	cropImageEvent          = "mediaLibrary_CropImageEvent"
-	loadImageCropperEvent   = "mediaLibrary_LoadImageCropperEvent"
-	imageSearchEvent        = "mediaLibrary_ImageSearchEvent"
-	imageJumpPageEvent      = "mediaLibrary_ImageJumpPageEvent"
-	uploadFileEvent         = "mediaLibrary_UploadFileEvent"
-	chooseFileEvent         = "mediaLibrary_ChooseFileEvent"
-	updateDescriptionEvent  = "mediaLibrary_UpdateDescriptionEvent"
-	deleteConfirmationEvent = "mediaLibrary_DeleteConfirmationEvent"
-	doDeleteEvent           = "mediaLibrary_DoDelete"
-)
-
-func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
-	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(db))
-	hub.RegisterEventFunc(deleteFileEvent, deleteFileField())
-	hub.RegisterEventFunc(cropImageEvent, cropImage(db))
-	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(db))
-	hub.RegisterEventFunc(imageSearchEvent, searchFile(db))
-	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(db))
-	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db))
-	hub.RegisterEventFunc(chooseFileEvent, chooseFile(db))
-	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db))
-	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(db))
-	hub.RegisterEventFunc(doDeleteEvent, doDelete(db))
-}
-
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if len(b.fieldName) == 0 {
 		panic("FieldName required")
@@ -165,34 +137,6 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 			Rounded(true).
 			Attr(web.InitContextVars, `{showFileChooser: false}`),
 	).MarshalHTML(c)
-}
-
-func mainPortalName(field string) string {
-	return fmt.Sprintf("%s_portal", field)
-}
-
-func deleteConfirmPortalName(field string) string {
-	return fmt.Sprintf("%s_deleteConfirm_portal", field)
-}
-
-func mediaBoxThumbnailsPortalName(field string) string {
-	return fmt.Sprintf("%s_portal_thumbnails", field)
-}
-
-func cropperPortalName(field string) string {
-	return fmt.Sprintf("%s_cropper_portal", field)
-}
-
-func dialogContentPortalName(field string) string {
-	return fmt.Sprintf("%s_dialog_content", field)
-}
-
-func searchKeywordName(field string) string {
-	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
-}
-
-func currentPageName(field string) string {
-	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
