@@ -4,5 +4,5 @@ local dc = c {
 };
 
 dc.build_apps_image('qor5/example', [
-  {name: 'example', dockerfile: './example/Dockerfile', context: '../'},
+  { name: 'example', dockerfile: './example/Dockerfile', context: './' },
 ])
