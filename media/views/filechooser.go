@@ -139,7 +139,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					Attr("v-ripple", true),
 			),
 		).
-			Cols(3),
+			Cols(6).Sm(4).Md(3),
 
 		VCol(
 			VCard(
@@ -151,7 +151,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				Height(200),
 		).
 			Attr("v-for", "f in locals.fileChooserUploadingFiles").
-			Cols(3),
+			Cols(6).Sm(4).Md(3),
 	).
 		Attr(web.InitContextLocals, `{fileChooserUploadingFiles: []}`)
 
@@ -208,7 +208,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							),
 					),
 				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
-			).Cols(3),
+			).Cols(6).Sm(4).Md(3),
 		)
 	}
 
