@@ -10,6 +10,13 @@ type CropperBuilder struct {
 	tag *h.HTMLTagBuilder
 }
 
+const (
+	VIEW_MODE_NO_RESTRICTIONS      = 0
+	VIEW_MODE_RESTRICT_CROP_BOX    = 1
+	VIEW_MODE_FIT_WITHIN_CONTAINER = 2
+	VIEW_MODE_FILL_FIT_CONTAINER   = 3
+)
+
 // {"x":1141.504660866477,"y":540.6135919744316,"width":713.7745472301137,"height":466.93834339488643,"rotate":0,"scaleX":1,"scaleY":1}
 type Value struct {
 	X      float64 `json:"x"`
@@ -36,6 +43,11 @@ func (b *CropperBuilder) Src(v string) (r *CropperBuilder) {
 
 func (b *CropperBuilder) AspectRatio(width float64, height float64) (r *CropperBuilder) {
 	b.tag.Attr(":aspect-ratio", width/height)
+	return b
+}
+
+func (b *CropperBuilder) ViewMode(viewMode int) (r *CropperBuilder) {
+	b.tag.Attr(":view-mode", viewMode)
 	return b
 }
 

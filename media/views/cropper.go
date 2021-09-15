@@ -39,6 +39,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 
 		c := cropper.Cropper().
 			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
+			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			Attr("@input", web.Plaid().
 				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
 				String())
