@@ -51,6 +51,11 @@ func (b *CropperBuilder) ViewMode(viewMode int) (r *CropperBuilder) {
 	return b
 }
 
+func (b *CropperBuilder) AutoCropArea(autoCropArea float64) (r *CropperBuilder) {
+	b.tag.Attr(":auto-crop-area", autoCropArea)
+	return b
+}
+
 func (b *CropperBuilder) Alt(v string) (r *CropperBuilder) {
 	b.tag.Attr(":alt", h.JSONString(v))
 	return b
