@@ -23,6 +23,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 		id := ctx.Event.ParamAsInt(1)
 		thumb := ctx.Event.Params[2]
 		cfg := ctx.Event.Params[3]
+		permRN := parseStringSlice(ctx.Event.Params[4])
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -70,7 +71,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 							Attr(":loading", "locals.cropping").
 							Attr("@click", web.Plaid().
 								BeforeScript("locals.cropping = true").
-								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg))).
+								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg)), h.JSONString(permRN)).
 								Go()),
 					).Class("pl-2 pr-2"),
 					VCardText(
@@ -94,6 +95,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 		id := ctx.Event.ParamAsInt(1)
 		thumb := ctx.Event.Params[2]
 		cfg := stringToCfg(ctx.Event.Params[3])
+		permRN := parseStringSlice(ctx.Event.Params[4])
 		mb := &media_library.MediaBox{}
 		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
 		if err != nil {
@@ -140,7 +142,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, mb, field, cfg),
+			Body: mediaBoxThumbnails(ctx, mb, field, cfg, permRN),
 		})
 		return
 	}

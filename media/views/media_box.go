@@ -10,6 +10,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
@@ -28,7 +29,9 @@ var MediaLibraryPerPage int64 = 39
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
-func Configure(b *presets.Builder, db *gorm.DB) {
+var permVerifier *perm.Verifier
+
+func Configure(b *presets.Builder, db *gorm.DB, permBuilder *perm.Builder, permVerbose bool) {
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxComponentFunc(db)).
@@ -38,7 +41,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxListFunc())
 
-	registerEventFuncs(b.GetWebBuilder(), db)
+	permVerifier = perm.Module("media_library", permBuilder).Verbose(permVerbose)
+	registerEventFuncs(b.GetWebBuilder(), db, permVerifier)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
@@ -53,7 +57,8 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 			FieldName(field.Name).
 			Value(&mediaBox).
 			Label(field.Label).
-			Config(cfg)
+			Config(cfg).
+			PermRN(perm.ToPermRN(obj))
 	}
 }
 
@@ -77,16 +82,19 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 }
 
 type QMediaBoxBuilder struct {
-	fieldName string
-	label     string
-	value     *media_library.MediaBox
-	config    *media_library.MediaBoxConfig
-	db        *gorm.DB
+	fieldName    string
+	label        string
+	value        *media_library.MediaBox
+	config       *media_library.MediaBoxConfig
+	db           *gorm.DB
+	permVerifier *perm.Verifier
+	permRN       []string
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
 	r = &QMediaBoxBuilder{
-		db: db,
+		db:           db,
+		permVerifier: permVerifier,
 	}
 	return
 }
@@ -111,6 +119,11 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 	return b
 }
 
+func (b *QMediaBoxBuilder) PermRN(v []string) (r *QMediaBoxBuilder) {
+	b.permRN = v
+	return b
+}
+
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if len(b.fieldName) == 0 {
 		panic("FieldName required")
@@ -120,7 +133,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	}
 
 	ctx := web.MustGetEventContext(c)
-	registerEventFuncs(ctx.Hub, b.db)
+	registerEventFuncs(ctx.Hub, b.db, b.permVerifier)
 
 	portalName := mainPortalName(b.fieldName)
 
@@ -130,7 +143,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config),
+				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.permRN),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
@@ -140,7 +153,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
-	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
+	f *media_library.MediaBox, field string, thumb string, permRN []string) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
 	url := f.URL(thumb)
@@ -161,7 +174,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				VChip(
 					thumbName(thumb, size, fileSize, f),
 				).Small(true).Attr("@click", web.Plaid().
-					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
+					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg), h.JSONString(permRN)).
 					Go()),
 			),
 		),
@@ -180,6 +193,8 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 		field := ctx.Event.Params[0]
 		id := ctx.Event.Params[1]
 		cfg := ctx.Event.Params[2]
+		resourceName := ctx.Event.Params[3]
+		resourceID := ctx.Event.Params[4]
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
@@ -198,7 +213,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 							Depressed(true).
 							Dark(true).
 							Attr("@click", web.Plaid().
-								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg))).
+								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg)), resourceName, resourceID).
 								Go()),
 					),
 				),
@@ -211,11 +226,16 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-func doDelete(db *gorm.DB) web.EventFunc {
+func doDelete(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		id := ctx.Event.Params[1]
 		cfg := ctx.Event.Params[2]
+		permRN := parseStringSlice(ctx.Event.Params[3])
+
+		if err = permVerifier.Do(PermDelete).On(permRN...).On(field).On("media_libraries", id).WithReq(ctx.R).IsAllowed(); err != nil {
+			return
+		}
 
 		err = db.Delete(&media_library.MediaLibrary{}, "id = ?", id).Error
 		if err != nil {
@@ -228,13 +248,15 @@ func doDelete(db *gorm.DB) web.EventFunc {
 			field,
 			db,
 			stringToCfg(cfg),
+			permVerifier,
+			permRN,
 		)
 		r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
 		return
 	}
 }
 
-func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, permRN []string) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
@@ -243,7 +265,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey),
+					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey, permRN),
 				).Cols(6).Sm(4).Class("pl-0"),
 			)
 		} else {
@@ -257,7 +279,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(msgr, cfg, mediaBox, field, k),
+						mediaBoxThumb(msgr, cfg, mediaBox, field, k, permRN),
 					).Cols(6).Sm(4).Class("pl-0"),
 				)
 			}
@@ -300,11 +322,11 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 		VBtn(msgr.ChooseFile).
 			Depressed(true).
-			OnClick(openFileChooserEvent, field, h.JSONString(cfg)),
+			OnClick(openFileChooserEvent, field, h.JSONString(cfg), h.JSONString(permRN)),
 		h.If(mediaBox != nil && mediaBox.ID.String() != "",
 			VBtn(msgr.Delete).
 				Depressed(true).
-				OnClick(deleteFileEvent, field, h.JSONString(cfg)),
+				OnClick(deleteFileEvent, field, h.JSONString(cfg), h.JSONString(permRN)),
 		),
 	)
 }
@@ -320,9 +342,10 @@ func deleteFileField() web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
+		permRN := parseStringSlice(ctx.Event.Params[2])
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, permRN),
 		})
 		return
 	}
@@ -341,6 +364,19 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 	return &cfg
 }
 
+func parseStringSlice(v string) (r []string) {
+	if v == "" {
+		return nil
+	}
+
+	err := json.Unmarshal([]byte(v), &r)
+	if err != nil {
+		panic(err)
+	}
+
+	return r
+}
+
 func thumbName(name string, size *media.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
 	text := name
 	if size != nil {
@@ -355,10 +391,15 @@ func thumbName(name string, size *media.Size, fileSize int, f *media_library.Med
 	return h.Text(text)
 }
 
-func updateDescription(db *gorm.DB) web.EventFunc {
+func updateDescription(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		//field := ctx.Event.Params[0]
+		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
+		permRN := parseStringSlice(ctx.Event.Params[2])
+
+		if err = permVerifier.Do(PermUpdateDesc).On(permRN...).On(field).On("media_libraries", ctx.Event.Params[1]).WithReq(ctx.R).IsAllowed(); err != nil {
+			return
+		}
 
 		var media media_library.MediaLibrary
 		if err = db.Find(&media, id).Error; err != nil {

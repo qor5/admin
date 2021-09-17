@@ -2,6 +2,7 @@ package views
 
 import (
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/jinzhu/gorm"
 )
 
@@ -19,16 +20,16 @@ const (
 	doDeleteEvent           = "mediaLibrary_DoDelete"
 )
 
-func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
-	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(db))
+func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB, permVerifier *perm.Verifier) {
+	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(db, permVerifier))
 	hub.RegisterEventFunc(deleteFileEvent, deleteFileField())
 	hub.RegisterEventFunc(cropImageEvent, cropImage(db))
 	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(db))
-	hub.RegisterEventFunc(imageSearchEvent, searchFile(db))
-	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(db))
-	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db))
+	hub.RegisterEventFunc(imageSearchEvent, searchFile(db, permVerifier))
+	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(db, permVerifier))
+	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db, permVerifier))
 	hub.RegisterEventFunc(chooseFileEvent, chooseFile(db))
-	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db))
+	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db, permVerifier))
 	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(db))
-	hub.RegisterEventFunc(doDeleteEvent, doDelete(db))
+	hub.RegisterEventFunc(doDeleteEvent, doDelete(db, permVerifier))
 }

@@ -35,6 +35,7 @@ type RichEditorBuilder struct {
 	setPlugins            bool
 	toolbarFixedTarget    string
 	setToolbarFixedTarget bool
+	permRN                []string
 }
 
 func RichEditor(db *gorm.DB, name string) (r *RichEditorBuilder) {
@@ -69,6 +70,11 @@ func (b *RichEditorBuilder) ToolbarFixedTarget(v string) (r *RichEditorBuilder) 
 	return b
 }
 
+func (b *RichEditorBuilder) PermRN(v []string) (r *RichEditorBuilder) {
+	b.permRN = v
+	return b
+}
+
 func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	p := Plugins
 	if b.setPlugins {
@@ -87,7 +93,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
-				}),
+				}).PermRN(b.permRN),
 			).Class("hidden-screen-only"),
 		).Class("pb-4").Rounded(true).Attr("data-type", "redactor"),
 	)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gormop"
 	"github.com/goplaid/x/vuetify"
@@ -61,7 +62,7 @@ func NewConfig() (b *presets.Builder) {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
-	media_view.Configure(b, db)
+	media_view.Configure(b, db, tempPermBuilder, true)
 	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
@@ -91,7 +92,7 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
+		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label).PermRN(perm.ToPermRN(obj))
 	})
 
 	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)

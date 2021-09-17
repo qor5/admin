@@ -8,6 +8,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/perm"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/media"
@@ -15,11 +16,12 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-func fileChooser(db *gorm.DB) web.EventFunc {
+func fileChooser(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
+		permRN := parseStringSlice(ctx.Event.Params[2])
 
 		portalName := mainPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -46,7 +48,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 								HideDetails(true).
 								Value("").
 								Attr("@keyup.enter", web.Plaid().
-									EventFunc(imageSearchEvent, field, h.JSONString(cfg)).
+									EventFunc(imageSearchEvent, field, h.JSONString(cfg), h.JSONString(permRN)).
 									FieldValue(searchKeywordName(field), web.Var("$event")).
 									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
@@ -56,7 +58,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 						Dark(true),
 					web.Portal().Name(deleteConfirmPortalName(field)),
 					web.Portal(
-						fileChooserDialogContent(db, field, ctx, cfg),
+						fileChooserDialogContent(db, field, ctx, cfg, permVerifier, permRN),
 					).Name(dialogContentPortalName(field)),
 				).Tile(true),
 			).
@@ -71,7 +73,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig, permVerifier *perm.Verifier, permRN []string) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
@@ -117,45 +119,47 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	}
 
 	row := VRow(
-		VCol(
-			h.Label("").Children(
-				VCard(
-					VCardTitle(h.Text(msgr.UploadFiles)),
-					VIcon("backup").XLarge(true),
-					h.Input("").
-						Attr("accept", fileAccept).
-						Type("file").
-						Attr("multiple", true).
-						Style("display:none").
-						Attr("@change",
-							web.Plaid().
-								BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
-								FieldValue("NewFiles", web.Var("$event")).
-								EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
-				).
-					Height(200).
-					Class("d-flex align-center justify-center").
-					Attr("role", "button").
-					Attr("v-ripple", true),
-			),
-		).
-			Cols(6).Sm(4).Md(3),
-
-		VCol(
-			VCard(
-				VProgressCircular().
-					Color("primary").
-					Indeterminate(true),
+		h.If(permVerifier.Do(PermUpload).On(permRN...).On(field).WithReq(ctx.R).IsAllowed() == nil,
+			VCol(
+				h.Label("").Children(
+					VCard(
+						VCardTitle(h.Text(msgr.UploadFiles)),
+						VIcon("backup").XLarge(true),
+						h.Input("").
+							Attr("accept", fileAccept).
+							Type("file").
+							Attr("multiple", true).
+							Style("display:none").
+							Attr("@change",
+								web.Plaid().
+									BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
+									FieldValue("NewFiles", web.Var("$event")).
+									EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go(), h.JSONString(permRN)),
+					).
+						Height(200).
+						Class("d-flex align-center justify-center").
+						Attr("role", "button").
+						Attr("v-ripple", true),
+				),
 			).
-				Class("d-flex align-center justify-center").
-				Height(200),
-		).
-			Attr("v-for", "f in locals.fileChooserUploadingFiles").
-			Cols(6).Sm(4).Md(3),
+				Cols(6).Sm(4).Md(3),
+
+			VCol(
+				VCard(
+					VProgressCircular().
+						Color("primary").
+						Indeterminate(true),
+				).
+					Class("d-flex align-center justify-center").
+					Height(200),
+			).
+				Attr("v-for", "f in locals.fileChooserUploadingFiles").
+				Cols(6).Sm(4).Md(3),
+		),
 	).
 		Attr(web.InitContextLocals, `{fileChooserUploadingFiles: []}`)
 
-	for _, f := range files {
+	for i, f := range files {
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		row.AppendChildren(
@@ -180,32 +184,36 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					).Attr("role", "button").
 						Attr("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg), h.JSONString(permRN)).
 							Go()),
 					VCardText(
 						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
-						h.Input("").
-							Style("width: 100%;").
-							Placeholder(msgr.DescriptionForAccessibility).
-							Value(f.File.Description).
-							Attr("@change", web.Plaid().
-								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID)).
-								FieldValue("CurrentDescription", web.Var("$event.target.value")).
-								Go(),
-							),
+						h.If(permVerifier.Do(PermUpdateDesc).On(permRN...).On(field).OnObject(files[i]).WithReq(ctx.R).IsAllowed() == nil,
+							h.Input("").
+								Style("width: 100%;").
+								Placeholder(msgr.DescriptionForAccessibility).
+								Value(f.File.Description).
+								Attr("@change", web.Plaid().
+									EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID), h.JSONString(permRN)).
+									FieldValue("CurrentDescription", web.Var("$event.target.value")).
+									Go(),
+								),
+						),
 						h.If(media.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
 					),
-					VCardActions(
-						VSpacer(),
-						VBtn(msgr.Delete).
-							Text(true).
-							Attr("@click",
-								web.Plaid().
-									EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
-									Go(),
-							),
+					h.If(permVerifier.Do(PermDelete).On(permRN...).On(field).OnObject(files[i]).WithReq(ctx.R).IsAllowed() == nil,
+						VCardActions(
+							VSpacer(),
+							VBtn(msgr.Delete).
+								Text(true).
+								Attr("@click",
+									web.Plaid().
+										EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg), h.JSONString(permRN)).
+										Go(),
+								),
+						),
 					),
 				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(6).Sm(4).Md(3),
@@ -228,7 +236,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						Value(int(currentPageInt)).
 						Attr("@input", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent, field, h.JSONString(cfg)).
+							EventFunc(imageJumpPageEvent, field, h.JSONString(cfg), h.JSONString(permRN)).
 							Go()),
 				).Cols(10),
 			),
@@ -266,10 +274,15 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB) web.EventFunc {
+func uploadFile(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
+		permRN := parseStringSlice(ctx.Event.Params[2])
+
+		if err = permVerifier.Do(PermUpload).On(permRN...).On(field).WithReq(ctx.R).IsAllowed(); err != nil {
+			return
+		}
 
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
@@ -293,7 +306,7 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 			}
 		}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, permVerifier, permRN)
 		return
 	}
 }
@@ -316,6 +329,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
 		cfg := stringToCfg(ctx.Event.Params[2])
+		permRN := parseStringSlice(ctx.Event.Params[3])
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -351,36 +365,38 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg),
+			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, permRN),
 		})
 		r.VarsScript = `vars.showFileChooser = false`
 		return
 	}
 }
 
-func searchFile(db *gorm.DB) web.EventFunc {
+func searchFile(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
+		permRN := parseStringSlice(ctx.Event.Params[2])
 		ctx.R.Form[currentPageName(field)] = []string{"1"}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, permVerifier, permRN)
 		return
 	}
 }
 
-func jumpPage(db *gorm.DB) web.EventFunc {
+func jumpPage(db *gorm.DB, permVerifier *perm.Verifier) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		permRN := parseStringSlice(ctx.Event.Params[2])
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, permVerifier, permRN)
 		return
 	}
 }
 
-func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig) {
+func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig, permVerifier *perm.Verifier, permRN []string) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: dialogContentPortalName(field),
-		Body: fileChooserDialogContent(db, field, ctx, cfg),
+		Body: fileChooserDialogContent(db, field, ctx, cfg, permVerifier, permRN),
 	})
 }
