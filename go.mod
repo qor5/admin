@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
+	github.com/go-playground/form v3.1.4+incompatible
 	github.com/goplaid/web v1.1.8
 	github.com/goplaid/x v1.0.11-0.20210911072504-b216114c0523
 	github.com/gosimple/slug v1.9.0
