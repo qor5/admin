@@ -13,6 +13,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
+	github.com/ory/ladon v1.2.0 // indirect
 	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
 	github.com/qor/media v0.0.0-20210601073757-402011f3b027 // indirect
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
