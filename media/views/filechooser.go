@@ -186,17 +186,15 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Go()),
 					VCardText(
 						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
-						h.If(updateDescIsAllowed(ctx.R, files[i], "") == nil,
-							h.Input("").
-								Style("width: 100%;").
-								Placeholder(msgr.DescriptionForAccessibility).
-								Value(f.File.Description).
-								Attr("@change", web.Plaid().
-									EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID)).
-									FieldValue("CurrentDescription", web.Var("$event.target.value")).
-									Go(),
-								),
-						),
+						h.Input("").
+							Style("width: 100%;").
+							Placeholder(msgr.DescriptionForAccessibility).
+							Value(f.File.Description).
+							Attr("@change", web.Plaid().
+								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID)).
+								FieldValue("CurrentDescription", web.Var("$event.target.value")).
+								Go(),
+							).Readonly(updateDescIsAllowed(ctx.R, files[i], "") != nil),
 						h.If(media.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
