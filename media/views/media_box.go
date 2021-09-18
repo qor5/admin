@@ -185,8 +185,6 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 		field := ctx.Event.Params[0]
 		id := ctx.Event.Params[1]
 		cfg := ctx.Event.Params[2]
-		resourceName := ctx.Event.Params[3]
-		resourceID := ctx.Event.Params[4]
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
@@ -205,7 +203,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 							Depressed(true).
 							Dark(true).
 							Attr("@click", web.Plaid().
-								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg)), resourceName, resourceID).
+								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg))).
 								Go()),
 					),
 				),
@@ -350,19 +348,6 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 	}
 
 	return &cfg
-}
-
-func parseStringSlice(v string) (r []string) {
-	if v == "" {
-		return nil
-	}
-
-	err := json.Unmarshal([]byte(v), &r)
-	if err != nil {
-		panic(err)
-	}
-
-	return r
 }
 
 func thumbName(name string, size *media.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
