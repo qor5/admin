@@ -40,6 +40,8 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
+	perm.Verbose = true
+
 	b = presets.New().RightDrawerWidth(700)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
@@ -62,7 +64,7 @@ func NewConfig() (b *presets.Builder) {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
-	media_view.Configure(b, db, tempPermBuilder, true)
+	media_view.Configure(b, db, tempPermBuilder)
 	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})
@@ -92,7 +94,7 @@ func NewConfig() (b *presets.Builder) {
 			&media_library.MediaBoxConfig{})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label).PermRN(perm.ToPermRN(obj))
+		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
 	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
