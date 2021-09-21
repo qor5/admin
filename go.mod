@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/form v3.1.4+incompatible
-	github.com/goplaid/web v1.1.8
-	github.com/goplaid/x v1.0.11-0.20210911072504-b216114c0523
+	github.com/goplaid/web v1.1.9
+	github.com/goplaid/x v1.0.11
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/jinzhu/configor v1.2.1 // indirect
@@ -21,8 +21,8 @@ require (
 	github.com/qor/serializable_meta v0.0.0-20180510060738-5fd8542db417
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
-	github.com/theplant/htmlgo v1.0.1
-	golang.org/x/text v0.3.6
+	github.com/theplant/htmlgo v1.0.3
+	golang.org/x/text v0.3.7
 )
 
 //replace github.com/goplaid/web => ../../goplaid/web
