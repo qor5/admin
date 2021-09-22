@@ -17,22 +17,10 @@ func uploadIsAllowed(r *http.Request) error {
 	return permVerifier.Do(PermUpload).On("media_libraries").WithReq(r).IsAllowed()
 }
 
-func deleteIsAllowed(r *http.Request, obj interface{}, id string) error {
-	v := permVerifier.Do(PermDelete)
-	if obj != nil {
-		v.OnObject(obj)
-	} else {
-		v.On("media_libraries", id)
-	}
-	return v.WithReq(r).IsAllowed()
+func deleteIsAllowed(r *http.Request, obj interface{}) error {
+	return permVerifier.Do(PermDelete).OnObject(obj).WithReq(r).IsAllowed()
 }
 
-func updateDescIsAllowed(r *http.Request, obj interface{}, id string) error {
-	v := permVerifier.Do(PermUpdateDesc)
-	if obj != nil {
-		v.OnObject(obj)
-	} else {
-		v.On("media_libraries", id)
-	}
-	return v.WithReq(r).IsAllowed()
+func updateDescIsAllowed(r *http.Request, obj interface{}) error {
+	return permVerifier.Do(PermUpdateDesc).OnObject(obj).WithReq(r).IsAllowed()
 }

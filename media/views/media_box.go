@@ -222,7 +222,23 @@ func doDelete(db *gorm.DB) web.EventFunc {
 		id := ctx.Event.Params[1]
 		cfg := ctx.Event.Params[2]
 
-		if err = deleteIsAllowed(ctx.R, nil, id); err != nil {
+		var obj media_library.MediaLibrary
+		err = db.Where("id = ?", id).First(&obj).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				renderFileChooserDialogContent(
+					ctx,
+					&r,
+					field,
+					db,
+					stringToCfg(cfg),
+				)
+				r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
+				return r, nil
+			}
+			panic(err)
+		}
+		if err = deleteIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 
@@ -366,10 +382,27 @@ func thumbName(name string, size *media.Size, fileSize int, f *media_library.Med
 
 func updateDescription(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		// field := ctx.Event.Params[0]
+		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
+		cfg := ctx.Event.Params[2]
 
-		if err = updateDescIsAllowed(ctx.R, nil, ctx.Event.Params[1]); err != nil {
+		var obj media_library.MediaLibrary
+		err = db.Where("id = ?", id).First(&obj).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				renderFileChooserDialogContent(
+					ctx,
+					&r,
+					field,
+					db,
+					stringToCfg(cfg),
+				)
+				// TODO: prompt that the record has been deleted?
+				return r, nil
+			}
+			panic(err)
+		}
+		if err = updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 

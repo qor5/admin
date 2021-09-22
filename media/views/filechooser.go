@@ -191,15 +191,15 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Placeholder(msgr.DescriptionForAccessibility).
 							Value(f.File.Description).
 							Attr("@change", web.Plaid().
-								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID)).
+								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
-							).Readonly(updateDescIsAllowed(ctx.R, files[i], "") != nil),
+							).Readonly(updateDescIsAllowed(ctx.R, files[i]) != nil),
 						h.If(media.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
 					),
-					h.If(deleteIsAllowed(ctx.R, files[i], "") == nil,
+					h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
 						VCardActions(
 							VSpacer(),
 							VBtn(msgr.Delete).
