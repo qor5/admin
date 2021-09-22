@@ -39,6 +39,11 @@ func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		r.PageTitle = "SEO Setting"
 		r.Body = VContainer(
+			VSnackbar(h.Text("Saved successfully")).
+				Attr("v-model", "vars.seoSnackbarShow").
+				Top(true).
+				Color("teal darken-1").
+				Timeout(2000),
 			VRow(
 				VCol(
 					VContainer(
@@ -65,7 +70,7 @@ func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
 					).Focusable(true),
 				).Cols(9),
 			),
-		).Attr("style", "background-color: #f5f5f5;max-width:100%")
+		).Attr("style", "background-color: #f5f5f5;max-width:100%").Attr(web.InitContextVars, `{seoSnackbarShow: false}`)
 
 		return
 	}
@@ -209,6 +214,8 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 		}
 
 		db.Save(setting)
+
+		r.VarsScript = `vars.seoSnackbarShow = true;`
 		return
 	}
 }
