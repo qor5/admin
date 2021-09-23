@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
+	github.com/go-playground/form v3.1.4+incompatible
 	github.com/goplaid/web v1.1.9
 	github.com/goplaid/x v1.0.12-0.20210922130047-7495990bf8f3
 	github.com/gosimple/slug v1.9.0
@@ -13,7 +14,6 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
-	github.com/ory/ladon v1.2.0
 	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
 	github.com/qor/media v0.0.0-20210601073757-402011f3b027 // indirect
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015

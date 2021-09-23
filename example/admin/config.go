@@ -103,6 +103,6 @@ func NewConfig() (b *presets.Builder) {
 
 	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
-
+	ConfigureSeo(b, db)
 	return
 }

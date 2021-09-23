@@ -161,7 +161,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				h.A().Text(f.FileName).Href(f.Url).Target("_blank"),
 			).Style("text-align:center"),
 		),
-		h.If(size != nil || thumb == media.DefaultSizeKey,
+		h.If(media.IsImageFormat(f.FileName) && (size != nil || thumb == media.DefaultSizeKey),
 			VCardActions(
 				VChip(
 					thumbName(thumb, size, fileSize, f),
