@@ -2,10 +2,10 @@ package admin
 
 import (
 	"github.com/goplaid/x/presets"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/seo"
 	qor_seo "github.com/qor/qor5/seo"
+	"gorm.io/gorm"
 )
 
 var SeoCollection *qor_seo.Collection

@@ -7,9 +7,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/oss"
+	"gorm.io/gorm"
 )
 
 var QorPeviewSizeName = "@qor_preview"
@@ -18,7 +18,7 @@ var QorPeviewSize = &media.Size{Width: 200, Height: 200}
 type MediaLibrary struct {
 	gorm.Model
 	SelectedType string
-	File         MediaLibraryStorage `sql:"size:4294967295;" media_library:"url:/system/{{class}}/{{primary_key}}/{{column}}.{{extension}}"`
+	File         MediaLibraryStorage `sql:"size:4294967295;" mediaLibrary:"url:/system/{{class}}/{{primary_key}}/{{column}}.{{extension}}"`
 }
 
 type MediaOption struct {

@@ -11,7 +11,6 @@ require (
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/jinzhu/configor v1.2.1 // indirect
-	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
 	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
@@ -23,8 +22,10 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/htmlgo v1.0.3
 	golang.org/x/text v0.3.7
+	gorm.io/driver/postgres v1.1.1 // indirect
+	gorm.io/gorm v1.21.15 // indirect
 )
 
-//replace github.com/goplaid/web => ../../goplaid/web
-//replace github.com/goplaid/x => ../../goplaid/x
-//replace github.com/sunfmin/reflectutils => ../../reflectutils
+// replace github.com/goplaid/web => ../../goplaid/web
+// replace github.com/goplaid/x => ../../goplaid/x
+// replace github.com/sunfmin/reflectutils => ../../reflectutils

@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qor/qor5/media/media_library"
-
 	"github.com/goplaid/web"
 	v "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
+	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 // how to add more plugins from https://imperavi.com/redactor/plugins/
