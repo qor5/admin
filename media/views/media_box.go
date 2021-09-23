@@ -10,6 +10,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/jinzhu/gorm"
@@ -28,7 +29,11 @@ var MediaLibraryPerPage int64 = 39
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
+var permVerifier *perm.Verifier
+
 func Configure(b *presets.Builder, db *gorm.DB) {
+	permVerifier = perm.NewVerifier("media_library", b.GetPermission())
+
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxComponentFunc(db)).
@@ -217,6 +222,26 @@ func doDelete(db *gorm.DB) web.EventFunc {
 		id := ctx.Event.Params[1]
 		cfg := ctx.Event.Params[2]
 
+		var obj media_library.MediaLibrary
+		err = db.Where("id = ?", id).First(&obj).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				renderFileChooserDialogContent(
+					ctx,
+					&r,
+					field,
+					db,
+					stringToCfg(cfg),
+				)
+				r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
+				return r, nil
+			}
+			panic(err)
+		}
+		if err = deleteIsAllowed(ctx.R, &obj); err != nil {
+			return
+		}
+
 		err = db.Delete(&media_library.MediaLibrary{}, "id = ?", id).Error
 		if err != nil {
 			panic(err)
@@ -357,8 +382,29 @@ func thumbName(name string, size *media.Size, fileSize int, f *media_library.Med
 
 func updateDescription(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		//field := ctx.Event.Params[0]
+		field := ctx.Event.Params[0]
 		id := ctx.Event.ParamAsInt(1)
+		cfg := ctx.Event.Params[2]
+
+		var obj media_library.MediaLibrary
+		err = db.Where("id = ?", id).First(&obj).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				renderFileChooserDialogContent(
+					ctx,
+					&r,
+					field,
+					db,
+					stringToCfg(cfg),
+				)
+				// TODO: prompt that the record has been deleted?
+				return r, nil
+			}
+			panic(err)
+		}
+		if err = updateDescIsAllowed(ctx.R, &obj); err != nil {
+			return
+		}
 
 		var media media_library.MediaLibrary
 		if err = db.Find(&media, id).Error; err != nil {

@@ -117,45 +117,47 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	}
 
 	row := VRow(
-		VCol(
-			h.Label("").Children(
-				VCard(
-					VCardTitle(h.Text(msgr.UploadFiles)),
-					VIcon("backup").XLarge(true),
-					h.Input("").
-						Attr("accept", fileAccept).
-						Type("file").
-						Attr("multiple", true).
-						Style("display:none").
-						Attr("@change",
-							web.Plaid().
-								BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
-								FieldValue("NewFiles", web.Var("$event")).
-								EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
-				).
-					Height(200).
-					Class("d-flex align-center justify-center").
-					Attr("role", "button").
-					Attr("v-ripple", true),
-			),
-		).
-			Cols(6).Sm(4).Md(3),
-
-		VCol(
-			VCard(
-				VProgressCircular().
-					Color("primary").
-					Indeterminate(true),
+		h.If(uploadIsAllowed(ctx.R) == nil,
+			VCol(
+				h.Label("").Children(
+					VCard(
+						VCardTitle(h.Text(msgr.UploadFiles)),
+						VIcon("backup").XLarge(true),
+						h.Input("").
+							Attr("accept", fileAccept).
+							Type("file").
+							Attr("multiple", true).
+							Style("display:none").
+							Attr("@change",
+								web.Plaid().
+									BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
+									FieldValue("NewFiles", web.Var("$event")).
+									EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
+					).
+						Height(200).
+						Class("d-flex align-center justify-center").
+						Attr("role", "button").
+						Attr("v-ripple", true),
+				),
 			).
-				Class("d-flex align-center justify-center").
-				Height(200),
-		).
-			Attr("v-for", "f in locals.fileChooserUploadingFiles").
-			Cols(6).Sm(4).Md(3),
+				Cols(6).Sm(4).Md(3),
+
+			VCol(
+				VCard(
+					VProgressCircular().
+						Color("primary").
+						Indeterminate(true),
+				).
+					Class("d-flex align-center justify-center").
+					Height(200),
+			).
+				Attr("v-for", "f in locals.fileChooserUploadingFiles").
+				Cols(6).Sm(4).Md(3),
+		),
 	).
 		Attr(web.InitContextLocals, `{fileChooserUploadingFiles: []}`)
 
-	for _, f := range files {
+	for i, f := range files {
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		row.AppendChildren(
@@ -189,23 +191,25 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Placeholder(msgr.DescriptionForAccessibility).
 							Value(f.File.Description).
 							Attr("@change", web.Plaid().
-								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID)).
+								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
-							),
+							).Readonly(updateDescIsAllowed(ctx.R, files[i]) != nil),
 						h.If(media.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
 					),
-					VCardActions(
-						VSpacer(),
-						VBtn(msgr.Delete).
-							Text(true).
-							Attr("@click",
-								web.Plaid().
-									EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
-									Go(),
-							),
+					h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+						VCardActions(
+							VSpacer(),
+							VBtn(msgr.Delete).
+								Text(true).
+								Attr("@click",
+									web.Plaid().
+										EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+										Go(),
+								),
+						),
 					),
 				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
 			).Cols(6).Sm(4).Md(3),
@@ -270,6 +274,10 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Event.Params[0]
 		cfg := stringToCfg(ctx.Event.Params[1])
+
+		if err = uploadIsAllowed(ctx.R); err != nil {
+			return
+		}
 
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
