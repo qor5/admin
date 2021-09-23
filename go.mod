@@ -7,7 +7,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/goplaid/web v1.1.9
-	github.com/goplaid/x v1.0.12-0.20210922130047-7495990bf8f3
+	github.com/goplaid/x v1.0.12-0.20210923022835-283f747bccad
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/jinzhu/configor v1.2.1 // indirect
