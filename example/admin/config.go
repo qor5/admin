@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gormop"
 	"github.com/goplaid/x/vuetify"
@@ -40,8 +39,6 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
-	perm.Verbose = true
-
 	b = presets.New().RightDrawerWidth(700)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
@@ -64,7 +61,7 @@ func NewConfig() (b *presets.Builder) {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
-	media_view.Configure(b, db, tempPermBuilder)
+	media_view.Configure(b, db)
 	//media_view.MediaLibraryPerPage = 3
 
 	m := b.Model(&models.Post{})

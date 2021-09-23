@@ -31,8 +31,8 @@ const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
 var permVerifier *perm.Verifier
 
-func Configure(b *presets.Builder, db *gorm.DB, permBuilder *perm.Builder) {
-	permVerifier = perm.Module("media_library", permBuilder)
+func Configure(b *presets.Builder, db *gorm.DB) {
+	permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).

@@ -18,9 +18,9 @@ func uploadIsAllowed(r *http.Request) error {
 }
 
 func deleteIsAllowed(r *http.Request, obj interface{}) error {
-	return permVerifier.Do(PermDelete).OnObject(obj).WithReq(r).IsAllowed()
+	return permVerifier.Do(PermDelete).ObjectOn(obj).WithReq(r).IsAllowed()
 }
 
 func updateDescIsAllowed(r *http.Request, obj interface{}) error {
-	return permVerifier.Do(PermUpdateDesc).OnObject(obj).WithReq(r).IsAllowed()
+	return permVerifier.Do(PermUpdateDesc).ObjectOn(obj).WithReq(r).IsAllowed()
 }
