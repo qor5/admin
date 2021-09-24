@@ -45,7 +45,7 @@ func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
 			VSnackbar(h.Text("Saved successfully")).
 				Attr("v-model", "vars.seoSnackbarShow").
 				Top(true).
-				Color("teal darken-1").
+				Color("primary").
 				Timeout(2000),
 			VRow(
 				VCol(

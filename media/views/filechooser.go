@@ -220,7 +220,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
 			Attr("v-model", "vars.snackbarShow").
 			Top(true).
-			Color("teal darken-1").
+			Color("primary").
 			Timeout(5000),
 		VContainer(
 			row,

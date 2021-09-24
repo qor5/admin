@@ -39,7 +39,23 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
-	b = presets.New().RightDrawerWidth(700)
+	b = presets.New().RightDrawerWidth(700).VuetifyOptions(`
+{
+  theme: {
+    themes: {
+      light: {
+		  primary: "#673ab7",
+		  secondary: "#009688",
+		  accent: "#ff5722",
+		  error: "#f44336",
+		  warning: "#ff9800",
+		  info: "#8bc34a",
+		  success: "#4caf50"
+      },
+    },
+  },
+}
+`)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
 	richeditor.PluginsJS = [][]byte{js}
