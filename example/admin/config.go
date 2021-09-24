@@ -41,6 +41,9 @@ func NewConfig() (b *presets.Builder) {
 
 	b = presets.New().RightDrawerWidth(700).VuetifyOptions(`
 {
+  icons: {
+	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
+  },
   theme: {
     themes: {
       light: {
