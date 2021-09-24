@@ -63,12 +63,13 @@ func NewConfig() (b *presets.Builder) {
 
 	media_view.Configure(b, db)
 	//media_view.MediaLibraryPerPage = 3
+	models.ConfigureSeo(b, db)
 
 	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -103,6 +104,5 @@ func NewConfig() (b *presets.Builder) {
 
 	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
-	ConfigureSeo(b, db)
 	return
 }

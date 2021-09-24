@@ -25,14 +25,17 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 	)
 
 	b.GetWebBuilder().RegisterEventFunc(saveCollectionEvent, saveCollection(collection, db))
-
 	b.Model(collection.settingModel).PrimaryField("Name").Label("SEO").Listing().PageFunc(collection.pageFunc(db))
 
-	// b.FieldDefaults(presets.WRITE).
-	// 	FieldType(&Setting{}).
-	// 	ComponentFunc(SeoEditingComponentFunc)
-	// SetterFunc(SeoSetterComponentFunc)
+	b.FieldDefaults(presets.WRITE).
+		FieldType(Setting{}).
+		ComponentFunc(SeoEditingComponentFunc(collection))
+}
 
+func SeoEditingComponentFunc(collection *Collection) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return collection.settingComponent(obj)
+	}
 }
 
 func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
@@ -108,8 +111,8 @@ func (collection *Collection) renderGlobalSection(db *gorm.DB) h.HTMLComponent {
 
 		VCardActions(
 			VSpacer(),
-			VBtn("Save").Color("primary").Large(true).OnClick(saveCollectionEvent, collection.Name),
-		),
+			VBtn("Save").Bind("loading", "vars.global_seo_loading").Color("primary").Large(true).Attr("@click", web.Plaid().EventFunc(saveCollectionEvent, collection.Name, "global_seo_loading").BeforeScript(`vars.global_seo_loading = true;`).Go()),
+		).Attr(web.InitContextVars, `{global_seo_loading: false}`),
 	)
 }
 
@@ -125,16 +128,18 @@ func (collection *Collection) renderSeoSections(db *gorm.DB) h.HTMLComponents {
 		}
 		setting.SetCollection(collection)
 
+		loadingName := strings.ToLower(seo.Name)
+		loadingName = strings.ReplaceAll(loadingName, " ", "_")
 		comp := VExpansionPanel(
 			VExpansionPanelHeader(h.H4(seo.Name).Style("font-weight: 500;")),
 			VExpansionPanelContent(
 				VCardText(
-					seoSettingComponent(seo.Name, setting.GetSEOSetting()),
+					collection.settingComponent(setting),
 				),
 				VCardActions(
 					VSpacer(),
-					VBtn("Save").Color("primary").Large(true).OnClick(saveCollectionEvent, seo.Name),
-				),
+					VBtn("Save").Bind("loading", fmt.Sprintf("vars.%s", loadingName)).Color("primary").Large(true).Attr("@click", web.Plaid().EventFunc(saveCollectionEvent, seo.Name, loadingName).BeforeScript(fmt.Sprintf("vars.%s = true;", loadingName)).Go()),
+				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, loadingName)),
 			),
 		)
 
@@ -144,41 +149,94 @@ func (collection *Collection) renderSeoSections(db *gorm.DB) h.HTMLComponents {
 	return comps
 }
 
-func seoSettingComponent(name string, setting Setting) h.HTMLComponents {
-	return h.Components(
+func (collection *Collection) settingComponent(obj interface{}) h.HTMLComponents {
+	var (
+		fieldPrefix string
+		isModel     bool
+		seo         *SEO
+		setting     Setting
+	)
+
+	if qorSeoSetting, ok := obj.(QorSEOSettingInterface); ok {
+		fieldPrefix = qorSeoSetting.GetName()
+		seo = collection.GetSEO(fieldPrefix)
+		setting = qorSeoSetting.GetSEOSetting()
+	} else {
+		if seoInterface, ok := obj.(interface{ GetSEO() *SEO }); ok {
+			isModel = true
+			seo = seoInterface.GetSEO()
+			value := reflect.Indirect(reflect.ValueOf(obj))
+			for i := 0; i < value.NumField(); i++ {
+				if s, ok := value.Field(i).Interface().(Setting); ok {
+					setting = s
+					fieldPrefix = value.Type().Field(i).Name
+				}
+			}
+		} else {
+			return nil
+		}
+	}
+
+	varibles := []string{}
+	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting)).Type()
+	for i := 0; i < value.NumField(); i++ {
+		fieldName := value.Field(i).Name
+		varibles = append(varibles, fieldName)
+	}
+	varibles = append(varibles, seo.Varibles...)
+
+	variblesEle := []h.HTMLComponent{}
+	for _, varible := range varibles {
+		variblesEle = append(variblesEle, VCol(
+			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(varible)),
+		).Cols(2))
+	}
+
+	commonSettingComponent := h.Components(
 		VRow(
-			VCol(
-				VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text("SiteName")),
-			).Cols(2),
-			VCol().Cols(2),
+			variblesEle...,
 		),
 		h.H6("Basic").Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
-				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", name, "Title")).Label("Title").Value(setting.Title).Clearable(true),
-				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", name, "Description")).Label("Description").Value(setting.Description).Clearable(true),
-				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", name, "Keywords")).Label("Keywords").Value(setting.Keywords).Clearable(true),
+				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label("Title").Value(setting.Title).Clearable(true),
+				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label("Description").Value(setting.Description).Clearable(true),
+				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label("Keywords").Value(setting.Keywords).Clearable(true),
 			),
 		).Color("#f5f5f5").Elevation(0),
 		h.H6("Open Graph Information").Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", name, "OpenGraphURL")).Label("Open Graph URL").Value(setting.OpenGraphURL).Clearable(true)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", name, "OpenGraphType")).Label("Open Graph Type").Value(setting.OpenGraphType).Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label("Open Graph URL").Value(setting.OpenGraphURL).Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label("Open Graph Type").Value(setting.OpenGraphType).Clearable(true)).Cols(6),
 				),
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", name, "OpenGraphImageURL")).Label("Open Graph Image URL").Value(setting.OpenGraphImageURL).Clearable(true)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", name, "OpenGraphImageFromMediaLibrary")).Label("Open Graph Image").Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label("Open Graph Image URL").Value(setting.OpenGraphImageURL).Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).Label("Open Graph Image").Clearable(true)).Cols(6),
 				),
 			),
 		).Color("#f5f5f5").Elevation(0),
 	)
+
+	if !isModel {
+		return commonSettingComponent
+	}
+
+	return h.HTMLComponents{
+		h.Label(fieldPrefix).Class("v-label theme--light"),
+		VCard(
+			VCardText(
+				h.Tag("v-checkbox").Attr("v-model", "vars.enabledCustomize").Attr("label", "Use Defaults"),
+				h.Div(commonSettingComponent).Attr("v-show", "vars.enabledCustomize == false"),
+			).Attr("style", "padding-bottom: 0px;padding-top: 1px;"),
+		).Attr(web.InitContextVars, fmt.Sprintf(`{enabledCustomize: %t}`, !setting.EnabledCustomize)),
+	}
 }
 
 func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		if len(ctx.Event.Params) == 0 {
+		if len(ctx.Event.Params) != 2 {
 			return
 		}
 
@@ -215,7 +273,7 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 
 		db.Save(setting)
 
-		r.VarsScript = `vars.seoSnackbarShow = true;`
+		r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.Event.Params[1])
 		return
 	}
 }
