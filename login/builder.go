@@ -14,7 +14,7 @@ import (
 	. "github.com/theplant/htmlgo"
 )
 
-type FetchUserFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
+type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
 
 type Provider struct {
 	Goth    goth.Provider
@@ -26,7 +26,7 @@ type Provider struct {
 type Builder struct {
 	secret        string
 	loginURL      string
-	fetchUserFunc FetchUserFunc
+	fetchUserFunc FetchUserToContextFunc
 	authParamName string
 	homeURL       string
 	extractors    []request.Extractor
@@ -37,6 +37,7 @@ type Builder struct {
 func New() *Builder {
 	r := &Builder{
 		authParamName: "auth",
+		loginURL:      "/auth/login",
 		homeURL:       "/",
 	}
 	r.loginPageFunc = r.defaultLoginPage
@@ -83,7 +84,7 @@ func (b *Builder) AuthParamName(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) FetchUserFunc(v FetchUserFunc) (r *Builder) {
+func (b *Builder) FetchUserToContextFunc(v FetchUserToContextFunc) (r *Builder) {
 	b.fetchUserFunc = v
 	return b
 }
@@ -200,6 +201,9 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 
 func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if len(b.secret) == 0 {
+			panic("secret is empty")
+		}
 		extractor := request.MultiExtractor(b.extractors)
 		if len(b.extractors) == 0 {
 			extractor = request.MultiExtractor{

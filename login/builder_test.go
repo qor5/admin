@@ -15,7 +15,7 @@ import (
 
 func TestAuthenticate(t *testing.T) {
 	b := login.New().Secret("123").
-		FetchUserFunc(func(claim *login.UserClaims, r *http.Request) (newR *http.Request, err error) {
+		FetchUserToContextFunc(func(claim *login.UserClaims, r *http.Request) (newR *http.Request, err error) {
 			newR = r.WithContext(context.WithValue(r.Context(), "user", claim))
 			return
 		})
