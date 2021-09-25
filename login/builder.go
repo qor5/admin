@@ -1,6 +1,7 @@
 package login
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -109,7 +110,6 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 }
 
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
-
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		return err
@@ -126,8 +126,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			ID:        user.UserID,
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	ss, err := token.SignedString(b.secret)
+	ss, err := b.SignClaims(&claims)
 	if err != nil {
 		return err
 	}
@@ -141,6 +140,12 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	})
 
 	return nil
+}
+
+func (b *Builder) SignClaims(claims *UserClaims) (signed string, err error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err = token.SignedString([]byte(b.secret))
+	return
 }
 
 // Logout is for url "/logout/{provider}"
@@ -168,7 +173,7 @@ type CookieExtractor string
 func (e CookieExtractor) ExtractToken(req *http.Request) (string, error) {
 	ck, err := req.Cookie(string(e))
 	if err != nil {
-		return "", err
+		return "", request.ErrNoTokenInRequest
 	}
 
 	if len(ck.Value) == 0 {
@@ -207,12 +212,14 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 		var claims UserClaims
 		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
 		if err != nil {
+			log.Println(err)
 			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
 			return
 		}
 
 		newReq, err := b.fetchUserFunc(&claims, r)
 		if err != nil {
+			log.Println(err)
 			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
 			return
 		}

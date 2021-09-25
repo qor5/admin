@@ -7,7 +7,6 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/golang/mock v1.4.4 // indirect
 	github.com/goplaid/web v1.1.9
 	github.com/goplaid/x v1.0.12-0.20210924083001-c0e02fb12914
 	github.com/gosimple/slug v1.9.0
