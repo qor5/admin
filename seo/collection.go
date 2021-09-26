@@ -49,3 +49,14 @@ func (collection *Collection) RegisterSEO(seo *SEO) {
 	}
 	collection.registeredSEO = append(collection.registeredSEO, seo)
 }
+
+// GetSEO get a Seo by name
+func (collection *Collection) GetSEO(name string) *SEO {
+	for _, s := range collection.registeredSEO {
+		if s.Name == name {
+			return s
+		}
+	}
+
+	return &SEO{Name: name, collection: collection}
+}

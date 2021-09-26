@@ -39,7 +39,26 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
-	b = presets.New().RightDrawerWidth(700)
+	b = presets.New().RightDrawerWidth(700).VuetifyOptions(`
+{
+  icons: {
+	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
+  },
+  theme: {
+    themes: {
+      light: {
+		  primary: "#673ab7",
+		  secondary: "#009688",
+		  accent: "#ff5722",
+		  error: "#f44336",
+		  warning: "#ff9800",
+		  info: "#8bc34a",
+		  success: "#4caf50"
+      },
+    },
+  },
+}
+`)
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
 	richeditor.PluginsJS = [][]byte{js}
@@ -63,12 +82,13 @@ func NewConfig() (b *presets.Builder) {
 
 	media_view.Configure(b, db)
 	//media_view.MediaLibraryPerPage = 3
+	models.ConfigureSeo(b, db)
 
 	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -103,6 +123,5 @@ func NewConfig() (b *presets.Builder) {
 
 	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
-	ConfigureSeo(b, db)
 	return
 }
