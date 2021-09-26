@@ -77,7 +77,6 @@ func saveAndCropImage(isCreate bool) func(db *gorm.DB) {
 		}
 
 		var updateColumns = map[string]interface{}{}
-
 		// Handle SerializableMeta
 		if value, ok := db.Statement.Dest.(serializable_meta.SerializableMetaInterface); ok {
 			var (
@@ -121,8 +120,7 @@ func saveAndCropImage(isCreate bool) func(db *gorm.DB) {
 		}
 
 		if db.Error == nil && len(updateColumns) != 0 {
-			// TODO
-			// db.AddError(db.Model(db.Statement.Dest).UpdateColumns(updateColumns).Error)
+			db.AddError(db.Session(&gorm.Session{NewDB: true}).Model(db.Statement.Model).UpdateColumns(updateColumns).Error)
 		}
 	}
 }
