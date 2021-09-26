@@ -15,23 +15,24 @@ import (
 )
 
 type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
+type ContentFunc func(ctx *web.EventContext, providers []*Provider, in HTMLComponent) (r HTMLComponent)
 
 type Provider struct {
-	Goth    goth.Provider
-	Key     string
-	Text    string
-	LogoURL string
+	Goth goth.Provider
+	Key  string
+	Text string
+	Logo HTMLComponent
 }
 
 type Builder struct {
-	secret        string
-	loginURL      string
-	fetchUserFunc FetchUserToContextFunc
-	authParamName string
-	homeURL       string
-	extractors    []request.Extractor
-	loginPageFunc web.PageFunc
-	providers     []*Provider
+	secret               string
+	loginURL             string
+	fetchUserFunc        FetchUserToContextFunc
+	authParamName        string
+	homeURL              string
+	extractors           []request.Extractor
+	loginPageContentFunc ContentFunc
+	providers            []*Provider
 }
 
 func New() *Builder {
@@ -40,7 +41,6 @@ func New() *Builder {
 		loginURL:      "/auth/login",
 		homeURL:       "/",
 	}
-	r.loginPageFunc = r.defaultLoginPage
 	return r
 }
 
@@ -74,8 +74,8 @@ func (b *Builder) HomeURL(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) LoginPageFunc(v web.PageFunc) (r *Builder) {
-	b.loginPageFunc = v
+func (b *Builder) LoginPageFunc(v ContentFunc) (r *Builder) {
+	b.loginPageContentFunc = v
 	return b
 }
 
@@ -233,15 +233,31 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 }
 
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
-	ul := Ul()
+
+	ul := Div().Class("flex flex-col justify-center mt-8")
 	for _, provider := range b.providers {
 		ul.AppendChildren(
-			Li(
-				A().Text(provider.Text).Href("/auth/begin?provider=" + provider.Key),
-			),
+			A().
+				Href("/auth/begin?provider="+provider.Key).
+				Class("px-6 py-3 mt-4 font-semibold text-gray-900 bg-white border-2 border-gray-500 rounded-md shadow outline-none hover:bg-yellow-50 hover:border-yellow-400 focus:outline-none").
+				Children(
+					provider.Logo,
+					Text(provider.Text),
+				),
 		)
 	}
-	r.Body = Div(ul)
+	var body HTMLComponent = Div(
+		Style(StyleCSS),
+		Div(
+			Div(
+				ul,
+			).Class("max-w-xs sm:max-w-xl"),
+		).Class("flex mt-4 justify-center h-screen"),
+	)
+	if b.loginPageContentFunc != nil {
+		body = b.loginPageContentFunc(ctx, b.providers, body)
+	}
+	r.Body = body
 	return
 }
 
@@ -250,5 +266,5 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/logout", b.Logout)
 	mux.HandleFunc("/auth/begin", b.BeginAuth)
 	mux.HandleFunc("/auth/callback", b.CompleteUserAuthCallback)
-	mux.Handle("/auth/login", web.New().Page(b.loginPageFunc))
+	mux.Handle("/auth/login", web.New().Page(b.defaultLoginPage))
 }
