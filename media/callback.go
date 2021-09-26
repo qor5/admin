@@ -72,55 +72,57 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 
 func saveAndCropImage(isCreate bool) func(db *gorm.DB) {
 	return func(db *gorm.DB) {
-		if db.Error == nil {
-			var updateColumns = map[string]interface{}{}
+		if db.Error != nil {
+			return
+		}
 
-			// Handle SerializableMeta
-			if value, ok := db.Statement.Dest.(serializable_meta.SerializableMetaInterface); ok {
-				var (
-					isCropped        bool
-					handleNestedCrop func(record interface{})
-				)
+		var updateColumns = map[string]interface{}{}
 
-				handleNestedCrop = func(record interface{}) {
-					// TODO
-					newdb := db.Find(record)
-					for _, field := range newdb.Statement.Schema.Fields {
-						if cropField(field, db) {
-							isCropped = true
-							continue
-						}
+		// Handle SerializableMeta
+		if value, ok := db.Statement.Dest.(serializable_meta.SerializableMetaInterface); ok {
+			var (
+				isCropped        bool
+				handleNestedCrop func(record interface{})
+			)
 
-						if field.IndirectFieldType.Kind() == reflect.Struct {
-							handleNestedCrop(field.ReflectValueOf(db.Statement.ReflectValue).Addr().Interface())
-						}
+			handleNestedCrop = func(record interface{}) {
+				// TODO
+				newdb := db.Find(record)
+				for _, field := range newdb.Statement.Schema.Fields {
+					if cropField(field, db) {
+						isCropped = true
+						continue
+					}
 
-						if field.IndirectFieldType.Kind() == reflect.Slice {
-							for i := 0; i < reflect.Indirect(field.ReflectValueOf(db.Statement.ReflectValue).Addr()).Len(); i++ {
-								handleNestedCrop(reflect.Indirect(field.ReflectValueOf(db.Statement.ReflectValue).Addr()).Index(i).Addr().Interface())
-							}
+					if field.IndirectFieldType.Kind() == reflect.Struct {
+						handleNestedCrop(field.ReflectValueOf(db.Statement.ReflectValue).Addr().Interface())
+					}
+
+					if field.IndirectFieldType.Kind() == reflect.Slice {
+						for i := 0; i < reflect.Indirect(field.ReflectValueOf(db.Statement.ReflectValue).Addr()).Len(); i++ {
+							handleNestedCrop(reflect.Indirect(field.ReflectValueOf(db.Statement.ReflectValue).Addr()).Index(i).Addr().Interface())
 						}
 					}
 				}
-
-				record := value.GetSerializableArgument(value)
-				handleNestedCrop(record)
-				if isCreate && isCropped {
-					updateColumns["value"], _ = json.Marshal(record)
-				}
 			}
 
-			// Handle Normal Field
-			for _, field := range db.Statement.Schema.Fields {
-				if cropField(field, db) && isCreate {
-					updateColumns[field.DBName] = reflect.New(field.Schema.ModelType).Interface()
-				}
+			record := value.GetSerializableArgument(value)
+			handleNestedCrop(record)
+			if isCreate && isCropped {
+				updateColumns["value"], _ = json.Marshal(record)
 			}
+		}
 
-			if db.Error == nil && len(updateColumns) != 0 {
-				// TODO
-				// db.AddError(db.Model(db.Statement.Dest).UpdateColumns(updateColumns).Error)
+		// Handle Normal Field
+		for _, field := range db.Statement.Schema.Fields {
+			if cropField(field, db) && isCreate {
+				updateColumns[field.DBName] = field.ReflectValueOf(db.Statement.ReflectValue).Addr().Interface()
 			}
+		}
+
+		if db.Error == nil && len(updateColumns) != 0 {
+			// TODO
+			// db.AddError(db.Model(db.Statement.Dest).UpdateColumns(updateColumns).Error)
 		}
 	}
 }
