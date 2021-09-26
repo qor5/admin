@@ -227,10 +227,11 @@ func (collection *Collection) settingComponent(obj interface{}) h.HTMLComponents
 		h.Label(fieldPrefix).Class("v-label theme--light"),
 		VCard(
 			VCardText(
-				h.Tag("v-checkbox").Attr("v-model", "vars.enabledCustomize").Attr("label", "Use Defaults"),
-				h.Div(commonSettingComponent).Attr("v-show", "vars.enabledCustomize == false"),
+				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "UserDefaults")).Label("Use Defaults").Attr("v-model", "vars.userDefaults").On("change", "vars.enabledCustomize = !vars.userDefaults;$refs.customize.$emit('change', vars.enabledCustomize)"),
+				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Label("EnabledCustomize").Attr(":input-value", "vars.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none"),
+				h.Div(commonSettingComponent).Attr("v-show", "vars.userDefaults == false"),
 			).Attr("style", "padding-bottom: 0px;padding-top: 1px;"),
-		).Attr(web.InitContextVars, fmt.Sprintf(`{enabledCustomize: %t}`, !setting.EnabledCustomize)),
+		).Attr(web.InitContextVars, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)),
 	}
 }
 
