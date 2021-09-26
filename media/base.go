@@ -18,9 +18,10 @@ import (
 	"time"
 
 	"github.com/gosimple/slug"
-	"github.com/jinzhu/gorm"
 	"github.com/jinzhu/inflection"
 	"github.com/qor/qor/utils"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // CropOption includes crop options
@@ -164,17 +165,25 @@ func (b Base) GetURLTemplate(option *Option) (path string) {
 
 var urlReplacer = regexp.MustCompile("(\\s|\\+)+")
 
-func getFuncMap(scope *gorm.Scope, field *gorm.Field, filename string) template.FuncMap {
+func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.FuncMap {
 	hash := func() string { return strings.Replace(time.Now().Format("20060102150405.000000"), ".", "", -1) }
 	shortHash := func() string { return time.Now().Format("20060102150405") }
+
 	return template.FuncMap{
-		"class":       func() string { return inflection.Plural(utils.ToParamString(scope.GetModelStruct().ModelType.Name())) },
-		"primary_key": func() string { return fmt.Sprintf("%v", scope.PrimaryKeyValue()) },
-		"column":      func() string { return strings.ToLower(field.Name) },
-		"filename":    func() string { return filename },
-		"basename":    func() string { return strings.TrimSuffix(path.Base(filename), path.Ext(filename)) },
-		"hash":        hash,
-		"short_hash":  shortHash,
+		"class": func() string { return inflection.Plural(utils.ToParamString(field.Schema.ModelType.Name())) },
+		"primary_key": func() string {
+			ppf := db.Statement.Schema.PrioritizedPrimaryField
+			if ppf != nil {
+				return fmt.Sprintf("%v", ppf.ReflectValueOf(db.Statement.ReflectValue))
+			}
+
+			return "0"
+		},
+		"column":     func() string { return strings.ToLower(field.Name) },
+		"filename":   func() string { return filename },
+		"basename":   func() string { return strings.TrimSuffix(path.Base(filename), path.Ext(filename)) },
+		"hash":       hash,
+		"short_hash": shortHash,
 		"filename_with_hash": func() string {
 			return urlReplacer.ReplaceAllString(fmt.Sprintf("%s.%v%v", slug.Make(strings.TrimSuffix(path.Base(filename), path.Ext(filename))), hash(), path.Ext(filename)), "-")
 		},
@@ -186,12 +195,12 @@ func getFuncMap(scope *gorm.Scope, field *gorm.Field, filename string) template.
 }
 
 // GetURL get default URL for a model based on its options
-func (b Base) GetURL(option *Option, scope *gorm.Scope, field *gorm.Field, templater URLTemplater) string {
+func (b Base) GetURL(option *Option, db *gorm.DB, field *schema.Field, templater URLTemplater) string {
 	if path := templater.GetURLTemplate(option); path != "" {
-		tmpl := template.New("").Funcs(getFuncMap(scope, field, b.GetFileName()))
+		tmpl := template.New("").Funcs(getFuncMap(db, field, b.GetFileName()))
 		if tmpl, err := tmpl.Parse(path); err == nil {
 			var result = bytes.NewBufferString("")
-			if err := tmpl.Execute(result, scope.Value); err == nil {
+			if err := tmpl.Execute(result, db.Statement.Dest); err == nil {
 				return result.String()
 			}
 		}

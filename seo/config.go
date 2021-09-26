@@ -1,6 +1,7 @@
 package seo
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -10,9 +11,8 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
-
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 const (
@@ -81,8 +81,8 @@ func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
 
 func (collection *Collection) renderGlobalSection(db *gorm.DB) h.HTMLComponent {
 	setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-	db.Where("is_global_seo = ? AND name = ?", true, collection.Name).First(setting)
-	if db.NewRecord(setting) {
+	err := db.Where("is_global_seo = ? AND name = ?", true, collection.Name).First(setting).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		setting.SetName(collection.Name)
 		setting.SetSEOType(collection.Name)
 		setting.SetIsGlobalSEO(true)
@@ -120,8 +120,8 @@ func (collection *Collection) renderSeoSections(db *gorm.DB) h.HTMLComponents {
 	var comps h.HTMLComponents
 	for _, seo := range collection.registeredSEO {
 		setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-		db.Where("name = ?", seo.Name).First(setting)
-		if db.NewRecord(setting) {
+		err := db.Where("name = ?", seo.Name).First(setting).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			setting.SetName(seo.Name)
 			setting.SetSEOType(seo.Name)
 			db.Save(setting)
@@ -243,7 +243,8 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 		prefix := ctx.Event.Params[0]
 
 		setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-		if db.Where("name = ?", prefix).First(setting).RecordNotFound() {
+		err = db.Where("name = ?", prefix).First(setting).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return
 		}
 

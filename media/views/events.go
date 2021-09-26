@@ -2,7 +2,7 @@ package views
 
 import (
 	"github.com/goplaid/web"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const (

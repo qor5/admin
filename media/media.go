@@ -6,7 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // Media is an interface including methods that needs for a media library storage
@@ -15,7 +16,7 @@ type Media interface {
 	Value() (driver.Value, error)
 
 	GetURLTemplate(*Option) string
-	GetURL(option *Option, scope *gorm.Scope, field *gorm.Field, templater URLTemplater) string
+	GetURL(option *Option, db *gorm.DB, field *schema.Field, templater URLTemplater) string
 
 	GetFileHeader() FileHeader
 	GetFileName() string

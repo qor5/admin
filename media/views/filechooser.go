@@ -9,10 +9,10 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func fileChooser(db *gorm.DB) web.EventFunc {
@@ -77,7 +77,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
 	var files []*media_library.MediaLibrary
 	wh := db.Model(&media_library.MediaLibrary{}).Order("created_at DESC")
-	currentPageInt, _ := strconv.ParseInt(ctx.R.FormValue(currentPageName(field)), 10, 64)
+	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
 	if currentPageInt == 0 {
 		currentPageInt = 1
 	}
@@ -94,14 +94,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		wh = wh.Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
 
-	var count int
+	var count int64
 	err := wh.Count(&count).Error
 	if err != nil {
 		panic(err)
 	}
 	perPage := MediaLibraryPerPage
-	pagesCount := int(int64(count)/perPage + 1)
-	if int64(count)%perPage == 0 {
+	pagesCount := int(count/int64(perPage) + 1)
+	if count%int64(perPage) == 0 {
 		pagesCount--
 	}
 

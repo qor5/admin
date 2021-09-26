@@ -5,13 +5,13 @@ import (
 
 	"github.com/goplaid/web"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/richeditor"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func Settings(db *gorm.DB) web.PageFunc {

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/gormop"
+	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/cropper"
@@ -68,7 +68,7 @@ func NewConfig() (b *presets.Builder) {
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 	b.URIPrefix("/admin").
 		BrandTitle("example").
-		DataOperator(gormop.DataOperator(db)).
+		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.Body = vuetify.VContainer(
 				h.H1("Home"),

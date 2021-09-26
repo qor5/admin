@@ -13,18 +13,18 @@ import (
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/fileicons"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 type MediaBoxConfigKey int
 
-var MediaLibraryPerPage int64 = 39
+var MediaLibraryPerPage int = 39
 
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"

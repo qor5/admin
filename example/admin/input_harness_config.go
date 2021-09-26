@@ -7,13 +7,13 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/picker"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func configInputHarness(b *presets.Builder, db *gorm.DB) {

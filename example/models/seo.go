@@ -2,8 +2,8 @@ package models
 
 import (
 	"github.com/goplaid/x/presets"
-	"github.com/jinzhu/gorm"
 	"github.com/qor/qor5/seo"
+	"gorm.io/gorm"
 )
 
 var SeoCollection *seo.Collection
