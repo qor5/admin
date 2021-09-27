@@ -113,6 +113,7 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
+		log.Println("completeUserAuthWithSetCookie", err)
 		return err
 	}
 
@@ -136,7 +137,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		Value:    ss,
 		Path:     "/",
 		Expires:  user.ExpiresAt,
-		Secure:   true,
 		HttpOnly: true,
 	})
 
