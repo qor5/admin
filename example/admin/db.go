@@ -22,6 +22,7 @@ func ConnectDB() (db *gorm.DB) {
 	if err = db.AutoMigrate(
 		&models.Post{},
 		&models.InputHarness{},
+		&models.User{},
 		&media_library.MediaLibrary{},
 	); err != nil {
 		panic(err)
