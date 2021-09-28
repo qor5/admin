@@ -11,6 +11,7 @@ require (
 	github.com/goplaid/x v1.0.12-0.20210924083001-c0e02fb12914
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
+	github.com/iancoleman/strcase v0.2.0
 	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
@@ -24,8 +25,8 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/htmlgo v1.0.3
 	golang.org/x/text v0.3.7
-	gorm.io/driver/postgres v1.1.1 // indirect
-	gorm.io/gorm v1.21.15 // indirect
+	gorm.io/driver/postgres v1.1.1
+	gorm.io/gorm v1.21.15
 )
 
 // replace github.com/goplaid/web => ../../goplaid/web
