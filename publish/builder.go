@@ -49,7 +49,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 					return
 				}
 			}
-			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOnline, "online_id": r.GetOnlineID()}).Error; err != nil {
+			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOnline, "online_url": r.GetOnlineUrl()}).Error; err != nil {
 				return
 			}
 		}

@@ -29,8 +29,8 @@ type AfterUnPublishInterface interface {
 type StatusInterface interface {
 	GeStatus() string
 	SetStatus(s string)
-	GetOnlineID() string
-	SetOnlineID(s string)
+	GetOnlineUrl() string
+	SetOnlineUrl(s string)
 }
 
 type VersionInterface interface {

@@ -7,8 +7,8 @@ const (
 )
 
 type Status struct {
-	Status   string
-	OnlineID string
+	Status    string
+	OnlineUrl string
 }
 
 func (status Status) GeStatus() string {
@@ -19,10 +19,10 @@ func (status *Status) SetStatus(s string) {
 	status.Status = s
 }
 
-func (status *Status) GetOnlineID() string {
-	return status.OnlineID
+func (status *Status) GetOnlineUrl() string {
+	return status.OnlineUrl
 }
 
-func (status *Status) SetOnlineID(onlineID string) {
-	status.OnlineID = onlineID
+func (status *Status) SetOnlineUrl(onlineUrl string) {
+	status.OnlineUrl = onlineUrl
 }
