@@ -155,6 +155,15 @@ func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//
 	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authParamName,
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		Expires:  time.Now(),
+		HttpOnly: true,
+	})
+
 	w.Header().Set("Location", b.loginURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
