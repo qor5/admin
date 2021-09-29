@@ -1,6 +1,7 @@
 package publish_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -36,7 +37,15 @@ func (p *Product) getUrl() string {
 	return fmt.Sprintf("test/product/%s/index.html", p.Code)
 }
 
-func (p *Product) GetPublishActions(db *gorm.DB) (objs []*publish.PublishAction) {
+func (p *Product) getListUrl() string {
+	return "test/product/list/index.html"
+}
+
+func (p *Product) getListContent() string {
+	return fmt.Sprintf("list page  %s", p.Code)
+}
+
+func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -56,11 +65,27 @@ func (p *Product) GetPublishActions(db *gorm.DB) (objs []*publish.PublishAction)
 			IsDelete: true,
 		})
 	}
+
+	if val, ok := ctx.Value("skip_list").(bool); ok && val {
+		return
+	}
+	objs = append(objs, &publish.PublishAction{
+		Url:      p.getListUrl(),
+		Content:  p.getListContent(),
+		IsDelete: false,
+	})
 	return
 }
-func (p *Product) GetUnPublishActions(db *gorm.DB) (objs []*publish.PublishAction) {
+func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
+		IsDelete: true,
+	})
+	if val, ok := ctx.Value("skip_list").(bool); ok && val {
+		return
+	}
+	objs = append(objs, &publish.PublishAction{
+		Url:      p.getListUrl(),
 		IsDelete: true,
 	})
 	return
@@ -82,7 +107,7 @@ func (p *ProductWithoutVersion) getUrl() string {
 	return fmt.Sprintf("test/product_no_version/%s/index.html", p.Code)
 }
 
-func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB) (objs []*publish.PublishAction) {
+func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -99,7 +124,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB) (objs []*publish.
 	p.SetOnlineUrl(p.getUrl())
 	return
 }
-func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB) (objs []*publish.PublishAction) {
+func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		IsDelete: true,
@@ -147,7 +172,7 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	p := publish.New(db, storage)
 
 	// publish v1
-	if err := p.Publish(&productV1); err != nil {
+	if err := p.WithValue("skip_list", true).Publish(&productV1); err != nil {
 		t.Error(err)
 	}
 	if err := assertUpdateStatus(db, &productV1, publish.StatusOnline, productV1.getUrl()); err != nil {
@@ -156,15 +181,22 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	if err := assertUploadFile(&productV1, storage); err != nil {
 		t.Error(err)
 	}
+	if err := assertUploadListFile(&productV1, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
+	} else {
+		t.Error(errors.New("skip_list failed"))
+	}
 
 	// publish v2
-	if err := p.Publish(&productV2); err != nil {
+	if err := p.WithValue("skip_list", false).Publish(&productV2); err != nil {
 		t.Error(err)
 	}
 	if err := assertUpdateStatus(db, &productV2, publish.StatusOnline, productV2.getUrl()); err != nil {
 		t.Error(err)
 	}
 	if err := assertUploadFile(&productV2, storage); err != nil {
+		t.Error(err)
+	}
+	if err := assertUploadListFile(&productV2, storage); err != nil {
 		t.Error(err)
 	}
 	// if delete v1 file
@@ -187,6 +219,10 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	if err := assertUploadFile(&productV2, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
 	} else {
 		t.Error(errors.New(fmt.Sprintf("delete file %s failed", productV2.getUrl())))
+	}
+	if err := assertUploadListFile(&productV2, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
+	} else {
+		t.Error(errors.New("delete list file %s failed"), productV2.getListUrl())
 	}
 }
 
@@ -283,6 +319,18 @@ func assertUploadFile(p *Product, storage oss.StorageInterface) error {
 	}
 	c, err := ioutil.ReadAll(f)
 	if string(c) != p.getContent() {
+		return errors.New("wrong content")
+	}
+	return nil
+}
+
+func assertUploadListFile(p *Product, storage oss.StorageInterface) error {
+	f, err := storage.Get(p.getListUrl())
+	if err != nil {
+		return err
+	}
+	c, err := ioutil.ReadAll(f)
+	if string(c) != p.getListContent() {
 		return errors.New("wrong content")
 	}
 	return nil

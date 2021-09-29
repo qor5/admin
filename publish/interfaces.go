@@ -1,6 +1,8 @@
 package publish
 
 import (
+	"context"
+
 	"github.com/qor/oss"
 	"gorm.io/gorm"
 )
@@ -12,18 +14,18 @@ type PublishAction struct {
 }
 
 type PublishInterface interface {
-	GetPublishActions(db *gorm.DB) (actions []*PublishAction)
+	GetPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
 type UnPublishInterface interface {
-	GetUnPublishActions(db *gorm.DB) (actions []*PublishAction)
+	GetUnPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
 
 type AfterPublishInterface interface {
-	AfterPublish(db *gorm.DB, storage oss.StorageInterface) error
+	AfterPublish(db *gorm.DB, storage oss.StorageInterface, ctx context.Context) error
 }
 
 type AfterUnPublishInterface interface {
-	AfterUnPublish(db *gorm.DB, storage oss.StorageInterface) error
+	AfterUnPublish(db *gorm.DB, storage oss.StorageInterface, ctx context.Context) error
 }
 
 type StatusInterface interface {

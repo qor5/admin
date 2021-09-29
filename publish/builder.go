@@ -1,6 +1,7 @@
 package publish
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -16,13 +17,20 @@ import (
 type Builder struct {
 	db      *gorm.DB
 	storage oss.StorageInterface
+	context context.Context
 }
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	return &Builder{
 		db:      db,
 		storage: storage,
+		context: context.Background(),
 	}
+}
+
+func (b *Builder) WithValue(key, val interface{}) *Builder {
+	b.context = context.WithValue(b.context, key, val)
+	return b
 }
 
 // 幂等
@@ -31,7 +39,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 		// publish content
 		if r, ok := record.(PublishInterface); ok {
 			var objs []*PublishAction
-			objs = r.GetPublishActions(b.db)
+			objs = r.GetPublishActions(b.db, b.context)
 			if err = b.UploadOrDelete(objs); err != nil {
 				return
 			}
@@ -58,7 +66,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
-			if err = r.AfterPublish(b.db, b.storage); err != nil {
+			if err = r.AfterPublish(b.db, b.storage, b.context); err != nil {
 				return
 			}
 		}
@@ -72,7 +80,7 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 		// unpublish content
 		if r, ok := record.(UnPublishInterface); ok {
 			var objs []*PublishAction
-			objs = r.GetUnPublishActions(b.db)
+			objs = r.GetUnPublishActions(b.db, b.context)
 			if err = b.UploadOrDelete(objs); err != nil {
 				return
 			}
@@ -87,7 +95,7 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 
 		// unpublish callback
 		if r, ok := record.(AfterUnPublishInterface); ok {
-			if err = r.AfterUnPublish(b.db, b.storage); err != nil {
+			if err = r.AfterUnPublish(b.db, b.storage, b.context); err != nil {
 				return
 			}
 		}
