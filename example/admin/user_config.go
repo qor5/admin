@@ -41,7 +41,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	cl := user.Listing("Name", "Email", "Status")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
-
 		return []*v.FilterItem{
 			{
 				Key:          "created",
@@ -60,22 +59,23 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Label:        "Status",
 				ItemType:     v.ItemTypeSelect,
 				SQLCondition: `status %s ?`,
-				Options:      []*v.SelectItem{{"Active", "active"}, {"Inactive", "inactive"}},
+				Options: []*v.SelectItem{
+					&v.SelectItem{Text: "Active", Value: "active"},
+					&v.SelectItem{Text: "Inactive", Value: "inactive"},
+				},
 			},
 		}
 	})
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-
 		return []*presets.FilterTab{
 			{
 				Label: "Felix",
 				Query: url.Values{"name.ilike": []string{"felix"}},
 			},
-
 			{
 				Label: "Active",
-				Query: url.Values{"status": []string{"active"}, "name.ilike": []string{"felix"}},
+				Query: url.Values{"status": []string{"active"}},
 			},
 			{
 				Label: "All",
@@ -83,5 +83,4 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			},
 		}
 	})
-
 }
