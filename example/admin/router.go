@@ -6,7 +6,10 @@ import (
 
 func Router() (mux *http.ServeMux) {
 	mux = http.NewServeMux()
-	b := NewConfig()
-	mux.Handle("/", b)
+	c := NewConfig()
+	c.lb.Mount(mux)
+	mux.Handle("/", c.lb.Authenticate(func(w http.ResponseWriter, r *http.Request) {
+		c.pb.ServeHTTP(w, r)
+	}))
 	return
 }

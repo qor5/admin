@@ -13,6 +13,7 @@ import (
 	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
+	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
@@ -26,7 +27,12 @@ import (
 //go:embed assets
 var assets embed.FS
 
-func NewConfig() (b *presets.Builder) {
+type Config struct {
+	pb *presets.Builder
+	lb *login.Builder
+}
+
+func NewConfig() Config {
 	db := ConnectDB()
 
 	sess := session.Must(session.NewSession())
@@ -39,7 +45,7 @@ func NewConfig() (b *presets.Builder) {
 
 	media.RegisterCallbacks(db)
 
-	b = presets.New().RightDrawerWidth(700).VuetifyOptions(`
+	b := presets.New().RightDrawerWidth(700).VuetifyOptions(`
 {
   icons: {
 	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
@@ -68,11 +74,13 @@ func NewConfig() (b *presets.Builder) {
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 	b.URIPrefix("/admin").
 		BrandTitle("example").
+		ProfileFunc(profile).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.Body = vuetify.VContainer(
 				h.H1("Home"),
-				h.P().Text("Change your home page here"))
+				h.P().Text("Change your home page here"),
+			)
 			return
 		})
 
@@ -124,5 +132,9 @@ func NewConfig() (b *presets.Builder) {
 
 	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
-	return
+
+	return Config{
+		pb: b,
+		lb: newLoginBuilder(db),
+	}
 }

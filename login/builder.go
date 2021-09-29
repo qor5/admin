@@ -90,6 +90,7 @@ func (b *Builder) FetchUserToContextFunc(v FetchUserToContextFunc) (r *Builder) 
 }
 
 type UserClaims struct {
+	Provider  string
 	Email     string
 	Name      string
 	UserID    string
@@ -118,7 +119,11 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	}
 
 	claims := UserClaims{
-		Email: user.Email,
+		Provider:  user.Provider,
+		Email:     user.Email,
+		Name:      user.Name,
+		UserID:    user.UserID,
+		AvatarURL: user.AvatarURL,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// A usual scenario is to set the expiration time relative to the current time
 			ExpiresAt: jwt.NewNumericDate(user.ExpiresAt),
