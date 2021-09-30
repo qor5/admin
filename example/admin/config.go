@@ -102,7 +102,7 @@ func NewConfig() Config {
 		).Icon("settings"),
 	)
 
-	m := b.Model(&models.Post{}).MenuIcon("article")
+	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)

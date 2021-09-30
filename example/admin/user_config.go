@@ -13,7 +13,7 @@ import (
 )
 
 func configUser(b *presets.Builder, db *gorm.DB) {
-	user := b.Model(&models.User{}).MenuIcon("manage_accounts")
+	user := b.Model(&models.User{})
 
 	ed := user.Editing(
 		"Name",
