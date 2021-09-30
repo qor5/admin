@@ -99,10 +99,10 @@ func NewConfig() Config {
 		b.MenuGroup("Site Management").SubItems(
 			"Setting",
 			"QorSEOSetting",
-		),
+		).Icon("settings"),
 	)
 
-	m := b.Model(&models.Post{})
+	m := b.Model(&models.Post{}).MenuIcon("article")
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)

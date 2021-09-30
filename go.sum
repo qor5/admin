@@ -158,8 +158,8 @@ github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/goplaid/web v1.1.9 h1:N4cNnmnnmhJGvCp8gC+s3ucTb8X7KZ7EgMul3ik+s+Q=
 github.com/goplaid/web v1.1.9/go.mod h1:elgPhqt3Yb69U79Bs4PMC6wpvQGc5AgiwXkCiuxPPFc=
-github.com/goplaid/x v1.0.13-0.20210930023331-8e5a43c667d8 h1:Q7zUFIzcahKWU/5qunZI1pE3Iyolkl2v1xK8Utq4PxQ=
-github.com/goplaid/x v1.0.13-0.20210930023331-8e5a43c667d8/go.mod h1:8BppAlCjdqxKOBFfNFOyp+8eBZvC89zdy2+WMbDIo8M=
+github.com/goplaid/x v1.0.13-0.20210930064203-b836098716b9 h1:OxffqcpR8HOLVzmpjszrO6WeElgfTkaHu22EQ8iZvfY=
+github.com/goplaid/x v1.0.13-0.20210930064203-b836098716b9/go.mod h1:8BppAlCjdqxKOBFfNFOyp+8eBZvC89zdy2+WMbDIo8M=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
