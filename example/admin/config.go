@@ -92,6 +92,16 @@ func NewConfig() Config {
 	//media_view.MediaLibraryPerPage = 3
 	models.ConfigureSeo(b, db)
 
+	b.MenuOrder(
+		"InputHarness",
+		"Post",
+		"User",
+		b.MenuGroup("Site Management").SubItems(
+			"Setting",
+			"QorSEOSetting",
+		),
+	)
+
 	m := b.Model(&models.Post{})
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
