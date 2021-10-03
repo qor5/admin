@@ -53,8 +53,10 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 			Type("text").
 			FieldName(field.Name).
 			Label(field.Label).
-			Value(reflectutils.MustGet(obj, field.Name).(string)).Attr("@input", web.Plaid().
-			EventFunc(convertToSlugEvent, slugTitle).Go()),
+			Value(field.Value(obj)).
+			Attr("v-debounce:input", "300").
+			Attr("@input:debounced", web.Plaid().
+				EventFunc(convertToSlugEvent, slugTitle).Go()),
 
 		VRow(
 			VCol(

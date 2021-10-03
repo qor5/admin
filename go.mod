@@ -7,8 +7,8 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.9
-	github.com/goplaid/x v1.0.13-0.20210930085049-1e5314c1c960
+	github.com/goplaid/web v1.1.10
+	github.com/goplaid/x v1.0.13
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
