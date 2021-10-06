@@ -19,7 +19,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ContainerFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
+type RenderFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
 
 type Builder struct {
 	prefix            string
@@ -77,10 +77,10 @@ type ContainerBuilder struct {
 	mb            *presets.ModelBuilder
 	model         interface{}
 	modelType     reflect.Type
-	containerFunc ContainerFunc
+	containerFunc RenderFunc
 }
 
-func (b *Builder) NewContainer(name string) (r *ContainerBuilder) {
+func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
@@ -102,7 +102,7 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
-func (b *ContainerBuilder) ContainerFunc(v ContainerFunc) *ContainerBuilder {
+func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
 	b.containerFunc = v
 	return b
 }

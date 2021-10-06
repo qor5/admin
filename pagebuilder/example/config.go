@@ -50,8 +50,8 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 	}
 	pb := pagebuilder.New(db)
 
-	textAndImage := pb.NewContainer("text_and_image").
-		ContainerFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+	textAndImage := pb.RegisterContainer("text_and_image").
+		RenderFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			tai := obj.(*TextAndImage)
 			return h.Div(
 				h.Text(tai.Text),
