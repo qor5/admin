@@ -39,5 +39,20 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 		},
 	})
 
+	seo.Messages_en_US.DynamicMessage = map[string]string{
+		"SiteName":              "SiteName",
+		"Title":                 "Title",
+		"Not Found":             "Not Found",
+		"Internal Server Error": "Internal Server Error",
+		"Post":                  "Post",
+	}
+
+	seo.Messages_zh_CN.DynamicMessage = map[string]string{
+		"SiteName":              "站点名称",
+		"Title":                 "标题",
+		"Not Found":             "404页面",
+		"Internal Server Error": "错误页面",
+		"Post":                  "帖子",
+	}
 	SeoCollection.Configure(b, db)
 }
