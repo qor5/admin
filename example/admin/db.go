@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/media/media_library"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,7 +22,6 @@ func ConnectDB() (db *gorm.DB) {
 		&models.Post{},
 		&models.InputHarness{},
 		&models.User{},
-		&media_library.MediaLibrary{},
 	); err != nil {
 		panic(err)
 	}

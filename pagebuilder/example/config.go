@@ -3,8 +3,12 @@ package example
 import (
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
+	"github.com/qor/oss/s3"
+	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
+	"github.com/qor/qor5/media/oss"
 	"github.com/qor/qor5/pagebuilder"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/driver/postgres"
@@ -30,6 +34,16 @@ type TextAndImage struct {
 }
 
 func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
+	sess := session.Must(session.NewSession())
+
+	oss.Storage = s3.New(&s3.Config{
+		Bucket:  os.Getenv("S3_Bucket"),
+		Region:  os.Getenv("S3_Region"),
+		Session: sess,
+	})
+
+	media.RegisterCallbacks(db)
+
 	err := db.AutoMigrate(&TextAndImage{})
 	if err != nil {
 		panic(err)
@@ -45,6 +59,7 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 			)
 		})
 
-	textAndImage.Model(&TextAndImage{}).Editing("Text", "Image")
+	ed := textAndImage.Model(&TextAndImage{}).Editing("Text", "Image")
+	ed.Field("Image")
 	return pb
 }

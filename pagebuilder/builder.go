@@ -9,7 +9,11 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
+	"github.com/goplaid/x/presets/gorm2op"
 	. "github.com/goplaid/x/vuetify"
+	media_view "github.com/qor/qor5/media/views"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	goji "goji.io"
 	"gorm.io/gorm"
@@ -43,8 +47,11 @@ func New(db *gorm.DB) *Builder {
 	}
 
 	r.ps = presets.New().
+		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(r.prefix).
 		LayoutFunc(r.pageEditorLayout)
+
+	media_view.Configure(r.ps, db)
 
 	type Editor struct {
 	}
@@ -143,7 +150,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 		pure := ec.builder.containerFunc(obj, ctx)
 
-		comps = append(comps, b.containerEditor(pure, ctx))
+		comps = append(comps, b.containerEditor(obj, ec, pure, ctx))
 	}
 
 	r.Body = h.Components(comps...)
@@ -151,8 +158,20 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	return
 }
 
-func (b *Builder) containerEditor(c h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
-	return c
+func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
+
+	return VCard(
+		c,
+		VCardActions(
+			VSpacer(),
+			VBtn("Edit").Attr("@click",
+				web.Plaid().
+					URL(ec.builder.mb.Info().ListingHref()).
+					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+					Go(),
+			).Text(true).Color("primary"),
+		),
+	).Class("mb-2")
 }
 
 type editorContainer struct {
@@ -213,7 +232,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Editor")
 		pr.Body = VApp(
 
-			// web.Portal().Name(rightDrawerName),
+			web.Portal().Name(presets.RightDrawerPortalName),
 
 			VAppBar(
 				h.Text("Hello"),
