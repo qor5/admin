@@ -38,17 +38,30 @@ func New(db *gorm.DB) *Builder {
 
 	r := &Builder{
 		db:     db,
-		ps:     presets.New(),
 		wb:     web.New(),
 		prefix: "/page_builder",
 	}
-	r.ps.LayoutFunc(r.pageEditorLayout)
+
+	r.ps = presets.New().
+		URIPrefix(r.prefix).
+		LayoutFunc(r.pageEditorLayout)
+
+	type Editor struct {
+	}
+	r.ps.Model(&Editor{}).
+		Detailing().
+		PageFunc(r.Editor)
 	return r
 }
 
 func (b *Builder) Prefix(v string) (r *Builder) {
 	b.prefix = v
 	return b
+}
+
+func (b *Builder) Configure(pb *presets.Builder) {
+	pb.Model(&Page{})
+	pb.Model(&Container{})
 }
 
 type ContainerBuilder struct {
@@ -62,7 +75,8 @@ type ContainerBuilder struct {
 
 func (b *Builder) NewContainer(name string) (r *ContainerBuilder) {
 	r = &ContainerBuilder{
-		name: name,
+		name:    name,
+		builder: b,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return
@@ -71,7 +85,13 @@ func (b *Builder) NewContainer(name string) (r *ContainerBuilder) {
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
-	b.modelType = reflect.TypeOf(b.model)
+
+	val := reflect.ValueOf(m)
+	if val.Kind() != reflect.Ptr {
+		panic("model pointer type required")
+	}
+
+	b.modelType = val.Elem().Type()
 	return b
 }
 
@@ -81,7 +101,7 @@ func (b *ContainerBuilder) ContainerFunc(v ContainerFunc) *ContainerBuilder {
 }
 
 func (b *ContainerBuilder) NewModel() interface{} {
-	return reflect.New(b.modelType)
+	return reflect.New(b.modelType).Interface()
 }
 
 func (b *ContainerBuilder) ModelTypeName() string {
@@ -116,7 +136,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	cbs := b.getContainerBuilders(cons)
 	for _, ec := range cbs {
 		obj := ec.builder.NewModel()
-		err = b.db.First(obj, "id = ?", ec.container.ModelID).Error
+		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
 		if err != nil {
 			return
 		}
