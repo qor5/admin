@@ -1,0 +1,1 @@
+export DB_PARAMS="user=pb_example password=123 dbname=pb_example_dev sslmode=disable host=localhost port=6435"

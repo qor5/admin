@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=pb_example"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=pb_example_dev"
+    ports:
+      - "6435:5432"
