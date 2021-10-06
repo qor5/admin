@@ -1,7 +1,14 @@
 package seo
 
 import (
+	"net/http"
+	"reflect"
+	"regexp"
+	"strings"
+
 	"github.com/qor/qor5/media"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 // New initialize a SeoCollection instance
@@ -59,4 +66,79 @@ func (collection *Collection) GetSEO(name string) *SEO {
 	}
 
 	return &SEO{Name: name, collection: collection}
+}
+
+func (collection Collection) Render(db *gorm.DB, req *http.Request, name string, objects ...interface{}) h.HTMLComponent {
+	seoSetting := collection.GetSEOSetting(db, name, objects...)
+
+	return seoSetting.Component(req)
+}
+
+func (collection Collection) GetSEOSetting(db *gorm.DB, name string, objects ...interface{}) Setting {
+	var (
+		seoSetting Setting
+		seo        = collection.GetSEO(name)
+	)
+
+	// If passed objects has customzied SEO Setting field
+	for _, obj := range objects {
+		if value := reflect.Indirect(reflect.ValueOf(obj)); value.IsValid() && value.Kind() == reflect.Struct {
+			for i := 0; i < value.NumField(); i++ {
+				if value.Field(i).Type() == reflect.TypeOf(Setting{}) {
+					seoSetting = value.Field(i).Interface().(Setting)
+					break
+				}
+			}
+		}
+	}
+
+	if !seoSetting.EnabledCustomize {
+
+		globalSeoSetting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
+		if db.Where("name = ?", name).First(globalSeoSetting); globalSeoSetting.GetName() != "" {
+			seoSetting = globalSeoSetting.GetSEOSetting()
+		}
+	}
+
+	siteWideSetting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface()
+	db.Where("is_global_seo = ? AND name = ?", true, collection.Name).First(siteWideSetting)
+	tagValues := siteWideSetting.(QorSEOSettingInterface).GetGlobalSetting()
+
+	if tagValues == nil {
+		tagValues = map[string]string{}
+	}
+
+	if seo.Context != nil {
+		for key, value := range seo.Context(objects...) {
+			tagValues[key] = value
+		}
+	}
+
+	return replaceTags(seoSetting, seo.Variables, tagValues)
+}
+
+func replaceTags(seoSetting Setting, validTags []string, values map[string]string) Setting {
+	replace := func(str string) string {
+		re := regexp.MustCompile("{{([a-zA-Z0-9]*)}}")
+		matches := re.FindAllStringSubmatch(str, -1)
+		for _, match := range matches {
+			str = strings.Replace(str, match[0], values[match[1]], 1)
+		}
+		return str
+	}
+
+	seoSetting.Title = replace(seoSetting.Title)
+	seoSetting.Description = replace(seoSetting.Description)
+	seoSetting.Keywords = replace(seoSetting.Keywords)
+	seoSetting.Type = replace(seoSetting.Type)
+	seoSetting.OpenGraphURL = replace(seoSetting.OpenGraphURL)
+	seoSetting.OpenGraphImageURL = replace(seoSetting.OpenGraphImageURL)
+	seoSetting.OpenGraphType = replace(seoSetting.OpenGraphType)
+	for idx, metadata := range seoSetting.OpenGraphMetadata {
+		seoSetting.OpenGraphMetadata[idx] = OpenGraphMetadata{
+			Property: replace(metadata.Property),
+			Content:  replace(metadata.Content),
+		}
+	}
+	return seoSetting
 }

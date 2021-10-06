@@ -3,9 +3,12 @@ package seo
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/qor/qor5/media/media_library"
+	h "github.com/theplant/htmlgo"
 )
 
 // QorSEOSettingInterface support customize Seo model
@@ -183,4 +186,68 @@ func (setting *Setting) Scan(value interface{}) error {
 func (setting Setting) Value() (driver.Value, error) {
 	result, err := json.Marshal(setting)
 	return string(result), err
+}
+
+func (setting Setting) Component(req *http.Request) h.HTMLComponent {
+	toAbsoluteURL := func(str string) string {
+		if u, err := url.Parse(str); err == nil {
+			if u.IsAbs() {
+				return str
+			}
+
+			if u.Host == "" && req != nil {
+				u.Host = req.Host
+			}
+
+			if u.Scheme == "" {
+				if req != nil && req.URL.Scheme != "" {
+					u.Scheme = req.URL.Scheme
+				} else {
+					u.Scheme = "http"
+				}
+			}
+			return u.String()
+		}
+		return str
+	}
+
+	openGraphData := map[string]string{}
+
+	if setting.OpenGraphURL != "" {
+		openGraphData["og:url"] = toAbsoluteURL(setting.OpenGraphURL)
+	}
+
+	if setting.OpenGraphType != "" {
+		openGraphData["og:type"] = setting.OpenGraphType
+	}
+
+	if setting.OpenGraphImageFromMediaLibrary.FileName != "" {
+		openGraphData["og:image"] = toAbsoluteURL(setting.OpenGraphImageFromMediaLibrary.URL())
+	} else {
+		openGraphData["og:image"] = toAbsoluteURL(setting.OpenGraphImageURL)
+	}
+
+	for _, metavalue := range setting.OpenGraphMetadata {
+		openGraphData[metavalue.Property] = metavalue.Content
+	}
+
+	if _, ok := openGraphData["og:title"]; !ok {
+		openGraphData["og:title"] = setting.Title
+	}
+
+	if _, ok := openGraphData["og:description"]; !ok {
+		openGraphData["og:description"] = setting.Description
+	}
+
+	var openGraphDataComponents h.HTMLComponents
+	for key, value := range openGraphData {
+		openGraphDataComponents = append(openGraphDataComponents, h.Meta().Attr("property", key).Attr("name", key).Attr("content", value))
+	}
+
+	return h.HTMLComponents{
+		h.Title(setting.Title),
+		h.Meta().Attr("name", "description").Attr("content", setting.Description),
+		h.Meta().Attr("name", "keywords").Attr("content", setting.Keywords),
+		openGraphDataComponents,
+	}
 }
