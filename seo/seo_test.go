@@ -28,8 +28,6 @@ var (
 func init() {
 	db = initDB()
 	db.AutoMigrate(&QorSEOSetting{})
-	db.AutoMigrate(&Product{})
-
 	collection = New("Site SEO")
 	collection.RegisterGlobalVariables(&SEOGlobalSetting{SiteName: "Qor Shop"})
 	collection.RegisterSettingModel(&QorSEOSetting{})
@@ -147,7 +145,6 @@ func TestSaveSEOSetting(t *testing.T) {
 
 func TestRender(t *testing.T) {
 	db.Exec("truncate qor_seo_settings;")
-	db.Exec("truncate products;")
 
 	db.Save(&QorSEOSetting{
 		Name: "Site SEO",

@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/form v3.1.4+incompatible
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/goplaid/web v1.1.10
 	github.com/goplaid/x v1.0.13
@@ -25,6 +26,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/htmlgo v1.0.3
 	golang.org/x/text v0.3.7
+	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/postgres v1.1.1
 	gorm.io/gorm v1.21.15
 )
