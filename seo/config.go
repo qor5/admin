@@ -20,9 +20,13 @@ const (
 )
 
 func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
-	db.AutoMigrate(
+	err := db.AutoMigrate(
 		collection.settingModel,
 	)
+
+	if err != nil {
+		panic(err)
+	}
 
 	b.GetWebBuilder().RegisterEventFunc(saveCollectionEvent, saveCollection(collection, db))
 	b.Model(collection.settingModel).PrimaryField("Name").Label("SEO").Listing().PageFunc(collection.pageFunc(db))
@@ -177,24 +181,24 @@ func (collection *Collection) settingComponent(obj interface{}) h.HTMLComponents
 		}
 	}
 
-	varibles := []string{}
+	var variables []string
 	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting)).Type()
 	for i := 0; i < value.NumField(); i++ {
 		fieldName := value.Field(i).Name
-		varibles = append(varibles, fieldName)
+		variables = append(variables, fieldName)
 	}
-	varibles = append(varibles, seo.Varibles...)
+	variables = append(variables, seo.Variables...)
 
-	variblesEle := []h.HTMLComponent{}
-	for _, varible := range varibles {
-		variblesEle = append(variblesEle, VCol(
-			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(varible)),
+	var variablesEle []h.HTMLComponent
+	for _, variable := range variables {
+		variablesEle = append(variablesEle, VCol(
+			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(variable)),
 		).Cols(2))
 	}
 
 	commonSettingComponent := h.Components(
 		VRow(
-			variblesEle...,
+			variablesEle...,
 		),
 		h.H6("Basic").Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
@@ -231,7 +235,7 @@ func (collection *Collection) settingComponent(obj interface{}) h.HTMLComponents
 				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Label("EnabledCustomize").Attr(":input-value", "vars.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none"),
 				h.Div(commonSettingComponent).Attr("v-show", "vars.userDefaults == false"),
 			).Attr("style", "padding-bottom: 0px;padding-top: 1px;"),
-		).Attr(web.InitContextVars, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)),
+		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)),
 	}
 }
 
@@ -268,12 +272,15 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 			}
 			s := setting.GetSEOSetting()
 			decoder := form.NewDecoder()
-			fmt.Println(values)
+			// fmt.Println(values)
 			decoder.Decode(&s, values)
 			setting.SetSEOSetting(s)
 		}
 
-		db.Save(setting)
+		err = db.Save(setting).Error
+		if err != nil {
+			return
+		}
 
 		r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.Event.Params[1])
 		return

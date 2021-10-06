@@ -14,7 +14,7 @@ type GlobalVaribles struct {
 
 func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 	SeoCollection = seo.New("Site SEO")
-	SeoCollection.RegisterGlobalVaribles(&GlobalVaribles{})
+	SeoCollection.RegisterGlobalVariables(&GlobalVaribles{})
 	SeoCollection.RegisterSettingModel(&seo.QorSEOSetting{})
 
 	SeoCollection.RegisterSEO(&seo.SEO{
@@ -26,8 +26,8 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 	})
 
 	SeoCollection.RegisterSEO(&seo.SEO{
-		Name:     "Post",
-		Varibles: []string{"Title"},
+		Name:      "Post",
+		Variables: []string{"Title"},
 		Context: func(objects ...interface{}) map[string]string {
 			context := make(map[string]string)
 			if len(objects) > 0 {

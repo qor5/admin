@@ -20,7 +20,7 @@ type Collection struct {
 // SEO represents a seo object for a page
 type SEO struct {
 	Name       string
-	Varibles   []string
+	Variables  []string
 	OpenGraph  *OpenGraphConfig
 	Context    func(...interface{}) map[string]string
 	collection *Collection
@@ -31,8 +31,8 @@ type OpenGraphConfig struct {
 	Size *media.Size
 }
 
-// RegisterGlobalVaribles register global setting struct and will represents as 'Site-wide Settings' part in admin
-func (collection *Collection) RegisterGlobalVaribles(s interface{}) {
+// RegisterGlobalVariables register global setting struct and will represents as 'Site-wide Settings' part in admin
+func (collection *Collection) RegisterGlobalVariables(s interface{}) {
 	collection.globalSetting = s
 }
 
