@@ -177,7 +177,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 						c,
 					),
 				),
-			).Class("page-builder-container elevation-10 mx-auto").Attr(":style", "locals.width"),
+			).Class("page-builder-container mx-auto").Attr(":style", "locals.width"),
 		).Cols(10).Class("pa-0"),
 
 		VCol(
@@ -324,7 +324,8 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 <style>
 	.page-builder-container {
 		overflow: hidden;
-	}
+		box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
+}
 </style>
 
 			<style>
