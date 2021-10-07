@@ -178,17 +178,19 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					),
 				),
 			).Class("page-builder-container elevation-10 mx-auto").Attr(":style", "locals.width"),
-		).Cols(11).Class("pa-0"),
+		).Cols(10).Class("pa-0"),
 
 		VCol(
-			h.Text(ec.builder.name),
-			VBtn("Edit").Attr("@click",
+			VBtn("").Attr("@click",
 				web.Plaid().
 					URL(ec.builder.mb.Info().ListingHref()).
 					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 					Go(),
-			).Color("primary"),
-		).Cols(1).Class("pa-0"),
+			).Color("primary").Children(
+				VIcon("settings"),
+				h.Text(ec.builder.name),
+			).Class("ma-2 float-right"),
+		).Cols(2).Class("pa-0"),
 	).Attr("style", "border-top: 0.5px dashed gray")
 
 }
