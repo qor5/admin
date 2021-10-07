@@ -28,6 +28,7 @@ type Builder struct {
 	db                *gorm.DB
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
+	pageStyle         h.HTMLComponent
 }
 
 func New(db *gorm.DB) *Builder {
@@ -62,7 +63,12 @@ func New(db *gorm.DB) *Builder {
 }
 
 func (b *Builder) Prefix(v string) (r *Builder) {
-	b.prefix = v
+	b.ps.URIPrefix(v)
+	return b
+}
+
+func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
+	b.pageStyle = v
 	return b
 }
 
@@ -153,25 +159,38 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		comps = append(comps, b.containerEditor(obj, ec, pure, ctx))
 	}
 
-	r.Body = h.Components(comps...)
+	r.Body = VContainer(comps...).Attr(web.InitContextLocals, `{width: "width: 600px;"}`).
+		Class("mt-6").
+		Fluid(true)
 
 	return
 }
 
 func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
 
-	return VCard(
-		c,
-		VCardActions(
-			VSpacer(),
+	return VRow(
+		VCol(
+			h.Div(
+				h.Tag("shadow-root").Children(
+					h.Div(
+						b.pageStyle,
+						c,
+					),
+				),
+			).Class("page-builder-container elevation-10 mx-auto").Attr(":style", "locals.width"),
+		).Cols(11).Class("pa-0"),
+
+		VCol(
+			h.Text(ec.builder.name),
 			VBtn("Edit").Attr("@click",
 				web.Plaid().
 					URL(ec.builder.mb.Info().ListingHref()).
 					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 					Go(),
-			).Text(true).Color("primary"),
-		),
-	).Class("mb-2")
+			).Color("primary"),
+		).Cols(1).Class("pa-0"),
+	).Attr("style", "border-top: 0.5px dashed gray")
+
 }
 
 type editorContainer struct {
@@ -202,6 +221,110 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 			<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
+<script >
+
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('vue')) :
+    typeof define === 'function' && define.amd ? define(['exports', 'vue'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.shadow = {}, global.Vue));
+}(this, (function (exports, Vue) { 'use strict';
+
+    function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+    var Vue__default = /*#__PURE__*/_interopDefaultLegacy(Vue);
+
+    function makeShadow(el) {
+        makeAbstractShadow(el, el.childNodes);
+    }
+    function makeAbstractShadow(rootEl, childNodes) {
+        const fragment = document.createDocumentFragment();
+        for (const node of childNodes) {
+            fragment.appendChild(node);
+        }
+        const shadowroot = rootEl.attachShadow({ mode: 'closed' });
+        shadowroot.appendChild(fragment);
+    }
+    function data() {
+        return {
+            pabstract: false,
+            pstatic: false
+        };
+    }
+    const ShadowRoot = Vue__default['default'].extend({
+        render(h) {
+            return h(this.tag, {}, [
+                this.pstatic ? this.$slots.default : h(this.slotTag, { attrs: { id: this.slotId }, 'class': this.slotClass }, [
+                    this.$slots.default
+                ])
+            ]);
+        },
+        props: {
+            abstract: {
+                type: Boolean,
+                default: false
+            },
+            static: {
+                type: Boolean,
+                default: false,
+            },
+            tag: {
+                type: String,
+                default: 'div',
+            },
+            slotTag: {
+                type: String,
+                default: 'div',
+            },
+            slotClass: {
+                type: String,
+            },
+            slotId: {
+                type: String
+            }
+        },
+        data,
+        beforeMount() {
+            this.pabstract = this.abstract;
+            this.pstatic = this.static;
+        },
+        mounted() {
+            if (this.pabstract) {
+                makeAbstractShadow(this.$el.parentElement, this.$el.childNodes);
+            }
+            else {
+                makeShadow(this.$el);
+            }
+        },
+    });
+    function install(vue) {
+        vue.component('shadow-root', ShadowRoot);
+        vue.directive('shadow', {
+            bind(el) {
+                makeShadow(el);
+            }
+        });
+    }
+    if (typeof window != null && window.Vue) {
+        install(window.Vue);
+    }
+    var shadow = { ShadowRoot, shadow_root: ShadowRoot, install };
+
+    exports.ShadowRoot = ShadowRoot;
+    exports.default = shadow;
+    exports.install = install;
+    exports.shadow_root = ShadowRoot;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+
+</script>
+<style>
+	.page-builder-container {
+		overflow: hidden;
+	}
+</style>
+
 			<style>
 				[v-cloak] {
 					display: none;
@@ -235,11 +358,23 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 			web.Portal().Name(presets.RightDrawerPortalName),
 
 			VAppBar(
-				h.Text("Hello"),
+				h.Div(
+					VBtn("").Icon(true).Children(
+						VIcon("phone_iphone"),
+					).Attr("@click", `locals.width="width: 600px"`).
+						Class("mr-10"),
+					VBtn("").Icon(true).Children(
+						VIcon("tablet_mac"),
+					).Attr("@click", `locals.width="width: 960px"`).
+						Class("mr-10"),
+
+					VBtn("").Icon(true).Children(
+						VIcon("laptop_mac"),
+					).Attr("@click", `locals.width="width: 1264px"`),
+				).Class("mx-auto"),
 			).Dark(true).
 				Color("primary").
-				App(true).
-				ClippedLeft(true),
+				App(true),
 
 			VMain(
 				innerPr.Body.(h.HTMLComponent),
