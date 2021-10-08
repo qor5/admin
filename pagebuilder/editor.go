@@ -265,7 +265,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 				web.Slot(
 					VBtn("").Color("secondary").Children(
 						VIcon("settings"),
-					).Icon(true).Class("my-2 float-right").
+					).Icon(true).Class("my-2 mr-4 float-right").
 						Attr("v-bind", "attrs", "v-on", "on"),
 				).Name("activator").Scope("{ on, attrs }"),
 
