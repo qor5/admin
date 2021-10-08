@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	h "github.com/theplant/htmlgo"
-	goji "goji.io"
 	"gorm.io/gorm"
 )
 
@@ -17,12 +17,12 @@ type RenderFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
 
 type Builder struct {
 	prefix            string
-	mux               *goji.Mux
 	wb                *web.Builder
 	db                *gorm.DB
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
 	pageStyle         h.HTMLComponent
+	preview           http.Handler
 }
 
 func New(db *gorm.DB) *Builder {
@@ -42,6 +42,7 @@ func New(db *gorm.DB) *Builder {
 	}
 
 	r.ps = presets.New().
+		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(r.prefix).
 		LayoutFunc(r.pageEditorLayout)
@@ -54,6 +55,7 @@ func New(db *gorm.DB) *Builder {
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
+	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
 	return r
 }
 
@@ -143,5 +145,9 @@ func (b *ContainerBuilder) Editing(vs ...string) *presets.EditingBuilder {
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.Index(r.RequestURI, b.prefix+"/preview") >= 0 {
+		b.preview.ServeHTTP(w, r)
+		return
+	}
 	b.ps.ServeHTTP(w, r)
 }

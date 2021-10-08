@@ -16,35 +16,31 @@ import (
 	"goji.io/pat"
 )
 
-func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
-
-	id := pat.Param(ctx.R, "id")
-
-	var page Page
-	err = b.db.First(&page, "id = ?", id).Error
-	if err != nil {
-		return
-	}
-
-	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", page.ID).Error
-	if err != nil {
-		return
-	}
+func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
+	id := ctx.R.FormValue("id")
+	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var comps []h.HTMLComponent
-	cbs := b.getContainerBuilders(cons)
-	for _, ec := range cbs {
-		obj := ec.builder.NewModel()
-		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
-		if err != nil {
-			return
-		}
-
-		pure := ec.builder.containerFunc(obj, ctx)
-
-		comps = append(comps, b.containerEditor(obj, ec, pure, ctx))
+	var p *Page
+	comps, p, err = b.renderContainers(ctx, id, true)
+	if err != nil {
+		return
 	}
+
+	r.PageTitle = p.Title
+	r.Body = h.Components(comps...)
+	return
+}
+
+func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
+	id := pat.Param(ctx.R, "id")
+	var comps []h.HTMLComponent
+	var p *Page
+	comps, p, err = b.renderContainers(ctx, id, false)
+	if err != nil {
+		return
+	}
+	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 
 	r.Body = h.Components(
 		VAppBar(
@@ -64,6 +60,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			).Attr("@click", `locals.width="width: 1264px"`),
 
 			VSpacer(),
+			VBtn("Preview").Text(true).Href(b.prefix+"/preview?id="+id).Target("_blank"),
 			b.addContainerMenu(id),
 		).Dark(true).
 			Color("primary").
@@ -77,6 +74,39 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		),
 	)
 
+	return
+}
+
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID string, preview bool) (r []h.HTMLComponent, p *Page, err error) {
+	var page Page
+	err = b.db.First(&page, "id = ?", pageID).Error
+	if err != nil {
+		return
+	}
+	p = &page
+
+	var cons []*Container
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", page.ID).Error
+	if err != nil {
+		return
+	}
+
+	cbs := b.getContainerBuilders(cons)
+	for _, ec := range cbs {
+		obj := ec.builder.NewModel()
+		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
+		if err != nil {
+			return
+		}
+
+		pure := ec.builder.containerFunc(obj, ctx)
+
+		if preview {
+			r = append(r, pure)
+		} else {
+			r = append(r, b.containerEditor(obj, ec, pure, ctx))
+		}
+	}
 	return
 }
 
@@ -431,7 +461,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 			panic(err)
 		}
 
-		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Editor")
+		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
 		pr.Body = VApp(
 
 			web.Portal().Name(presets.RightDrawerPortalName),
