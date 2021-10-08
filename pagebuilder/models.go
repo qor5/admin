@@ -11,12 +11,11 @@ func (*Page) TableName() string {
 }
 
 type Container struct {
-	ID        uint
-	PageID    uint
-	Name      string
-	ModelType string
-	ModelID   uint
-	Order     float64
+	ID           uint
+	PageID       uint
+	Name         string
+	ModelID      uint
+	DisplayOrder float64
 }
 
 func (*Container) TableName() string {
