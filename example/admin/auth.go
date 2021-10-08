@@ -78,6 +78,17 @@ func autheticate(loginBuilder *login.Builder) func(next http.Handler) http.Handl
 	re := regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			p := r.URL.Path
+			if strings.HasSuffix(p, "/") {
+				p = p[:len(p)-1]
+				if p == "" {
+					p = "/admin"
+				}
+				r.URL.Path = p
+				http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+				return
+			}
+
 			if re.MatchString(strings.ToLower(r.URL.Path)) {
 				next.ServeHTTP(w, r)
 				return
