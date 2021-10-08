@@ -32,6 +32,11 @@ const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 var permVerifier *perm.Verifier
 
 func Configure(b *presets.Builder, db *gorm.DB) {
+	err := db.AutoMigrate(&media_library.MediaLibrary{})
+	if err != nil {
+		panic(err)
+	}
+
 	permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.FieldDefaults(presets.WRITE).
@@ -52,7 +57,10 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		cfg := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
+		cfg, ok := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
+		if !ok {
+			cfg = &media_library.MediaBoxConfig{}
+		}
 		mediaBox := field.Value(obj).(media_library.MediaBox)
 		return QMediaBox(db).
 			FieldName(field.Name).

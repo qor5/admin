@@ -378,6 +378,7 @@ github.com/theplant/bimg v1.1.1 h1:97KW0oDbGt8d3K7vu2rgM88gT/+beWzTu0ZwtlqcxwE=
 github.com/theplant/bimg v1.1.1/go.mod h1:H0qlp9lKZoOO4akI0VxEtxO8lgLBLNuhF/+2U00LSPg=
 github.com/theplant/cldr v0.0.0-20190423050709-9f76f7ce4ee8 h1:di0cR5qqo2DllBMwmP75kZpUX6dAXhsn1O2dshQfMaA=
 github.com/theplant/cldr v0.0.0-20190423050709-9f76f7ce4ee8/go.mod h1:MIL7SmF8wRAYDn+JexczVRUiJXTCi4VbQavsCKWKwXI=
+github.com/theplant/gofixtures v1.1.0 h1:gooxE6aXGn06UnibuUfBYKYiSLEEyk1dOki3MINPfyg=
 github.com/theplant/gofixtures v1.1.0/go.mod h1:FJoYzhg16y7kk+bn92a8mJ5ytpFT3Owb6VkEYA+0saQ=
 github.com/theplant/htmlgo v1.0.3 h1:G7/YSf8OrOIRHVQ13avd78T/GV1kDl/jMwpQURrXB0o=
 github.com/theplant/htmlgo v1.0.3/go.mod h1:pCKSFJsoVNkyW+yN2i1Mst+8130NSQzIU7L2IbnuyKg=

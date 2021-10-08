@@ -24,7 +24,9 @@ require (
 	github.com/qor/serializable_meta v0.0.0-20180510060738-5fd8542db417
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
+	github.com/theplant/gofixtures v1.1.0 // indirect
 	github.com/theplant/htmlgo v1.0.3
+	goji.io v2.0.2+incompatible // indirect
 	golang.org/x/text v0.3.7
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/postgres v1.1.1
@@ -32,5 +34,6 @@ require (
 )
 
 // replace github.com/goplaid/web => ../../goplaid/web
-// replace github.com/goplaid/x => ../../goplaid/x
+replace github.com/goplaid/x => ../../goplaid/x
+
 // replace github.com/sunfmin/reflectutils => ../../reflectutils
