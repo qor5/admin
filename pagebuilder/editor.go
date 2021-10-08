@@ -263,11 +263,9 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 		VCol(
 			VMenu(
 				web.Slot(
-
-					VBtn("").Color("primary").Children(
+					VBtn("").Color("secondary").Children(
 						VIcon("settings"),
-						h.Text(ec.builder.name),
-					).Class("ma-2 float-right").
+					).Icon(true).Class("my-2 float-right").
 						Attr("v-bind", "attrs", "v-on", "on"),
 				).Name("activator").Scope("{ on, attrs }"),
 
@@ -317,6 +315,16 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					),
 				),
 			).OffsetY(true),
+
+			VBtn("").Color("primary").Children(
+				h.Text(ec.builder.name),
+			).Text(true).
+				Class("my-2 float-right").Attr("@click",
+				web.Plaid().
+					URL(ec.builder.mb.Info().ListingHref()).
+					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+					Go(),
+			),
 		).Cols(2).Class("pa-0"),
 	).Attr("style", "border-top: 0.5px dashed gray")
 
