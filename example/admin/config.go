@@ -18,6 +18,8 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor/qor5/pagebuilder"
+	"github.com/qor/qor5/pagebuilder/example"
 	"github.com/qor/qor5/richeditor"
 	"github.com/qor/qor5/slug"
 	h "github.com/theplant/htmlgo"
@@ -28,8 +30,9 @@ import (
 var assets embed.FS
 
 type Config struct {
-	pb *presets.Builder
-	lb *login.Builder
+	pb          *presets.Builder
+	lb          *login.Builder
+	pageBuilder *pagebuilder.Builder
 }
 
 func NewConfig() Config {
@@ -143,8 +146,15 @@ func NewConfig() Config {
 	type Setting struct{}
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
 
+	pageBuilder := example.ConfigPageBuilder(db)
+	pageBuilder.
+		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
+		Prefix("/admin/page_builder")
+	pageBuilder.Configure(b)
+
 	return Config{
-		pb: b,
-		lb: newLoginBuilder(db),
+		pb:          b,
+		lb:          newLoginBuilder(db),
+		pageBuilder: pageBuilder,
 	}
 }

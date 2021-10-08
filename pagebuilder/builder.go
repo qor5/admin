@@ -8,7 +8,6 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
-	media_view "github.com/qor/qor5/media/views"
 	h "github.com/theplant/htmlgo"
 	goji "goji.io"
 	"gorm.io/gorm"
@@ -47,8 +46,6 @@ func New(db *gorm.DB) *Builder {
 		URIPrefix(r.prefix).
 		LayoutFunc(r.pageEditorLayout)
 
-	media_view.Configure(r.ps, db)
-
 	type Editor struct {
 	}
 	r.ps.Model(&Editor{}).
@@ -61,6 +58,7 @@ func New(db *gorm.DB) *Builder {
 
 func (b *Builder) Prefix(v string) (r *Builder) {
 	b.ps.URIPrefix(v)
+	b.prefix = v
 	return b
 }
 
@@ -69,9 +67,21 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
+func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
+	return b.ps
+}
+
 func (b *Builder) Configure(pb *presets.Builder) {
-	pb.Model(&Page{})
-	pb.Model(&Container{})
+	pm := pb.Model(&Page{})
+	list := pm.Listing("ID", "Title", "Slug")
+	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		return h.Td(
+			h.A().Text(fmt.Sprintf("Editor for %d", p.ID)).
+				Href(fmt.Sprintf("%s/editors/%d", b.prefix, p.ID)).
+				Target("_blank"),
+		)
+	})
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {

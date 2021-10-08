@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
@@ -111,7 +112,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (err erro
 		return
 	}
 
-	var maxOrder float64
+	var maxOrder sql.NullFloat64
 	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ?", pageID).Scan(&maxOrder).Error
 	if err != nil {
 		return
@@ -121,7 +122,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (err erro
 		PageID:       uint(pageID),
 		Name:         containerName,
 		ModelID:      reflectutils.MustGet(model, "ID").(uint),
-		DisplayOrder: maxOrder + 8,
+		DisplayOrder: maxOrder.Float64 + 8,
 	}).Error
 	if err != nil {
 		return
@@ -322,6 +323,8 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 				}
 			</style>
 		`, "{{prefix}}", b.prefix, -1))
+
+		b.ps.InjectExtraAssets(ctx)
 
 		if len(os.Getenv("DEV_PRESETS")) > 0 {
 			ctx.Injector.TailHTML(`
