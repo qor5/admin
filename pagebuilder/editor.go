@@ -27,7 +27,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	}
 
 	var cons []*Container
-	err = b.db.Find(&cons, "page_id = ?", page.ID).Order("order ASC").Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", page.ID).Error
 	if err != nil {
 		return
 	}
@@ -82,6 +82,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 const AddContainerEvent = "page_builder_AddContainerEvent"
 const DeleteContainerEvent = "page_builder_DeleteContainerEvent"
+const MoveContainerEvent = "page_builder_MoveContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.Event.ParamAsInt(0)
@@ -90,6 +91,68 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	err = b.AddContainerToPage(pageID, containerName)
 
 	r.PushState = web.PushState(url.Values{})
+	return
+}
+
+func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	direction := ctx.Event.Params[0]
+	pageID := ctx.Event.ParamAsInt(1)
+	containerID := ctx.Event.ParamAsInt(2)
+	err = b.MoveContainerOrder(pageID, containerID, direction)
+
+	r.PushState = web.PushState(url.Values{})
+
+	return
+}
+
+type moveDirection string
+
+const (
+	up   moveDirection = "up"
+	down moveDirection = "down"
+)
+
+func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction string) (err error) {
+
+	var current Container
+	err = b.db.Find(&current, "id = ?", containerID).Error
+	if err != nil {
+		return
+	}
+
+	var closest []*Container
+
+	if moveDirection(direction) == up {
+		b.db.Order("display_order DESC").
+			Where("page_id = ?", pageID).
+			Limit(2).
+			Find(&closest, "display_order < ?", current.DisplayOrder)
+
+	} else {
+		b.db.Order("display_order ASC").
+			Where("page_id = ?", pageID).
+			Limit(2).
+			Find(&closest, "display_order > ?", current.DisplayOrder)
+	}
+
+	if len(closest) > 0 {
+		var displayOrder float64 = 0
+		if len(closest) == 1 {
+			if moveDirection(direction) == up {
+				displayOrder = closest[0].DisplayOrder - 8
+			} else {
+				displayOrder = closest[0].DisplayOrder + 8
+			}
+		} else {
+			displayOrder = (closest[0].DisplayOrder + closest[1].DisplayOrder) / 2
+		}
+
+		err = b.db.Model(&Container{}).Where("id = ?", containerID).
+			Update("display_order", displayOrder).Error
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -164,7 +227,29 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 							EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 							Go(),
 					),
+					VListItem(
+						VListItemTitle(h.Text("Move Up")),
+					).Attr("@click",
+						web.Plaid().
+							URL(ec.builder.mb.Info().ListingHref()).
+							EventFunc(MoveContainerEvent,
+								string(up),
+								fmt.Sprint(ec.container.PageID),
+								fmt.Sprint(ec.container.ID)).
+							Go(),
+					),
 
+					VListItem(
+						VListItemTitle(h.Text("Move Down")),
+					).Attr("@click",
+						web.Plaid().
+							URL(ec.builder.mb.Info().ListingHref()).
+							EventFunc(MoveContainerEvent,
+								string(down),
+								fmt.Sprint(ec.container.PageID),
+								fmt.Sprint(ec.container.ID)).
+							Go(),
+					),
 					VDivider(),
 
 					VListItem(
