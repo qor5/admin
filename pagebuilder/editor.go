@@ -41,6 +41,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		return
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+	device, _ := b.getDevice(ctx)
 
 	r.Body = h.Components(
 		VAppBar(
@@ -48,16 +49,18 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", `locals.width="width: 600px"`).
-				Class("mr-10"),
+			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"phone"}}).Go()).
+				Class("mr-10").InputValue(device == "phone"),
+
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", `locals.width="width: 960px"`).
-				Class("mr-10"),
+			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"tablet"}}).Go()).
+				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", `locals.width="width: 1264px"`),
+			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"laptop"}}).Go()).
+				InputValue(device == "laptop"),
 
 			VSpacer(),
 			VBtn("Preview").Text(true).Href(b.prefix+"/preview?id="+id).Target("_blank"),
@@ -73,6 +76,24 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 				Fluid(true),
 		),
 	)
+
+	return
+}
+
+func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
+	device = ctx.R.FormValue("device")
+	if len(device) == 0 {
+		device = "phone"
+	}
+
+	switch device {
+	case "phone":
+		style = "width: 600px"
+	case "tablet":
+		style = "width: 960px"
+	case "laptop":
+		style = "width: 1264px"
+	}
 
 	return
 }
@@ -104,7 +125,9 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID string, preview
 		if preview {
 			r = append(r, pure)
 		} else {
-			r = append(r, b.containerEditor(obj, ec, pure, ctx))
+			_, width := b.getDevice(ctx)
+
+			r = append(r, b.containerEditor(obj, ec, pure, width))
 		}
 	}
 	return
@@ -223,7 +246,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (err erro
 	return
 }
 
-func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
+func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
 
 	return VRow(
 		VCol(
@@ -234,7 +257,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 						c,
 					),
 				),
-			).Class("page-builder-container mx-auto").Attr(":style", "locals.width"),
+			).Class("page-builder-container mx-auto").Attr("style", width),
 		).Cols(10).Class("pa-0"),
 
 		VCol(
