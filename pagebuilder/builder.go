@@ -55,6 +55,7 @@ func New(db *gorm.DB) *Builder {
 		Detailing().
 		PageFunc(r.Editor)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
 	return r
 }
 

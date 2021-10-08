@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -79,6 +80,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 }
 
 const AddContainerEvent = "page_builder_AddContainerEvent"
+const DeleteContainerEvent = "page_builder_DeleteContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.Event.ParamAsInt(0)
@@ -86,7 +88,19 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 
 	err = b.AddContainerToPage(pageID, containerName)
 
-	r.Reload = true
+	r.PushState = web.PushState(url.Values{})
+	return
+}
+
+func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	pageID := ctx.Event.ParamAsInt(0)
+	containerID := ctx.Event.ParamAsInt(1)
+
+	err = b.db.Delete(&Container{}, "id = ? AND page_id = ?", containerID, pageID).Error
+	if err != nil {
+		return
+	}
+	r.PushState = web.PushState(url.Values{})
 	return
 }
 
@@ -130,15 +144,40 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 		).Cols(10).Class("pa-0"),
 
 		VCol(
-			VBtn("").Attr("@click",
-				web.Plaid().
-					URL(ec.builder.mb.Info().ListingHref()).
-					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
-					Go(),
-			).Color("primary").Children(
-				VIcon("settings"),
-				h.Text(ec.builder.name),
-			).Class("ma-2 float-right"),
+			VMenu(
+				web.Slot(
+
+					VBtn("").Color("primary").Children(
+						VIcon("settings"),
+						h.Text(ec.builder.name),
+					).Class("ma-2 float-right").
+						Attr("v-bind", "attrs", "v-on", "on"),
+				).Name("activator").Scope("{ on, attrs }"),
+
+				VList(
+					VListItem(
+						VListItemTitle(h.Text("Edit")),
+					).Attr("@click",
+						web.Plaid().
+							URL(ec.builder.mb.Info().ListingHref()).
+							EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+							Go(),
+					),
+
+					VDivider(),
+
+					VListItem(
+						VListItemTitle(h.Text("Delete")),
+					).Attr("@click",
+						web.Plaid().
+							URL(ec.builder.mb.Info().ListingHref()).
+							EventFunc(DeleteContainerEvent,
+								fmt.Sprint(ec.container.PageID),
+								fmt.Sprint(ec.container.ID)).
+							Go(),
+					),
+				),
+			).OffsetY(true),
 		).Cols(2).Class("pa-0"),
 	).Attr("style", "border-top: 0.5px dashed gray")
 
