@@ -80,6 +80,7 @@ func NewConfig() Config {
 		ProfileFunc(profile).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			r.PageTitle = "Home"
 			r.Body = vuetify.VContainer(
 				h.H1("Home"),
 				h.P().Text("Change your home page here"),
