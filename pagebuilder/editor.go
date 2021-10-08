@@ -141,9 +141,14 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	pageID := ctx.Event.ParamAsInt(0)
 	containerName := ctx.Event.Params[1]
 
-	err = b.AddContainerToPage(pageID, containerName)
+	var modelID uint
+	modelID, err = b.AddContainerToPage(pageID, containerName)
 
-	r.PushState = web.PushState(url.Values{})
+	// r.PushState = web.PushState(url.Values{})
+	r.VarsScript = web.Plaid().
+		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		EventFunc(actions.DrawerEdit, fmt.Sprint(modelID)).
+		Go()
 	return
 }
 
@@ -221,7 +226,7 @@ func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 	return
 }
 
-func (b *Builder) AddContainerToPage(pageID int, containerName string) (err error) {
+func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID uint, err error) {
 	model := b.ContainerByName(containerName).NewModel()
 	err = b.db.Create(model).Error
 	if err != nil {
@@ -234,10 +239,11 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (err erro
 		return
 	}
 
+	modelID = reflectutils.MustGet(model, "ID").(uint)
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
 		Name:         containerName,
-		ModelID:      reflectutils.MustGet(model, "ID").(uint),
+		ModelID:      modelID,
 		DisplayOrder: maxOrder.Float64 + 8,
 	}).Error
 	if err != nil {
@@ -539,5 +545,5 @@ func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
 				),
 			),
 		),
-	).OffsetY(true).NudgeWidth(600).CloseOnContentClick(false)
+	).OffsetY(true).NudgeWidth(600).CloseOnContentClick(true)
 }

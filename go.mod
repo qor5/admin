@@ -8,8 +8,8 @@ require (
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.10
-	github.com/goplaid/x v1.0.14-0.20211008055758-f7e471297ca7
+	github.com/goplaid/web v1.1.11
+	github.com/goplaid/x v1.0.14
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
