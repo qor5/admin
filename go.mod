@@ -9,7 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/goplaid/web v1.1.10
-	github.com/goplaid/x v1.0.14-0.20211008033753-cfeb5f3dceda
+	github.com/goplaid/x v1.0.14-0.20211008055758-f7e471297ca7
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -26,6 +26,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
+	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
 	gorm.io/driver/mysql v1.1.2
