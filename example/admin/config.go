@@ -10,7 +10,6 @@ import (
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss/s3"
-	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/login"
@@ -73,8 +72,6 @@ func NewConfig() Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
-	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 	b.URIPrefix("/admin").
 		BrandTitle("example").
 		ProfileFunc(profile).

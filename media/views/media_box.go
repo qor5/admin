@@ -13,6 +13,7 @@ import (
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/fileicons"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
@@ -36,6 +37,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
+	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
+	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 
 	permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
