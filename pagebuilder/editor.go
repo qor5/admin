@@ -70,8 +70,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			App(true),
 
 		VMain(
-
-			VContainer(comps...).Attr(web.InitContextLocals, `{width: "width: 600px;"}`).
+			VContainer(comps...).Attr("v-keep-scroll", "true").
 				Class("mt-6").
 				Fluid(true),
 		),
