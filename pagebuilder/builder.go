@@ -45,7 +45,8 @@ func New(db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(r.prefix).
-		LayoutFunc(r.pageEditorLayout)
+		LayoutFunc(r.pageEditorLayout).
+		ExtraAsset("/vue-shadow-dom.js", "text/javascript", ShadowDomComponentsPack())
 
 	type Editor struct {
 	}
