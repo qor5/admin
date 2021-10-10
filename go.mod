@@ -9,8 +9,8 @@ require (
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.12
-	github.com/goplaid/x v1.0.16-0.20211010004122-b9dcd4a9f630
+	github.com/goplaid/web v1.1.13
+	github.com/goplaid/x v1.0.16-0.20211010021035-634f3e1c5b86
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
