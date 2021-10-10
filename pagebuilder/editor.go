@@ -418,7 +418,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 			web.Portal().Name(presets.RightDrawerPortalName),
 
 			innerPr.Body.(h.HTMLComponent),
-		).Id("vt-app")
+		).Id("vt-app").Attr(web.InitContextVars, `{rightDrawer: false}`)
 
 		return
 	}
