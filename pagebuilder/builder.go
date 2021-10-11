@@ -9,6 +9,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
+	. "github.com/goplaid/x/vuetify"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -81,9 +82,11 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		return h.Td(
-			h.A().Text(fmt.Sprintf("Editor for %d", p.ID)).
-				Href(fmt.Sprintf("%s/editors/%d", b.prefix, p.ID)).
+			h.A().Children(
+				h.Text(fmt.Sprintf("Editor for %d", p.ID)),
+			).Href(fmt.Sprintf("%s/editors/%d", b.prefix, p.ID)).
 				Target("_blank"),
+			VIcon("open_in_new").Size(16).Class("ml-1"),
 		)
 	})
 }

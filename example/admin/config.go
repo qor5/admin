@@ -103,7 +103,8 @@ func NewConfig() Config {
 		).Icon("settings"),
 	)
 
-	m := b.Model(&models.Post{})
+	m := b.Model(&models.Post{}).URIName("posts2").Label("Posts2")
+	b.Model(&models.Post{}).URIName("posts3")
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)

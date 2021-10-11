@@ -52,7 +52,7 @@ INSERT INTO public.text_and_images (text, image, id) VALUES ('Hello Text and Ima
 		t.Error(w.Body.String())
 	}
 
-	err := pb.AddContainerToPage(1, "text_and_image")
+	_, err := pb.AddContainerToPage(1, "text_and_image")
 	if err != nil {
 		t.Error(err)
 	}
