@@ -6,6 +6,7 @@ import (
 	"github.com/goplaid/web"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/cropper"
+	"github.com/qor/qor5/listeditor"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
@@ -19,10 +20,24 @@ func Settings(db *gorm.DB) web.PageFunc {
 		ctx.Hub.RegisterEventFunc("logInfo", logInfo)
 		r.PageTitle = "Settings"
 		r.Body = h.Div(
-			h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
 			VContainer(
+
 				VRow(
 					VCol(
+						listeditor.Editor().
+							Value([]string{"1", "2", "3"}).
+							FieldName("images").
+							ComponentFunc(func(ctx *web.EventContext) h.HTMLComponent {
+								return h.Div(
+									VTextField().Attr(":value", "obj").Attr("v-field-name", `"images["+index+"]"`),
+									media_view.QMediaBox(db).FieldName("abc").Value(&media_library.MediaBox{}),
+								)
+							}),
+					),
+				),
+				VRow(
+					VCol(
+						h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
 						media_view.QMediaBox(db).
 							FieldName("test").
 							Value(&media_library.MediaBox{}).
