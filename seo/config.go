@@ -1,18 +1,20 @@
 package seo
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"reflect"
 	"strings"
 
-	"github.com/go-playground/form"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/media/media_library"
+	"github.com/qor/qor5/media/views"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -39,7 +41,7 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(Setting{}).
-		ComponentFunc(SeoEditingComponentFunc(collection))
+		ComponentFunc(SeoEditingComponentFunc(collection, db))
 
 	b.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
@@ -49,11 +51,11 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 	permVerifier = perm.NewVerifier("seo", b.GetPermission())
 }
 
-func SeoEditingComponentFunc(collection *Collection) presets.FieldComponentFunc {
+func SeoEditingComponentFunc(collection *Collection, db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 
-		return collection.settingComponent(msgr, obj)
+		return collection.settingComponent(msgr, obj, db)
 	}
 }
 
@@ -122,7 +124,7 @@ func (collection *Collection) renderGlobalSection(msgr *Messages, db *gorm.DB) h
 	var comps h.HTMLComponents
 	for i := 0; i < value.Type().NumField(); i++ {
 		filed := value.Type().Field(i)
-		comps = append(comps, VTextField().FieldName(fmt.Sprintf("%s.%s", collection.Name, filed.Name)).Label(msgr.DynamicMessage[filed.Name]).Value(value.Field(i).String()).Clearable(true))
+		comps = append(comps, VTextField().FieldName(fmt.Sprintf("%s.%s", collection.Name, filed.Name)).Label(msgr.DynamicMessage[filed.Name]).Value(value.Field(i).String()))
 	}
 
 	return VForm(
@@ -155,7 +157,7 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 			VExpansionPanelHeader(h.H4(msgr.DynamicMessage[seo.Name]).Style("font-weight: 500;")),
 			VExpansionPanelContent(
 				VCardText(
-					collection.settingComponent(msgr, setting),
+					collection.settingComponent(msgr, setting, db),
 				),
 				VCardActions(
 					VSpacer(),
@@ -170,7 +172,7 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 	return comps
 }
 
-func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) h.HTMLComponent {
+func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, db *gorm.DB) h.HTMLComponent {
 	var (
 		fieldPrefix string
 		isModel     bool
@@ -198,6 +200,11 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) 
 		}
 	}
 
+	media := &setting.OpenGraphImageFromMediaLibrary
+	if media.ID.String() == "0" {
+		media.ID = json.Number("")
+	}
+
 	var variables []string
 	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting)).Type()
 	for i := 0; i < value.NumField(); i++ {
@@ -220,25 +227,28 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) 
 		h.H6(msgr.Basic).Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
-				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.title)").Attr("ref", "title"),
-				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.description)").Attr("ref", "description"),
-				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.keywords)").Attr("ref", "keywords"),
+				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@click", "$refs.seo.tagInputsFocus($refs.title)").Attr("ref", "title"),
+				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", "$refs.seo.tagInputsFocus($refs.description)").Attr("ref", "description"),
+				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", "$refs.seo.tagInputsFocus($refs.keywords)").Attr("ref", "keywords"),
 			),
-		).Color("#f5f5f5").Elevation(0),
+		),
 
 		h.H6(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL).Clearable(true)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType).Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType)).Cols(6),
 				),
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL).Clearable(true)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).Label(msgr.OpenGraphImage).Clearable(true)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL)).Cols(6),
+					VCol(views.QMediaBox(db).
+						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+						Value(media).
+						Config(&media_library.MediaBoxConfig{})).Cols(6),
 				),
 			),
-		).Color("#f5f5f5").Elevation(0),
+		),
 	).Attr("ref", "seo")
 
 	if !isModel {
@@ -252,8 +262,8 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) 
 				VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
 				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Label("EnabledCustomize").Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
 				h.Div(commonSettingComponent).Attr("v-show", "locals.userDefaults == false"),
-			).Attr("style", "padding-bottom: 0px;padding-top: 1px;"),
-		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)),
+			),
+		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),
 	}
 }
 
@@ -281,16 +291,38 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 			}
 			setting.SetGlobalSetting(globalSetting)
 		} else {
-			values := url.Values{}
+			vals := map[string]interface{}{}
+			mediaBox := media_library.MediaBox{}
 			for fieldWithPrefix := range ctx.R.Form {
 				if strings.HasPrefix(fieldWithPrefix, prefix) {
 					field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", prefix), "", -1)
-					values[field] = []string{ctx.R.Form.Get(fieldWithPrefix)}
+					if !strings.HasPrefix(field, "OpenGraphImageFromMediaLibrary") {
+						vals[field] = ctx.R.Form.Get(fieldWithPrefix)
+					} else {
+						if field == "OpenGraphImageFromMediaLibrary.Values" {
+							err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
+							if err != nil {
+								return
+							}
+							vals["OpenGraphImageFromMediaLibrary"] = mediaBox
+						}
+						if field == "OpenGraphImageFromMediaLibrary.Description" {
+							mediaBox.Description = ctx.R.FormValue(fieldWithPrefix)
+							if err != nil {
+								return
+							}
+						}
+					}
 				}
 			}
+
 			s := setting.GetSEOSetting()
-			decoder := form.NewDecoder()
-			decoder.Decode(&s, values)
+			for k, v := range vals {
+				err = reflectutils.Set(&s, k, v)
+				if err != nil {
+					return
+				}
+			}
 			setting.SetSEOSetting(s)
 		}
 
