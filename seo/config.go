@@ -45,6 +45,7 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSeoKey, Messages_zh_CN)
 
+	b.ExtraAsset("/vue-seo.js", "text/javascript", SeoJSComponentsPack())
 	permVerifier = perm.NewVerifier("seo", b.GetPermission())
 }
 
@@ -169,7 +170,7 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 	return comps
 }
 
-func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) h.HTMLComponents {
+func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) h.HTMLComponent {
 	var (
 		fieldPrefix string
 		isModel     bool
@@ -208,22 +209,23 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) 
 	var variablesEle []h.HTMLComponent
 	for _, variable := range variables {
 		variablesEle = append(variablesEle, VCol(
-			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(msgr.DynamicMessage[variable])),
+			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(msgr.DynamicMessage[variable])).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
 		).Cols(2))
 	}
 
-	commonSettingComponent := h.Components(
+	commonSettingComponent := VSeo(
 		VRow(
 			variablesEle...,
 		),
 		h.H6(msgr.Basic).Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
-				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Clearable(true),
-				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Clearable(true),
-				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Clearable(true),
+				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.title)").Attr("ref", "title"),
+				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.description)").Attr("ref", "description"),
+				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Clearable(true).Attr("@click", "$refs.seo.tagInputsFocus($refs.keywords)").Attr("ref", "keywords"),
 			),
 		).Color("#f5f5f5").Elevation(0),
+
 		h.H6(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
@@ -237,7 +239,7 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}) 
 				),
 			),
 		).Color("#f5f5f5").Elevation(0),
-	)
+	).Attr("ref", "seo")
 
 	if !isModel {
 		return commonSettingComponent
