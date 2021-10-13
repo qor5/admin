@@ -58,11 +58,12 @@ func unpublishAction(db *gorm.DB, publisher *publish.Builder) web.EventFunc {
 
 func getCurrentObj(db *gorm.DB, ctx *web.EventContext) (obj interface{}, err error) {
 	modelType := ctx.Event.Params[0]
-	obj, ok := modelsMap[modelType]
+	m, ok := modelsMap[modelType]
 	if !ok {
 		err = fmt.Errorf("unregistered type %s", modelType)
 		return
 	}
+	obj = reflect.New(reflect.TypeOf(m).Elem()).Interface()
 
 	id := ctx.Event.Params[1]
 	reflectutils.Set(obj, "ID", id)
