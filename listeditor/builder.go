@@ -50,6 +50,9 @@ func (b *EditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	return Div(
 		Div(
 			b.cf(ctx),
+			VBtn("Delete").Text(true).
+				Color("error").
+				Attr("@click", fmt.Sprintf("locals.%s.splice(index, 1)", localName)),
 		).Attr("v-for", fmt.Sprintf("(obj, index) in locals.%s", localName)),
 		VBtn("Add row").
 			Text(true).
