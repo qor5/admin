@@ -2,10 +2,11 @@ package pagebuilder
 
 import (
 	"context"
+	"fmt"
+	"net/http/httptest"
 	"path"
 
 	"github.com/qor/qor5/publish"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -48,11 +49,10 @@ func (p Page) getPublishUrl() string {
 }
 
 func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
-	var comps []h.HTMLComponent
-	comps, err = b.renderContainers(nil, p.ID, true)
-	if err != nil {
-		return
-	}
-	r = h.MustString(h.Components(comps...), ctx)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d", p.ID), nil)
+	b.preview.ServeHTTP(w, req)
+
+	r = w.Body.String()
 	return
 }
