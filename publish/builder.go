@@ -111,8 +111,10 @@ func (b *Builder) Sync(models ...interface{}) error {
 func (b *Builder) UploadOrDelete(objs []*PublishAction) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
+			fmt.Printf("deleting %s \n", obj.Url)
 			err = b.storage.Delete(obj.Url)
 		} else {
+			fmt.Printf("uploading %s \n", obj.Url)
 			_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {

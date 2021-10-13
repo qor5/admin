@@ -1,9 +1,13 @@
 package pagebuilder
 
+import "github.com/qor/qor5/publish"
+
 type Page struct {
 	ID    uint
 	Title string
 	Slug  string
+
+	publish.Status
 }
 
 func (*Page) TableName() string {

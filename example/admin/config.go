@@ -4,6 +4,9 @@ import (
 	"embed"
 	"os"
 
+	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -145,6 +148,9 @@ func NewConfig() Config {
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
 
 	pageBuilder := example.ConfigPageBuilder(db)
+	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
+	publish_view.Configure(b, db, publisher)
+	publish_view.RegisterPublishModels(&pagebuilder.Page{})
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")

@@ -78,7 +78,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*p
 }
 func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.getUrl(),
+		Url:      p.GetOnlineUrl(),
 		IsDelete: true,
 	})
 	if val, ok := ctx.Value("skip_list").(bool); ok && val {
@@ -114,7 +114,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 		IsDelete: false,
 	})
 
-	if p.GetOnlineUrl() != "" && p.GetOnlineUrl() != p.getUrl() {
+	if p.GetStatus() == publish.StatusOnline && p.GetOnlineUrl() != p.getUrl() {
 		objs = append(objs, &publish.PublishAction{
 			Url:      p.GetOnlineUrl(),
 			IsDelete: true,
@@ -126,7 +126,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 }
 func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.getUrl(),
+		Url:      p.GetOnlineUrl(),
 		IsDelete: true,
 	})
 	return
@@ -294,7 +294,7 @@ func assertUpdateStatus(db *gorm.DB, p *Product, assertStatus string, asserOnlin
 	if err != nil {
 		return err
 	}
-	if pindb.GeStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
+	if pindb.GetStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
 		return errors.New("update status failed")
 	}
 	return
@@ -306,7 +306,7 @@ func assertNoVersionUpdateStatus(db *gorm.DB, p *ProductWithoutVersion, assertSt
 	if err != nil {
 		return err
 	}
-	if pindb.GeStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
+	if pindb.GetStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
 		return errors.New("update status failed")
 	}
 	return

@@ -34,7 +34,11 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 
 	var comps []h.HTMLComponent
 	var p *Page
-	comps, p, err = b.renderContainers(ctx, id, true)
+	err = b.db.First(&p, "id = ?", id).Error
+	if err != nil {
+		return
+	}
+	comps, err = b.renderContainers(ctx, p.ID, true)
 	if err != nil {
 		return
 	}
@@ -48,7 +52,11 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	id := pat.Param(ctx.R, "id")
 	var comps []h.HTMLComponent
 	var p *Page
-	comps, p, err = b.renderContainers(ctx, id, false)
+	err = b.db.First(&p, "id = ?", id).Error
+	if err != nil {
+		return
+	}
+	comps, err = b.renderContainers(ctx, p.ID, false)
 	if err != nil {
 		return
 	}
@@ -109,16 +117,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID string, preview bool) (r []h.HTMLComponent, p *Page, err error) {
-	var page Page
-	err = b.db.First(&page, "id = ?", pageID).Error
-	if err != nil {
-		return
-	}
-	p = &page
-
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, preview bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", page.ID).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", pageID).Error
 	if err != nil {
 		return
 	}

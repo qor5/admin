@@ -78,7 +78,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 
 func (b *Builder) Configure(pb *presets.Builder) {
 	pm := pb.Model(&Page{})
-	list := pm.Listing("ID", "Title", "Slug")
+	list := pm.Listing("ID", "Title", "Slug", "Status")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		return h.Td(
@@ -89,6 +89,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			VIcon("open_in_new").Size(16).Class("ml-1"),
 		)
 	})
+
+	pm.Editing("Status", "Title", "Slug")
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
