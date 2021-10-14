@@ -7,7 +7,6 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi v1.5.4
 	github.com/go-playground/form v3.1.4+incompatible
-	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/goplaid/web v1.1.14-0.20211012134701-57895edc9687
 	github.com/goplaid/x v1.0.16-0.20211010021035-634f3e1c5b86
@@ -23,6 +22,7 @@ require (
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
 	github.com/qor/serializable_meta v0.0.0-20180510060738-5fd8542db417
+	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
@@ -30,7 +30,6 @@ require (
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
-	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/postgres v1.1.1
 	gorm.io/gorm v1.21.15
 )

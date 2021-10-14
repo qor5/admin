@@ -78,7 +78,7 @@ func autheticate(loginBuilder *login.Builder) func(next http.Handler) http.Handl
 					p = "/admin"
 				}
 				r.URL.Path = p
-				http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+				http.Redirect(w, r, r.URL.String(), http.StatusFound)
 				return
 			}
 

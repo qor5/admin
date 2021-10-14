@@ -28,11 +28,7 @@ const (
 var permVerifier *perm.Verifier
 
 func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
-	err := db.AutoMigrate(
-		collection.settingModel,
-	)
-
-	if err != nil {
+	if err := db.AutoMigrate(collection.settingModel); err != nil {
 		panic(err)
 	}
 
@@ -109,7 +105,9 @@ func (collection *Collection) renderGlobalSection(msgr *Messages, db *gorm.DB) h
 		setting.SetName(collection.Name)
 		setting.SetSEOType(collection.Name)
 		setting.SetIsGlobalSEO(true)
-		db.Save(setting)
+		if err := db.Save(setting).Error; err != nil {
+			panic(err)
+		}
 	}
 
 	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting))
@@ -147,7 +145,9 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			setting.SetName(seo.Name)
 			setting.SetSEOType(seo.Name)
-			db.Save(setting)
+			if err := db.Save(setting).Error; err != nil {
+				panic(err)
+			}
 		}
 		setting.SetCollection(collection)
 
@@ -326,8 +326,7 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 			setting.SetSEOSetting(s)
 		}
 
-		err = db.Save(setting).Error
-		if err != nil {
+		if err = db.Save(setting).Error; err != nil {
 			return
 		}
 

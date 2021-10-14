@@ -3,7 +3,7 @@ package seo
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -12,10 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/goplaid/x/presets"
 	_ "github.com/lib/pq"
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -43,34 +41,13 @@ func init() {
 	})
 }
 
-func initDB() *gorm.DB {
-	var db *gorm.DB
+func initDB() (db *gorm.DB) {
 	var err error
-	var dbuser, dbpwd, dbname = "qor", "qor", "qor_test"
-
-	if os.Getenv("DB_USER") != "" {
-		dbuser = os.Getenv("DB_USER")
-	}
-
-	if os.Getenv("DB_PWD") != "" {
-		dbpwd = os.Getenv("DB_PWD")
-	}
-
-	if os.Getenv("TEST_DB") == "postgres" {
-		db, err = gorm.Open(postgres.Open(fmt.Sprintf("postgres://%s:%s@localhost/%s?sslmode=disable", dbuser, dbpwd, dbname)), &gorm.Config{})
-	} else {
-		db, err = gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@/%s?charset=utf8&parseTime=True&loc=Local", dbuser, dbpwd, dbname)), &gorm.Config{})
-	}
-
-	if err != nil {
+	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{}); err != nil {
 		panic(err)
 	}
 
-	return db
-}
-
-type SeoGlobalSetting struct {
-	SiteName string
+	return
 }
 
 type Product struct {
@@ -107,7 +84,8 @@ func TestSaveSEOSetting(t *testing.T) {
 		}
 
 		var seoSetting QorSEOSetting
-		if db.First(&seoSetting, "name = ?", "Product"); seoSetting.Name == "" {
+		err := db.First(&seoSetting, "name = ?", "Product").Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			t.Errorf("SEO Setting should be created successfully")
 		}
 	} else {
@@ -125,21 +103,24 @@ func TestSaveSEOSetting(t *testing.T) {
 	mwriter.WriteField("Product.Description", description)
 	mwriter.WriteField("Product.Keywords", keyword)
 	mwriter.Close()
-	if req, err := http.DefaultClient.Post(server.URL+"/admin/qor-seo-settings?__execute_event__=seo_save_collection", mwriter.FormDataContentType(), form); err == nil {
-		if req.StatusCode != 200 {
-			t.Errorf("Save should be processed successfully, status code is %v", req.StatusCode)
-		}
 
-		var seoSetting QorSEOSetting
-		if db.First(&seoSetting, "name = ?", "Product"); seoSetting.Name == "" {
-			t.Errorf("SEO Setting should be created successfully")
-		}
+	req, err := http.DefaultClient.Post(server.URL+"/admin/qor-seo-settings?__execute_event__=seo_save_collection", mwriter.FormDataContentType(), form)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		if seoSetting.Setting.Title != title || seoSetting.Setting.Description != description || seoSetting.Setting.Keywords != keyword {
-			t.Errorf("SEOSetting should be Save correctly, its value %#v", seoSetting)
-		}
-	} else {
-		t.Errorf(err.Error())
+	if req.StatusCode != 200 {
+		t.Errorf("Save should be processed successfully, status code is %v", req.StatusCode)
+	}
+
+	var seoSetting QorSEOSetting
+	err = db.First(&seoSetting, "name = ?", "Product").Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Errorf("SEO Setting should be created successfully")
+	}
+
+	if seoSetting.Setting.Title != title || seoSetting.Setting.Description != description || seoSetting.Setting.Keywords != keyword {
+		t.Errorf("SEOSetting should be Save correctly, its value %#v", seoSetting)
 	}
 }
 

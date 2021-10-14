@@ -93,7 +93,6 @@ func (collection Collection) GetSEOSetting(db *gorm.DB, name string, objects ...
 	}
 
 	if !seoSetting.EnabledCustomize {
-
 		globalSeoSetting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
 		if db.Where("name = ?", name).First(globalSeoSetting); globalSeoSetting.GetName() != "" {
 			seoSetting = globalSeoSetting.GetSEOSetting()
