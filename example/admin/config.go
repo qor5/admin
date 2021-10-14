@@ -4,6 +4,8 @@ import (
 	"embed"
 	"os"
 
+	"github.com/qor/qor5/utils"
+
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"
 
@@ -91,6 +93,7 @@ func NewConfig() Config {
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+	utils.Configure(b)
 
 	media_view.Configure(b, db)
 	//media_view.MediaLibraryPerPage = 3

@@ -26,15 +26,3 @@ func (status *Status) GetOnlineUrl() string {
 func (status *Status) SetOnlineUrl(onlineUrl string) {
 	status.OnlineUrl = onlineUrl
 }
-
-func GetStatusColor(status string) string {
-	switch status {
-	case StatusDraft:
-		return "orange"
-	case StatusOnline:
-		return "green"
-	case StatusOffline:
-		return "grey"
-	}
-	return ""
-}
