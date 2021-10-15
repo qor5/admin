@@ -104,7 +104,7 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, args interface{}) (*QorJobIn
 	inst := QorJobInstance{
 		QorJobID: qorJobID,
 		Args:     mArgs,
-		Status:   jobStatusNew,
+		Status:   JobStatusNew,
 	}
 	err := jb.b.db.Create(&inst).Error
 	if err != nil {
@@ -150,7 +150,7 @@ func (job *QorJobInstance) SetStatus(status string) error {
 	defer job.mutex.Unlock()
 
 	job.Status = status
-	if status == jobStatusDone {
+	if status == JobStatusDone {
 		job.Progress = 100
 	}
 

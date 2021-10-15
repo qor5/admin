@@ -2,17 +2,17 @@ package worker
 
 const (
 	// JobStatusNew job status new
-	jobStatusNew = "new"
+	JobStatusNew = "new"
 	// JobStatusScheduled job status scheduled
-	jobStatusScheduled = "scheduled"
+	JobStatusScheduled = "scheduled"
 	// JobStatusRunning job status running
-	jobStatusRunning = "running"
+	JobStatusRunning = "running"
 	// JobStatusCancelled job status cancelled
-	jobStatusCancelled = "cancelled"
+	JobStatusCancelled = "cancelled"
 	// JobStatusDone job status done
-	jobStatusDone = "done"
+	JobStatusDone = "done"
 	// JobStatusException job status exception
-	jobStatusException = "exception"
+	JobStatusException = "exception"
 	// JobStatusKilled job status killed
-	jobStatusKilled = "killed"
+	JobStatusKilled = "killed"
 )

@@ -110,13 +110,12 @@ func (c *cron) Add(job QorJobInterface) (err error) {
 		}
 		if scheduler, ok := args.(Scheduler); ok && scheduler.GetScheduleTime() != nil {
 			scheduleTime := scheduler.GetScheduleTime().In(time.Local)
-			job.SetStatus(jobStatusScheduled)
+			job.SetStatus(JobStatusScheduled)
 
 			currentPath, _ := os.Getwd()
 			jobs = append(jobs, &cronJob{
-				JobID: job.GetJobID(),
-				// Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, job.GetJobID()),
-				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v >> /Users/xuxin/xhome/try/go/qor/cronlog.txt\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, job.GetJobID()),
+				JobID:   job.GetJobID(),
+				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, job.GetJobID()),
 			})
 		} else {
 			cmd := exec.Command(binaryFile, "--qor-job", job.GetJobID())
@@ -149,7 +148,7 @@ func (c *cron) Run(qorJob QorJobInterface) error {
 		i := <-sigint
 
 		qorJob.SetProgressText(fmt.Sprintf("Worker killed by signal %s", i.String()))
-		qorJob.SetStatus(jobStatusKilled)
+		qorJob.SetStatus(JobStatusKilled)
 
 		qorJob.StopReferesh()
 		os.Exit(int(reflect.ValueOf(i).Int()))

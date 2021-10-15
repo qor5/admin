@@ -103,21 +103,21 @@ func (b *Builder) runJob(qorJobID uint) error {
 		if r := recover(); r != nil {
 			inst.AddLog(string(debug.Stack()))
 			inst.SetProgressText(fmt.Sprint(r))
-			inst.SetStatus(jobStatusException)
+			inst.SetStatus(JobStatusException)
 		}
 	}()
 
-	if inst.GetStatus() != jobStatusNew && inst.GetStatus() != jobStatusScheduled {
+	if inst.GetStatus() != JobStatusNew && inst.GetStatus() != JobStatusScheduled {
 		return errors.New("invalid job status, current status: " + inst.GetStatus())
 	}
 
-	if err = inst.SetStatus(jobStatusRunning); err == nil {
+	if err = inst.SetStatus(JobStatusRunning); err == nil {
 		if err = b.q.Run(inst); err == nil {
-			return inst.SetStatus(jobStatusDone)
+			return inst.SetStatus(JobStatusDone)
 		}
 
 		inst.SetProgressText(err.Error())
-		inst.SetStatus(jobStatusException)
+		inst.SetStatus(JobStatusException)
 	}
 
 	return nil
@@ -168,13 +168,13 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `status %s ?`,
 				Options: []*vuetifyx.SelectItem{
-					{Text: "New", Value: jobStatusNew},
-					{Text: "Scheduled", Value: jobStatusScheduled},
-					{Text: "Running", Value: jobStatusRunning},
-					{Text: "Cancelled", Value: jobStatusCancelled},
-					{Text: "Done", Value: jobStatusDone},
-					{Text: "Exception", Value: jobStatusException},
-					{Text: "Killed", Value: jobStatusKilled},
+					{Text: "New", Value: JobStatusNew},
+					{Text: "Scheduled", Value: JobStatusScheduled},
+					{Text: "Running", Value: JobStatusRunning},
+					{Text: "Cancelled", Value: JobStatusCancelled},
+					{Text: "Done", Value: JobStatusDone},
+					{Text: "Exception", Value: JobStatusException},
+					{Text: "Killed", Value: JobStatusKilled},
 				},
 			},
 		}
@@ -187,19 +187,19 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			},
 			{
 				Label: "Running",
-				Query: url.Values{"status": []string{jobStatusRunning}},
+				Query: url.Values{"status": []string{JobStatusRunning}},
 			},
 			{
 				Label: "Scheduled",
-				Query: url.Values{"status": []string{jobStatusScheduled}},
+				Query: url.Values{"status": []string{JobStatusScheduled}},
 			},
 			{
 				Label: "Done",
-				Query: url.Values{"status": []string{jobStatusDone}},
+				Query: url.Values{"status": []string{JobStatusDone}},
 			},
 			{
 				Label: "Errors",
-				Query: url.Values{"status": []string{jobStatusException}},
+				Query: url.Values{"status": []string{JobStatusException}},
 			},
 		}
 	})
@@ -230,7 +230,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 		j := QorJob{
 			Job:    qorJob.Job,
-			Status: jobStatusNew,
+			Status: JobStatusNew,
 		}
 		err = b.db.Create(&j).Error
 		if err != nil {
@@ -263,7 +263,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 		return Div(
 			Div(Text(qorJob.Job)).Class("mb-2 text-h6 font-weight-regular"),
-			If(inst.Status == jobStatusScheduled,
+			If(inst.Status == JobStatusScheduled,
 				Div(Text(inst.Args)),
 				VBtn("cancel scheduled job").OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
 			).Else(
@@ -302,17 +302,17 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	switch inst.Status {
-	case jobStatusRunning:
+	case JobStatusRunning:
 		err = b.q.Kill(inst)
 		if err != nil {
 			return er, err
 		}
-		err = inst.SetStatus(jobStatusKilled)
+		err = inst.SetStatus(JobStatusKilled)
 		if err != nil {
 			return er, err
 		}
-	case jobStatusNew, jobStatusScheduled:
-		err = inst.SetStatus(jobStatusKilled)
+	case JobStatusNew, JobStatusScheduled:
+		err = inst.SetStatus(JobStatusKilled)
 		if err != nil {
 			return er, err
 		}
@@ -337,7 +337,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	if err != nil {
 		return er, err
 	}
-	if old.Status != jobStatusDone {
+	if old.Status != JobStatusDone {
 		return er, errors.New("job is not done")
 	}
 
@@ -365,7 +365,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	er.Body = jobProgressing(qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
-	if inst.Status != jobStatusNew && inst.Status != jobStatusRunning {
+	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	}
 	return er, nil
@@ -397,7 +397,7 @@ func jobProgressing(
     margin-bottom: 4px;`).Children(Text(l)))
 		}
 	}
-	inRefresh := status == jobStatusNew || status == jobStatusRunning
+	inRefresh := status == JobStatusNew || status == JobStatusRunning
 	return Div(
 		Div(Text("Status")).Class("text-caption"),
 		Div().Class("d-flex align-center mb-3").Children(
@@ -430,7 +430,7 @@ func jobProgressing(
 		If(inRefresh,
 			VBtn("abort job").OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
 		),
-		If(status == jobStatusDone,
+		If(status == JobStatusDone,
 			VBtn("rerun job").OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
 		),
 	)
