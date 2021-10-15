@@ -253,7 +253,6 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	dtb.Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		ctx.Hub.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
-		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 		ctx.Hub.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
 
 		qorJob := obj.(*QorJob)
@@ -262,30 +261,17 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			return Text(err.Error())
 		}
 
-		// FIXME: not work on the first enter
-		ctx.Injector.TailHTML(`
-		<script>
-window.setInterval(function(){
-	var jpc = document.getElementById('jobProgressingContainer');
-	if (jpc && jpc.hasAttribute('data-inrefresh')) {
-		var btn = document.getElementById('btnUpdateJobProgressing');
-		if (btn) {
-			btn.click();
-		}
-	}
-}, 2000)
-		</script>
-		`)
-
 		return Div(
 			Div(Text(qorJob.Job)).Class("mb-2 text-h6 font-weight-regular"),
 			If(inst.Status == jobStatusScheduled,
 				Div(Text(inst.Args)),
 				VBtn("cancel scheduled job").OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
 			).Else(
-				web.Portal(jobProgressing(qorJob.ID, qorJob.Job, inst.Status, inst.Progress, inst.Log, inst.ProgressText)).Name("worker_jobProgressing"),
-				A().Attr("id", "btnUpdateJobProgressing").
-					Attr("@click", web.Plaid().EventFunc("worker_updateJobProgressing", fmt.Sprintf("%d", qorJob.ID), qorJob.Job).Go()),
+				Div(
+					web.Portal().
+						EventFunc("worker_updateJobProgressing", fmt.Sprintf("%d", qorJob.ID), qorJob.Job).
+						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
+				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
 			),
 		)
 	})
@@ -365,6 +351,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
+	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
 	return
 }
 
@@ -377,10 +364,10 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 		return er, err
 	}
 
-	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-		Name: "worker_jobProgressing",
-		Body: jobProgressing(qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText),
-	})
+	er.Body = jobProgressing(qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
+	if inst.Status != jobStatusNew && inst.Status != jobStatusRunning {
+		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
+	}
 	return er, nil
 }
 
@@ -411,18 +398,16 @@ func jobProgressing(
 		}
 	}
 	inRefresh := status == jobStatusNew || status == jobStatusRunning
-	return Div().Attr("id", "jobProgressingContainer").
-		AttrIf("data-inrefresh", true, inRefresh).
-		Children(
-			Div(Text("Status")).Class("text-caption"),
-			Div().Class("d-flex align-center mb-3").Children(
-				Div().Style("width: 120px").Children(
-					Text(fmt.Sprintf("%s (%d%%)", status, progress)),
-				),
-				VProgressLinear().Value(int(progress)),
+	return Div(
+		Div(Text("Status")).Class("text-caption"),
+		Div().Class("d-flex align-center mb-3").Children(
+			Div().Style("width: 120px").Children(
+				Text(fmt.Sprintf("%s (%d%%)", status, progress)),
 			),
-			Div(Text("Job Log")).Class("text-caption"),
-			Div().Class("mb-2").Style(fmt.Sprintf(`
+			VProgressLinear().Value(int(progress)),
+		),
+		Div(Text("Job Log")).Class("text-caption"),
+		Div().Class("mb-2").Style(fmt.Sprintf(`
 	background-color: #222;
     color: #fff;
     font-family: menlo,Roboto,Helvetica,Arial,sans-serif;
@@ -434,19 +419,19 @@ func jobProgressing(
 	line-height: 1;
 	%s
 	`, reverseStyle)).Children(
-				logLines...,
+			logLines...,
+		),
+		If(progressText != "",
+			Div().Class("mb-2").Children(
+				RawHTML(progressText),
 			),
-			If(progressText != "",
-				Div().Class("mb-2").Children(
-					RawHTML(progressText),
-				),
-			),
+		),
 
-			If(inRefresh,
-				VBtn("abort job").OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
-			),
-			If(status == jobStatusDone,
-				VBtn("rerun job").OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
-			),
-		)
+		If(inRefresh,
+			VBtn("abort job").OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
+		),
+		If(status == jobStatusDone,
+			VBtn("rerun job").OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+		),
+	)
 }

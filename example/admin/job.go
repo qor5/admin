@@ -43,9 +43,9 @@ func addJobs(w *worker.Builder) {
 		})
 	w.NewJob("longRunningJob").
 		Handler(func(ctx context.Context, job worker.HQorJob) error {
-			for i := 1; i <= 100; i++ {
+			for i := 1; i <= 20; i++ {
 				job.AddLog(fmt.Sprintf("%v", i))
-				job.SetProgress(uint(i))
+				job.SetProgress(uint(i * 5))
 				time.Sleep(time.Second)
 			}
 			return nil
