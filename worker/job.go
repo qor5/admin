@@ -155,10 +155,6 @@ func (job *QorJobInstance) SetStatus(status string) error {
 	}
 
 	if job.shouldCallSave() {
-		err := job.jb.b.setStatus(job.QorJobID, job.Status)
-		if err != nil {
-			return err
-		}
 		return job.callSave()
 	}
 
@@ -244,6 +240,10 @@ func (job *QorJobInstance) shouldCallSave() bool {
 }
 
 func (job *QorJobInstance) callSave() error {
+	err := job.jb.b.setStatus(job.QorJobID, job.Status)
+	if err != nil {
+		return err
+	}
 	return job.jb.b.db.Save(job).Error
 }
 

@@ -262,10 +262,14 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		}
 
 		return Div(
-			Div(Text(qorJob.Job)).Class("mb-2 text-h6 font-weight-regular"),
+			Div(Text(qorJob.Job)).Class("mb-3 text-h6 font-weight-regular"),
 			If(inst.Status == JobStatusScheduled,
 				Div(Text(inst.Args)),
-				VBtn("cancel scheduled job").OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+				Div().Class("d-flex mt-3").Children(
+					VSpacer(),
+					VBtn("cancel scheduled job").Color("error").
+						OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+				),
 			).Else(
 				Div(
 					web.Portal().
@@ -400,14 +404,14 @@ func jobProgressing(
 	inRefresh := status == JobStatusNew || status == JobStatusRunning
 	return Div(
 		Div(Text("Status")).Class("text-caption"),
-		Div().Class("d-flex align-center mb-3").Children(
+		Div().Class("d-flex align-center mb-5").Children(
 			Div().Style("width: 120px").Children(
 				Text(fmt.Sprintf("%s (%d%%)", status, progress)),
 			),
 			VProgressLinear().Value(int(progress)),
 		),
 		Div(Text("Job Log")).Class("text-caption"),
-		Div().Class("mb-2").Style(fmt.Sprintf(`
+		Div().Class("mb-3").Style(fmt.Sprintf(`
 	background-color: #222;
     color: #fff;
     font-family: menlo,Roboto,Helvetica,Arial,sans-serif;
@@ -422,16 +426,21 @@ func jobProgressing(
 			logLines...,
 		),
 		If(progressText != "",
-			Div().Class("mb-2").Children(
+			Div().Class("mb-3").Children(
 				RawHTML(progressText),
 			),
 		),
 
-		If(inRefresh,
-			VBtn("abort job").OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
-		),
-		If(status == JobStatusDone,
-			VBtn("rerun job").OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+		Div().Class("d-flex mt-3").Children(
+			VSpacer(),
+			If(inRefresh,
+				VBtn("abort job").Color("error").
+					OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
+			),
+			If(status == JobStatusDone,
+				VBtn("rerun job").Color("primary").
+					OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+			),
 		),
 	)
 }
