@@ -63,7 +63,8 @@ func addJobs(w *worker.Builder) {
 		})
 	sjbeb := sjb.GetResourceBuilder().Editing()
 	sjbeb.Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return VTextField().Label("ScheduleTime").Attr(web.VFieldName("ScheduleTime")...)
+		args := obj.(*ScheduleJobResource)
+		return VTextField().Label("ScheduleTime").Attr(web.VFieldName("ScheduleTime")...).Value(args.ScheduleTime)
 	})
 
 	w.NewJob("errorJob").

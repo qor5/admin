@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -68,14 +69,24 @@ func (b *Builder) NewJob(name string) *JobBuilder {
 	return j
 }
 
-func (b *Builder) mustGetJobBuilder(name string) *JobBuilder {
+func (b *Builder) getJobBuilder(name string) *JobBuilder {
 	for _, jb := range b.jbs {
 		if jb.name == name {
 			return jb
 		}
 	}
 
-	panic(fmt.Sprintf("no job %s", name))
+	return nil
+}
+
+func (b *Builder) mustGetJobBuilder(name string) *JobBuilder {
+	jb := b.getJobBuilder(name)
+
+	if jb == nil {
+		panic(fmt.Sprintf("no job %s", name))
+	}
+
+	return jb
 }
 
 func (b *Builder) getJobBuilderByQorJobID(id uint) (*JobBuilder, error) {
@@ -253,6 +264,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	dtb.Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		ctx.Hub.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
+		ctx.Hub.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 		ctx.Hub.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
 
 		qorJob := obj.(*QorJob)
@@ -261,15 +273,42 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			return Text(err.Error())
 		}
 
+		var scheduledJobDetailing []HTMLComponent
+		if inst.Status == JobStatusScheduled {
+			jb := b.getJobBuilder(qorJob.Job)
+			if jb != nil && jb.r != nil {
+				args := jb.newResourceObject()
+				err := json.Unmarshal([]byte(inst.Args), &args)
+				if err != nil {
+					return Text(err.Error())
+				}
+				body := jb.rmb.Editing().ToComponent(jb.rmb, args, nil, ctx)
+				scheduledJobDetailing = []HTMLComponent{
+					body,
+					Div().Class("d-flex mt-3").Children(
+						VSpacer(),
+						VBtn("cancel scheduled job").Color("error").Class("mr-2").
+							OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+						VBtn("update scheduled job").Color("primary").
+							OnClick("worker_updateJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+					),
+				}
+			} else {
+				scheduledJobDetailing = []HTMLComponent{
+					Div(Text(inst.Args)),
+					Div().Class("d-flex mt-3").Children(
+						VSpacer(),
+						VBtn("cancel scheduled job").Color("error").
+							OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+					),
+				}
+			}
+		}
+
 		return Div(
 			Div(Text(qorJob.Job)).Class("mb-3 text-h6 font-weight-regular"),
 			If(inst.Status == JobStatusScheduled,
-				Div(Text(inst.Args)),
-				Div().Class("d-flex mt-3").Children(
-					VSpacer(),
-					VBtn("cancel scheduled job").Color("error").
-						OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
-				),
+				scheduledJobDetailing...,
 			).Else(
 				Div(
 					web.Portal().
@@ -305,31 +344,40 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		return er, err
 	}
 
-	switch inst.Status {
-	case JobStatusRunning:
-		err = b.q.Kill(inst)
-		if err != nil {
-			return er, err
-		}
-		err = inst.SetStatus(JobStatusKilled)
-		if err != nil {
-			return er, err
-		}
-	case JobStatusNew, JobStatusScheduled:
-		err = inst.SetStatus(JobStatusKilled)
-		if err != nil {
-			return er, err
-		}
-		err = b.q.Remove(inst)
-		if err != nil {
-			return er, err
-		}
-	default:
-		return er, fmt.Errorf("job status is %s, cannot be aborted", inst.Status)
+	err = b.doAbortJob(inst)
+	if err != nil {
+		return er, err
 	}
 
 	er.Reload = true
 	return
+}
+
+func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
+	switch inst.Status {
+	case JobStatusRunning:
+		err = b.q.Kill(inst)
+		if err != nil {
+			return err
+		}
+		err = inst.SetStatus(JobStatusKilled)
+		if err != nil {
+			return err
+		}
+	case JobStatusNew, JobStatusScheduled:
+		err = inst.SetStatus(JobStatusKilled)
+		if err != nil {
+			return err
+		}
+		err = b.q.Remove(inst)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("job status is %s, cannot be aborted", inst.Status)
+	}
+
+	return nil
 }
 
 func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, err error) {
@@ -350,6 +398,39 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 		return er, err
 	}
 	err = b.q.Add(inst)
+	if err != nil {
+		return er, err
+	}
+
+	er.Reload = true
+	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	return
+}
+
+func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
+	qorJobID := uint(ctx.Event.ParamAsInt(0))
+	qorJobName := ctx.Event.Params[1]
+
+	jb := b.mustGetJobBuilder(qorJobName)
+	newArgs := jb.newResourceObject()
+	if newArgs != nil {
+		ctx.MustUnmarshalForm(newArgs)
+	}
+
+	old, err := jb.getJobInstance(qorJobID)
+	if err != nil {
+		return er, err
+	}
+	err = b.doAbortJob(old)
+	if err != nil {
+		return er, err
+	}
+
+	newInst, err := jb.newJobInstance(qorJobID, newArgs)
+	if err != nil {
+		return er, err
+	}
+	err = b.q.Add(newInst)
 	if err != nil {
 		return er, err
 	}
