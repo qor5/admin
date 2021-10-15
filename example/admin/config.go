@@ -26,6 +26,7 @@ import (
 	"github.com/qor/qor5/pagebuilder/example"
 	"github.com/qor/qor5/richeditor"
 	"github.com/qor/qor5/slug"
+	"github.com/qor/qor5/worker"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -158,6 +159,10 @@ func NewConfig() Config {
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
 	pageBuilder.Configure(b)
+
+	w := worker.New(db)
+	addJobs(w)
+	w.Configure(b)
 
 	return Config{
 		pb:          b,
