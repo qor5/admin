@@ -49,14 +49,20 @@ func (b *EditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	var newElementValueJSON = JSONString(b.newElementValue())
 	return Div(
 		Div(
-			b.cf(ctx),
-			VBtn("Delete").Text(true).
-				Color("error").
-				Attr("@click", fmt.Sprintf("locals.%s.splice(index, 1)", localName)),
-		).Attr("v-for", fmt.Sprintf("(obj, index) in locals.%s", localName)),
+			Div(
+				b.cf(ctx),
+				VBtn("Delete").Text(true).
+					Color("error").
+					Attr("@click",
+						fmt.Sprintf(
+							`Vue.set(locals.%s_deleted, index, true); $plaid().fieldValue("%s["+index+"].Deleted", 1)`,
+							localName, b.fieldName)),
+			).Attr("v-if", fmt.Sprintf("!locals.%s_deleted[index]", localName)),
+		).Attr("v-for", fmt.Sprintf("(obj, index) in locals.%s", localName)).
+			Attr(":key", "index"),
 		VBtn("Add row").
 			Text(true).
 			Color("primary").
-			Attr("@click", fmt.Sprintf("locals.%s.push(%s)", localName, newElementValueJSON)),
-	).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s}`, localName, JSONString(b.value))).MarshalHTML(c)
+			Attr("@click", fmt.Sprintf(`locals.%s.push(%s);$plaid().fieldValue("%s["+(locals.%s.length-1)+"].Deleted", "")`, localName, newElementValueJSON, b.fieldName, localName)),
+	).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, %s_deleted: {}}`, localName, JSONString(b.value), localName)).MarshalHTML(c)
 }
