@@ -234,9 +234,9 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		qorJob := obj.(*QorJob)
 		jb := b.mustGetJobBuilder(qorJob.Job)
-		args := jb.newResourceObject()
-		if args != nil {
-			ctx.MustUnmarshalForm(args)
+		args, err := jb.unmarshalForm(ctx)
+		if err != nil {
+			return err
 		}
 
 		j := QorJob{
@@ -412,9 +412,9 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	qorJobName := ctx.Event.Params[1]
 
 	jb := b.mustGetJobBuilder(qorJobName)
-	newArgs := jb.newResourceObject()
-	if newArgs != nil {
-		ctx.MustUnmarshalForm(newArgs)
+	newArgs, err := jb.unmarshalForm(ctx)
+	if err != nil {
+		return er, err
 	}
 
 	old, err := jb.getJobInstance(qorJobID)

@@ -6,11 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/worker"
-	. "github.com/theplant/htmlgo"
 )
 
 func addJobs(w *worker.Builder) {
@@ -54,18 +50,13 @@ func addJobs(w *worker.Builder) {
 		F1 string
 		worker.Schedule
 	}
-	sjb := w.NewJob("scheduleJob").
+	w.NewJob("scheduleJob").
 		Resource(&ScheduleJobResource{}).
 		Handler(func(ctx context.Context, job worker.HQorJob) error {
 			args, _ := job.GetArgument()
 			job.AddLog(fmt.Sprintf("%#+v", args))
 			return nil
 		})
-	sjbeb := sjb.GetResourceBuilder().Editing()
-	sjbeb.Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		args := obj.(*ScheduleJobResource)
-		return VTextField().Label("ScheduleTime").Attr(web.VFieldName("ScheduleTime")...).Value(args.ScheduleTime)
-	})
 
 	w.NewJob("errorJob").
 		Handler(func(ctx context.Context, job worker.HQorJob) error {

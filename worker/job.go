@@ -8,7 +8,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	. "github.com/goplaid/x/vuetify"
+	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +35,20 @@ type JobHandler func(context.Context, HQorJob) error
 func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 	jb.r = r
 	jb.rmb = jb.b.jpb.Model(r)
+
+	if _, ok := r.(Scheduler); ok {
+		eb := jb.rmb.Editing()
+		eb.Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+			t := obj.(Scheduler).GetScheduleTime()
+			var v string
+			if t != nil {
+				v = t.Local().Format("2006-01-02 15:04")
+			}
+			return VTextField().Label("ScheduleTime").Placeholder("YYYY-MM-DD HH:MM").
+				Attr(web.VFieldName("ScheduleTime")...).
+				Value(v)
+		})
+	}
 	return jb
 }
 
@@ -49,6 +66,27 @@ func (jb *JobBuilder) newResourceObject() interface{} {
 		return nil
 	}
 	return reflect.New(reflect.TypeOf(jb.r).Elem()).Interface()
+}
+
+func (jb *JobBuilder) unmarshalForm(ctx *web.EventContext) (args interface{}, err error) {
+	args = jb.newResourceObject()
+	if args != nil {
+		if v := ctx.R.Form.Get("ScheduleTime"); v != "" {
+			t, err := time.ParseInLocation("2006-01-02 15:04", v, time.Local)
+			if err != nil {
+				return nil, err
+			}
+			ft := t.Format(time.RFC3339)
+			ctx.R.Form.Set("ScheduleTime", ft)
+			ctx.R.MultipartForm.Value["ScheduleTime"] = []string{ft}
+		}
+		err = ctx.UnmarshalForm(args)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return args, nil
 }
 
 func (jb *JobBuilder) parseArgs(in string) (args interface{}, err error) {
