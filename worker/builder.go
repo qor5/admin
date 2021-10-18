@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/goplaid/x/vuetifyx"
@@ -142,6 +143,8 @@ func (b *Builder) setStatus(id uint, status string) error {
 		Error
 }
 
+var permVerifier *perm.Verifier
+
 func (b *Builder) Configure(pb *presets.Builder) {
 	{
 		// Parse job
@@ -164,6 +167,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			}
 		}
 	}
+
+	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 
 	mb := pb.Model(&QorJob{}).
 		Label("Workers").
@@ -221,7 +226,9 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 		jobNames := make([]string, 0, len(b.jbs))
 		for _, jb := range b.jbs {
-			jobNames = append(jobNames, jb.name)
+			if editIsAllowed(ctx.R, jb.name) == nil {
+				jobNames = append(jobNames, jb.name)
+			}
 		}
 		return Div(
 			VSelect().
@@ -233,6 +240,10 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	})
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		qorJob := obj.(*QorJob)
+		if pErr := editIsAllowed(ctx.R, qorJob.Job); pErr != nil {
+			return pErr
+		}
+
 		jb := b.mustGetJobBuilder(qorJob.Job)
 		args, err := jb.unmarshalForm(ctx)
 		if err != nil {
@@ -285,21 +296,25 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				body := jb.rmb.Editing().ToComponent(jb.rmb, args, nil, ctx)
 				scheduledJobDetailing = []HTMLComponent{
 					body,
-					Div().Class("d-flex mt-3").Children(
-						VSpacer(),
-						VBtn("cancel scheduled job").Color("error").Class("mr-2").
-							OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
-						VBtn("update scheduled job").Color("primary").
-							OnClick("worker_updateJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+					If(editIsAllowed(ctx.R, qorJob.Job) == nil,
+						Div().Class("d-flex mt-3").Children(
+							VSpacer(),
+							VBtn("cancel scheduled job").Color("error").Class("mr-2").
+								OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+							VBtn("update scheduled job").Color("primary").
+								OnClick("worker_updateJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+						),
 					),
 				}
 			} else {
 				scheduledJobDetailing = []HTMLComponent{
 					Div(Text(inst.Args)),
-					Div().Class("d-flex mt-3").Children(
-						VSpacer(),
-						VBtn("cancel scheduled job").Color("error").
-							OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+					If(editIsAllowed(ctx.R, qorJob.Job) == nil,
+						Div().Class("d-flex mt-3").Children(
+							VSpacer(),
+							VBtn("cancel scheduled job").Color("error").
+								OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+						),
 					),
 				}
 			}
@@ -337,6 +352,10 @@ func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.Ev
 func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
+
+	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
+		return er, pErr
+	}
 
 	jb := b.mustGetJobBuilder(qorJobName)
 	inst, err := jb.getJobInstance(qorJobID)
@@ -384,6 +403,10 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
 
+	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
+		return er, pErr
+	}
+
 	jb := b.mustGetJobBuilder(qorJobName)
 	old, err := jb.getJobInstance(qorJobID)
 	if err != nil {
@@ -410,6 +433,10 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
+
+	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
+		return er, pErr
+	}
 
 	jb := b.mustGetJobBuilder(qorJobName)
 	newArgs, err := jb.unmarshalForm(ctx)
@@ -449,7 +476,8 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 		return er, err
 	}
 
-	er.Body = jobProgressing(qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
+	canEdit := editIsAllowed(ctx.R, qorJobName) == nil
+	er.Body = jobProgressing(canEdit, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	}
@@ -457,6 +485,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 }
 
 func jobProgressing(
+	canEdit bool,
 	id uint,
 	job string,
 	status string,
@@ -512,15 +541,17 @@ func jobProgressing(
 			),
 		),
 
-		Div().Class("d-flex mt-3").Children(
-			VSpacer(),
-			If(inRefresh,
-				VBtn("abort job").Color("error").
-					OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
-			),
-			If(status == JobStatusDone,
-				VBtn("rerun job").Color("primary").
-					OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+		If(canEdit,
+			Div().Class("d-flex mt-3").Children(
+				VSpacer(),
+				If(inRefresh,
+					VBtn("abort job").Color("error").
+						OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
+				),
+				If(status == JobStatusDone,
+					VBtn("rerun job").Color("primary").
+						OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+				),
 			),
 		),
 	)
