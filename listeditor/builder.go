@@ -48,21 +48,41 @@ func (b *EditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	var localName = fmt.Sprintf("listeditor_%s", b.fieldName)
 	var newElementValueJSON = JSONString(b.newElementValue())
 	return Div(
-		Div(
-			Div(
-				b.cf(ctx),
-				VBtn("Delete").Text(true).
-					Color("error").
-					Attr("@click",
-						fmt.Sprintf(
-							`Vue.set(locals.%s_deleted, index, true); $plaid().fieldValue("%s["+index+"].Deleted", 1)`,
-							localName, b.fieldName)),
-			).Attr("v-if", fmt.Sprintf("!locals.%s_deleted[index]", localName)),
-		).Attr("v-for", fmt.Sprintf("(obj, index) in locals.%s", localName)).
-			Attr(":key", "index"),
-		VBtn("Add row").
-			Text(true).
-			Color("primary").
-			Attr("@click", fmt.Sprintf(`locals.%s.push(%s);$plaid().fieldValue("%s["+(locals.%s.length-1)+"].Deleted", "")`, localName, newElementValueJSON, b.fieldName, localName)),
+		Table(
+			Tbody(
+				Template(
+					Tr(
+						Td(
+							VCard(
+								VCardText(
+									b.cf(ctx),
+								),
+							),
+						),
+						Td(
+							VBtn("Delete").Icon(true).
+								Color("error").
+								Attr("@click",
+									fmt.Sprintf(
+										`$set(locals.%s_deleted, index, true); $plaid().fieldValue("%s["+index+"].Deleted", 1)`,
+										localName, b.fieldName)).Children(
+								VIcon("clear"),
+							),
+						).Style("width: 1%"),
+					).Attr("v-if", fmt.Sprintf("!locals.%s_deleted[index]", localName)),
+				).Attr("v-for", fmt.Sprintf("(obj, index) in locals.%s", localName)).
+					Attr(":key", "index"),
+
+				Tr(
+					Td(
+						VBtn("Add row").
+							Text(true).
+							Color("primary").
+							Attr("@click", fmt.Sprintf(`locals.%s.push(%s);$plaid().fieldValue("%s["+(locals.%s.length-1)+"].Deleted", "")`, localName, newElementValueJSON, b.fieldName, localName)),
+					),
+					Td(),
+				),
+			),
+		),
 	).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, %s_deleted: {}}`, localName, JSONString(b.value), localName)).MarshalHTML(c)
 }
