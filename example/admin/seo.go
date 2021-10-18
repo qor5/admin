@@ -1,7 +1,8 @@
-package models
+package admin
 
 import (
 	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/seo"
 	"gorm.io/gorm"
 )
@@ -27,11 +28,12 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 
 	SeoCollection.RegisterSEO(&seo.SEO{
 		Name:      "Post",
+		Model:     &models.Post{},
 		Variables: []string{"Title"},
 		Context: func(objects ...interface{}) map[string]string {
 			context := make(map[string]string)
 			if len(objects) > 0 {
-				if article, ok := objects[0].(Post); ok {
+				if article, ok := objects[0].(models.Post); ok {
 					context["Title"] = article.Title
 				}
 			}

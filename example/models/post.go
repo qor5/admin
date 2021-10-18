@@ -19,7 +19,3 @@ type Post struct {
 	UpdatedAt     time.Time
 	CreatedAt     time.Time
 }
-
-func (post Post) GetSEO() *seo.SEO {
-	return SeoCollection.GetSEO("Post")
-}

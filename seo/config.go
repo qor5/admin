@@ -174,20 +174,19 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 
 func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, db *gorm.DB) h.HTMLComponent {
 	var (
-		fieldPrefix string
-		isModel     bool
-		seo         *SEO
-		setting     Setting
+		fieldPrefix   string
+		switchOnModel bool
+		seo           *SEO
+		setting       Setting
 	)
 
 	if qorSeoSetting, ok := obj.(QorSEOSettingInterface); ok {
 		fieldPrefix = qorSeoSetting.GetName()
-		seo = collection.GetSEO(fieldPrefix)
+		seo = collection.GetSEOByName(fieldPrefix)
 		setting = qorSeoSetting.GetSEOSetting()
 	} else {
-		if seoInterface, ok := obj.(interface{ GetSEO() *SEO }); ok {
-			isModel = true
-			seo = seoInterface.GetSEO()
+		if seo = collection.GetSEOByModel(obj); seo.Name != "" {
+			switchOnModel = true
 			value := reflect.Indirect(reflect.ValueOf(obj))
 			for i := 0; i < value.NumField(); i++ {
 				if s, ok := value.Field(i).Interface().(Setting); ok {
@@ -200,6 +199,7 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 		}
 	}
 
+	// todo: will remove this later
 	media := &setting.OpenGraphImageFromMediaLibrary
 	if media.ID.String() == "0" {
 		media.ID = json.Number("")
@@ -220,6 +220,7 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 		).Cols(2))
 	}
 
+	refPrefix := strings.ReplaceAll(strings.ToLower(fieldPrefix), " ", "_")
 	commonSettingComponent := VSeo(
 		VRow(
 			variablesEle...,
@@ -227,9 +228,9 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 		h.H6(msgr.Basic).Style("margin-top:15px;margin-bottom:15px;"),
 		VCard(
 			VCardText(
-				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@click", "$refs.seo.tagInputsFocus($refs.title)").Attr("ref", "title"),
-				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", "$refs.seo.tagInputsFocus($refs.description)").Attr("ref", "description"),
-				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", "$refs.seo.tagInputsFocus($refs.keywords)").Attr("ref", "keywords"),
+				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
+				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
+				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 			),
 		),
 
@@ -251,7 +252,7 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 		),
 	).Attr("ref", "seo")
 
-	if !isModel {
+	if !switchOnModel {
 		return commonSettingComponent
 	}
 
@@ -260,7 +261,7 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 		VCard(
 			VCardText(
 				VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
-				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Label("EnabledCustomize").Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
+				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
 				h.Div(commonSettingComponent).Attr("v-show", "locals.userDefaults == false"),
 			),
 		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),

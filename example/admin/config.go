@@ -97,7 +97,7 @@ func NewConfig() Config {
 
 	media_view.Configure(b, db)
 	//media_view.MediaLibraryPerPage = 3
-	models.ConfigureSeo(b, db)
+	ConfigureSeo(b, db)
 
 	b.MenuOrder(
 		"InputHarness",

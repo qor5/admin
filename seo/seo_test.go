@@ -55,10 +55,6 @@ type Product struct {
 	SEO  Setting
 }
 
-func (product Product) GetSEO() *SEO {
-	return collection.GetSEO("Product")
-}
-
 type RenderTestCase struct {
 	SiteName   string
 	SeoSetting Setting

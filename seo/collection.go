@@ -27,6 +27,7 @@ type Collection struct {
 // SEO represents a seo object for a page
 type SEO struct {
 	Name       string
+	Model      interface{}
 	Variables  []string
 	OpenGraph  *OpenGraphConfig
 	Context    func(...interface{}) map[string]string
@@ -58,7 +59,7 @@ func (collection *Collection) RegisterSEO(seo *SEO) {
 }
 
 // GetSEO get a Seo by name
-func (collection *Collection) GetSEO(name string) *SEO {
+func (collection *Collection) GetSEOByName(name string) *SEO {
 	for _, s := range collection.registeredSEO {
 		if s.Name == name {
 			return s
@@ -66,6 +67,16 @@ func (collection *Collection) GetSEO(name string) *SEO {
 	}
 
 	return &SEO{Name: name, collection: collection}
+}
+
+func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
+	for _, s := range collection.registeredSEO {
+		if reflect.TypeOf(model) == reflect.TypeOf(s.Model) {
+			return s
+		}
+	}
+
+	return &SEO{Name: "", collection: collection}
 }
 
 func (collection Collection) Render(db *gorm.DB, req *http.Request, name string, objects ...interface{}) h.HTMLComponent {
@@ -77,7 +88,7 @@ func (collection Collection) Render(db *gorm.DB, req *http.Request, name string,
 func (collection Collection) GetSEOSetting(db *gorm.DB, name string, objects ...interface{}) Setting {
 	var (
 		seoSetting Setting
-		seo        = collection.GetSEO(name)
+		seo        = collection.GetSEOByName(name)
 	)
 
 	// If passed objects has customzied SEO Setting field
