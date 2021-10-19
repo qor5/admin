@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -131,10 +134,10 @@ func (c *cron) Add(job QorJobInterface) (err error) {
 }
 
 // Run a job from cron queue
-func (c *cron) Run(qorJob QorJobInterface) error {
+func (c *cron) run(qorJob QorJobInterface) error {
 	h := qorJob.GetHandler()
 	if h == nil {
-		panic(fmt.Sprintf("job %v no handler", qorJob.GetJobID()))
+		panic(fmt.Sprintf("job %v no handler", qorJob.GetJobName()))
 	}
 
 	go func() {
@@ -150,12 +153,12 @@ func (c *cron) Run(qorJob QorJobInterface) error {
 		qorJob.SetProgressText(fmt.Sprintf("Worker killed by signal %s", i.String()))
 		qorJob.SetStatus(JobStatusKilled)
 
-		qorJob.StopReferesh()
+		qorJob.StopRefresh()
 		os.Exit(int(reflect.ValueOf(i).Int()))
 	}()
 
-	qorJob.StartReferesh()
-	defer qorJob.StopReferesh()
+	qorJob.StartRefresh()
+	defer qorJob.StopRefresh()
 
 	err := h(context.Background(), qorJob)
 	if err == nil {
@@ -180,7 +183,7 @@ func (c *cron) Kill(job QorJobInterface) (err error) {
 			if process, err := os.FindProcess(cronJob.Pid); err == nil {
 				if err = process.Kill(); err == nil {
 					cronJob.Delete = true
-					return nil
+					return job.SetStatus(JobStatusKilled)
 				}
 			}
 			return err
@@ -198,10 +201,63 @@ func (c *cron) Remove(job QorJobInterface) error {
 		if cronJob.JobID == job.GetJobID() {
 			if cronJob.Pid == 0 {
 				cronJob.Delete = true
-				return nil
+				return job.SetStatus(JobStatusKilled)
 			}
 			return errors.New("failed to remove current job as it is running")
 		}
 	}
 	return errors.New("failed to find job")
+}
+
+func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QorJobInterface, error)) error {
+	cmdLine := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	qorJobID := cmdLine.String("qor-job", "", "Qor Job ID")
+	cmdLine.Parse(os.Args[1:])
+
+	if *qorJobID != "" {
+		id, err := strconv.ParseUint(*qorJobID, 10, 64)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		job, err := getJob(uint(id))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		if err := c.doRunJob(job); err == nil {
+			os.Exit(0)
+		} else {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	return nil
+}
+
+func (c *cron) doRunJob(job QorJobInterface) error {
+	defer func() {
+		if r := recover(); r != nil {
+			job.AddLog(string(debug.Stack()))
+			job.SetProgressText(fmt.Sprint(r))
+			job.SetStatus(JobStatusException)
+		}
+	}()
+
+	if job.GetStatus() != JobStatusNew && job.GetStatus() != JobStatusScheduled {
+		return errors.New("invalid job status, current status: " + job.GetStatus())
+	}
+
+	if err := job.SetStatus(JobStatusRunning); err == nil {
+		if err := c.run(job); err == nil {
+			return job.SetStatus(JobStatusDone)
+		}
+
+		job.SetProgressText(err.Error())
+		job.SetStatus(JobStatusException)
+	}
+
+	return nil
 }

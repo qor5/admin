@@ -19,17 +19,20 @@ type QorJobInstance struct {
 
 	QorJobID uint `gorm:"index"`
 
-	Args string
+	QueJobID int64
 
-	Status       string `sql:"default:'new'"`
+	Job    string
+	Status string `sql:"default:'new'"`
+	Args   string
+
 	Progress     uint
 	ProgressText string
 	Log          string `sql:"size:65532"`
 
-	jb           *JobBuilder `sql:"-"`
-	mutex        sync.Mutex  `sql:"-"`
-	stopReferesh bool        `sql:"-"`
-	inReferesh   bool        `sql:"-"`
+	jb          *JobBuilder `sql:"-"`
+	mutex       sync.Mutex  `sql:"-"`
+	stopRefresh bool        `sql:"-"`
+	inRefresh   bool        `sql:"-"`
 }
 
 type Scheduler interface {

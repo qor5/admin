@@ -3,12 +3,8 @@ package worker
 import (
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"net/url"
-	"os"
-	"runtime/debug"
-	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -40,14 +36,14 @@ func New(db *gorm.DB) *Builder {
 
 	r := &Builder{
 		db:  db,
-		q:   NewCronQueue(),
+		q:   NewGoQueQueue(db),
 		jpb: presets.New(),
 	}
 
 	return r
 }
 
-// default queue is cron queue
+// default queue is go-que queue
 func (b *Builder) Queue(q Queue) *Builder {
 	b.q = q
 	return b
@@ -60,7 +56,7 @@ func (b *Builder) NewJob(name string) *JobBuilder {
 
 	for _, jb := range b.jbs {
 		if jb.name == name {
-			panic(fmt.Sprintf("worker %s already exists\n", name))
+			panic(fmt.Sprintf("worker %s already exists", name))
 		}
 	}
 
@@ -97,42 +93,7 @@ func (b *Builder) getJobBuilderByQorJobID(id uint) (*JobBuilder, error) {
 		return nil, err
 	}
 
-	return b.mustGetJobBuilder(j.Job), nil
-}
-
-func (b *Builder) runJob(qorJobID uint) error {
-	jb, err := b.getJobBuilderByQorJobID(qorJobID)
-	if err != nil {
-		return err
-	}
-
-	inst, err := jb.getJobInstance(qorJobID)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			inst.AddLog(string(debug.Stack()))
-			inst.SetProgressText(fmt.Sprint(r))
-			inst.SetStatus(JobStatusException)
-		}
-	}()
-
-	if inst.GetStatus() != JobStatusNew && inst.GetStatus() != JobStatusScheduled {
-		return errors.New("invalid job status, current status: " + inst.GetStatus())
-	}
-
-	if err = inst.SetStatus(JobStatusRunning); err == nil {
-		if err = b.q.Run(inst); err == nil {
-			return inst.SetStatus(JobStatusDone)
-		}
-
-		inst.SetProgressText(err.Error())
-		inst.SetStatus(JobStatusException)
-	}
-
-	return nil
+	return b.getJobBuilder(j.Job), nil
 }
 
 func (b *Builder) setStatus(id uint, status string) error {
@@ -146,26 +107,27 @@ func (b *Builder) setStatus(id uint, status string) error {
 var permVerifier *perm.Verifier
 
 func (b *Builder) Configure(pb *presets.Builder) {
-	{
-		// Parse job
-		cmdLine := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-		qorJobID := cmdLine.String("qor-job", "", "Qor Job ID")
-		cmdLine.Parse(os.Args[1:])
-		b.configured = true
-
-		if *qorJobID != "" {
-			id, err := strconv.ParseUint(*qorJobID, 10, 64)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			if err := b.runJob(uint(id)); err == nil {
-				os.Exit(0)
-			} else {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+	b.configured = true
+	var jds []*QorJobDefinition
+	for _, jb := range b.jbs {
+		jds = append(jds, &QorJobDefinition{
+			Name:    jb.name,
+			Handler: jb.h,
+		})
+	}
+	err := b.q.Listen(jds, func(qorJobID uint) (QorJobInterface, error) {
+		jb, err := b.getJobBuilderByQorJobID(qorJobID)
+		if err != nil {
+			return nil, err
 		}
+		if jb == nil {
+			return nil, errors.New("failed to find job (job name modified?)")
+		}
+
+		return jb.getJobInstance(qorJobID)
+	})
+	if err != nil {
+		panic(err)
 	}
 
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
@@ -250,29 +212,26 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			return err
 		}
 
-		j := QorJob{
-			Job:    qorJob.Job,
-			Status: JobStatusNew,
-		}
-		err = b.db.Create(&j).Error
-		if err != nil {
-			return err
-		}
+		return b.db.Transaction(func(tx *gorm.DB) error {
+			j := QorJob{
+				Job:    qorJob.Job,
+				Status: JobStatusNew,
+			}
+			err = b.db.Create(&j).Error
+			if err != nil {
+				return err
+			}
 
-		inst, err := jb.newJobInstance(j.ID, args)
-		if err != nil {
-			return err
-		}
-		err = b.q.Add(inst)
-		if err != nil {
-			return err
-		}
+			inst, err := jb.newJobInstance(j.ID, qorJob.Job, args)
+			if err != nil {
+				return err
+			}
 
-		return nil
+			return b.q.Add(inst)
+		})
 	})
 
-	dtb := mb.Detailing("DetailingPage")
-	dtb.Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	mb.Detailing("DetailingPage").Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		ctx.Hub.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 		ctx.Hub.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
@@ -308,14 +267,10 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				}
 			} else {
 				scheduledJobDetailing = []HTMLComponent{
-					Div(Text(inst.Args)),
-					If(editIsAllowed(ctx.R, qorJob.Job) == nil,
-						Div().Class("d-flex mt-3").Children(
-							VSpacer(),
-							VBtn("cancel scheduled job").Color("error").
-								OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
-						),
+					VAlert().Dense(true).Type("warning").Children(
+						Text("The job code has been deleted or modified, this job will not be executed"),
 					),
+					Div(Text("args: " + inst.Args)),
 				}
 			}
 		}
@@ -375,28 +330,12 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
 	switch inst.Status {
 	case JobStatusRunning:
-		err = b.q.Kill(inst)
-		if err != nil {
-			return err
-		}
-		err = inst.SetStatus(JobStatusKilled)
-		if err != nil {
-			return err
-		}
+		return b.q.Kill(inst)
 	case JobStatusNew, JobStatusScheduled:
-		err = inst.SetStatus(JobStatusKilled)
-		if err != nil {
-			return err
-		}
-		err = b.q.Remove(inst)
-		if err != nil {
-			return err
-		}
+		return b.q.Remove(inst)
 	default:
 		return fmt.Errorf("job status is %s, cannot be aborted", inst.Status)
 	}
-
-	return nil
 }
 
 func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, err error) {
@@ -416,7 +355,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 		return er, errors.New("job is not done")
 	}
 
-	inst, err := jb.newJobInstance(qorJobID, old.Args)
+	inst, err := jb.newJobInstance(qorJobID, qorJobName, old.Args)
 	if err != nil {
 		return er, err
 	}
@@ -453,7 +392,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, err
 	}
 
-	newInst, err := jb.newJobInstance(qorJobID, newArgs)
+	newInst, err := jb.newJobInstance(qorJobID, qorJobName, newArgs)
 	if err != nil {
 		return er, err
 	}
@@ -480,6 +419,8 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	er.Body = jobProgressing(canEdit, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
+	} else {
+		er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
 	}
 	return er, nil
 }

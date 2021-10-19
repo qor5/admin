@@ -3,9 +3,11 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/goplaid/web"
@@ -24,6 +26,13 @@ type JobBuilder struct {
 }
 
 func newJob(b *Builder, name string) *JobBuilder {
+	if b == nil {
+		panic("builder is nil")
+	}
+	if strings.TrimSpace(name) == "" {
+		panic("name is empty")
+	}
+
 	return &JobBuilder{
 		b:    b,
 		name: name,
@@ -32,13 +41,23 @@ func newJob(b *Builder, name string) *JobBuilder {
 
 type JobHandler func(context.Context, HQorJob) error
 
+// r should be ptr to struct
 func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
+	{
+		v := reflect.TypeOf(r)
+		if v.Kind() != reflect.Ptr {
+			panic("resource is not ptr to struct")
+		}
+		if v.Elem().Kind() != reflect.Struct {
+			panic("resource is not ptr to struct")
+		}
+	}
+
 	jb.r = r
 	jb.rmb = jb.b.jpb.Model(r)
 
 	if _, ok := r.(Scheduler); ok {
-		eb := jb.rmb.Editing()
-		eb.Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		jb.rmb.Editing().Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			t := obj.(Scheduler).GetScheduleTime()
 			var v string
 			if t != nil {
@@ -113,6 +132,9 @@ func getModelQorJobInstance(db *gorm.DB, qorJobID uint) (*QorJobInstance, error)
 	if err != nil {
 		return nil, err
 	}
+	if len(insts) == 0 {
+		return nil, errors.New("no qor job instance")
+	}
 
 	return insts[0], nil
 }
@@ -128,7 +150,7 @@ func (jb *JobBuilder) getJobInstance(qorJobID uint) (*QorJobInstance, error) {
 	return inst, nil
 }
 
-func (jb *JobBuilder) newJobInstance(qorJobID uint, args interface{}) (*QorJobInstance, error) {
+func (jb *JobBuilder) newJobInstance(qorJobID uint, qorJobName string, args interface{}) (*QorJobInstance, error) {
 	var mArgs string
 	if v, ok := args.(string); ok {
 		mArgs = v
@@ -142,6 +164,7 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, args interface{}) (*QorJobIn
 	inst := QorJobInstance{
 		QorJobID: qorJobID,
 		Args:     mArgs,
+		Job:      qorJobName,
 		Status:   JobStatusNew,
 	}
 	err := jb.b.db.Create(&inst).Error
@@ -155,14 +178,18 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, args interface{}) (*QorJobIn
 type QorJobInterface interface {
 	HQorJob
 
+	GetJobName() string
 	GetJobID() string
 	GetStatus() string
 	SetStatus(string) error
 
-	StartReferesh()
-	StopReferesh()
+	StartRefresh()
+	StopRefresh()
 
 	GetHandler() JobHandler
+
+	SetQueJobID(id int64) error
+	GetQueJobID() int64
 }
 
 // for job handler
@@ -174,6 +201,10 @@ type HQorJob interface {
 }
 
 var _ QorJobInterface = (*QorJobInstance)(nil)
+
+func (job *QorJobInstance) GetJobName() string {
+	return job.Job
+}
 
 func (job *QorJobInstance) GetJobID() string {
 	return fmt.Sprint(job.QorJobID)
@@ -231,7 +262,6 @@ func (job *QorJobInstance) AddLog(log string) error {
 	job.mutex.Lock()
 	defer job.mutex.Unlock()
 
-	fmt.Println(log)
 	job.Log += "\n" + log
 	if job.shouldCallSave() {
 		return job.callSave()
@@ -240,20 +270,20 @@ func (job *QorJobInstance) AddLog(log string) error {
 	return nil
 }
 
-func (job *QorJobInstance) StartReferesh() {
+func (job *QorJobInstance) StartRefresh() {
 	job.mutex.Lock()
 	defer job.mutex.Unlock()
-	if !job.inReferesh {
-		job.inReferesh = true
-		job.stopReferesh = false
+	if !job.inRefresh {
+		job.inRefresh = true
+		job.stopRefresh = false
 
 		go func() {
-			job.referesh()
+			job.refresh()
 		}()
 	}
 }
 
-func (job *QorJobInstance) StopReferesh() {
+func (job *QorJobInstance) StopRefresh() {
 	job.mutex.Lock()
 	defer job.mutex.Unlock()
 
@@ -262,7 +292,7 @@ func (job *QorJobInstance) StopReferesh() {
 		log.Println(err)
 	}
 
-	job.stopReferesh = true
+	job.stopRefresh = true
 }
 
 func (job *QorJobInstance) GetHandler() JobHandler {
@@ -273,8 +303,24 @@ func (job *QorJobInstance) GetArgument() (interface{}, error) {
 	return job.jb.parseArgs(job.Args)
 }
 
+func (job *QorJobInstance) SetQueJobID(id int64) error {
+	job.mutex.Lock()
+	defer job.mutex.Unlock()
+
+	job.QueJobID = id
+	if job.shouldCallSave() {
+		return job.callSave()
+	}
+
+	return nil
+}
+
+func (job *QorJobInstance) GetQueJobID() int64 {
+	return job.QueJobID
+}
+
 func (job *QorJobInstance) shouldCallSave() bool {
-	return !job.inReferesh || job.stopReferesh
+	return !job.inRefresh || job.stopRefresh
 }
 
 func (job *QorJobInstance) callSave() error {
@@ -285,7 +331,7 @@ func (job *QorJobInstance) callSave() error {
 	return job.jb.b.db.Save(job).Error
 }
 
-func (job *QorJobInstance) referesh() {
+func (job *QorJobInstance) refresh() {
 	job.mutex.Lock()
 	defer job.mutex.Unlock()
 
@@ -294,10 +340,10 @@ func (job *QorJobInstance) referesh() {
 		log.Println(err)
 	}
 
-	if job.stopReferesh {
-		job.inReferesh = false
-		job.stopReferesh = false
+	if job.stopRefresh {
+		job.inRefresh = false
+		job.stopRefresh = false
 	} else {
-		time.AfterFunc(5*time.Second, job.referesh)
+		time.AfterFunc(5*time.Second, job.refresh)
 	}
 }
