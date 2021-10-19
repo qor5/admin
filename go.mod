@@ -6,9 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi v1.5.4
-	github.com/go-playground/form v3.1.4+incompatible
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.14-0.20211012134701-57895edc9687
+	github.com/goplaid/web v1.1.14
 	github.com/goplaid/x v1.0.16-0.20211010021035-634f3e1c5b86
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -28,6 +27,7 @@ require (
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
+	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
 	gorm.io/driver/postgres v1.1.1
