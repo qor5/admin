@@ -6,8 +6,8 @@ type QorJobDefinition struct {
 }
 
 type Queue interface {
-	Add(QorJobInterface) error
-	Kill(QorJobInterface) error
-	Remove(QorJobInterface) error
-	Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QorJobInterface, error)) error
+	Add(QueJobInterface) error
+	Kill(QueJobInterface) error
+	Remove(QueJobInterface) error
+	Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error
 }

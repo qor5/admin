@@ -43,7 +43,7 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 	}
 }
 
-func (q *goque) Add(job QorJobInterface) error {
+func (q *goque) Add(job QueJobInterface) error {
 	args, err := job.GetArgument()
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (q *goque) Add(job QorJobInterface) error {
 	return job.SetQueJobID(ids[0])
 }
 
-func (q *goque) run(ctx context.Context, job QorJobInterface) error {
+func (q *goque) run(ctx context.Context, job QueJobInterface) error {
 	job.StartRefresh()
 	defer job.StopRefresh()
 
@@ -94,7 +94,7 @@ func (q *goque) isJobExpired(id int64) (bool, error) {
 	return false, nil
 }
 
-func (q *goque) Kill(job QorJobInterface) error {
+func (q *goque) Kill(job QueJobInterface) error {
 	err := job.SetStatus(JobStatusKilled)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (q *goque) Kill(job QorJobInterface) error {
 	return q.expireJob(job.GetQueJobID())
 }
 
-func (q *goque) Remove(job QorJobInterface) error {
+func (q *goque) Remove(job QueJobInterface) error {
 	err := job.SetStatus(JobStatusKilled)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (q *goque) Remove(job QorJobInterface) error {
 	return q.expireJob(job.GetQueJobID())
 }
 
-func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QorJobInterface, error)) error {
+func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error {
 	for i, _ := range jobDefs {
 		jd := jobDefs[i]
 		if jd.Handler == nil {
@@ -126,7 +126,7 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 			MaxPerformPerSecond:       2,
 			MaxConcurrentPerformCount: 1,
 			Perform: func(ctx context.Context, qj que.Job) (err error) {
-				var job QorJobInterface
+				var job QueJobInterface
 				{
 					var sid string
 					err = q.parseArgs(qj.Plan().Args, &sid)

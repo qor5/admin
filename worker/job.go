@@ -39,7 +39,7 @@ func newJob(b *Builder, name string) *JobBuilder {
 	}
 }
 
-type JobHandler func(context.Context, HQorJob) error
+type JobHandler func(context.Context, QorJobInterface) error
 
 // r should be ptr to struct
 func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
@@ -175,8 +175,8 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, qorJobName string, args inte
 	return jb.getJobInstance(qorJobID)
 }
 
-type QorJobInterface interface {
-	HQorJob
+type QueJobInterface interface {
+	QorJobInterface
 
 	GetJobName() string
 	GetJobID() string
@@ -193,14 +193,14 @@ type QorJobInterface interface {
 }
 
 // for job handler
-type HQorJob interface {
+type QorJobInterface interface {
 	GetArgument() (interface{}, error)
 	SetProgress(uint) error
 	SetProgressText(string) error
 	AddLog(string) error
 }
 
-var _ QorJobInterface = (*QorJobInstance)(nil)
+var _ QueJobInterface = (*QorJobInstance)(nil)
 
 func (job *QorJobInstance) GetJobName() string {
 	return job.Job

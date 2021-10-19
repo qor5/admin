@@ -115,7 +115,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			Handler: jb.h,
 		})
 	}
-	err := b.q.Listen(jds, func(qorJobID uint) (QorJobInterface, error) {
+	err := b.q.Listen(jds, func(qorJobID uint) (QueJobInterface, error) {
 		jb, err := b.getJobBuilderByQorJobID(qorJobID)
 		if err != nil {
 			return nil, err
