@@ -2,7 +2,6 @@ package views
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -10,15 +9,15 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/jsontyperegistry"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder) {
+func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...interface{}) {
 	b.FieldDefaults(presets.LIST).
 		FieldType(publish.Status{}).
 		ComponentFunc(StatusListFunc())
@@ -31,6 +30,10 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN)
+
+	for _, m := range models {
+		jsontyperegistry.MustRegisterType(m)
+	}
 }
 
 func StatusListFunc() presets.FieldComponentFunc {
@@ -64,13 +67,14 @@ func StatusEditFunc() presets.FieldComponentFunc {
 				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, publishEvent)),
 			)
 		}
-		params := []interface{}{reflect.TypeOf(obj).String(), fmt.Sprint(reflectutils.MustGet(obj, "ID"))}
-		if v, ok := obj.(publish.VersionInterface); ok {
-			params = append(params, v.GetVersionName())
-		}
+
+		//params := []interface{}{reflect.TypeOf(obj).String(), fmt.Sprint(reflectutils.MustGet(obj, "ID"))}
+		//if v, ok := obj.(publish.VersionInterface); ok {
+		//	params = append(params, v.GetVersionName())
+		//}
 		return h.Div(
 			btn,
-			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFuncVar(web.Var("locals.action"), params...).Go(), utilsMsgr)).
+			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFuncVar(web.Var("locals.action"), jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).
 			Attr(web.InitContextLocals, `{ action: ""}`)
 
 	}

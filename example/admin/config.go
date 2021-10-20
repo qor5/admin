@@ -4,11 +4,6 @@ import (
 	"embed"
 	"os"
 
-	"github.com/qor/qor5/utils"
-
-	"github.com/qor/qor5/publish"
-	publish_view "github.com/qor/qor5/publish/views"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -24,8 +19,11 @@ import (
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
+	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/richeditor"
 	"github.com/qor/qor5/slug"
+	"github.com/qor/qor5/utils"
 	"github.com/qor/qor5/worker"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -153,8 +151,8 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(b, db, publisher)
-	publish_view.RegisterPublishModels(&pagebuilder.Page{})
+	publish_view.Configure(b, db, publisher, &pagebuilder.Page{})
+
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
