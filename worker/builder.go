@@ -8,11 +8,13 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/goplaid/x/vuetifyx"
 	. "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -131,6 +133,9 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	}
 
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
+	pb.I18n().
+		RegisterForModule(language.English, I18nWorkerKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nWorkerKey, Messages_zh_CN)
 
 	mb := pb.Model(&QorJob{}).
 		Label("Workers").
@@ -139,6 +144,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 		return []*vuetifyx.FilterItem{
 			{
 				Key:          "status",
@@ -146,40 +152,46 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `status %s ?`,
 				Options: []*vuetifyx.SelectItem{
-					{Text: "New", Value: JobStatusNew},
-					{Text: "Scheduled", Value: JobStatusScheduled},
-					{Text: "Running", Value: JobStatusRunning},
-					{Text: "Cancelled", Value: JobStatusCancelled},
-					{Text: "Done", Value: JobStatusDone},
-					{Text: "Exception", Value: JobStatusException},
-					{Text: "Killed", Value: JobStatusKilled},
+					{Text: msgr.StatusNew, Value: JobStatusNew},
+					{Text: msgr.StatusScheduled, Value: JobStatusScheduled},
+					{Text: msgr.StatusRunning, Value: JobStatusRunning},
+					{Text: msgr.StatusCancelled, Value: JobStatusCancelled},
+					{Text: msgr.StatusDone, Value: JobStatusDone},
+					{Text: msgr.StatusException, Value: JobStatusException},
+					{Text: msgr.StatusKilled, Value: JobStatusKilled},
 				},
 			},
 		}
 	})
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 		return []*presets.FilterTab{
 			{
-				Label: "All Jobs",
+				Label: msgr.FilterTabAll,
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: "Running",
+				Label: msgr.FilterTabRunning,
 				Query: url.Values{"status": []string{JobStatusRunning}},
 			},
 			{
-				Label: "Scheduled",
+				Label: msgr.FilterTabScheduled,
 				Query: url.Values{"status": []string{JobStatusScheduled}},
 			},
 			{
-				Label: "Done",
+				Label: msgr.FilterTabDone,
 				Query: url.Values{"status": []string{JobStatusDone}},
 			},
 			{
-				Label: "Errors",
+				Label: msgr.FilterTabErrors,
 				Query: url.Values{"status": []string{JobStatusException}},
 			},
 		}
+	})
+	lb.Field("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+		qorJob := obj.(*QorJob)
+		return Td(Text(getStatusTranslation(msgr, qorJob.Status)))
 	})
 
 	eb := mb.Editing("Job")
@@ -232,6 +244,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	})
 
 	mb.Detailing("DetailingPage").Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+
 		ctx.Hub.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 		ctx.Hub.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
@@ -258,9 +272,9 @@ func (b *Builder) Configure(pb *presets.Builder) {
 					If(editIsAllowed(ctx.R, qorJob.Job) == nil,
 						Div().Class("d-flex mt-3").Children(
 							VSpacer(),
-							VBtn("cancel scheduled job").Color("error").Class("mr-2").
+							VBtn(msgr.ActionCancelJob).Color("error").Class("mr-2").
 								OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
-							VBtn("update scheduled job").Color("primary").
+							VBtn(msgr.ActionUpdateJob).Color("primary").
 								OnClick("worker_updateJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
 						),
 					),
@@ -439,6 +453,8 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 }
 
 func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
 
@@ -448,7 +464,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	canEdit := editIsAllowed(ctx.R, qorJobName) == nil
-	er.Body = jobProgressing(canEdit, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
+	er.Body = jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
@@ -459,6 +475,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 
 func jobProgressing(
 	canEdit bool,
+	msgr *Messages,
 	id uint,
 	job string,
 	status string,
@@ -486,14 +503,14 @@ func jobProgressing(
 	}
 	inRefresh := status == JobStatusNew || status == JobStatusRunning
 	return Div(
-		Div(Text("Status")).Class("text-caption"),
+		Div(Text(msgr.DetailTitleStatus)).Class("text-caption"),
 		Div().Class("d-flex align-center mb-5").Children(
 			Div().Style("width: 120px").Children(
-				Text(fmt.Sprintf("%s (%d%%)", status, progress)),
+				Text(fmt.Sprintf("%s (%d%%)", getStatusTranslation(msgr, status), progress)),
 			),
 			VProgressLinear().Value(int(progress)),
 		),
-		Div(Text("Job Log")).Class("text-caption"),
+		Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
 		Div().Class("mb-3").Style(fmt.Sprintf(`
 	background-color: #222;
     color: #fff;
@@ -518,14 +535,34 @@ func jobProgressing(
 			Div().Class("d-flex mt-3").Children(
 				VSpacer(),
 				If(inRefresh,
-					VBtn("abort job").Color("error").
+					VBtn(msgr.ActionAbortJob).Color("error").
 						OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
 				),
 				If(status == JobStatusDone,
-					VBtn("rerun job").Color("primary").
+					VBtn(msgr.ActionRerunJob).Color("primary").
 						OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
 				),
 			),
 		),
 	)
+}
+
+func getStatusTranslation(msgr *Messages, status string) string {
+	switch status {
+	case JobStatusNew:
+		return msgr.StatusNew
+	case JobStatusScheduled:
+		return msgr.StatusScheduled
+	case JobStatusRunning:
+		return msgr.StatusRunning
+	case JobStatusCancelled:
+		return msgr.StatusCancelled
+	case JobStatusDone:
+		return msgr.StatusDone
+	case JobStatusException:
+		return msgr.StatusException
+	case JobStatusKilled:
+		return msgr.StatusKilled
+	}
+	return status
 }
