@@ -16,8 +16,7 @@ import (
 )
 
 type goque struct {
-	db *gorm.DB
-	q  que.Queue
+	q que.Queue
 }
 
 func NewGoQueQueue(db *gorm.DB) Queue {
@@ -38,8 +37,7 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 	}
 
 	return &goque{
-		db: db,
-		q:  q,
+		q: q,
 	}
 }
 
@@ -54,7 +52,7 @@ func (q *goque) Add(job QueJobInterface) error {
 		job.SetStatus(JobStatusScheduled)
 	}
 
-	ids, err := q.q.Enqueue(context.Background(), nil, que.Plan{
+	_, err = q.q.Enqueue(context.Background(), nil, que.Plan{
 		Queue: "worker_" + job.GetJobName(),
 		Args:  que.Args(job.GetJobID(), args),
 		RunAt: runAt,
@@ -62,7 +60,8 @@ func (q *goque) Add(job QueJobInterface) error {
 	if err != nil {
 		return err
 	}
-	return job.SetQueJobID(ids[0])
+
+	return nil
 }
 
 func (q *goque) run(ctx context.Context, job QueJobInterface) error {
@@ -72,44 +71,12 @@ func (q *goque) run(ctx context.Context, job QueJobInterface) error {
 	return job.GetHandler()(ctx, job)
 }
 
-func (q *goque) expireJob(id int64) error {
-	return q.db.Exec("update goque_jobs set expired_at = now() where id = ?", id).Error
-}
-
-func (q *goque) isJobExpired(id int64) (bool, error) {
-	db, err := q.db.DB()
-	if err != nil {
-		return false, err
-	}
-
-	var expiredAt time.Time
-	err = db.QueryRow("select expired_at from goque_jobs where id = $1", id).Scan(&expiredAt)
-	if err != nil {
-		return false, err
-	}
-	if time.Now().Sub(expiredAt) > 0 {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func (q *goque) Kill(job QueJobInterface) error {
-	err := job.SetStatus(JobStatusKilled)
-	if err != nil {
-		return err
-	}
-
-	return q.expireJob(job.GetQueJobID())
+	return job.SetStatus(JobStatusKilled)
 }
 
 func (q *goque) Remove(job QueJobInterface) error {
-	err := job.SetStatus(JobStatusKilled)
-	if err != nil {
-		return err
-	}
-
-	return q.expireJob(job.GetQueJobID())
+	return job.SetStatus(JobStatusKilled)
 }
 
 func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error {
@@ -163,9 +130,8 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 				}
 
 				hctx, cf := context.WithCancel(context.Background())
-				queJobID := job.GetQueJobID()
 				hDoneC := make(chan struct{})
-				isExpired := false
+				isAborted := false
 				go func() {
 					timer := time.NewTicker(time.Second)
 					for {
@@ -173,9 +139,9 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 						case <-hDoneC:
 							return
 						case <-timer.C:
-							isExpired, _ = q.isJobExpired(queJobID)
-							if isExpired {
-								job.SetStatus(JobStatusKilled)
+							status, _ := job.FetchAndSetStatus()
+							if status == JobStatusKilled {
+								isAborted = true
 								cf()
 								return
 							}
@@ -183,7 +149,7 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 					}
 				}()
 				err = q.run(hctx, job)
-				if !isExpired {
+				if !isAborted {
 					hDoneC <- struct{}{}
 				}
 				if err != nil {
@@ -191,12 +157,13 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 					job.SetStatus(JobStatusException)
 					return err
 				}
+				if isAborted {
+					return qj.Expire(ctx, errors.New("manually aborted"))
+				}
 
-				if !isExpired {
-					err = job.SetStatus(JobStatusDone)
-					if err != nil {
-						return err
-					}
+				err = job.SetStatus(JobStatusDone)
+				if err != nil {
+					return err
 				}
 				return qj.Done(ctx)
 			},

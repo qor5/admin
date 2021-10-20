@@ -19,8 +19,6 @@ type QorJobInstance struct {
 
 	QorJobID uint `gorm:"index"`
 
-	QueJobID int64
-
 	Job    string
 	Status string `sql:"default:'new'"`
 	Args   string

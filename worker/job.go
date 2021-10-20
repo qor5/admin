@@ -181,15 +181,13 @@ type QueJobInterface interface {
 	GetJobName() string
 	GetJobID() string
 	GetStatus() string
+	FetchAndSetStatus() (string, error)
 	SetStatus(string) error
 
 	StartRefresh()
 	StopRefresh()
 
 	GetHandler() JobHandler
-
-	SetQueJobID(id int64) error
-	GetQueJobID() int64
 }
 
 // for job handler
@@ -212,6 +210,33 @@ func (job *QorJobInstance) GetJobID() string {
 
 func (job *QorJobInstance) GetStatus() string {
 	return job.Status
+}
+
+func (job *QorJobInstance) FetchAndSetStatus() (string, error) {
+	var status string
+	{
+		db, err := job.jb.b.db.DB()
+		if err != nil {
+			return job.Status, err
+		}
+
+		err = db.QueryRow("select status from qor_job_instances where id = $1", job.ID).Scan(&status)
+		if err != nil {
+			return job.Status, err
+		}
+		if status == "" {
+			return job.Status, errors.New("failed to fetch qor_job_instance status")
+		}
+	}
+
+	if job.Status != status {
+		err := job.SetStatus(status)
+		if err != nil {
+			return job.Status, err
+		}
+	}
+
+	return job.Status, nil
 }
 
 func (job *QorJobInstance) SetStatus(status string) error {
@@ -301,22 +326,6 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 
 func (job *QorJobInstance) GetArgument() (interface{}, error) {
 	return job.jb.parseArgs(job.Args)
-}
-
-func (job *QorJobInstance) SetQueJobID(id int64) error {
-	job.mutex.Lock()
-	defer job.mutex.Unlock()
-
-	job.QueJobID = id
-	if job.shouldCallSave() {
-		return job.callSave()
-	}
-
-	return nil
-}
-
-func (job *QorJobInstance) GetQueJobID() int64 {
-	return job.QueJobID
 }
 
 func (job *QorJobInstance) shouldCallSave() bool {
