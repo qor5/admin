@@ -334,6 +334,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
+	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
 	return er, nil
 }
 
@@ -353,7 +354,7 @@ func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
 		return b.q.Remove(inst)
 	default:
 		return &cannotAbortError{
-			err: fmt.Errorf("job status is %s, cannot be aborted", inst.Status),
+			err: fmt.Errorf("job status is %s, cannot be aborted/canceled", inst.Status),
 		}
 	}
 }

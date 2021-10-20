@@ -76,7 +76,7 @@ func (q *goque) Kill(job QueJobInterface) error {
 }
 
 func (q *goque) Remove(job QueJobInterface) error {
-	return job.SetStatus(JobStatusKilled)
+	return job.SetStatus(JobStatusCancelled)
 }
 
 func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error {
@@ -119,6 +119,9 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 					}
 				}()
 
+				if job.GetStatus() == JobStatusCancelled {
+					return qj.Expire(ctx, errors.New("job is cancelled"))
+				}
 				if job.GetStatus() != JobStatusNew && job.GetStatus() != JobStatusScheduled {
 					job.SetStatus(JobStatusKilled)
 					return errors.New("invalid job status, current status: " + job.GetStatus())
