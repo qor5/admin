@@ -197,7 +197,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				Items(jobNames).
 				Attr(web.VFieldName("Job")...).
 				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Go()),
-			web.Portal().Name("jobEditingContent"),
+			web.Portal().Name("worker_jobEditingContent"),
 		)
 	})
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -286,6 +286,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
 				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
 			),
+			web.Portal().Name("worker_snackbar"),
 		)
 	})
 }
@@ -297,7 +298,7 @@ func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.Ev
 		body = jb.rmb.Editing().ToComponent(jb.rmb, jb.r, nil, ctx)
 	}
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-		Name: "jobEditingContent",
+		Name: "worker_jobEditingContent",
 		Body: body,
 	})
 
@@ -320,11 +321,28 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 
 	err = b.doAbortJob(inst)
 	if err != nil {
-		return er, err
+		_, ok := err.(*cannotAbortError)
+		if !ok {
+			return er, err
+		}
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: "worker_snackbar",
+			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+				Text(err.Error()),
+			),
+		})
 	}
 
 	er.Reload = true
-	return
+	return er, nil
+}
+
+type cannotAbortError struct {
+	err error
+}
+
+func (e *cannotAbortError) Error() string {
+	return e.err.Error()
 }
 
 func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
@@ -334,7 +352,9 @@ func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
 	case JobStatusNew, JobStatusScheduled:
 		return b.q.Remove(inst)
 	default:
-		return fmt.Errorf("job status is %s, cannot be aborted", inst.Status)
+		return &cannotAbortError{
+			err: fmt.Errorf("job status is %s, cannot be aborted", inst.Status),
+		}
 	}
 }
 
@@ -389,7 +409,18 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	}
 	err = b.doAbortJob(old)
 	if err != nil {
-		return er, err
+		_, ok := err.(*cannotAbortError)
+		if !ok {
+			return er, err
+		}
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: "worker_snackbar",
+			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+				Text("job status changed, cannot be aborted"),
+			),
+		})
+		er.Reload = true
+		return er, nil
 	}
 
 	newInst, err := jb.newJobInstance(qorJobID, qorJobName, newArgs)
@@ -403,7 +434,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 
 	er.Reload = true
 	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
-	return
+	return er, nil
 }
 
 func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
