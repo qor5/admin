@@ -282,7 +282,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			} else {
 				scheduledJobDetailing = []HTMLComponent{
 					VAlert().Dense(true).Type("warning").Children(
-						Text("The job code has been deleted or modified, this job will not be executed"),
+						Text(msgr.NoticeJobWontBeExecuted),
 					),
 					Div(Text("args: " + inst.Args)),
 				}
@@ -320,6 +320,8 @@ func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.Ev
 }
 
 func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, err error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
 
@@ -342,7 +344,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
 			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
-				Text(err.Error()),
+				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
 	}
@@ -405,6 +407,8 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 }
 
 func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+
 	qorJobID := uint(ctx.Event.ParamAsInt(0))
 	qorJobName := ctx.Event.Params[1]
 
@@ -431,7 +435,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
 			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
-				Text("job status changed, cannot be aborted"),
+				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
 		er.Reload = true
