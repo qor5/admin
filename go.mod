@@ -8,7 +8,7 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/goplaid/web v1.1.14
-	github.com/goplaid/x v1.0.16-0.20211010021035-634f3e1c5b86
+	github.com/goplaid/x v1.0.16-0.20211021131013-005568c0c361
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -26,7 +26,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
-	github.com/theplant/jsontyperegistry v0.0.2 // indirect
+	github.com/theplant/jsontyperegistry v0.0.2
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	github.com/vedranvuk/errorex v0.4.1 // indirect

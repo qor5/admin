@@ -77,7 +77,7 @@ func NewConfig() Config {
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.URIPrefix("/admin").
-		BrandTitle("example").
+		BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
