@@ -114,3 +114,10 @@ func (site *SiteMapBuilder) ToUrl(ctx context.Context) string {
 	}
 	return site.PathName
 }
+
+func WithHost(host string, ctxs ...context.Context) context.Context {
+	if len(ctxs) == 0 {
+		return context.WithValue(context.TODO(), hostWithSchemeKey, host)
+	}
+	return context.WithValue(ctxs[0], hostWithSchemeKey, host)
+}

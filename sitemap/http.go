@@ -1,7 +1,6 @@
 package sitemap
 
 import (
-	"context"
 	"net/http"
 )
 
@@ -49,6 +48,5 @@ func EncodeToXmlByRequest(r *http.Request, encoder EncodeToXmlInterface) string 
 		host = r.URL.Scheme + "://" + r.URL.Host
 	}
 
-	ctx := context.WithValue(r.Context(), hostWithSchemeKey, host)
-	return encoder.EncodeToXml(ctx)
+	return encoder.EncodeToXml(WithHost(host, r.Context()))
 }

@@ -1,7 +1,6 @@
 package sitemap
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +9,7 @@ import (
 
 func TestAddSitemapUrl(t *testing.T) {
 	robot := Robots()
-	robot.Agent(AllAgents).AddSitemapUrl(SiteMap().ToUrl(context.WithValue(context.TODO(), hostWithSchemeKey, "https://qor5.dev.com")))
+	robot.Agent(AllAgents).AddSitemapUrl(SiteMap().ToUrl(WithHost("https://qor5.dev.com")))
 	s := robot.ToTxt()
 	expected := "User-agent: *\nSitemap: https:/qor5.dev.com/sitemap.xml\n\n"
 	if s != expected {
@@ -40,7 +39,7 @@ func TestDisallow(t *testing.T) {
 
 func TestRobotsServeHTTP(t *testing.T) {
 	robot := Robots()
-	robot.Agent(GoogleAgent).Disallow("/admin", "/product").AddSitemapUrl(SiteMap().ToUrl(context.WithValue(context.TODO(), hostWithSchemeKey, "https://qor5.dev.com")))
+	robot.Agent(GoogleAgent).Disallow("/admin", "/product").AddSitemapUrl(SiteMap().ToUrl(WithHost("https://qor5.dev.com")))
 	robot.Agent(DuckDuckAgent).Allow("/admin1", "/product2").Disallow("/product1")
 
 	serveMux := http.NewServeMux()

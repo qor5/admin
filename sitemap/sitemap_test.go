@@ -52,7 +52,7 @@ func TestSiteMapIndex(t *testing.T) {
 }
 
 func TestEncodeToXmlWithContext(t *testing.T) {
-	s := SiteMap().RegisterRawString("/admin", "https://qor5-1.dev.com/product").EncodeToXml(context.WithValue(context.TODO(), hostWithSchemeKey, "https://qor5.dev.com"))
+	s := SiteMap().RegisterRawString("/admin", "https://qor5-1.dev.com/product").EncodeToXml(WithHost("https://qor5.dev.com"))
 	expected := `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https:/qor5.dev.com/admin</loc></url><url><loc>https://qor5-1.dev.com/product</loc></url></urlset>`
 	if s != expected {
 		t.Errorf("\n\tExpected value: %s\n \tbut got: %s", expected, s)
