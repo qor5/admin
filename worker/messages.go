@@ -1,6 +1,11 @@
 package worker
 
-import "github.com/goplaid/x/i18n"
+import (
+	"net/http"
+
+	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/presets"
+)
 
 const I18nWorkerKey i18n.ModuleKey = "I18nWorkerKey"
 
@@ -71,4 +76,28 @@ var Messages_zh_CN = &Messages{
 	DetailTitleLog:           "日志",
 	NoticeJobCannotBeAborted: "任务状态已经改变，不能被中止/取消/更新",
 	NoticeJobWontBeExecuted:  "任务代码被删除/修改, 这个任务不会被执行",
+}
+
+func getTStatus(msgr *Messages, status string) string {
+	switch status {
+	case JobStatusNew:
+		return msgr.StatusNew
+	case JobStatusScheduled:
+		return msgr.StatusScheduled
+	case JobStatusRunning:
+		return msgr.StatusRunning
+	case JobStatusCancelled:
+		return msgr.StatusCancelled
+	case JobStatusDone:
+		return msgr.StatusDone
+	case JobStatusException:
+		return msgr.StatusException
+	case JobStatusKilled:
+		return msgr.StatusKilled
+	}
+	return status
+}
+
+func getTJob(r *http.Request, v string) string {
+	return i18n.PT(r, presets.ModelsI18nModuleKey, "WorkerJob", v)
 }

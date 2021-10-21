@@ -188,25 +188,39 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			},
 		}
 	})
+	lb.Field("Job").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		qorJob := obj.(*QorJob)
+		return Td(Text(getTJob(ctx.R, qorJob.Job)))
+	})
 	lb.Field("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 		qorJob := obj.(*QorJob)
-		return Td(Text(getStatusTranslation(msgr, qorJob.Status)))
+		return Td(Text(getTStatus(msgr, qorJob.Status)))
 	})
 
 	eb := mb.Editing("Job")
+	type JobSelectItem struct {
+		Label string
+		Value string
+	}
 	eb.Field("Job").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		ctx.Hub.RegisterEventFunc("worker_renderJobEditingContent", b.eventRenderJobEditingContent)
 
-		jobNames := make([]string, 0, len(b.jbs))
+		items := make([]JobSelectItem, 0, len(b.jbs))
 		for _, jb := range b.jbs {
+			label := getTJob(ctx.R, jb.name)
 			if editIsAllowed(ctx.R, jb.name) == nil {
-				jobNames = append(jobNames, jb.name)
+				items = append(items, JobSelectItem{
+					Label: label,
+					Value: jb.name,
+				})
 			}
 		}
 		return Div(
 			VSelect().
-				Items(jobNames).
+				Items(items).
+				ItemText("Label").
+				ItemValue("Value").
 				Attr(web.VFieldName("Job")...).
 				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Go()),
 			web.Portal().Name("worker_jobEditingContent"),
@@ -290,7 +304,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		}
 
 		return Div(
-			Div(Text(qorJob.Job)).Class("mb-3 text-h6 font-weight-regular"),
+			Div(Text(getTJob(ctx.R, qorJob.Job))).Class("mb-3 text-h6 font-weight-regular"),
 			If(inst.Status == JobStatusScheduled,
 				scheduledJobDetailing...,
 			).Else(
@@ -510,7 +524,7 @@ func jobProgressing(
 		Div(Text(msgr.DetailTitleStatus)).Class("text-caption"),
 		Div().Class("d-flex align-center mb-5").Children(
 			Div().Style("width: 120px").Children(
-				Text(fmt.Sprintf("%s (%d%%)", getStatusTranslation(msgr, status), progress)),
+				Text(fmt.Sprintf("%s (%d%%)", getTStatus(msgr, status), progress)),
 			),
 			VProgressLinear().Value(int(progress)),
 		),
@@ -549,24 +563,4 @@ func jobProgressing(
 			),
 		),
 	)
-}
-
-func getStatusTranslation(msgr *Messages, status string) string {
-	switch status {
-	case JobStatusNew:
-		return msgr.StatusNew
-	case JobStatusScheduled:
-		return msgr.StatusScheduled
-	case JobStatusRunning:
-		return msgr.StatusRunning
-	case JobStatusCancelled:
-		return msgr.StatusCancelled
-	case JobStatusDone:
-		return msgr.StatusDone
-	case JobStatusException:
-		return msgr.StatusException
-	case JobStatusKilled:
-		return msgr.StatusKilled
-	}
-	return status
 }
