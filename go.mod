@@ -7,7 +7,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi v1.5.4
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.14
+	github.com/goplaid/web v1.1.15
 	github.com/goplaid/x v1.0.16-0.20211021131013-005568c0c361
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
