@@ -15,12 +15,12 @@ func (status Status) GetStatus() string {
 	return status.Status
 }
 
-func (status *Status) SetStatus(s string) {
-	status.Status = s
+func (status Status) GetOnlineUrl() string {
+	return status.OnlineUrl
 }
 
-func (status *Status) GetOnlineUrl() string {
-	return status.OnlineUrl
+func (status *Status) SetStatus(s string) {
+	status.Status = s
 }
 
 func (status *Status) SetOnlineUrl(onlineUrl string) {

@@ -33,9 +33,11 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
 	gorm.io/driver/postgres v1.1.1
-	gorm.io/gorm v1.21.15
+	gorm.io/gorm v1.21.17-0.20211019021111-38e55f111785
 )
 
-// replace github.com/goplaid/web => ../../goplaid/web
-// replace github.com/goplaid/x => ../../goplaid/x
+replace github.com/goplaid/web => ../../goplaid/web
+
+replace github.com/goplaid/x => ../../goplaid/x
+
 // replace github.com/sunfmin/reflectutils => ../../reflectutils

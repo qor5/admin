@@ -8,6 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/qor/qor5/media/oss"
+	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
+
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/qor/qor5/pagebuilder"
@@ -105,7 +109,10 @@ var orderCases = []struct {
 func TestUpdatePage(t *testing.T) {
 	db := example.ConnectDB()
 	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
-	pb.Model(&pagebuilder.Page{})
+	pageBuilder := example.ConfigPageBuilder(db)
+	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
+	publish_view.Configure(pb, db, publisher, &pagebuilder.Page{})
+	pageBuilder.Configure(pb)
 
 	sdb, _ := db.DB()
 	gofixtures.Data(

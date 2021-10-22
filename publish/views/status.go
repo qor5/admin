@@ -23,7 +23,13 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 		ComponentFunc(StatusListFunc())
 	b.FieldDefaults(presets.WRITE).
 		FieldType(publish.Status{}).
-		ComponentFunc(StatusEditFunc())
+		ComponentFunc(StatusEditFunc()).
+		SetterFunc(ScheduleEditSetterFunc)
+
+	b.FieldDefaults(presets.WRITE).
+		FieldType(publish.Schedule{}).
+		ComponentFunc(ScheduleEditFunc()).
+		SetterFunc(ScheduleEditSetterFunc)
 
 	registerEventFuncs(b.GetWebBuilder(), db, publisher)
 

@@ -90,7 +90,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		)
 	})
 
-	pm.Editing("Status", "Title", "Slug")
+	pm.Editing("Status", "Schedule", "Title", "Slug")
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {

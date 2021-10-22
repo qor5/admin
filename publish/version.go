@@ -1,9 +1,10 @@
 package publish
 
 type Version struct {
-	VersionName       string `gorm:"primary_key;size:128"`
-	ParentVersionName string
-	VersionPriority   string `gorm:"index"`
+	Version       string `gorm:"primary_key;size:128"`
+	VersionName   string
+	ParentVersion string
+	OnlineVersion string `gorm:"index"`
 }
 
 func (version Version) GetVersionName() string {

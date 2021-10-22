@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"time"
 
 	"github.com/qor/oss"
 	"gorm.io/gorm"
@@ -38,4 +39,11 @@ type StatusInterface interface {
 type VersionInterface interface {
 	GetVersionName() string
 	SetVersionName(v string)
+}
+
+type ScheduleInterface interface {
+	GetScheduledStartAt() *time.Time
+	GetScheduledEndAt() *time.Time
+	SetScheduledStartAt(v *time.Time)
+	SetScheduledEndAt(v *time.Time)
 }
