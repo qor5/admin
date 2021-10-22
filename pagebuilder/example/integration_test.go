@@ -1,10 +1,15 @@
 package example_test
 
 import (
+	"bytes"
+	"fmt"
+	"mime/multipart"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
 	"github.com/theplant/gofixtures"
@@ -95,4 +100,30 @@ var orderCases = []struct {
 		direction:   "down",
 		expected:    []float64{0, 48, 40},
 	},
+}
+
+func TestUpdatePage(t *testing.T) {
+	db := example.ConnectDB()
+	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
+	pb.Model(&pagebuilder.Page{})
+
+	sdb, _ := db.DB()
+	gofixtures.Data(
+		gofixtures.Sql(`
+INSERT INTO public.page_builder_pages (id, title, slug) VALUES (1, '123', '123');
+`, []string{"page_builder_pages"}),
+	).TruncatePut(sdb)
+
+	body := bytes.NewBuffer(nil)
+
+	mw := multipart.NewWriter(body)
+	_ = mw.WriteField("__event_data__", `{"eventFuncId":{"id":"presets_Update","params":["1"],"pushState":null},"event":{}}`)
+	_ = mw.Close()
+
+	r := httptest.NewRequest("POST", "/admin/pages?__execute_event__=presets_Update", body)
+	r.Header.Add("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", mw.Boundary()))
+
+	w := httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+
 }
