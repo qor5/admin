@@ -7,7 +7,6 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/qor/oss/s3"
-	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
@@ -50,8 +49,6 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-
-	media.RegisterCallbacks(db)
 
 	err := db.AutoMigrate(
 		&TextAndImage{},

@@ -49,8 +49,6 @@ func NewConfig() Config {
 		Session: sess,
 	})
 
-	media.RegisterCallbacks(db)
-
 	b := presets.New().RightDrawerWidth(700).VuetifyOptions(`
 {
   icons: {

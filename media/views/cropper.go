@@ -127,10 +127,12 @@ func cropImage(db *gorm.DB) web.EventFunc {
 			if err != nil {
 				return
 			}
-			err = db.Save(&m).Error
+
+			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				return
 			}
+
 			mb.FileSizes = m.File.FileSizes
 			if thumb == media.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)

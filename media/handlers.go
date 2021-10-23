@@ -98,108 +98,128 @@ func resizeImageTo(img image.Image, size *Size, format imaging.Format) image.Ima
 }
 
 func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err error) {
-	if fileBytes, err := ioutil.ReadAll(file); err == nil {
-		fileSizes := media.GetFileSizes()
-		originalFileSize := len(fileBytes)
-		fileSizes["original"] = originalFileSize
-		file.Seek(0, 0)
-		if err = media.Store(media.URL("original"), option, file); err == nil {
-			file.Seek(0, 0)
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return
+	}
+	fileSizes := media.GetFileSizes()
+	originalFileSize := len(fileBytes)
+	fileSizes["original"] = originalFileSize
+	file.Seek(0, 0)
+	err = media.Store(media.URL("original"), option, file)
+	if err != nil {
+		return
+	}
+	file.Seek(0, 0)
 
-			if format, err := GetImageFormat(media.URL()); err == nil {
-				if *format == imaging.GIF {
-					var buffer bytes.Buffer
-					if g, err := gif.DecodeAll(file); err == nil {
-						SetWeightHeight(media, g.Config.Width, g.Config.Height)
-						if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
-							for i := range g.Image {
-								img := imaging.Crop(g.Image[i], *cropOption)
-								g.Image[i] = image.NewPaletted(img.Rect, g.Image[i].Palette)
-								draw.Draw(g.Image[i], img.Rect, img, image.Pt(0, 0), draw.Src)
-								if i == 0 {
-									g.Config.Width = img.Rect.Dx()
-									g.Config.Height = img.Rect.Dy()
-								}
-							}
-						}
-
-						gif.EncodeAll(&buffer, g)
-						fileSizes[DefaultSizeKey] = buffer.Len()
-						media.Store(media.URL(), option, &buffer)
-					} else {
-						return err
-					}
-
-					// save sizes image
-					for key, size := range media.GetSizes() {
-						if key == DefaultSizeKey {
-							continue
-						}
-
-						file.Seek(0, 0)
-						if g, err := gif.DecodeAll(file); err == nil {
-							for i := range g.Image {
-								var img image.Image = g.Image[i]
-								if cropOption := media.GetCropOption(key); cropOption != nil {
-									img = imaging.Crop(g.Image[i], *cropOption)
-								}
-								img = resizeImageTo(img, size, *format)
-								g.Image[i] = image.NewPaletted(image.Rect(0, 0, size.Width, size.Height), g.Image[i].Palette)
-								draw.Draw(g.Image[i], image.Rect(0, 0, size.Width, size.Height), img, image.Pt(0, 0), draw.Src)
-							}
-
-							var buffer bytes.Buffer
-							g.Config.Width = size.Width
-							g.Config.Height = size.Height
-							gif.EncodeAll(&buffer, g)
-							fileSizes[key] = buffer.Len()
-							media.Store(media.URL(key), option, &buffer)
-						}
-					}
-				} else {
-					if img, _, err := image.Decode(file); err == nil {
-						SetWeightHeight(media, img.Bounds().Dx(), img.Bounds().Dy())
-						// Save cropped default image
-						if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
-							var buffer bytes.Buffer
-							imaging.Encode(&buffer, imaging.Crop(img, *cropOption), *format)
-							fileSizes[DefaultSizeKey] = buffer.Len()
-							media.Store(media.URL(), option, &buffer)
-						} else {
-							file.Seek(0, 0)
-							// Save default image
-							fileSizes[DefaultSizeKey] = originalFileSize
-							media.Store(media.URL(), option, file)
-						}
-
-						// save sizes image
-						for key, size := range media.GetSizes() {
-							if key == DefaultSizeKey {
-								continue
-							}
-
-							newImage := img
-							if cropOption := media.GetCropOption(key); cropOption != nil {
-								newImage = imaging.Crop(newImage, *cropOption)
-							}
-							var buffer bytes.Buffer
-							imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format)
-							fileSizes[key] = buffer.Len()
-							media.Store(media.URL(key), option, &buffer)
-						}
-
-					} else {
-						return err
-					}
-				}
-			}
-		} else {
-			return err
-		}
-		SetFileSizes(media, fileSizes)
+	format, err := GetImageFormat(media.URL())
+	if err != nil {
+		return
 	}
 
-	return err
+	if *format == imaging.GIF {
+		err = handleGIF(media, file, option, fileSizes, format)
+		if err != nil {
+			return
+		}
+		SetFileSizes(media, fileSizes)
+		return
+	}
+
+	img, _, err := image.Decode(file)
+
+	if err != nil {
+		return
+	}
+
+	SetWeightHeight(media, img.Bounds().Dx(), img.Bounds().Dy())
+	// Save cropped default image
+	if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
+		var buffer bytes.Buffer
+		imaging.Encode(&buffer, imaging.Crop(img, *cropOption), *format)
+		fileSizes[DefaultSizeKey] = buffer.Len()
+		media.Store(media.URL(), option, &buffer)
+	} else {
+		file.Seek(0, 0)
+		// Save default image
+		fileSizes[DefaultSizeKey] = originalFileSize
+		media.Store(media.URL(), option, file)
+	}
+
+	// save sizes image
+	for key, size := range media.GetSizes() {
+		if key == DefaultSizeKey {
+			continue
+		}
+
+		newImage := img
+		if cropOption := media.GetCropOption(key); cropOption != nil {
+			newImage = imaging.Crop(newImage, *cropOption)
+		}
+		var buffer bytes.Buffer
+		imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format)
+		fileSizes[key] = buffer.Len()
+		media.Store(media.URL(key), option, &buffer)
+	}
+	SetFileSizes(media, fileSizes)
+
+	return
+}
+
+func handleGIF(media Media, file FileInterface, option *Option, fileSizes map[string]int, format *imaging.Format) error {
+	var buffer bytes.Buffer
+	g, err := gif.DecodeAll(file)
+	if err != nil {
+		return err
+	}
+
+	SetWeightHeight(media, g.Config.Width, g.Config.Height)
+	if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
+		for i := range g.Image {
+			img := imaging.Crop(g.Image[i], *cropOption)
+			g.Image[i] = image.NewPaletted(img.Rect, g.Image[i].Palette)
+			draw.Draw(g.Image[i], img.Rect, img, image.Pt(0, 0), draw.Src)
+			if i == 0 {
+				g.Config.Width = img.Rect.Dx()
+				g.Config.Height = img.Rect.Dy()
+			}
+		}
+	}
+
+	gif.EncodeAll(&buffer, g)
+	fileSizes[DefaultSizeKey] = buffer.Len()
+	media.Store(media.URL(), option, &buffer)
+
+	// save sizes image
+	for key, size := range media.GetSizes() {
+		if key == DefaultSizeKey {
+			continue
+		}
+
+		file.Seek(0, 0)
+		g, err := gif.DecodeAll(file)
+		if err != nil {
+			return err
+		}
+
+		for i := range g.Image {
+			var img image.Image = g.Image[i]
+			if cropOption := media.GetCropOption(key); cropOption != nil {
+				img = imaging.Crop(g.Image[i], *cropOption)
+			}
+			img = resizeImageTo(img, size, *format)
+			g.Image[i] = image.NewPaletted(image.Rect(0, 0, size.Width, size.Height), g.Image[i].Palette)
+			draw.Draw(g.Image[i], image.Rect(0, 0, size.Width, size.Height), img, image.Pt(0, 0), draw.Src)
+		}
+
+		var buffer bytes.Buffer
+		g.Config.Width = size.Width
+		g.Config.Height = size.Height
+		gif.EncodeAll(&buffer, g)
+		fileSizes[key] = buffer.Len()
+		media.Store(media.URL(key), option, &buffer)
+	}
+	return nil
 }
 
 func SetWeightHeight(media Media, width, height int) {
