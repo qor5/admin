@@ -128,12 +128,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 				return
 			}
 
-			err = db.Save(&m).Error
-			if err != nil {
-				return
-			}
-
-			err = media.UploadAndCropImage(db, &m)
+			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				return
 			}

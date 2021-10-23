@@ -3,8 +3,6 @@ package media
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"reflect"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -16,7 +14,6 @@ var (
 )
 
 func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
-	fmt.Println("field", field)
 
 	if !field.ReflectValueOf(db.Statement.ReflectValue).CanAddr() {
 		return
@@ -89,18 +86,14 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 	return true
 }
 
-func UploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
-	db = db.Model(obj)
-	err = db.Statement.Parse(obj)
+func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
+	db = db.Model(obj).Save(obj)
+	err = db.Error
 	if err != nil {
-		panic(err)
 		return
 	}
-	db.Statement.ReflectValue = reflect.ValueOf(db.Statement.Model)
 
 	var updateColumns = map[string]interface{}{}
-	fmt.Printf("db.Statement.ReflectValue %#+v", db.Statement.ReflectValue)
-	fmt.Printf("db.Statement.Model  %#+v", db.Statement.Model)
 
 	for _, field := range db.Statement.Schema.Fields {
 		if cropField(field, db) {
@@ -112,7 +105,7 @@ func UploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
 		return
 	}
 
-	err = db.Where(obj).UpdateColumns(updateColumns).Error
+	err = db.UpdateColumns(updateColumns).Error
 
 	return
 }
