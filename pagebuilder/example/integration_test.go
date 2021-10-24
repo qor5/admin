@@ -113,6 +113,8 @@ func TestUpdatePage(t *testing.T) {
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
 	publish_view.Configure(pb, db, publisher, &pagebuilder.Page{})
 	pageBuilder.Configure(pb)
+	// _ = publisher
+	pb.Model(&pagebuilder.Page{})
 
 	sdb, _ := db.DB()
 	gofixtures.Data(
