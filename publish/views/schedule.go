@@ -4,18 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sunfmin/reflectutils"
-
-	. "github.com/goplaid/x/vuetify"
-	vx "github.com/goplaid/x/vuetifyx"
-
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	. "github.com/goplaid/x/vuetify"
+	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/publish"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
-
-var timeFormat = "2006-01-02 15:04:05 -0700"
 
 func ScheduleEditFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -27,8 +23,7 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		//utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
 
-		start := ""
-		end := ""
+		start, end := "", ""
 		if s.GetScheduledStartAt() != nil {
 			start = s.GetScheduledStartAt().Format("2006-01-02 15:04")
 		}
@@ -42,7 +37,7 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 					//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
 				).Cols(6),
 				VCol(
-					vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label("Scheduled end at").Value(end),
+					vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label("Scheduled end at").Value(end).TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}),
 				//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
 				).Cols(6),
 			),
@@ -53,20 +48,24 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 func ScheduleEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 	s := ctx.R.FormValue("ScheduledStartAt")
 	e := ctx.R.FormValue("ScheduledEndAt")
-	if s == "" {
-		err = reflectutils.Set(obj, "ScheduledStartAt", nil)
-	} else {
-		startAt, err1 := time.Parse(timeFormat, fmt.Sprintf("%v:00 +0900", s))
-		if err1 == nil && !startAt.IsZero() {
-			err = reflectutils.Set(obj, "ScheduledStartAt", startAt)
-		}
+	if err = setTime(obj, "ScheduledStartAt", s); err != nil {
+		return
 	}
-	if e == "" {
-		err = reflectutils.Set(obj, "ScheduledEndAt", nil)
+	if err = setTime(obj, "ScheduledEndAt", e); err != nil {
+		return
+	}
+	return
+}
+
+var timeFormat = "2006-01-02 15:04:05 -0700"
+
+func setTime(obj interface{}, fieldName string, val string) (err error) {
+	if val == "" {
+		err = reflectutils.Set(obj, fieldName, nil)
 	} else {
-		endAt, err2 := time.Parse(timeFormat, fmt.Sprintf("%v:00 +0900", e))
-		if err2 == nil && !endAt.IsZero() {
-			err = reflectutils.Set(obj, "ScheduledEndAt", endAt)
+		startAt, err1 := time.Parse(timeFormat, fmt.Sprintf("%v:00 +0900", val))
+		if err1 == nil && !startAt.IsZero() {
+			err = reflectutils.Set(obj, fieldName, startAt)
 		}
 	}
 	return
