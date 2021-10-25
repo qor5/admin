@@ -1,0 +1,193 @@
+package activity
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type contextKey string
+
+const (
+	CreatorContextKey contextKey = "Creator"
+	DBContextKey      contextKey = "DB"
+)
+
+type ActivityBuilder struct {
+	useL10n           bool
+	creatorContextKey interface{}
+	dbContextKey      interface{}
+	models            []*modelBuilder
+}
+
+type modelBuilder struct {
+	name string
+	keys []string
+	link func(interface{}) string
+}
+
+func Activity() *ActivityBuilder {
+	return &ActivityBuilder{
+		creatorContextKey: CreatorContextKey,
+		dbContextKey:      DBContextKey,
+	}
+}
+
+func (ab *ActivityBuilder) UseL10n() *ActivityBuilder {
+	ab.useL10n = true
+	return ab
+}
+
+func (ab *ActivityBuilder) SetCreatorContextKey(key interface{}) *ActivityBuilder {
+	ab.creatorContextKey = key
+	return ab
+}
+
+func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
+	ab.dbContextKey = key
+	return ab
+}
+
+func (ab *ActivityBuilder) RegisterModel(model interface{}) *modelBuilder {
+	mb := &modelBuilder{name: reflect.TypeOf(reflect.Indirect(reflect.ValueOf(model))).Name()}
+	ab.models = append(ab.models, mb)
+	return mb
+}
+
+func (mb *modelBuilder) SetKeys(keys ...string) *modelBuilder {
+	mb.keys = append(mb.keys, keys...)
+	return mb
+}
+
+func (mb *modelBuilder) SetLink(f func(interface{}) string) *modelBuilder {
+	mb.link = f
+	return mb
+}
+
+func (mb *modelBuilder) getModelKey(v interface{}) string {
+	var (
+		stringBuilder = strings.Builder{}
+		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
+	)
+
+	for _, key := range mb.keys {
+		stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
+
+	}
+
+	return strings.TrimRight(stringBuilder.String(), ":")
+}
+
+func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *modelBuilder {
+	name := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(v))).Name()
+	for _, m := range ab.models {
+		if m.name == name {
+			return m
+		}
+	}
+	return &modelBuilder{}
+}
+
+func (ab *ActivityBuilder) GetActivityLogModel() ActivityLogInterface {
+	if ab.useL10n {
+		return &ActivityLogWithLocale{}
+	}
+	return &ActivityLog{}
+}
+
+func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db *gorm.DB, diffs string) error {
+	var (
+		mb  = ab.GetModelBuilder(v)
+		log = ab.GetActivityLogModel()
+	)
+
+	log.SetCreatedAt(time.Now())
+	log.SetCreator(creator)
+	log.SetAction(action)
+	log.SetModelName(mb.name)
+	log.SetModelKeys(mb.getModelKey(v))
+
+	if f := mb.link; f != nil {
+		log.SetModelLink(f(v))
+	}
+
+	if diffs != "" && action == ActivityEdit {
+		log.SetModelDiff(diffs)
+	}
+
+	return db.Save(log).Error
+}
+
+func (ab *ActivityBuilder) AddCreateRecord(creator string, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityCreate, v, db, "")
+}
+
+func (ab *ActivityBuilder) AddViewRecord(creator string, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityView, v, db, "")
+}
+
+func (ab *ActivityBuilder) AddDeleteRecord(creator string, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityDelete, v, db, "")
+}
+
+func (ab *ActivityBuilder) AddEditRecord(creator string, old, now interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityEdit, now, db, "")
+}
+
+func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...interface{}) error {
+	if len(vs) == 0 {
+		return errors.New("models are empty")
+	}
+
+	var (
+		creator string
+		db      *gorm.DB
+	)
+
+	if c, ok := ctx.Value(ab.creatorContextKey).(string); ok {
+		creator = c
+	}
+
+	if d, ok := ctx.Value(ab.dbContextKey).(*gorm.DB); ok {
+		db = d
+	}
+
+	if creator == "" || db == nil {
+		return errors.New("creator and DB cannot be found from the context")
+	}
+
+	switch action {
+	case ActivityView:
+		for _, v := range vs {
+			err := ab.AddViewRecord(creator, v, db)
+			if err != nil {
+				return err
+			}
+		}
+
+	case ActivityDelete:
+		for _, v := range vs {
+			err := ab.AddDeleteRecord(creator, v, db)
+			if err != nil {
+				return err
+			}
+		}
+	case ActivityCreate:
+		for _, v := range vs {
+			err := ab.AddCreateRecord(creator, v, db)
+			if err != nil {
+				return err
+			}
+		}
+	case ActivityEdit:
+		if len(vs) == 2 {
+			return ab.AddEditRecord(creator, vs[0], vs[1], db)
+		}
+	}
+	return nil
+}
