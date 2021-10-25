@@ -12,7 +12,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	vx "github.com/goplaid/x/vuetifyx"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -63,9 +63,12 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 			if t != nil {
 				v = t.Local().Format("2006-01-02 15:04")
 			}
-			return VTextField().Label("ScheduleTime").Placeholder("YYYY-MM-DD HH:MM").
-				Attr(web.VFieldName("ScheduleTime")...).
-				Value(v)
+			return vx.VXDateTimePicker().FieldName("ScheduleTime").Label("ScheduleTime").
+				Value(v).
+				TimePickerProps(vx.TimePickerProps{
+					Format:     "24hr",
+					Scrollable: true,
+				})
 		})
 	}
 	return jb
