@@ -11,36 +11,7 @@ import (
 	"github.com/qor/qor5/utils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/jsontyperegistry"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
-
-const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
-
-func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...interface{}) {
-	b.FieldDefaults(presets.LIST).
-		FieldType(publish.Status{}).
-		ComponentFunc(StatusListFunc())
-	b.FieldDefaults(presets.WRITE).
-		FieldType(publish.Status{}).
-		ComponentFunc(StatusEditFunc()).
-		SetterFunc(ScheduleEditSetterFunc)
-
-	b.FieldDefaults(presets.WRITE).
-		FieldType(publish.Schedule{}).
-		ComponentFunc(ScheduleEditFunc()).
-		SetterFunc(ScheduleEditSetterFunc)
-
-	registerEventFuncs(b.GetWebBuilder(), db, publisher)
-
-	b.I18n().
-		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN)
-
-	for _, m := range models {
-		jsontyperegistry.MustRegisterType(m)
-	}
-}
 
 func StatusListFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
