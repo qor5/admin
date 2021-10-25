@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
@@ -20,8 +21,7 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 			return nil
 		}
 
-		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		//utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		start, end := "", ""
 		if s.GetScheduledStartAt() != nil {
@@ -33,11 +33,15 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 		return h.Div(
 			VRow(
 				VCol(
-					vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label("Scheduled start at").Value(start).TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}),
+					vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
+						TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+						ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
 					//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
 				).Cols(6),
 				VCol(
-					vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label("Scheduled end at").Value(end).TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}),
+					vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
+						TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+						ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
 				//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
 				).Cols(6),
 			),
