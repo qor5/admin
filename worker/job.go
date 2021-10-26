@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	vx "github.com/goplaid/x/vuetifyx"
 	. "github.com/theplant/htmlgo"
@@ -58,17 +59,19 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 
 	if _, ok := r.(Scheduler); ok {
 		jb.rmb.Editing().Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 			t := obj.(Scheduler).GetScheduleTime()
 			var v string
 			if t != nil {
 				v = t.Local().Format("2006-01-02 15:04")
 			}
-			return vx.VXDateTimePicker().FieldName("ScheduleTime").Label("ScheduleTime").
+			return vx.VXDateTimePicker().FieldName("ScheduleTime").Label(msgr.ScheduleTime).
 				Value(v).
 				TimePickerProps(vx.TimePickerProps{
 					Format:     "24hr",
 					Scrollable: true,
-				})
+				}).
+				ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText)
 		})
 	}
 	return jb

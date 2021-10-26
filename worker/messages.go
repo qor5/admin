@@ -30,6 +30,9 @@ type Messages struct {
 	DetailTitleLog           string
 	NoticeJobCannotBeAborted string
 	NoticeJobWontBeExecuted  string
+	ScheduleTime             string
+	DateTimePickerClearText  string
+	DateTimePickerOkText     string
 }
 
 var Messages_en_US = &Messages{
@@ -53,6 +56,9 @@ var Messages_en_US = &Messages{
 	DetailTitleLog:           "Log",
 	NoticeJobCannotBeAborted: "This job cannot be aborted/canceled/updated due to its status change",
 	NoticeJobWontBeExecuted:  "This job won't be executed due to code being deleted/modified",
+	ScheduleTime:             "Schedule Time",
+	DateTimePickerClearText:  "Clear",
+	DateTimePickerOkText:     "OK",
 }
 
 var Messages_zh_CN = &Messages{
@@ -76,6 +82,9 @@ var Messages_zh_CN = &Messages{
 	DetailTitleLog:           "日志",
 	NoticeJobCannotBeAborted: "任务状态已经改变，不能被中止/取消/更新",
 	NoticeJobWontBeExecuted:  "任务代码被删除/修改, 这个任务不会被执行",
+	ScheduleTime:             "执行时间",
+	DateTimePickerClearText:  "清空",
+	DateTimePickerOkText:     "确定",
 }
 
 func getTStatus(msgr *Messages, status string) string {
