@@ -143,6 +143,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		MenuIcon("smart_toy")
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
+	lb.RowMenu().Empty()
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 		return []*vuetifyx.FilterItem{
