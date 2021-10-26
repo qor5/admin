@@ -49,7 +49,7 @@ func NewConfig() Config {
 		Session: sess,
 	})
 
-	b := presets.New().RightDrawerWidth(700).VuetifyOptions(`
+	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
 	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
@@ -149,12 +149,14 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(b, db, publisher, &pagebuilder.Page{})
 
+	pm := b.Model(&pagebuilder.Page{})
+
+	publish_view.Configure(b, db, publisher, pm)
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
-	pageBuilder.Configure(b)
+	pageBuilder.Configure(b, pm)
 
 	w := worker.New(db)
 	addJobs(w)
