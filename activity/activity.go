@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -22,13 +23,15 @@ type ActivityBuilder struct {
 	useL10n           bool
 	creatorContextKey interface{}
 	dbContextKey      interface{}
-	models            []*modelBuilder
+	models            []*ModelBuilder
 }
 
-type modelBuilder struct {
-	name string
-	keys []string
-	link func(interface{}) string
+type ModelBuilder struct {
+	name          string
+	keys          []string
+	link          func(interface{}) string
+	ignoredFields []string
+	typeHanders   map[reflect.Type]TypeHandle
 }
 
 func Activity() *ActivityBuilder {
@@ -53,49 +56,69 @@ func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
 	return ab
 }
 
-func (ab *ActivityBuilder) RegisterModel(model interface{}) *modelBuilder {
-	mb := &modelBuilder{name: reflect.TypeOf(reflect.Indirect(reflect.ValueOf(model))).Name()}
+func (ab *ActivityBuilder) RegisterModel(model interface{}) *ModelBuilder {
+	mb := &ModelBuilder{name: reflect.TypeOf(model).Name()}
 	ab.models = append(ab.models, mb)
 	return mb
 }
 
-func (mb *modelBuilder) SetKeys(keys ...string) *modelBuilder {
+func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
 	mb.keys = append(mb.keys, keys...)
 	return mb
 }
 
-func (mb *modelBuilder) SetLink(f func(interface{}) string) *modelBuilder {
+func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 	mb.link = f
 	return mb
 }
 
-func (mb *modelBuilder) getModelKey(v interface{}) string {
+func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
+	mb.ignoredFields = append(mb.ignoredFields, fields...)
+	return mb
+}
+
+func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandle) *ModelBuilder {
+	if mb.typeHanders == nil {
+		mb.typeHanders = map[reflect.Type]TypeHandle{}
+	}
+	mb.typeHanders[reflect.Indirect(reflect.ValueOf(v)).Type()] = f
+	return mb
+}
+
+func (mb *ModelBuilder) getModelKey(v interface{}) string {
 	var (
 		stringBuilder = strings.Builder{}
 		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
 	)
 
-	for _, key := range mb.keys {
-		stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
+	if len(mb.keys) == 0 {
+		if !reflectValue.FieldByName("ID").IsZero() {
+			stringBuilder.WriteString(fmt.Sprintf("%v", reflectValue.FieldByName("ID").Interface()))
+		}
+	}
 
+	for _, key := range mb.keys {
+		if !reflectValue.FieldByName(key).IsZero() {
+			stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
+		}
 	}
 
 	return strings.TrimRight(stringBuilder.String(), ":")
 }
 
-func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *modelBuilder {
-	name := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(v))).Name()
+func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
+	name := reflect.TypeOf(v).Name()
 	for _, m := range ab.models {
 		if m.name == name {
 			return m
 		}
 	}
-	return &modelBuilder{}
+	return &ModelBuilder{}
 }
 
 func (ab *ActivityBuilder) GetActivityLogModel() ActivityLogInterface {
 	if ab.useL10n {
-		return &ActivityLogWithLocale{}
+		return &ActivityLocaleLog{}
 	}
 	return &ActivityLog{}
 }
@@ -117,7 +140,7 @@ func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db
 	}
 
 	if diffs != "" && action == ActivityEdit {
-		log.SetModelDiff(diffs)
+		log.SetModelDiffs(diffs)
 	}
 
 	return db.Save(log).Error
@@ -136,7 +159,19 @@ func (ab *ActivityBuilder) AddDeleteRecord(creator string, v interface{}, db *go
 }
 
 func (ab *ActivityBuilder) AddEditRecord(creator string, old, now interface{}, db *gorm.DB) error {
-	return ab.save(creator, ActivityEdit, now, db, "")
+	diffs, err := ab.Diff(old, now)
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(diffs)
+	if err != nil {
+		return err
+	}
+	return ab.save(creator, ActivityEdit, now, db, string(b))
+}
+
+func (ab *ActivityBuilder) Diff(old, now interface{}) ([]Diff, error) {
+	return NewDiffBuilder(ab.GetModelBuilder(old)).Diff(old, now)
 }
 
 func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...interface{}) error {
@@ -158,7 +193,7 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	}
 
 	if creator == "" || db == nil {
-		return errors.New("creator and DB cannot be found from the context")
+		return errors.New("creator and db cannot be found from the context")
 	}
 
 	switch action {

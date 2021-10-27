@@ -12,15 +12,21 @@ const (
 )
 
 type ActivityLogInterface interface {
-	SetID(uint)
 	SetCreatedAt(time.Time)
 	SetCreator(string)
+	GetCreator() string
 	SetAction(string)
+	GetAction() string
 	SetModelKeys(string)
+	GetModelKeys() string
 	SetModelName(string)
+	GetModelName() string
 	SetModelLink(string)
-	SetModelDiff(string)
+	GetModelLink() string
+	SetModelDiffs(string)
+	GetModelDiffs() string
 	SetLocale(string)
+	GetLocale() string
 }
 
 type ActivityLog struct {
@@ -34,10 +40,6 @@ type ActivityLog struct {
 	ModelDiffs string `sql:"type:text;"`
 }
 
-func (al *ActivityLog) SetID(id uint) {
-	al.ID = id
-}
-
 func (al *ActivityLog) SetCreatedAt(t time.Time) {
 	al.CreatedAt = t
 }
@@ -46,44 +48,58 @@ func (al *ActivityLog) SetCreator(s string) {
 	al.Creator = s
 }
 
+func (al *ActivityLog) GetCreator() string {
+	return al.Creator
+}
+
 func (al *ActivityLog) SetAction(s string) {
 	al.Action = s
+}
+
+func (al *ActivityLog) GetAction() string {
+	return al.Action
 }
 
 func (al *ActivityLog) SetModelKeys(s string) {
 	al.ModelKeys = s
 }
 
+func (al *ActivityLog) GetModelKeys() string {
+	return al.ModelKeys
+}
+
 func (al *ActivityLog) SetModelName(s string) {
 	al.ModelName = s
+}
+
+func (al *ActivityLog) GetModelName() string {
+	return al.ModelName
 }
 
 func (al *ActivityLog) SetModelLink(s string) {
 	al.ModelLink = s
 }
 
-func (al *ActivityLog) SetModelDiff(s string) {
+func (al *ActivityLog) GetModelLink() string {
+	return al.ModelLink
+}
+
+func (al *ActivityLog) SetModelDiffs(s string) {
 	al.ModelDiffs = s
+}
+
+func (al *ActivityLog) GetModelDiffs() string {
+	return al.ModelDiffs
 }
 
 func (al *ActivityLog) SetLocale(s string) {
 }
 
-type ActivityLogWithLocale struct {
+func (al *ActivityLog) GetLocale() string {
+	return ""
+}
+
+type ActivityLocaleLog struct {
 	ActivityLog
 	// l10n.LocaleCreatable
-}
-
-func (al *ActivityLogWithLocale) SetLocale(s string) {
-}
-
-type ModelDiffs struct {
-	Diffs []Diff
-}
-
-type Diff struct {
-	Type string
-	Path []string
-	From string
-	To   string
 }
