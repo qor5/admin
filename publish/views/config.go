@@ -13,7 +13,8 @@ const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
 		m.RightDrawerWidth("1200")
-		m.Editing().SidePanelFunc(sidePanel)
+		m.Editing().SidePanelFunc(sidePanel(db, m))
+		m.Listing().Searcher(searcher(db, m))
 		registerEventFuncs(db, m, publisher)
 	}
 
