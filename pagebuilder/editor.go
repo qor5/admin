@@ -159,7 +159,7 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	// r.PushState = web.PushState(url.Values{})
 	r.VarsScript = web.Plaid().
 		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-		EventFunc(actions.DrawerEdit, fmt.Sprint(modelID)).
+		EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(modelID)).
 		Go()
 	return
 }
@@ -293,7 +293,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					).Attr("@click",
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+							EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 							Go(),
 					),
 					VListItem(
@@ -340,7 +340,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 				Class("my-2 float-right").Attr("@click",
 				web.Plaid().
 					URL(ec.builder.mb.Info().ListingHref()).
-					EventFunc(actions.DrawerEdit, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+					EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 					Go(),
 			),
 		).Cols(2).Class("pa-0"),
@@ -419,7 +419,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
 			web.Portal().Name(presets.RightDrawerPortalName),
 
 			innerPr.Body.(h.HTMLComponent),
-		).Id("vt-app").Attr(web.InitContextVars, `{rightDrawer: false}`)
+		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false}`)
 
 		return
 	}

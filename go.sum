@@ -159,10 +159,10 @@ github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/goplaid/multipartestutils v0.0.2 h1:TsrPfS0giTAwCGGTY613YiOeTUwwYsQ42Jk++oTtjMQ=
 github.com/goplaid/multipartestutils v0.0.2/go.mod h1:jic2wg6tSAdLgLMTs1N+9+KzRu+Bs85z1+lMvh/5NO8=
-github.com/goplaid/web v1.1.15 h1:sQVQB4u/tww7er0surJIuHw4g/8uFpNOpNOpfnMQxPc=
-github.com/goplaid/web v1.1.15/go.mod h1:elgPhqt3Yb69U79Bs4PMC6wpvQGc5AgiwXkCiuxPPFc=
-github.com/goplaid/x v1.0.16-0.20211026023313-05dd58cc58da h1:6UCcfFSYDGBkmOHKYLbyEGUKkSXyA8o2//JdzG2W6ns=
-github.com/goplaid/x v1.0.16-0.20211026023313-05dd58cc58da/go.mod h1:dgcvz6FEQpGpPFE4RxqQVjs0/khZfJ3xDaS3EFwubPo=
+github.com/goplaid/web v1.1.17 h1:K7xS6zHprdPpog55Cr1KZmhUnu0Bfg0I6IgHdS14/90=
+github.com/goplaid/web v1.1.17/go.mod h1:N9rSC//ME8Y60wxXBIlm+zLwQdxtPaCR8CeOdb4dBzc=
+github.com/goplaid/x v1.0.16-0.20211029090335-7d3b2d1119ee h1:1aGq7yJtw3q1ko1abLJjySmyNVIYBFWjivsh3O79oZM=
+github.com/goplaid/x v1.0.16-0.20211029090335-7d3b2d1119ee/go.mod h1:aE3a8UJvVpvzleFIU4plqdaJv7fIeTAY3RT7Ndk8Zcw=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=

@@ -49,7 +49,7 @@ func NewConfig() Config {
 		Session: sess,
 	})
 
-	b := presets.New().RightDrawerWidth(700).VuetifyOptions(`
+	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
 	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
