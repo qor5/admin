@@ -9,16 +9,18 @@ import (
 )
 
 const (
-	publishEvent       = "publish_PublishEvent"
-	unpublishEvent     = "publish_UnpublishEvent"
-	switchVersionEvent = "publish_SwitchVersionEvent"
-	removeVersionEvent = "publish_RemoveVersionEvent"
+	publishEvent        = "publish_PublishEvent"
+	unpublishEvent      = "publish_UnpublishEvent"
+	switchVersionEvent  = "publish_SwitchVersionEvent"
+	saveNewVersionEvent = "publish_SaveNewVersionEvent"
+	removeVersionEvent  = "publish_RemoveVersionEvent"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) {
 	mb.RegisterEventFunc(publishEvent, publishAction(db, mb, publisher))
 	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher))
 	mb.RegisterEventFunc(switchVersionEvent, switchVersionAction(db, mb, publisher))
+	mb.RegisterEventFunc(saveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
 }
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {

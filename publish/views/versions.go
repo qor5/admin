@@ -2,15 +2,18 @@ package views
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
-
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
@@ -80,6 +83,63 @@ func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 		obj, err = eb.Fetcher(obj, fmt.Sprintf("%v_%v", id, version), ctx)
 
 		eb.UpdateRightDrawerContent(ctx, &r, obj, "", err)
+		return
+	}
+}
+
+func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		segs := strings.Split(ctx.Event.Params[0], "_")
+		id := segs[0]
+		//version := ctx.Event.Params[1]
+
+		var newObj = mb.NewModel()
+		// don't panic for fields that set in SetterFunc
+		_ = ctx.UnmarshalForm(newObj)
+
+		var obj = mb.NewModel()
+
+		me := mb.Editing()
+		if me.Setter != nil {
+			me.Setter(obj, ctx)
+		}
+
+		vErr := me.RunSetterFunc(ctx, &r, obj, newObj)
+		if vErr.HaveErrors() {
+			return
+		}
+
+		intID, err := strconv.Atoi(id)
+		if err != nil {
+			return
+		}
+		if err = reflectutils.Set(obj, "ID", uint(intID)); err != nil {
+			return
+		}
+
+		version := time.Now().Format("2006-01-02")
+		var count int64
+		db.Model(newObj).Where("id = ? AND version like ?", id, version+"%").Count(&count)
+
+		if err = reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v%v", version, count+1)); err != nil {
+			return
+		}
+
+		if me.Validator != nil {
+			if vErr := me.Validator(obj, ctx); vErr.HaveErrors() {
+				me.UpdateRightDrawerContent(ctx, &r, obj, "", &vErr)
+				return
+			}
+		}
+
+		err1 := me.Saver(obj, ctx.Event.Params[0], ctx)
+		if err1 != nil {
+			me.UpdateRightDrawerContent(ctx, &r, obj, "", err1)
+			return
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		me.UpdateRightDrawerContent(ctx, &r, obj, msgr.CreatedSuccessfully, nil)
 		return
 	}
 }
