@@ -243,6 +243,9 @@ func TestExample(t *testing.T) {
 
 	csvContent := `Code,Name,ReleaseDate,Width,Height,Depth,ScreenSize,ScreenType,5G,WirelessCharge,Intro,FrontCamera,BackCamera,SellingOnJD,SellingOnTaoBao
 100,Orange13,2021-01-01,80,180,8,6.5,IPS,FALSE,TRUE,yyds,3000px,6000px,TRUE,FALSE
+101,Orange14,2021-01-02,80,180,8,6.5,IPS,FALSE,TRUE,yyds,3000px,6000px,TRUE,FALSE
+102,Orange15,2021-01-02,80,180,8,6.5,IPS,FALSE,TRUE,yyds,3000px,6000px,TRUE,FALSE
+103,Orange16,2021-01-02,80,180,8,6.5,IPS,FALSE,TRUE,yyds,3000px,6000px,TRUE,FALSE
 200,DaMi11,2021-02-02,100,200,10,6.1,LCD,TRUE,FALSE,dddd,2000px,5000px,FALSE,TRUE
 `
 
@@ -265,7 +268,10 @@ func TestExample(t *testing.T) {
 	assert.Equal(t, csvContent, buf.String())
 
 	csvContent = `Code,Name,ReleaseDate,Width,Height,Depth,ScreenSize,ScreenType,5G,WirelessCharge,Intro,FrontCamera,BackCamera,SellingOnJD,SellingOnTaoBao
-100,Orange13+,2021-02-01,88,188,8,6.3,LED,TRUE,FALSE,,,8000px,FALSE,TRUE
+100,Orange13+,2021-02-01,88,188,8,6.3,LED,TRUE,FALSE,,,,FALSE,FALSE
+101,Orange14,2021-01-02,82,180,8,6.5,IPS,FALSE,TRUE,,,,FALSE,FALSE
+102,Orange15,2021-01-03,83,180,8,6.5,IPS,FALSE,TRUE,yyds3,4000px,7000px,FALSE,TRUE
+103,Orange16,2021-01-04,84,180,8,6.5,IPS,FALSE,TRUE,yyds4,5000px,8000px,FALSE,TRUE
 200,DaMi11,2021-02-02,100,200,10,6.1,LCD,TRUE,FALSE,dddd,2000px,5000px,FALSE,TRUE
 300,Pear100,,,,,,,FALSE,FALSE,,,,FALSE,FALSE
 `
