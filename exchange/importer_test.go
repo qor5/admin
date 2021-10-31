@@ -10,7 +10,6 @@ import (
 
 	"github.com/qor/qor5/exchange"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 func TestImport(t *testing.T) {
@@ -28,13 +27,12 @@ func TestImport(t *testing.T) {
 				exchange.NewMeta("ID").PrimaryKey(true),
 				exchange.NewMeta("Name").Header("Nameeee"),
 				exchange.NewMeta("Age"),
-				exchange.NewMeta("Birth").Setter(func(record interface{}, metaValues exchange.MetaValues) error {
-					s := metaValues.Get("Birth")
-					if s == "" {
+				exchange.NewMeta("Birth").Setter(func(record interface{}, value string, metaValues exchange.MetaValues) error {
+					if value == "" {
 						return nil
 					}
 
-					t, err := time.ParseInLocation("2006-01-02", s, time.Local)
+					t, err := time.ParseInLocation("2006-01-02", value, time.Local)
 					if err != nil {
 						return err
 					}
@@ -66,23 +64,46 @@ func TestImport(t *testing.T) {
 		},
 
 		{
-			name: "few fields",
+			name: "has extra columns",
 			metas: []*exchange.Meta{
 				exchange.NewMeta("ID").PrimaryKey(true),
 				exchange.NewMeta("Name").Header("Nameeee"),
+				exchange.NewMeta("Age"),
 			},
-			csvContent: `ID,Nameeee,Age,Birth
-1,Tom,6,1939-01-01
-2,Jerry,5,1940-02-10
+			csvContent: `ID,Nameeee,Name2,Age,Birth,Hobby
+1,Tom,Tomey,6,1939-01-01,sleep
 `,
 			expectRecords: []*TestExchangeModel{
 				{
 					ID:   1,
 					Name: "Tom",
+					Age:  ptrInt(6),
+				},
+			},
+			expectError: nil,
+		},
+
+		{
+			name: "empty value",
+			metas: []*exchange.Meta{
+				exchange.NewMeta("ID").PrimaryKey(true),
+				exchange.NewMeta("Name").Header("Nameeee"),
+				exchange.NewMeta("Age"),
+			},
+			csvContent: `ID,Nameeee,Age,Birth
+1,,,1939-01-01
+2,Jerry,5,1940-02-10
+`,
+			expectRecords: []*TestExchangeModel{
+				{
+					ID:   1,
+					Name: "",
+					Age:  nil,
 				},
 				{
 					ID:   2,
 					Name: "Jerry",
+					Age:  ptrInt(5),
 				},
 			},
 			expectError: nil,
@@ -110,52 +131,8 @@ func TestImport(t *testing.T) {
 			expectRecords: nil,
 			expectError:   fmt.Errorf("name cannot be empty"),
 		},
-
-		{
-			name: "has extra columns",
-			metas: []*exchange.Meta{
-				exchange.NewMeta("ID").PrimaryKey(true),
-				exchange.NewMeta("Name").Header("Nameeee"),
-			},
-			csvContent: `ID,Nameeee,Name2,Age,Birth,Hobby
-1,Tom,Tomey,6,1939-01-01,sleep
-`,
-			expectRecords: []*TestExchangeModel{
-				{
-					ID:   1,
-					Name: "Tom",
-				},
-			},
-			expectError: nil,
-		},
-
-		{
-			name: "empty value",
-			metas: []*exchange.Meta{
-				exchange.NewMeta("ID").PrimaryKey(true),
-				exchange.NewMeta("Name").Header("Nameeee"),
-				exchange.NewMeta("Age"),
-			},
-			csvContent: `ID,Nameeee,Age,Birth
-1,Tom,,1939-01-01
-2,Jerry,5,1940-02-10
-`,
-			expectRecords: []*TestExchangeModel{
-				{
-					ID:   1,
-					Name: "Tom",
-					Age:  nil,
-				},
-				{
-					ID:   2,
-					Name: "Jerry",
-					Age:  ptrInt(5),
-				},
-			},
-			expectError: nil,
-		},
 	} {
-		emptyTables()
+		initTables()
 		r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(c.csvContent)))
 		assert.NoError(t, err, c.name)
 		err = exchange.NewImporter(&TestExchangeModel{}).
@@ -174,7 +151,7 @@ func TestImport(t *testing.T) {
 }
 
 func TestReImport(t *testing.T) {
-	emptyTables()
+	initTables()
 	var err error
 	importer := exchange.NewImporter(&TestExchangeModel{}).
 		Metas(
@@ -198,6 +175,13 @@ func TestReImport(t *testing.T) {
 	assert.NoError(t, err)
 	err = importer.Exec(db, r)
 	assert.NoError(t, err)
+	// 3nd import
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
+1,Tomey2
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
 
 	var records []*TestExchangeModel
 	err = db.Order("id asc").Find(&records).Error
@@ -205,7 +189,7 @@ func TestReImport(t *testing.T) {
 	assert.Equal(t, []*TestExchangeModel{
 		{
 			ID:   1,
-			Name: "Tomey",
+			Name: "Tomey2",
 		},
 		{
 			ID:   2,
@@ -218,8 +202,128 @@ func TestReImport(t *testing.T) {
 	}, records)
 }
 
+func TestEmptyPrimaryKeyValue(t *testing.T) {
+	initTables()
+	var err error
+	importer := exchange.NewImporter(&TestExchangeModel{}).
+		Metas(
+			exchange.NewMeta("ID").PrimaryKey(true),
+			exchange.NewMeta("Name"),
+		)
+	// 1st import
+	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
+,Tom
+,Jerry
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+	records := make([]*TestExchangeModel, 0)
+	err = db.Order("id asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeModel{
+		{
+			ID:   1,
+			Name: "Tom",
+		},
+		{
+			ID:   2,
+			Name: "Jerry",
+		},
+	}, records)
+	// 2nd import
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
+1,Tomey
+,Jerry
+,Spike
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+	records = make([]*TestExchangeModel, 0)
+	err = db.Order("id asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeModel{
+		{
+			ID:   1,
+			Name: "Tomey",
+		},
+		{
+			ID:   2,
+			Name: "Jerry",
+		},
+		{
+			ID:   3,
+			Name: "Jerry",
+		},
+		{
+			ID:   4,
+			Name: "Spike",
+		},
+	}, records)
+}
+
+func TestNoPrimaryKeyMeta(t *testing.T) {
+	initTables()
+	var err error
+	importer := exchange.NewImporter(&TestExchangeModel{}).
+		Metas(
+			exchange.NewMeta("Name"),
+		)
+	// 1st import
+	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`Name
+Tom
+Jerry
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+	records := make([]*TestExchangeModel, 0)
+	err = db.Order("id asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeModel{
+		{
+			ID:   1,
+			Name: "Tom",
+		},
+		{
+			ID:   2,
+			Name: "Jerry",
+		},
+	}, records)
+	// 2nd import
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`Name
+Tom
+Jerry
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+	records = make([]*TestExchangeModel, 0)
+	err = db.Order("id asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeModel{
+		{
+			ID:   1,
+			Name: "Tom",
+		},
+		{
+			ID:   2,
+			Name: "Jerry",
+		},
+		{
+			ID:   3,
+			Name: "Tom",
+		},
+		{
+			ID:   4,
+			Name: "Jerry",
+		},
+	}, records)
+}
+
 func TestCompositePrimaryKey(t *testing.T) {
-	emptyTables()
+	initTables()
 	var err error
 	importer := exchange.NewImporter(&TestExchangeCompositePrimaryKeyModel{}).Metas(
 		exchange.NewMeta("ID").PrimaryKey(true),
@@ -256,89 +360,4 @@ func TestCompositePrimaryKey(t *testing.T) {
 			Age:  ptrInt(5),
 		},
 	}, records)
-}
-
-type ExchangeUser struct {
-	gorm.Model
-
-	Number string `gorm:"uniqueIndex"`
-	Name   string
-	Birth  time.Time
-
-	Hobbies []ExchangeHobby
-}
-
-type ExchangeHobby struct {
-	gorm.Model
-
-	ExchangeUserID uint
-
-	Name      string
-	OtherName string
-}
-
-func TestComplexImport(t *testing.T) {
-	var err error
-	err = db.AutoMigrate(&ExchangeUser{}, &ExchangeHobby{})
-	if err != nil {
-		panic(err)
-	}
-
-	importer := exchange.NewImporter(&ExchangeUser{}).
-		Associations("Hobbies").
-		Metas(
-			exchange.NewMeta("Number").PrimaryKey(true),
-			exchange.NewMeta("Name"),
-			exchange.NewMeta("Running").Setter(func(record interface{}, metaValues exchange.MetaValues) error {
-				v := strings.ToLower(metaValues.Get("Running"))
-				if v != "true" {
-					return nil
-				}
-				u := record.(*ExchangeUser)
-				hs := u.Hobbies
-				has := false
-				for _, oh := range hs {
-					if oh.Name == "Running" {
-						has = true
-						break
-					}
-				}
-				if !has {
-					hs = append(hs, ExchangeHobby{
-						Name: "Running",
-					})
-				}
-				u.Hobbies = hs
-				return nil
-			}),
-			exchange.NewMeta("Swimming").Setter(func(record interface{}, metaValues exchange.MetaValues) error {
-				v := strings.ToLower(metaValues.Get("Swimming"))
-				if v != "true" {
-					return nil
-				}
-				u := record.(*ExchangeUser)
-				hs := u.Hobbies
-				has := false
-				for _, oh := range hs {
-					if oh.Name == "Swimming" {
-						has = true
-						break
-					}
-				}
-				if !has {
-					hs = append(hs, ExchangeHobby{
-						Name: "Swimming",
-					})
-				}
-				u.Hobbies = hs
-				return nil
-			}),
-		)
-	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`Number,Name,Running,Swimming
-100,Tom,true,true
-200,Jerry,false,true
-`)))
-	assert.NoError(t, err)
-	err = importer.Exec(db, r)
-	assert.NoError(t, err)
 }

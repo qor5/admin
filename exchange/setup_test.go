@@ -18,6 +18,10 @@ var (
 var tables = []interface{}{
 	&TestExchangeModel{},
 	&TestExchangeCompositePrimaryKeyModel{},
+	&Phone{},
+	&Intro{},
+	&Camera{},
+	&ShoppingSite{},
 }
 
 type TestExchangeModel struct {
@@ -36,30 +40,47 @@ type TestExchangeCompositePrimaryKeyModel struct {
 
 func TestMain(m *testing.M) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		panic(err)
 	}
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	err = db.AutoMigrate(tables...)
-	if err != nil {
-		panic(err)
-	}
+	migrateTables()
 
-	os.Exit(m.Run())
+	s := m.Run()
+	// dropTables()
+	os.Exit(s)
 }
 
-func emptyTables() {
+func migrateTables() {
+	if err := db.AutoMigrate(tables...); err != nil {
+		panic(err)
+	}
+}
+
+func dropTables() {
 	var err error
 	for _, m := range tables {
 		stmt := &gorm.Statement{DB: db}
 		stmt.Parse(m)
-		err = db.Exec(fmt.Sprintf("truncate table %s", stmt.Schema.Table)).Error
+		err = db.Exec(fmt.Sprintf("drop table %s", stmt.Schema.Table)).Error
 		if err != nil {
 			panic(err)
 		}
 	}
+
+	err = db.Exec(fmt.Sprintf("drop table phone_selling_shopping_site")).Error
+	if err != nil {
+		panic(err)
+	}
+}
+
+func initTables() {
+	dropTables()
+	migrateTables()
 }
 
 func ptrInt(v int) *int {

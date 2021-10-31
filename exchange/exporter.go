@@ -3,7 +3,6 @@ package exchange
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
@@ -42,9 +41,6 @@ func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
 	var records reflect.Value
 	{
 		iRecords := reflect.New(reflect.SliceOf(ep.rtResource)).Interface()
-		for _, t := range ep.associations {
-			db = db.Preload(t)
-		}
 		var orderBy string
 		for i, m := range ep.pkMetas {
 			if i > 0 {
@@ -52,7 +48,7 @@ func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
 			}
 			orderBy += fmt.Sprintf("%s asc", m.snakeField)
 		}
-		err = db.Model(ep.resource).
+		err = preloadDB(db, ep.associations).Model(ep.resource).
 			Order(orderBy).
 			Find(iRecords).
 			Error
@@ -83,17 +79,7 @@ func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
 				vals[i] = v
 				continue
 			}
-			iv := record.Elem().FieldByName(m.field).Interface()
-			switch v := iv.(type) {
-			case time.Time:
-				vals[i] = v.Format(time.RFC3339Nano)
-			case *time.Time:
-				if v != nil {
-					vals[i] = v.Format(time.RFC3339Nano)
-				}
-			default:
-				vals[i] = cast.ToString(iv)
-			}
+			vals[i] = cast.ToString(record.Elem().FieldByName(m.field).Interface())
 		}
 		err = w.WriteRow(vals)
 		if err != nil {

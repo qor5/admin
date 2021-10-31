@@ -10,7 +10,7 @@ import (
 )
 
 func TestExport(t *testing.T) {
-	emptyTables()
+	initTables()
 	records := []*TestExchangeModel{
 		{
 			ID:    1,
@@ -46,8 +46,8 @@ func TestExport(t *testing.T) {
 				exchange.NewMeta("Birth"),
 			},
 			expectCSVContent: `ID,Nameeee,Age,Birth
-1,Tom,6,1939-01-01T00:00:00+09:00
-2,Jerry,5,1940-02-10T00:00:00+09:00
+1,Tom,6,1939-01-01 00:00:00 +0900 JST
+2,Jerry,5,1940-02-10 00:00:00 +0900 JST
 `,
 			expectError: nil,
 		},

@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.1.18-0.20211101154615-2a66588a980b
 	github.com/goplaid/x v1.0.16-0.20211102090357-db41a903b1e8
@@ -19,6 +20,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
 	github.com/spf13/cast v1.4.1
@@ -34,8 +36,8 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/postgres v1.1.1
-	gorm.io/gorm v1.21.17-0.20211019021111-38e55f111785
+	gorm.io/driver/postgres v1.2.1
+	gorm.io/gorm v1.22.2
 )
 
 // replace github.com/goplaid/web => ../../goplaid/web
