@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/mohae/deepcopy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -88,12 +90,9 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 
 	// primarykeys:record
 	oldRecordsMap := make(map[string]interface{})
-	{
+	if len(ip.pkMetas) > 0 {
 		oldRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Interface()
-		for _, t := range ip.associations {
-			db = db.Preload(t)
-		}
-		err = db.Find(oldRecords).Error
+		err = preloadDB(db, ip.associations).Find(oldRecords).Error
 		if err != nil {
 			return err
 		}
@@ -108,35 +107,59 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 		}
 	}
 
-	// records := make([]interface{}, 0, r.Total())
 	records := reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
 	for _, metaValues := range allMetaValues {
-		var record interface{}
-		pkvs := make([]string, 0, len(ip.pkMetas))
-		for _, m := range ip.pkMetas {
-			pkvs = append(pkvs, metaValues.Get(m.field))
-		}
-		cpkvs := strings.Join(pkvs, "$")
-		if v, ok := oldRecordsMap[cpkvs]; cpkvs != "" && ok {
-			record = v
-		} else {
-			record = reflect.New(ip.rtResource.Elem()).Interface()
+		var record reflect.Value
+		var oldRecord reflect.Value
+		{
+			pkvs := make([]string, 0, len(ip.pkMetas))
+			for _, m := range ip.pkMetas {
+				pkvs = append(pkvs, metaValues.Get(m.field))
+			}
+			cpkvs := strings.Join(pkvs, "$")
+			if v, ok := oldRecordsMap[cpkvs]; cpkvs != "" && ok {
+				record = reflect.ValueOf(v)
+				oldRecord = reflect.ValueOf(deepcopy.Copy(v))
+			} else {
+				record = reflect.New(ip.rtResource.Elem())
+			}
 		}
 		for _, m := range ip.metas {
 			if m.setter != nil {
-				err = m.setter(record, metaValues)
+				err = m.setter(record.Interface(), metaValues.Get(m.field), metaValues)
 				if err != nil {
 					return err
 				}
 				continue
 			}
-			rfv := reflect.ValueOf(record).Elem().FieldByName(m.field)
-			err = setValueFromString(rfv, metaValues.Get(m.field))
+			fv := record.Elem().FieldByName(m.field)
+			err = setValueFromString(fv, metaValues.Get(m.field))
 			if err != nil {
 				return err
 			}
 		}
-		records = reflect.Append(records, reflect.ValueOf(record))
+		if oldRecord.IsValid() {
+			for _, a := range ip.associations {
+				newV := record.Elem().FieldByName(a)
+				oldV := oldRecord.Elem().FieldByName(a)
+				if !cmp.Equal(newV.Interface(), oldV.Interface()) {
+					if newV.IsZero() {
+						err = db.Model(record.Interface()).Association(a).Clear()
+					} else {
+						ft, _ := ip.rtResource.Elem().FieldByName(a)
+						if !strings.Contains(ft.Tag.Get("gorm"), "many2many") {
+							ip.clearPrimaryKeyValueForAssociation(newV)
+						}
+						err = db.Model(record.Interface()).Association(a).Replace(newV.Interface())
+					}
+					if err != nil {
+						return err
+					}
+				}
+				newV.Set(reflect.New(newV.Type()).Elem())
+			}
+		}
+		records = reflect.Append(records, record)
 	}
 
 	ocPrimaryCols := make([]clause.Column, 0, len(ip.metas))
@@ -147,10 +170,24 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 			})
 		}
 	}
+	// .Session(&gorm.Session{FullSaveAssociations: true}) cannot auto delete associations and not work with many-to-many
 	return db.Clauses(clause.OnConflict{
 		Columns:   ocPrimaryCols,
 		UpdateAll: true,
 	}).Model(ip.resource).CreateInBatches(records.Interface(), 1000).Error
+}
+
+func (ip *Importer) clearPrimaryKeyValueForAssociation(v reflect.Value) {
+	rv := getIndirect(v)
+	rt := rv.Type()
+	switch rt.Kind() {
+	case reflect.Struct:
+		clearPrimaryKeyValue(rv)
+	case reflect.Slice:
+		for i := 0; i < rv.Len(); i++ {
+			clearPrimaryKeyValue(getIndirect(rv.Index(i)))
+		}
+	}
 }
 
 func (ip *Importer) validateAndInit() error {

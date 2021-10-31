@@ -12,8 +12,8 @@ type Meta struct {
 	columnHeader string
 	primaryKey   bool
 
-	setter func(record interface{}, metaValues MetaValues) error
-	valuer func(record interface{}) (string, error)
+	setter MetaSetter
+	valuer MetaValuer
 }
 
 func NewMeta(field string) *Meta {
@@ -36,15 +36,19 @@ func (m *Meta) PrimaryKey(b bool) *Meta {
 	return m
 }
 
+type MetaSetter func(record interface{}, value string, metaValues MetaValues) error
+
 // set values to special fields
-// e.g. time.Time, media, associated records
-func (m *Meta) Setter(f func(record interface{}, metaValues MetaValues) error) *Meta {
+// e.g. time.Time, struct, associated records ...
+func (m *Meta) Setter(f MetaSetter) *Meta {
 	m.setter = f
 	return m
 }
 
+type MetaValuer func(record interface{}) (string, error)
+
 // format values when exporting
-func (m *Meta) Valuer(f func(record interface{}) (string, error)) *Meta {
+func (m *Meta) Valuer(f MetaValuer) *Meta {
 	m.valuer = f
 	return m
 }

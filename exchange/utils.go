@@ -2,8 +2,12 @@ package exchange
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
+
+	"gorm.io/gorm"
 )
 
 func setValueFromString(v reflect.Value, strVal string) error {
@@ -73,22 +77,58 @@ func validateResourceAndMetas(r interface{}, metas []*Meta) error {
 		return errors.New("no metas")
 	}
 
-	hasPrimaryKey := false
+	ret := rt.Elem()
 	for i, _ := range metas {
 		m := metas[i]
 		if m.field == "" {
 			return errors.New("field name is empty")
 		}
+		if m.setter == nil && m.valuer == nil {
+			_, ok := ret.FieldByName(m.field)
+			if !ok {
+				return fmt.Errorf("field %s not found", m.field)
+			}
+		}
 		if m.columnHeader == "" {
 			return errors.New("header is empty")
 		}
-		if m.primaryKey {
-			hasPrimaryKey = true
-		}
-	}
-	if !hasPrimaryKey {
-		return errors.New("must have primary key field meta")
 	}
 
 	return nil
+}
+
+func preloadDB(db *gorm.DB, associations []string) *gorm.DB {
+	if len(associations) == 0 {
+		return db
+	}
+
+	ndb := db.Preload(associations[0])
+	for i := 1; i < len(associations); i++ {
+		ndb = ndb.Preload(associations[i])
+	}
+	return ndb
+}
+
+func getIndirect(v reflect.Value) reflect.Value {
+	if v.Kind() != reflect.Ptr {
+		return v
+	}
+
+	return getIndirect(reflect.Indirect(v))
+}
+
+func clearPrimaryKeyValue(v reflect.Value) {
+	t := v.Type()
+	if idf, ok := t.FieldByName("ID"); ok {
+		if strings.Contains(idf.Tag.Get("gorm"), "primarykey") {
+			v.FieldByName("ID").SetUint(0)
+		}
+	}
+	for i := 0; i < t.NumField(); i++ {
+		ft := t.Field(i)
+		if !strings.Contains(ft.Tag.Get("gorm"), "primarykey") {
+			continue
+		}
+		v.Field(i).Set(reflect.New(ft.Type).Elem())
+	}
 }
