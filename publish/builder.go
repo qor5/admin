@@ -62,6 +62,11 @@ func (b *Builder) Publish(record interface{}) (err error) {
 			}
 		}
 
+		if r, ok := record.(ListInterface); ok {
+			// Update ListDeleted, ListUpdated
+			r.SetListUpdated(true)
+		}
+
 		// TODO update schedule
 
 		// publish callback
@@ -91,6 +96,11 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOffline}).Error; err != nil {
 				return
 			}
+		}
+
+		if r, ok := record.(ListInterface); ok {
+			// Update ListDeleted, ListUpdated
+			r.SetListDeleted(true)
 		}
 
 		// unpublish callback

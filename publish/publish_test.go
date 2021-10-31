@@ -27,6 +27,7 @@ type Product struct {
 	publish.Version
 	publish.Schedule
 	publish.Status
+	publish.List
 }
 
 func (p *Product) getContent() string {
@@ -224,6 +225,36 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	} else {
 		t.Error(errors.New("delete list file %s failed"), productV2.getListUrl())
 	}
+}
+
+func TestPublishList(t *testing.T) {
+	// TODO
+	//db := ConnectDB()
+	//db.AutoMigrate(&ProductWithoutVersion{})
+	//storage := s3.New(&s3.Config{
+	//	Bucket:  os.Getenv("S3_Bucket"),
+	//	Region:  os.Getenv("S3_Region"),
+	//	Session: session.Must(session.NewSession()),
+	//})
+	//
+	//productV1 := Product{
+	//	Model:   gorm.Model{ID: 1},
+	//	Code:    "0001",
+	//	Name:    "coffee",
+	//	Status:  publish.Status{Status: publish.StatusDraft},
+	//	Version: publish.Version{VersionName: "v1"},
+	//}
+	//productV2 := Product{
+	//	Model:   gorm.Model{ID: 1},
+	//	Code:    "0002",
+	//	Name:    "coffee",
+	//	Status:  publish.Status{Status: publish.StatusDraft},
+	//	Version: publish.Version{VersionName: "v2"},
+	//}
+	//
+	//listP := publish.NewListBuilder(db, storage)
+	//listP
+
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {

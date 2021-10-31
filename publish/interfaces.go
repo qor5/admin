@@ -47,3 +47,12 @@ type ScheduleInterface interface {
 	SetScheduledStartAt(v *time.Time)
 	SetScheduledEndAt(v *time.Time)
 }
+
+type ListInterface interface {
+	GetPageNumber() int
+	SetPageNumber(pageNumber int)
+	GetPosition() int
+	SetPosition(position int)
+	SetListDeleted(listDeleted bool)
+	SetListUpdated(listUpdated bool)
+}
