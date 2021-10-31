@@ -108,6 +108,18 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 	}
 
 	records := reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
+	// key is association
+	recordsToClearAssociations := make(map[string]reflect.Value)
+	// key is association
+	recordsToReplaceAssociations := make(map[string]reflect.Value)
+	for _, a := range ip.associations {
+		recordsToClearAssociations[a] = reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
+		recordsToReplaceAssociations[a] = reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
+	}
+	// key is association
+	toReplaceAssociations := make(map[string][]interface{})
+	// to avoid useless associations updates
+	toSetNilAssociationsFields := make([]reflect.Value, 0, len(ip.associations)*int(r.Total()))
 	for _, metaValues := range allMetaValues {
 		var record reflect.Value
 		var oldRecord reflect.Value
@@ -144,22 +156,41 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 				oldV := oldRecord.Elem().FieldByName(a)
 				if !cmp.Equal(newV.Interface(), oldV.Interface()) {
 					if newV.IsZero() {
-						err = db.Model(record.Interface()).Association(a).Clear()
+						recordsToClearAssociations[a] = reflect.Append(recordsToClearAssociations[a], record)
 					} else {
 						ft, _ := ip.rtResource.Elem().FieldByName(a)
 						if !strings.Contains(ft.Tag.Get("gorm"), "many2many") {
 							ip.clearPrimaryKeyValueForAssociation(newV)
 						}
-						err = db.Model(record.Interface()).Association(a).Replace(newV.Interface())
+						recordsToReplaceAssociations[a] = reflect.Append(recordsToReplaceAssociations[a], record)
+						toReplaceAssociations[a] = append(toReplaceAssociations[a], newV.Interface())
 					}
 					if err != nil {
 						return err
 					}
 				}
-				newV.Set(reflect.New(newV.Type()).Elem())
+				toSetNilAssociationsFields = append(toSetNilAssociationsFields, newV)
 			}
 		}
 		records = reflect.Append(records, record)
+	}
+	for _, a := range ip.associations {
+		if recordsToClearAssociations[a].Len() > 0 {
+			err = db.Model(recordsToClearAssociations[a].Interface()).Association(a).Clear()
+			if err != nil {
+				return err
+			}
+		}
+		if recordsToReplaceAssociations[a].Len() > 0 {
+			// TODO: it seems not updated in batch from the gorm log
+			err = db.Model(recordsToReplaceAssociations[a].Interface()).Association(a).Replace(toReplaceAssociations[a]...)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range toSetNilAssociationsFields {
+		f.Set(reflect.New(f.Type()).Elem())
 	}
 
 	ocPrimaryCols := make([]clause.Column, 0, len(ip.metas))
