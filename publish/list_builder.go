@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"strings"
 
 	"github.com/qor/oss"
 	"github.com/qor/qor5/utils"
@@ -15,7 +16,7 @@ type ListBuilder struct {
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
 	getOldItemsFunc    func(modelSlice interface{})
 	totalNumberPerPage int
-	publishActionsFunc func(v []*OnePageItems) []PublishAction
+	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
 }
 
 func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
@@ -31,17 +32,26 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 			db.Where("status = ?", StatusOnline).Find(&modelSlice)
 		},
 		totalNumberPerPage: 30,
-		publishActionsFunc: nil,
+		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
+			for _, onePageItems := range result {
+				objs = append(objs, &PublishAction{
+					Url:      lp.GetListUrl(onePageItems.PageNumber),
+					Content:  lp.GetListContent(onePageItems.Items),
+					IsDelete: false,
+				})
+			}
+			return
+		},
 	}
 }
 
 type ListPublisher interface {
-	TableName() string
+	GetListUrl(pageNumber int) string
+	GetListContent(Items []interface{}) string
 	Sort(array []interface{})
-	GenerateAndPutPages(result []*OnePageItems)
 }
 
-func (b *ListBuilder) PublishList(model interface{}, modelSlice []interface{}) {
+func (b *ListBuilder) PublishList(model interface{}, modelSlice []interface{}) (err error) {
 	lp := model.(ListPublisher)
 
 	var oldItems, addItems, deleteItems []interface{}
@@ -80,7 +90,16 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice []interface{}) {
 	old := paginate(oldItems)
 	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
 	restartFrom := getRestartFromIndex(old, newResult)
-	lp.GenerateAndPutPages(newResult[restartFrom:])
+
+	var objs []*PublishAction
+	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
+	for _, obj := range objs {
+		_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 func (b *ListBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool) *ListBuilder {
@@ -98,7 +117,7 @@ func (b *ListBuilder) TotalNumberPerPage(number int) *ListBuilder {
 	return b
 }
 
-func (b *ListBuilder) PublishActionsFunc(f func(v []*OnePageItems) []PublishAction) *ListBuilder {
+func (b *ListBuilder) PublishActionsFunc(f func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)) *ListBuilder {
 	b.publishActionsFunc = f
 	return b
 }
