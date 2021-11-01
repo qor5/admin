@@ -223,7 +223,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				ItemText("Label").
 				ItemValue("Value").
 				Attr(web.VFieldName("Job")...).
-				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Go()),
+				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Event(web.Var("$event")).Go()),
 			web.Portal().Name("worker_jobEditingContent"),
 		)
 	})
