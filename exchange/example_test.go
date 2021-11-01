@@ -107,14 +107,15 @@ func TestExample(t *testing.T) {
 		exchange.NewMeta("Code").PrimaryKey(true),
 		exchange.NewMeta("Name"),
 		exchange.NewMeta("ReleaseDate").Setter(func(record interface{}, value string, metaValues exchange.MetaValues) error {
+			r := record.(*Phone)
 			if value == "" {
+				r.ReleaseDate = nil
 				return nil
 			}
 			t, err := time.ParseInLocation("2006-01-02", value, time.Local)
 			if err != nil {
 				return err
 			}
-			r := record.(*Phone)
 			r.ReleaseDate = &t
 			return nil
 		}).Valuer(func(record interface{}) (string, error) {

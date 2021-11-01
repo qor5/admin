@@ -92,6 +92,9 @@ func validateResourceAndMetas(r interface{}, metas []*Meta) error {
 		if m.columnHeader == "" {
 			return errors.New("header is empty")
 		}
+		if m.primaryKey && (m.setter != nil || m.valuer != nil) {
+			return fmt.Errorf("can not set setter/valuer on primaryKey meta")
+		}
 	}
 
 	return nil

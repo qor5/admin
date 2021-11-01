@@ -25,17 +25,18 @@ var tables = []interface{}{
 }
 
 type TestExchangeModel struct {
-	ID    uint `gorm:"primarykey"`
-	Name  string
-	Age   *int
-	Birth *time.Time
+	ID       uint `gorm:"primarykey"`
+	Name     string
+	Age      *int
+	Birth    *time.Time
+	Appender string
 }
 
 type TestExchangeCompositePrimaryKeyModel struct {
-	ID    uint   `gorm:"primarykey"`
-	Name  string `gorm:"primarykey"`
-	Age   *int
-	Birth *time.Time
+	ID       uint   `gorm:"primarykey"`
+	Name     string `gorm:"primarykey"`
+	Age      *int
+	Appender string
 }
 
 func TestMain(m *testing.M) {

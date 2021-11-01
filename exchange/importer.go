@@ -48,6 +48,7 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 		return err
 	}
 
+	fullPrimaryKeyValues := make([][]string, 0, r.Total())
 	allMetaValues := make([]url.Values, 0, r.Total())
 	{
 		headerIdxMetas := make(map[int]*Meta)
@@ -69,12 +70,20 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 				return err
 			}
 
+			notEmptyPrimaryKeyValues := make([]string, 0, len(ip.pkMetas))
 			for i, v := range row {
 				m, ok := headerIdxMetas[i]
 				if !ok {
 					continue
 				}
 				metaValues.Set(m.field, v)
+
+				if m.primaryKey && v != "" && m.setter == nil {
+					notEmptyPrimaryKeyValues = append(notEmptyPrimaryKeyValues, v)
+				}
+			}
+			if len(ip.pkMetas) > 0 && len(notEmptyPrimaryKeyValues) == len(ip.pkMetas) {
+				fullPrimaryKeyValues = append(fullPrimaryKeyValues, notEmptyPrimaryKeyValues)
 			}
 
 			for _, vd := range ip.validators {
@@ -90,9 +99,39 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 
 	// primarykeys:record
 	oldRecordsMap := make(map[string]interface{})
-	if len(ip.pkMetas) > 0 {
+	if len(fullPrimaryKeyValues) > 0 {
 		oldRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Interface()
-		err = preloadDB(db, ip.associations).Find(oldRecords).Error
+		tx := preloadDB(db, ip.associations)
+		searchInKeys := false
+		if len(fullPrimaryKeyValues) <= 5000 {
+			searchInKeys = true
+		} else if len(fullPrimaryKeyValues) <= 50000 {
+			var total int64
+			err = db.Model(ip.resource).Count(&total).Error
+			if err != nil {
+				return err
+			}
+			if int64(len(fullPrimaryKeyValues))*100 < total {
+				searchInKeys = true
+			}
+		}
+		if searchInKeys {
+			if len(ip.pkMetas) == 1 {
+				vs := make([]string, 0, len(fullPrimaryKeyValues))
+				for _, pkvs := range fullPrimaryKeyValues {
+					vs = append(vs, pkvs[0])
+				}
+				tx = tx.Where(fmt.Sprintf("%s in (?)", ip.pkMetas[0].snakeField), vs)
+			} else {
+				var pkvs []string
+				for _, m := range ip.pkMetas {
+					pkvs = append(pkvs, m.snakeField)
+				}
+				// only test this on Postgres, not sure if this is valid for other databases
+				tx = tx.Where(fmt.Sprintf("(%s) in (?)", strings.Join(pkvs, ",")), fullPrimaryKeyValues)
+			}
+		}
+		err = tx.Find(oldRecords).Error
 		if err != nil {
 			return err
 		}
@@ -101,7 +140,7 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 			record := rv.Index(i)
 			pkvs := make([]string, 0, len(ip.pkMetas))
 			for _, m := range ip.pkMetas {
-				pkvs = append(pkvs, fmt.Sprintf("%s", record.Elem().FieldByName(m.field).Interface()))
+				pkvs = append(pkvs, fmt.Sprintf("%v", record.Elem().FieldByName(m.field).Interface()))
 			}
 			oldRecordsMap[strings.Join(pkvs, "$")] = record.Interface()
 		}
@@ -151,6 +190,9 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 			}
 		}
 		if oldRecord.IsValid() {
+			if cmp.Equal(record.Interface(), oldRecord.Interface()) {
+				continue
+			}
 			for _, a := range ip.associations {
 				newV := record.Elem().FieldByName(a)
 				oldV := oldRecord.Elem().FieldByName(a)
@@ -205,7 +247,7 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 	return db.Clauses(clause.OnConflict{
 		Columns:   ocPrimaryCols,
 		UpdateAll: true,
-	}).Model(ip.resource).CreateInBatches(records.Interface(), 1000).Error
+	}).Model(ip.resource).CreateInBatches(records.Interface(), 10000).Error
 }
 
 func (ip *Importer) clearPrimaryKeyValueForAssociation(v reflect.Value) {
@@ -226,6 +268,7 @@ func (ip *Importer) validateAndInit() error {
 		return err
 	}
 
+	ip.pkMetas = []*Meta{}
 	for i, _ := range ip.metas {
 		m := ip.metas[i]
 		if m.primaryKey {
