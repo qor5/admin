@@ -100,6 +100,7 @@ func NewConfig() Config {
 		"InputHarness",
 		"Post",
 		"User",
+		"Role",
 		b.MenuGroup("Site Management").SubItems(
 			"Setting",
 			"QorSEOSetting",
@@ -140,6 +141,7 @@ func NewConfig() Config {
 	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 	configInputHarness(b, db)
 	configUser(b, db)
+	configRole(b, db)
 
 	_ = m
 	// Use m to customize the model, Or config more models here.

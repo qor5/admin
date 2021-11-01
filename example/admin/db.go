@@ -22,6 +22,7 @@ func ConnectDB() (db *gorm.DB) {
 		&models.Post{},
 		&models.InputHarness{},
 		&models.User{},
+		&models.Role{},
 	); err != nil {
 		panic(err)
 	}

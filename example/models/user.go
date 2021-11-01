@@ -2,14 +2,17 @@ package models
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
-	ID         uint
+	gorm.Model
 	Name       string
 	Company    string
 	Email      string
 	Permission string
+	Roles      []Role `gorm:"many2many:user_role_join;"`
 	Status     string
 	AvatarURL  string
 	UpdatedAt  time.Time

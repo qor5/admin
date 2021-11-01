@@ -10,7 +10,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/goplaid/multipartestutils v0.0.2
 	github.com/goplaid/web v1.1.17
-	github.com/goplaid/x v1.0.16-0.20211029090335-7d3b2d1119ee
+	github.com/goplaid/x v1.0.16-0.20211101111454-cfe55e083a35
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -37,8 +37,8 @@ require (
 	gorm.io/gorm v1.21.17-0.20211019021111-38e55f111785
 )
 
-// replace github.com/goplaid/web => ../../goplaid/web
+//replace github.com/goplaid/web => ../../goplaid/web
 
-// replace github.com/goplaid/x => ../../goplaid/x
+//replace github.com/goplaid/x => ../../goplaid/x
 
 // replace github.com/sunfmin/reflectutils => ../../reflectutils
