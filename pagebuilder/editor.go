@@ -69,17 +69,17 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"phone"}}).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"phone"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "phone"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"tablet"}}).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"tablet"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().PushStateQuery(url.Values{"device": []string{"laptop"}}).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"laptop"}}).PushState(true).Go()).
 				InputValue(device == "laptop"),
 
 			VSpacer(),
@@ -150,27 +150,28 @@ const DeleteContainerEvent = "page_builder_DeleteContainerEvent"
 const MoveContainerEvent = "page_builder_MoveContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.Event.ParamAsInt(0)
-	containerName := ctx.Event.Params[1]
+	pageID := ctx.QueryAsInt(paramPageID)
+	containerName := ctx.R.FormValue(paramContainerName)
 
 	var modelID uint
 	modelID, err = b.AddContainerToPage(pageID, containerName)
 
-	// r.PushState = web.PushState(url.Values{})
+	// r.Location = web.Location(url.Values{})
 	r.VarsScript = web.Plaid().
 		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-		EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(modelID)).
+		EventFunc(actions.Edit).
+		Query(presets.ParamID, fmt.Sprint(modelID)).
 		Go()
 	return
 }
 
 func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	direction := ctx.Event.Params[0]
-	pageID := ctx.Event.ParamAsInt(1)
-	containerID := ctx.Event.ParamAsInt(2)
+	direction := ctx.R.FormValue(paramDirection)
+	pageID := ctx.QueryAsInt(paramPageID)
+	containerID := ctx.QueryAsInt(paramContainerID)
 	err = b.MoveContainerOrder(pageID, containerID, direction)
 
-	r.PushState = web.PushState(url.Values{})
+	r.PushState = web.Location(url.Values{})
 
 	return
 }
@@ -227,14 +228,14 @@ func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction stri
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.Event.ParamAsInt(0)
-	containerID := ctx.Event.ParamAsInt(1)
+	pageID := ctx.QueryAsInt(paramPageID)
+	containerID := ctx.QueryAsInt(paramContainerID)
 
 	err = b.db.Delete(&Container{}, "id = ? AND page_id = ?", containerID, pageID).Error
 	if err != nil {
 		return
 	}
-	r.PushState = web.PushState(url.Values{})
+	r.PushState = web.Location(url.Values{})
 	return
 }
 
@@ -263,6 +264,13 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	}
 	return
 }
+
+const (
+	paramPageID        = "pageID"
+	paramContainerID   = "containerID"
+	paramDirection     = "direction"
+	paramContainerName = "containerName"
+)
 
 func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
 
@@ -293,7 +301,8 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					).Attr("@click",
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+							EventFunc(actions.Edit).
+							Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 							Go(),
 					),
 					VListItem(
@@ -301,10 +310,10 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					).Attr("@click",
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(MoveContainerEvent,
-								string(up),
-								fmt.Sprint(ec.container.PageID),
-								fmt.Sprint(ec.container.ID)).
+							EventFunc(MoveContainerEvent).
+							Query(paramDirection, string(up)).
+							Query(paramPageID, ec.container.PageID).
+							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
 
@@ -313,10 +322,10 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					).Attr("@click",
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(MoveContainerEvent,
-								string(down),
-								fmt.Sprint(ec.container.PageID),
-								fmt.Sprint(ec.container.ID)).
+							EventFunc(MoveContainerEvent).
+							Query(paramDirection, string(down)).
+							Query(paramPageID, ec.container.PageID).
+							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
 					VDivider(),
@@ -326,9 +335,9 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					).Attr("@click",
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(DeleteContainerEvent,
-								fmt.Sprint(ec.container.PageID),
-								fmt.Sprint(ec.container.ID)).
+							EventFunc(DeleteContainerEvent).
+							Query(paramPageID, ec.container.PageID).
+							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
 				),
@@ -340,7 +349,8 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 				Class("my-2 float-right").Attr("@click",
 				web.Plaid().
 					URL(ec.builder.mb.Info().ListingHref()).
-					EventFunc(actions.Edit, actions.Drawer, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+					EventFunc(actions.Edit).
+					Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 					Go(),
 			),
 		).Cols(2).Class("pa-0"),
@@ -439,7 +449,9 @@ func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
 						VBtn("Select").
 							Text(true).
 							Color("primary").Attr("@click",
-							web.Plaid().EventFunc(AddContainerEvent, id, builder.name).
+							web.Plaid().EventFunc(AddContainerEvent).
+								Query(paramPageID, id).
+								Query(paramContainerName, builder.name).
 								Go(),
 						),
 					),

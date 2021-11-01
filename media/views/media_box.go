@@ -177,7 +177,11 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				VChip(
 					thumbName(thumb, size, fileSize, f),
 				).Small(true).Attr("@click", web.Plaid().
-					EventFunc(loadImageCropperEvent, field, fmt.Sprint(f.ID), thumb, h.JSONString(cfg)).
+					EventFunc(loadImageCropperEvent).
+					Query("field", field).
+					Query("id", fmt.Sprint(f.ID)).
+					Query("thumb", thumb).
+					FieldValue("cfg", h.JSONString(cfg)).
 					Go()),
 			),
 		),
@@ -193,9 +197,9 @@ func fileThumb(filename string) h.HTMLComponent {
 func deleteConfirmation(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		field := ctx.Event.Params[0]
-		id := ctx.Event.Params[1]
-		cfg := ctx.Event.Params[2]
+		field := ctx.R.FormValue("field")
+		id := ctx.R.FormValue("id")
+		cfg := ctx.R.FormValue("cfg")
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
@@ -214,7 +218,10 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 							Depressed(true).
 							Dark(true).
 							Attr("@click", web.Plaid().
-								EventFunc(doDeleteEvent, field, id, h.JSONString(stringToCfg(cfg))).
+								EventFunc(doDeleteEvent).
+								Query("field", field).
+								Query("id", id).
+								FieldValue("cfg", h.JSONString(cfg)).
 								Go()),
 					),
 				),
@@ -229,9 +236,9 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 }
 func doDelete(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		id := ctx.Event.Params[1]
-		cfg := ctx.Event.Params[2]
+		field := ctx.R.FormValue("field")
+		id := ctx.R.FormValue("id")
+		cfg := ctx.R.FormValue("cfg")
 
 		var obj media_library.MediaLibrary
 		err = db.Where("id = ?", id).First(&obj).Error
@@ -334,13 +341,23 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		h.Input("").Type("hidden").
 			Value(mediaBoxValue).
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
+
 		VBtn(msgr.ChooseFile).
 			Depressed(true).
-			OnClick(openFileChooserEvent, field, h.JSONString(cfg)),
+			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
+				Query("field", field).
+				FieldValue("cfg", h.JSONString(cfg)).
+				Go(),
+			),
+
 		h.If(mediaBox != nil && mediaBox.ID.String() != "",
 			VBtn(msgr.Delete).
 				Depressed(true).
-				OnClick(deleteFileEvent, field, h.JSONString(cfg)),
+				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
+					Query("field", field).
+					FieldValue("cfg", h.JSONString(cfg)).
+					Go(),
+				),
 		),
 	)
 }
@@ -354,8 +371,8 @@ func MediaBoxListFunc() presets.FieldComponentFunc {
 
 func deleteFileField() web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		cfg := stringToCfg(ctx.Event.Params[1])
+		field := ctx.R.FormValue("field")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg),
@@ -393,9 +410,9 @@ func thumbName(name string, size *media.Size, fileSize int, f *media_library.Med
 
 func updateDescription(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		id := ctx.Event.ParamAsInt(1)
-		cfg := ctx.Event.Params[2]
+		field := ctx.R.FormValue("field")
+		id := ctx.R.FormValue("id")
+		cfg := ctx.R.FormValue("cfg")
 
 		var obj media_library.MediaLibrary
 		err = db.Where("id = ?", id).First(&obj).Error
