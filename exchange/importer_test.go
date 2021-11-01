@@ -28,7 +28,9 @@ func TestImport(t *testing.T) {
 				exchange.NewMeta("Name").Header("Nameeee"),
 				exchange.NewMeta("Age"),
 				exchange.NewMeta("Birth").Setter(func(record interface{}, value string, metaValues exchange.MetaValues) error {
+					r := record.(*TestExchangeModel)
 					if value == "" {
+						r.Birth = nil
 						return nil
 					}
 
@@ -37,7 +39,6 @@ func TestImport(t *testing.T) {
 						return err
 					}
 
-					r := record.(*TestExchangeModel)
 					r.Birth = &t
 					return nil
 				}),
@@ -157,27 +158,32 @@ func TestReImport(t *testing.T) {
 		Metas(
 			exchange.NewMeta("ID").PrimaryKey(true),
 			exchange.NewMeta("Name"),
+			exchange.NewMeta("Appender").Setter(func(record interface{}, value string, metaValues exchange.MetaValues) error {
+				r := record.(*TestExchangeModel)
+				r.Appender += value
+				return nil
+			}),
 		)
 	// 1st import
-	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
-1,Tom
-2,Jerry
+	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Appender
+1,Tom,aa
+2,Jerry,bb
 `)))
 	assert.NoError(t, err)
 	err = importer.Exec(db, r)
 	assert.NoError(t, err)
 	// 2nd import
-	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
-1,Tomey
-2,
-3,Spike
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Appender
+1,Tomey,AA
+2,,BB
+3,Spike,cc
 `)))
 	assert.NoError(t, err)
 	err = importer.Exec(db, r)
 	assert.NoError(t, err)
 	// 3nd import
-	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
-1,Tomey2
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Appender
+1,Tomey2,aa
 `)))
 	assert.NoError(t, err)
 	err = importer.Exec(db, r)
@@ -188,16 +194,19 @@ func TestReImport(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []*TestExchangeModel{
 		{
-			ID:   1,
-			Name: "Tomey2",
+			ID:       1,
+			Name:     "Tomey2",
+			Appender: "aaAAaa",
 		},
 		{
-			ID:   2,
-			Name: "",
+			ID:       2,
+			Name:     "",
+			Appender: "bbBB",
 		},
 		{
-			ID:   3,
-			Name: "Spike",
+			ID:       3,
+			Name:     "Spike",
+			Appender: "cc",
 		},
 	}, records)
 }
@@ -325,38 +334,120 @@ Jerry
 func TestCompositePrimaryKey(t *testing.T) {
 	initTables()
 	var err error
+	// 1st import
 	importer := exchange.NewImporter(&TestExchangeCompositePrimaryKeyModel{}).Metas(
 		exchange.NewMeta("ID").PrimaryKey(true),
 		exchange.NewMeta("Name").Header("Name").PrimaryKey(true),
 		exchange.NewMeta("Age"),
+		exchange.NewMeta("Appender").Setter(func(record interface{}, value string, metaValues exchange.MetaValues) error {
+			r := record.(*TestExchangeCompositePrimaryKeyModel)
+			r.Appender += value
+			return nil
+		}),
 	)
-	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Age
-1,Tom,6
-1,Tom2,16
-2,Jerry,5
+	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Age,Appender
+1,Tom,6,aa
+1,Tom2,16,bb
+2,Jerry,5,cc
 `)))
 	assert.NoError(t, err)
 
 	err = importer.Exec(db, r)
 	assert.NoError(t, err)
 
-	var records []*TestExchangeCompositePrimaryKeyModel
+	records := []*TestExchangeCompositePrimaryKeyModel{}
 	err = db.Order("id asc, name asc").Find(&records).Error
 	assert.NoError(t, err)
 	assert.Equal(t, []*TestExchangeCompositePrimaryKeyModel{
 		{
-			ID:   1,
-			Name: "Tom",
-			Age:  ptrInt(6),
+			ID:       1,
+			Name:     "Tom",
+			Age:      ptrInt(6),
+			Appender: "aa",
 		},
+		{
+			ID:       1,
+			Name:     "Tom2",
+			Age:      ptrInt(16),
+			Appender: "bb",
+		},
+		{
+			ID:       2,
+			Name:     "Jerry",
+			Age:      ptrInt(5),
+			Appender: "cc",
+		},
+	}, records)
+	// 2nd import
+	r, err = exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name,Age,Appender
+1,Tom,7,AA
+1,Tom2,16,BB
+2,Jerry2,6,dd
+`)))
+	assert.NoError(t, err)
+
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+
+	records = []*TestExchangeCompositePrimaryKeyModel{}
+	err = db.Order("id asc, name asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeCompositePrimaryKeyModel{
+		{
+			ID:       1,
+			Name:     "Tom",
+			Age:      ptrInt(7),
+			Appender: "aaAA",
+		},
+		{
+			ID:       1,
+			Name:     "Tom2",
+			Age:      ptrInt(16),
+			Appender: "bbBB",
+		},
+		{
+			ID:       2,
+			Name:     "Jerry",
+			Age:      ptrInt(5),
+			Appender: "cc",
+		},
+		{
+			ID:       2,
+			Name:     "Jerry2",
+			Age:      ptrInt(6),
+			Appender: "dd",
+		},
+	}, records)
+}
+
+func TestNoAffectOnOldData(t *testing.T) {
+	initTables()
+	var err error
+	db.Create(&TestExchangeModel{
+		ID:   1,
+		Name: "Tom",
+		Age:  ptrInt(5),
+	})
+
+	importer := exchange.NewImporter(&TestExchangeModel{}).
+		Metas(
+			exchange.NewMeta("ID").PrimaryKey(true),
+			exchange.NewMeta("Name"),
+		)
+	// 1st import
+	r, err := exchange.NewCSVReader(ioutil.NopCloser(strings.NewReader(`ID,Name
+1,Tom2
+`)))
+	assert.NoError(t, err)
+	err = importer.Exec(db, r)
+	assert.NoError(t, err)
+	records := make([]*TestExchangeModel, 0)
+	err = db.Order("id asc").Find(&records).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []*TestExchangeModel{
 		{
 			ID:   1,
 			Name: "Tom2",
-			Age:  ptrInt(16),
-		},
-		{
-			ID:   2,
-			Name: "Jerry",
 			Age:  ptrInt(5),
 		},
 	}, records)

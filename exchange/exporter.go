@@ -95,6 +95,7 @@ func (ep *Exporter) validateAndInit() error {
 		return err
 	}
 
+	ep.pkMetas = []*Meta{}
 	for i, _ := range ep.metas {
 		m := ep.metas[i]
 		if m.primaryKey {
