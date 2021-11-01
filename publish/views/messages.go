@@ -14,7 +14,8 @@ type Messages struct {
 	ScheduledEndAt          string
 	DateTimePickerClearText string
 	DateTimePickerOkText    string
-	CreatedSuccessfully     string
+	SaveAsNewVersion        string
+	SuccessfullyCreated     string
 }
 
 var Messages_en_US = &Messages{
@@ -29,7 +30,8 @@ var Messages_en_US = &Messages{
 	ScheduledEndAt:          "Scheduled end at",
 	DateTimePickerClearText: "Clear",
 	DateTimePickerOkText:    "OK",
-	CreatedSuccessfully:     "Created Successfully",
+	SaveAsNewVersion:        "Save As New Version",
+	SuccessfullyCreated:     "Successfully Created",
 }
 
 var Messages_zh_CN = &Messages{
@@ -44,7 +46,8 @@ var Messages_zh_CN = &Messages{
 	ScheduledEndAt:          "预计结束时间",
 	DateTimePickerClearText: "清空",
 	DateTimePickerOkText:    "确定",
-	CreatedSuccessfully:     "成功创建",
+	SaveAsNewVersion:        "保存为一个新版本",
+	SuccessfullyCreated:     "成功创建",
 }
 
 func GetStatusText(status string, msgr *Messages) string {

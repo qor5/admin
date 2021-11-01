@@ -18,20 +18,30 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 	for _, m := range models {
 		m.RightDrawerWidth("1200")
 		m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(func(ctx *web.EventContext) h.HTMLComponent {
+			gmsgr := presets.MustGetMessages(ctx.R)
+			var buttonLabel = gmsgr.Create
+			if ctx.Event.Params[0] != "" {
+				buttonLabel = gmsgr.Update
+			}
+
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
 			return h.Components(
 				VSpacer(),
-				VBtn("Save as new version").
+				VBtn(msgr.SaveAsNewVersion).
 					Color("secondary").
 					Attr("@click", web.Plaid().
 						EventFunc(saveNewVersionEvent, ctx.Event.Params...).
 						URL(m.Info().ListingHref()).
-						Go()),
-				VBtn("Update").
+						Go(),
+					).Disabled(ctx.Event.Params[0] == ""),
+				VBtn(buttonLabel).
 					Color("primary").
 					Attr("@click", web.Plaid().
 						EventFunc(actions.Update, ctx.Event.Params...).
 						URL(m.Info().ListingHref()).
-						Go()),
+						Go(),
+					),
 			)
 		})
 		m.Listing().Searcher(searcher(db, m))

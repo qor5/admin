@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
@@ -30,7 +29,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 		lv := map[string]interface{}{}
 		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
-			Where("id = ? AND status = 'Published'", id).
+			Where("id = ? AND status = ?", id, publish.StatusOnline).
 			First(&lv)
 		if len(lv) > 0 {
 			ov.AppendChildren(
@@ -62,7 +61,10 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			tr := h.Tr(
 				h.Td(h.Button(fmt.Sprint(r["version"]))),
 				h.Td(h.Button(fmt.Sprint(r["status"]))),
-			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprint(fmt.Sprint(r["id"])), fmt.Sprint(r["version"])).Go())
+			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprintf("%v_%v", r["id"], r["version"])).Go())
+			if r["version"] == segs[1] {
+				tr.Class("deep-purple white--text")
+			}
 			tbody.AppendChildren(tr)
 		}
 
@@ -75,12 +77,11 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.Event.Params[0]
-		version := ctx.Event.Params[1]
 
 		eb := mb.Editing()
 
 		obj := mb.NewModel()
-		obj, err = eb.Fetcher(obj, fmt.Sprintf("%v_%v", id, version), ctx)
+		obj, err = eb.Fetcher(obj, id, ctx)
 
 		eb.UpdateRightDrawerContent(ctx, &r, obj, "", err)
 		return
@@ -91,7 +92,6 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		segs := strings.Split(ctx.Event.Params[0], "_")
 		id := segs[0]
-		//version := ctx.Event.Params[1]
 
 		var newObj = mb.NewModel()
 		// don't panic for fields that set in SetterFunc
@@ -105,6 +105,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		}
 
 		vErr := me.RunSetterFunc(ctx, &r, obj, newObj)
+
 		if vErr.HaveErrors() {
 			return
 		}
@@ -117,7 +118,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 			return
 		}
 
-		version := time.Now().Format("2006-01-02")
+		version := db.NowFunc().Format("2006-01-02")
 		var count int64
 		db.Model(newObj).Where("id = ? AND version like ?", id, version+"%").Count(&count)
 
@@ -139,7 +140,8 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		me.UpdateRightDrawerContent(ctx, &r, obj, msgr.CreatedSuccessfully, nil)
+		me.UpdateRightDrawerContent(ctx, &r, obj, msgr.SuccessfullyCreated, nil)
+
 		return
 	}
 }
