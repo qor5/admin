@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"github.com/qor/qor5/publish"
 	"net/http"
 	"reflect"
 	"strings"
@@ -77,7 +78,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 }
 
 func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
-	list := pm.Listing("ID", "Title", "Slug", "Status")
+	list := pm.Listing("ID", "Title", "Slug", "Draft Count", "Status")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		return h.Td(
@@ -87,6 +88,12 @@ func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
 				Target("_blank"),
 			VIcon("open_in_new").Size(16).Class("ml-1"),
 		)
+	})
+	list.Field("Draft Count").ComponentFunc(func(obj interface{}, _ *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
+		var count int64
+		b.db.Model(&Page{}).Where("id = ? AND status = ?", obj.(*Page).ID, publish.StatusDraft).Count(&count)
+
+		return h.Td(h.Text(fmt.Sprint(count)))
 	})
 
 	pm.Editing("Status", "Schedule", "Title", "Slug")
