@@ -18,7 +18,7 @@ import (
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		segs := strings.Split(ctx.Event.Params[0], "_")
+		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -35,16 +35,15 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			Where("id = ? AND status = ?", id, publish.StatusOnline).
 			First(&lv)
 		if len(lv) > 0 {
-			ov.AppendChildren(
-				VSimpleTable(
-					h.Tbody(
-						h.Tr(
-							h.Td(h.Button(fmt.Sprint(lv["version"]))),
-							h.Td(h.Button(fmt.Sprint(lv["status"]))),
-						).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprintf("%v_%v", lv["id"], lv["version"])).Go()),
-					),
-				),
-			)
+			tr := h.Tr(
+				h.Td(h.Button(fmt.Sprint(lv["version"]))),
+				h.Td(h.Button(fmt.Sprint(lv["status"]))),
+			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", lv["id"], lv["version"])).Go())
+			if lv["version"] == segs[1] {
+				tr.Class("deep-purple white--text")
+			}
+
+			ov.AppendChildren(VSimpleTable(h.Tbody(tr)))
 		}
 
 		c.AppendChildren(h.Br())
@@ -64,7 +63,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			tr := h.Tr(
 				h.Td(h.Button(fmt.Sprint(r["version"]))),
 				h.Td(h.Button(fmt.Sprint(r["status"]))),
-			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprintf("%v_%v", r["id"], r["version"])).Go())
+			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go())
 			if r["version"] == segs[1] {
 				tr.Class("deep-purple white--text")
 			}
@@ -79,21 +78,23 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.Event.Params[0]
+		id := ctx.R.FormValue("id")
 
 		eb := mb.Editing()
 
 		obj := mb.NewModel()
 		obj, err = eb.Fetcher(obj, id, ctx)
 
-		eb.UpdateRightDrawerContent(ctx, &r, obj, "", err)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
+		eb.UpdateOverlayContent(ctx, &r, obj, msgr.SwitchedToNewVersion, err)
 		return
 	}
 }
 
 func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		segs := strings.Split(ctx.Event.Params[0], "_")
+		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
 
 		var newObj = mb.NewModel()
@@ -134,18 +135,18 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		if me.Validator != nil {
 			if vErr := me.Validator(obj, ctx); vErr.HaveErrors() {
-				me.UpdateRightDrawerContent(ctx, &r, obj, "", &vErr)
+				me.UpdateOverlayContent(ctx, &r, obj, "", &vErr)
 				return
 			}
 		}
 
-		if err = me.Saver(obj, ctx.Event.Params[0], ctx); err != nil {
-			me.UpdateRightDrawerContent(ctx, &r, obj, "", err)
+		if err = me.Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
+			me.UpdateOverlayContent(ctx, &r, obj, "", err)
 			return
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		ctx.Flash = msgr.SuccessfullyCreated
+		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 		r.Reload = true
 
 		return

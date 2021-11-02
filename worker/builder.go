@@ -143,6 +143,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		MenuIcon("smart_toy")
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
+	lb.RowMenu().Empty()
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 		return []*vuetifyx.FilterItem{
@@ -222,7 +223,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				ItemText("Label").
 				ItemValue("Value").
 				Attr(web.VFieldName("Job")...).
-				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Go()),
+				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Event(web.Var("$event")).Go()),
 			web.Portal().Name("worker_jobEditingContent"),
 		)
 	})
@@ -287,9 +288,17 @@ func (b *Builder) Configure(pb *presets.Builder) {
 						Div().Class("d-flex mt-3").Children(
 							VSpacer(),
 							VBtn(msgr.ActionCancelJob).Color("error").Class("mr-2").
-								OnClick("worker_abortJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+								Attr("@click", web.Plaid().
+									EventFunc("worker_abortJob").
+									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
+									Query("job", qorJob.Job).
+									Go()),
 							VBtn(msgr.ActionUpdateJob).Color("primary").
-								OnClick("worker_updateJob", fmt.Sprintf("%d", qorJob.ID), qorJob.Job),
+								Attr("@click", web.Plaid().
+									EventFunc("worker_updateJob").
+									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
+									Query("job", qorJob.Job).
+									Go()),
 						),
 					),
 				}
@@ -310,7 +319,10 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			).Else(
 				Div(
 					web.Portal().
-						EventFunc("worker_updateJobProgressing", fmt.Sprintf("%d", qorJob.ID), qorJob.Job).
+						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
+							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
+							Query("job", qorJob.Job),
+						).
 						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
 				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
 			),
@@ -336,8 +348,8 @@ func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.Ev
 func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.Event.ParamAsInt(0))
-	qorJobName := ctx.Event.Params[1]
+	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
 		return er, pErr
@@ -390,8 +402,8 @@ func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
 }
 
 func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, err error) {
-	qorJobID := uint(ctx.Event.ParamAsInt(0))
-	qorJobName := ctx.Event.Params[1]
+	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
 		return er, pErr
@@ -423,8 +435,8 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.Event.ParamAsInt(0))
-	qorJobName := ctx.Event.Params[1]
+	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
 		return er, pErr
@@ -473,8 +485,8 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.Event.ParamAsInt(0))
-	qorJobName := ctx.Event.Params[1]
+	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobName := ctx.R.FormValue("job")
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
 	if err != nil {
@@ -554,11 +566,19 @@ func jobProgressing(
 				VSpacer(),
 				If(inRefresh,
 					VBtn(msgr.ActionAbortJob).Color("error").
-						OnClick("worker_abortJob", fmt.Sprintf("%d", id), job),
+						Attr("@click", web.Plaid().
+							EventFunc("worker_abortJob").
+							Query("jobID", fmt.Sprintf("%d", id)).
+							Query("job", job).
+							Go()),
 				),
 				If(status == JobStatusDone,
 					VBtn(msgr.ActionRerunJob).Color("primary").
-						OnClick("worker_rerunJob", fmt.Sprintf("%d", id), job),
+						Attr("@click", web.Plaid().
+							EventFunc("worker_rerunJob").
+							Query("jobID", fmt.Sprintf("%d", id)).
+							Query("job", job).
+							Go()),
 				),
 			),
 		),

@@ -132,7 +132,12 @@ func (collection *Collection) renderGlobalSection(msgr *Messages, db *gorm.DB) h
 
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Save).Bind("loading", "vars.global_seo_loading").Color("primary").Large(true).Attr("@click", web.Plaid().EventFunc(saveCollectionEvent, collection.Name, "global_seo_loading").BeforeScript(`vars.global_seo_loading = true;`).Go()),
+			VBtn(msgr.Save).Bind("loading", "vars.global_seo_loading").
+				Color("primary").Large(true).Attr("@click",
+				web.Plaid().EventFunc(saveCollectionEvent).
+					Query("seoName", collection.Name).
+					Query("loadingName", "global_seo_loading").
+					BeforeScript(`vars.global_seo_loading = true;`).Go()),
 		).Attr(web.InitContextVars, `{global_seo_loading: false}`),
 	)
 }
@@ -161,7 +166,12 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 				),
 				VCardActions(
 					VSpacer(),
-					VBtn(msgr.Save).Bind("loading", fmt.Sprintf("vars.%s", loadingName)).Color("primary").Large(true).Attr("@click", web.Plaid().EventFunc(saveCollectionEvent, seo.Name, loadingName).BeforeScript(fmt.Sprintf("vars.%s = true;", loadingName)).Go()),
+					VBtn(msgr.Save).Bind("loading", fmt.Sprintf("vars.%s", loadingName)).Color("primary").Large(true).
+						Attr("@click", web.Plaid().
+							EventFunc(saveCollectionEvent).
+							Query("seoName", seo.Name).
+							Query("loadingName", loadingName).
+							BeforeScript(fmt.Sprintf("vars.%s = true;", loadingName)).Go()),
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, loadingName)),
 			),
 		)
@@ -270,11 +280,8 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 
 func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		if len(ctx.Event.Params) != 2 {
-			return
-		}
 
-		prefix := ctx.Event.Params[0]
+		prefix := ctx.R.FormValue("seoName")
 
 		setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
 		err = db.Where("name = ?", prefix).First(setting).Error
@@ -331,7 +338,7 @@ func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
 			return
 		}
 
-		r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.Event.Params[1])
+		r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.R.FormValue("loadingName"))
 		return
 	}
 }

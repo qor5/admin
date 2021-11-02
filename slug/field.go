@@ -56,7 +56,7 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 			Value(field.Value(obj)).
 			Attr("v-debounce:input", "300").
 			Attr("@input:debounced", web.Plaid().
-				EventFunc(convertToSlugEvent, slugTitle).Go()),
+				EventFunc(convertToSlugEvent).Query("title", slugTitle).Go()),
 
 		VRow(
 			VCol(
@@ -84,11 +84,8 @@ func SlugEditingSetterFunc(obj interface{}, field *presets.FieldContext, ctx *we
 }
 
 func convertToSlug(ctx *web.EventContext) (r web.EventResponse, err error) {
-	if len(ctx.Event.Params) == 0 {
-		return
-	}
 
-	slugFieldTitle := ctx.Event.Params[0]
+	slugFieldTitle := ctx.R.FormValue("title")
 	checked := ctx.R.FormValue(slugCheckBoxName(slugFieldTitle))
 	if checked != "checked" {
 		return

@@ -23,7 +23,7 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 		m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(func(ctx *web.EventContext) h.HTMLComponent {
 			gmsgr := presets.MustGetMessages(ctx.R)
 			var buttonLabel = gmsgr.Create
-			if ctx.Event.Params[0] != "" {
+			if ctx.R.FormValue("id") != "" {
 				buttonLabel = gmsgr.Update
 			}
 
@@ -34,14 +34,14 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 				VBtn(msgr.SaveAsNewVersion).
 					Color("secondary").
 					Attr("@click", web.Plaid().
-						EventFunc(saveNewVersionEvent, ctx.Event.Params...).
+						EventFunc(saveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
 						URL(m.Info().ListingHref()).
 						Go(),
-					).Disabled(ctx.Event.Params[0] == ""),
+					).Disabled(ctx.R.FormValue("id") == ""),
 				VBtn(buttonLabel).
 					Color("primary").
 					Attr("@click", web.Plaid().
-						EventFunc(actions.Update, ctx.Event.Params...).
+						EventFunc(actions.Update).Query("id", ctx.R.FormValue("id")).
 						URL(m.Info().ListingHref()).
 						Go(),
 					),
@@ -50,7 +50,7 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 		m.Listing().Searcher(searcher(db, m))
 
 		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			if ctx.Event.Params[0] == "" {
+			if ctx.R.FormValue("id") == "" {
 				version := db.NowFunc().Format("2006-01-02")
 				if err := reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v01", version)); err != nil {
 					return

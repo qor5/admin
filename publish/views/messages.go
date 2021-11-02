@@ -17,6 +17,7 @@ type Messages struct {
 	DateTimePickerClearText string
 	DateTimePickerOkText    string
 	SaveAsNewVersion        string
+	SwitchedToNewVersion    string
 	SuccessfullyCreated     string
 	OnlineVersion           string
 	VersionsList            string
@@ -35,6 +36,7 @@ var Messages_en_US = &Messages{
 	DateTimePickerClearText: "Clear",
 	DateTimePickerOkText:    "OK",
 	SaveAsNewVersion:        "Save As New Version",
+	SwitchedToNewVersion:    "Switched To New Version",
 	SuccessfullyCreated:     "Successfully Created",
 	OnlineVersion:           "Online Version",
 	VersionsList:            "Versions List",
@@ -53,6 +55,7 @@ var Messages_zh_CN = &Messages{
 	DateTimePickerClearText: "清空",
 	DateTimePickerOkText:    "确定",
 	SaveAsNewVersion:        "保存为一个新版本",
+	SwitchedToNewVersion:    "切换到新版本",
 	SuccessfullyCreated:     "成功创建",
 	OnlineVersion:           "在线版本",
 	VersionsList:            "版本列表",

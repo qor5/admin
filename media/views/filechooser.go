@@ -18,8 +18,8 @@ import (
 func fileChooser(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		field := ctx.Event.Params[0]
-		cfg := stringToCfg(ctx.Event.Params[1])
+		field := ctx.R.FormValue("field")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		portalName := mainPortalName(field)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -46,7 +46,9 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 								HideDetails(true).
 								Value("").
 								Attr("@keyup.enter", web.Plaid().
-									EventFunc(imageSearchEvent, field, h.JSONString(cfg)).
+									EventFunc(imageSearchEvent).
+									Query("field", field).
+									FieldValue("cfg", h.JSONString(cfg)).
 									FieldValue(searchKeywordName(field), web.Var("$event")).
 									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
@@ -132,7 +134,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								web.Plaid().
 									BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
 									FieldValue("NewFiles", web.Var("$event")).
-									EventFunc(uploadFileEvent, field, h.JSONString(cfg)).Go()),
+									EventFunc(uploadFileEvent).
+									Query("field", field).
+									FieldValue("cfg", h.JSONString(cfg)).
+									Go()),
 					).
 						Height(200).
 						Class("d-flex align-center justify-center").
@@ -182,7 +187,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					).Attr("role", "button").
 						Attr("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-							EventFunc(chooseFileEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+							EventFunc(chooseFileEvent).
+							Query("field", field).
+							Query("id", fmt.Sprint(f.ID)).
+							FieldValue("cfg", h.JSONString(cfg)).
 							Go()),
 					VCardText(
 						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
@@ -191,7 +199,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Placeholder(msgr.DescriptionForAccessibility).
 							Value(f.File.Description).
 							Attr("@change", web.Plaid().
-								EventFunc(updateDescriptionEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+								EventFunc(updateDescriptionEvent).
+								Query("field", field).
+								Query("id", fmt.Sprint(f.ID)).
+								FieldValue("cfg", h.JSONString(cfg)).
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
 							).Readonly(updateDescIsAllowed(ctx.R, files[i]) != nil),
@@ -206,7 +217,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								Text(true).
 								Attr("@click",
 									web.Plaid().
-										EventFunc(deleteConfirmationEvent, field, fmt.Sprint(f.ID), h.JSONString(cfg)).
+										EventFunc(deleteConfirmationEvent).
+										Query("field", field).
+										Query("id", fmt.Sprint(f.ID)).
+										FieldValue("cfg", h.JSONString(cfg)).
 										Go(),
 								),
 						),
@@ -232,7 +246,9 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						Value(int(currentPageInt)).
 						Attr("@input", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent, field, h.JSONString(cfg)).
+							EventFunc(imageJumpPageEvent).
+							Query("field", field).
+							FieldValue("cfg", h.JSONString(cfg)).
 							Go()),
 				).Cols(10),
 			),
@@ -272,8 +288,8 @@ type uploadFiles struct {
 
 func uploadFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		cfg := stringToCfg(ctx.Event.Params[1])
+		field := ctx.R.FormValue("field")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		if err = uploadIsAllowed(ctx.R); err != nil {
 			return
@@ -322,9 +338,9 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 
 func chooseFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		id := ctx.Event.ParamAsInt(1)
-		cfg := stringToCfg(ctx.Event.Params[2])
+		field := ctx.R.FormValue("field")
+		id := ctx.QueryAsInt("id")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -374,8 +390,9 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 
 func searchFile(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		cfg := stringToCfg(ctx.Event.Params[1])
+		field := ctx.R.FormValue("field")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
+
 		ctx.R.Form[currentPageName(field)] = []string{"1"}
 
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
@@ -385,8 +402,8 @@ func searchFile(db *gorm.DB) web.EventFunc {
 
 func jumpPage(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Event.Params[0]
-		cfg := stringToCfg(ctx.Event.Params[1])
+		field := ctx.R.FormValue("field")
+		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
 		return
 	}
