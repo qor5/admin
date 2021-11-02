@@ -3,6 +3,7 @@ package exchange
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -120,6 +121,13 @@ func getIndirect(v reflect.Value) reflect.Value {
 	return getIndirect(reflect.Indirect(v))
 }
 
+func getIndirectStruct(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Struct {
+		return t
+	}
+	return getIndirectStruct(t.Elem())
+}
+
 func clearPrimaryKeyValue(v reflect.Value) {
 	t := v.Type()
 	if idf, ok := t.FieldByName("ID"); ok {
@@ -134,4 +142,64 @@ func clearPrimaryKeyValue(v reflect.Value) {
 		}
 		v.Field(i).Set(reflect.New(ft.Type).Elem())
 	}
+}
+
+func getParamsNumbers(n *int, t reflect.Type, associations []string) {
+	for i := 0; i < t.NumField(); i++ {
+		ft := t.Field(i)
+		isAssociation := false
+		for _, a := range associations {
+			if ft.Name == a {
+				isAssociation = true
+				break
+			}
+		}
+		if isAssociation {
+			continue
+		}
+		if ft.Type.Kind() == reflect.Struct && ft.Anonymous {
+			getParamsNumbers(n, ft.Type, nil)
+			continue
+		}
+		*n++
+	}
+}
+
+func splitInterfaceSlice(s []interface{}, size int) [][]interface{} {
+	groupsLen := int(math.Ceil(float64(len(s)) / float64(size)))
+	groups := make([][]interface{}, groupsLen)
+
+	idx := 0
+	for i := 0; i < groupsLen; i++ {
+		idx = i * size
+		if i != groupsLen-1 {
+			groups[i] = s[idx : idx+size]
+		} else {
+			groups[i] = s[idx:]
+		}
+	}
+
+	return groups
+}
+
+func splitReflectSliceValue(s reflect.Value, size int) []reflect.Value {
+	groupsLen := int(math.Ceil(float64(s.Len()) / float64(size)))
+	groups := make([]reflect.Value, 0, groupsLen)
+
+	idx := 0
+	for i := 0; i < groupsLen; i++ {
+		idx = i * size
+		endIdx := idx + size
+		if i == groupsLen-1 {
+			endIdx = s.Len()
+		}
+
+		vs := reflect.New(reflect.SliceOf(s.Type().Elem())).Elem()
+		for j := idx; j < endIdx; j++ {
+			vs = reflect.Append(vs, s.Index(j))
+		}
+		groups = append(groups, vs)
+	}
+
+	return groups
 }
