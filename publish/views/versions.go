@@ -2,6 +2,10 @@ package views
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
@@ -10,9 +14,6 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-	"reflect"
-	"strconv"
-	"strings"
 )
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
@@ -20,10 +21,12 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		segs := strings.Split(ctx.Event.Params[0], "_")
 		id := segs[0]
 
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
 		c := h.Div()
 
 		ov := VCard(
-			VCardTitle(h.Text("Online Version")),
+			VCardTitle(h.Text(msgr.OnlineVersion)),
 		)
 		c.AppendChildren(ov)
 
@@ -38,7 +41,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 						h.Tr(
 							h.Td(h.Button(fmt.Sprint(lv["version"]))),
 							h.Td(h.Button(fmt.Sprint(lv["status"]))),
-						).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprint(lv["id"]), fmt.Sprint(lv["version"])).Go()),
+						).Attr("@click", web.Plaid().EventFunc(switchVersionEvent, fmt.Sprintf("%v_%v", lv["id"], lv["version"])).Go()),
 					),
 				),
 			)
@@ -47,7 +50,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		c.AppendChildren(h.Br())
 
 		versionsList := VCard(
-			VCardTitle(h.Text("Versions List")),
+			VCardTitle(h.Text(msgr.VersionsList)),
 		)
 		c.AppendChildren(versionsList)
 
@@ -122,7 +125,10 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		var count int64
 		db.Model(newObj).Where("id = ? AND version like ?", id, version+"%").Count(&count)
 
-		if err = reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v%v", version, count+1)); err != nil {
+		if err = reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v%02v", version, count+1)); err != nil {
+			return
+		}
+		if err = reflectutils.Set(obj, "Version.ParentVersion", segs[1]); err != nil {
 			return
 		}
 
@@ -133,14 +139,14 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 			}
 		}
 
-		err1 := me.Saver(obj, ctx.Event.Params[0], ctx)
-		if err1 != nil {
-			me.UpdateRightDrawerContent(ctx, &r, obj, "", err1)
+		if err = me.Saver(obj, ctx.Event.Params[0], ctx); err != nil {
+			me.UpdateRightDrawerContent(ctx, &r, obj, "", err)
 			return
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		me.UpdateRightDrawerContent(ctx, &r, obj, msgr.SuccessfullyCreated, nil)
+		ctx.Flash = msgr.SuccessfullyCreated
+		r.Reload = true
 
 		return
 	}

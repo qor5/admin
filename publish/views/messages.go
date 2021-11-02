@@ -1,6 +1,8 @@
 package views
 
-import "github.com/qor/qor5/publish"
+import (
+	"github.com/qor/qor5/publish"
+)
 
 type Messages struct {
 	StatusDraft             string
@@ -16,6 +18,8 @@ type Messages struct {
 	DateTimePickerOkText    string
 	SaveAsNewVersion        string
 	SuccessfullyCreated     string
+	OnlineVersion           string
+	VersionsList            string
 }
 
 var Messages_en_US = &Messages{
@@ -32,6 +36,8 @@ var Messages_en_US = &Messages{
 	DateTimePickerOkText:    "OK",
 	SaveAsNewVersion:        "Save As New Version",
 	SuccessfullyCreated:     "Successfully Created",
+	OnlineVersion:           "Online Version",
+	VersionsList:            "Versions List",
 }
 
 var Messages_zh_CN = &Messages{
@@ -48,6 +54,8 @@ var Messages_zh_CN = &Messages{
 	DateTimePickerOkText:    "确定",
 	SaveAsNewVersion:        "保存为一个新版本",
 	SuccessfullyCreated:     "成功创建",
+	OnlineVersion:           "在线版本",
+	VersionsList:            "版本列表",
 }
 
 func GetStatusText(status string, msgr *Messages) string {

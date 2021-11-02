@@ -1,12 +1,15 @@
 package views
 
 import (
+	"fmt"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -45,6 +48,18 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 			)
 		})
 		m.Listing().Searcher(searcher(db, m))
+
+		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			if ctx.Event.Params[0] == "" {
+				version := db.NowFunc().Format("2006-01-02")
+				if err := reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v01", version)); err != nil {
+					return
+				}
+			}
+
+			return
+		})
+
 		registerEventFuncs(db, m, publisher)
 	}
 

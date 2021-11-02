@@ -1,6 +1,8 @@
 package publish
 
-import "time"
+import (
+	"time"
+)
 
 type Schedule struct {
 	ScheduledStartAt *time.Time `gorm:"index"`
