@@ -49,7 +49,16 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		//if v, ok := obj.(publish.VersionInterface); ok {
 		//	params = append(params, v.GetVersionName())
 		//}
+
 		return h.Div(
+			VStepper(
+				VStepperHeader(
+					VStepperStep(h.Text(msgr.StatusDraft)).Step(0).Complete(s.GetStatus() == publish.StatusDraft),
+					VDivider(),
+					VStepperStep(h.Text(msgr.StatusOnline)).Step(0).Complete(s.GetStatus() == publish.StatusOnline),
+				),
+			),
+			h.Br(),
 			btn,
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 				FieldValue("objJson", jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).

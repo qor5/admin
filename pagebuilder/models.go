@@ -3,16 +3,15 @@ package pagebuilder
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/qor/qor5/publish"
+	"gorm.io/gorm"
 )
 
 type Page struct {
-	ID    uint `gorm:"primarykey"`
+	gorm.Model
 	Title string
 	Slug  string
-	Ti    *time.Time
 
 	publish.Status
 	publish.Schedule

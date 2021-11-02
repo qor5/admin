@@ -21,9 +21,13 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		if id == "" {
+			return nil
+		}
 
 		c := h.Div()
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		ov := VCard(
 			VCardTitle(h.Text(msgr.OnlineVersion)),

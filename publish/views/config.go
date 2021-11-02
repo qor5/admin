@@ -19,12 +19,13 @@ const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
 func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
-		m.RightDrawerWidth("1200")
 		m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(func(ctx *web.EventContext) h.HTMLComponent {
 			gmsgr := presets.MustGetMessages(ctx.R)
 			var buttonLabel = gmsgr.Create
+			m.RightDrawerWidth("800")
 			if ctx.R.FormValue("id") != "" {
 				buttonLabel = gmsgr.Update
+				m.RightDrawerWidth("1200")
 			}
 
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -56,8 +57,6 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 					return
 				}
 			}
-
-			return
 		})
 
 		registerEventFuncs(db, m, publisher)
