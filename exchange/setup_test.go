@@ -20,6 +20,7 @@ var tables = []interface{}{
 	&TestExchangeCompositePrimaryKeyModel{},
 	&Phone{},
 	&Intro{},
+	&ExtraIntro{},
 	&Camera{},
 	&ShoppingSite{},
 }
@@ -91,31 +92,3 @@ func ptrInt(v int) *int {
 func ptrTime(v time.Time) *time.Time {
 	return &v
 }
-
-// type Variant struct {
-// 	gorm.Model
-// 	Code              string `sql:"not null;"`
-// 	ProductID         uint
-// 	ProductCode       string
-// 	Images            string
-// 	ExternalID        string
-// 	Price             uint64
-// 	SellingPrice      uint64
-// 	VolumeCoefficient int64 // For convenience store pick store
-// }
-
-// func TestImportVariants(t *testing.T) {
-// 	var err error
-// 	err = db.AutoMigrate(&Variant{})
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	exchange.NewImporter(&Variant{}).Metas(
-// 		exchange.NewMeta("Code").Header("JANコード"),
-// 		exchange.NewMeta("ProductCode").Header("品番"),
-// 		exchange.NewMeta("Price").Header("上代1"),
-// 		exchange.NewMeta("SellingPrice").Header("上代2"),
-// 		// exchange.NewMeta("ColorCode").Header("カラー"),
-// 	)
-// }

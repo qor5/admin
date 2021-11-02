@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/spf13/cast"
@@ -38,24 +37,31 @@ func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
 		return err
 	}
 
-	var records reflect.Value
+	records := reflect.New(reflect.SliceOf(ep.rtResource)).Elem()
 	{
-		iRecords := reflect.New(reflect.SliceOf(ep.rtResource)).Interface()
-		var orderBy string
-		for i, m := range ep.pkMetas {
-			if i > 0 {
-				orderBy += ", "
-			}
-			orderBy += fmt.Sprintf("%s asc", m.snakeField)
+		// gorm using id to order in FindInBatches
+		// var orderBy string
+		// for i, m := range ep.pkMetas {
+		// 	if i > 0 {
+		// 		orderBy += ", "
+		// 	}
+		// 	orderBy += fmt.Sprintf("%s asc", m.snakeField)
+		// }
+		chunkRecords := reflect.New(reflect.SliceOf(ep.rtResource)).Interface()
+		batchSize := 65000
+		if len(ep.pkMetas) > 0 {
+			batchSize /= len(ep.pkMetas)
 		}
-		err = preloadDB(db, ep.associations).Model(ep.resource).
-			Order(orderBy).
-			Find(iRecords).
-			Error
+		err = preloadDB(db, ep.associations).
+			Model(ep.resource).
+			// Order(orderBy).
+			FindInBatches(chunkRecords, batchSize, func(tx *gorm.DB, batch int) error {
+				records = reflect.AppendSlice(records, reflect.ValueOf(chunkRecords).Elem())
+				return nil
+			}).Error
 		if err != nil {
 			return err
 		}
-		records = reflect.ValueOf(iRecords).Elem()
 	}
 
 	headers := make([]string, 0, len(ep.metas))

@@ -111,6 +111,20 @@ func TestImport(t *testing.T) {
 		},
 
 		{
+			name: "missing columns",
+			metas: []*exchange.Meta{
+				exchange.NewMeta("ID").PrimaryKey(true),
+				exchange.NewMeta("Name").Header("Nameeee"),
+				exchange.NewMeta("Age"),
+			},
+			csvContent: `ID,Nameeee
+1,Tom
+`,
+			expectRecords: nil,
+			expectError:   errors.New("column Age not found"),
+		},
+
+		{
 			name: "validator error",
 			metas: []*exchange.Meta{
 				exchange.NewMeta("ID").PrimaryKey(true),
