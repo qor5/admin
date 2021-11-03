@@ -12,7 +12,3 @@ type Writer interface {
 	WriteRow([]string) error
 	Flush() error
 }
-
-type MetaValues interface {
-	Get(field string) (val string)
-}
