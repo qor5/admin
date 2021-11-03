@@ -31,11 +31,13 @@ func (ep *Exporter) Associations(ts ...string) *Exporter {
 	return ep
 }
 
-func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
+func (ep *Exporter) Exec(db *gorm.DB, w Writer, opts ...ExporterExecOption) error {
 	err := ep.validateAndInit()
 	if err != nil {
 		return err
 	}
+
+	maxParamsPerSQL := ep.parseOptions(opts...)
 
 	records := reflect.New(reflect.SliceOf(ep.rtResource)).Elem()
 	{
@@ -48,7 +50,7 @@ func (ep *Exporter) Exec(db *gorm.DB, w Writer) error {
 		// 	orderBy += fmt.Sprintf("%s asc", m.snakeField)
 		// }
 		chunkRecords := reflect.New(reflect.SliceOf(ep.rtResource)).Interface()
-		batchSize := 65000
+		batchSize := maxParamsPerSQL
 		if len(ep.pkMetas) > 0 {
 			batchSize /= len(ep.pkMetas)
 		}
@@ -112,4 +114,18 @@ func (ep *Exporter) validateAndInit() error {
 	ep.rtResource = reflect.TypeOf(ep.resource)
 
 	return nil
+}
+
+func (ep *Exporter) parseOptions(opts ...ExporterExecOption) (
+	maxParamsPerSQL int,
+) {
+	maxParamsPerSQL = 65000
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case *maxParamsPerSQLOption:
+			maxParamsPerSQL = v.v
+		}
+	}
+
+	return maxParamsPerSQL
 }

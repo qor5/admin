@@ -6,6 +6,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+type MetaValues interface {
+	Get(field string) (val string)
+}
+
 type Meta struct {
 	field        string
 	snakeField   string

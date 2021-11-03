@@ -44,11 +44,13 @@ func (ip *Importer) Validators(vs ...func(metaValues MetaValues) error) *Importe
 	return ip
 }
 
-func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
+func (ip *Importer) Exec(db *gorm.DB, r Reader, opts ...ImporterExecOption) error {
 	err := ip.validateAndInit()
 	if err != nil {
 		return err
 	}
+
+	maxParamsPerSQL := ip.parseOptions(opts...)
 
 	fullPrimaryKeyValues := make([][]string, 0, r.Total())
 	allMetaValues := make([]url.Values, 0, r.Total())
@@ -107,14 +109,10 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 	// primarykeys:record
 	oldRecordsMap := make(map[string]interface{})
 	if len(fullPrimaryKeyValues) > 0 {
-		oldRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Interface()
-		oldRecordsFib := reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
+		oldRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Elem()
 		tx := preloadDB(db, ip.associations)
 		searchInKeys := false
-		searchInKeysParams := len(fullPrimaryKeyValues) * len(fullPrimaryKeyValues[0])
-		if searchInKeysParams <= 5000 {
-			searchInKeys = true
-		} else if searchInKeysParams <= 65000 {
+		{
 			var total int64
 			err = db.Model(ip.resource).Count(&total).Error
 			if err != nil {
@@ -125,40 +123,39 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 			}
 		}
 		if searchInKeys {
-			if len(ip.pkMetas) == 1 {
-				vs := make([]string, 0, len(fullPrimaryKeyValues))
-				for _, pkvs := range fullPrimaryKeyValues {
-					vs = append(vs, pkvs[0])
+			pkvsGroups := splitStringSliceSlice(fullPrimaryKeyValues, maxParamsPerSQL/len(ip.pkMetas))
+			for _, g := range pkvsGroups {
+				if len(ip.pkMetas) == 1 {
+					vs := make([]string, 0, len(g))
+					for _, pkvs := range g {
+						vs = append(vs, pkvs[0])
+					}
+					tx = tx.Where(fmt.Sprintf("%s in (?)", ip.pkMetas[0].snakeField), vs)
+				} else {
+					var pks []string
+					for _, m := range ip.pkMetas {
+						pks = append(pks, m.snakeField)
+					}
+					// only test this on Postgres, not sure if this is valid for other databases
+					tx = tx.Where(fmt.Sprintf("(%s) in (?)", strings.Join(pks, ",")), g)
 				}
-				tx = tx.Where(fmt.Sprintf("%s in (?)", ip.pkMetas[0].snakeField), vs)
-			} else {
-				var pkvs []string
-				for _, m := range ip.pkMetas {
-					pkvs = append(pkvs, m.snakeField)
-				}
-				// only test this on Postgres, not sure if this is valid for other databases
-				tx = tx.Where(fmt.Sprintf("(%s) in (?)", strings.Join(pkvs, ",")), fullPrimaryKeyValues)
-			}
 
-			err = tx.Find(oldRecords).Error
+				chunkRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Interface()
+				err = tx.Find(chunkRecords).Error
+				oldRecords = reflect.AppendSlice(oldRecords, reflect.ValueOf(chunkRecords).Elem())
+			}
 		} else {
 			chunkRecords := reflect.New(reflect.SliceOf(ip.rtResource)).Interface()
-			err = tx.FindInBatches(chunkRecords, 65000/len(ip.pkMetas), func(tx *gorm.DB, batch int) error {
-				oldRecordsFib = reflect.AppendSlice(oldRecordsFib, reflect.ValueOf(chunkRecords).Elem())
+			err = tx.FindInBatches(chunkRecords, maxParamsPerSQL/len(ip.pkMetas), func(tx *gorm.DB, batch int) error {
+				oldRecords = reflect.AppendSlice(oldRecords, reflect.ValueOf(chunkRecords).Elem())
 				return nil
 			}).Error
 		}
 		if err != nil {
 			return err
 		}
-		var rv reflect.Value
-		if oldRecordsFib.Len() > 0 {
-			rv = oldRecordsFib
-		} else {
-			rv = reflect.ValueOf(oldRecords).Elem()
-		}
-		for i := 0; i < rv.Len(); i++ {
-			record := rv.Index(i)
+		for i := 0; i < oldRecords.Len(); i++ {
+			record := oldRecords.Index(i)
 			pkvs := make([]string, 0, len(ip.pkMetas))
 			for _, m := range ip.pkMetas {
 				pkvs = append(pkvs, fmt.Sprintf("%v", record.Elem().FieldByName(m.field).Interface()))
@@ -252,17 +249,17 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 
 	batchSize := 10000
 	{
-		max := 65000 / ip.resourceParams
+		max := maxParamsPerSQL / ip.resourceParams
 		for i, a := range ip.associations {
 			l, ok := maxAssociationsRecordsLen[a]
 			if ok {
 				if l > 0 {
-					if v := 65000 / (l * ip.associationsParams[i]); max > v {
+					if v := maxParamsPerSQL / (l * ip.associationsParams[i]); max > v {
 						max = v
 					}
 				}
 			} else {
-				if v := 65000 / ip.associationsParams[i]; max > v {
+				if v := maxParamsPerSQL / ip.associationsParams[i]; max > v {
 					max = v
 				}
 			}
@@ -274,7 +271,7 @@ func (ip *Importer) Exec(db *gorm.DB, r Reader) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		for _, a := range ip.associations {
 			if recordsToClearAssociations[a].Len() > 0 {
-				rgs := splitReflectSliceValue(recordsToClearAssociations[a], 65000/len(ip.pkMetas))
+				rgs := splitReflectSliceValue(recordsToClearAssociations[a], maxParamsPerSQL/len(ip.pkMetas))
 				for _, g := range rgs {
 					err = db.Model(g.Interface()).Association(a).Clear()
 					if err != nil {
@@ -348,4 +345,18 @@ func (ip *Importer) validateAndInit() error {
 	}
 
 	return nil
+}
+
+func (ip *Importer) parseOptions(opts ...ImporterExecOption) (
+	maxParamsPerSQL int,
+) {
+	maxParamsPerSQL = 65000
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case *maxParamsPerSQLOption:
+			maxParamsPerSQL = v.v
+		}
+	}
+
+	return maxParamsPerSQL
 }
