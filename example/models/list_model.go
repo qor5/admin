@@ -22,7 +22,7 @@ func (this ListModel) TableName() string {
 	return "list_models"
 }
 
-func (this ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
 		Content:  this.getPublishContent(),
@@ -39,7 +39,8 @@ func (this ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs 
 	this.SetOnlineUrl(this.getPublishUrl())
 	return
 }
-func (this ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+
+func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.GetOnlineUrl(),
 		IsDelete: true,

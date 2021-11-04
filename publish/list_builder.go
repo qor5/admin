@@ -32,7 +32,7 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 
 		//&[]models.ListModel{}
 		getOldItemsFunc: func(record interface{}) (result []interface{}) {
-			err := db.Where("status = ? AND page_number <> ?", StatusOnline, 0).Find(&record).Error
+			err := db.Where("status = ? AND page_number <> ? AND list_updated = ? AND list_deleted = ?", StatusOnline, 0, false, false).Find(&record).Error
 			if err != nil {
 				panic(err)
 			}
