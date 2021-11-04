@@ -2,10 +2,12 @@ package publish
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/qor/oss"
 	"github.com/qor/qor5/utils"
+	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +16,7 @@ type ListBuilder struct {
 	storage            oss.StorageInterface
 	context            context.Context
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
-	getOldItemsFunc    func(modelSlice interface{})
+	getOldItemsFunc    func(record interface{}) (result []interface{})
 	totalNumberPerPage int
 	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
 }
@@ -28,15 +30,22 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 		needNextPageFunc: func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool {
 			return currentPageNumber*totalNumberPerPage+int(0.5*float64(totalNumberPerPage)) <= totalNumberOfItems
 		},
-		getOldItemsFunc: func(modelSlice interface{}) {
-			db.Where("status = ?", StatusOnline).Find(&modelSlice)
+
+		//&[]models.ListModel{}
+		getOldItemsFunc: func(record interface{}) (result []interface{}) {
+			err := db.Where("status = ?", StatusOnline).Find(&record).Error
+			if err != nil {
+				panic(err)
+			}
+			result = sliceutils.Wrap(record)
+			return
 		},
 		totalNumberPerPage: 30,
 		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
 			for _, onePageItems := range result {
 				objs = append(objs, &PublishAction{
 					Url:      lp.GetListUrl(onePageItems.PageNumber),
-					Content:  lp.GetListContent(onePageItems.Items),
+					Content:  lp.GetListContent(onePageItems),
 					IsDelete: false,
 				})
 			}
@@ -45,24 +54,31 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 	}
 }
 
+func getAddItems(db *gorm.DB, record interface{}) (result []interface{}) {
+	db.Where("status = ? AND list_updated = ?", StatusOnline, true).Find(&record)
+	result = sliceutils.Wrap(record)
+	return
+}
+
+func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}) {
+	db.Where("status = ? AND list_deleted = ?", StatusOnline, true).Find(&record)
+	result = sliceutils.Wrap(record)
+	return
+}
+
 type ListPublisher interface {
+	TableName() string
 	GetListUrl(pageNumber int) string
-	GetListContent(Items []interface{}) string
+	GetListContent(onePageItems *OnePageItems) string
 	Sort(array []interface{})
 }
 
-func (b *ListBuilder) PublishList(model interface{}, modelSlice []interface{}) (err error) {
+func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (err error) {
 	lp := model.(ListPublisher)
 
-	var oldItems, addItems, deleteItems []interface{}
-	b.getOldItemsFunc(&modelSlice)
-	oldItems = modelSlice
-
-	getAddItems(b.db, &modelSlice)
-	addItems = modelSlice
-
-	getDeleteItems(b.db, &modelSlice)
-	deleteItems = modelSlice
+	oldItems := b.getOldItemsFunc(modelSlice)
+	addItems := getAddItems(b.db, modelSlice)
+	deleteItems := getDeleteItems(b.db, modelSlice)
 
 	var newItems []interface{}
 	if deleteItems != nil {
@@ -94,6 +110,7 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice []interface{}) (
 	var objs []*PublishAction
 	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
 	for _, obj := range objs {
+		fmt.Printf("uploading %s \n", obj.Url)
 		_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
 		if err != nil {
 			return
@@ -107,7 +124,7 @@ func (b *ListBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNum
 	return b
 }
 
-func (b *ListBuilder) GetOldItemsFunc(f func(modelSlice interface{})) *ListBuilder {
+func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []interface{})) *ListBuilder {
 	b.getOldItemsFunc = f
 	return b
 }
@@ -186,14 +203,4 @@ func getRestartFromIndex(old, new []*OnePageItems) int {
 		}
 	}
 	return 0
-}
-
-func getAddItems(db *gorm.DB, modelSlice interface{}) {
-	db.Where("status = ? AND list_updated = ?", StatusOnline, true).Find(&modelSlice)
-	return
-}
-
-func getDeleteItems(db *gorm.DB, modelSlice interface{}) {
-	db.Where("status = ? AND list_deleted = ?", StatusOnline, true).Find(&modelSlice)
-	return
 }

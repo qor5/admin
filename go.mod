@@ -27,6 +27,7 @@ require (
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/jsontyperegistry v0.0.2
+	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1 // indirect
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	github.com/vedranvuk/errorex v0.4.1 // indirect

@@ -62,9 +62,11 @@ func (b *Builder) Publish(record interface{}) (err error) {
 			}
 		}
 
-		if r, ok := record.(ListInterface); ok {
+		if _, ok := record.(ListInterface); ok {
 			// Update ListDeleted, ListUpdated
-			r.SetListUpdated(true)
+			if err = b.db.Model(record).Updates(map[string]interface{}{"list_updated": true}).Error; err != nil {
+				return
+			}
 		}
 
 		// TODO update schedule
@@ -98,9 +100,11 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 			}
 		}
 
-		if r, ok := record.(ListInterface); ok {
+		if _, ok := record.(ListInterface); ok {
 			// Update ListDeleted, ListUpdated
-			r.SetListDeleted(true)
+			if err = b.db.Model(record).Updates(map[string]interface{}{"list_deleted": true}).Error; err != nil {
+				return
+			}
 		}
 
 		// unpublish callback
