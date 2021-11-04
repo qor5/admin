@@ -57,7 +57,7 @@ func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
 }
 
 func (ab *ActivityBuilder) RegisterModel(model interface{}) *ModelBuilder {
-	mb := &ModelBuilder{name: reflect.TypeOf(model).Name()}
+	mb := &ModelBuilder{name: reflect.Indirect(reflect.ValueOf(model)).Type().Name()}
 	ab.models = append(ab.models, mb)
 	return mb
 }
@@ -107,7 +107,7 @@ func (mb *ModelBuilder) getModelKey(v interface{}) string {
 }
 
 func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
-	name := reflect.TypeOf(v).Name()
+	name := reflect.Indirect(reflect.ValueOf(v)).Type().Name()
 	for _, m := range ab.models {
 		if m.name == name {
 			return m
