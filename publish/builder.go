@@ -40,7 +40,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 		if r, ok := record.(PublishInterface); ok {
 			var objs []*PublishAction
 			objs = r.GetPublishActions(b.db, b.context)
-			if err = b.UploadOrDelete(objs); err != nil {
+			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}
 		}
@@ -88,7 +88,7 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 		if r, ok := record.(UnPublishInterface); ok {
 			var objs []*PublishAction
 			objs = r.GetUnPublishActions(b.db, b.context)
-			if err = b.UploadOrDelete(objs); err != nil {
+			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}
 		}
@@ -122,14 +122,14 @@ func (b *Builder) Sync(models ...interface{}) error {
 	return nil
 }
 
-func (b *Builder) UploadOrDelete(objs []*PublishAction) (err error) {
+func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
-			err = b.storage.Delete(obj.Url)
+			err = storage.Delete(obj.Url)
 		} else {
 			fmt.Printf("uploading %s \n", obj.Url)
-			_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
+			_, err = storage.Put(obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {
 			return

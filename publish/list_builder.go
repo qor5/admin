@@ -3,8 +3,6 @@ package publish
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/qor/oss"
 	"github.com/qor/qor5/utils"
@@ -117,12 +115,8 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
-		for _, obj := range objs {
-			fmt.Printf("uploading %s \n", obj.Url)
-			_, err1 = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
-			if err1 != nil {
-				return
-			}
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
 		}
 
 		for _, items := range newResult[restartFrom:] {
