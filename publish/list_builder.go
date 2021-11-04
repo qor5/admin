@@ -77,13 +77,14 @@ type ListPublisher interface {
 func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (err error) {
 	lp := model.(ListPublisher)
 
-	oldItems := b.getOldItemsFunc(modelSlice)
 	addItems := getAddItems(b.db, modelSlice)
 	deleteItems := getDeleteItems(b.db, modelSlice)
 
 	if len(deleteItems) == 0 && len(addItems) == 0 {
 		return nil
 	}
+
+	oldItems := b.getOldItemsFunc(modelSlice)
 
 	var newItems []interface{}
 	if len(deleteItems) != 0 {
