@@ -11,6 +11,7 @@ import (
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/jsontyperegistry"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -60,6 +61,8 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 		})
 
 		registerEventFuncs(db, m, publisher)
+
+		jsontyperegistry.MustRegisterType(m.NewModel())
 
 		m.Listing("Draft Count", "Online")
 		m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
