@@ -89,9 +89,11 @@ func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 		obj := mb.NewModel()
 		obj, err = eb.Fetcher(obj, id, ctx)
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		eb.UpdateOverlayContent(ctx, &r, obj, "", err)
 
-		eb.UpdateOverlayContent(ctx, &r, obj, msgr.SwitchedToNewVersion, err)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		presets.ShowMessage(&r, msgr.SwitchedToNewVersion, "")
+
 		return
 	}
 }
