@@ -27,7 +27,8 @@ func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var count int64
 		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusOnline).Count(&count)
-		var c h.HTMLComponent
+
+		c := h.Text("-")
 		if count > 0 {
 			c = VBadge().Color("green")
 		}
