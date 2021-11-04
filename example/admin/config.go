@@ -141,6 +141,12 @@ func NewConfig() Config {
 	configInputHarness(b, db)
 	configUser(b, db)
 
+	lp := publish.New(db, oss.Storage)
+	publish_view.Configure(b, db, lp, &models.ListModel{})
+	l := b.Model(&models.ListModel{})
+	l.Listing("ID", "Title", "Status")
+	l.Editing("Status", "Title")
+
 	_ = m
 	// Use m to customize the model, Or config more models here.
 
