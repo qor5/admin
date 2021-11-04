@@ -60,6 +60,10 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 		})
 
 		registerEventFuncs(db, m, publisher)
+
+		m.Listing("Draft Count", "Online")
+		m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
+		m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
 	}
 
 	b.FieldDefaults(presets.LIST).

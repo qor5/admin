@@ -9,9 +9,31 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/jsontyperegistry"
+	"gorm.io/gorm"
 )
+
+func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusDraft).Count(&count)
+		return h.Td(h.Text(fmt.Sprint(count)))
+	}
+}
+
+func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusOnline).Count(&count)
+		var c h.HTMLComponent
+		if count > 0 {
+			c = VBadge().Color("green")
+		}
+		return h.Td(c)
+	}
+}
 
 func StatusListFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
