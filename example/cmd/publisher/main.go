@@ -21,7 +21,8 @@ func main() {
 
 	listP := publish.NewListBuilder(db, storage)
 	go func() {
-		t := time.Tick(time.Second * 1)
+		t := time.Tick(time.Minute * 1)
+		listP.PublishList(models.ListModel{}, []*models.ListModel{})
 		for range t {
 			listP.PublishList(models.ListModel{}, []*models.ListModel{})
 		}

@@ -23,8 +23,16 @@ func (this *List) SetPosition(position int) {
 	this.Position = position
 }
 
+func (this List) GetListDeleted() bool {
+	return this.ListDeleted
+}
+
 func (this *List) SetListDeleted(listDeleted bool) {
 	this.ListDeleted = listDeleted
+}
+
+func (this List) GetListUpdated() bool {
+	return this.ListUpdated
 }
 
 func (this *List) SetListUpdated(listUpdated bool) {

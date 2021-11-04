@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -33,7 +34,7 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 
 		//&[]models.ListModel{}
 		getOldItemsFunc: func(record interface{}) (result []interface{}) {
-			err := db.Where("status = ?", StatusOnline).Find(&record).Error
+			err := db.Where("status = ? AND page_number <> ?", StatusOnline, 0).Find(&record).Error
 			if err != nil {
 				panic(err)
 			}
@@ -80,8 +81,12 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 	addItems := getAddItems(b.db, modelSlice)
 	deleteItems := getDeleteItems(b.db, modelSlice)
 
+	if len(deleteItems) == 0 && len(addItems) == 0 {
+		return nil
+	}
+
 	var newItems []interface{}
-	if deleteItems != nil {
+	if len(deleteItems) != 0 {
 		var deleteMap = make(map[int][]int)
 		for _, item := range deleteItems {
 			lp := item.(ListInterface)
@@ -98,7 +103,7 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 		newItems = oldItems
 	}
 
-	if addItems != nil {
+	if len(addItems) != 0 {
 		newItems = append(newItems, addItems...)
 	}
 
@@ -109,13 +114,35 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 
 	var objs []*PublishAction
 	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
-	for _, obj := range objs {
-		fmt.Printf("uploading %s \n", obj.Url)
-		_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
-		if err != nil {
-			return
+
+	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
+		for _, obj := range objs {
+			fmt.Printf("uploading %s \n", obj.Url)
+			_, err1 = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
+			if err1 != nil {
+				return
+			}
 		}
-	}
+
+		for _, items := range newResult[restartFrom:] {
+			for _, item := range items.Items {
+				if listItem, ok := item.(ListInterface); ok {
+					if err1 = b.db.Model(item).Updates(map[string]interface{}{
+						"list_updated": listItem.GetListUpdated(),
+						"list_deleted": listItem.GetListDeleted(),
+						"page_number":  listItem.GetPageNumber(),
+						"position":     listItem.GetPosition(),
+					}).Error; err1 != nil {
+						return
+					}
+				} else {
+					return errors.New("model must be ListInterface")
+				}
+			}
+
+		}
+		return
+	})
 	return nil
 }
 
@@ -153,6 +180,8 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 			model := items[k].(ListInterface)
 			model.SetPageNumber(pageNumber)
 			model.SetPosition(k)
+			model.SetListUpdated(false)
+			model.SetListDeleted(false)
 		}
 		result = append(result, &OnePageItems{
 			Items:      items,
@@ -166,6 +195,8 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 		model := items[k].(ListInterface)
 		model.SetPageNumber(pageNumber)
 		model.SetPosition(k)
+		model.SetListUpdated(false)
+		model.SetListDeleted(false)
 	}
 	result = append(result, &OnePageItems{
 		Items:      items,

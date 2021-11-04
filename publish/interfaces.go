@@ -53,6 +53,8 @@ type ListInterface interface {
 	SetPageNumber(pageNumber int)
 	GetPosition() int
 	SetPosition(position int)
+	GetListDeleted() bool
 	SetListDeleted(listDeleted bool)
+	GetListUpdated() bool
 	SetListUpdated(listUpdated bool)
 }
