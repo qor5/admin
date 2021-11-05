@@ -17,6 +17,7 @@ type ListBuilder struct {
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
 	getOldItemsFunc    func(record interface{}) (result []interface{})
 	totalNumberPerPage int
+	comparisonFunc     func(recordA interface{}, recordB interface{}) bool
 	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
 }
 
@@ -40,6 +41,9 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 			return
 		},
 		totalNumberPerPage: 30,
+		comparisonFunc: func(recordA interface{}, recordB interface{}) bool {
+			return true
+		},
 		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
 			for _, onePageItems := range result {
 				objs = append(objs, &PublishAction{
@@ -54,13 +58,13 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 }
 
 func getAddItems(db *gorm.DB, record interface{}) (result []interface{}) {
-	db.Where("status = ? AND list_updated = ?", StatusOnline, true).Find(&record)
+	db.Where("list_updated = ?", true).Find(&record)
 	result = sliceutils.Wrap(record)
 	return
 }
 
 func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}) {
-	db.Where("status = ? AND list_deleted = ?", StatusOnline, true).Find(&record)
+	db.Where("list_deleted = ?", true).Find(&record)
 	result = sliceutils.Wrap(record)
 	return
 }
@@ -107,9 +111,12 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 	}
 
 	lp.Sort(newItems)
-	old := paginate(oldItems)
+	var oldResult []*OnePageItems
+	if len(oldItems) > 0 {
+		oldResult = paginate(oldItems)
+	}
 	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
-	restartFrom := getRestartFromIndex(old, newResult)
+	restartFrom := getRestartFromIndex(oldResult, newResult)
 
 	var objs []*PublishAction
 	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
@@ -136,6 +143,22 @@ func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (er
 			}
 
 		}
+
+		for _, item := range deleteItems {
+			if _, ok := item.(ListInterface); ok {
+				if err1 = b.db.Model(item).Updates(map[string]interface{}{
+					"list_updated": false,
+					"list_deleted": false,
+					"page_number":  0,
+					"position":     0,
+				}).Error; err1 != nil {
+					return
+				}
+			} else {
+				return errors.New("model must be ListInterface")
+			}
+
+		}
 		return
 	})
 	return nil
@@ -153,6 +176,11 @@ func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []inter
 
 func (b *ListBuilder) TotalNumberPerPage(number int) *ListBuilder {
 	b.totalNumberPerPage = number
+	return b
+}
+
+func (b *ListBuilder) ComparisonFunc(f func(recordA interface{}, recordB interface{}) bool) *ListBuilder {
+	b.comparisonFunc = f
 	return b
 }
 
@@ -215,6 +243,9 @@ func paginate(array []interface{}) (result []*OnePageItems) {
 }
 
 func getRestartFromIndex(old, new []*OnePageItems) int {
+	if len(old) == 0 {
+		return 0
+	}
 	for indexNumber, array := range new {
 		if len(array.Items) == len(old[indexNumber].Items) {
 			for position, item := range array.Items {
