@@ -8,9 +8,10 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/goplaid/multipartestutils v0.0.2
-	github.com/goplaid/web v1.1.15
-	github.com/goplaid/x v1.0.16-0.20211026023313-05dd58cc58da
+	github.com/google/go-cmp v0.5.6
+	github.com/goplaid/multipartestutils v0.0.3
+	github.com/goplaid/web v1.1.18-0.20211101154615-2a66588a980b
+	github.com/goplaid/x v1.0.16-0.20211101155426-e6d669813204
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -19,8 +20,10 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
+	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
@@ -34,12 +37,12 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/postgres v1.1.1
-	gorm.io/gorm v1.21.17-0.20211019021111-38e55f111785
+	gorm.io/driver/postgres v1.2.1
+	gorm.io/gorm v1.22.2
 )
 
-// replace github.com/goplaid/web => ../../goplaid/web
+//replace github.com/goplaid/web => ../../goplaid/web
 
-// replace github.com/goplaid/x => ../../goplaid/x
+//replace github.com/goplaid/x => ../../goplaid/x
 
 // replace github.com/sunfmin/reflectutils => ../../reflectutils

@@ -46,7 +46,7 @@ func unpublishAction(db *gorm.DB, publisher *publish.Builder) web.EventFunc {
 }
 
 func getCurrentObj(db *gorm.DB, ctx *web.EventContext) (obj interface{}, err error) {
-	objJson := ctx.Event.Params[0]
+	objJson := ctx.R.FormValue("objJson")
 
 	obj = jsontyperegistry.MustNewWithJSONString(objJson)
 	if err = db.First(obj).Error; err != nil {

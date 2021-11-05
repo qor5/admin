@@ -9,13 +9,13 @@ type contextKey string
 const hostWithSchemeKey contextKey = "HostWithScheme"
 
 func (site *SiteMapBuilder) MountTo(mux *http.ServeMux) {
-	mux.Handle(site.PathName, site)
+	mux.Handle(site.pathName, site)
 }
 
 func (index *SiteMapIndexBuilder) MountTo(mux *http.ServeMux) {
-	mux.Handle(index.PathName, index)
+	mux.Handle(index.pathName, index)
 	for _, site := range index.siteMaps {
-		mux.Handle(site.PathName, site)
+		mux.Handle(site.pathName, site)
 	}
 }
 

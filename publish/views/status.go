@@ -51,7 +51,8 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		//}
 		return h.Div(
 			btn,
-			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFuncVar(web.Var("locals.action"), jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).
+			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
+				FieldValue("objJson", jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).
 			Attr(web.InitContextLocals, `{ action: ""}`)
 
 	}
