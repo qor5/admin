@@ -10,66 +10,71 @@ sitemap := SiteMap("product") //  /product.xml
 ```
 
 - Register URLs
-    - Register a raw string path
-        ```go
-        sitemap.RegisterRawString("/product1") // path mode
-        sitemap.RegisterRawString("https://qor5.dev.com/product1") //url mode
-        ```
 
-    - Register a regularURL
+  - Register a raw string path
 
-        ```go
-        sitemap.RegisterURL(URL{Loc: "/product1"}, URL{Loc: "https://qor5.dev.com/product1"})
-        ```
+    ```go
+    sitemap.RegisterRawString("/product1") // path mode
+    sitemap.RegisterRawString("https://qor5.dev.com/product1") //url mode
+    ```
 
-    - Register a contextFunc
+  - Register a regularURL
 
-        ```go
-        sitemap.RegisterContextFunc(func(context.Context) []URL {
-            // fetch and generate the urls by the context
-        }
-        ) 
-        ```
+    ```go
+    sitemap.RegisterURL(URL{Loc: "/product1"}, URL{Loc: "https://qor5.dev.com/product1"})
+    ```
 
-    - Register a model
+  - Register a contextFunc
 
-        ```go
-        type product struct{
-            ...
-        }
+    ```go
+    sitemap.RegisterContextFunc(func(context.Context) []URL {
+        // fetch and generate the urls by the context
+    }
+    )
+    ```
 
-        func (p product) Sitemap(ctx context.Context) []URL {
-            // fetch urls from db
-        }
+  - Register a model
 
-        sitemap.TestRegisterModel(&product{}) // path mode
-        ```    
--  Mount to HTTP ServeMux, will automatically fetch the host according to the request and put it in context.
+    ```go
+    type product struct{
+        ...
+    }
 
-```go
-	serveMux := http.NewServeMux()
-	site.MountTo(serveMux)
-```
+    // model need to implement this method
+    func (p product) Sitemap(ctx context.Context) []URL {
+        // fetch urls from db
+    }
 
--  Generate xml string data directly according to the host in the context
+    sitemap.RegisterModel(&product{}) // path mode
+    ```
 
-```go
-	sitemap.EncodeToXml(WithHost("https://qor5.dev.com"))
-```
+- Mount to HTTP ServeMux, will automatically fetch the host according to the request and put it in context.
+
+  ```go
+  serveMux := http.NewServeMux()
+  site.MountTo(serveMux)
+  ```
+
+- Generate xml string data directly according to the host in the context
+
+  ```go
+  sitemap.EncodeToXml(WithHost("https://qor5.dev.com"))
+  ```
 
 - Ping the search engine when the new sitemap is generated
-``` go
-PingBing(sitemap,WithHost("https://qor5.dev.com"))
-PingGoogle(sitemap,WithHost("https://qor5.dev.com"))
-PingAll(sitemap,WithHost("https://qor5.dev.com"))
-```
+
+  ```go
+  PingBing(sitemap,WithHost("https://qor5.dev.com"))
+  PingGoogle(sitemap,WithHost("https://qor5.dev.com"))
+  PingAll(sitemap,WithHost("https://qor5.dev.com"))
+  ```
 
 # Sitemap Index
 
 ```go
 index := SiteMapIndex().RegisterSiteMap(SiteMap(), SiteMap("product"), SiteMap("post")) // Register multiple sitemaps
 
-index.EncodeToXml(WithHost("https://qor5.dev.com")) // Generate xml string data directly 
+index.EncodeToXml(WithHost("https://qor5.dev.com")) // Generate xml string data directly
 index.MountTo(serveMux) // MountTo Mux
 
 ```
@@ -94,14 +99,14 @@ robot.Agent(GoogleAgent).AddSitemapUrl(sitemao.ToUrl(WithHost("https://qor5.dev.
 
 ```
 
--  Mount to HTTP ServeMux,
+- Mount to HTTP ServeMux,
 
 ```go
 	serveMux := http.NewServeMux()
 	robot.MountTo(serveMux)
 ```
 
--  Generate plain txt 
+- Generate plain txt
 
 ```go
 	robot.ToTxt()
