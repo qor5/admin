@@ -43,6 +43,23 @@ func TestRegisterContextFunc(t *testing.T) {
 	}
 }
 
+type post struct {
+}
+
+func (p post) Sitemap(ctx context.Context) []URL {
+	return []URL{
+		{Loc: "/post1"},
+		{Loc: "/post2"},
+	}
+}
+func TestRegisterModel(t *testing.T) {
+	s := SiteMap().RegisterModel(post{}).EncodeToXml(context.TODO())
+	expected := `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>/post1</loc></url><url><loc>/post2</loc></url></urlset>`
+	if s != expected {
+		t.Errorf("\n\tExpected value: %s\n \tbut got: %s", expected, s)
+	}
+}
+
 func TestSiteMapIndex(t *testing.T) {
 	s := SiteMapIndex().RegisterSiteMap(SiteMap(), SiteMap("product"), SiteMap("admin")).EncodeToXml(context.TODO())
 	expected := `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>/sitemap.xml</loc></sitemap><sitemap><loc>/product.xml</loc></sitemap><sitemap><loc>/admin.xml</loc></sitemap></sitemapindex>`

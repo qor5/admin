@@ -16,15 +16,21 @@ const (
 	FreqAlways  = "always"
 )
 
+type ContextFunc func(context.Context) []URL
+type ModelInferface interface {
+	Sitemap(context.Context) []URL
+}
+
 type SiteMapIndexBuilder struct {
-	PathName string
+	pathName string
 	siteMaps []*SiteMapBuilder
 }
 
 type SiteMapBuilder struct {
-	PathName     string
+	pathName     string
 	urls         []URL
 	contextFuncs []ContextFunc
+	models       []ModelInferface
 }
 
 type URL struct {
@@ -33,8 +39,6 @@ type URL struct {
 	Changefreq string
 	Priority   float32
 }
-
-type ContextFunc func(context.Context) []URL
 
 func SiteMapIndex(names ...string) (s *SiteMapIndexBuilder) {
 	var namePath string
@@ -53,7 +57,7 @@ func SiteMapIndex(names ...string) (s *SiteMapIndexBuilder) {
 	}
 
 	return &SiteMapIndexBuilder{
-		PathName: namePath,
+		pathName: namePath,
 	}
 }
 
@@ -64,9 +68,9 @@ func (index *SiteMapIndexBuilder) RegisterSiteMap(sites ...*SiteMapBuilder) (s *
 
 func (index *SiteMapIndexBuilder) ToUrl(ctx context.Context) string {
 	if h, ok := ctx.Value(hostWithSchemeKey).(string); ok {
-		return path.Join(h, index.PathName)
+		return path.Join(h, index.pathName)
 	}
-	return index.PathName
+	return index.pathName
 }
 
 func SiteMap(names ...string) (s *SiteMapBuilder) {
@@ -87,7 +91,7 @@ func SiteMap(names ...string) (s *SiteMapBuilder) {
 	}
 
 	return &SiteMapBuilder{
-		PathName: namePath,
+		pathName: namePath,
 	}
 }
 
@@ -103,16 +107,22 @@ func (site *SiteMapBuilder) RegisterURL(urls ...URL) (s *SiteMapBuilder) {
 	return site
 }
 
+
 func (site *SiteMapBuilder) RegisterContextFunc(funcs ...ContextFunc) (s *SiteMapBuilder) {
 	site.contextFuncs = append(site.contextFuncs, funcs...)
 	return site
 }
 
+func (site *SiteMapBuilder) RegisterModel(models ...ModelInferface) (s *SiteMapBuilder) {
+	site.models = append(site.models, models...)
+	return site
+}
+
 func (site *SiteMapBuilder) ToUrl(ctx context.Context) string {
 	if h, ok := ctx.Value(hostWithSchemeKey).(string); ok {
-		return path.Join(h, site.PathName)
+		return path.Join(h, site.pathName)
 	}
-	return site.PathName
+	return site.pathName
 }
 
 func WithHost(host string, ctxs ...context.Context) context.Context {

@@ -29,6 +29,10 @@ func (s SiteMapBuilder) EncodeToXml(ctx context.Context) string {
 		urls = append(urls, contextfunc(ctx)...)
 	}
 
+	for _, model := range s.models {
+		urls = append(urls, model.Sitemap(ctx)...)
+	}
+
 	for _, url := range urls {
 		u, err := neturl.Parse(url.Loc)
 		if err != nil {
