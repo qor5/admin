@@ -9,6 +9,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
@@ -39,14 +40,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			Where("id = ? AND status = ?", id, publish.StatusOnline).
 			First(&lv)
 		if len(lv) > 0 {
-			tr := h.Tr(
-				h.Td(h.Button(fmt.Sprint(lv["version"]))),
-				h.Td(h.Button(fmt.Sprint(lv["status"]))),
-			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", lv["id"], lv["version"])).Go())
-			if lv["version"] == segs[1] {
-				tr.Class("deep-purple white--text")
-			}
-
+			tr := trBuilder(ctx, lv, segs[1])
 			ov.AppendChildren(VSimpleTable(h.Tbody(tr)))
 		}
 
@@ -63,14 +57,9 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			Find(&results)
 
 		tbody := h.Tbody()
+
 		for _, r := range results {
-			tr := h.Tr(
-				h.Td(h.Button(fmt.Sprint(r["version"]))),
-				h.Td(h.Button(fmt.Sprint(r["status"]))),
-			).Attr("@click", web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go())
-			if r["version"] == segs[1] {
-				tr.Class("deep-purple white--text")
-			}
+			tr := trBuilder(ctx, r, segs[1])
 			tbody.AppendChildren(tr)
 		}
 
@@ -78,6 +67,37 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 		return c
 	}
+}
+
+func trBuilder(ctx *web.EventContext, r map[string]interface{}, versionName string) *h.HTMLTagBuilder {
+	msgr := presets.MustGetMessages(ctx.R)
+
+	attr := web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go()
+	tr := h.Tr(
+		h.Td(h.Button(fmt.Sprint(r["version"]))).Attr("@click", attr),
+		h.Td(h.Button(fmt.Sprint(r["status"]))).Attr("@click", attr),
+		h.Td(VMenu(
+			web.Slot(
+				VBtn("").Children(
+					VIcon("more_vert"),
+				).Attr("v-on", "on").Text(true).Fab(true).Small(true),
+			).Name("activator").Scope("{ on }"),
+
+			VList(
+				VListItem(
+					VListItemIcon(VIcon("delete")),
+					VListItemTitle(h.Text(msgr.Delete)),
+				).Attr("@click", web.Plaid().
+					EventFunc(actions.DeleteConfirmation).
+					Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go(),
+				),
+			).Dense(true),
+		)),
+	)
+	if r["version"] == versionName {
+		tr.Class("deep-purple white--text")
+	}
+	return tr
 }
 
 func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {

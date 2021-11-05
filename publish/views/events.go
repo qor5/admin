@@ -13,7 +13,6 @@ const (
 	unpublishEvent      = "publish_UnpublishEvent"
 	switchVersionEvent  = "publish_SwitchVersionEvent"
 	saveNewVersionEvent = "publish_SaveNewVersionEvent"
-	removeVersionEvent  = "publish_RemoveVersionEvent"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) {
