@@ -140,13 +140,6 @@ func NewConfig() Config {
 	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 	configInputHarness(b, db)
 	configUser(b, db)
-
-	lp := publish.New(db, oss.Storage)
-	publish_view.Configure(b, db, lp, &models.ListModel{})
-	l := b.Model(&models.ListModel{})
-	l.Listing("ID", "Title", "Status")
-	l.Editing("Status", "Title")
-
 	_ = m
 	// Use m to customize the model, Or config more models here.
 
@@ -155,7 +148,11 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(b, db, publisher, &pagebuilder.Page{})
+	publish_view.Configure(b, db, publisher, &pagebuilder.Page{}, &models.ListModel{})
+
+	l := b.Model(&models.ListModel{})
+	l.Listing("ID", "Title", "Status")
+	l.Editing("Status", "Title")
 
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
