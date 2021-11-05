@@ -150,9 +150,13 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
-		db.Model(newObj).Where("id = ? AND version like ?", id, version+"%").Count(&count)
+		db.Model(newObj).Unscoped().Where("id = ? AND version like ?", id, version+"%").Count(&count)
 
-		if err = reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v%02v", version, count+1)); err != nil {
+		versionName := fmt.Sprintf("%s-v%02v", version, count+1)
+		if err = reflectutils.Set(obj, "Version.Version", versionName); err != nil {
+			return
+		}
+		if err = reflectutils.Set(obj, "Version.VersionName", versionName); err != nil {
 			return
 		}
 		if err = reflectutils.Set(obj, "Version.ParentVersion", segs[1]); err != nil {
@@ -205,8 +209,21 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		stmt.Parse(mb.NewModel())
 		tn := stmt.Schema.Table
 
+		var pks []string
+		condition := ""
 		var c int64
-		sql := fmt.Sprintf("(%v.id, %v.version) IN (SELECT %v.id, MAX(%v.version) FROM %v GROUP BY %v.id)", tn, tn, tn, tn, tn, tn)
+		for _, f := range stmt.Schema.Fields {
+			if f.Name == "DeletedAt" {
+				condition = "WHERE deleted_at IS NULL"
+			}
+		}
+		for _, f := range stmt.Schema.PrimaryFields {
+			if f.Name != "Version" {
+				pks = append(pks, stmt.Quote(strings.ToLower(f.Name)))
+			}
+		}
+		pkc := strings.Join(pks, ",")
+		sql := fmt.Sprintf("(%v.id, %v.version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", tn, tn, pkc, tn, condition, pkc)
 		if err = wh.Where(sql).Count(&c).Error; err != nil {
 			return
 		}
