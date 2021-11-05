@@ -127,7 +127,7 @@ func (b *Builder) UploadOrDelete(objs []*PublishAction) (err error) {
 func SetPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
 	conds := []string{}
 	for _, p := range s.PrimaryFields {
-		if p.Name == "VersionName" {
+		if p.Name == "Version" {
 			continue
 		}
 		val, _ := p.ValueOf(reflect.ValueOf(record))
