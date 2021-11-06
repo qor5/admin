@@ -159,7 +159,8 @@ func NewConfig() Config {
 
 	ab := activity.Activity()
 	ab.RegisterModel(&models.Post{})
-	ab.Configure(b, db)
+	ab.ConfigureAdmin(b, db)
+	ab.RegisterCallbackOnDB(db, "Creator")
 
 	w := worker.New(db)
 	addJobs(w)

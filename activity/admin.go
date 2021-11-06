@@ -18,7 +18,7 @@ const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
 )
 
-func (ab *ActivityBuilder) Configure(b *presets.Builder, db *gorm.DB) {
+func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 	if err := db.AutoMigrate(ab.GetActivityLogModel()); err != nil {
 		panic(err)
 	}
@@ -182,26 +182,58 @@ func (ab *ActivityBuilder) Configure(b *presets.Builder, db *gorm.DB) {
 				}
 			}
 
+			var diffsElems []h.HTMLComponent
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			return VCard(
-				VCardTitle(h.Text(msgr.Diffs)),
-				VList(
-					VListItem(h.H4("1"),
+
+			if len(newdiffs) > 0 {
+				var elems []h.HTMLComponent
+				for _, d := range newdiffs {
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Now))))
+				}
+
+				diffsElems = append(diffsElems,
+					VCard(
+						VCardTitle(h.Text(msgr.DiffNew)),
 						VSimpleTable(
-							h.Thead(h.Tr(h.Th("11"), h.Th("22"))),
-							h.Tbody(h.Tr(h.Td(h.Text("11aa")), h.Td(h.Text("22c")))),
+							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffNow))),
+							h.Tbody(elems...),
 						),
-					),
-					VListItem(h.Text("2"), VSimpleTable(
-						h.Thead(h.Tr(h.Th("11"), h.Th("22"))),
-						h.Tbody(h.Tr(h.Td(h.Text("11aa")), h.Td(h.Text("22c")))),
-					)),
-					VListItem(h.Text("3"), VSimpleTable(
-						h.Thead(h.Tr(h.Th("11"), h.Th("22"))),
-						h.Tbody(h.Tr(h.Td(h.Text("11aa")), h.Td(h.Text("22c")))),
-					)),
-				),
-			).Attr("style", "margin-top:15px;margin-bottom:15px;")
+					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			}
+
+			if len(deletediffs) > 0 {
+				var elems []h.HTMLComponent
+				for _, d := range deletediffs {
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Now))))
+				}
+
+				diffsElems = append(diffsElems,
+					VCard(
+						VCardTitle(h.Text(msgr.DiffDelete)),
+						VSimpleTable(
+							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffNow))),
+							h.Tbody(elems...),
+						),
+					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			}
+
+			if len(changediffs) > 0 {
+				var elems []h.HTMLComponent
+				for _, d := range changediffs {
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Old), h.Td(h.Text(d.Now)))))
+				}
+
+				diffsElems = append(diffsElems,
+					VCard(
+						VCardTitle(h.Text(msgr.DiffChanges)),
+						VSimpleTable(
+							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
+							h.Tbody(elems...),
+						),
+					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			}
+
+			return h.Components(diffsElems...)
 		},
 	)
 }

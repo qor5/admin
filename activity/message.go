@@ -12,6 +12,12 @@ type Messages struct {
 	FilterCreatedAt string
 	FilterCreator   string
 	FilterModel     string
+	DiffNew         string
+	DiffDelete      string
+	DiffChanges     string
+	DiffField       string
+	DiffOld         string
+	DiffNow         string
 }
 
 var Messages_en_US = &Messages{
@@ -21,11 +27,16 @@ var Messages_en_US = &Messages{
 	ActivityCreate:  "Create",
 	ActivityDelete:  "Delete",
 	Link:            "Link",
-	Diffs:           "Diffs",
 	FilterAction:    "Action",
 	FilterCreatedAt: "Create Time",
 	FilterCreator:   "Creator",
 	FilterModel:     "Model Name",
+	DiffNew:         "New",
+	DiffDelete:      "Delete",
+	DiffChanges:     "Changes",
+	DiffField:       "Filed",
+	DiffOld:         "Old",
+	DiffNow:         "Now",
 }
 
 var Messages_zh_CN = &Messages{
@@ -35,9 +46,15 @@ var Messages_zh_CN = &Messages{
 	ActivityCreate:  "创建",
 	ActivityDelete:  "删除",
 	Link:            "链接",
-	Diffs:           "改动",
 	FilterAction:    "操作类型",
 	FilterCreatedAt: "操作时间",
 	FilterCreator:   "操作人",
 	FilterModel:     "操作对象",
+
+	DiffNew:     "新加",
+	DiffDelete:  "删除",
+	DiffChanges: "修改",
+	DiffField:   "字段",
+	DiffOld:     "之前的值",
+	DiffNow:     "当前的值",
 }
