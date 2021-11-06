@@ -331,7 +331,9 @@ func TestPublishList(t *testing.T) {
 
 	publisher.Publish(&productV1)
 	publisher.Publish(&productV3)
-	listPublisher.PublishList(ProductWithoutVersion{})
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
 
 	var expected string
 	expected = "product:1 product:3 pageNumber:1"
@@ -343,7 +345,9 @@ get: %v
 	}
 
 	publisher.Publish(&productV2)
-	listPublisher.PublishList(ProductWithoutVersion{})
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
 
 	expected = "product:1 product:2 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
@@ -354,7 +358,9 @@ get: %v
 	}
 
 	publisher.UnPublish(&productV2)
-	listPublisher.PublishList(ProductWithoutVersion{})
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
 
 	expected = "product:1 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
@@ -365,7 +371,9 @@ get: %v
 	}
 
 	publisher.UnPublish(&productV3)
-	listPublisher.PublishList(ProductWithoutVersion{})
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
 
 	expected = "product:1 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"][0] != expected {

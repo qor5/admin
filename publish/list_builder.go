@@ -16,7 +16,7 @@ type ListBuilder struct {
 	storage            oss.StorageInterface
 	context            context.Context
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
-	getOldItemsFunc    func(record interface{}) (result []interface{})
+	getOldItemsFunc    func(record interface{}) (result []interface{}, err error)
 	totalNumberPerPage int
 	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
 }
@@ -30,15 +30,12 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 		needNextPageFunc: func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool {
 			return currentPageNumber*totalNumberPerPage+int(0.5*float64(totalNumberPerPage)) <= totalNumberOfItems
 		},
-
-		//&[]models.ListModel{}
-		getOldItemsFunc: func(record interface{}) (result []interface{}) {
-			err := db.Where("status = ? AND page_number <> ? AND list_updated = ? AND list_deleted = ?", StatusOnline, 0, false, false).Find(&record).Error
-			if err != nil {
-				panic(err)
+		getOldItemsFunc: func(record interface{}) (result []interface{}, err error) {
+			err = db.Where("status = ? AND page_number <> ? AND list_updated = ? AND list_deleted = ?", StatusOnline, 0, false, false).Find(&record).Error
+			if err != nil && err != gorm.ErrRecordNotFound {
+				return
 			}
-			result = sliceutils.Wrap(record)
-			return
+			return sliceutils.Wrap(record), nil
 		},
 		totalNumberPerPage: 30,
 		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
@@ -54,16 +51,20 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 	}
 }
 
-func getAddItems(db *gorm.DB, record interface{}) (result []interface{}) {
-	db.Where("list_updated = ?", true).Find(&record)
-	result = sliceutils.Wrap(record)
-	return
+func getAddItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
+	err = db.Where("list_updated = ?", true).Find(&record).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return
+	}
+	return sliceutils.Wrap(record), nil
 }
 
-func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}) {
-	db.Where("list_deleted = ?", true).Find(&record)
-	result = sliceutils.Wrap(record)
-	return
+func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
+	err = db.Where("list_deleted = ?", true).Find(&record).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return
+	}
+	return sliceutils.Wrap(record), nil
 }
 
 type ListPublisher interface {
@@ -73,17 +74,27 @@ type ListPublisher interface {
 }
 
 func (b *ListBuilder) PublishList(model interface{}) (err error) {
-	lp := model.(ListPublisher)
+	//If model is Product{}
+	//Generate a modelSlice: []*Product{}
 	modelSlice := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
 
-	addItems := getAddItems(b.db, modelSlice)
-	deleteItems := getDeleteItems(b.db, modelSlice)
+	addItems, err := getAddItems(b.db, modelSlice)
+	if err != nil {
+		return
+	}
+	deleteItems, err := getDeleteItems(b.db, modelSlice)
+	if err != nil {
+		return
+	}
 
 	if len(deleteItems) == 0 && len(addItems) == 0 {
 		return nil
 	}
 
-	oldItems := b.getOldItemsFunc(modelSlice)
+	oldItems, err := b.getOldItemsFunc(modelSlice)
+	if err != nil {
+		return
+	}
 
 	var newItems []interface{}
 	if len(deleteItems) != 0 {
@@ -107,6 +118,7 @@ func (b *ListBuilder) PublishList(model interface{}) (err error) {
 		newItems = append(newItems, addItems...)
 	}
 
+	lp := model.(ListPublisher)
 	lp.Sort(newItems)
 	var oldResult []*OnePageItems
 	if len(oldItems) > 0 {
@@ -115,6 +127,7 @@ func (b *ListBuilder) PublishList(model interface{}) (err error) {
 	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
 	restartFrom := getRestartFromIndex(oldResult, newResult)
 
+	//newResult[restartFrom:] is the pages that will be published to storage
 	var objs []*PublishAction
 	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
 
@@ -166,7 +179,7 @@ func (b *ListBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNum
 	return b
 }
 
-func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []interface{})) *ListBuilder {
+func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []interface{}, err error)) *ListBuilder {
 	b.getOldItemsFunc = f
 	return b
 }
@@ -186,6 +199,9 @@ type OnePageItems struct {
 	PageNumber int
 }
 
+//Repaginate completely
+//Regardless of the PageNumber and Position of the old data
+//Resort and repaginate all data
 func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc func(itemsCountInOnePage, currentPageNumber, allItemsCount int) bool) (result []*OnePageItems) {
 	var pageNumber int
 	for i := 1; needNextPageFunc(totalNumberPerPage, i, len(array)); i++ {
@@ -220,6 +236,9 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 	return
 }
 
+//For old data
+//Old data has PageNumber and Position
+//Sort pages according to the PageNumber and position
 func paginate(array []interface{}) (result []*OnePageItems) {
 	lp := array[0].(ListPublisher)
 	lp.Sort(array)
@@ -234,6 +253,9 @@ func paginate(array []interface{}) (result []*OnePageItems) {
 	return
 }
 
+//Compare new pages and old pages
+//Pick out which is the first page that different on both sides
+//Return the page's index
 func getRestartFromIndex(old, new []*OnePageItems) int {
 	if len(old) == 0 {
 		return 0

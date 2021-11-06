@@ -22,9 +22,13 @@ func main() {
 	listP := publish.NewListBuilder(db, storage)
 	go func() {
 		t := time.Tick(time.Minute * 1)
-		listP.PublishList(models.ListModel{})
+		if err := listP.PublishList(models.ListModel{}); err != nil {
+			panic(err)
+		}
 		for range t {
-			listP.PublishList(models.ListModel{})
+			if err := listP.PublishList(models.ListModel{}); err != nil {
+				panic(err)
+			}
 		}
 	}()
 	select {}
