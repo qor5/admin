@@ -69,15 +69,15 @@ func (this ListModel) GetListContent(onePageItems *publish.OnePageItems) string 
 func (this ListModel) Sort(array []interface{}) {
 	var temp []*ListModel
 	sliceutils.Unwrap(array, &temp)
-	sort.Sort(ModelListModel(temp))
+	sort.Sort(SliceListModel(temp))
 	for k, v := range temp {
 		array[k] = v
 	}
 	return
 }
 
-type ModelListModel []*ListModel
+type SliceListModel []*ListModel
 
-func (x ModelListModel) Len() int           { return len(x) }
-func (x ModelListModel) Less(i, j int) bool { return x[i].Title < x[j].Title }
-func (x ModelListModel) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+func (x SliceListModel) Len() int           { return len(x) }
+func (x SliceListModel) Less(i, j int) bool { return x[i].Title < x[j].Title }
+func (x SliceListModel) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
