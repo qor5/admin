@@ -18,7 +18,6 @@ type ListBuilder struct {
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
 	getOldItemsFunc    func(record interface{}) (result []interface{})
 	totalNumberPerPage int
-	comparisonFunc     func(recordA interface{}, recordB interface{}) bool
 	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
 }
 
@@ -42,9 +41,6 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 			return
 		},
 		totalNumberPerPage: 30,
-		comparisonFunc: func(recordA interface{}, recordB interface{}) bool {
-			return true
-		},
 		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
 			for _, onePageItems := range result {
 				objs = append(objs, &PublishAction{
@@ -71,7 +67,6 @@ func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}) {
 }
 
 type ListPublisher interface {
-	TableName() string
 	GetListUrl(pageNumber int) string
 	GetListContent(onePageItems *OnePageItems) string
 	Sort(array []interface{})
@@ -178,11 +173,6 @@ func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []inter
 
 func (b *ListBuilder) TotalNumberPerPage(number int) *ListBuilder {
 	b.totalNumberPerPage = number
-	return b
-}
-
-func (b *ListBuilder) ComparisonFunc(f func(recordA interface{}, recordB interface{}) bool) *ListBuilder {
-	b.comparisonFunc = f
 	return b
 }
 

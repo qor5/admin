@@ -18,10 +18,6 @@ type ListModel struct {
 	publish.List
 }
 
-func (this ListModel) TableName() string {
-	return "list_models"
-}
-
 func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
