@@ -3,6 +3,7 @@ package publish
 import (
 	"context"
 	"errors"
+	"reflect"
 
 	"github.com/qor/oss"
 	"github.com/qor/qor5/utils"
@@ -76,8 +77,9 @@ type ListPublisher interface {
 	Sort(array []interface{})
 }
 
-func (b *ListBuilder) PublishList(model interface{}, modelSlice interface{}) (err error) {
+func (b *ListBuilder) PublishList(model interface{}) (err error) {
 	lp := model.(ListPublisher)
+	modelSlice := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
 
 	addItems := getAddItems(b.db, modelSlice)
 	deleteItems := getDeleteItems(b.db, modelSlice)
