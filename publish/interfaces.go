@@ -37,6 +37,8 @@ type StatusInterface interface {
 }
 
 type VersionInterface interface {
+	GetVersion() string
+	SetVersion(v string)
 	GetVersionName() string
 	SetVersionName(v string)
 }

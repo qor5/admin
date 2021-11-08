@@ -11,7 +11,6 @@ import (
 	"github.com/qor/qor5/utils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/jsontyperegistry"
 	"gorm.io/gorm"
 )
 
@@ -68,10 +67,10 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			)
 		}
 
-		//params := []interface{}{reflect.TypeOf(obj).String(), fmt.Sprint(reflectutils.MustGet(obj, "ID"))}
-		//if v, ok := obj.(publish.VersionInterface); ok {
-		//	params = append(params, v.GetVersionName())
-		//}
+		id := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+		if v, ok := obj.(publish.VersionInterface); ok {
+			id = fmt.Sprintf("%v_%v", id, v.GetVersion())
+		}
 
 		return h.Div(
 			VStepper(
@@ -84,10 +83,16 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			h.Br(),
 			btn,
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				FieldValue("objJson", jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).
+				Query("id", id).Go(),
+				utilsMsgr)).
 			Attr(web.InitContextLocals, `{ action: ""}`)
 
 	}
+}
+
+// need empty setterFunc here to avoid set status to empty when update
+func StatusEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+	return
 }
 
 func getStatusColor(status string) string {
