@@ -251,3 +251,35 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		return
 	}
 }
+
+func versionActionsFunc(m *presets.ModelBuilder) presets.ComponentFunc {
+	return func(ctx *web.EventContext) h.HTMLComponent {
+		gmsgr := presets.MustGetMessages(ctx.R)
+		var buttonLabel = gmsgr.Create
+		m.RightDrawerWidth("800")
+		if ctx.R.FormValue("id") != "" {
+			buttonLabel = gmsgr.Update
+			m.RightDrawerWidth("1200")
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
+		return h.Components(
+			VSpacer(),
+			VBtn(msgr.SaveAsNewVersion).
+				Color("secondary").
+				Attr("@click", web.Plaid().
+					EventFunc(saveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
+					URL(m.Info().ListingHref()).
+					Go(),
+				).Disabled(ctx.R.FormValue("id") == ""),
+			VBtn(buttonLabel).
+				Color("primary").
+				Attr("@click", web.Plaid().
+					EventFunc(actions.Update).Query("id", ctx.R.FormValue("id")).
+					URL(m.Info().ListingHref()).
+					Go(),
+				),
+		)
+	}
+}
