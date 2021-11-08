@@ -32,7 +32,7 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 			return currentPageNumber*totalNumberPerPage+int(0.5*float64(totalNumberPerPage)) <= totalNumberOfItems
 		},
 		getOldItemsFunc: func(record interface{}) (result []interface{}, err error) {
-			err = db.Where("status = ? AND page_number <> ? AND list_updated = ? AND list_deleted = ?", StatusOnline, 0, false, false).Find(&record).Error
+			err = db.Where("page_number <> ? ", 0).Find(&record).Error
 			if err != nil && err != gorm.ErrRecordNotFound {
 				return
 			}
@@ -47,18 +47,20 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 					IsDelete: false,
 				})
 			}
-			objs = append(objs, &PublishAction{
-				Url:      lp.GetListUrl("index"),
-				Content:  lp.GetListContent(indexPage),
-				IsDelete: false,
-			})
+			if indexPage != nil {
+				objs = append(objs, &PublishAction{
+					Url:      lp.GetListUrl("index"),
+					Content:  lp.GetListContent(indexPage),
+					IsDelete: false,
+				})
+			}
 			return
 		},
 	}
 }
 
 func getAddItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
-	err = db.Where("list_updated = ?", true).Find(&record).Error
+	err = db.Where("page_number = ? AND list_updated = ?", 0, true).Find(&record).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return
 	}
@@ -66,7 +68,15 @@ func getAddItems(db *gorm.DB, record interface{}) (result []interface{}, err err
 }
 
 func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
-	err = db.Where("list_deleted = ?", true).Find(&record).Error
+	err = db.Where("page_number <> ? AND list_deleted = ?", 0, true).Find(&record).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return
+	}
+	return sliceutils.Wrap(record), nil
+}
+
+func getRepublishItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
+	err = db.Where("page_number <> ? AND list_updated = ?", 0, true).Find(&record).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return
 	}
@@ -124,25 +134,36 @@ func (b *ListBuilder) PublishList(model interface{}) (err error) {
 		newItems = append(newItems, addItems...)
 	}
 
+	republishItems, err := getRepublishItems(b.db, modelSlice)
+	if err != nil {
+		return
+	}
+
 	lp := model.(ListPublisher)
 	lp.Sort(newItems)
 	var oldResult []*OnePageItems
 	if len(oldItems) > 0 {
 		oldResult = paginate(oldItems)
 	}
-	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
-	restartFrom := getRestartFromIndex(oldResult, newResult)
 
-	//newResult[restartFrom:] is the pages that will be published to storage
+	var republishResult []*OnePageItems
+	if len(republishItems) > 0 {
+		republishResult = paginate(republishItems)
+	}
+
+	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
+
+	needPublishResults, indexResult := getNeedPublishResultsAndIndexResult(oldResult, newResult, republishResult)
+
 	var objs []*PublishAction
-	objs = b.publishActionsFunc(lp, newResult[restartFrom:], newResult[len(newResult)-1])
+	objs = b.publishActionsFunc(lp, needPublishResults, indexResult)
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
 		if err = UploadOrDelete(objs, b.storage); err != nil {
 			return
 		}
 
-		for _, items := range newResult[restartFrom:] {
+		for _, items := range needPublishResults {
 			for _, item := range items.Items {
 				if listItem, ok := item.(ListInterface); ok {
 					if err1 = b.db.Model(item).Updates(map[string]interface{}{
@@ -260,24 +281,58 @@ func paginate(array []interface{}) (result []*OnePageItems) {
 }
 
 //Compare new pages and old pages
-//Pick out which is the first page that different on both sides
-//Return the page's index
-func getRestartFromIndex(old, new []*OnePageItems) int {
-	if len(old) == 0 {
-		return 0
+//Pick out the pages which are needed to republish
+func getNeedPublishResultsAndIndexResult(oldResults, newResults, republishResults []*OnePageItems) (needPublishResults []*OnePageItems, indexResult *OnePageItems) {
+	if len(oldResults) == 0 {
+		return newResults, newResults[len(newResults)-1]
 	}
-	for indexNumber, array := range new {
-		if len(array.Items) == len(old[indexNumber].Items) {
-			for position, item := range array.Items {
+
+	var republishMap = make(map[int]bool)
+	for _, republishResult := range republishResults {
+		republishMap[republishResult.PageNumber] = true
+	}
+
+	for i, newResult := range newResults {
+
+		// Add need publish pages to needPublishResults
+		if _, exist := republishMap[newResult.PageNumber]; exist {
+			needPublishResults = append(needPublishResults, newResult)
+			if i == len(newResults)-1 {
+				indexResult = newResult
+			}
+			continue
+		}
+
+		// Add new page whose page number over old page's max page number
+		if i > len(oldResults)-1 {
+			needPublishResults = append(needPublishResults, newResult)
+			if i == len(newResults)-1 {
+				indexResult = newResult
+			}
+			continue
+		}
+
+		// Compare new page and old page
+		// If the items are different, add to needPublishResults
+		if len(newResult.Items) == len(oldResults[i].Items) {
+			for position, item := range newResult.Items {
 				model := item.(ListInterface)
-				oldModel := old[indexNumber].Items[position].(ListInterface)
+				oldModel := oldResults[i].Items[position].(ListInterface)
 				if model.GetPosition() != oldModel.GetPosition() {
-					return indexNumber
+					needPublishResults = append(needPublishResults, newResult)
+					if i == len(newResults)-1 {
+						indexResult = newResult
+					}
+					continue
 				}
 			}
 		} else {
-			return indexNumber
+			needPublishResults = append(needPublishResults, newResult)
+			if i == len(newResults)-1 {
+				indexResult = newResult
+			}
+			continue
 		}
 	}
-	return 0
+	return
 }

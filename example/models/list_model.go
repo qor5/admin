@@ -15,6 +15,7 @@ type ListModel struct {
 	Title string
 
 	publish.Status
+	publish.Schedule
 	publish.List
 }
 
