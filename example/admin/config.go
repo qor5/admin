@@ -10,6 +10,7 @@ import (
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss/s3"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/login"
@@ -159,6 +160,11 @@ func NewConfig() Config {
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
 	pageBuilder.Configure(b, pm)
+
+	ab := activity.Activity()
+	ab.RegisterModel(&models.Post{})
+	ab.ConfigureAdmin(b, db)
+	ab.RegisterCallbackOnDB(db, "Creator")
 
 	w := worker.New(db)
 	addJobs(w)
