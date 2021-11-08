@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 
 	"github.com/qor/oss"
 	"github.com/qor/qor5/utils"
@@ -18,7 +19,7 @@ type ListBuilder struct {
 	needNextPageFunc   func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool
 	getOldItemsFunc    func(record interface{}) (result []interface{}, err error)
 	totalNumberPerPage int
-	publishActionsFunc func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)
+	publishActionsFunc func(lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction)
 }
 
 func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
@@ -38,14 +39,19 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 			return sliceutils.Wrap(record), nil
 		},
 		totalNumberPerPage: 30,
-		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction) {
+		publishActionsFunc: func(lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction) {
 			for _, onePageItems := range result {
 				objs = append(objs, &PublishAction{
-					Url:      lp.GetListUrl(onePageItems.PageNumber),
+					Url:      lp.GetListUrl(strconv.Itoa(onePageItems.PageNumber)),
 					Content:  lp.GetListContent(onePageItems),
 					IsDelete: false,
 				})
 			}
+			objs = append(objs, &PublishAction{
+				Url:      lp.GetListUrl("index"),
+				Content:  lp.GetListContent(indexPage),
+				IsDelete: false,
+			})
 			return
 		},
 	}
@@ -68,7 +74,7 @@ func getDeleteItems(db *gorm.DB, record interface{}) (result []interface{}, err 
 }
 
 type ListPublisher interface {
-	GetListUrl(pageNumber int) string
+	GetListUrl(pageNumber string) string
 	GetListContent(onePageItems *OnePageItems) string
 	Sort(array []interface{})
 }
@@ -129,7 +135,7 @@ func (b *ListBuilder) PublishList(model interface{}) (err error) {
 
 	//newResult[restartFrom:] is the pages that will be published to storage
 	var objs []*PublishAction
-	objs = b.publishActionsFunc(lp, newResult[restartFrom:])
+	objs = b.publishActionsFunc(lp, newResult[restartFrom:], newResult[len(newResult)-1])
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
 		if err = UploadOrDelete(objs, b.storage); err != nil {
@@ -189,7 +195,7 @@ func (b *ListBuilder) TotalNumberPerPage(number int) *ListBuilder {
 	return b
 }
 
-func (b *ListBuilder) PublishActionsFunc(f func(lp ListPublisher, result []*OnePageItems) (objs []*PublishAction)) *ListBuilder {
+func (b *ListBuilder) PublishActionsFunc(f func(lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction)) *ListBuilder {
 	b.publishActionsFunc = f
 	return b
 }

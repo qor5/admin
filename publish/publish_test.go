@@ -137,7 +137,7 @@ func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Con
 	return
 }
 
-func (this ProductWithoutVersion) GetListUrl(pageNumber int) string {
+func (this ProductWithoutVersion) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/product_without_version/list/%v.html", pageNumber)
 }
 

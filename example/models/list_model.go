@@ -52,7 +52,7 @@ func (this ListModel) getPublishContent() string {
 	return fmt.Sprintf("id: %v, title: %v", this.ID, this.Title)
 }
 
-func (this ListModel) GetListUrl(pageNumber int) string {
+func (this ListModel) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/list_model/list/%v.html", pageNumber)
 }
 
