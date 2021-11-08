@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type contextKey string
@@ -225,4 +226,81 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 		}
 	}
 	return nil
+}
+
+func (ab *ActivityBuilder) HasModel(v interface{}) bool {
+	name := reflect.Indirect(reflect.ValueOf(v)).Type().Name()
+	for _, m := range ab.models {
+		if m.name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string) {
+	if db.Callback().Create().Get("activity:create") == nil {
+		db.Callback().Create().After("gorm:after_create").Register("activity:create", ab.record(ActivityCreate, creatorDBKey))
+	}
+	if db.Callback().Update().Get("activity:update") == nil {
+		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(ActivityEdit, creatorDBKey))
+	}
+	if db.Callback().Delete().Get("activity:delete") == nil {
+		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
+	}
+}
+
+func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
+	if creatorDBKey == "" {
+		panic("creatorDBKey cannot be empty")
+	}
+
+	return func(db *gorm.DB) {
+		model := db.Statement.Model
+		if !ab.HasModel(model) {
+			return
+		}
+
+		var (
+			userName string
+		)
+
+		if user, ok := db.Get(creatorDBKey); ok {
+			if u, ok := user.(string); ok {
+				userName = u
+			}
+		}
+
+		switch mode {
+		case ActivityCreate:
+			ab.AddCreateRecord(userName, model, db.Session(&gorm.Session{NewDB: true}))
+		case ActivityDelete:
+			ab.AddDeleteRecord(userName, model, db)
+		case ActivityEdit:
+			modelBuilder := ab.GetModelBuilder(model)
+			reflectValue := reflect.Indirect(reflect.ValueOf(model))
+			old := reflect.New(db.Statement.ReflectValue.Type()).Interface()
+			if len(modelBuilder.keys) == 0 {
+				if !reflectValue.FieldByName("ID").IsZero() {
+					db.Session(&gorm.Session{NewDB: true}).Where("id = ?", reflectValue.FieldByName("ID").Interface()).Find(old)
+					ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
+				}
+			} else {
+				newdb := db.Session(&gorm.Session{NewDB: true})
+				for _, key := range modelBuilder.keys {
+					newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).Interface())
+				}
+				newdb.Find(old)
+				ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
+			}
+		}
+	}
+}
+
+func ContextWithCreator(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, CreatorContextKey, name)
+}
+
+func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
+	return context.WithValue(ctx, DBContextKey, db)
 }

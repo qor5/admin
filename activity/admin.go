@@ -195,7 +195,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 					VCard(
 						VCardTitle(h.Text(msgr.DiffNew)),
 						VSimpleTable(
-							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffNow))),
+							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 							h.Tbody(elems...),
 						),
 					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
@@ -204,14 +204,14 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 			if len(deletediffs) > 0 {
 				var elems []h.HTMLComponent
 				for _, d := range deletediffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Now))))
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Old))))
 				}
 
 				diffsElems = append(diffsElems,
 					VCard(
 						VCardTitle(h.Text(msgr.DiffDelete)),
 						VSimpleTable(
-							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffNow))),
+							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 							h.Tbody(elems...),
 						),
 					).Attr("style", "margin-top:15px;margin-bottom:15px;"))

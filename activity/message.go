@@ -18,6 +18,7 @@ type Messages struct {
 	DiffField       string
 	DiffOld         string
 	DiffNow         string
+	DiffValue       string
 }
 
 var Messages_en_US = &Messages{
@@ -37,6 +38,7 @@ var Messages_en_US = &Messages{
 	DiffField:       "Filed",
 	DiffOld:         "Old",
 	DiffNow:         "Now",
+	DiffValue:       "Value",
 }
 
 var Messages_zh_CN = &Messages{
@@ -57,4 +59,5 @@ var Messages_zh_CN = &Messages{
 	DiffField:   "字段",
 	DiffOld:     "之前的值",
 	DiffNow:     "当前的值",
+	DiffValue:   "值",
 }
