@@ -21,9 +21,9 @@ const (
 )
 
 type ActivityBuilder struct {
-	useL10n           bool
 	creatorContextKey interface{}
 	dbContextKey      interface{}
+	logModel          ActivityLogInterface
 	models            []*ModelBuilder
 }
 
@@ -37,14 +37,25 @@ type ModelBuilder struct {
 
 func Activity() *ActivityBuilder {
 	return &ActivityBuilder{
+		logModel:          &ActivityLog{},
 		creatorContextKey: CreatorContextKey,
 		dbContextKey:      DBContextKey,
 	}
 }
 
-func (ab *ActivityBuilder) UseL10n() *ActivityBuilder {
-	ab.useL10n = true
+func (ab *ActivityBuilder) SetLogModel(model ActivityLogInterface) *ActivityBuilder {
+	ab.logModel = model
 	return ab
+}
+
+func (ab *ActivityBuilder) NewLogModel() interface{} {
+	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
+}
+func (ab *ActivityBuilder) NewLogModelSlice() interface{} {
+	sliceType := reflect.SliceOf(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type())
+	slice := reflect.New(sliceType)
+	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
+	return slice.Interface()
 }
 
 func (ab *ActivityBuilder) SetCreatorContextKey(key interface{}) *ActivityBuilder {
@@ -117,18 +128,16 @@ func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
 	return &ModelBuilder{}
 }
 
-func (ab *ActivityBuilder) GetActivityLogModel() ActivityLogInterface {
-	if ab.useL10n {
-		return &ActivityLocaleLog{}
-	}
-	return &ActivityLog{}
-}
-
 func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db *gorm.DB, diffs string) error {
 	var (
-		mb  = ab.GetModelBuilder(v)
-		log = ab.GetActivityLogModel()
+		mb = ab.GetModelBuilder(v)
+		m  = ab.NewLogModel()
 	)
+
+	log, ok := m.(ActivityLogInterface)
+	if !ok {
+		return errors.New("invalid activity log model")
+	}
 
 	log.SetCreatedAt(time.Now())
 	log.SetCreator(creator)

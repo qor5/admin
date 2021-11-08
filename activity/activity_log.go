@@ -25,8 +25,6 @@ type ActivityLogInterface interface {
 	GetModelLink() string
 	SetModelDiffs(string)
 	GetModelDiffs() string
-	SetLocale(string)
-	GetLocale() string
 }
 
 type ActivityLog struct {
@@ -97,9 +95,4 @@ func (al *ActivityLog) SetLocale(s string) {
 
 func (al *ActivityLog) GetLocale() string {
 	return ""
-}
-
-type ActivityLocaleLog struct {
-	ActivityLog
-	// l10n.LocaleCreatable
 }

@@ -3,6 +3,8 @@ package activity
 import (
 	"encoding/json"
 	"net/url"
+	"reflect"
+	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -19,7 +21,7 @@ const (
 )
 
 func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
-	if err := db.AutoMigrate(ab.GetActivityLogModel()); err != nil {
+	if err := db.AutoMigrate(ab.logModel); err != nil {
 		panic(err)
 	}
 
@@ -28,7 +30,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
 	var (
-		mb        = b.Model(ab.GetActivityLogModel())
+		mb        = b.Model(ab.logModel)
 		listing   = mb.Listing("CreatedAt", "Creator", "ModelKeys", "ModelName")
 		detailing = mb.Detailing("ModelLink", "ModelDiff")
 	)
@@ -38,24 +40,15 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 
 		var creatorOptions []*vuetifyx.SelectItem
 
-		if ab.useL10n {
-			var logs []ActivityLocaleLog
-			db.Select("creator").Group("creator").Find(&logs)
-			for _, log := range logs {
-				creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-					Text:  log.Creator,
-					Value: log.Creator,
-				})
-			}
-		} else {
-			var logs []ActivityLog
-			db.Select("creator").Group("creator").Find(&logs)
-			for _, log := range logs {
-				creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-					Text:  log.Creator,
-					Value: log.Creator,
-				})
-			}
+		var logs = ab.NewLogModelSlice()
+		db.Select("creator").Group("creator").Find(logs)
+		reflectVlaue := reflect.Indirect(reflect.ValueOf(logs))
+		for i := 0; i < reflectVlaue.Len(); i++ {
+			creator := reflectVlaue.Index(i).FieldByName("Creator").String()
+			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
+				Text:  creator,
+				Value: creator,
+			})
 		}
 
 		var modelOptions []*vuetifyx.SelectItem
@@ -181,14 +174,13 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 					continue
 				}
 			}
-
 			var diffsElems []h.HTMLComponent
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 
 			if len(newdiffs) > 0 {
 				var elems []h.HTMLComponent
 				for _, d := range newdiffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Now))))
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Now)))))
 				}
 
 				diffsElems = append(diffsElems,
@@ -204,7 +196,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 			if len(deletediffs) > 0 {
 				var elems []h.HTMLComponent
 				for _, d := range deletediffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Old))))
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)))))
 				}
 
 				diffsElems = append(diffsElems,
@@ -220,7 +212,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 			if len(changediffs) > 0 {
 				var elems []h.HTMLComponent
 				for _, d := range changediffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(d.Old), h.Td(h.Text(d.Now)))))
+					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)), h.Td(h.Text(fixSpecialChars(d.Now))))))
 				}
 
 				diffsElems = append(diffsElems,
@@ -232,8 +224,13 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 						),
 					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
 			}
-
 			return h.Components(diffsElems...)
 		},
 	)
+}
+
+func fixSpecialChars(str string) string {
+	str = strings.Replace(str, "{", "[", -1)
+	str = strings.Replace(str, "}", "]", -1)
+	return str
 }

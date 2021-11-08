@@ -11,7 +11,7 @@ import (
 
 var (
 	db    *gorm.DB
-	table = Activity().GetActivityLogModel()
+	table = Activity().logModel
 )
 
 type (
@@ -43,7 +43,7 @@ func TestModelKeys(t *testing.T) {
 
 	db.Where("1 = 1").Delete(table)
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.GetActivityLogModel()
+	record := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestModelKeys(t *testing.T) {
 	db.Where("1 = 1").Delete(table)
 	builder.RegisterModel(Widget{}).SetKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
-	record2 := builder.GetActivityLogModel()
+	record2 := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestModelLink(t *testing.T) {
 
 	db.Where("1 = 1").Delete(table)
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.GetActivityLogModel()
+	record := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestModelTypeHanders(t *testing.T) {
 				{Name: "Video 03", Title: "video 1"},
 			},
 		}, db)
-	record := builder.GetActivityLogModel()
+	record := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}

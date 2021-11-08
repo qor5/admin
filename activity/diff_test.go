@@ -69,8 +69,8 @@ func TestDiff(t *testing.T) {
 			want: []Diff{
 				{
 					Field: ".PublishedDate",
-					Old:   "2009-11-11T07:00:00+08:00",
-					Now:   "2016-03-14T02:33:20+08:00",
+					Old:   "2009-11-11T08:00:00+09:00", // db TimeZone=Asia/Tokyo
+					Now:   "2016-03-14T03:33:20+09:00", // db TimeZone=Asia/Tokyo
 				},
 				{
 					Field: ".Image.Url",
