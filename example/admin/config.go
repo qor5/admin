@@ -109,10 +109,12 @@ func NewConfig() Config {
 	)
 
 	m := b.Model(&models.Post{})
-	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
+
+	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", "Draft Count", "Online").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
