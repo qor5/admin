@@ -89,10 +89,3 @@ func (al *ActivityLog) SetModelDiffs(s string) {
 func (al *ActivityLog) GetModelDiffs() string {
 	return al.ModelDiffs
 }
-
-func (al *ActivityLog) SetLocale(s string) {
-}
-
-func (al *ActivityLog) GetLocale() string {
-	return ""
-}

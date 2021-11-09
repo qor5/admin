@@ -203,7 +203,7 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	}
 
 	if creator == "" || db == nil {
-		return errors.New("creator and db cannot be found from the context")
+		return errors.New("creator or db cannot be found from the context")
 	}
 
 	switch action {
@@ -248,6 +248,9 @@ func (ab *ActivityBuilder) HasModel(v interface{}) bool {
 }
 
 func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string) {
+	if creatorDBKey == "" {
+		panic("creatorDBKey cannot be empty")
+	}
 	if db.Callback().Create().Get("activity:create") == nil {
 		db.Callback().Create().After("gorm:after_create").Register("activity:create", ab.record(ActivityCreate, creatorDBKey))
 	}
@@ -255,15 +258,11 @@ func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string
 		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(ActivityEdit, creatorDBKey))
 	}
 	if db.Callback().Delete().Get("activity:delete") == nil {
-		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
+		db.Callback().Delete().After("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
 	}
 }
 
 func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
-	if creatorDBKey == "" {
-		panic("creatorDBKey cannot be empty")
-	}
-
 	return func(db *gorm.DB) {
 		model := db.Statement.Model
 		if !ab.HasModel(model) {
@@ -284,7 +283,29 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 		case ActivityCreate:
 			ab.AddCreateRecord(userName, model, db.Session(&gorm.Session{NewDB: true}))
 		case ActivityDelete:
-			ab.AddDeleteRecord(userName, model, db)
+			var (
+				mb = ab.GetModelBuilder(model)
+				m  = ab.NewLogModel()
+			)
+
+			log, ok := m.(ActivityLogInterface)
+			if !ok {
+				return
+			}
+
+			log.SetCreatedAt(time.Now())
+			log.SetCreator(userName)
+			log.SetAction(ActivityDelete)
+			log.SetModelName(mb.name)
+			var keys []string
+			for _, key := range db.Statement.Vars {
+				keys = append(keys, fmt.Sprintf("%v", key))
+			}
+			log.SetModelKeys(strings.Join(keys, ":"))
+			if f := mb.link; f != nil {
+				log.SetModelLink(f(model))
+			}
+			db.Session(&gorm.Session{NewDB: true}).Save(log)
 		case ActivityEdit:
 			modelBuilder := ab.GetModelBuilder(model)
 			reflectValue := reflect.Indirect(reflect.ValueOf(model))
