@@ -67,7 +67,7 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 		HomeURL("/admin")
 }
 
-func autheticate(loginBuilder *login.Builder) func(next http.Handler) http.Handler {
+func authenticate(loginBuilder *login.Builder) func(next http.Handler) http.Handler {
 	re := regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

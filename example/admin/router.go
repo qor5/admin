@@ -20,8 +20,8 @@ div {
 }
 `)))
 
-	mux.Handle("/admin/page_builder/", autheticate(c.lb)(c.pageBuilder))
-	mux.Handle("/", autheticate(c.lb)(c.pb))
+	mux.Handle("/admin/page_builder/", authenticate(c.lb)(c.pageBuilder))
+	mux.Handle("/", authenticate(c.lb)(c.pb))
 
 	return
 }
