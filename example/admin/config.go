@@ -109,6 +109,7 @@ func NewConfig() Config {
 	)
 
 	m := b.Model(&models.Post{})
+	slug.Configure(b, m)
 	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
 
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", "Draft Count", "Online").
@@ -140,8 +141,6 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
-	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 	configInputHarness(b, db)
 	configUser(b, db)
 	configRole(b, db)
