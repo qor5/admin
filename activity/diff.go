@@ -69,6 +69,10 @@ func (db *DiffBuilder) Diff(old, now interface{}) ([]Diff, error) {
 }
 
 func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) error {
+	if old.IsZero() || now.IsZero() {
+		return nil
+	}
+
 	if old.Type() != now.Type() {
 		return errors.New("the two types are not the same")
 	}

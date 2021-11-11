@@ -101,6 +101,7 @@ func (mb *ModelBuilder) getModelKey(v interface{}) string {
 	var (
 		stringBuilder = strings.Builder{}
 		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
+		reflectType   = reflectValue.Type()
 	)
 
 	if len(mb.keys) == 0 {
@@ -110,8 +111,15 @@ func (mb *ModelBuilder) getModelKey(v interface{}) string {
 	}
 
 	for _, key := range mb.keys {
-		if !reflectValue.FieldByName(key).IsZero() {
-			stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
+		if fields, ok := reflectType.FieldByName(key); ok {
+			if reflectValue.FieldByName(key).IsZero() {
+				continue
+			}
+			if fields.Anonymous {
+				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).FieldByName(key).Interface()))
+			} else {
+				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
+			}
 		}
 	}
 
@@ -309,6 +317,7 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 		case ActivityEdit:
 			modelBuilder := ab.GetModelBuilder(model)
 			reflectValue := reflect.Indirect(reflect.ValueOf(model))
+			reflectType := reflectValue.Type()
 			old := reflect.New(db.Statement.ReflectValue.Type()).Interface()
 			if len(modelBuilder.keys) == 0 {
 				if !reflectValue.FieldByName("ID").IsZero() {
@@ -318,7 +327,13 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 			} else {
 				newdb := db.Session(&gorm.Session{NewDB: true})
 				for _, key := range modelBuilder.keys {
-					newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).Interface())
+					if fields, ok := reflectType.FieldByName(key); ok {
+						if fields.Anonymous {
+							newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).FieldByName(key).Interface())
+						} else {
+							newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).Interface())
+						}
+					}
 				}
 				newdb.Find(old)
 				ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
