@@ -15,7 +15,7 @@
 
   ```go
     activity.RegisterModel(&model.Page{}).
-      SetKeys("ID", "VersionName"). // set keys
+      AddKeys("VersionName"). // add keys
       SetLink(func(page interface{}) string {
   	    return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
       }). // set link
@@ -40,6 +40,6 @@
 
 - Use the admin page to view the activity log
 
-    ```go  
-    activity.ConfigureAdmin(preset,db)
-    ```
+  ```go
+  activity.ConfigureAdmin(preset,db)
+  ```

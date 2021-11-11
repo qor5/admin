@@ -163,7 +163,7 @@ func NewConfig() Config {
 	pageBuilder.Configure(b, pm)
 
 	ab := activity.Activity()
-	ab.RegisterModel(&models.Post{}).SetKeys("ID", "Version")
+	ab.RegisterModel(&models.Post{})
 	ab.ConfigureAdmin(b, db)
 	ab.RegisterCallbackOnDB(db, "Creator")
 

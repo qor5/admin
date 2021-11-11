@@ -39,7 +39,7 @@ func init() {
 
 func TestModelKeys(t *testing.T) {
 	builder := Activity()
-	builder.RegisterModel(Page{}).SetKeys("ID", "VersionName")
+	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
 
 	db.Where("1 = 1").Delete(table)
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -52,7 +52,7 @@ func TestModelKeys(t *testing.T) {
 	}
 
 	db.Where("1 = 1").Delete(table)
-	builder.RegisterModel(Widget{}).SetKeys("Name")
+	builder.RegisterModel(Widget{}).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
 	record2 := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record2).Error; err != nil {

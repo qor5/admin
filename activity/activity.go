@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+	"gorm.io/gorm/clause"
 )
 
 type contextKey string
@@ -28,7 +28,7 @@ type ActivityBuilder struct {
 }
 
 type ModelBuilder struct {
-	name          string
+	typ           reflect.Type
 	keys          []string
 	link          func(interface{}) string
 	ignoredFields []string
@@ -51,6 +51,7 @@ func (ab *ActivityBuilder) SetLogModel(model ActivityLogInterface) *ActivityBuil
 func (ab *ActivityBuilder) NewLogModel() interface{} {
 	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
 }
+
 func (ab *ActivityBuilder) NewLogModelSlice() interface{} {
 	sliceType := reflect.SliceOf(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type())
 	slice := reflect.New(sliceType)
@@ -68,13 +69,45 @@ func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
 	return ab
 }
 
+func getPrimaryKey(t reflect.Type) (keys []string) {
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		if strings.Contains(t.Field(i).Tag.Get("gorm"), "primary") {
+			keys = append(keys, t.Field(i).Name)
+			continue
+		}
+
+		if t.Field(i).Type.Kind() == reflect.Ptr {
+			keys = append(keys, getPrimaryKey(t.Field(i).Type.Elem())...)
+		}
+
+		if t.Field(i).Type.Kind() == reflect.Struct {
+			keys = append(keys, getPrimaryKey(t.Field(i).Type)...)
+		}
+	}
+	return
+}
+
 func (ab *ActivityBuilder) RegisterModel(model interface{}) *ModelBuilder {
-	mb := &ModelBuilder{name: reflect.Indirect(reflect.ValueOf(model)).Type().Name()}
+	reflectType := reflect.Indirect(reflect.ValueOf(model)).Type()
+	if reflectType.Kind() != reflect.Struct {
+		panic(fmt.Sprintf("%v is not a struct", reflectType.Name()))
+	}
+
+	keys := getPrimaryKey(reflectType)
+	mb := &ModelBuilder{
+		typ:           reflectType,
+		keys:          keys,
+		ignoredFields: keys,
+	}
 	ab.models = append(ab.models, mb)
 	return mb
 }
 
-func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
+func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	mb.keys = append(mb.keys, keys...)
 	return mb
 }
@@ -97,18 +130,12 @@ func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandle) *ModelBuilde
 	return mb
 }
 
-func (mb *ModelBuilder) getModelKey(v interface{}) string {
+func (mb *ModelBuilder) GetModelKey(v interface{}) string {
 	var (
 		stringBuilder = strings.Builder{}
 		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
 		reflectType   = reflectValue.Type()
 	)
-
-	if len(mb.keys) == 0 {
-		if !reflectValue.FieldByName("ID").IsZero() {
-			stringBuilder.WriteString(fmt.Sprintf("%v", reflectValue.FieldByName("ID").Interface()))
-		}
-	}
 
 	for _, key := range mb.keys {
 		if fields, ok := reflectType.FieldByName(key); ok {
@@ -127,9 +154,9 @@ func (mb *ModelBuilder) getModelKey(v interface{}) string {
 }
 
 func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
-	name := reflect.Indirect(reflect.ValueOf(v)).Type().Name()
+	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
 	for _, m := range ab.models {
-		if m.name == name {
+		if m.typ == typ {
 			return m
 		}
 	}
@@ -150,8 +177,8 @@ func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db
 	log.SetCreatedAt(time.Now())
 	log.SetCreator(creator)
 	log.SetAction(action)
-	log.SetModelName(mb.name)
-	log.SetModelKeys(mb.getModelKey(v))
+	log.SetModelName(mb.typ.Name())
+	log.SetModelKeys(mb.GetModelKey(v))
 
 	if f := mb.link; f != nil {
 		log.SetModelLink(f(v))
@@ -246,9 +273,9 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 }
 
 func (ab *ActivityBuilder) HasModel(v interface{}) bool {
-	name := reflect.Indirect(reflect.ValueOf(v)).Type().Name()
+	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
 	for _, m := range ab.models {
-		if m.name == name {
+		if m.typ == typ {
 			return true
 		}
 	}
@@ -266,7 +293,7 @@ func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string
 		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(ActivityEdit, creatorDBKey))
 	}
 	if db.Callback().Delete().Get("activity:delete") == nil {
-		db.Callback().Delete().After("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
+		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
 	}
 }
 
@@ -291,55 +318,32 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 		case ActivityCreate:
 			ab.AddCreateRecord(userName, model, db.Session(&gorm.Session{NewDB: true}))
 		case ActivityDelete:
-			var (
-				mb = ab.GetModelBuilder(model)
-				m  = ab.NewLogModel()
-			)
-
-			log, ok := m.(ActivityLogInterface)
-			if !ok {
-				return
-			}
-
-			log.SetCreatedAt(time.Now())
-			log.SetCreator(userName)
-			log.SetAction(ActivityDelete)
-			log.SetModelName(mb.name)
-			var keys []string
-			for _, key := range db.Statement.Vars {
-				keys = append(keys, fmt.Sprintf("%v", key))
-			}
-			log.SetModelKeys(strings.Join(keys, ":"))
-			if f := mb.link; f != nil {
-				log.SetModelLink(f(model))
-			}
-			db.Session(&gorm.Session{NewDB: true}).Save(log)
+			ab.AddDeleteRecord(userName, findOld(db), db.Session(&gorm.Session{NewDB: true}))
 		case ActivityEdit:
-			modelBuilder := ab.GetModelBuilder(model)
-			reflectValue := reflect.Indirect(reflect.ValueOf(model))
-			reflectType := reflectValue.Type()
-			old := reflect.New(db.Statement.ReflectValue.Type()).Interface()
-			if len(modelBuilder.keys) == 0 {
-				if !reflectValue.FieldByName("ID").IsZero() {
-					db.Session(&gorm.Session{NewDB: true}).Where("id = ?", reflectValue.FieldByName("ID").Interface()).Find(old)
-					ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
-				}
-			} else {
-				newdb := db.Session(&gorm.Session{NewDB: true})
-				for _, key := range modelBuilder.keys {
-					if fields, ok := reflectType.FieldByName(key); ok {
-						if fields.Anonymous {
-							newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).FieldByName(key).Interface())
-						} else {
-							newdb = newdb.Where(fmt.Sprintf("%s = ?", (schema.NamingStrategy{}).ColumnName("", key)), reflectValue.FieldByName(key).Interface())
-						}
-					}
-				}
-				newdb.Find(old)
-				ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
+			old := findOld(db)
+			if ab.GetModelBuilder(old).GetModelKey(old) != ab.GetModelBuilder(model).GetModelKey(model) {
+				return // ignore diffs if the keys are different, this situation mostly occurs when a new version is created and localized a page to the other locale
+			}
+			ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
+		}
+	}
+}
+
+func findOld(db *gorm.DB) interface{} {
+	old := reflect.New(db.Statement.ReflectValue.Type()).Interface()
+	var sqls []string
+	var vars []interface{}
+
+	if where, ok := db.Statement.Clauses["WHERE"].Expression.(clause.Where); ok {
+		for _, e := range where.Exprs {
+			if expr, ok := e.(clause.Expr); ok {
+				sqls = append(sqls, expr.SQL)
+				vars = append(vars, expr.Vars...)
 			}
 		}
 	}
+	db.Session(&gorm.Session{NewDB: true, PrepareStmt: true}).Where(strings.Join(sqls, " AND "), vars...).First(old)
+	return old
 }
 
 func ContextWithCreator(ctx context.Context, name string) context.Context {

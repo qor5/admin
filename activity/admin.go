@@ -54,8 +54,8 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 		var modelOptions []*vuetifyx.SelectItem
 		for _, m := range ab.models {
 			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
-				Text:  m.name,
-				Value: m.name,
+				Text:  m.typ.Name(),
+				Value: m.typ.Name(),
 			})
 		}
 
