@@ -141,7 +141,7 @@ func (this ProductWithoutVersion) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/product_without_version/list/%v.html", pageNumber)
 }
 
-func (this ProductWithoutVersion) GetListContent(onePageItems *publish.OnePageItems) string {
+func (this ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
 	pageNumber := onePageItems.PageNumber
 	var result string
 	for _, item := range onePageItems.Items {

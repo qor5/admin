@@ -57,7 +57,7 @@ func (this ListModel) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/list_model/list/%v.html", pageNumber)
 }
 
-func (this ListModel) GetListContent(onePageItems *publish.OnePageItems) string {
+func (this ListModel) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
 	pageNumber := onePageItems.PageNumber
 	var result string
 	for _, item := range onePageItems.Items {
