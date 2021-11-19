@@ -10,8 +10,8 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.18
-	github.com/goplaid/x v1.0.16-0.20211102090357-db41a903b1e8
+	github.com/goplaid/web v1.1.20
+	github.com/goplaid/x v1.0.18
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -27,7 +27,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
-	github.com/theplant/docgo v0.0.1
+	github.com/theplant/docgo v0.0.7
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
