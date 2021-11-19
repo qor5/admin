@@ -12,6 +12,7 @@ import (
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/views"
 	"github.com/sunfmin/reflectutils"
@@ -21,8 +22,8 @@ import (
 )
 
 const (
-	saveCollectionEvent                = "seo_save_collection"
-	I18nSeoKey          i18n.ModuleKey = "I18nSeoKey"
+	saveEvent                 = "seo_save_collection"
+	I18nSeoKey i18n.ModuleKey = "I18nSeoKey"
 )
 
 var permVerifier *perm.Verifier
@@ -32,12 +33,16 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 		panic(err)
 	}
 
-	b.GetWebBuilder().RegisterEventFunc(saveCollectionEvent, saveCollection(collection, db))
-	b.Model(collection.settingModel).PrimaryField("Name").Label("SEO").Listing().PageFunc(collection.pageFunc(db))
+	if GlobalDB == nil {
+		GlobalDB = db
+	}
+
+	b.GetWebBuilder().RegisterEventFunc(saveEvent, collection.save)
+	b.Model(collection.settingModel).PrimaryField("Name").Label("SEO").Listing().PageFunc(collection.pageFunc)
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(Setting{}).
-		ComponentFunc(SeoEditingComponentFunc(collection, db))
+		ComponentFunc(collection.editingComponentFunc)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
@@ -47,223 +52,26 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 	permVerifier = perm.NewVerifier("seo", b.GetPermission())
 }
 
-func SeoEditingComponentFunc(collection *Collection, db *gorm.DB) presets.FieldComponentFunc {
-	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-
-		return collection.settingComponent(msgr, obj, db)
-	}
-}
-
-func (collection *Collection) pageFunc(db *gorm.DB) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-
-		r.PageTitle = msgr.PageTitle
-		r.Body = h.If(editIsAllowed(ctx.R) == nil, VContainer(
-			VSnackbar(h.Text(msgr.SavedSuccessfully)).
-				Attr("v-model", "vars.seoSnackbarShow").
-				Top(true).
-				Color("primary").
-				Timeout(2000),
-			VRow(
-				VCol(
-					VContainer(
-						h.H3(msgr.SiteWideTitle).Style("font-weight: 500"),
-						h.P().Text(msgr.SiteWideDescription)),
-				).Cols(3),
-				VCol(
-					VCard(
-						VForm(
-							collection.renderGlobalSection(msgr, db),
-						),
-					).Outlined(true).Elevation(2),
-				).Cols(9),
-			),
-			VRow(
-				VCol(
-					VContainer(
-						h.H3(msgr.PageMetadataTitle).Attr("style", "font-weight: 500"),
-						h.P().Text(msgr.PageMetadataDescription)),
-				).Cols(3),
-				VCol(
-					VExpansionPanels(
-						collection.renderSeoSections(msgr, db),
-					).Focusable(true),
-				).Cols(9),
-			),
-		).Attr("style", "background-color: #f5f5f5;max-width:100%").Attr(web.InitContextVars, `{seoSnackbarShow: false}`))
-
-		return
-	}
-}
-
-func (collection *Collection) renderGlobalSection(msgr *Messages, db *gorm.DB) h.HTMLComponent {
-	setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-	err := db.Where("is_global_seo = ? AND name = ?", true, collection.Name).First(setting).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		setting.SetName(collection.Name)
-		setting.SetSEOType(collection.Name)
-		setting.SetIsGlobalSEO(true)
-		if err := db.Save(setting).Error; err != nil {
-			panic(err)
-		}
-	}
-
-	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting))
-	settingValue := setting.GetGlobalSetting()
-	for i := 0; i < value.NumField(); i++ {
-		fieldName := value.Type().Field(i).Name
-		if settingValue[fieldName] != "" {
-			value.Field(i).Set(reflect.ValueOf(settingValue[fieldName]))
-		}
-	}
-
-	var comps h.HTMLComponents
-	for i := 0; i < value.Type().NumField(); i++ {
-		filed := value.Type().Field(i)
-		comps = append(comps, VTextField().FieldName(fmt.Sprintf("%s.%s", collection.Name, filed.Name)).Label(msgr.DynamicMessage[filed.Name]).Value(value.Field(i).String()))
-	}
-
-	return VForm(
-		VCardText(
-			comps,
-		),
-
-		VCardActions(
-			VSpacer(),
-			VBtn(msgr.Save).Bind("loading", "vars.global_seo_loading").
-				Color("primary").Large(true).Attr("@click",
-				web.Plaid().EventFunc(saveCollectionEvent).
-					Query("seoName", collection.Name).
-					Query("loadingName", "global_seo_loading").
-					BeforeScript(`vars.global_seo_loading = true;`).Go()),
-		).Attr(web.InitContextVars, `{global_seo_loading: false}`),
-	)
-}
-
-func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.HTMLComponents {
-	var comps h.HTMLComponents
-	for _, seo := range collection.registeredSEO {
-		setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-		err := db.Where("name = ?", seo.Name).First(setting).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			setting.SetName(seo.Name)
-			setting.SetSEOType(seo.Name)
-			if err := db.Save(setting).Error; err != nil {
-				panic(err)
-			}
-		}
-		setting.SetCollection(collection)
-
-		loadingName := strings.ToLower(seo.Name)
-		loadingName = strings.ReplaceAll(loadingName, " ", "_")
-		comp := VExpansionPanel(
-			VExpansionPanelHeader(h.H4(msgr.DynamicMessage[seo.Name]).Style("font-weight: 500;")),
-			VExpansionPanelContent(
-				VCardText(
-					collection.settingComponent(msgr, setting, db),
-				),
-				VCardActions(
-					VSpacer(),
-					VBtn(msgr.Save).Bind("loading", fmt.Sprintf("vars.%s", loadingName)).Color("primary").Large(true).
-						Attr("@click", web.Plaid().
-							EventFunc(saveCollectionEvent).
-							Query("seoName", seo.Name).
-							Query("loadingName", loadingName).
-							BeforeScript(fmt.Sprintf("vars.%s = true;", loadingName)).Go()),
-				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, loadingName)),
-			),
-		)
-
-		comps = append(comps, comp)
-	}
-
-	return comps
-}
-
-func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, db *gorm.DB) h.HTMLComponent {
+func (collection *Collection) editingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
-		fieldPrefix   string
-		switchOnModel bool
-		seo           *SEO
-		setting       Setting
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		db          = collection.getDBFromContext(ctx.R.Context())
+		fieldPrefix string
+		setting     Setting
 	)
 
-	if qorSeoSetting, ok := obj.(QorSEOSettingInterface); ok {
-		fieldPrefix = qorSeoSetting.GetName()
-		seo = collection.GetSEOByName(fieldPrefix)
-		setting = qorSeoSetting.GetSEOSetting()
-	} else {
-		if seo = collection.GetSEOByModel(obj); seo.Name != "" {
-			switchOnModel = true
-			value := reflect.Indirect(reflect.ValueOf(obj))
-			for i := 0; i < value.NumField(); i++ {
-				if s, ok := value.Field(i).Interface().(Setting); ok {
-					setting = s
-					fieldPrefix = value.Type().Field(i).Name
-				}
-			}
-		} else {
-			return nil
-		}
+	seo := collection.GetSEOByModel(obj)
+	if seo == nil {
+		return h.Div()
 	}
 
-	// todo: will remove this later
-	media := &setting.OpenGraphImageFromMediaLibrary
-	if media.ID.String() == "0" {
-		media.ID = json.Number("")
-	}
-
-	var variables []string
-	value := reflect.Indirect(reflect.ValueOf(collection.globalSetting)).Type()
+	value := reflect.Indirect(reflect.ValueOf(obj))
 	for i := 0; i < value.NumField(); i++ {
-		fieldName := value.Field(i).Name
-		variables = append(variables, fieldName)
-	}
-	variables = append(variables, seo.Variables...)
+		if s, ok := value.Field(i).Interface().(Setting); ok {
+			setting = s
+			fieldPrefix = value.Type().Field(i).Name
 
-	var variablesEle []h.HTMLComponent
-	for _, variable := range variables {
-		variablesEle = append(variablesEle, VCol(
-			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(msgr.DynamicMessage[variable])).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
-		).Cols(2))
-	}
-
-	refPrefix := strings.ReplaceAll(strings.ToLower(fieldPrefix), " ", "_")
-	commonSettingComponent := VSeo(
-		VRow(
-			variablesEle...,
-		),
-		h.H6(msgr.Basic).Style("margin-top:15px;margin-bottom:15px;"),
-		VCard(
-			VCardText(
-				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
-				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
-				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
-			),
-		),
-
-		h.H6(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;"),
-		VCard(
-			VCardText(
-				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType)).Cols(6),
-				),
-				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL)).Cols(6),
-					VCol(views.QMediaBox(db).
-						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
-						Value(media).
-						Config(&media_library.MediaBoxConfig{})).Cols(6),
-				),
-			),
-		),
-	).Attr("ref", "seo")
-
-	if !switchOnModel {
-		return commonSettingComponent
+		}
 	}
 
 	return h.HTMLComponents{
@@ -272,73 +80,276 @@ func (collection *Collection) settingComponent(msgr *Messages, obj interface{}, 
 			VCardText(
 				VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
 				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
-				h.Div(commonSettingComponent).Attr("v-show", "locals.userDefaults == false"),
+				h.Div(collection.vseo(fieldPrefix, seo, &setting, msgr, db)).Attr("v-show", "locals.userDefaults == false"),
 			),
 		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),
 	}
 }
 
-func saveCollection(collection *Collection, db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (collection *Collection) pageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+	var (
+		msgr = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		db   = collection.getDBFromContext(ctx.R.Context())
+	)
 
-		prefix := ctx.R.FormValue("seoName")
+	r.PageTitle = msgr.PageTitle
+	r.Body = h.If(editIsAllowed(ctx.R) == nil, VContainer(
+		VSnackbar(h.Text(msgr.SavedSuccessfully)).
+			Attr("v-model", "vars.seoSnackbarShow").
+			Top(true).
+			Color("primary").
+			Timeout(2000),
+		VRow(
+			VCol(
+				VContainer(
+					h.H3(msgr.PageMetadataTitle).Attr("style", "font-weight: 500"),
+					h.P().Text(msgr.PageMetadataDescription)),
+			).Cols(3),
+			VCol(
+				VExpansionPanels(
+					collection.renderSeoSections(msgr, db),
+				).Focusable(true),
+			).Cols(9),
+		),
+	).Attr("style", "background-color: #f5f5f5;max-width:100%").Attr(web.InitContextVars, `{seoSnackbarShow: false}`))
+	return
+}
 
-		setting := reflect.New(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()).Interface().(QorSEOSettingInterface)
-		err = db.Where("name = ?", prefix).First(setting).Error
+func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.HTMLComponents {
+	var comps h.HTMLComponents
+	for _, seo := range collection.registeredSEO {
+		modelSetting := collection.NewSettingModelInstance().(QorSEOSettingInterface)
+		err := db.Where("name = ?", seo.name).First(modelSetting).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return
+			modelSetting.SetName(seo.name)
+			if err := db.Save(modelSetting).Error; err != nil {
+				panic(err)
+			}
 		}
 
-		if setting.GetIsGlobalSEO() {
-			globalSetting := make(map[string]string)
-			for fieldWithPrefix := range ctx.R.Form {
-				if strings.HasPrefix(fieldWithPrefix, prefix) {
-					field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", prefix), "", -1)
-					globalSetting[field] = ctx.R.Form.Get(fieldWithPrefix)
-				}
-			}
-			setting.SetGlobalSetting(globalSetting)
-		} else {
-			vals := map[string]interface{}{}
-			mediaBox := media_library.MediaBox{}
-			for fieldWithPrefix := range ctx.R.Form {
-				if strings.HasPrefix(fieldWithPrefix, prefix) {
-					field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", prefix), "", -1)
-					if !strings.HasPrefix(field, "OpenGraphImageFromMediaLibrary") {
-						vals[field] = ctx.R.Form.Get(fieldWithPrefix)
-					} else {
-						if field == "OpenGraphImageFromMediaLibrary.Values" {
-							err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
-							if err != nil {
-								return
-							}
-							vals["OpenGraphImageFromMediaLibrary"] = mediaBox
-						}
-						if field == "OpenGraphImageFromMediaLibrary.Description" {
-							mediaBox.Description = ctx.R.FormValue(fieldWithPrefix)
-							if err != nil {
-								return
-							}
-						}
-					}
+		var variablesComps h.HTMLComponents
+		if seo.settingVariables != nil {
+			variables := reflect.Indirect(reflect.ValueOf(seo.settingVariables))
+			variableValues := modelSetting.GetVariables()
+			for i := 0; i < variables.NumField(); i++ {
+				fieldName := variables.Type().Field(i).Name
+				if variableValues[fieldName] != "" {
+					variables.Field(i).Set(reflect.ValueOf(variableValues[fieldName]))
 				}
 			}
 
-			s := setting.GetSEOSetting()
-			for k, v := range vals {
-				err = reflectutils.Set(&s, k, v)
+			if variables.Type().NumField() > 0 {
+				variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"), h.P().Text(msgr.VariableDescription))
+			}
+
+			for i := 0; i < variables.Type().NumField(); i++ {
+				field := variables.Type().Field(i)
+				var fieldLabel string
+				if msgr.DynamicMessage[field.Name] != "" {
+					fieldLabel = msgr.DynamicMessage[field.Name]
+				} else {
+					fieldLabel = field.Name
+				}
+				variablesComps = append(variablesComps, VTextField().FieldName(fmt.Sprintf("%s.Variables.%s", seo.name, field.Name)).Label(fieldLabel).Value(variables.Field(i).String()))
+			}
+		}
+
+		var (
+			label       string
+			setting     = modelSetting.GetSEOSetting()
+			loadingName = strings.ReplaceAll(strings.ToLower(seo.name), " ", "_")
+		)
+
+		if seo.name == collection.globalName {
+			label = msgr.GlobalName
+		} else {
+			label = msgr.DynamicMessage[seo.name]
+		}
+
+		if label == "" {
+			label = seo.name
+		}
+
+		comp := VExpansionPanel(
+			VExpansionPanelHeader(h.H4(label).Style("font-weight: 500;")),
+			VExpansionPanelContent(
+				VCardText(
+					variablesComps,
+					collection.vseo(modelSetting.GetName(), seo, &setting, msgr, db),
+				),
+				VCardActions(
+					VSpacer(),
+					VBtn(msgr.Save).Bind("loading", fmt.Sprintf("vars.%s", loadingName)).Color("primary").Large(true).
+						Attr("@click", web.Plaid().
+							EventFunc(saveEvent).
+							Query("name", seo.name).
+							Query("loadingName", loadingName).
+							BeforeScript(fmt.Sprintf("vars.%s = true;", loadingName)).Go()),
+				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, loadingName)),
+			),
+		)
+		comps = append(comps, comp)
+	}
+
+	return comps
+}
+
+func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Setting, msgr *Messages, db *gorm.DB) h.HTMLComponent {
+	var (
+		seos []*SEO
+	)
+
+	if seo.name == collection.globalName {
+		seos = append(seos, seo)
+	} else {
+		seos = append(seos, collection.GetSEO(collection.globalName), seo)
+	}
+
+	var (
+		variablesEle []h.HTMLComponent
+		variables    []string
+	)
+
+	for _, seo := range seos {
+		if seo.settingVariables == nil {
+			continue
+		}
+		value := reflect.Indirect(reflect.ValueOf(seo.settingVariables)).Type()
+		for i := 0; i < value.NumField(); i++ {
+			fieldName := value.Field(i).Name
+			variables = append(variables, fieldName)
+		}
+
+		for key := range seo.contextVariables {
+			if !strings.Contains(key, ":") {
+				variables = append(variables, key)
+			}
+		}
+	}
+	for _, variable := range variables {
+		var label string
+		if msgr.DynamicMessage[variable] != "" {
+			label = msgr.DynamicMessage[variable]
+		} else {
+			label = variable
+		}
+		variablesEle = append(variablesEle, VCol(
+			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(label)).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
+		).Cols(2))
+	}
+
+	image := &setting.OpenGraphImageFromMediaLibrary
+	if image.ID.String() == "0" {
+		image.ID = json.Number("")
+	}
+	refPrefix := strings.ReplaceAll(strings.ToLower(fieldPrefix), " ", "_")
+	return VSeo(
+		h.H4(msgr.Basic).Style("margin-top:15px;font-weight: 500"),
+		VRow(
+			variablesEle...,
+		),
+		VCard(
+			VCardText(
+				VTextField().Counter(65).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
+				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
+				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
+			),
+		),
+
+		h.H4(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;font-weight: 500"),
+		VCard(
+			VCardText(
+				VRow(
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType)).Cols(6),
+				),
+				VRow(
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL)).Cols(12),
+				),
+				VRow(
+					VCol(views.QMediaBox(db).Label(msgr.OpenGraphImage).
+						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+						Value(image).
+						Config(&media_library.MediaBoxConfig{
+							AllowType: "image",
+							Sizes: map[string]*media.Size{
+								"og": {
+									Width:  1200,
+									Height: 630,
+								},
+								"twitter-large": {
+									Width:  1200,
+									Height: 600,
+								},
+								"twitter-small": {
+									Width:  630,
+									Height: 630,
+								},
+							},
+						})).Cols(12)),
+			),
+		),
+	).Attr("ref", "seo")
+}
+
+func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		db      = collection.getDBFromContext(ctx.R.Context())
+		name    = ctx.R.FormValue("name")
+		setting = collection.NewSettingModelInstance().(QorSEOSettingInterface)
+	)
+
+	if err = db.Where("name = ?", name).First(setting).Error; err != nil {
+		return
+	}
+
+	var (
+		variables   = map[string]string{}
+		settingVals = map[string]interface{}{}
+		mediaBox    = media_library.MediaBox{}
+	)
+
+	for fieldWithPrefix := range ctx.R.Form {
+		if !strings.HasPrefix(fieldWithPrefix, name) {
+			continue
+		}
+
+		field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", name), "", -1)
+		if strings.HasPrefix(field, "OpenGraphImageFromMediaLibrary") {
+			if field == "OpenGraphImageFromMediaLibrary.Values" {
+				err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
+				if err != nil {
+					return
+				}
+				settingVals["OpenGraphImageFromMediaLibrary"] = mediaBox
+			}
+
+			if field == "OpenGraphImageFromMediaLibrary.Description" {
+				mediaBox.Description = ctx.R.FormValue(fieldWithPrefix)
 				if err != nil {
 					return
 				}
 			}
-			setting.SetSEOSetting(s)
+		} else if strings.HasPrefix(field, "Variables") {
+			key := strings.Replace(field, "Variables.", "", -1)
+			variables[key] = ctx.R.FormValue(fieldWithPrefix)
+		} else {
+			settingVals[field] = ctx.R.Form.Get(fieldWithPrefix)
 		}
-
-		if err = db.Save(setting).Error; err != nil {
+	}
+	s := setting.GetSEOSetting()
+	for k, v := range settingVals {
+		err = reflectutils.Set(&s, k, v)
+		if err != nil {
 			return
 		}
+	}
 
-		r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.R.FormValue("loadingName"))
+	setting.SetSEOSetting(s)
+	setting.SetVariables(variables)
+	if err = db.Save(setting).Error; err != nil {
 		return
 	}
+	r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.R.FormValue("loadingName"))
+	return
 }
