@@ -25,15 +25,21 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publ
 		Content:  content,
 		IsDelete: false,
 	})
+	p.SetOnlineUrl(p.getPublishUrl())
 
-	if p.GetStatus() == publish.StatusOnline && p.GetOnlineUrl() != p.getPublishUrl() {
+	var liveRecord Page
+	db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline).First(&liveRecord)
+	if liveRecord.ID == 0 {
+		return
+	}
+
+	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      p.GetOnlineUrl(),
+			Url:      liveRecord.getPublishUrl(),
 			IsDelete: true,
 		})
 	}
 
-	p.SetOnlineUrl(p.getPublishUrl())
 	return
 }
 func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {

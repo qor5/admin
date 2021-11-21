@@ -10,6 +10,7 @@ import (
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss/s3"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/login"
@@ -108,10 +109,13 @@ func NewConfig() Config {
 	)
 
 	m := b.Model(&models.Post{})
-	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	slug.Configure(b, m)
+	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
+
+	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", "Draft Count", "Online").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -137,8 +141,6 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
-	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 	configInputHarness(b, db)
 	configUser(b, db)
 	configRole(b, db)
@@ -151,16 +153,24 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(b, db, publisher, &pagebuilder.Page{}, &models.ListModel{})
 
+	pm := b.Model(&pagebuilder.Page{})
 	l := b.Model(&models.ListModel{})
+
+	publish_view.Configure(b, db, publisher, pm, l)
+
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Title")
 
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
-	pageBuilder.Configure(b)
+	pageBuilder.Configure(b, pm)
+
+	ab := activity.Activity()
+	ab.RegisterModel(&models.Post{})
+	ab.ConfigureAdmin(b, db)
+	ab.RegisterCallbackOnDB(db, "Creator")
 
 	w := worker.New(db)
 	addJobs(w)

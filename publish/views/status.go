@@ -9,9 +9,31 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/jsontyperegistry"
+	"gorm.io/gorm"
 )
+
+func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusDraft).Count(&count)
+		return h.Td(h.Text(fmt.Sprint(count)))
+	}
+}
+
+func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusOnline).Count(&count)
+
+		c := h.Text("-")
+		if count > 0 {
+			c = VBadge().Color("green")
+		}
+		return h.Td(c)
+	}
+}
 
 func StatusListFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -45,17 +67,32 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			)
 		}
 
-		//params := []interface{}{reflect.TypeOf(obj).String(), fmt.Sprint(reflectutils.MustGet(obj, "ID"))}
-		//if v, ok := obj.(publish.VersionInterface); ok {
-		//	params = append(params, v.GetVersionName())
-		//}
+		id := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+		if v, ok := obj.(publish.VersionInterface); ok {
+			id = fmt.Sprintf("%v_%v", id, v.GetVersion())
+		}
+
 		return h.Div(
+			VStepper(
+				VStepperHeader(
+					VStepperStep(h.Text(msgr.StatusDraft)).Step(0).Complete(s.GetStatus() == publish.StatusDraft),
+					VDivider(),
+					VStepperStep(h.Text(msgr.StatusOnline)).Step(0).Complete(s.GetStatus() == publish.StatusOnline),
+				),
+			),
+			h.Br(),
 			btn,
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				FieldValue("objJson", jsontyperegistry.MustJSONString(obj)).Go(), utilsMsgr)).
+				Query("id", id).Go(),
+				utilsMsgr)).
 			Attr(web.InitContextLocals, `{ action: ""}`)
 
 	}
+}
+
+// need empty setterFunc here to avoid set status to empty when update
+func StatusEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+	return
 }
 
 func getStatusColor(status string) string {

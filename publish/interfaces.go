@@ -17,6 +17,7 @@ type PublishAction struct {
 type PublishInterface interface {
 	GetPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
+
 type UnPublishInterface interface {
 	GetUnPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
@@ -37,6 +38,8 @@ type StatusInterface interface {
 }
 
 type VersionInterface interface {
+	GetVersion() string
+	SetVersion(v string)
 	GetVersionName() string
 	SetVersionName(v string)
 }
