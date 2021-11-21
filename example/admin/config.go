@@ -155,8 +155,13 @@ func NewConfig() Config {
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
 
 	pm := b.Model(&pagebuilder.Page{})
+	l := b.Model(&models.ListModel{})
 
-	publish_view.Configure(b, db, publisher, pm)
+	publish_view.Configure(b, db, publisher, pm, l)
+
+	l.Listing("ID", "Title", "Status")
+	l.Editing("Status", "Title")
+
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
