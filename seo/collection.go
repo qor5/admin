@@ -20,11 +20,8 @@ var (
 )
 
 type (
-	contextKey            string
-	contextVariablesFunc  func(interface{}, *Setting, *http.Request) string
-	globalSettingVaribles struct {
-		SiteName string
-	}
+	contextKey           string
+	contextVariablesFunc func(interface{}, *Setting, *http.Request) string
 )
 
 // Create a SeoCollection instance
@@ -35,7 +32,7 @@ func NewCollection() *Collection {
 		globalName:   GlobalSEO,
 	}
 
-	collection.RegisterSEO(GlobalSEO).RegisterVariblesSetting(&globalSettingVaribles{}).
+	collection.RegisterSEO(GlobalSEO).RegisterVariblesSetting(struct{ SiteName string }{}).
 		RegisterContextVariables(
 			"og:url", func(_ interface{}, _ *Setting, req *http.Request) string {
 				return req.URL.String()
@@ -56,14 +53,14 @@ type Collection struct {
 // SEO represents a seo object for a page
 type SEO struct {
 	name             string
-	model            interface{}
+	modelTyp         reflect.Type
 	contextVariables map[string]contextVariablesFunc // fetch context variables from request
 	settingVariables interface{}                     // fetch setting variables from db
 }
 
 // RegisterModel register a model to seo
 func (seo *SEO) SetModel(model interface{}) *SEO {
-	seo.model = model
+	seo.modelTyp = reflect.Indirect(reflect.ValueOf(model)).Type()
 	return seo
 }
 
@@ -101,7 +98,7 @@ func (collection *Collection) NewSettingModelInstance() interface{} {
 }
 
 func (collection *Collection) NewSettingModelSlice() interface{} {
-	sliceType := reflect.SliceOf(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type())
+	sliceType := reflect.SliceOf(reflect.PtrTo(reflect.Indirect(reflect.ValueOf(collection.settingModel)).Type()))
 	slice := reflect.New(sliceType)
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
 	return slice.Interface()
@@ -132,8 +129,8 @@ func (collection *Collection) RegisterSEO(obj interface{}) (seo *SEO) {
 	if name, ok := obj.(string); ok {
 		seo = &SEO{name: name}
 	} else {
-		name := reflect.Indirect(reflect.ValueOf(obj)).Type().Name()
-		seo = &SEO{name: name, model: obj}
+		typ := reflect.Indirect(reflect.ValueOf(obj)).Type()
+		seo = &SEO{name: typ.Name(), modelTyp: typ}
 	}
 
 	collection.registeredSEO = append(collection.registeredSEO, seo)
@@ -182,7 +179,7 @@ func (collection *Collection) GetSEOByName(name string) *SEO {
 // GetSEOByModel get a seo by model
 func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	for _, s := range collection.registeredSEO {
-		if reflect.TypeOf(model) == reflect.TypeOf(s.model) {
+		if reflect.Indirect(reflect.ValueOf(model)).Type() == s.modelTyp {
 			return s
 		}
 	}
@@ -207,10 +204,10 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 
 	// sort all SEOs
 	globalSeo := collection.GetSEO(collection.globalName)
-	if globalSeo != nil {
-		return nil
+	if globalSeo == nil {
+		return h.RawHTML("")
 	}
-	sortedSeoNames = append(sortedSeoNames, globalSeo.name)
+
 	sortedSEOs = append(sortedSEOs, globalSeo)
 
 	if name, ok := obj.(string); !ok || name != collection.globalName {
@@ -219,17 +216,21 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 			sortedSEOs = append(sortedSEOs, seo)
 		}
 	}
+	sortedSeoNames = append(sortedSeoNames, globalSeo.name)
 
 	// sort all QorSEOSettingInterface
 	var settingModelSlice = collection.NewSettingModelSlice()
 	if db.Find(settingModelSlice, "name in (?)", sortedSeoNames).Error != nil {
-		return nil
+		return h.RawHTML("")
 	}
 
 	reflectVlaue := reflect.Indirect(reflect.ValueOf(settingModelSlice))
-	for i := 0; i < reflectVlaue.Len(); i++ {
-		if modelSetting, ok := reflectVlaue.Index(i).Interface().(QorSEOSettingInterface); ok {
-			sortedDBSettings = append(sortedDBSettings, modelSetting)
+
+	for _, name := range sortedSeoNames {
+		for i := 0; i < reflectVlaue.Len(); i++ {
+			if modelSetting, ok := reflectVlaue.Index(i).Interface().(QorSEOSettingInterface); ok && modelSetting.GetName() == name {
+				sortedDBSettings = append(sortedDBSettings, modelSetting)
+			}
 		}
 	}
 
@@ -312,7 +313,6 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 			}
 		}
 	}
-
 	setting = replaceVariables(setting, variables)
 	return setting.HTMLComponent(tags)
 }

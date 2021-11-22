@@ -172,7 +172,7 @@ func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 	}
 
 	for _, key := range []string{"og:url", "og:type", "og:image", "og:title", "og:description"} {
-		if _, ok := openGraphData[key]; !ok {
+		if v := openGraphData[key]; v == "" {
 			if v, ok := tags[key]; ok {
 				openGraphData[key] = v
 			}

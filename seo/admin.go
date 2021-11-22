@@ -104,11 +104,12 @@ func (collection *Collection) pageFunc(ctx *web.EventContext) (_ web.PageRespons
 
 		var variablesComps h.HTMLComponents
 		if seo.settingVariables != nil {
-			variables := reflect.Indirect(reflect.ValueOf(seo.settingVariables))
+			variables := reflect.Indirect(reflect.New(reflect.Indirect(reflect.ValueOf(seo.settingVariables)).Type()))
 			variableValues := modelSetting.GetVariables()
 			for i := 0; i < variables.NumField(); i++ {
 				fieldName := variables.Type().Field(i).Name
 				if variableValues[fieldName] != "" {
+					fmt.Println(fieldName, variableValues[fieldName])
 					variables.Field(i).Set(reflect.ValueOf(variableValues[fieldName]))
 				}
 			}
@@ -119,7 +120,7 @@ func (collection *Collection) pageFunc(ctx *web.EventContext) (_ web.PageRespons
 
 			for i := 0; i < variables.Type().NumField(); i++ {
 				field := variables.Type().Field(i)
-				variablesComps = append(variablesComps, VTextField().FieldName(fmt.Sprintf("%s.Variables.%s", seo.name, field.Name)).Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", field.Name	)).Value(variables.Field(i).String()))
+				variablesComps = append(variablesComps, VTextField().FieldName(fmt.Sprintf("%s.Variables.%s", seo.name, field.Name)).Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", field.Name)).Value(variables.Field(i).String()))
 			}
 		}
 
