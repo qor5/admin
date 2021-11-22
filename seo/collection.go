@@ -120,6 +120,14 @@ func (collection *Collection) RegisterDBContextKey(key interface{}) *Collection 
 }
 
 // RegisterSEO register a seo
+func (collection *Collection) RegisterSEOByNames(names ...string) *Collection {
+	for index := range names {
+		collection.registeredSEO = append(collection.registeredSEO, &SEO{name: names[index]})
+	}
+	return collection
+}
+
+// RegisterSEO register a seo
 func (collection *Collection) RegisterSEO(obj interface{}) (seo *SEO) {
 	if name, ok := obj.(string); ok {
 		seo = &SEO{name: name}

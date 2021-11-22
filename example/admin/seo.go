@@ -21,20 +21,7 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 			}
 			return ""
 		},
-	)
-	SeoCollection.RegisterSEO("Not Found")
-	SeoCollection.RegisterSEO("Internal Server Error")
-
-	seo.Messages_en_US.DynamicMessage = map[string]string{
-		"SiteName": "SiteName",
-		"Title":    "Title",
-		"Post":     "Post",
-	}
-
-	seo.Messages_zh_CN.DynamicMessage = map[string]string{
-		"SiteName": "站点名称",
-		"Title":    "标题",
-		"Post":     "帖子",
-	}
+	).RegisterVariblesSetting(struct{ Test string }{})
+	SeoCollection.RegisterSEOByNames("Not Found", "Internal Server Error")
 	SeoCollection.Configure(b, db)
 }

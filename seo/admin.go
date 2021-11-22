@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -55,7 +56,6 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 func (collection *Collection) editingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-		db          = collection.getDBFromContext(ctx.R.Context())
 		fieldPrefix string
 		setting     Setting
 	)
@@ -70,7 +70,6 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 		if s, ok := value.Field(i).Interface().(Setting); ok {
 			setting = s
 			fieldPrefix = value.Type().Field(i).Name
-
 		}
 	}
 
@@ -80,43 +79,19 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 			VCardText(
 				VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
 				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
-				h.Div(collection.vseo(fieldPrefix, seo, &setting, msgr, db)).Attr("v-show", "locals.userDefaults == false"),
+				h.Div(collection.vseo(fieldPrefix, seo, &setting, ctx.R)).Attr("v-show", "locals.userDefaults == false"),
 			),
 		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),
 	}
 }
 
-func (collection *Collection) pageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+func (collection *Collection) pageFunc(ctx *web.EventContext) (_ web.PageResponse, err error) {
 	var (
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 		db   = collection.getDBFromContext(ctx.R.Context())
 	)
 
-	r.PageTitle = msgr.PageTitle
-	r.Body = h.If(editIsAllowed(ctx.R) == nil, VContainer(
-		VSnackbar(h.Text(msgr.SavedSuccessfully)).
-			Attr("v-model", "vars.seoSnackbarShow").
-			Top(true).
-			Color("primary").
-			Timeout(2000),
-		VRow(
-			VCol(
-				VContainer(
-					h.H3(msgr.PageMetadataTitle).Attr("style", "font-weight: 500"),
-					h.P().Text(msgr.PageMetadataDescription)),
-			).Cols(3),
-			VCol(
-				VExpansionPanels(
-					collection.renderSeoSections(msgr, db),
-				).Focusable(true),
-			).Cols(9),
-		),
-	).Attr("style", "background-color: #f5f5f5;max-width:100%").Attr(web.InitContextVars, `{seoSnackbarShow: false}`))
-	return
-}
-
-func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.HTMLComponents {
-	var comps h.HTMLComponents
+	var seoComponents h.HTMLComponents
 	for _, seo := range collection.registeredSEO {
 		modelSetting := collection.NewSettingModelInstance().(QorSEOSettingInterface)
 		err := db.Where("name = ?", seo.name).First(modelSetting).Error
@@ -139,18 +114,12 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 			}
 
 			if variables.Type().NumField() > 0 {
-				variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"), h.P().Text(msgr.VariableDescription))
+				variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"))
 			}
 
 			for i := 0; i < variables.Type().NumField(); i++ {
 				field := variables.Type().Field(i)
-				var fieldLabel string
-				if msgr.DynamicMessage[field.Name] != "" {
-					fieldLabel = msgr.DynamicMessage[field.Name]
-				} else {
-					fieldLabel = field.Name
-				}
-				variablesComps = append(variablesComps, VTextField().FieldName(fmt.Sprintf("%s.Variables.%s", seo.name, field.Name)).Label(fieldLabel).Value(variables.Field(i).String()))
+				variablesComps = append(variablesComps, VTextField().FieldName(fmt.Sprintf("%s.Variables.%s", seo.name, field.Name)).Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", field.Name	)).Value(variables.Field(i).String()))
 			}
 		}
 
@@ -163,11 +132,7 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 		if seo.name == collection.globalName {
 			label = msgr.GlobalName
 		} else {
-			label = msgr.DynamicMessage[seo.name]
-		}
-
-		if label == "" {
-			label = seo.name
+			label = i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo", seo.name)
 		}
 
 		comp := VExpansionPanel(
@@ -175,7 +140,7 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 			VExpansionPanelContent(
 				VCardText(
 					variablesComps,
-					collection.vseo(modelSetting.GetName(), seo, &setting, msgr, db),
+					collection.vseo(modelSetting.GetName(), seo, &setting, ctx.R),
 				),
 				VCardActions(
 					VSpacer(),
@@ -188,15 +153,38 @@ func (collection *Collection) renderSeoSections(msgr *Messages, db *gorm.DB) h.H
 				).Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, loadingName)),
 			),
 		)
-		comps = append(comps, comp)
+		seoComponents = append(seoComponents, comp)
 	}
 
-	return comps
+	return web.PageResponse{
+		PageTitle: msgr.PageTitle,
+		Body: h.If(editIsAllowed(ctx.R) == nil, VContainer(
+			VSnackbar(h.Text(msgr.SavedSuccessfully)).
+				Attr("v-model", "vars.seoSnackbarShow").
+				Top(true).
+				Color("primary").
+				Timeout(2000),
+			VRow(
+				VCol(
+					VContainer(
+						h.H3(msgr.PageMetadataTitle).Attr("style", "font-weight: 500"),
+						h.P().Text(msgr.PageMetadataDescription)),
+				).Cols(3),
+				VCol(
+					VExpansionPanels(
+						seoComponents,
+					).Focusable(true),
+				).Cols(9),
+			),
+		).Attr("style", "background-color: #f5f5f5;max-width:100%").Attr(web.InitContextVars, `{seoSnackbarShow: false}`)),
+	}, nil
 }
 
-func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Setting, msgr *Messages, db *gorm.DB) h.HTMLComponent {
+func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
 	var (
 		seos []*SEO
+		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
+		db   = collection.getDBFromContext(req.Context())
 	)
 
 	if seo.name == collection.globalName {
@@ -211,13 +199,12 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 	)
 
 	for _, seo := range seos {
-		if seo.settingVariables == nil {
-			continue
-		}
-		value := reflect.Indirect(reflect.ValueOf(seo.settingVariables)).Type()
-		for i := 0; i < value.NumField(); i++ {
-			fieldName := value.Field(i).Name
-			variables = append(variables, fieldName)
+		if seo.settingVariables != nil {
+			value := reflect.Indirect(reflect.ValueOf(seo.settingVariables)).Type()
+			for i := 0; i < value.NumField(); i++ {
+				fieldName := value.Field(i).Name
+				variables = append(variables, fieldName)
+			}
 		}
 
 		for key := range seo.contextVariables {
@@ -226,15 +213,10 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 			}
 		}
 	}
+
 	for _, variable := range variables {
-		var label string
-		if msgr.DynamicMessage[variable] != "" {
-			label = msgr.DynamicMessage[variable]
-		} else {
-			label = variable
-		}
 		variablesEle = append(variablesEle, VCol(
-			VBtn("").Width(100).Icon(true).Children(VIcon("add_box"), h.Text(label)).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
+			VBtn("").Width(100).Icon(true).Attr("style", "text-transform: none").Children(VIcon("add_box"), h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", variable))).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
 		).Cols(2))
 	}
 
