@@ -43,7 +43,7 @@ func (b *PickerBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	b.comp.SetAttr("v-field-name", h.JSONString(b.fieldName))
 	b.comp.SetAttr("@change", fmt.Sprintf("locals.%s = false; locals.%s = $event", menuLocal, valueLocal))
 
-	return h.Div(
+	return web.Scope(
 		VMenu(
 			web.Slot(
 				VTextField().
@@ -60,7 +60,8 @@ func (b *PickerBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 		).Attr("v-model", fmt.Sprintf("locals.%s", menuLocal)).
 			CloseOnContentClick(false).
 			MaxWidth(290),
-	).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, %s: false}`, valueLocal, h.JSONString(b.value), menuLocal)).
+	).Init(fmt.Sprintf(`{%s: %s, %s: false}`, valueLocal, h.JSONString(b.value), menuLocal)).
+		VSlot("{ locals }").
 		MarshalHTML(ctx)
 
 }
