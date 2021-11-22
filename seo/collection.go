@@ -30,6 +30,7 @@ func NewCollection() *Collection {
 		settingModel: &QorSEOSetting{},
 		dbContextKey: DBContextKey,
 		globalName:   GlobalSEO,
+		inherited:    true,
 	}
 
 	collection.RegisterSEO(GlobalSEO).RegisterVariblesSetting(struct{ SiteName string }{}).
@@ -46,6 +47,7 @@ func NewCollection() *Collection {
 type Collection struct {
 	registeredSEO []*SEO
 	globalName    string      //default is GlobalSEO
+	inherited     bool        //default is true. the order is model setting >> related seo setting >> global setting
 	dbContextKey  interface{} // context key to get db from context
 	settingModel  interface{} // db model
 }
@@ -102,6 +104,12 @@ func (collection *Collection) NewSettingModelSlice() interface{} {
 	slice := reflect.New(sliceType)
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
 	return slice.Interface()
+}
+
+// RegisterVariblesSetting register variables setting
+func (collection *Collection) SetInherited(b bool) *Collection {
+	collection.inherited = b
+	return collection
 }
 
 // RegisterVariblesSetting register variables setting
@@ -253,7 +261,11 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 	}
 
 	// get the final setting from sortedSettings
-	for _, s := range sortedSettings {
+	for i, s := range sortedSettings {
+		if !collection.inherited && i > 1 {
+			break
+		}
+
 		if s.Title != "" && setting.Title == "" {
 			setting.Title = s.Title
 		}
@@ -303,10 +315,12 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 		}
 	}
 
-	for _, seo := range sortedSEOs {
+	for i, seo := range sortedSEOs {
 		for key, f := range seo.contextVariables {
 			value := f(obj, &setting, req)
-			if strings.Contains(key, ":") {
+			if strings.Contains(key, ":") && collection.inherited {
+				tags[key] = value
+			} else if strings.Contains(key, ":") && !collection.inherited && i == 0 {
 				tags[key] = value
 			} else {
 				variables[key] = f(obj, &setting, req)
