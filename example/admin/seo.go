@@ -21,7 +21,7 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 			}
 			return ""
 		},
-	).RegisterVariblesSetting(struct{ Test string }{})
+	).RegisterSettingVaribles(struct{ Test string }{})
 	SeoCollection.RegisterSEOByNames("Not Found", "Internal Server Error")
 	SeoCollection.Configure(b, db)
 }

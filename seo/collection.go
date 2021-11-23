@@ -33,7 +33,7 @@ func NewCollection() *Collection {
 		inherited:    true,
 	}
 
-	collection.RegisterSEO(GlobalSEO).RegisterVariblesSetting(struct{ SiteName string }{}).
+	collection.RegisterSEO(GlobalSEO).RegisterSettingVaribles(struct{ SiteName string }{}).
 		RegisterContextVariables(
 			"og:url", func(_ interface{}, _ *Setting, req *http.Request) string {
 				return req.URL.String()
@@ -82,7 +82,7 @@ func (seo *SEO) RegisterContextVariables(key string, f contextVariablesFunc) *SE
 }
 
 // RegisterSettingModel register a setting
-func (seo *SEO) RegisterVariblesSetting(setting interface{}) *SEO {
+func (seo *SEO) RegisterSettingVaribles(setting interface{}) *SEO {
 	seo.settingVariables = setting
 	return seo
 }
@@ -124,7 +124,7 @@ func (collection *Collection) RegisterDBContextKey(key interface{}) *Collection 
 	return collection
 }
 
-// RegisterSEO register a seo
+// RegisterSEOByNames register mutiple seo by names
 func (collection *Collection) RegisterSEOByNames(names ...string) *Collection {
 	for index := range names {
 		collection.registeredSEO = append(collection.registeredSEO, &SEO{name: names[index]})
@@ -195,6 +195,7 @@ func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	return nil
 }
 
+//RenderGlobal render global seo
 func (collection Collection) RenderGlobal(req *http.Request) h.HTMLComponent {
 	return collection.Render(collection.globalName, req)
 }
@@ -262,7 +263,7 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 
 	// get the final setting from sortedSettings
 	for i, s := range sortedSettings {
-		if !collection.inherited && i > 1 {
+		if !collection.inherited && i >= 1 {
 			break
 		}
 
