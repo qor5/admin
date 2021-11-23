@@ -19,7 +19,7 @@ func TestAdmin(t *testing.T) {
 		server = httptest.NewServer(admin)
 	)
 
-	collection := NewCollection().RegisterSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product Detail", "Product")
+	collection := NewCollection().SetSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product Detail", "Product")
 	collection.Configure(admin, GlobalDB)
 
 	// should create all seo setting in the first time

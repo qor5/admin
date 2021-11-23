@@ -36,7 +36,7 @@ func TestRender(t *testing.T) {
 		{
 			name:       "Render Golabl SEO with setting variables and default context variables",
 			prepareDB:  func() { GlobalDB.Save(&globlalSeoSetting) },
-			collection: NewCollection().RegisterSettingModel(&TestQorSEOSetting{}),
+			collection: NewCollection().SetSettingModel(&TestQorSEOSetting{}),
 			obj:        GlobalSEO,
 			want: `
 			<title>global | Qor5 dev</title>
@@ -58,7 +58,7 @@ func TestRender(t *testing.T) {
 				}
 				GlobalDB.Save(&product)
 			},
-			collection: NewCollection().RegisterSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product"),
+			collection: NewCollection().SetSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product"),
 			obj:        "Product",
 			want:       `<title>product | Qor5 dev</title>`,
 		},
@@ -79,7 +79,7 @@ func TestRender(t *testing.T) {
 				GlobalDB.Save(&product)
 			},
 			collection: func() *Collection {
-				collection := NewCollection().RegisterSettingModel(&TestQorSEOSetting{})
+				collection := NewCollection().SetSettingModel(&TestQorSEOSetting{})
 				collection.RegisterSEO("Product").
 					RegisterSettingVaribles(struct{ ProductTag string }{}).
 					RegisterContextVariables("og:image", func(_ interface{}, _ *Setting, _ *http.Request) string {
@@ -106,7 +106,7 @@ func TestRender(t *testing.T) {
 				GlobalDB.Save(&product)
 			},
 			collection: func() *Collection {
-				collection := NewCollection().RegisterSettingModel(&TestQorSEOSetting{})
+				collection := NewCollection().SetSettingModel(&TestQorSEOSetting{})
 				collection.RegisterSEO(&Product{})
 				return collection
 			}(),
@@ -136,7 +136,7 @@ func TestRender(t *testing.T) {
 				GlobalDB.Save(&product)
 			},
 			collection: func() *Collection {
-				collection := NewCollection().RegisterSettingModel(&TestQorSEOSetting{})
+				collection := NewCollection().SetSettingModel(&TestQorSEOSetting{})
 				collection.RegisterSEO(&Product{})
 				return collection
 			}(),
@@ -166,7 +166,7 @@ func TestRender(t *testing.T) {
 				GlobalDB.Save(&product)
 			},
 			collection: func() *Collection {
-				collection := NewCollection().RegisterSettingModel(&TestQorSEOSetting{})
+				collection := NewCollection().SetSettingModel(&TestQorSEOSetting{})
 				collection.RegisterSEO(&Product{})
 				return collection
 			}(),
@@ -200,7 +200,7 @@ func TestRender(t *testing.T) {
 				GlobalDB.Save(&product)
 			},
 			collection: func() *Collection {
-				collection := NewCollection().SetInherited(false).RegisterSettingModel(&TestQorSEOSetting{})
+				collection := NewCollection().SetInherited(false).SetSettingModel(&TestQorSEOSetting{})
 				collection.RegisterSEO(&Product{})
 				return collection
 			}(),

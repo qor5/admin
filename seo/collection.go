@@ -81,7 +81,7 @@ func (seo *SEO) RegisterContextVariables(key string, f contextVariablesFunc) *SE
 	return seo
 }
 
-// RegisterSettingModel register a setting
+// RegisterSettingVaribles register a setting variable
 func (seo *SEO) RegisterSettingVaribles(setting interface{}) *SEO {
 	seo.settingVariables = setting
 	return seo
@@ -113,13 +113,13 @@ func (collection *Collection) SetInherited(b bool) *Collection {
 }
 
 // RegisterVariblesSetting register variables setting
-func (collection *Collection) RegisterSettingModel(s interface{}) *Collection {
+func (collection *Collection) SetSettingModel(s interface{}) *Collection {
 	collection.settingModel = s
 	return collection
 }
 
 // RegisterDBContextKey register a key to get db from context
-func (collection *Collection) RegisterDBContextKey(key interface{}) *Collection {
+func (collection *Collection) SetDBContextKey(key interface{}) *Collection {
 	collection.dbContextKey = key
 	return collection
 }
