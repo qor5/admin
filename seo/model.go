@@ -3,8 +3,6 @@ package seo
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/qor/qor5/media/media_library"
@@ -17,18 +15,11 @@ type QorSEOSettingInterface interface {
 	SetName(string)
 	GetSEOSetting() Setting
 	SetSEOSetting(Setting)
-	GetGlobalSetting() map[string]string
-	SetGlobalSetting(map[string]string)
-	GetSEOType() string
-	SetSEOType(string)
-	GetIsGlobalSEO() bool
-	SetIsGlobalSEO(bool)
+	GetVariables() Variables
+	SetVariables(Variables)
 	GetTitle() string
 	GetDescription() string
 	GetKeywords() string
-	SetCollection(*Collection)
-	GetOpenGraphTitle() string
-	GetOpenGraphDescription() string
 	GetOpenGraphURL() string
 	GetOpenGraphType() string
 	GetOpenGraphImageURL() string
@@ -38,15 +29,12 @@ type QorSEOSettingInterface interface {
 
 // QorSEOSetting default seo model
 type QorSEOSetting struct {
-	Name        string `gorm:"primary_key"`
-	Setting     Setting
-	IsGlobalSEO bool
-
+	Name      string `gorm:"primary_key"`
+	Setting   Setting
+	Variables Variables `sql:"type:text"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `gorm:"index"`
-
-	collection *Collection
 }
 
 // Setting defined meta's attributes
@@ -54,16 +42,12 @@ type Setting struct {
 	Title                          string `gorm:"size:4294967295"`
 	Description                    string
 	Keywords                       string
-	Type                           string
-	OpenGraphTitle                 string
-	OpenGraphDescription           string
 	OpenGraphURL                   string
 	OpenGraphType                  string
 	OpenGraphImageURL              string
 	OpenGraphImageFromMediaLibrary media_library.MediaBox
 	OpenGraphMetadata              []OpenGraphMetadata
 	EnabledCustomize               bool
-	GlobalSetting                  map[string]string
 }
 
 // OpenGraphMetadata open graph meta data
@@ -81,6 +65,16 @@ func (s QorSEOSetting) GetSEOSetting() Setting {
 	return s.Setting
 }
 
+// SetVariablesSetting set variables setting
+func (s *QorSEOSetting) SetVariables(setting Variables) {
+	s.Variables = setting
+}
+
+// GetVariablesSetting get variables setting
+func (s QorSEOSetting) GetVariables() Variables {
+	return s.Variables
+}
+
 // GetName get QorSeoSetting's name
 func (s QorSEOSetting) GetName() string {
 	return s.Name
@@ -91,42 +85,6 @@ func (s *QorSEOSetting) SetName(name string) {
 	s.Name = name
 }
 
-// GetSEOType get QorSeoSetting's type
-func (s QorSEOSetting) GetSEOType() string {
-	return s.Setting.Type
-}
-
-// SetSEOType set QorSeoSetting's type
-func (s *QorSEOSetting) SetSEOType(t string) {
-	s.Setting.Type = t
-}
-
-// GetIsGlobalSEO get QorSEOSetting's isGlobal
-func (s QorSEOSetting) GetIsGlobalSEO() bool {
-	return s.IsGlobalSEO
-}
-
-// SetIsGlobalSEO set QorSeoSetting's isGlobal
-func (s *QorSEOSetting) SetIsGlobalSEO(isGlobal bool) {
-	s.IsGlobalSEO = isGlobal
-}
-
-// GetGlobalSetting get QorSeoSetting's globalSetting
-func (s QorSEOSetting) GetGlobalSetting() map[string]string {
-	return s.Setting.GlobalSetting
-}
-
-// SetGlobalSetting set QorSeoSetting's globalSetting
-func (s *QorSEOSetting) SetGlobalSetting(globalSetting map[string]string) {
-	s.Setting.GlobalSetting = globalSetting
-}
-
-func (s QorSEOSetting) GetOpenGraphTitle() string {
-	return s.Setting.OpenGraphTitle
-}
-func (s QorSEOSetting) GetOpenGraphDescription() string {
-	return s.Setting.OpenGraphDescription
-}
 func (s QorSEOSetting) GetOpenGraphURL() string {
 	return s.Setting.OpenGraphURL
 }
@@ -158,16 +116,6 @@ func (s QorSEOSetting) GetKeywords() string {
 	return s.Setting.Keywords
 }
 
-// SetCollection set Setting's collection
-func (s *QorSEOSetting) SetCollection(collection *Collection) {
-	s.collection = collection
-}
-
-// GetSEO get Setting's SEO configure
-// func (s QorSEOSetting) GetSEO() *SEO {
-// 	return s.collection.GetSEO(s.Name)
-// }
-
 // Scan scan value from database into struct
 func (setting *Setting) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
@@ -188,55 +136,57 @@ func (setting Setting) Value() (driver.Value, error) {
 	return string(result), err
 }
 
-func (setting Setting) Component(req *http.Request) h.HTMLComponent {
-	toAbsoluteURL := func(str string) string {
-		if u, err := url.Parse(str); err == nil {
-			if u.IsAbs() {
-				return str
-			}
+type Variables map[string]string
 
-			if u.Host == "" && req != nil {
-				u.Host = req.Host
-			}
-
-			if u.Scheme == "" {
-				if req != nil && req.URL.Scheme != "" {
-					u.Scheme = req.URL.Scheme
-				} else {
-					u.Scheme = "http"
-				}
-			}
-			return u.String()
+// Scan scan value from database into struct
+func (setting *Variables) Scan(value interface{}) error {
+	if bytes, ok := value.([]byte); ok {
+		json.Unmarshal(bytes, setting)
+	} else if str, ok := value.(string); ok {
+		json.Unmarshal([]byte(str), setting)
+	} else if strs, ok := value.([]string); ok {
+		for _, str := range strs {
+			json.Unmarshal([]byte(str), setting)
 		}
-		return str
 	}
+	return nil
+}
 
-	openGraphData := map[string]string{}
+// Value get value from struct, and save into database
+func (setting Variables) Value() (driver.Value, error) {
+	result, err := json.Marshal(setting)
+	return string(result), err
+}
 
-	if setting.OpenGraphURL != "" {
-		openGraphData["og:url"] = toAbsoluteURL(setting.OpenGraphURL)
-	}
-
-	if setting.OpenGraphType != "" {
-		openGraphData["og:type"] = setting.OpenGraphType
-	}
-
-	if setting.OpenGraphImageFromMediaLibrary.FileName != "" {
-		openGraphData["og:image"] = toAbsoluteURL(setting.OpenGraphImageFromMediaLibrary.URL())
-	} else {
-		openGraphData["og:image"] = toAbsoluteURL(setting.OpenGraphImageURL)
+func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
+	openGraphData := map[string]string{
+		"og:title":       setting.Title,
+		"og:description": setting.Description,
+		"og:url":         setting.OpenGraphURL,
+		"og:type":        setting.OpenGraphType,
+		"og:image":       setting.OpenGraphImageURL,
 	}
 
 	for _, metavalue := range setting.OpenGraphMetadata {
 		openGraphData[metavalue.Property] = metavalue.Content
 	}
 
-	if _, ok := openGraphData["og:title"]; !ok {
-		openGraphData["og:title"] = setting.Title
+	for _, key := range []string{"og:url", "og:type", "og:image", "og:title", "og:description"} {
+		if v := openGraphData[key]; v == "" {
+			if v, ok := tags[key]; ok {
+				openGraphData[key] = v
+			}
+		}
 	}
 
-	if _, ok := openGraphData["og:description"]; !ok {
-		openGraphData["og:description"] = setting.Description
+	if openGraphData["og:type"] == "" {
+		openGraphData["og:type"] = "website"
+	}
+
+	for key, value := range tags {
+		if _, ok := openGraphData[key]; !ok {
+			openGraphData[key] = value
+		}
 	}
 
 	var openGraphDataComponents h.HTMLComponents
