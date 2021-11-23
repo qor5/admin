@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// @snippet_begin(SeoExample)
 var SeoCollection *seo.Collection
 
 func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
@@ -25,3 +26,5 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 	SeoCollection.RegisterSEOByNames("Not Found", "Internal Server Error")
 	SeoCollection.Configure(b, db)
 }
+
+// @snippet_end

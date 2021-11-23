@@ -14,7 +14,13 @@ This is how you start
 
 `),
 ).Title("QOR5 Documentation").
-	Slug("/")
+	Slug("/").Tables(
+	ChildrenTable(
+		ContentGroup(
+			SEO,
+		).Title("Packages"),
+	),
+)
 
 //go:embed assets/**.*
 var Assets embed.FS

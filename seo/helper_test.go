@@ -22,10 +22,13 @@ func init() {
 	GlobalDB.AutoMigrate(&TestQorSEOSetting{})
 }
 
+// @snippet_begin(SeoModelExample)
 type Product struct {
 	Name string
 	SEO  Setting
 }
+
+// @snippet_end
 
 func resetDB() {
 	GlobalDB.Exec("truncate test_qor_seo_settings;")

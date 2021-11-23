@@ -44,21 +44,27 @@ func NewCollection() *Collection {
 }
 
 // Collection will hold registered seo configures and global setting definition and other configures
+// @snippet_begin(SeoCollectionDefinition)
 type Collection struct {
 	registeredSEO []*SEO
-	globalName    string      //default is GlobalSEO
-	inherited     bool        //default is true. the order is model setting >> related seo setting >> global setting
-	dbContextKey  interface{} // context key to get db from context
+	globalName    string      //default name is GlobalSEO
+	inherited     bool        //default is true. the order is model seo setting, system seo setting, global seo setting
+	dbContextKey  interface{} // get db from context
 	settingModel  interface{} // db model
 }
 
+// @snippet_end
+
 // SEO represents a seo object for a page
+// @snippet_begin(SeoDefinition)
 type SEO struct {
 	name             string
 	modelTyp         reflect.Type
 	contextVariables map[string]contextVariablesFunc // fetch context variables from request
 	settingVariables interface{}                     // fetch setting variables from db
 }
+
+// @snippet_end
 
 // RegisterModel register a model to seo
 func (seo *SEO) SetModel(model interface{}) *SEO {

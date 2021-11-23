@@ -10,6 +10,7 @@ import (
 )
 
 // QorSEOSettingInterface support customize Seo model
+// @snippet_begin(QorSEOSettingInterface)
 type QorSEOSettingInterface interface {
 	GetName() string
 	SetName(string)
@@ -26,6 +27,8 @@ type QorSEOSettingInterface interface {
 	GetOpenGraphImageFromMediaLibrary() media_library.MediaBox
 	GetOpenGraphMetadata() []OpenGraphMetadata
 }
+
+// @snippet_end
 
 // QorSEOSetting default seo model
 type QorSEOSetting struct {
