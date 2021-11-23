@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/publish"
+	"github.com/theplant/sliceutils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -27,6 +30,7 @@ type Product struct {
 	publish.Version
 	publish.Schedule
 	publish.Status
+	publish.List
 }
 
 func (p *Product) getContent() string {
@@ -97,6 +101,7 @@ type ProductWithoutVersion struct {
 	Code string
 
 	publish.Status
+	publish.List
 }
 
 func (p *ProductWithoutVersion) getContent() string {
@@ -130,6 +135,72 @@ func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Con
 		IsDelete: true,
 	})
 	return
+}
+
+func (this ProductWithoutVersion) GetListUrl(pageNumber string) string {
+	return fmt.Sprintf("/product_without_version/list/%v.html", pageNumber)
+}
+
+func (this ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
+	pageNumber := onePageItems.PageNumber
+	var result string
+	for _, item := range onePageItems.Items {
+		record := item.(*ProductWithoutVersion)
+		result = result + fmt.Sprintf("product:%v ", record.Name)
+	}
+	result = result + fmt.Sprintf("pageNumber:%v", pageNumber)
+	return result
+}
+
+func (this ProductWithoutVersion) Sort(array []interface{}) {
+	var temp []*ProductWithoutVersion
+	sliceutils.Unwrap(array, &temp)
+	sort.Sort(SliceProductWithoutVersion(temp))
+	for k, v := range temp {
+		array[k] = v
+	}
+	return
+}
+
+type SliceProductWithoutVersion []*ProductWithoutVersion
+
+func (x SliceProductWithoutVersion) Len() int           { return len(x) }
+func (x SliceProductWithoutVersion) Less(i, j int) bool { return x[i].Name < x[j].Name }
+func (x SliceProductWithoutVersion) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+
+type MockStorage struct {
+	oss.StorageInterface
+	Objects        map[string][]string
+	DeletedObjects map[string]bool
+}
+
+func (m *MockStorage) Get(path string) (*os.File, error) {
+	return nil, errors.New("no file")
+}
+
+func (m *MockStorage) Put(path string, r io.Reader) (*oss.Object, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		panic(err)
+	}
+	if m.Objects == nil {
+		m.Objects = make(map[string][]string)
+	}
+	if _, ok := m.Objects[path]; !ok {
+		m.Objects[path] = []string{}
+	}
+	m.Objects[path] = append([]string{string(b)}, m.Objects[path]...)
+
+	return &oss.Object{}, nil
+}
+
+func (m *MockStorage) Delete(path string) error {
+	fmt.Println("Calling mock s3 client - Delete: ", path)
+	if m.DeletedObjects == nil {
+		m.DeletedObjects = make(map[string]bool)
+	}
+	m.DeletedObjects[path] = true
+	return nil
 }
 
 func ConnectDB() (db *gorm.DB) {
@@ -223,6 +294,93 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	if err := assertUploadListFile(&productV2, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
 	} else {
 		t.Error(errors.New("delete list file %s failed"), productV2.getListUrl())
+	}
+}
+
+func TestPublishList(t *testing.T) {
+	db := ConnectDB()
+	db.AutoMigrate(&ProductWithoutVersion{})
+	storage := &MockStorage{}
+
+	productV1 := ProductWithoutVersion{
+		Model:  gorm.Model{ID: 1},
+		Code:   "1",
+		Name:   "1",
+		Status: publish.Status{Status: publish.StatusDraft},
+	}
+	productV2 := ProductWithoutVersion{
+		Model:  gorm.Model{ID: 2},
+		Code:   "2",
+		Name:   "2",
+		Status: publish.Status{Status: publish.StatusDraft},
+	}
+
+	productV3 := ProductWithoutVersion{
+		Model:  gorm.Model{ID: 3},
+		Code:   "3",
+		Name:   "3",
+		Status: publish.Status{Status: publish.StatusDraft},
+	}
+
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV1)
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV2)
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV3)
+
+	publisher := publish.New(db, storage)
+	listPublisher := publish.NewListBuilder(db, storage)
+
+	publisher.Publish(&productV1)
+	publisher.Publish(&productV3)
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
+
+	var expected string
+	expected = "product:1 product:3 pageNumber:1"
+	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+want: %v
+get: %v
+`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+	}
+
+	publisher.Publish(&productV2)
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
+
+	expected = "product:1 product:2 product:3 pageNumber:1"
+	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+want: %v
+get: %v
+`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+	}
+
+	publisher.UnPublish(&productV2)
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
+
+	expected = "product:1 product:3 pageNumber:1"
+	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+want: %v
+get: %v
+`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+	}
+
+	publisher.UnPublish(&productV3)
+	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+		panic(err)
+	}
+
+	expected = "product:1 pageNumber:1"
+	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+want: %v
+get: %v
+`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
 	}
 }
 

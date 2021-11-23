@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
@@ -36,6 +35,5 @@ func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent 
 			),
 		),
 	).MaxWidth("600px").
-		Attr(web.InitContextLocals, `{commonConfirmDialog: false}`).Attr("v-model", "locals.commonConfirmDialog")
-
+		Attr("v-model", "locals.commonConfirmDialog")
 }

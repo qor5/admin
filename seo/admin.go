@@ -75,13 +75,16 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 
 	return h.HTMLComponents{
 		h.Label(msgr.Seo).Class("v-label theme--light"),
-		VCard(
-			VCardText(
-				VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
-				VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
-				h.Div(collection.vseo(fieldPrefix, seo, &setting, ctx.R)).Attr("v-show", "locals.userDefaults == false"),
-			),
-		).Attr(web.InitContextLocals, fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),
+		web.Scope(
+			VCard(
+				VCardText(
+					VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize)"),
+					VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
+					h.Div(collection.vseo(fieldPrefix, seo, &setting, ctx.R)).Attr("v-show", "locals.userDefaults == false"),
+				),
+			).Attr("style", "margin-bottom: 15px; margin-top: 15px;"),
+		).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).
+			VSlot("{ locals }"),
 	}
 }
 

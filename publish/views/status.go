@@ -72,7 +72,7 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			id = fmt.Sprintf("%v_%v", id, v.GetVersion())
 		}
 
-		return h.Div(
+		return web.Scope(
 			VStepper(
 				VStepperHeader(
 					VStepperStep(h.Text(msgr.StatusDraft)).Step(0).Complete(s.GetStatus() == publish.StatusDraft),
@@ -84,9 +84,8 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			btn,
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 				Query("id", id).Go(),
-				utilsMsgr)).
-			Attr(web.InitContextLocals, `{ action: ""}`)
-
+				utilsMsgr),
+		).Init(`{ action: "", commonConfirmDialog: false}`).VSlot("{ locals }")
 	}
 }
 

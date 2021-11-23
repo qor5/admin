@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"strconv"
+	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -53,7 +54,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 									Go()),
 						).AlignCenter(true).Attr("style", "max-width: 650px"),
 					).Color("primary").
-						//MaxHeight(64).
+						// MaxHeight(64).
 						Flat(true).
 						Dark(true),
 					web.Portal().Name(deleteConfirmPortalName(field)),
@@ -63,9 +64,9 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 				).Tile(true),
 			).
 				Fullscreen(true).
-				//HideOverlay(true).
+				// HideOverlay(true).
 				Transition("dialog-bottom-transition").
-				//Scrollable(true).
+				// Scrollable(true).
 				Attr("v-model", "vars.showFileChooser"),
 		})
 		r.VarsScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
@@ -159,12 +160,15 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				Attr("v-for", "f in locals.fileChooserUploadingFiles").
 				Cols(6).Sm(4).Md(3),
 		),
-	).
-		Attr(web.InitContextLocals, `{fileChooserUploadingFiles: []}`)
+	)
+
+	var initCroppingVars = []string{fileCroppingVarName(0) + ": false"}
 
 	for i, f := range files {
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
+		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
+
 		row.AppendChildren(
 			VCol(
 				VCard(
@@ -225,7 +229,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								),
 						),
 					),
-				).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: false}`, croppingVar)),
+				),
 			).Cols(6).Sm(4).Md(3),
 		)
 	}
@@ -236,24 +240,26 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			Top(true).
 			Color("primary").
 			Timeout(5000),
-		VContainer(
-			row,
-			VRow(
+		web.Scope(
+			VContainer(
+				row,
+				VRow(
+					VCol().Cols(1),
+					VCol(
+						VPagination().
+							Length(pagesCount).
+							Value(int(currentPageInt)).
+							Attr("@input", web.Plaid().
+								FieldValue(currentPageName(field), web.Var("$event")).
+								EventFunc(imageJumpPageEvent).
+								Query("field", field).
+								FieldValue("cfg", h.JSONString(cfg)).
+								Go()),
+					).Cols(10),
+				),
 				VCol().Cols(1),
-				VCol(
-					VPagination().
-						Length(pagesCount).
-						Value(int(currentPageInt)).
-						Attr("@input", web.Plaid().
-							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent).
-							Query("field", field).
-							FieldValue("cfg", h.JSONString(cfg)).
-							Go()),
-				).Cols(10),
-			),
-			VCol().Cols(1),
-		).Fluid(true),
+			).Fluid(true),
+		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).VSlot("{ locals }"),
 	).Attr(web.InitContextVars, `{snackbarShow: false}`)
 }
 
@@ -269,15 +275,15 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 	g.AppendChildren(
 		VChip(h.Text(text)).XSmall(true),
 	)
-	//if len(f.File.Sizes) == 0 {
+	// if len(f.File.Sizes) == 0 {
 	//	return g
-	//}
+	// }
 
-	//for k, size := range f.File.GetSizes() {
+	// for k, size := range f.File.GetSizes() {
 	//	g.AppendChildren(
 	//		VChip(thumbName(k, size)).XSmall(true),
 	//	)
-	//}
+	// }
 	return g
 
 }
