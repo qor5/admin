@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
+	"github.com/qor/qor5/note"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -62,6 +64,8 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 			// TODO: update user info if claim info changed?
 
 			newR = r.WithContext(context.WithValue(r.Context(), _userKey, u))
+			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserIDKey, u.ID))
+			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Email)))
 			return
 		}).
 		HomeURL("/admin")
