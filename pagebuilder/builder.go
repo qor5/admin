@@ -77,7 +77,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 }
 
 func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
-	list := pm.Listing("ID", "Title", "Slug", "Draft Count", "Online")
+	list := pm.Listing("ID", "Title", "Slug")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		return h.Td(

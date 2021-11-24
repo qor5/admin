@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/qor/qor5/note"
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/goplaid/web"
@@ -27,6 +28,7 @@ type Item struct {
 
 func configUser(b *presets.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
+	note.Configure(db, b, user)
 
 	ed := user.Editing(
 		"Name",
@@ -64,12 +66,12 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			}
 
 			return v.VXAutocomplete().Label(field.Label).
-				//ItemText("text").ItemValue("value").
+				// ItemText("text").ItemValue("value").
 				FieldName(field.Name).
 				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
 				Value(values).
 				SelectedItems(selectedItems).
-				//Items(items).
+				// Items(items).
 				CacheItems(true).
 				ItemsEventFunc("roles_selector")
 		}).
@@ -108,7 +110,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	cl := user.Listing("Name", "Email", "Status")
+	cl := user.Listing("ID", "Name", "Email", "Status", "Notes").PerPage(10)
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
 		return []*v.FilterItem{

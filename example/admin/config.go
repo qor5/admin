@@ -18,6 +18,7 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
 	"github.com/qor/qor5/publish"
@@ -94,7 +95,7 @@ func NewConfig() Config {
 	utils.Configure(b)
 
 	media_view.Configure(b, db)
-	//media_view.MediaLibraryPerPage = 3
+	// media_view.MediaLibraryPerPage = 3
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(
@@ -110,11 +111,13 @@ func NewConfig() Config {
 
 	m := b.Model(&models.Post{})
 	slug.Configure(b, m)
-	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
 
-	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", "Draft Count", "Online").
+	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
+
+	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
+
 	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
@@ -166,6 +169,10 @@ func NewConfig() Config {
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
 	pageBuilder.Configure(b, pm)
+
+	publish_view.Configure(b, db, publisher, pm)
+
+	note.Configure(db, b, m, pm)
 
 	ab := activity.Activity()
 	ab.RegisterModel(&models.Post{})
