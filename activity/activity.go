@@ -80,11 +80,11 @@ func getPrimaryKey(t reflect.Type) (keys []string) {
 			continue
 		}
 
-		if t.Field(i).Type.Kind() == reflect.Ptr {
+		if t.Field(i).Type.Kind() == reflect.Ptr && t.Field(i).Anonymous {
 			keys = append(keys, getPrimaryKey(t.Field(i).Type.Elem())...)
 		}
 
-		if t.Field(i).Type.Kind() == reflect.Struct {
+		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Anonymous {
 			keys = append(keys, getPrimaryKey(t.Field(i).Type)...)
 		}
 	}
