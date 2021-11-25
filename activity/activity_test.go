@@ -11,7 +11,7 @@ import (
 
 var (
 	db    *gorm.DB
-	table = Activity().logModel
+	table = &TestActivityLog{}
 )
 
 type (
@@ -26,6 +26,10 @@ type (
 		Name  string
 		Title string
 	}
+
+	TestActivityLog struct {
+		ActivityLog
+	}
 )
 
 func init() {
@@ -37,11 +41,14 @@ func init() {
 	db.AutoMigrate(table)
 }
 
-func TestModelKeys(t *testing.T) {
-	builder := Activity()
-	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+func resetDB() {
+	db.Exec("truncate test_activity_logs;")
+}
 
-	db.Where("1 = 1").Delete(table)
+func TestModelKeys(t *testing.T) {
+	builder := Activity().SetLogModel(&TestActivityLog{})
+	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+	resetDB()
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
@@ -51,7 +58,7 @@ func TestModelKeys(t *testing.T) {
 		t.Errorf("want the keys %v, but got %v", "1:v1", record.GetModelKeys())
 	}
 
-	db.Where("1 = 1").Delete(table)
+	resetDB()
 	builder.RegisterModel(Widget{}).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
 	record2 := builder.NewLogModel().(ActivityLogInterface)
@@ -64,13 +71,13 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := Activity()
+	builder := Activity().SetLogModel(&TestActivityLog{})
 	builder.RegisterModel(Page{}).SetLink(func(v interface{}) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
 	})
 
-	db.Where("1 = 1").Delete(table)
+	resetDB()
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModel().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
@@ -82,7 +89,7 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := Activity()
+	builder := Activity().SetLogModel(&TestActivityLog{})
 	builder.RegisterModel(Page{}).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
 		nowWidgets := now.(Widgets)
@@ -132,7 +139,7 @@ func TestModelTypeHanders(t *testing.T) {
 		return diffs
 	})
 
-	db.Where("1 = 1").Delete(table)
+	resetDB()
 	builder.AddEditRecord("a",
 		Page{ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
@@ -155,5 +162,47 @@ func TestModelTypeHanders(t *testing.T) {
 	wants := `[{"Field":".VersionName","Old":"v1","Now":"v2"},{"Field":".Title","Old":"test","Now":"test1"},{"Field":".Widgets.0","Old":"Text 01","Now":"Text 011"},{"Field":".Widgets.1","Old":"HeroBanner 02","Now":"HeroBanner 022"},{"Field":".Widgets.3","Old":"","Now":"Video 03"}]`
 	if record.GetModelDiffs() != wants {
 		t.Errorf("want the diffs %v, but got %v", wants, record.GetModelDiffs())
+	}
+}
+
+func TestCreator(t *testing.T) {
+	builder := Activity().SetLogModel(&TestActivityLog{})
+	builder.RegisterModel(Page{})
+	resetDB()
+
+	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	record := builder.NewLogModel().(ActivityLogInterface)
+	if err := db.First(record).Error; err != nil {
+		t.Fatal(err)
+	}
+	if record.GetCreator() != "user a" {
+		t.Errorf("want the creator %v, but got %v", "a", record.GetCreator())
+	}
+}
+
+type user struct {
+}
+
+func (u user) GetID() uint {
+	return 10
+}
+func (u user) GetName() string {
+	return "user a"
+}
+func TestCreatorInferface(t *testing.T) {
+	builder := Activity().SetLogModel(&TestActivityLog{})
+	builder.RegisterModel(Page{})
+	resetDB()
+
+	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	record := builder.NewLogModel().(ActivityLogInterface)
+	if err := db.First(record).Error; err != nil {
+		t.Fatal(err)
+	}
+	if record.GetCreator() != "user a" {
+		t.Errorf("want the creator %v, but got %v", "a", record.GetCreator())
+	}
+	if record.GetUserID() != 10 {
+		t.Errorf("want the creator id %v, but got %v", 10, record.GetUserID())
 	}
 }

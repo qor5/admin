@@ -75,7 +75,7 @@ func (ab *ActivityBuilder) SetListings(ls ...string) *ActivityBuilder {
 func (ab ActivityBuilder) getListings() []string {
 	if len(ab.listings) == 0 {
 		return defaultListings
-	}	
+	}
 	return ab.listings
 }
 
@@ -178,7 +178,7 @@ func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
 	return &ModelBuilder{}
 }
 
-func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db *gorm.DB, diffs string) error {
+func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
 	var (
 		mb = ab.GetModelBuilder(v)
 		m  = ab.NewLogModel()
@@ -190,7 +190,14 @@ func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db
 	}
 
 	log.SetCreatedAt(time.Now())
-	log.SetCreator(creator)
+	switch user := creator.(type) {
+	case string:
+		log.SetCreator(user)
+	case CreatorInferface:
+		log.SetCreator(user.GetName())
+		log.SetUserID(user.GetID())
+	}
+
 	log.SetAction(action)
 	log.SetModelName(mb.typ.Name())
 	log.SetModelKeys(mb.GetModelKey(v))
@@ -206,19 +213,19 @@ func (ab *ActivityBuilder) save(creator string, action string, v interface{}, db
 	return db.Save(log).Error
 }
 
-func (ab *ActivityBuilder) AddCreateRecord(creator string, v interface{}, db *gorm.DB) error {
+func (ab *ActivityBuilder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
 	return ab.save(creator, ActivityCreate, v, db, "")
 }
 
-func (ab *ActivityBuilder) AddViewRecord(creator string, v interface{}, db *gorm.DB) error {
+func (ab *ActivityBuilder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
 	return ab.save(creator, ActivityView, v, db, "")
 }
 
-func (ab *ActivityBuilder) AddDeleteRecord(creator string, v interface{}, db *gorm.DB) error {
+func (ab *ActivityBuilder) AddDeleteRecord(creator interface{}, v interface{}, db *gorm.DB) error {
 	return ab.save(creator, ActivityDelete, v, db, "")
 }
 
-func (ab *ActivityBuilder) AddEditRecord(creator string, old, now interface{}, db *gorm.DB) error {
+func (ab *ActivityBuilder) AddEditRecord(creator interface{}, old, now interface{}, db *gorm.DB) error {
 	diffs, err := ab.Diff(old, now)
 	if err != nil {
 		return err
@@ -240,11 +247,11 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	}
 
 	var (
-		creator string
+		creator interface{}
 		db      *gorm.DB
 	)
 
-	if c, ok := ctx.Value(ab.creatorContextKey).(string); ok {
+	if c := ctx.Value(ab.creatorContextKey); c != nil {
 		creator = c
 	}
 
@@ -320,26 +327,24 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 		}
 
 		var (
-			userName string
+			creator interface{}
 		)
 
 		if user, ok := db.Get(creatorDBKey); ok {
-			if u, ok := user.(string); ok {
-				userName = u
-			}
+			creator = user
 		}
 
 		switch mode {
 		case ActivityCreate:
-			ab.AddCreateRecord(userName, model, db.Session(&gorm.Session{NewDB: true}))
+			ab.AddCreateRecord(creator, model, db.Session(&gorm.Session{NewDB: true}))
 		case ActivityDelete:
-			ab.AddDeleteRecord(userName, findOld(db), db.Session(&gorm.Session{NewDB: true}))
+			ab.AddDeleteRecord(creator, findOld(db), db.Session(&gorm.Session{NewDB: true}))
 		case ActivityEdit:
 			old := findOld(db)
 			if ab.GetModelBuilder(old).GetModelKey(old) != ab.GetModelBuilder(model).GetModelKey(model) {
 				return // ignore diffs if the keys are different, this situation mostly occurs when a new version is created and localized a page to the other locale
 			}
-			ab.AddEditRecord(userName, old, model, db.Session(&gorm.Session{NewDB: true}))
+			ab.AddEditRecord(creator, old, model, db.Session(&gorm.Session{NewDB: true}))
 		}
 	}
 }

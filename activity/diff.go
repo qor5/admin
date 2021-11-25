@@ -69,45 +69,18 @@ func (db *DiffBuilder) Diff(old, now interface{}) ([]Diff, error) {
 }
 
 func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) error {
-	if old.IsZero() || now.IsZero() {
-		return nil
-	}
-
 	if old.Type() != now.Type() {
 		return errors.New("the two types are not the same")
 	}
 
-	if old.Kind() == reflect.Invalid {
-		return errors.New("the kind is invalid")
-	}
-
 	switch now.Kind() {
-	case reflect.Bool:
-		if old.Bool() != now.Bool() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Bool()), Now: fmt.Sprintf("%v", now.Bool())})
+	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.UnsafePointer, reflect.Uintptr:
+		return nil
+	case reflect.Interface, reflect.Ptr:
+		if old.IsNil() || now.IsNil() {
+			return nil
 		}
-	case reflect.String:
-		if old.String() != now.String() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: old.String(), Now: now.String()})
-		}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if old.Int() != now.Int() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Int()), Now: fmt.Sprintf("%v", now.Int())})
-		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if old.Uint() != now.Uint() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Uint()), Now: fmt.Sprintf("%v", now.Uint())})
-		}
-	case reflect.Float64, reflect.Float32:
-		if old.Float() != now.Float() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Float()), Now: fmt.Sprintf("%v", now.Float())})
-		}
-	case reflect.Complex128, reflect.Complex64:
-		if old.Complex() != now.Complex() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Complex()), Now: fmt.Sprintf("%v", now.Complex())})
-		}
-	case reflect.Ptr:
-		return db.diffLoop(reflect.Indirect(old), reflect.Indirect(now), prefixField)
+		return db.diffLoop(old.Elem(), now.Elem(), prefixField)
 	case reflect.Struct:
 		for i := 0; i < now.Type().NumField(); i++ {
 			field := now.Type().Field(i)
@@ -146,6 +119,12 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 
 		}
 	case reflect.Array, reflect.Slice:
+		if now.Kind() == reflect.Slice {
+			if old.IsNil() || now.IsNil() {
+				return nil
+			}
+		}
+
 		var (
 			oldLen  = old.Len()
 			nowLen  = now.Len()
@@ -190,6 +169,9 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 			}
 		}
 	case reflect.Map:
+		if old.IsNil() || now.IsNil() {
+			return nil
+		}
 		var (
 			oldKeys = old.MapKeys()
 			newKeys = now.MapKeys()
@@ -243,7 +225,10 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 			newPrefixField := fmt.Sprintf("%s.%v", prefixField, key)
 			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", old.MapIndex(key).Interface()), Now: ""})
 		}
+	default:
+		if old.Interface() != now.Interface() {
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Interface()), Now: fmt.Sprintf("%v", now.Interface())})
+		}
 	}
-
 	return nil
 }

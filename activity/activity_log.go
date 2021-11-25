@@ -11,6 +11,11 @@ const (
 	ActivityDelete = "Delete"
 )
 
+type CreatorInferface interface {
+	GetID() uint
+	GetName() string
+}
+
 type ActivityLogInterface interface {
 	SetCreatedAt(time.Time)
 	SetUserID(uint)
