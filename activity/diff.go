@@ -73,11 +73,28 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		return errors.New("the two types are not the same")
 	}
 
+	handleNil := func() bool {
+		if old.IsNil() && now.IsNil() {
+			return true
+		}
+
+		if old.IsNil() && !now.IsNil() {
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: "", Now: fmt.Sprintf("%+v", now.Interface())})
+			return true
+		}
+
+		if !old.IsNil() && now.IsNil() {
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%+v", old.Interface()), Now: ""})
+			return true
+		}
+		return false
+	}
+
 	switch now.Kind() {
 	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.UnsafePointer, reflect.Uintptr:
 		return nil
 	case reflect.Interface, reflect.Ptr:
-		if old.IsNil() || now.IsNil() {
+		if handleNil() {
 			return nil
 		}
 		return db.diffLoop(old.Elem(), now.Elem(), prefixField)
@@ -120,7 +137,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		}
 	case reflect.Array, reflect.Slice:
 		if now.Kind() == reflect.Slice {
-			if old.IsNil() || now.IsNil() {
+			if handleNil() {
 				return nil
 			}
 		}
@@ -169,13 +186,13 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 			}
 		}
 	case reflect.Map:
-		if old.IsNil() || now.IsNil() {
+		if handleNil() {
 			return nil
 		}
-		var (
-			oldKeys = old.MapKeys()
-			newKeys = now.MapKeys()
 
+		var (
+			oldKeys     = old.MapKeys()
+			newKeys     = now.MapKeys()
 			sameKeys    = []reflect.Value{}
 			addedKeys   = []reflect.Value{}
 			deletedKeys = []reflect.Value{}

@@ -11,39 +11,38 @@ import (
 
 type (
 	Post struct {
-		ID        uint `gorm:"primarykey"`
-		CreatedAt time.Time
-		UpdatedAt time.Time
-
+		ID            uint `gorm:"primarykey"`
+		CreatedAt     time.Time
+		UpdatedAt     time.Time
 		PublishedDate time.Time
 		Image         media_library.MediaBox
 
 		Title    string
 		Content  string
 		Author   Author
-		Comments Comments
-		Relateds map[string]Post
+		Comments []Comment
+		Tags     map[string]Tag
+	}
+	Tag struct {
+		Name string
 	}
 	Author struct {
 		Name string
 		Age  int
 	}
-	Comments []Comment
-	Comment  struct {
+	Comment struct {
 		Text string
 	}
+)
 
-	testCase struct {
+func TestDiff(t *testing.T) {
+	testCases := []struct {
 		description  string
 		modelBuilder *ModelBuilder
 		old          Post
 		now          Post
 		want         []Diff
-	}
-)
-
-func TestDiff(t *testing.T) {
-	testCases := []testCase{
+	}{
 		{
 			description:  "Simple basic update",
 			modelBuilder: &ModelBuilder{},
@@ -179,13 +178,39 @@ func TestDiff(t *testing.T) {
 			},
 		},
 		{
-			description:  "Test map data",
+			description:  "Test creating slice data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Relateds: map[string]Post{"tag1": {Title: "tst1"}}},
-			now:          Post{Relateds: map[string]Post{"tag1": {Title: "tst12"}}},
+			old:          Post{},
+			now:          Post{Comments: []Comment{{Text: "1.1"}, {Text: "2"}}},
 			want: []Diff{
 				{
-					Field: ".Relateds.tag1.Title",
+					Field: ".Comments",
+					Old:   "",
+					Now:   "[{Text:1.1} {Text:2}]",
+				},
+			},
+		},
+		{
+			description:  "Test remove all slice data",
+			modelBuilder: &ModelBuilder{},
+			old:          Post{Comments: []Comment{{Text: "1.1"}, {Text: "2"}}},
+			now:          Post{},
+			want: []Diff{
+				{
+					Field: ".Comments",
+					Old:   "[{Text:1.1} {Text:2}]",
+					Now:   "",
+				},
+			},
+		},
+		{
+			description:  "Test map data",
+			modelBuilder: &ModelBuilder{},
+			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}}},
+			want: []Diff{
+				{
+					Field: ".Tags.tag1.Name",
 					Old:   "tst1",
 					Now:   "tst12",
 				},
@@ -194,30 +219,56 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Test adding map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Relateds: map[string]Post{"tag1": {Title: "tst1"}}},
-			now:          Post{Relateds: map[string]Post{"tag1": {Title: "tst12"}, "tag2": {Title: "tst121"}}},
+			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}, "tag2": {Name: "tst121"}}},
 			want: []Diff{
 				{
-					Field: ".Relateds.tag1.Title",
+					Field: ".Tags.tag1.Name",
 					Old:   "tst1",
 					Now:   "tst12",
 				},
 				{
-					Field: ".Relateds.tag2",
+					Field: ".Tags.tag2",
 					Old:   "",
-					Now:   "{ID:0 CreatedAt:0001-01-01 00:00:00 +0000 UTC UpdatedAt:0001-01-01 00:00:00 +0000 UTC PublishedDate:0001-01-01 00:00:00 +0000 UTC Image:{ID: Url: VideoLink: FileName: Description: FileSizes:map[] Width:0 Height:0} Title:tst121 Content: Author:{Name: Age:0} Comments:[] Relateds:map[]}",
+					Now:   "{Name:tst121}",
 				},
 			},
 		},
 		{
 			description:  "Test deleting map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Relateds: map[string]Post{"tag1": {Title: "tst1"}}},
-			now:          Post{Relateds: map[string]Post{}},
+			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}, "tag2": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
 			want: []Diff{
 				{
-					Field: ".Relateds.tag1",
-					Old:   "{ID:0 CreatedAt:0001-01-01 00:00:00 +0000 UTC UpdatedAt:0001-01-01 00:00:00 +0000 UTC PublishedDate:0001-01-01 00:00:00 +0000 UTC Image:{ID: Url: VideoLink: FileName: Description: FileSizes:map[] Width:0 Height:0} Title:tst1 Content: Author:{Name: Age:0} Comments:[] Relateds:map[]}",
+					Field: ".Tags.tag2",
+					Old:   "{Name:tst1}",
+					Now:   "",
+				},
+			},
+		},
+		{
+			description:  "Test creating map data",
+			modelBuilder: &ModelBuilder{},
+			old:          Post{},
+			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			want: []Diff{
+				{
+					Field: ".Tags",
+					Old:   "",
+					Now:   "map[tag1:{Name:tst1}]",
+				},
+			},
+		},
+		{
+			description:  "Test remove all map data",
+			modelBuilder: &ModelBuilder{},
+			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: nil},
+			want: []Diff{
+				{
+					Field: ".Tags",
+					Old:   "map[tag1:{Name:tst1}]",
 					Now:   "",
 				},
 			},
@@ -269,12 +320,12 @@ func BenchmarkComplexDiff(b *testing.B) {
 		Content:       "content111",
 		Author:        Author{Name: "author1", Age: 10},
 		Comments:      []Comment{},
-		Relateds:      map[string]Post{},
+		Tags:          map[string]Tag{},
 	}
 
 	for i := 0; i < 50; i++ {
 		old.Comments = append(old.Comments, Comment{Text: fmt.Sprintf("text - %d", i)})
-		old.Relateds[fmt.Sprintf("tag - %d", i)] = Post{Title: fmt.Sprintf("title - %d", i)}
+		old.Tags[fmt.Sprintf("tag - %d", i)] = Tag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
 	now := Post{
@@ -289,12 +340,12 @@ func BenchmarkComplexDiff(b *testing.B) {
 			Age:  19,
 		},
 		Comments: []Comment{},
-		Relateds: map[string]Post{},
+		Tags:     map[string]Tag{},
 	}
 
 	for i := 0; i < 80; i++ {
 		now.Comments = append(now.Comments, Comment{Text: fmt.Sprintf("text ---%d", i)})
-		now.Relateds[fmt.Sprintf("tag - %d", i)] = Post{Title: fmt.Sprintf("title - %d", i)}
+		old.Tags[fmt.Sprintf("tag - %d", i)] = Tag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
 	builder := NewDiffBuilder(&ModelBuilder{})
