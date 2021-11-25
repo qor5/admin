@@ -8,7 +8,8 @@
   activity := Activity().
       SetLogModel(&model.ActivityLog{}). // store activity log in model.ActivityLog
       SetDBContextKey("DB"). // set db context key
-      SetCreatorContextKey("Creator") //set creator context key
+      SetCreatorContextKey("Creator"). //set creator context key
+      SetListings("CreatedAt", "UserID", "Creator", "ModelKeys", "ModelName") // modify the default listing
   ```
 
 - Register a model with the `RegisterModel` method.

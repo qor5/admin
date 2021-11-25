@@ -13,6 +13,8 @@ const (
 
 type ActivityLogInterface interface {
 	SetCreatedAt(time.Time)
+	SetUserID(uint)
+	GetUserID() uint
 	SetCreator(string)
 	GetCreator() string
 	SetAction(string)
@@ -29,6 +31,7 @@ type ActivityLogInterface interface {
 
 type ActivityLog struct {
 	ID         uint `gorm:"primary_key"`
+	UserID     uint
 	CreatedAt  time.Time
 	Creator    string
 	Action     string
@@ -40,6 +43,14 @@ type ActivityLog struct {
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {
 	al.CreatedAt = t
+}
+
+func (al *ActivityLog) SetUserID(id uint) {
+	al.UserID = id
+}
+
+func (al ActivityLog) GetUserID() uint {
+	return al.UserID
 }
 
 func (al *ActivityLog) SetCreator(s string) {

@@ -31,7 +31,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 
 	var (
 		mb        = b.Model(ab.logModel)
-		listing   = mb.Listing("CreatedAt", "Creator", "ModelKeys", "ModelName")
+		listing   = mb.Listing(ab.getListings()...)
 		detailing = mb.Detailing("ModelLink", "ModelDiff")
 	)
 

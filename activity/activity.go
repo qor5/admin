@@ -20,11 +20,14 @@ const (
 	DBContextKey      contextKey = "DB"
 )
 
+var defaultListings = []string{"CreatedAt", "Creator", "ModelKeys", "ModelName"}
+
 type ActivityBuilder struct {
 	creatorContextKey interface{}
 	dbContextKey      interface{}
 	logModel          ActivityLogInterface
 	models            []*ModelBuilder
+	listings          []string
 }
 
 type ModelBuilder struct {
@@ -62,6 +65,18 @@ func (ab *ActivityBuilder) NewLogModelSlice() interface{} {
 func (ab *ActivityBuilder) SetCreatorContextKey(key interface{}) *ActivityBuilder {
 	ab.creatorContextKey = key
 	return ab
+}
+
+func (ab *ActivityBuilder) SetListings(ls ...string) *ActivityBuilder {
+	ab.listings = ls
+	return ab
+}
+
+func (ab ActivityBuilder) getListings() []string {
+	if len(ab.listings) == 0 {
+		return defaultListings
+	}	
+	return ab.listings
 }
 
 func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
