@@ -22,7 +22,6 @@ require (
 	github.com/markbates/goth v1.68.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
-	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.2
