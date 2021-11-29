@@ -19,7 +19,9 @@ const (
 	DBContextKey      contextKey = "DB"
 )
 
-var GlobalDB *gorm.DB
+var (
+	GlobalDB *gorm.DB
+)
 
 // @snippet_begin(ActivityBuilder)
 type ActivityBuilder struct {
@@ -33,12 +35,12 @@ type ActivityBuilder struct {
 
 // @snippet_begin(ActivityModelBuilder)
 type ModelBuilder struct {
-	typ           reflect.Type
-	keys          []string                     // primary keys
-	explicitly    bool                         // if ture, will don't record any log on callback db
-	link          func(interface{}) string     // display the model link on the admin detail page
-	ignoredFields []string                     // ignored fields
-	typeHanders   map[reflect.Type]TypeHandler // type handlers
+	typ               reflect.Type
+	keys              []string                     // primary keys
+	disableOnCallback bool                         // if ture, will don't record any log on callback db
+	link              func(interface{}) string     // display the model link on the admin detail page
+	ignoredFields     []string                     // ignored fields
+	typeHanders       map[reflect.Type]TypeHandler // type handlers
 }
 
 // @snippet_end
@@ -158,8 +160,8 @@ func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 	return mb
 }
 
-func (mb *ModelBuilder) SetAddExplicitly(b bool) *ModelBuilder {
-	mb.explicitly = b
+func (mb *ModelBuilder) DisableOnCallback(b bool) *ModelBuilder {
+	mb.disableOnCallback = b
 	return mb
 }
 
@@ -280,7 +282,11 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 		log.SetModelDiffs(diffs)
 	}
 
-	return db.Save(log).Error
+	if db.Save(log).Error != nil {
+		return db.Error
+	}
+
+	return nil
 }
 
 // Diff get diffs between old and now value
@@ -375,7 +381,7 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 		now := db.Statement.Dest
 
 		mb, ok := ab.GetModelBuilder(now)
-		if !ok || mb.explicitly {
+		if !ok || mb.disableOnCallback {
 			return
 		}
 

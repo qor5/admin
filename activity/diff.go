@@ -72,7 +72,7 @@ func NewDiffBuilder(mb *ModelBuilder) *DiffBuilder {
 }
 
 func (db *DiffBuilder) Diff(old, now interface{}) ([]Diff, error) {
-	err := db.diffLoop(reflect.ValueOf(old), reflect.ValueOf(now), "")
+	err := db.diffLoop(reflect.Indirect(reflect.ValueOf(old)), reflect.Indirect(reflect.ValueOf(now)), "")
 	return db.diffs, err
 }
 

@@ -297,7 +297,7 @@ func TestDiffTypesError(t *testing.T) {
 		t.Fatalf("difference type error")
 	}
 
-	_, err = NewDiffBuilder(&ModelBuilder{}).Diff(Post{Title: "123"}, &Post{Title: "ccc"})
+	_, err = NewDiffBuilder(&ModelBuilder{}).Diff(Post{Title: "123"}, struct{}{})
 	if err.Error() != "the two types are not the same" {
 		t.Fatalf("difference type error")
 	}
