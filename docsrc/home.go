@@ -18,6 +18,7 @@ This is how you start
 	ChildrenTable(
 		ContentGroup(
 			Activity,
+			Slug,
 			SEO,
 		).Title("Packages"),
 	),
