@@ -10,8 +10,12 @@ import (
 )
 
 var (
+	// @snippet_begin(ActivityDefaultIgnoredFields)
 	DefaultIgnoredFields = []string{"ID", "UpdatedAt", "DeletedAt", "CreatedAt"}
-	DefaultTypeHandles   = map[reflect.Type]TypeHandle{
+	// @snippet_end
+
+	// @snippet_begin(ActivityDefaultTypeHandles)
+	DefaultTypeHandles = map[reflect.Type]TypeHandler{
 		reflect.TypeOf(time.Time{}): func(old, now interface{}, prefixField string) []Diff {
 			oldString := old.(time.Time).Format(time.RFC3339)
 			nowString := now.(time.Time).Format(time.RFC3339)
@@ -41,9 +45,13 @@ var (
 			return diffs
 		},
 	}
+	// @snippet_end
 )
 
-type TypeHandle func(old, now interface{}, prefixField string) []Diff
+// @snippet_begin(ActivityTypeHandle)
+type TypeHandler func(old, now interface{}, prefixField string) []Diff
+
+// @snippet_end
 
 type Diff struct {
 	Field string

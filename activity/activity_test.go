@@ -169,7 +169,6 @@ func TestCreator(t *testing.T) {
 	builder := Activity().SetLogModel(&TestActivityLog{})
 	builder.RegisterModel(Page{})
 	resetDB()
-
 	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {

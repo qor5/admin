@@ -174,10 +174,12 @@ func NewConfig() Config {
 
 	note.Configure(db, b, m, pm)
 
+	// @snippet_begin(ActivityExample)
 	ab := activity.Activity()
 	ab.RegisterModel(&models.Post{})
 	ab.ConfigureAdmin(b, db)
 	ab.RegisterCallbackOnDB(db, "Creator")
+	// @snippet_end
 
 	w := worker.New(db)
 	addJobs(w)

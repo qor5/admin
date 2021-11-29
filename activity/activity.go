@@ -21,21 +21,27 @@ const (
 
 var GlobalDB *gorm.DB
 
+// @snippet_begin(ActivityBuilder)
 type ActivityBuilder struct {
-	creatorContextKey interface{}
-	dbContextKey      interface{}
-	logModel          ActivityLogInterface
-	models            []*ModelBuilder
+	creatorContextKey interface{}          // get the creator from context
+	dbContextKey      interface{}          // get the db from context
+	logModel          ActivityLogInterface // log model
+	models            []*ModelBuilder      // registered model builders
 }
 
+// @snippet_end
+
+// @snippet_begin(ActivityModelBuilder)
 type ModelBuilder struct {
 	typ           reflect.Type
-	keys          []string
-	explicitly    bool // if ture, will don't record any log on callback db
-	link          func(interface{}) string
-	ignoredFields []string
-	typeHanders   map[reflect.Type]TypeHandle
+	keys          []string                     // primary keys
+	explicitly    bool                         // if ture, will don't record any log on callback db
+	link          func(interface{}) string     // display the model link on the admin detail page
+	ignoredFields []string                     // ignored fields
+	typeHanders   map[reflect.Type]TypeHandler // type handlers
 }
+
+// @snippet_end
 
 func Activity() *ActivityBuilder {
 	return &ActivityBuilder{
@@ -170,9 +176,9 @@ func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder {
 }
 
 // AddTypeHanders add type handers for the model builder
-func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandle) *ModelBuilder {
+func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandler) *ModelBuilder {
 	if mb.typeHanders == nil {
-		mb.typeHanders = map[reflect.Type]TypeHandle{}
+		mb.typeHanders = map[reflect.Type]TypeHandler{}
 	}
 	mb.typeHanders[reflect.Indirect(reflect.ValueOf(v)).Type()] = f
 	return mb

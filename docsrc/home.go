@@ -17,6 +17,7 @@ This is how you start
 	Slug("/").Tables(
 	ChildrenTable(
 		ContentGroup(
+			Activity,
 			SEO,
 		).Title("Packages"),
 	),
