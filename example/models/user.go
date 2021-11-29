@@ -21,3 +21,11 @@ type User struct {
 	OAuthProvider string `gorm:"index:uidx_users_oauth,unique"`
 	OAuthUserID   string `gorm:"index:uidx_users_oauth,unique"`
 }
+
+func (u User) GetName() string {
+	return u.Name
+}
+
+func (u User) GetID() uint {
+	return u.ID
+}

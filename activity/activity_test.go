@@ -50,7 +50,7 @@ func TestModelKeys(t *testing.T) {
 	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
 	resetDB()
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModel().(ActivityLogInterface)
+	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 	builder.RegisterModel(Widget{}).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
-	record2 := builder.NewLogModel().(ActivityLogInterface)
+	record2 := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModel().(ActivityLogInterface)
+	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestModelTypeHanders(t *testing.T) {
 	})
 
 	resetDB()
-	builder.AddEditRecord("a",
+	builder.AddEditRecordWithOld("a",
 		Page{ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
 				{Name: "Text 01", Title: "test1"},
@@ -155,7 +155,7 @@ func TestModelTypeHanders(t *testing.T) {
 				{Name: "Video 03", Title: "video 1"},
 			},
 		}, db)
-	record := builder.NewLogModel().(ActivityLogInterface)
+	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +171,7 @@ func TestCreator(t *testing.T) {
 	resetDB()
 
 	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModel().(ActivityLogInterface)
+	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestCreatorInferface(t *testing.T) {
 	resetDB()
 
 	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModel().(ActivityLogInterface)
+	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type contextKey string
@@ -20,19 +19,19 @@ const (
 	DBContextKey      contextKey = "DB"
 )
 
-var defaultListings = []string{"CreatedAt", "Creator", "ModelKeys", "ModelName"}
+var GlobalDB *gorm.DB
 
 type ActivityBuilder struct {
 	creatorContextKey interface{}
 	dbContextKey      interface{}
 	logModel          ActivityLogInterface
 	models            []*ModelBuilder
-	listings          []string
 }
 
 type ModelBuilder struct {
 	typ           reflect.Type
 	keys          []string
+	explicitly    bool // if ture, will don't record any log on callback db
 	link          func(interface{}) string
 	ignoredFields []string
 	typeHanders   map[reflect.Type]TypeHandle
@@ -46,44 +45,38 @@ func Activity() *ActivityBuilder {
 	}
 }
 
+// SetLogModel change the default log model
 func (ab *ActivityBuilder) SetLogModel(model ActivityLogInterface) *ActivityBuilder {
 	ab.logModel = model
 	return ab
 }
 
-func (ab *ActivityBuilder) NewLogModel() interface{} {
+// NewLogModelData new a log model data
+func (ab ActivityBuilder) NewLogModelData() interface{} {
 	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
 }
 
-func (ab *ActivityBuilder) NewLogModelSlice() interface{} {
+// NewLogModelSlice new a log model slice
+func (ab ActivityBuilder) NewLogModelSlice() interface{} {
 	sliceType := reflect.SliceOf(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type())
 	slice := reflect.New(sliceType)
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
 	return slice.Interface()
 }
 
+// SetCreatorContextKey change the default creator context key
 func (ab *ActivityBuilder) SetCreatorContextKey(key interface{}) *ActivityBuilder {
 	ab.creatorContextKey = key
 	return ab
 }
 
-func (ab *ActivityBuilder) SetListings(ls ...string) *ActivityBuilder {
-	ab.listings = ls
-	return ab
-}
-
-func (ab ActivityBuilder) getListings() []string {
-	if len(ab.listings) == 0 {
-		return defaultListings
-	}
-	return ab.listings
-}
-
+// SetDBContextKey change the default db context key
 func (ab *ActivityBuilder) SetDBContextKey(key interface{}) *ActivityBuilder {
 	ab.dbContextKey = key
 	return ab
 }
 
+// getPrimaryKey get primary keys from a model
 func getPrimaryKey(t reflect.Type) (keys []string) {
 	if t.Kind() != reflect.Struct {
 		return
@@ -106,6 +99,15 @@ func getPrimaryKey(t reflect.Type) (keys []string) {
 	return
 }
 
+// RegisterModels register mutiple models
+func (ab *ActivityBuilder) RegisterModels(models ...interface{}) *ActivityBuilder {
+	for _, model := range models {
+		ab.RegisterModel(model)
+	}
+	return ab
+}
+
+// RegisterModel register a model and return model builder
 func (ab *ActivityBuilder) RegisterModel(model interface{}) *ModelBuilder {
 	reflectType := reflect.Indirect(reflect.ValueOf(model)).Type()
 	if reflectType.Kind() != reflect.Struct {
@@ -122,8 +124,26 @@ func (ab *ActivityBuilder) RegisterModel(model interface{}) *ModelBuilder {
 	return mb
 }
 
+// GetModelBuilder 	get model builder
+func (ab ActivityBuilder) GetModelBuilder(v interface{}) (*ModelBuilder, bool) {
+	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
+	for _, m := range ab.models {
+		if m.typ == typ {
+			return m, true
+		}
+	}
+	return &ModelBuilder{}, false
+}
+
+// AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	mb.keys = append(mb.keys, keys...)
+	return mb
+}
+
+// SetKeys set keys for the model builder
+func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
+	mb.keys = keys
 	return mb
 }
 
@@ -132,11 +152,24 @@ func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 	return mb
 }
 
+func (mb *ModelBuilder) SetAddExplicitly(b bool) *ModelBuilder {
+	mb.explicitly = b
+	return mb
+}
+
+// AddIgnoredFields add ignored fields to the model builder
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = append(mb.ignoredFields, fields...)
 	return mb
 }
 
+// SetIgnoredFields set ignored fields for the model builder
+func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder {
+	mb.ignoredFields = append(mb.ignoredFields, fields...)
+	return mb
+}
+
+// AddTypeHanders add type handers for the model builder
 func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandle) *ModelBuilder {
 	if mb.typeHanders == nil {
 		mb.typeHanders = map[reflect.Type]TypeHandle{}
@@ -145,7 +178,8 @@ func (mb *ModelBuilder) AddTypeHanders(v interface{}, f TypeHandle) *ModelBuilde
 	return mb
 }
 
-func (mb *ModelBuilder) GetModelKey(v interface{}) string {
+// GetModelKeyValues get model key values
+func (mb *ModelBuilder) GetModelKeyValue(v interface{}) string {
 	var (
 		stringBuilder = strings.Builder{}
 		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
@@ -168,22 +202,52 @@ func (mb *ModelBuilder) GetModelKey(v interface{}) string {
 	return strings.TrimRight(stringBuilder.String(), ":")
 }
 
-func (ab *ActivityBuilder) GetModelBuilder(v interface{}) *ModelBuilder {
-	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
-	for _, m := range ab.models {
-		if m.typ == typ {
-			return m
-		}
-	}
-	return &ModelBuilder{}
+// AddCreateRecord add create record
+func (ab *ActivityBuilder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityCreate, v, db, "")
 }
 
-func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
-	var (
-		mb = ab.GetModelBuilder(v)
-		m  = ab.NewLogModel()
-	)
+// AddViewRecord add view record
+func (ab *ActivityBuilder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityView, v, db, "")
+}
 
+// AddDeleteRecord	add delete record
+func (ab *ActivityBuilder) AddDeleteRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityDelete, v, db, "")
+}
+
+// AddEditRecord add edit record
+func (ab *ActivityBuilder) AddEditRecord(creator interface{}, now interface{}, db *gorm.DB) error {
+	old, ok := findOld(now)
+	if !ok {
+		return errors.New("can not find old value")
+	}
+	return ab.AddEditRecordWithOld(creator, old, now, db)
+}
+
+// AddEditRecord add edit record
+func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now interface{}, db *gorm.DB) error {
+	diffs, err := ab.Diff(old, now)
+	if err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(diffs)
+	if err != nil {
+		return err
+	}
+	return ab.save(creator, ActivityEdit, now, db, string(b))
+}
+
+// save log into db
+func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
+	mb, ok := ab.GetModelBuilder(v)
+	if !ok {
+		return errors.New("model not found")
+	}
+
+	var m = ab.NewLogModelData()
 	log, ok := m.(ActivityLogInterface)
 	if !ok {
 		return errors.New("invalid activity log model")
@@ -200,7 +264,7 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 
 	log.SetAction(action)
 	log.SetModelName(mb.typ.Name())
-	log.SetModelKeys(mb.GetModelKey(v))
+	log.SetModelKeys(mb.GetModelKeyValue(v))
 
 	if f := mb.link; f != nil {
 		log.SetModelLink(f(v))
@@ -213,34 +277,21 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 	return db.Save(log).Error
 }
 
-func (ab *ActivityBuilder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
-	return ab.save(creator, ActivityCreate, v, db, "")
-}
-
-func (ab *ActivityBuilder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
-	return ab.save(creator, ActivityView, v, db, "")
-}
-
-func (ab *ActivityBuilder) AddDeleteRecord(creator interface{}, v interface{}, db *gorm.DB) error {
-	return ab.save(creator, ActivityDelete, v, db, "")
-}
-
-func (ab *ActivityBuilder) AddEditRecord(creator interface{}, old, now interface{}, db *gorm.DB) error {
-	diffs, err := ab.Diff(old, now)
-	if err != nil {
-		return err
-	}
-	b, err := json.Marshal(diffs)
-	if err != nil {
-		return err
-	}
-	return ab.save(creator, ActivityEdit, now, db, string(b))
-}
-
+// Diff get diffs between old and now value
 func (ab *ActivityBuilder) Diff(old, now interface{}) ([]Diff, error) {
-	return NewDiffBuilder(ab.GetModelBuilder(old)).Diff(old, now)
+	mb, ok := ab.GetModelBuilder(old)
+	if !ok {
+		return nil, errors.New("can not find model builder")
+	}
+
+	if mb.GetModelKeyValue(old) != mb.GetModelKeyValue(now) {
+		return []Diff{}, errors.New("primary keys value are different") //// ignore diffs if the primary keys value are different, this situation mostly occurs when a new version is created and localized a page to the other locale
+	}
+
+	return NewDiffBuilder(mb).Diff(old, now)
 }
 
+// AddRecords add records log
 func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...interface{}) error {
 	if len(vs) == 0 {
 		return errors.New("models are empty")
@@ -248,7 +299,7 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 
 	var (
 		creator interface{}
-		db      *gorm.DB
+		db      = ab.getDBFromContext(ctx)
 	)
 
 	if c := ctx.Value(ab.creatorContextKey); c != nil {
@@ -260,7 +311,7 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	}
 
 	if creator == "" || db == nil {
-		return errors.New("creator or db cannot be found from the context")
+		return errors.New("creator or db cannot be found")
 	}
 
 	switch action {
@@ -287,23 +338,17 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 			}
 		}
 	case ActivityEdit:
-		if len(vs) == 2 {
-			return ab.AddEditRecord(creator, vs[0], vs[1], db)
+		for _, v := range vs {
+			err := ab.AddEditRecord(creator, v, db)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (ab *ActivityBuilder) HasModel(v interface{}) bool {
-	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
-	for _, m := range ab.models {
-		if m.typ == typ {
-			return true
-		}
-	}
-	return false
-}
-
+// RegisterCallbackOnDB register callback on db
 func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string) {
 	if creatorDBKey == "" {
 		panic("creatorDBKey cannot be empty")
@@ -321,8 +366,10 @@ func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string
 
 func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 	return func(db *gorm.DB) {
-		model := db.Statement.Model
-		if !ab.HasModel(model) {
+		now := db.Statement.Dest
+
+		mb, ok := ab.GetModelBuilder(now)
+		if !ok || mb.explicitly {
 			return
 		}
 
@@ -332,44 +379,32 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 
 		if user, ok := db.Get(creatorDBKey); ok {
 			creator = user
+		} else {
+			creator = "unknown" // can not find creator from db instance's context, set to unknown
 		}
 
 		switch mode {
 		case ActivityCreate:
-			ab.AddCreateRecord(creator, model, db.Session(&gorm.Session{NewDB: true}))
+			ab.AddCreateRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 		case ActivityDelete:
-			ab.AddDeleteRecord(creator, findOld(db), db.Session(&gorm.Session{NewDB: true}))
+			if mb.GetModelKeyValue(now) == "" { //handle the delete action from presets/gorm2op
+				old, ok := findDeletedOldByWhere(db)
+				if ok {
+					ab.AddDeleteRecord(creator, old, db.Session(&gorm.Session{NewDB: true}))
+				}
+			} else {
+				ab.AddDeleteRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
+			}
 		case ActivityEdit:
-			old := findOld(db)
-			if ab.GetModelBuilder(old).GetModelKey(old) != ab.GetModelBuilder(model).GetModelKey(model) {
-				return // ignore diffs if the keys are different, this situation mostly occurs when a new version is created and localized a page to the other locale
-			}
-			ab.AddEditRecord(creator, old, model, db.Session(&gorm.Session{NewDB: true}))
+			ab.AddEditRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 		}
 	}
 }
 
-func findOld(db *gorm.DB) interface{} {
-	old := reflect.New(db.Statement.ReflectValue.Type()).Interface()
-	var sqls []string
-	var vars []interface{}
-
-	if where, ok := db.Statement.Clauses["WHERE"].Expression.(clause.Where); ok {
-		for _, e := range where.Exprs {
-			if expr, ok := e.(clause.Expr); ok {
-				sqls = append(sqls, expr.SQL)
-				vars = append(vars, expr.Vars...)
-			}
-		}
+// GetDB get db from context
+func (ab *ActivityBuilder) getDBFromContext(ctx context.Context) *gorm.DB {
+	if contextdb := ctx.Value(ab.dbContextKey); contextdb != nil {
+		return contextdb.(*gorm.DB)
 	}
-	db.Session(&gorm.Session{NewDB: true, PrepareStmt: true}).Where(strings.Join(sqls, " AND "), vars...).First(old)
-	return old
-}
-
-func ContextWithCreator(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, CreatorContextKey, name)
-}
-
-func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
-	return context.WithValue(ctx, DBContextKey, db)
+	return GlobalDB
 }

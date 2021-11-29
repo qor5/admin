@@ -20,9 +20,13 @@ const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
 )
 
-func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
+func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	if err := db.AutoMigrate(ab.logModel); err != nil {
 		panic(err)
+	}
+
+	if GlobalDB == nil {
+		GlobalDB = db
 	}
 
 	b.I18n().
@@ -31,18 +35,23 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 
 	var (
 		mb        = b.Model(ab.logModel)
-		listing   = mb.Listing(ab.getListings()...)
-		detailing = mb.Detailing("ModelLink", "ModelDiff")
+		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
+		detailing = mb.Detailing("ModelLink", "ModelDiffs")
 	)
 
+	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
+	listing.Field("ModelName").Label(Messages_en_US.ModelName)
+
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		var (
+			logs      = ab.NewLogModelSlice()
+			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+			contextDB = ab.getDBFromContext(ctx.R.Context())
+		)
 
-		var creatorOptions []*vuetifyx.SelectItem
-
-		var logs = ab.NewLogModelSlice()
-		db.Select("creator").Group("creator").Find(logs)
+		contextDB.Select("creator").Group("creator").Find(logs)
 		reflectVlaue := reflect.Indirect(reflect.ValueOf(logs))
+		var creatorOptions []*vuetifyx.SelectItem
 		for i := 0; i < reflectVlaue.Len(); i++ {
 			creator := reflectVlaue.Index(i).FieldByName("Creator").String()
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
@@ -66,10 +75,9 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `action %s ?`,
 				Options: []*vuetifyx.SelectItem{
-					{Text: msgr.ActivityEdit, Value: ActivityEdit},
-					{Text: msgr.ActivityCreate, Value: ActivityCreate},
-					{Text: msgr.ActivityDelete, Value: ActivityDelete},
-					{Text: msgr.ActivityView, Value: ActivityView},
+					{Text: msgr.ActionEdit, Value: ActivityEdit},
+					{Text: msgr.ActionCreate, Value: ActivityCreate},
+					{Text: msgr.ActionDelete, Value: ActivityDelete},
 				},
 			},
 			{
@@ -99,27 +107,24 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 		return []*presets.FilterTab{
 			{
-				Label: msgr.ActivityAll,
+				Label: msgr.ActionAll,
 				Query: url.Values{"action": []string{}},
 			},
 			{
-				Label: msgr.ActivityEdit,
+				Label: msgr.ActionEdit,
 				Query: url.Values{"action": []string{ActivityEdit}},
 			},
 			{
-				Label: msgr.ActivityCreate,
+				Label: msgr.ActionCreate,
 				Query: url.Values{"action": []string{ActivityCreate}},
 			},
 			{
-				Label: msgr.ActivityDelete,
+				Label: msgr.ActionDelete,
 				Query: url.Values{"action": []string{ActivityDelete}},
-			},
-			{
-				Label: msgr.ActivityView,
-				Query: url.Values{"action": []string{ActivityView}},
 			},
 		}
 	})
+
 	detailing.Field("ModelLink").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			link := field.Value(obj).(string)
@@ -129,7 +134,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			return VCard(
-				VCardTitle(h.Text(msgr.Link)),
+				VCardTitle(h.Text(msgr.ModelLink)),
 				VCardText(h.A(h.Text(link)).Href(link)),
 			)
 		},
@@ -227,6 +232,8 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) {
 			return h.Components(diffsElems...)
 		},
 	)
+
+	return mb
 }
 
 func fixSpecialChars(str string) string {

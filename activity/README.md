@@ -8,20 +8,27 @@
   activity := Activity().
       SetLogModel(&model.ActivityLog{}). // store activity log in model.ActivityLog
       SetDBContextKey("DB"). // set db context key
-      SetCreatorContextKey("Creator"). //set creator context key
-      SetListings("CreatedAt", "UserID", "Creator", "ModelKeys", "ModelName") // modify the default listing
+      SetCreatorContextKey("Creator") //set creator context key
+  ```
+
+- Register mutiple models with the `RegisterModel` method.
+
+  ```go
+  activity.RegisterModels(&Post{},&Product{})
   ```
 
 - Register a model with the `RegisterModel` method.
 
   ```go
     activity.RegisterModel(&model.Page{}).
-      AddKeys("VersionName"). // add keys
+      SetKeys("VersionName"). // add keys
       SetLink(func(page interface{}) string {
   	    return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
       }). // set link
       AddIgnoredFields("ID", "Updatedat"). // ignore fields
       AddTypeHanders(...). // add type handlers
+      SetAddExplicitly(ture) // will ingore this model when using the callback db
+
   ```
 
 - Record a activity log
@@ -30,10 +37,11 @@
    // record activity log from a context
     ctx := context.WithValue(context.Background(), 	DBContextKey, db)
     ctx  = ContextWithCreator(ctx, user)
-    activity.AddRecords(ActivityEdit, ctx,oldpage, newpage)
+    activity.AddRecords(ActivityEdit, ctx, newpage)
 
     // record activity log directly using known db and creator
-    activity.AddEditRecord(user,oldpage, newpage, db)
+    activity.AddEditRecord(user,newpage, db)
+    activity.AddEditRecordWithOld(user,oldpage,newpage, db)
 
     // use db callback to automatically process the registered model
     activity.RegisterCallbackOnDB(db, "creator")
