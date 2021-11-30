@@ -17,8 +17,8 @@ type contextKey string
 const (
 	Create = 1 << iota
 	Delete
-	Eidt
-	All = Create | Delete | Eidt
+	Update
+	All = Create | Delete | Update
 )
 
 var (
@@ -378,7 +378,7 @@ func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string
 		db.Callback().Create().After("gorm:after_create").Register("activity:create", ab.record(Create, creatorDBKey))
 	}
 	if db.Callback().Update().Get("activity:update") == nil {
-		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(Eidt, creatorDBKey))
+		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(Update, creatorDBKey))
 	}
 	if db.Callback().Delete().Get("activity:delete") == nil {
 		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(Delete, creatorDBKey))
@@ -406,7 +406,7 @@ func (ab *ActivityBuilder) record(mode uint8, creatorDBKey string) func(*gorm.DB
 			} else {
 				ab.AddDeleteRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 			}
-		case Eidt:
+		case Update:
 			ab.AddEditRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 		}
 	}
