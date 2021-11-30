@@ -66,8 +66,7 @@ type DiffBuilder struct {
 
 func NewDiffBuilder(mb *ModelBuilder) *DiffBuilder {
 	return &DiffBuilder{
-		mb:    mb,
-		diffs: []Diff{},
+		mb: mb,
 	}
 }
 

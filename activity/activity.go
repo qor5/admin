@@ -249,10 +249,15 @@ func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now in
 		return err
 	}
 
+	if len(diffs) == 0 {
+		return ab.save(creator, ActivityEdit, now, db, "")
+	}
+
 	b, err := json.Marshal(diffs)
 	if err != nil {
 		return err
 	}
+
 	return ab.save(creator, ActivityEdit, now, db, string(b))
 }
 
@@ -288,7 +293,11 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 		log.SetModelLink(f(v))
 	}
 
-	if diffs != "" && action == ActivityEdit {
+	if diffs == "" && action == ActivityEdit {
+		return nil
+	}
+
+	if action == ActivityEdit {
 		log.SetModelDiffs(diffs)
 	}
 
@@ -306,7 +315,7 @@ func (ab *ActivityBuilder) Diff(old, now interface{}) ([]Diff, error) {
 	}
 
 	if mb.GetModelKeyValue(old) != mb.GetModelKeyValue(now) {
-		return []Diff{}, errors.New("primary keys value are different") //// ignore diffs if the primary keys value are different, this situation mostly occurs when a new version is created and localized a page to the other locale
+		return nil, errors.New("primary keys value are different") //// ignore diffs if the primary keys value are different, this situation mostly occurs when a new version is created and localized a page to the other locale
 	}
 
 	return NewDiffBuilder(mb).Diff(old, now)
