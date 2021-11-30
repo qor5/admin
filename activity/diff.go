@@ -1,7 +1,6 @@
 package activity
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -77,7 +76,7 @@ func (db *DiffBuilder) Diff(old, now interface{}) ([]Diff, error) {
 
 func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) error {
 	if old.Type() != now.Type() {
-		return errors.New("the two types are not the same")
+		return fmt.Errorf("old and now type mismatch: %v != %v", old.Type(), now.Type())
 	}
 
 	handleNil := func() bool {

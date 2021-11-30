@@ -237,7 +237,7 @@ func (ab *ActivityBuilder) AddDeleteRecord(creator interface{}, v interface{}, d
 func (ab *ActivityBuilder) AddEditRecord(creator interface{}, now interface{}, db *gorm.DB) error {
 	old, ok := findOld(now)
 	if !ok {
-		return errors.New("can not find old value")
+		return fmt.Errorf("can not find old value, now value is %+v", now)
 	}
 	return ab.AddEditRecordWithOld(creator, old, now, db)
 }
@@ -265,13 +265,13 @@ func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now in
 func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
 	mb, ok := ab.GetModelBuilder(v)
 	if !ok {
-		return errors.New("model not found")
+		return fmt.Errorf("can not find type %T on activity", v)
 	}
 
 	var m = ab.NewLogModelData()
 	log, ok := m.(ActivityLogInterface)
 	if !ok {
-		return errors.New("invalid activity log model")
+		return fmt.Errorf("model %T is not implement ActivityLogInterface", m)
 	}
 
 	log.SetCreatedAt(time.Now())
@@ -311,11 +311,11 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 func (ab *ActivityBuilder) Diff(old, now interface{}) ([]Diff, error) {
 	mb, ok := ab.GetModelBuilder(old)
 	if !ok {
-		return nil, errors.New("can not find model builder")
+		return nil, fmt.Errorf("can not find type %T on activity", old)
 	}
 
 	if mb.GetModelKeyValue(old) != mb.GetModelKeyValue(now) {
-		return nil, errors.New("primary keys value are different") //// ignore diffs if the primary keys value are different, this situation mostly occurs when a new version is created and localized a page to the other locale
+		return nil, fmt.Errorf("old and now value mismatch: %v != %v", mb.GetModelKeyValue(old), mb.GetModelKeyValue(now))
 	}
 
 	return NewDiffBuilder(mb).Diff(old, now)
@@ -324,7 +324,7 @@ func (ab *ActivityBuilder) Diff(old, now interface{}) ([]Diff, error) {
 // AddRecords add records log
 func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...interface{}) error {
 	if len(vs) == 0 {
-		return errors.New("models are empty")
+		return errors.New("data are empty")
 	}
 
 	var (
