@@ -27,7 +27,8 @@
       }). // set link
       AddIgnoredFields("ID", "Updatedat"). // ignore fields
       AddTypeHanders(...). // add type handlers
-      SetAddExplicitly(ture) // will ingore this model when using the callback db
+      DisableOnCallback(All). // disable Create,Edit,Delete on callback
+      DisableOnCallback(Create, Delete)  // disable Create,Delete on callback
 
   ```
 

@@ -15,12 +15,16 @@ import (
 type contextKey string
 
 const (
-	CreatorContextKey contextKey = "Creator"
-	DBContextKey      contextKey = "DB"
+	Create = 1 << iota
+	Delete
+	Eidt
+	All = Create | Delete | Eidt
 )
 
 var (
-	GlobalDB *gorm.DB
+	GlobalDB          *gorm.DB
+	CreatorContextKey contextKey = "Creator"
+	DBContextKey      contextKey = "DB"
 )
 
 // @snippet_begin(ActivityBuilder)
@@ -37,7 +41,7 @@ type ActivityBuilder struct {
 type ModelBuilder struct {
 	typ               reflect.Type
 	keys              []string                     // primary keys
-	disableOnCallback bool                         // if ture, will don't record any log on callback db
+	disableOnCallback uint8                        // disable the callback depends on the mode
 	link              func(interface{}) string     // display the model link on the admin detail page
 	ignoredFields     []string                     // ignored fields
 	typeHanders       map[reflect.Type]TypeHandler // type handlers
@@ -160,8 +164,12 @@ func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 	return mb
 }
 
-func (mb *ModelBuilder) DisableOnCallback(b bool) *ModelBuilder {
-	mb.disableOnCallback = b
+func (mb *ModelBuilder) DisableOnCallback(modes ...uint8) *ModelBuilder {
+	var mode uint8
+	for _, m := range modes {
+		mode |= m
+	}
+	mb.disableOnCallback = mode
 	return mb
 }
 
@@ -268,6 +276,8 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 	case CreatorInferface:
 		log.SetCreator(user.GetName())
 		log.SetUserID(user.GetID())
+	default:
+		log.SetCreator("unknown")
 	}
 
 	log.SetAction(action)
@@ -285,7 +295,6 @@ func (ab *ActivityBuilder) save(creator interface{}, action string, v interface{
 	if db.Save(log).Error != nil {
 		return db.Error
 	}
-
 	return nil
 }
 
@@ -366,39 +375,29 @@ func (ab *ActivityBuilder) RegisterCallbackOnDB(db *gorm.DB, creatorDBKey string
 		panic("creatorDBKey cannot be empty")
 	}
 	if db.Callback().Create().Get("activity:create") == nil {
-		db.Callback().Create().After("gorm:after_create").Register("activity:create", ab.record(ActivityCreate, creatorDBKey))
+		db.Callback().Create().After("gorm:after_create").Register("activity:create", ab.record(Create, creatorDBKey))
 	}
 	if db.Callback().Update().Get("activity:update") == nil {
-		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(ActivityEdit, creatorDBKey))
+		db.Callback().Update().Before("gorm:update").Register("activity:update", ab.record(Eidt, creatorDBKey))
 	}
 	if db.Callback().Delete().Get("activity:delete") == nil {
-		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(ActivityDelete, creatorDBKey))
+		db.Callback().Delete().Before("gorm:after_delete").Register("activity:delete", ab.record(Delete, creatorDBKey))
 	}
 }
 
-func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
+func (ab *ActivityBuilder) record(mode uint8, creatorDBKey string) func(*gorm.DB) {
 	return func(db *gorm.DB) {
 		now := db.Statement.Dest
-
 		mb, ok := ab.GetModelBuilder(now)
-		if !ok || mb.disableOnCallback {
+		if !ok || mode&mb.disableOnCallback != 0 {
 			return
 		}
 
-		var (
-			creator interface{}
-		)
-
-		if user, ok := db.Get(creatorDBKey); ok {
-			creator = user
-		} else {
-			creator = "unknown" // can not find creator from db instance's context, set to unknown
-		}
-
+		creator, _ := db.Get(creatorDBKey)
 		switch mode {
-		case ActivityCreate:
+		case Create:
 			ab.AddCreateRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
-		case ActivityDelete:
+		case Delete:
 			if mb.GetModelKeyValue(now) == "" { //handle the delete action from presets/gorm2op
 				old, ok := findDeletedOldByWhere(db)
 				if ok {
@@ -407,7 +406,7 @@ func (ab *ActivityBuilder) record(mode, creatorDBKey string) func(*gorm.DB) {
 			} else {
 				ab.AddDeleteRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 			}
-		case ActivityEdit:
+		case Eidt:
 			ab.AddEditRecord(creator, now, db.Session(&gorm.Session{NewDB: true}))
 		}
 	}
