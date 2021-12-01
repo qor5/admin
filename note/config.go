@@ -26,7 +26,7 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 	}
 
 	for _, m := range models {
-		m.Editing().TabsPanelFunc(tabsPanel(db, m))
+		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
 		m.RegisterEventFunc(createNoteEvent, createNoteAction(db))
 		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db))
 		m.Listing().Field("Notes").ComponentFunc(noteFunc(db))
@@ -59,20 +59,15 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
 			Color("red")
 
 		c = h.Components(
-			VTabs(
-				VTab(h.Text(msgr.Item)),
-				VTab(notesTab).
-					Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
-					Attr("@click", web.Plaid().
-						BeforeScript("locals.unreadNotesCount=0").
-						EventFunc(updateUserNoteEvent).
-						Query("resource_id", id).
-						Query("resource_type", tn).
-						Go()),
-
-				VTabItem(web.Scope(obj.(h.HTMLComponent)).VSlot("{plaidForm}")),
-				VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
-			).Class("v-tabs--fixed-tabs"),
+			VTab(notesTab).
+				Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
+				Attr("@click", web.Plaid().
+					BeforeScript("locals.unreadNotesCount=0").
+					EventFunc(updateUserNoteEvent).
+					Query("resource_id", id).
+					Query("resource_type", tn).
+					Go()),
+			VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
 		)
 
 		return
