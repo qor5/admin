@@ -74,7 +74,6 @@ func (ab ActivityBuilder) GetActivityLogs(m interface{}, db *gorm.DB) []*Activit
 	if !ok {
 		return nil
 	}
-	fmt.Println(logs)
 	return *logs
 }
 

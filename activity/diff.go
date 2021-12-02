@@ -106,18 +106,24 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		return db.diffLoop(old.Elem(), now.Elem(), prefixField)
 	case reflect.Struct:
 		for i := 0; i < now.Type().NumField(); i++ {
+			if !old.Field(i).CanInterface() {
+				continue
+			}
+
 			field := now.Type().Field(i)
 
 			var needContinue bool
 			for _, ignoredField := range DefaultIgnoredFields {
 				if ignoredField == field.Name {
 					needContinue = true
+					continue
 				}
 			}
 
 			for _, ignoredField := range db.mb.ignoredFields {
 				if ignoredField == field.Name {
 					needContinue = true
+					continue
 				}
 			}
 

@@ -88,7 +88,7 @@ func TestDiff(t *testing.T) {
 			modelBuilder: &ModelBuilder{},
 			old:          Post{ID: 1, CreatedAt: time.Unix(1257894000, 0)},
 			now:          Post{ID: 2, CreatedAt: time.Unix(1457894000, 0)},
-			want:         []Diff{},
+			want:         nil,
 		},
 		{
 			description:  "Using model ingored fields",
@@ -293,12 +293,12 @@ func TestDiff(t *testing.T) {
 func TestDiffTypesError(t *testing.T) {
 	_, err := NewDiffBuilder(&ModelBuilder{}).Diff(Post{Title: "123"}, Author{Name: "ccc"})
 
-	if err.Error() != "the two types are not the same" {
+	if err.Error() != "old and now type mismatch: activity.Post != activity.Author" {
 		t.Fatalf("difference type error")
 	}
 
 	_, err = NewDiffBuilder(&ModelBuilder{}).Diff(Post{Title: "123"}, struct{}{})
-	if err.Error() != "the two types are not the same" {
+	if err.Error() != "old and now type mismatch: activity.Post != struct {}" {
 		t.Fatalf("difference type error")
 	}
 }
