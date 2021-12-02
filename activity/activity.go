@@ -63,6 +63,41 @@ func (ab *ActivityBuilder) SetLogModel(model ActivityLogInterface) *ActivityBuil
 	return ab
 }
 
+// GetActivityLogs get activity logs
+func (ab ActivityBuilder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
+	objs := ab.GetCustomizeActivityLogs(m, db)
+	if objs == nil {
+		return nil
+	}
+
+	logs, ok := objs.(*[]*ActivityLog)
+	if !ok {
+		return nil
+	}
+	fmt.Println(logs)
+	return *logs
+}
+
+// GetCustomizeActivityLogs get customize activity logs
+func (ab ActivityBuilder) GetCustomizeActivityLogs(m interface{}, db *gorm.DB) interface{} {
+	mb, ok := ab.GetModelBuilder(m)
+	if !ok {
+		return nil
+	}
+
+	if db == nil {
+		db = GlobalDB
+	}
+
+	keys := mb.GetModelKeyValue(m)
+	logs := ab.NewLogModelSlice()
+	err := db.Where("model_name = ? AND model_keys = ?", mb.typ.Name(), keys).Find(logs).Error
+	if err != nil {
+		return nil
+	}
+	return logs
+}
+
 // NewLogModelData new a log model data
 func (ab ActivityBuilder) NewLogModelData() interface{} {
 	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
@@ -70,7 +105,7 @@ func (ab ActivityBuilder) NewLogModelData() interface{} {
 
 // NewLogModelSlice new a log model slice
 func (ab ActivityBuilder) NewLogModelSlice() interface{} {
-	sliceType := reflect.SliceOf(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type())
+	sliceType := reflect.SliceOf(reflect.PtrTo(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()))
 	slice := reflect.New(sliceType)
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
 	return slice.Interface()

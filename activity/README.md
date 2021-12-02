@@ -48,6 +48,13 @@
     activity.RegisterCallbackOnDB(db, "creator")
   ```
 
+- Fetch the activity log
+
+  ```go
+    activity.GetActivityLogs(Post{ID: 1}, db) // use the default log model
+    activity.GetCustomizeActivityLogs(Post{ID: 1}, db) // use the customize log model
+  ```
+
 - Use the admin page to view the activity log
 
   ```go

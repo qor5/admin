@@ -3,6 +3,7 @@ package activity
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	"gorm.io/driver/postgres"
@@ -204,4 +205,39 @@ func TestCreatorInferface(t *testing.T) {
 	if record.GetUserID() != 10 {
 		t.Errorf("want the creator id %v, but got %v", 10, record.GetUserID())
 	}
+}
+
+func TestGetActivityLogs(t *testing.T) {
+
+	builder := Activity().SetLogModel(&TestActivityLog{})
+	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+	resetDB()
+
+	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	builder.AddEditRecordWithOld("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"}, db)
+	builder.AddEditRecordWithOld("creator a", Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"}, db)
+	builder.AddEditRecordWithOld("creator a", Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"}, db)
+
+	logs := builder.GetCustomizeActivityLogs(Page{ID: 1, VersionName: "v1"}, db)
+	testlogs, ok := logs.(*[]*TestActivityLog)
+	if !ok {
+		t.Errorf("want the logs type %v, but got %v", "*[]*TestActivityLog", reflect.TypeOf(logs))
+	}
+
+	if len(*testlogs) != 3 {
+		t.Errorf("want the logs length %v, but got %v", 3, len(*testlogs))
+	}
+
+	if (*testlogs)[0].Action != "Create" || (*testlogs)[0].ModelName != "Page" || (*testlogs)[0].ModelKeys != "1:v1" || (*testlogs)[0].Creator != "creator a" {
+		t.Errorf("want the logs %v, but got %v", "Create:Page:1:v1:creator a", (*testlogs)[0])
+	}
+
+	if (*testlogs)[1].Action != "Edit" || (*testlogs)[1].ModelName != "Page" || (*testlogs)[1].ModelKeys != "1:v1" || (*testlogs)[1].Creator != "creator a" {
+		t.Errorf("want the logs %v, but got %v", "Edit:Page:1:v1:creator a", (*testlogs)[1])
+	}
+
+	if (*testlogs)[2].Action != "Edit" || (*testlogs)[2].ModelName != "Page" || (*testlogs)[2].ModelKeys != "1:v1" || (*testlogs)[2].Creator != "creator a" {
+		t.Errorf("want the logs %v, but got %v", "Edit:Page:1:v1:creator a", (*testlogs)[2])
+	}
+
 }

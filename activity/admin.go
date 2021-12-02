@@ -2,6 +2,7 @@ package activity
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -53,7 +54,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *pres
 		reflectVlaue := reflect.Indirect(reflect.ValueOf(logs))
 		var creatorOptions []*vuetifyx.SelectItem
 		for i := 0; i < reflectVlaue.Len(); i++ {
-			creator := reflectVlaue.Index(i).FieldByName("Creator").String()
+			creator := reflect.Indirect(reflectVlaue.Index(i)).FieldByName("Creator").String()
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
 				Text:  creator,
 				Value: creator,
@@ -146,90 +147,7 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *pres
 			if d == "" {
 				return nil
 			}
-
-			var diffs []Diff
-			err := json.Unmarshal([]byte(d), &diffs)
-			if err != nil {
-				return nil
-			}
-
-			if len(diffs) == 0 {
-				return nil
-			}
-
-			var (
-				newdiffs    []Diff
-				changediffs []Diff
-				deletediffs []Diff
-			)
-
-			for _, diff := range diffs {
-				if diff.Now == "" && diff.Old != "" {
-					deletediffs = append(deletediffs, diff)
-					continue
-				}
-
-				if diff.Now != "" && diff.Old == "" {
-					newdiffs = append(newdiffs, diff)
-					continue
-				}
-
-				if diff.Now != "" && diff.Old != "" {
-					changediffs = append(changediffs, diff)
-					continue
-				}
-			}
-			var diffsElems []h.HTMLComponent
-			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-
-			if len(newdiffs) > 0 {
-				var elems []h.HTMLComponent
-				for _, d := range newdiffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Now)))))
-				}
-
-				diffsElems = append(diffsElems,
-					VCard(
-						VCardTitle(h.Text(msgr.DiffNew)),
-						VSimpleTable(
-							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-							h.Tbody(elems...),
-						),
-					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
-			}
-
-			if len(deletediffs) > 0 {
-				var elems []h.HTMLComponent
-				for _, d := range deletediffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)))))
-				}
-
-				diffsElems = append(diffsElems,
-					VCard(
-						VCardTitle(h.Text(msgr.DiffDelete)),
-						VSimpleTable(
-							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-							h.Tbody(elems...),
-						),
-					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
-			}
-
-			if len(changediffs) > 0 {
-				var elems []h.HTMLComponent
-				for _, d := range changediffs {
-					elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)), h.Td(h.Text(fixSpecialChars(d.Now))))))
-				}
-
-				diffsElems = append(diffsElems,
-					VCard(
-						VCardTitle(h.Text(msgr.DiffChanges)),
-						VSimpleTable(
-							h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
-							h.Tbody(elems...),
-						),
-					).Attr("style", "margin-top:15px;margin-bottom:15px;"))
-			}
-			return h.Components(diffsElems...)
+			return DiffComponent(d, ctx.R)
 		},
 	)
 
@@ -240,4 +158,90 @@ func fixSpecialChars(str string) string {
 	str = strings.Replace(str, "{", "[", -1)
 	str = strings.Replace(str, "}", "]", -1)
 	return str
+}
+
+func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
+	var diffs []Diff
+	err := json.Unmarshal([]byte(diffstr), &diffs)
+	if err != nil {
+		return nil
+	}
+
+	if len(diffs) == 0 {
+		return nil
+	}
+
+	var (
+		newdiffs    []Diff
+		changediffs []Diff
+		deletediffs []Diff
+	)
+
+	for _, diff := range diffs {
+		if diff.Now == "" && diff.Old != "" {
+			deletediffs = append(deletediffs, diff)
+			continue
+		}
+
+		if diff.Now != "" && diff.Old == "" {
+			newdiffs = append(newdiffs, diff)
+			continue
+		}
+
+		if diff.Now != "" && diff.Old != "" {
+			changediffs = append(changediffs, diff)
+			continue
+		}
+	}
+	var diffsElems []h.HTMLComponent
+	msgr := i18n.MustGetModuleMessages(req, I18nActivityKey, Messages_en_US).(*Messages)
+
+	if len(newdiffs) > 0 {
+		var elems []h.HTMLComponent
+		for _, d := range newdiffs {
+			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Now)))))
+		}
+
+		diffsElems = append(diffsElems,
+			VCard(
+				VCardTitle(h.Text(msgr.DiffNew)),
+				VSimpleTable(
+					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+					h.Tbody(elems...),
+				),
+			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+	}
+
+	if len(deletediffs) > 0 {
+		var elems []h.HTMLComponent
+		for _, d := range deletediffs {
+			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)))))
+		}
+
+		diffsElems = append(diffsElems,
+			VCard(
+				VCardTitle(h.Text(msgr.DiffDelete)),
+				VSimpleTable(
+					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+					h.Tbody(elems...),
+				),
+			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+	}
+
+	if len(changediffs) > 0 {
+		var elems []h.HTMLComponent
+		for _, d := range changediffs {
+			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)), h.Td(h.Text(fixSpecialChars(d.Now))))))
+		}
+
+		diffsElems = append(diffsElems,
+			VCard(
+				VCardTitle(h.Text(msgr.DiffChanges)),
+				VSimpleTable(
+					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
+					h.Tbody(elems...),
+				),
+			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+	}
+	return h.Components(diffsElems...)
 }
