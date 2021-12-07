@@ -1,6 +1,7 @@
 package activity
 
 type Messages struct {
+	Activities   string
 	ActionAll    string
 	ActionView   string
 	ActionEdit   string
@@ -31,6 +32,7 @@ type Messages struct {
 }
 
 var Messages_en_US = &Messages{
+	Activities:   "Activities",
 	ActionAll:    "All",
 	ActionView:   "View",
 	ActionEdit:   "Edit",
@@ -61,6 +63,7 @@ var Messages_en_US = &Messages{
 }
 
 var Messages_zh_CN = &Messages{
+	Activities:   "活动",
 	ActionAll:    "全部",
 	ActionView:   "查看",
 	ActionEdit:   "编辑",

@@ -18,6 +18,7 @@ type CreatorInferface interface {
 
 type ActivityLogInterface interface {
 	SetCreatedAt(time.Time)
+	GetCreatedAt() time.Time
 	SetUserID(uint)
 	GetUserID() uint
 	SetCreator(string)
@@ -48,6 +49,10 @@ type ActivityLog struct {
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {
 	al.CreatedAt = t
+}
+
+func (al ActivityLog) GetCreatedAt() time.Time {
+	return al.CreatedAt
 }
 
 func (al *ActivityLog) SetUserID(id uint) {

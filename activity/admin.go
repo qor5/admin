@@ -10,26 +10,17 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	vuetify "github.com/goplaid/x/vuetify"
 	"github.com/goplaid/x/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
 )
 
-func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	if err := db.AutoMigrate(ab.logModel); err != nil {
-		panic(err)
-	}
-
-	if GlobalDB == nil {
-		GlobalDB = db
-	}
-
+func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
@@ -134,9 +125,9 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *pres
 			}
 
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			return VCard(
-				VCardTitle(h.Text(msgr.ModelLink)),
-				VCardText(h.A(h.Text(link)).Href(link)),
+			return vuetify.VCard(
+				vuetify.VCardTitle(h.Text(msgr.ModelLink)),
+				vuetify.VCardText(h.A(h.Text(link)).Href(link)),
 			)
 		},
 	)
@@ -150,8 +141,6 @@ func (ab *ActivityBuilder) ConfigureAdmin(b *presets.Builder, db *gorm.DB) *pres
 			return DiffComponent(d, ctx.R)
 		},
 	)
-
-	return mb
 }
 
 func fixSpecialChars(str string) string {
@@ -203,9 +192,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffNew)),
-				VSimpleTable(
+			vuetify.VCard(
+				vuetify.VCardTitle(h.Text(msgr.DiffNew)),
+				vuetify.VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -219,9 +208,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffDelete)),
-				VSimpleTable(
+			vuetify.VCard(
+				vuetify.VCardTitle(h.Text(msgr.DiffDelete)),
+				vuetify.VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -235,9 +224,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffChanges)),
-				VSimpleTable(
+			vuetify.VCard(
+				vuetify.VCardTitle(h.Text(msgr.DiffChanges)),
+				vuetify.VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
 					h.Tbody(elems...),
 				),
