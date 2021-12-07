@@ -5,30 +5,31 @@
 - Initalize the activity with the `Activity` method.
 
   ```go
-  activity := Activity().
-      SetLogModel(&model.ActivityLog{}). // store activity log in model.ActivityLog
+  activity := New(presetsBuilder, db, &model.ActivityLog{}).
       SetDBContextKey("DB"). // set db context key
       SetCreatorContextKey("Creator") //set creator context key
   ```
 
-- Register mutiple models with the `RegisterModel` method.
+- Register mutiple models with the `Models` method.
 
   ```go
-  activity.RegisterModels(&Post{},&Product{})
+  activity.Models(postBuilder,productBuilder)
   ```
 
-- Register a model with the `RegisterModel` method.
+- Register a model with the `Model` method.
 
   ```go
-    activity.RegisterModel(&model.Page{}).
+    activity.Model(postBuilder).
       SetKeys("VersionName"). // add keys
       SetLink(func(page interface{}) string {
   	    return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
       }). // set link
       AddIgnoredFields("ID", "Updatedat"). // ignore fields
       AddTypeHanders(...). // add type handlers
-      DisableOnCallback(All). // disable Create,Edit,Delete on callback
-      DisableOnCallback(Create, Delete)  // disable Create,Delete on callback
+      SkipCreate(). // skip Create
+      SkipUpdate(). //  skip Update
+      SkipDelete(). // skip Delete
+      UseDefaultTab(). // use default tab
 
   ```
 
@@ -53,10 +54,4 @@
   ```go
     activity.GetActivityLogs(Post{ID: 1}, db) // use the default log model
     activity.GetCustomizeActivityLogs(Post{ID: 1}, db) // use the customize log model
-  ```
-
-- Use the admin page to view the activity log
-
-  ```go
-  activity.ConfigureAdmin(preset,db)
   ```

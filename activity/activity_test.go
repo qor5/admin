@@ -6,13 +6,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/goplaid/x/presets"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var (
-	db    *gorm.DB
-	table = &TestActivityLog{}
+	db          *gorm.DB
+	pb          = presets.New()
+	pageModel   = pb.Model(&Page{})
+	widgetModel = pb.Model(&Widget{})
 )
 
 type (
@@ -38,8 +41,6 @@ func init() {
 	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{}); err != nil {
 		panic(err)
 	}
-
-	db.AutoMigrate(table)
 }
 
 func resetDB() {
@@ -47,8 +48,8 @@ func resetDB() {
 }
 
 func TestModelKeys(t *testing.T) {
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
@@ -60,7 +61,7 @@ func TestModelKeys(t *testing.T) {
 	}
 
 	resetDB()
-	builder.RegisterModel(Widget{}).AddKeys("Name")
+	builder.Model(widgetModel).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
 	record2 := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record2).Error; err != nil {
@@ -72,8 +73,8 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{}).SetLink(func(v interface{}) string {
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel).SetLink(func(v interface{}) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
 	})
@@ -90,8 +91,8 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{}).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
 		nowWidgets := now.(Widgets)
 
@@ -167,8 +168,8 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestCreator(t *testing.T) {
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{})
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel)
 	resetDB()
 	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
@@ -190,8 +191,8 @@ func (u user) GetName() string {
 	return "user a"
 }
 func TestCreatorInferface(t *testing.T) {
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{})
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel)
 	resetDB()
 
 	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -208,9 +209,8 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-
-	builder := Activity().SetLogModel(&TestActivityLog{})
-	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+	builder := New(pb, db, &TestActivityLog{})
+	builder.Model(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
 
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -229,7 +229,7 @@ func TestGetActivityLogs(t *testing.T) {
 	}
 
 	if (*testlogs)[0].Action != "Create" || (*testlogs)[0].ModelName != "Page" || (*testlogs)[0].ModelKeys != "1:v1" || (*testlogs)[0].Creator != "creator a" {
-		t.Errorf("want the logs %v, but got %v", "Create:Page:1:v1:creator a", (*testlogs)[0])
+		t.Errorf("want the logs %v, but got %+v", "Create:Page:1:v1:creator a", (*testlogs)[0])
 	}
 
 	if (*testlogs)[1].Action != "Edit" || (*testlogs)[1].ModelName != "Page" || (*testlogs)[1].ModelKeys != "1:v1" || (*testlogs)[1].Creator != "creator a" {
