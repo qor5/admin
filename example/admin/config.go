@@ -2,7 +2,9 @@ package admin
 
 import (
 	"embed"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -175,10 +177,13 @@ func NewConfig() Config {
 	note.Configure(db, b, m, pm)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.Activity()
-	ab.RegisterModel(&models.Post{})
-	ab.ConfigureAdmin(b, db)
-	ab.RegisterCallbackOnDB(db, "Creator")
+	ab := activity.New(b, db).SetCreatorContextKey(_userKey).SetTabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	ab.Model(m).UseDefaultTab()
+	ab.Model(pm).UseDefaultTab()
+	ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
 	w := worker.New(db)
