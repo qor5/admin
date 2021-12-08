@@ -21,7 +21,6 @@ const (
 	Create = 1 << iota
 	Delete
 	Update
-	All = Create | Delete | Update
 )
 
 type contextKey int
@@ -47,14 +46,16 @@ type ActivityBuilder struct {
 // @snippet_begin(ActivityModelBuilder)
 type ModelBuilder struct {
 	typ      reflect.Type
-	mb       *presets.ModelBuilder
 	activity *ActivityBuilder
+
+	presetModel    *presets.ModelBuilder // only hold the latest preset model builder
+	presetModelNum uint8                 // the number of preset model builder
+	skip           uint16                // skip the prefined data operator of the presetModel, every three digits represents a presetModel so currently supports up to 5
 
 	keys          []string                     // primary keys
 	ignoredFields []string                     // ignored fields
 	typeHanders   map[reflect.Type]TypeHandler // type handlers
 	link          func(interface{}) string     // display the model link on the admin detail page
-	skip          uint8                        // skip the default data operator
 }
 
 // @snippet_end
@@ -146,71 +147,98 @@ func (ab *ActivityBuilder) SetTabHeading(f func(log ActivityLogInterface) string
 }
 
 // RegisterModels register mutiple models
-func (ab *ActivityBuilder) Models(models ...*presets.ModelBuilder) *ActivityBuilder {
+func (ab *ActivityBuilder) RegisterModels(models ...interface{}) *ActivityBuilder {
 	for _, model := range models {
-		ab.Model(model)
+		ab.RegisterModel(model)
 	}
 	return ab
 }
 
 // Model register a model and return model builder
-func (ab *ActivityBuilder) Model(mb *presets.ModelBuilder) *ModelBuilder {
-	reflectType := reflect.Indirect(reflect.ValueOf(mb.NewModel())).Type()
-	if reflectType.Kind() != reflect.Struct {
-		panic(fmt.Sprintf("%v is not a struct", reflectType.Name()))
+func (ab *ActivityBuilder) RegisterModel(m interface{}) (model *ModelBuilder) {
+	var originalModel = m
+
+	presetModel, preset := m.(*presets.ModelBuilder)
+	if preset {
+		originalModel = presetModel.NewModel()
 	}
 
-	keys := getPrimaryKey(reflectType)
-	model := &ModelBuilder{
-		typ:           reflectType,
-		mb:            mb,
-		activity:      ab,
-		keys:          keys,
-		ignoredFields: keys,
+	model, exist := ab.GetModelBuilder(originalModel)
+	if exist && !preset {
+		return model
 	}
 
-	ab.models = append(ab.models, model)
-
-	editing := mb.Editing()
-	oldSaver := editing.Saver
-	oldDeleter := editing.Deleter
-	editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if model.skip&Update != 0 && model.skip&Create != 0 {
-			return oldSaver(obj, id, ctx)
+	if !exist {
+		reflectType := reflect.Indirect(reflect.ValueOf(originalModel)).Type()
+		if reflectType.Kind() != reflect.Struct {
+			panic(fmt.Sprintf("%v is not a struct", reflectType.Name()))
 		}
 
-		old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
-		if err = oldSaver(obj, id, ctx); err != nil {
-			return err
+		keys := getPrimaryKey(reflectType)
+		model = &ModelBuilder{
+			typ:           reflectType,
+			activity:      ab,
+			keys:          keys,
+			ignoredFields: keys,
 		}
+		ab.models = append(ab.models, model)
+	}
 
-		if (!ok || id == "") && model.skip&Create == 0 {
-			return ab.AddRecords(ActivityCreate, ctx.R.Context(), obj)
-		}
+	if preset {
+		model.presetModel = presetModel
+		model.presetModelNum += 1
 
-		if ok && id != "" && model.skip&Update == 0 {
-			return ab.AddEditRecordWithOld(ctx.R.Context().Value(ab.creatorContextKey), old, obj, ab.getDBFromContext(ctx.R.Context()))
-		}
+		var (
+			editing     = presetModel.Editing()
+			oldSaver    = editing.Saver
+			oldDeleter  = editing.Deleter
+			presetIndex = model.presetModelNum - 1
+		)
 
-		return
-	})
+		editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			var (
+				update uint16 = Update << (3 * presetIndex)
+				create uint16 = Create << (3 * presetIndex)
+			)
 
-	editing.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if model.skip&Delete != 0 {
-			return oldDeleter(obj, id, ctx)
-		}
+			if model.skip&update != 0 && model.skip&create != 0 {
+				return oldSaver(obj, id, ctx)
+			}
 
-		old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
-		if err = oldDeleter(obj, id, ctx); err != nil {
-			return err
-		}
+			old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
+			if err = oldSaver(obj, id, ctx); err != nil {
+				return err
+			}
 
-		if ok {
-			return ab.AddRecords(ActivityDelete, ctx.R.Context(), old)
-		}
+			if (!ok || id == "") && model.skip&create == 0 {
+				return ab.AddRecords(ActivityCreate, ctx.R.Context(), obj)
+			}
 
-		return
-	})
+			if ok && id != "" && model.skip&update == 0 {
+				return ab.AddEditRecordWithOld(ctx.R.Context().Value(ab.creatorContextKey), old, obj, ab.getDBFromContext(ctx.R.Context()))
+			}
+
+			return
+		})
+
+		editing.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			var delete uint16 = Delete << (3 * presetIndex)
+			if model.skip&delete != 0 {
+				return oldDeleter(obj, id, ctx)
+			}
+
+			old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
+			if err = oldDeleter(obj, id, ctx); err != nil {
+				return err
+			}
+
+			if ok {
+				return ab.AddRecords(ActivityDelete, ctx.R.Context(), old)
+			}
+
+			return
+		})
+	}
 
 	return model
 }
@@ -244,28 +272,59 @@ func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 }
 
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
-	if mb.skip&Create == 0 {
-		mb.skip |= Create
+	if mb.presetModel == nil {
+		return mb
+	}
+
+	var (
+		presetIndex        = mb.presetModelNum - 1
+		create      uint16 = Create << (3 * presetIndex)
+	)
+
+	if mb.skip&create == 0 {
+		mb.skip |= create
 	}
 	return mb
 }
 
 func (mb *ModelBuilder) SkipUpdate() *ModelBuilder {
-	if mb.skip&Update == 0 {
-		mb.skip |= Update
+	if mb.presetModel == nil {
+		return mb
+	}
+
+	var (
+		presetIndex        = mb.presetModelNum - 1
+		update      uint16 = Update << (3 * presetIndex)
+	)
+
+	if mb.skip&update == 0 {
+		mb.skip |= update
 	}
 	return mb
 }
 
 func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
-	if mb.skip&Delete == 0 {
-		mb.skip |= Delete
+	if mb.presetModel == nil {
+		return mb
+	}
+
+	var (
+		presetIndex        = mb.presetModelNum - 1
+		delete      uint16 = Delete << (3 * presetIndex)
+	)
+
+	if mb.skip&delete == 0 {
+		mb.skip |= delete
 	}
 	return mb
 }
 
 func (mb *ModelBuilder) UseDefaultTab() *ModelBuilder {
-	editing := mb.mb.Editing()
+	if mb.presetModel == nil {
+		return mb
+	}
+
+	editing := mb.presetModel.Editing()
 	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
 		logs := mb.activity.GetCustomizeActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -390,11 +449,6 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	return nil
 }
 
-// AddCreateRecord add create record
-func (ab *ActivityBuilder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
-	return ab.save(creator, ActivityCreate, v, db, "")
-}
-
 // AddViewRecord add view record
 func (ab *ActivityBuilder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
 	return ab.save(creator, ActivityView, v, db, "")
@@ -405,11 +459,25 @@ func (ab *ActivityBuilder) AddDeleteRecord(creator interface{}, v interface{}, d
 	return ab.save(creator, ActivityDelete, v, db, "")
 }
 
+// AddSaverRecord will save a create log or a edit log
+func (ab *ActivityBuilder) AddSaveRecord(creator interface{}, now interface{}, db *gorm.DB) error {
+	old, ok := findOld(now, db)
+	if !ok {
+		return ab.AddCreateRecord(creator, now, db)
+	}
+	return ab.AddEditRecordWithOld(creator, old, now, db)
+}
+
+// AddCreateRecord add create record
+func (ab *ActivityBuilder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+	return ab.save(creator, ActivityCreate, v, db, "")
+}
+
 // AddEditRecord add edit record
 func (ab *ActivityBuilder) AddEditRecord(creator interface{}, now interface{}, db *gorm.DB) error {
 	old, ok := findOld(now, db)
 	if !ok {
-		return ab.AddCreateRecord(creator, now, db)
+		return fmt.Errorf("can't find old data for %+v ", now)
 	}
 	return ab.AddEditRecordWithOld(creator, old, now, db)
 }
@@ -422,7 +490,7 @@ func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now in
 	}
 
 	if len(diffs) == 0 {
-		return ab.save(creator, ActivityEdit, now, db, "")
+		return nil
 	}
 
 	b, err := json.Marshal(diffs)
