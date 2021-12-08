@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Slug - QOR5 Documentation</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/qor5/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<nav class='bg-gray-700 py-3 text-base font-normal mb-8'>
+<div aria-label='Breadcrumbs' class='flex list-none lg:max-w-5xl mx-auto px-6 sm:px-10'>
+<div class='flex'>
+<a href='index.html' class='text-gray-50'>QOR5 Documentation</a>
+</div>
+
+<div class='flex'>
+<div class='w-3 m-2 fill-current text-gray-500'>
+<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" data-v-134594fd="" data-v-838665fe=""><path data-v-7abeccde="" d="m4.81347656 13.1269531c.22558594 0 .41015625-.0820312.56738282-.2324219l5.31835942-5.19531245c.1845703-.19140625.2802734-.38964844.2802734-.63574219 0-.23925781-.0888672-.45117187-.2802734-.62890625l-5.31835942-5.20214843c-.15722657-.15039063-.34179688-.23242188-.56738282-.23242188-.45800781 0-.81347656.35546875-.81347656.80664062 0 .21875.09570312.43066407.24609375.58789063l4.79199219 4.67578125-4.79199219 4.6621094c-.15722656.1640625-.24609375.3623047-.24609375.5878906 0 .4511719.35546875.8066406.81347656.8066406z"></path></svg>
+</div>
+
+<a href='slug.html' class='text-gray-50'>Slug</a>
+</div>
+</div>
+</nav>
+
+<div>
+<main class='lg:max-w-5xl mx-auto px-6 sm:px-8'>
+<h1>Slug</h1>
+
+<div class='sm:flex mt-8 mb-16'>
+<div class='sm:w-9/12'>
+<div class='border-t'>Slug provides an easy way to create a pretty URL for your model.<h2><a name="usage" class="anchor" href="#usage" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Use <code>slug.Slug</code> as your field type with the same name as the benefactor field, from which the slug&#39;s value should be dynamically derived, and prepended with <code>WithSlug</code>, for example:</p>
+
+<div class="highlight highlight-go"><pre>
+type User struct {
+	gorm.Model
+	Name            string
+	NameWithSlug    slug.Slug
+}
+</pre></div>
+</div>
+</div>
+
+<div class='ml-4 sm:w-3/12 font-medium text-base hidden sm:block text-gray-600'>
+<div class='sticky top-4'>On This Page<toc></toc></div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body>
+</html>

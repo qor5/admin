@@ -19,6 +19,21 @@ import (
 func configInputHarness(b *presets.Builder, db *gorm.DB) {
 	harness := b.Model(&models.InputHarness{}).MenuIcon("view_quilt")
 
+	harness.Listing().OrderableFields([]*presets.OrderableField{
+		{
+			FieldName: "ID",
+			DBColumn:  "id",
+		},
+		{
+			FieldName: "TextField1",
+			DBColumn:  "text_field1",
+		},
+		{
+			FieldName: "Switch1",
+			DBColumn:  "switch1",
+		},
+	})
+
 	ed := harness.Editing(
 		"TextField1",
 		"TextArea1",

@@ -125,8 +125,9 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		UserID:    user.UserID,
 		AvatarURL: user.AvatarURL,
 		RegisteredClaims: jwt.RegisteredClaims{
-			// A usual scenario is to set the expiration time relative to the current time
-			ExpiresAt: jwt.NewNumericDate(user.ExpiresAt),
+			// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
+			// access token expire time
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Subject:   user.Email,
@@ -141,7 +142,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		Name:     b.authParamName,
 		Value:    ss,
 		Path:     "/",
-		Expires:  user.ExpiresAt,
+		Expires:  time.Now().Add(time.Hour),
 		HttpOnly: true,
 	})
 
@@ -240,6 +241,19 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 			log.Println(err)
 			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
 			return
+		}
+
+		// extend the cookie to one hour later if successfully authenticated
+		c, err := r.Cookie(b.authParamName)
+		if err == nil {
+			newExpire := time.Now().Add(time.Hour)
+			http.SetCookie(w, &http.Cookie{
+				Name:     b.authParamName,
+				Value:    c.Value,
+				Path:     "/",
+				Expires:  newExpire,
+				HttpOnly: true,
+			})
 		}
 
 		in.ServeHTTP(w, newReq)

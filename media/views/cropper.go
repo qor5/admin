@@ -15,14 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *media_library.MediaBoxConfig) {
+	field = ctx.R.FormValue("field")
+
+	id = ctx.QueryAsInt("id")
+	thumb = ctx.R.FormValue("thumb")
+	cfg = stringToCfg(ctx.R.FormValue("cfg"))
+	return
+}
+
 func loadImageCropper(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		field := ctx.Event.Params[0]
-
-		id := ctx.Event.ParamAsInt(1)
-		thumb := ctx.Event.Params[2]
-		cfg := ctx.Event.Params[3]
+		field, id, thumb, cfg := getParams(ctx)
 
 		var m media_library.MediaLibrary
 		err = db.Find(&m, id).Error
@@ -47,7 +52,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 		if size != nil {
 			c.AspectRatio(float64(size.Width), float64(size.Height))
 		}
-		//Attr("style", "max-width: 800px; max-height: 600px;")
+		// Attr("style", "max-width: 800px; max-height: 600px;")
 
 		cropOption := moption.CropOptions[thumb]
 		if cropOption != nil {
@@ -61,26 +66,31 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: cropperPortalName(field),
-			Body: VDialog(
-				VCard(
-					VToolbar(
-						VToolbarTitle(msgr.CropImage),
-						VSpacer(),
-						VBtn(msgr.Crop).Color("primary").
-							Attr(":loading", "locals.cropping").
-							Attr("@click", web.Plaid().
-								BeforeScript("locals.cropping = true").
-								EventFunc(cropImageEvent, field, fmt.Sprint(id), thumb, h.JSONString(stringToCfg(cfg))).
-								Go()),
-					).Class("pl-2 pr-2"),
-					VCardText(
-						c,
-					).Attr("style", "max-height: 500px"),
-				),
-			).Value(true).
-				Scrollable(true).
-				MaxWidth("800px").
-				Attr(web.InitContextLocals, `{cropping: false}`),
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						VToolbar(
+							VToolbarTitle(msgr.CropImage),
+							VSpacer(),
+							VBtn(msgr.Crop).Color("primary").
+								Attr(":loading", "locals.cropping").
+								Attr("@click", web.Plaid().
+									BeforeScript("locals.cropping = true").
+									EventFunc(cropImageEvent).
+									Query("field", field).
+									Query("id", fmt.Sprint(id)).
+									Query("thumb", thumb).
+									FieldValue("cfg", h.JSONString(cfg)).
+									Go()),
+						).Class("pl-2 pr-2"),
+						VCardText(
+							c,
+						).Attr("style", "max-height: 500px"),
+					),
+				).Value(true).
+					Scrollable(true).
+					MaxWidth("800px"),
+			).Init(`{cropping: false}`).VSlot("{ locals }"),
 		})
 		return
 	}
@@ -89,11 +99,9 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 func cropImage(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		cropOption := ctx.R.FormValue("CropOption")
-		//log.Println(cropOption, ctx.Event.Params)
-		field := ctx.Event.Params[0]
-		id := ctx.Event.ParamAsInt(1)
-		thumb := ctx.Event.Params[2]
-		cfg := stringToCfg(ctx.Event.Params[3])
+		// log.Println(cropOption, ctx.Event.Params)
+		field, id, thumb, cfg := getParams(ctx)
+
 		mb := &media_library.MediaBox{}
 		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
 		if err != nil {
@@ -127,10 +135,12 @@ func cropImage(db *gorm.DB) web.EventFunc {
 			if err != nil {
 				return
 			}
-			err = db.Save(&m).Error
+
+			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				return
 			}
+
 			mb.FileSizes = m.File.FileSizes
 			if thumb == media.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)

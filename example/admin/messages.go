@@ -10,6 +10,10 @@ type Messages struct {
 	Settings       string
 	Post           string
 	PostsBodyImage string
+
+	SeoPost             string
+	SeoVariableTitle    string
+	SeoVariableSiteName string
 }
 
 var Messages_zh_CN = &Messages{
@@ -22,4 +26,8 @@ var Messages_zh_CN = &Messages{
 	Settings:       "设置",
 	Post:           "帖子",
 	PostsBodyImage: "内容图片",
+
+	SeoPost:             "帖子",
+	SeoVariableTitle:    "标题",
+	SeoVariableSiteName: "站点名称",
 }

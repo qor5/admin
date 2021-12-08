@@ -2,10 +2,9 @@ package admin
 
 import (
 	"embed"
+	"fmt"
 	"os"
-
-	"github.com/qor/qor5/publish"
-	publish_view "github.com/qor/qor5/publish/views"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -13,6 +12,7 @@ import (
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss/s3"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
 	"github.com/qor/qor5/login"
@@ -20,10 +20,15 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
+	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/richeditor"
 	"github.com/qor/qor5/slug"
+	"github.com/qor/qor5/utils"
+	"github.com/qor/qor5/worker"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -48,9 +53,7 @@ func NewConfig() Config {
 		Session: sess,
 	})
 
-	media.RegisterCallbacks(db)
-
-	b := presets.New().RightDrawerWidth(700).VuetifyOptions(`
+	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
 	iconfont: 'md', // 'mdi' || 'mdiSvg' || 'md' || 'fa' || 'fa4'
@@ -76,7 +79,7 @@ func NewConfig() Config {
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.URIPrefix("/admin").
-		BrandTitle("example").
+		BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -91,15 +94,17 @@ func NewConfig() Config {
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+	utils.Configure(b)
 
 	media_view.Configure(b, db)
-	//media_view.MediaLibraryPerPage = 3
-	models.ConfigureSeo(b, db)
+	// media_view.MediaLibraryPerPage = 3
+	ConfigureSeo(b, db)
 
 	b.MenuOrder(
 		"InputHarness",
 		"Post",
 		"User",
+		"Role",
 		b.MenuGroup("Site Management").SubItems(
 			"Setting",
 			"QorSEOSetting",
@@ -107,10 +112,15 @@ func NewConfig() Config {
 	)
 
 	m := b.Model(&models.Post{})
+	slug.Configure(b, m)
+
 	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
-	ed := m.Editing("Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+
+	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
+
+	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -136,10 +146,9 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	ed.Field("Title").ComponentFunc(slug.SlugEditingComponentFunc)
-	ed.Field("TitleWithSlug").SetterFunc(slug.SlugEditingSetterFunc).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) { return })
 	configInputHarness(b, db)
 	configUser(b, db)
+	configRole(b, db)
 
 	_ = m
 	// Use m to customize the model, Or config more models here.
@@ -149,12 +158,37 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(b, db, publisher)
-	publish_view.RegisterPublishModels(&pagebuilder.Page{})
+
+	pm := b.Model(&pagebuilder.Page{})
+	l := b.Model(&models.ListModel{})
+
+	publish_view.Configure(b, db, publisher, pm, l)
+
+	l.Listing("ID", "Title", "Status")
+	l.Editing("Status", "Title")
+
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
 		Prefix("/admin/page_builder")
-	pageBuilder.Configure(b)
+	pageBuilder.Configure(b, pm)
+
+	publish_view.Configure(b, db, publisher, pm)
+
+	note.Configure(db, b, m, pm)
+
+	// @snippet_begin(ActivityExample)
+	ab := activity.New(b, db).SetCreatorContextKey(_userKey).SetTabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	ab.Model(m).UseDefaultTab()
+	ab.Model(pm).UseDefaultTab()
+	ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
+	w := worker.New(db)
+	addJobs(w)
+	w.Configure(b)
 
 	return Config{
 		pb:          b,

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
+	"github.com/qor/qor5/note"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -62,12 +64,14 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 			// TODO: update user info if claim info changed?
 
 			newR = r.WithContext(context.WithValue(r.Context(), _userKey, u))
+			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserIDKey, u.ID))
+			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Email)))
 			return
 		}).
 		HomeURL("/admin")
 }
 
-func autheticate(loginBuilder *login.Builder) func(next http.Handler) http.Handler {
+func authenticate(loginBuilder *login.Builder) func(next http.Handler) http.Handler {
 	re := regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +82,7 @@ func autheticate(loginBuilder *login.Builder) func(next http.Handler) http.Handl
 					p = "/admin"
 				}
 				r.URL.Path = p
-				http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+				http.Redirect(w, r, r.URL.String(), http.StatusFound)
 				return
 			}
 

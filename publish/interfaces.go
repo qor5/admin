@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"time"
 
 	"github.com/qor/oss"
 	"gorm.io/gorm"
@@ -16,6 +17,7 @@ type PublishAction struct {
 type PublishInterface interface {
 	GetPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
+
 type UnPublishInterface interface {
 	GetUnPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
 }
@@ -36,6 +38,26 @@ type StatusInterface interface {
 }
 
 type VersionInterface interface {
+	GetVersion() string
+	SetVersion(v string)
 	GetVersionName() string
 	SetVersionName(v string)
+}
+
+type ScheduleInterface interface {
+	GetScheduledStartAt() *time.Time
+	GetScheduledEndAt() *time.Time
+	SetScheduledStartAt(v *time.Time)
+	SetScheduledEndAt(v *time.Time)
+}
+
+type ListInterface interface {
+	GetPageNumber() int
+	SetPageNumber(pageNumber int)
+	GetPosition() int
+	SetPosition(position int)
+	GetListDeleted() bool
+	SetListDeleted(listDeleted bool)
+	GetListUpdated() bool
+	SetListUpdated(listUpdated bool)
 }

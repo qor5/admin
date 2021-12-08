@@ -40,7 +40,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 		if r, ok := record.(PublishInterface); ok {
 			var objs []*PublishAction
 			objs = r.GetPublishActions(b.db, b.context)
-			if err = b.UploadOrDelete(objs); err != nil {
+			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}
 		}
@@ -58,6 +58,13 @@ func (b *Builder) Publish(record interface{}) (err error) {
 				}
 			}
 			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOnline, "online_url": r.GetOnlineUrl()}).Error; err != nil {
+				return
+			}
+		}
+
+		if _, ok := record.(ListInterface); ok {
+			// Update ListDeleted, ListUpdated
+			if err = b.db.Model(record).Updates(map[string]interface{}{"list_updated": true}).Error; err != nil {
 				return
 			}
 		}
@@ -81,7 +88,7 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 		if r, ok := record.(UnPublishInterface); ok {
 			var objs []*PublishAction
 			objs = r.GetUnPublishActions(b.db, b.context)
-			if err = b.UploadOrDelete(objs); err != nil {
+			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}
 		}
@@ -89,6 +96,13 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 		// update status
 		if _, ok := record.(StatusInterface); ok {
 			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOffline}).Error; err != nil {
+				return
+			}
+		}
+
+		if _, ok := record.(ListInterface); ok {
+			// Update ListDeleted, ListUpdated
+			if err = b.db.Model(record).Updates(map[string]interface{}{"list_deleted": true}).Error; err != nil {
 				return
 			}
 		}
@@ -108,14 +122,14 @@ func (b *Builder) Sync(models ...interface{}) error {
 	return nil
 }
 
-func (b *Builder) UploadOrDelete(objs []*PublishAction) (err error) {
+func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
-			err = b.storage.Delete(obj.Url)
+			err = storage.Delete(obj.Url)
 		} else {
 			fmt.Printf("uploading %s \n", obj.Url)
-			_, err = b.storage.Put(obj.Url, strings.NewReader(obj.Content))
+			_, err = storage.Put(obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {
 			return
@@ -127,7 +141,7 @@ func (b *Builder) UploadOrDelete(objs []*PublishAction) (err error) {
 func SetPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
 	conds := []string{}
 	for _, p := range s.PrimaryFields {
-		if p.Name == "VersionName" {
+		if p.Name == "Version" {
 			continue
 		}
 		val, _ := p.ValueOf(reflect.ValueOf(record))

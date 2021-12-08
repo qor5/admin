@@ -40,14 +40,14 @@ func (b *PickerBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	menuLocal := fmt.Sprintf("picker_%s_menu", b.fieldName)
 	valueLocal := fmt.Sprintf("picker_%s_value", b.fieldName)
 
-	b.comp.SetAttr("v-field-name", h.JSONString(b.fieldName))
-	b.comp.SetAttr("@change", fmt.Sprintf("locals.%s = false; locals.%s = $event", menuLocal, valueLocal))
+	b.comp.SetAttr("@change", fmt.Sprintf(`locals.%s = false; locals.%s = $event; $plaid().form(plaidForm).fieldValue(%s, $event)`, menuLocal, valueLocal, h.JSONString(b.fieldName)))
 
-	return h.Div(
+	return web.Scope(
 		VMenu(
 			web.Slot(
 				VTextField().
 					Label(b.label).
+					Attr(web.VFieldName(b.fieldName)...).
 					Value(b.value).
 					Readonly(true).
 					PrependIcon("edit_calendar").
@@ -60,7 +60,8 @@ func (b *PickerBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 		).Attr("v-model", fmt.Sprintf("locals.%s", menuLocal)).
 			CloseOnContentClick(false).
 			MaxWidth(290),
-	).Attr(web.InitContextLocals, fmt.Sprintf(`{%s: %s, %s: false}`, valueLocal, h.JSONString(b.value), menuLocal)).
+	).Init(fmt.Sprintf(`{%s: %s, %s: false}`, valueLocal, h.JSONString(b.value), menuLocal)).
+		VSlot("{ locals }").
 		MarshalHTML(ctx)
 
 }

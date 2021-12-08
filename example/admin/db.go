@@ -9,7 +9,9 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func ConnectDB() (db *gorm.DB) {
+var db *gorm.DB
+
+func ConnectDB() *gorm.DB {
 	var err error
 	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
 	if err != nil {
@@ -22,8 +24,10 @@ func ConnectDB() (db *gorm.DB) {
 		&models.Post{},
 		&models.InputHarness{},
 		&models.User{},
+		&models.ListModel{},
+		&models.Role{},
 	); err != nil {
 		panic(err)
 	}
-	return
+	return db
 }

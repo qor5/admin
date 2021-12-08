@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/gosimple/slug"
+	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor/qor/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -170,7 +170,7 @@ func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.Func
 	shortHash := func() string { return time.Now().Format("20060102150405") }
 
 	return template.FuncMap{
-		"class": func() string { return inflection.Plural(utils.ToParamString(field.Schema.ModelType.Name())) },
+		"class": func() string { return inflection.Plural(strcase.ToSnake(field.Schema.ModelType.Name())) },
 		"primary_key": func() string {
 			ppf := db.Statement.Schema.PrioritizedPrimaryField
 			if ppf != nil {

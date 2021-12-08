@@ -6,11 +6,13 @@ require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi v1.5.4
-	github.com/go-playground/form v3.1.4+incompatible
-	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/goplaid/web v1.1.14-0.20211012134701-57895edc9687
-	github.com/goplaid/x v1.0.16-0.20211010021035-634f3e1c5b86
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.6
+	github.com/goplaid/multipartestutils v0.0.3
+	github.com/goplaid/web v1.1.22-0.20211130072140-c74595eb9bef
+	github.com/goplaid/x v1.0.20-0.20211202060202-a1edfd97df91
+	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -18,23 +20,25 @@ require (
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
-	github.com/qor/admin v0.0.0-20210421035046-739414767209 // indirect
-	github.com/qor/media v0.0.0-20210601073757-402011f3b027 // indirect
+	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
-	github.com/qor/qor v0.0.0-20210513025647-811b8dd7cfcf
-	github.com/qor/serializable_meta v0.0.0-20180510060738-5fd8542db417
+	github.com/spf13/cast v1.4.1
+	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.2
 	github.com/theplant/bimg v1.1.1
+	github.com/theplant/docgo v0.0.7
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
+	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
+	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
-	gorm.io/driver/mysql v1.1.2
-	gorm.io/driver/postgres v1.1.1
-	gorm.io/gorm v1.21.15
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gorm.io/driver/postgres v1.2.1
+	gorm.io/gorm v1.22.2
 )
 
-// replace github.com/goplaid/web => ../../goplaid/web
-// replace github.com/goplaid/x => ../../goplaid/x
+// replace github.com/goplaid/web => ../goplaid/web
+// replace github.com/goplaid/x => ../goplaid/x
 // replace github.com/sunfmin/reflectutils => ../../reflectutils
