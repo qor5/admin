@@ -4,8 +4,10 @@ import (
 	"log"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/cropper"
+	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/listeditor"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
@@ -19,20 +21,22 @@ func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		ctx.Hub.RegisterEventFunc("logInfo", logInfo)
 		r.PageTitle = "Settings"
+		listValue := []*models.Post{
+			{Title: "Post 1"},
+			{Title: "Post 2"},
+			{Title: "Post 3"},
+		}
+		le := listeditor.New().Value(listValue)
+		le.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return VTextField().FieldName(field.Name).Value(field.Value(obj))
+		})
+
 		r.Body = h.Div(
 			VContainer(
 
 				VRow(
 					VCol(
-						listeditor.Editor().
-							Value([]string{"1", "2", "3"}).
-							FieldName("images").
-							ComponentFunc(func(ctx *web.EventContext) h.HTMLComponent {
-								return h.Div(
-									VTextField().Attr(":value", "obj").Attr("v-field-name", `"images["+index+"]"`),
-									media_view.QMediaBox(db).FieldName("abc").Value(&media_library.MediaBox{}),
-								)
-							}),
+						le,
 					),
 				),
 				VRow(

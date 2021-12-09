@@ -31,6 +31,7 @@ require (
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
+	github.com/thoas/go-funk v0.9.1 // indirect
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
@@ -40,5 +41,6 @@ require (
 )
 
 // replace github.com/goplaid/web => ../goplaid/web
-// replace github.com/goplaid/x => ../goplaid/x
+replace github.com/goplaid/x => ../../goplaid/x
+
 // replace github.com/sunfmin/reflectutils => ../../reflectutils

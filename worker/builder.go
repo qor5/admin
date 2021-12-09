@@ -281,7 +281,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				if err != nil {
 					return Text(err.Error())
 				}
-				body := jb.rmb.Editing().ToComponent(jb.rmb, args, nil, ctx)
+				body := jb.rmb.Editing().ToComponent(jb.rmb.Info(), args, ctx)
 				scheduledJobDetailing = []HTMLComponent{
 					body,
 					If(editIsAllowed(ctx.R, qorJob.Job) == nil,
@@ -335,7 +335,7 @@ func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.Ev
 	jb := b.mustGetJobBuilder(ctx.Event.Value)
 	var body HTMLComponent
 	if jb.rmb != nil {
-		body = jb.rmb.Editing().ToComponent(jb.rmb, jb.r, nil, ctx)
+		body = jb.rmb.Editing().ToComponent(jb.rmb.Info(), jb.r, ctx)
 	}
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 		Name: "worker_jobEditingContent",
