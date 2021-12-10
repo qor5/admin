@@ -61,7 +61,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 						VCardText(
 							b.FieldBuilders.ToComponent(mi, obj, ctx),
 						),
-					),
+					).Class("mb-2"),
 				),
 				Td(
 					VBtn("Delete").Icon(true).
