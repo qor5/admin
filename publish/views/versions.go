@@ -123,18 +123,10 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
 
-		var newObj = mb.NewModel()
-		// don't panic for fields that set in SetterFunc
-		_ = ctx.UnmarshalForm(newObj)
-
 		var obj = mb.NewModel()
 
 		me := mb.Editing()
-		if me.Setter != nil {
-			me.Setter(obj, ctx)
-		}
-
-		vErr := me.RunSetterFunc(ctx, &r, obj, newObj)
+		vErr := me.RunSetterFunc(ctx, &r, obj)
 
 		if vErr.HaveErrors() {
 			return
@@ -150,6 +142,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
+		newObj := mb.NewModel()
 		db.Model(newObj).Unscoped().Where("id = ? AND version like ?", id, version+"%").Count(&count)
 
 		versionName := fmt.Sprintf("%s-v%02v", version, count+1)

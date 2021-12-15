@@ -157,7 +157,10 @@ func NewConfig() Config {
 	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
 
 	type ListEditorExample struct{}
-	b.Model(&ListEditorExample{}).Label("List Editor Example").Listing().PageFunc(pages.ListEditorExample(db))
+	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
+	pf, sf := pages.ListEditorExample(db)
+	leem.Listing().PageFunc(pf)
+	leem.RegisterEventFunc("save", sf)
 
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
