@@ -337,7 +337,11 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 	var body HTMLComponent = Div(
 		Style(StyleCSS),
 		If(loginFailText != "",
-			Div(Text(loginFailText)).Class("mt-8").Style("text-align:center;color: rgb(244 63 94);font-size:20px;margin-bottom:-2rem"),
+			Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
+				Role("alert").
+				Children(
+					Span(loginFailText).Class("block sm:inline"),
+				),
 		),
 		Div(
 			Div(
