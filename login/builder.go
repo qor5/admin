@@ -1,8 +1,12 @@
 package login
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +16,10 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	. "github.com/theplant/htmlgo"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
@@ -103,19 +111,19 @@ type UserClaims struct {
 // CompleteUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
 
-	if b.completeUserAuthWithSetCookie(w, r) != nil {
-		http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
+	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
+		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
 		return
 	}
 
 	http.Redirect(w, r, b.homeURL, http.StatusTemporaryRedirect)
 }
 
-func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
+func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) loginFailCode {
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		log.Println("completeUserAuthWithSetCookie", err)
-		return err
+		return completeUserAuthFailed
 	}
 
 	claims := UserClaims{
@@ -136,7 +144,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	}
 	ss, err := b.SignClaims(&claims)
 	if err != nil {
-		return err
+		return systemError
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authParamName,
@@ -146,7 +154,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		HttpOnly: true,
 	})
 
-	return nil
+	return 0
 }
 
 func (b *Builder) SignClaims(claims *UserClaims) (signed string, err error) {
@@ -177,7 +185,7 @@ func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
 // BeginAuth is for url "/auth/{provider}"
 func (b *Builder) BeginAuth(w http.ResponseWriter, r *http.Request) {
 	// try to get the user without re-authenticating
-	if b.completeUserAuthWithSetCookie(w, r) == nil {
+	if b.completeUserAuthWithSetCookie(w, r) == 0 {
 		http.Redirect(w, r, b.homeURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -232,14 +240,18 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
 		if err != nil {
 			log.Println(err)
-			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, systemError), http.StatusTemporaryRedirect)
 			return
 		}
 
 		newReq, err := b.fetchUserFunc(&claims, r)
 		if err != nil {
 			log.Println(err)
-			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
+			code := systemError
+			if err == ErrUserNotFound {
+				code = userNotFound
+			}
+			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
 			return
 		}
 
@@ -260,6 +272,52 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 	}
 }
 
+type loginFailCode int
+
+const (
+	systemError loginFailCode = iota + 1
+	completeUserAuthFailed
+	userNotFound
+)
+
+var loginFailTexts = map[loginFailCode]string{
+	systemError:            "System Error",
+	completeUserAuthFailed: "Complete User Auth Failed",
+	userNotFound:           "User Not Found",
+}
+
+var loginFailCodeQuery = "login_fc"
+
+func (b *Builder) urlWithLoginFailCode(u string, code loginFailCode) string {
+	pu, err := url.Parse(u)
+	if err != nil {
+		return u
+	}
+	q := pu.Query()
+	q.Add(loginFailCodeQuery, fmt.Sprint(code))
+	pu.RawQuery = q.Encode()
+	return pu.String()
+}
+
+func (b *Builder) getLoginFailText(r *http.Request) string {
+	sCode := r.URL.Query().Get(loginFailCodeQuery)
+	if sCode == "" {
+		return ""
+	}
+	code, err := strconv.Atoi(sCode)
+	if err != nil {
+		return ""
+	}
+	if code == 0 {
+		return ""
+	}
+	text := loginFailTexts[loginFailCode(code)]
+	if text == "" {
+		text = loginFailTexts[systemError]
+	}
+	return text
+}
+
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
 
 	ul := Div().Class("flex flex-col justify-center mt-8")
@@ -274,8 +332,17 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 				),
 		)
 	}
+
+	loginFailText := b.getLoginFailText(ctx.R)
 	var body HTMLComponent = Div(
 		Style(StyleCSS),
+		If(loginFailText != "",
+			Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
+				Role("alert").
+				Children(
+					Span(loginFailText).Class("block sm:inline"),
+				),
+		),
 		Div(
 			Div(
 				ul,

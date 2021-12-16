@@ -10,16 +10,16 @@
       SetCreatorContextKey("Creator") //set creator context key
   ```
 
-- Register mutiple models with the `Models` method.
+- Register mutiple models with the `RegisterModels` method.
 
   ```go
-  activity.Models(postBuilder,productBuilder)
+  activity.RegisterModels(postBuilder,productBuilder)
   ```
 
-- Register a model with the `Model` method.
+- Register a model with the `RegisterModel` method.
 
   ```go
-    activity.Model(postBuilder).
+    activity.RegisterModel(postBuilder).
       SetKeys("VersionName"). // add keys
       SetLink(func(page interface{}) string {
   	    return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)

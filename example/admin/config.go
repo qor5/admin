@@ -187,9 +187,10 @@ func NewConfig() Config {
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
-	ab.Model(m).UseDefaultTab()
-	ab.Model(pm).UseDefaultTab()
-	ab.Model(l).SkipDelete().SkipCreate()
+	_ = ab
+	// ab.Model(m).UseDefaultTab()
+	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
 	w := worker.New(db)
