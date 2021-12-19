@@ -43,10 +43,10 @@ func main() {
 	}
 
 	{ // list publisher
-		listP := publish.NewListBuilder(db, storage)
+		listP := publish.NewListPublishBuilder(db, storage)
 		for _, model := range publish.ListPublishModels {
 			go RunJob("list-publisher", time.Minute, time.Minute*5, func() {
-				if err := listP.PublishList(model); err != nil {
+				if err := listP.Run(model); err != nil {
 					panic(err)
 				}
 			})

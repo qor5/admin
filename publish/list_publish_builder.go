@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ListBuilder struct {
+type ListPublishBuilder struct {
 	db                 *gorm.DB
 	storage            oss.StorageInterface
 	context            context.Context
@@ -22,8 +22,8 @@ type ListBuilder struct {
 	publishActionsFunc func(db *gorm.DB, lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction)
 }
 
-func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
-	return &ListBuilder{
+func NewListPublishBuilder(db *gorm.DB, storage oss.StorageInterface) *ListPublishBuilder {
+	return &ListPublishBuilder{
 		db:      db,
 		storage: storage,
 		context: context.Background(),
@@ -59,6 +59,11 @@ func NewListBuilder(db *gorm.DB, storage oss.StorageInterface) *ListBuilder {
 	}
 }
 
+func (b *ListPublishBuilder) WithValue(key, val interface{}) *ListPublishBuilder {
+	b.context = context.WithValue(b.context, key, val)
+	return b
+}
+
 func getAddItems(db *gorm.DB, record interface{}) (result []interface{}, err error) {
 	err = db.Where("page_number = ? AND list_updated = ?", 0, true).Find(&record).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -89,7 +94,7 @@ type ListPublisher interface {
 	Sort(array []interface{})
 }
 
-func (b *ListBuilder) PublishList(model interface{}) (err error) {
+func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 	//If model is Product{}
 	//Generate a modelSlice: []*Product{}
 	modelSlice := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
@@ -201,22 +206,22 @@ func (b *ListBuilder) PublishList(model interface{}) (err error) {
 	return nil
 }
 
-func (b *ListBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool) *ListBuilder {
+func (b *ListPublishBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool) *ListPublishBuilder {
 	b.needNextPageFunc = f
 	return b
 }
 
-func (b *ListBuilder) GetOldItemsFunc(f func(record interface{}) (result []interface{}, err error)) *ListBuilder {
+func (b *ListPublishBuilder) GetOldItemsFunc(f func(record interface{}) (result []interface{}, err error)) *ListPublishBuilder {
 	b.getOldItemsFunc = f
 	return b
 }
 
-func (b *ListBuilder) TotalNumberPerPage(number int) *ListBuilder {
+func (b *ListPublishBuilder) TotalNumberPerPage(number int) *ListPublishBuilder {
 	b.totalNumberPerPage = number
 	return b
 }
 
-func (b *ListBuilder) PublishActionsFunc(f func(db *gorm.DB, lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction)) *ListBuilder {
+func (b *ListPublishBuilder) PublishActionsFunc(f func(db *gorm.DB, lp ListPublisher, result []*OnePageItems, indexPage *OnePageItems) (objs []*PublishAction)) *ListPublishBuilder {
 	b.publishActionsFunc = f
 	return b
 }

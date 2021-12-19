@@ -327,11 +327,11 @@ func TestPublishList(t *testing.T) {
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV3)
 
 	publisher := publish.New(db, storage)
-	listPublisher := publish.NewListBuilder(db, storage)
+	listPublisher := publish.NewListPublishBuilder(db, storage)
 
 	publisher.Publish(&productV1)
 	publisher.Publish(&productV3)
-	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -345,7 +345,7 @@ get: %v
 	}
 
 	publisher.Publish(&productV2)
-	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -358,7 +358,7 @@ get: %v
 	}
 
 	publisher.UnPublish(&productV2)
-	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -371,7 +371,7 @@ get: %v
 	}
 
 	publisher.UnPublish(&productV3)
-	if err := listPublisher.PublishList(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
