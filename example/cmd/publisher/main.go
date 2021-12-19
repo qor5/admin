@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/example/admin"
-	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/publish"
 )
 
@@ -18,18 +19,63 @@ func main() {
 		Region:  os.Getenv("S3_Region"),
 		Session: session.Must(session.NewSession()),
 	})
+	admin.NewConfig()
 
-	listP := publish.NewListBuilder(db, storage)
-	go func() {
-		t := time.Tick(time.Minute * 1)
-		if err := listP.PublishList(models.ListModel{}); err != nil {
-			panic(err)
+	{ // schedule publisher
+		publisher := publish.New(db, storage)
+		scheduleP := publish.NewSchedulePublishBuilder(publisher)
+
+		for _, model := range publish.NonVersionPublishModels {
+			go RunJob("schedule-publisher", time.Minute, time.Minute*5, func() {
+				if err := scheduleP.Run(model); err != nil {
+					panic(err)
+				}
+			})
 		}
-		for range t {
-			if err := listP.PublishList(models.ListModel{}); err != nil {
-				panic(err)
-			}
+
+		for _, model := range publish.VersionPublishModels {
+			go RunJob("", time.Minute, time.Minute*5, func() {
+				if err := scheduleP.Run(model); err != nil {
+					panic(err)
+				}
+			})
 		}
-	}()
+	}
+
+	{ // list publisher
+		listP := publish.NewListBuilder(db, storage)
+		for _, model := range publish.ListPublishModels {
+			go RunJob("list-publisher", time.Minute, time.Minute*5, func() {
+				if err := listP.PublishList(model); err != nil {
+					panic(err)
+				}
+			})
+		}
+	}
+
 	select {}
+}
+
+func RunJob(jobName string, interval time.Duration, timeout time.Duration, f func()) {
+	t := time.Tick(interval)
+	for range t {
+		start := time.Now()
+		defer func() {
+			stop := time.Now()
+			log.Printf("job_name: %s, started_at: %s, stopped_at: %s, time_spent_ms: %s\n", jobName, start, stop, fmt.Sprintf("%f", float64(stop.Sub(start))/float64(time.Millisecond)))
+		}()
+
+		s := make(chan bool, 1)
+		go func() {
+			f()
+			s <- true
+		}()
+
+		select {
+		case <-s:
+		case <-time.After(timeout):
+			log.Printf("job_name: %s, started_at: %s, timeout: %s\n", jobName, start, time.Now())
+			os.Exit(124)
+		}
+	}
 }
