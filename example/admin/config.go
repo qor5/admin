@@ -158,7 +158,7 @@ func NewConfig() Config {
 
 	type ListEditorExample struct{}
 	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
-	pf, sf := pages.ListEditorExample(db)
+	pf, sf := pages.ListEditorExample(db, b)
 	leem.Listing().PageFunc(pf)
 	leem.RegisterEventFunc("save", sf)
 
