@@ -126,9 +126,10 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		var obj = mb.NewModel()
 
 		me := mb.Editing()
-		vErr := me.RunSetterFunc(ctx, &r, obj)
+		vErr := me.RunSetterFunc(ctx, obj)
 
 		if vErr.HaveErrors() {
+			me.UpdateOverlayContent(ctx, &r, obj, "", &vErr)
 			return
 		}
 

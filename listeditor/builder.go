@@ -67,7 +67,12 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 					Td(
 						VBtn("Add row").
 							Text(true).
-							Color("primary"),
+							Color("primary").
+							Attr("@click", web.Plaid().
+								EventFunc(addRowEvent).
+								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+								Query(ParamOpFormKey, b.fieldContext.FormKey).
+								Go()),
 					),
 					Td(),
 				),

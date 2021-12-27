@@ -8,8 +8,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type Customer struct {
+	gorm.Model
+	Name      string
+	Addresses []*Address
+}
+
 type Address struct {
 	gorm.Model
+	CustomerID uint
 
 	Street    string
 	HomeImage media_library.MediaBox `sql:"type:text;"`

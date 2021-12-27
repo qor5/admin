@@ -26,6 +26,7 @@ func ConnectDB() *gorm.DB {
 		&models.User{},
 		&models.ListModel{},
 		&models.Role{},
+		&models.Customer{},
 		&models.Address{},
 		&models.Phone{},
 	); err != nil {

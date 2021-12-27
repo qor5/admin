@@ -162,6 +162,8 @@ func NewConfig() Config {
 	leem.Listing().PageFunc(pf)
 	leem.RegisterEventFunc("save", sf)
 
+	configCustomer(b, db)
+
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
 

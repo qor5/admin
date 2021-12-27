@@ -66,7 +66,7 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 		}
 		mediaBox := field.Value(obj).(media_library.MediaBox)
 		return QMediaBox(db).
-			FieldName(field.Name).
+			FieldName(field.FormKey).
 			Value(&mediaBox).
 			Label(field.Label).
 			Config(cfg)
