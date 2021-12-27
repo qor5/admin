@@ -1,3 +1,7 @@
 .redactor-toolbar {
   z-index: 5;
 }
+.redactor-styles {
+  max-height: 50vh;
+  overflow-y: auto;
+}
