@@ -27,7 +27,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 	var phoneFb = p.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{})
 	phoneFb.Field("Number").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VTextField().
-			FieldName(field.FormValueKey).
+			FieldName(field.FormKey).
 			Value(field.StringValue(obj)).
 			Label(field.Label)
 	})
@@ -36,19 +36,19 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 		return h.Input("").
 			Type("hidden").
 			Value(fmt.Sprint(field.Value(obj))).
-			Attr(web.VFieldName(field.FormValueKey)...)
+			Attr(web.VFieldName(field.FormKey)...)
 	})
 
 	addressFb.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input("").
 			Type("hidden").
 			Value(fmt.Sprint(field.Value(obj))).
-			Attr(web.VFieldName(field.FormValueKey)...)
+			Attr(web.VFieldName(field.FormKey)...)
 	})
 
 	addressFb.Field("Street").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VTextField().
-			FieldName(field.FormValueKey).
+			FieldName(field.FormKey).
 			Value(field.Value(obj)).
 			Label(field.Label)
 	})
@@ -58,10 +58,10 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 			Items([]string{"Draft", "PendingReview", "Approved"}).
 			Value(field.Value(obj).(publish.Status).Status).
 			Label(field.Label).
-			FieldName(field.FormValueKey)
+			FieldName(field.FormKey)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		ad := obj.(*models.Address)
-		ad.Status.Status = ctx.R.FormValue(field.FormValueKey)
+		ad.Status.Status = ctx.R.FormValue(field.FormKey)
 		return
 	})
 
@@ -72,7 +72,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 	addressFb.Field("HomeImage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		val := field.Value(obj).(media_library.MediaBox)
 		return media_view.QMediaBox(db).
-			FieldName(field.FormValueKey).
+			FieldName(field.FormKey).
 			Value(&val).
 			Config(&media_library.MediaBoxConfig{
 				AllowType: "image",

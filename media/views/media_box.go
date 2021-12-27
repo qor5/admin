@@ -75,13 +75,13 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 
 func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		jsonValuesField := fmt.Sprintf("%s.Values", field.FormValueKey)
+		jsonValuesField := fmt.Sprintf("%s.Values", field.FormKey)
 		mediaBox := media_library.MediaBox{}
 		err = mediaBox.Scan(ctx.R.FormValue(jsonValuesField))
 		if err != nil {
 			return
 		}
-		descriptionField := fmt.Sprintf("%s.Description", field.FormValueKey)
+		descriptionField := fmt.Sprintf("%s.Description", field.FormKey)
 		mediaBox.Description = ctx.R.FormValue(descriptionField)
 		err = reflectutils.Set(obj, field.Name, mediaBox)
 		if err != nil {
