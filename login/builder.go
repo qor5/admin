@@ -240,7 +240,7 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
 		if err != nil {
 			log.Println(err)
-			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, systemError), http.StatusTemporaryRedirect)
+			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
 			return
 		}
 
