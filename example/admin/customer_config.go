@@ -48,6 +48,7 @@ func configCustomer(b *presets.Builder, db *gorm.DB) {
 	})
 
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		db.Model(obj).Association("Addresses").Replace(obj.(*models.Customer).Addresses)
 		return gorm2op.DataOperator(db.Session(&gorm.Session{FullSaveAssociations: true})).Save(obj, id, ctx)
 	})
 }

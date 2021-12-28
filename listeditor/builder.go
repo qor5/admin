@@ -39,7 +39,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 
 	var form HTMLComponent
 	if b.value != nil {
-		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
+		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
 			return Tr(
 				Td(
 					VCard(
@@ -52,7 +52,11 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 					VBtn("Delete").Icon(true).
 						Color("error").Children(
 						VIcon("clear"),
-					),
+					).Attr("@click", web.Plaid().
+						EventFunc(removeRowEvent).
+						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+						Query(ParamRemoveRowFormKey, formKey).
+						Go()),
 				).Style("width: 1%"),
 			)
 		})
@@ -71,7 +75,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 							Attr("@click", web.Plaid().
 								EventFunc(addRowEvent).
 								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
-								Query(ParamOpFormKey, b.fieldContext.FormKey).
+								Query(ParamAddRowFormKey, b.fieldContext.FormKey).
 								Go()),
 					),
 					Td(),
