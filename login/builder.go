@@ -224,6 +224,11 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 
 func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/auth/") {
+			in(w, r)
+			return
+		}
+
 		if len(b.secret) == 0 {
 			panic("secret is empty")
 		}
