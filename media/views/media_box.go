@@ -69,7 +69,7 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 			FieldName(field.Name).
 			Value(&mediaBox).
 			Label(field.Label).
-			Config(cfg)
+			Config(cfg).Disabled(field.Disabled)
 	}
 }
 
@@ -98,6 +98,7 @@ type QMediaBoxBuilder struct {
 	value     *media_library.MediaBox
 	config    *media_library.MediaBoxConfig
 	db        *gorm.DB
+	disabled  bool
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
@@ -114,6 +115,11 @@ func (b *QMediaBoxBuilder) FieldName(v string) (r *QMediaBoxBuilder) {
 
 func (b *QMediaBoxBuilder) Value(v *media_library.MediaBox) (r *QMediaBoxBuilder) {
 	b.value = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Disabled(v bool) (r *QMediaBoxBuilder) {
+	b.disabled = v
 	return b
 }
 
@@ -146,7 +152,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config),
+				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
@@ -156,7 +162,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
-	f *media_library.MediaBox, field string, thumb string) h.HTMLComponent {
+	f *media_library.MediaBox, field string, thumb string, disabled bool) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
 	url := f.URL(thumb)
@@ -176,7 +182,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 			VCardActions(
 				VChip(
 					thumbName(thumb, size, fileSize, f),
-				).Small(true).Attr("@click", web.Plaid().
+				).Small(true).Disabled(disabled).Attr("@click", web.Plaid().
 					EventFunc(loadImageCropperEvent).
 					Query("field", field).
 					Query("id", fmt.Sprint(f.ID)).
@@ -277,7 +283,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
@@ -286,7 +292,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey),
+					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey, disabled),
 				).Cols(6).Sm(4).Class("pl-0"),
 			)
 		} else {
@@ -300,7 +306,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			for _, k := range keys {
 				row.AppendChildren(
 					VCol(
-						mediaBoxThumb(msgr, cfg, mediaBox, field, k),
+						mediaBoxThumb(msgr, cfg, mediaBox, field, k, disabled),
 					).Cols(6).Sm(4).Class("pl-0"),
 				)
 			}
@@ -323,7 +329,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 							Label(msgr.DescriptionForAccessibility).
 							Dense(true).
 							HideDetails(true).
-							Outlined(true),
+							Outlined(true).
+							Disabled(disabled),
 					).Cols(12).Class("pl-0 pt-0"),
 				),
 			)
@@ -348,7 +355,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				Query("field", field).
 				FieldValue("cfg", h.JSONString(cfg)).
 				Go(),
-			),
+			).Disabled(disabled),
 
 		h.If(mediaBox != nil && mediaBox.ID.String() != "",
 			VBtn(msgr.Delete).
@@ -357,7 +364,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 					Query("field", field).
 					FieldValue("cfg", h.JSONString(cfg)).
 					Go(),
-				),
+				).Disabled(disabled),
 		),
 	)
 }
@@ -375,8 +382,9 @@ func deleteFileField() web.EventFunc {
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false),
 		})
+
 		return
 	}
 }

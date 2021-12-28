@@ -252,8 +252,8 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 	}
 }
 
-func versionActionsFunc(m *presets.ModelBuilder) presets.ComponentFunc {
-	return func(ctx *web.EventContext) h.HTMLComponent {
+func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		var buttonLabel = gmsgr.Create
 		m.RightDrawerWidth("800")

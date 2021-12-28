@@ -387,7 +387,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg),
+			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false),
 		})
 		r.VarsScript = `vars.showFileChooser = false`
 		return
