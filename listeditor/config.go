@@ -1,13 +1,13 @@
 package listeditor
 
 import (
-	"encoding/json"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
 )
 
 const (
@@ -18,32 +18,19 @@ const (
 const (
 	ParamAddRowFormKey    = "listEditor_AddRowFormKey"
 	ParamRemoveRowFormKey = "listEditor_RemoveRowFormKey"
-	ParamHiddenObjectName = "listEditor_HiddenObjectName"
 )
 
 func Configure(mbs ...*presets.ModelBuilder) {
 	for _, mb := range mbs {
 		mb.RegisterEventFunc(addRowEvent, addRow(mb))
 		mb.RegisterEventFunc(removeRowEvent, removeRow(mb))
-
-		mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-			return h.Input("").Type("hidden").Value(h.JSONString(obj)).Attr(web.VFieldName(ParamHiddenObjectName)...)
-		})
-
 	}
 }
 
 func addRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		objJson := ctx.R.FormValue(ParamHiddenObjectName)
-
 		me := mb.Editing()
-		obj := mb.NewModel()
-		err = json.Unmarshal([]byte(objJson), obj)
-		if err != nil {
-			return
-		}
-		_ = me.RunSetterFunc(ctx, obj)
+		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), true, ctx)
 
 		formKey := ctx.R.FormValue(ParamAddRowFormKey)
 		t := reflectutils.GetType(obj, formKey+"[0]")
@@ -59,21 +46,21 @@ func addRow(mb *presets.ModelBuilder) web.EventFunc {
 
 func removeRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		objJson := ctx.R.FormValue(ParamHiddenObjectName)
 
 		me := mb.Editing()
-		obj := mb.NewModel()
-		err = json.Unmarshal([]byte(objJson), obj)
+		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), true, ctx)
+
+		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
+		lb := strings.LastIndex(formKey, "[")
+		sliceField := formKey[0:lb]
+		strIndex := formKey[lb+1 : strings.LastIndex(formKey, "]")]
+
+		var index int
+		index, err = strconv.Atoi(strIndex)
 		if err != nil {
 			return
 		}
-		_ = me.RunSetterFunc(ctx, obj)
-
-		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
-		err = reflectutils.Delete(obj, formKey)
-		if err != nil {
-			panic(err)
-		}
+		presets.ContextDeletedIndexesBuilder(ctx).Append(sliceField, index)
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
 		return
 	}

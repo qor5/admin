@@ -107,7 +107,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 		if len(addresses) == 0 {
 			holder.Addresses = []*models.Address{
 				{
-					Model:  gorm.Model{ID: 1},
+					ID:     1,
 					Street: "Street 1",
 					Status: publish.Status{
 						Status: "Draft",
@@ -122,7 +122,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 					},
 				},
 				{
-					Model:  gorm.Model{ID: 2},
+					ID:     2,
 					Street: "Street 2",
 					Status: publish.Status{
 						Status: "PendingReview",
@@ -136,7 +136,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 						},
 					}},
 				{
-					Model:  gorm.Model{ID: 3},
+					ID:     3,
 					Street: "Street 3",
 					Status: publish.Status{
 						Status: "Approved",
@@ -165,7 +165,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 
 	sf = func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var holder = &Holder{}
-		holderFb.Unmarshal(holder, nil, ctx)
+		holderFb.Unmarshal(holder, nil, false, ctx)
 		for _, ad := range holder.Addresses {
 			for _, ph := range ad.Phones {
 				ph.AddressID = ad.ID

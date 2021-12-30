@@ -5,17 +5,16 @@ import (
 
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/publish"
-	"gorm.io/gorm"
 )
 
 type Customer struct {
-	gorm.Model
+	ID        uint `gorm:"primarykey"`
 	Name      string
 	Addresses []*Address
 }
 
 type Address struct {
-	gorm.Model
+	ID         uint `gorm:"primarykey"`
 	CustomerID uint
 
 	Street    string
@@ -28,7 +27,7 @@ type Address struct {
 }
 
 type Phone struct {
-	gorm.Model
+	ID        uint `gorm:"primarykey"`
 	AddressID uint
 	Number    int
 }
