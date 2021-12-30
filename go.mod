@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.1.23
-	github.com/goplaid/x v1.0.21-0.20211229070640-c81f4ec38bfa
+	github.com/goplaid/x v1.0.21-0.20211230063344-8ad6beeb49da
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -40,6 +40,5 @@ require (
 )
 
 // replace github.com/goplaid/web => ../goplaid/web
-replace github.com/goplaid/x => ../../goplaid/x
-
+// replace github.com/goplaid/x => ../../goplaid/x
 // replace github.com/sunfmin/reflectutils => ../../reflectutils
