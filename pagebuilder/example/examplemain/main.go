@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/qor/qor5/pagebuilder"
 	"log"
 	"net/http"
 
@@ -19,7 +20,8 @@ func main() {
 		DataOperator(gorm2op.DataOperator(db))
 	pb := example.ConfigPageBuilder(db)
 	pb.PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`))
-	pb.Configure(p)
+	pm := p.Model(&pagebuilder.Page{})
+	pb.Configure(p, pm)
 
 	mux := http.NewServeMux()
 
