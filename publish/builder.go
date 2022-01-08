@@ -47,6 +47,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 
 		// update status
 		if r, ok := record.(StatusInterface); ok {
+			var updateMap = make(map[string]interface{})
 			if _, ok := record.(VersionInterface); ok {
 				var modelSchema *schema.Schema
 				modelSchema, err = schema.Parse(record, &sync.Map{}, b.db.NamingStrategy)
@@ -57,14 +58,19 @@ func (b *Builder) Publish(record interface{}) (err error) {
 					return
 				}
 			}
-			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOnline, "online_url": r.GetOnlineUrl()}).Error; err != nil {
-				return
+			if r, ok := record.(ScheduleInterface); ok {
+				now := b.db.NowFunc()
+				r.SetPublishedAt(&now)
+				r.SetScheduledStartAt(nil)
+				updateMap["scheduled_start_at"] = r.GetScheduledStartAt()
+				updateMap["actual_start_at"] = r.GetPublishedAt()
 			}
-		}
-
-		if _, ok := record.(ListInterface); ok {
-			// Update ListDeleted, ListUpdated
-			if err = b.db.Model(record).Updates(map[string]interface{}{"list_updated": true}).Error; err != nil {
+			if _, ok := record.(ListInterface); ok {
+				updateMap["list_updated"] = true
+			}
+			updateMap["status"] = StatusOnline
+			updateMap["online_url"] = r.GetOnlineUrl()
+			if err = b.db.Model(record).Updates(updateMap).Error; err != nil {
 				return
 			}
 		}
@@ -95,14 +101,20 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 
 		// update status
 		if _, ok := record.(StatusInterface); ok {
-			if err = b.db.Model(record).Updates(map[string]interface{}{"status": StatusOffline}).Error; err != nil {
-				return
+			var updateMap = make(map[string]interface{})
+			if r, ok := record.(ScheduleInterface); ok {
+				now := b.db.NowFunc()
+				r.SetUnPublishedAt(&now)
+				r.SetScheduledEndAt(nil)
+				updateMap["scheduled_end_at"] = r.GetScheduledEndAt()
+				updateMap["actual_end_at"] = r.GetUnPublishedAt()
 			}
-		}
-
-		if _, ok := record.(ListInterface); ok {
-			// Update ListDeleted, ListUpdated
-			if err = b.db.Model(record).Updates(map[string]interface{}{"list_deleted": true}).Error; err != nil {
+			if _, ok := record.(ListInterface); ok {
+				// Update ListDeleted, ListUpdated
+				updateMap["list_deleted"] = true
+			}
+			updateMap["status"] = StatusOffline
+			if err = b.db.Model(record).Updates(updateMap).Error; err != nil {
 				return
 			}
 		}

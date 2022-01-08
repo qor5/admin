@@ -43,13 +43,13 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("status = ? AND scheduled_end_at <= ?", StatusOnline, db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_end_at <= ?", db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
-		publishedReflectValues := reflect.ValueOf(tempRecords)
-		for i := 0; i < publishedReflectValues.Len(); i++ {
-			if record, ok := publishedReflectValues.Index(i).Interface().(UnPublishInterface); ok {
+		needUnpublishReflectValues := reflect.ValueOf(tempRecords)
+		for i := 0; i < needUnpublishReflectValues.Len(); i++ {
+			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = err2
@@ -60,13 +60,13 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("status = ? AND scheduled_start_at <= ?", StatusDraft, db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_start_at <= ?", db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
-		approvedReflectValues := reflect.ValueOf(tempRecords)
-		for i := 0; i < approvedReflectValues.Len(); i++ {
-			if record, ok := approvedReflectValues.Index(i).Interface().(PublishInterface); ok {
+		needPublishReflectValues := reflect.ValueOf(tempRecords)
+		for i := 0; i < needPublishReflectValues.Len(); i++ {
+			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
 				if err2 := b.publisher.Publish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = err2

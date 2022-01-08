@@ -27,3 +27,19 @@ func (schedule *Schedule) SetScheduledStartAt(v *time.Time) {
 func (schedule *Schedule) SetScheduledEndAt(v *time.Time) {
 	schedule.ScheduledEndAt = v
 }
+
+func (schedule Schedule) GetPublishedAt() *time.Time {
+	return schedule.ActualStartAt
+}
+
+func (schedule Schedule) GetUnPublishedAt() *time.Time {
+	return schedule.ActualEndAt
+}
+
+func (schedule *Schedule) SetPublishedAt(v *time.Time) {
+	schedule.ActualStartAt = v
+}
+
+func (schedule *Schedule) SetUnPublishedAt(v *time.Time) {
+	schedule.ActualEndAt = v
+}

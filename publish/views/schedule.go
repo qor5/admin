@@ -30,7 +30,22 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 		if s.GetScheduledEndAt() != nil {
 			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
 		}
+		publishedAt, unpublishedAt := "", ""
+		if s.GetPublishedAt() != nil {
+			publishedAt = s.GetPublishedAt().Format("2006-01-02 15:04")
+		}
+		if s.GetUnPublishedAt() != nil {
+			unpublishedAt = s.GetUnPublishedAt().Format("2006-01-02 15:04")
+		}
 		return h.Div(
+			VRow(
+				VCol(
+					VTextField().Label(msgr.PublishedAt).Value(publishedAt).Disabled(true),
+				).Cols(6),
+				VCol(
+					VTextField().Label(msgr.UnPublishedAt).Value(unpublishedAt).Disabled(true),
+				).Cols(6),
+			),
 			VRow(
 				VCol(
 					vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
