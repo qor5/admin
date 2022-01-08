@@ -94,16 +94,18 @@ type ListPublisher interface {
 	Sort(array []interface{})
 }
 
+// model is a empty struct
+// example: Product{}
 func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 	//If model is Product{}
-	//Generate a modelSlice: []*Product{}
-	modelSlice := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
+	//Generate a records: []*Product{}
+	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
 
-	addItems, err := getAddItems(b.db, modelSlice)
+	addItems, err := getAddItems(b.db, records)
 	if err != nil {
 		return
 	}
-	deleteItems, err := getDeleteItems(b.db, modelSlice)
+	deleteItems, err := getDeleteItems(b.db, records)
 	if err != nil {
 		return
 	}
@@ -112,7 +114,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		return nil
 	}
 
-	oldItems, err := b.getOldItemsFunc(modelSlice)
+	oldItems, err := b.getOldItemsFunc(records)
 	if err != nil {
 		return
 	}
@@ -139,7 +141,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		newItems = append(newItems, addItems...)
 	}
 
-	republishItems, err := getRepublishItems(b.db, modelSlice)
+	republishItems, err := getRepublishItems(b.db, records)
 	if err != nil {
 		return
 	}

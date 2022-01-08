@@ -30,20 +30,23 @@ type SchedulePublisher interface {
 	SchedulePublisherDBScope(db *gorm.DB) *gorm.DB
 }
 
+// model is a empty struct
+// example: Product{}
 func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
-	db := b.publisher.db
 	var scope *gorm.DB
 	if m, ok := model.(SchedulePublisher); ok {
 		scope = m.SchedulePublisherDBScope(b.publisher.db)
 	} else {
-		scope = db
+		scope = b.publisher.db
 	}
 
+	//If model is Product{}
+	//Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_end_at <= ?", db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_end_at <= ?", scope.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
@@ -60,7 +63,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_start_at <= ?", db.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_start_at <= ?", scope.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}

@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/example/admin"
+	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/publish"
 )
 
@@ -26,7 +29,7 @@ func main() {
 		scheduleP := publish.NewSchedulePublishBuilder(publisher)
 
 		for _, model := range publish.NonVersionPublishModels {
-			go RunJob("schedule-publisher", time.Minute, time.Minute*5, func() {
+			go RunJob("schedule-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
 					panic(err)
 				}
@@ -34,7 +37,7 @@ func main() {
 		}
 
 		for _, model := range publish.VersionPublishModels {
-			go RunJob("", time.Minute, time.Minute*5, func() {
+			go RunJob("schedule-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
 					panic(err)
 				}
@@ -45,7 +48,7 @@ func main() {
 	{ // list publisher
 		listP := publish.NewListPublishBuilder(db, storage)
 		for _, model := range publish.ListPublishModels {
-			go RunJob("list-publisher", time.Minute, time.Minute*5, func() {
+			go RunJob("list-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
 				if err := listP.Run(model); err != nil {
 					panic(err)
 				}
@@ -60,13 +63,12 @@ func RunJob(jobName string, interval time.Duration, timeout time.Duration, f fun
 	t := time.Tick(interval)
 	for range t {
 		start := time.Now()
-		defer func() {
-			stop := time.Now()
-			log.Printf("job_name: %s, started_at: %s, stopped_at: %s, time_spent_ms: %s\n", jobName, start, stop, fmt.Sprintf("%f", float64(stop.Sub(start))/float64(time.Millisecond)))
-		}()
-
 		s := make(chan bool, 1)
 		go func() {
+			defer func() {
+				stop := time.Now()
+				log.Printf("job_name: %s, started_at: %s, stopped_at: %s, time_spent_ms: %s\n", jobName, start, stop, fmt.Sprintf("%f", float64(stop.Sub(start))/float64(time.Millisecond)))
+			}()
 			f()
 			s <- true
 		}()
