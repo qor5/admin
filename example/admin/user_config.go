@@ -132,8 +132,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				ItemType:     v.ItemTypeSelect,
 				SQLCondition: `status %s ?`,
 				Options: []*v.SelectItem{
-					&v.SelectItem{Text: "Active", Value: "active"},
-					&v.SelectItem{Text: "Inactive", Value: "inactive"},
+					{Text: "Active", Value: "active"},
+					{Text: "Inactive", Value: "inactive"},
 				},
 			},
 		}
@@ -161,7 +161,7 @@ func rolesSelector(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var roles []models.Role
 		var items []Item
-		searchKey := ctx.Event.Value
+		searchKey := ctx.R.FormValue("keyword")
 		sql := db.Order("name").Limit(3)
 		if searchKey != "" {
 			sql = sql.Where("name ILIKE ?", fmt.Sprintf("%%%s%%", searchKey))

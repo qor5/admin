@@ -223,7 +223,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				ItemText("Label").
 				ItemValue("Value").
 				Attr(web.VFieldName("Job")...).
-				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Event(web.Var("$event")).Go()),
+				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Query("jobName", web.Var("$event")).Go()),
 			web.Portal().Name("worker_jobEditingContent"),
 		)
 	})
@@ -332,7 +332,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 }
 
 func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.EventResponse, err error) {
-	jb := b.mustGetJobBuilder(ctx.Event.Value)
+	jb := b.mustGetJobBuilder(ctx.R.FormValue("jobName"))
 	var body HTMLComponent
 	if jb.rmb != nil {
 		body = jb.rmb.Editing().ToComponent(jb.rmb.Info(), jb.r, ctx)

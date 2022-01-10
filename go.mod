@@ -10,8 +10,8 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.23
-	github.com/goplaid/x v1.0.21-0.20211230063344-8ad6beeb49da
+	github.com/goplaid/web v1.1.24
+	github.com/goplaid/x v1.0.21-0.20220110073403-ab01f4874905
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
