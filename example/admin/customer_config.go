@@ -35,12 +35,12 @@ func configCustomer(b *presets.Builder, db *gorm.DB) {
 
 	var phoneFb = b.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{}).Only("Number")
 	addFb.ListField("Phones", phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
+		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Number")
 	})
 
 	ed := cust.Editing("Name", "Addresses")
 	ed.ListField("Addresses", addFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
+		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Street")
 	})
 
 	ed.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
