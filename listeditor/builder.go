@@ -71,49 +71,78 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 		})
 	}
 
-	var haveSorter = b.value != nil
-
+	isSortStart := ctx.R.FormValue(ParamIsStartSort) == "1" && ctx.R.FormValue(ParamSortSectionFormKey) == b.fieldContext.FormKey
+	haveSorterIcon := true
 	var i = 0
+	var j = 0
 	var sorter HTMLComponent
-	if haveSorter {
-		sorter1 := VList().Attr("v-if", "locals.isSorting")
-		fmt.Println("b.value", b.value)
+	var sorterData Sorter
+	if b.value != nil {
+		deletedIndexes := presets.ContextModifiedIndexesBuilder(ctx)
 
 		funk.ForEach(b.value, func(obj interface{}) {
-			i++
-
+			defer func() { i++ }()
+			if deletedIndexes.DeletedContains(b.fieldContext.FormKey, i) {
+				return
+			}
 			var label = ""
 			if b.displayFieldInSorter != "" {
 				label = fmt.Sprint(reflectutils.MustGet(obj, b.displayFieldInSorter))
 			} else {
-				label = fmt.Sprintf("Item %d", i)
+				j++
+				label = fmt.Sprintf("Item %d", j)
 			}
-
-			sorter1.AppendChildren(
-				VListItem(
-					VListItemContent(
-						VListItemTitle(Text(label)),
-					),
-				),
-			)
+			sorterData.Items = append(sorterData.Items, SorterItem{Label: label, Index: i})
 		})
-		sorter = VCard(sorter1)
-
-		if i < 2 {
-			sorter = nil
-			haveSorter = false
-		}
-
+	}
+	if len(sorterData.Items) < 2 {
+		haveSorterIcon = false
+	}
+	if haveSorterIcon && isSortStart {
+		sorter = VCard(VList(
+			Tag("vx-draggable").Attr("v-model", "locals.items", "draggable", ".item", "animation", "300").Children(
+				Div(
+					VListItem(
+						VListItemIcon(VIcon("reorder")),
+						VListItemContent(
+							VListItemTitle(Text("{{item.label}}")),
+						),
+					),
+					VDivider().Attr("v-if", "index < locals.items.length - 1", ":key", "index"),
+				).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),
+			),
+		))
 	}
 
 	return Div(
 		web.Scope(
 			Div(
 				Label(b.fieldContext.Label).Class("v-label v-label--active").Style("font-size: 12px"),
-				If(haveSorter,
-					VBtn("Sort").Class("float-right").Icon(true).Children(
-						VIcon("sort"),
-					).Attr("@click", "locals.isSorting = !locals.isSorting"),
+				If(haveSorterIcon,
+					If(!isSortStart,
+						VBtn("SortStart").Class("float-right").Icon(true).Children(
+							VIcon("sort"),
+						).Attr("@click",
+							web.Plaid().
+								EventFunc(sortEvent).
+								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+								Query(ParamIsStartSort, "1").
+								Go(),
+						),
+					).Else(
+						VBtn("SortDone").Class("float-right").Icon(true).Children(
+							VIcon("done"),
+						).Attr("@click",
+							web.Plaid().
+								EventFunc(sortEvent).
+								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+								FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
+								Query(ParamIsStartSort, "0").
+								Go(),
+						),
+					),
 				),
 			),
 			sorter,
@@ -134,7 +163,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 						Td(),
 					),
 				),
-			).Attr("v-if", "!locals.isSorting"),
-		).Init("{ isSorting: false }").VSlot("{ locals }"),
+			).Attr("v-show", JSONString(!isSortStart)),
+		).Init(JSONString(sorterData)).VSlot("{ locals }"),
 	).MarshalHTML(c)
 }
