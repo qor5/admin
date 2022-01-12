@@ -49,17 +49,14 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if b.value != nil {
 		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
 			return VCard(
-				VToolbar(
-					VSpacer(),
-					VBtn("Delete").Icon(true).
-						Children(
-							VIcon("delete"),
-						).Attr("@click", web.Plaid().
-						EventFunc(removeRowEvent).
-						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
-						Query(ParamRemoveRowFormKey, formKey).
-						Go()),
-				).Flat(true).Dense(true),
+				VBtn("Delete").Icon(true).Class("float-right ma-2").
+					Children(
+						VIcon("delete"),
+					).Attr("@click", web.Plaid().
+					EventFunc(removeRowEvent).
+					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+					Query(ParamRemoveRowFormKey, formKey).
+					Go()),
 				VCardText(
 					content,
 				),
