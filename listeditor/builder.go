@@ -48,25 +48,22 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 	var form HTMLComponent
 	if b.value != nil {
 		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
-			return Tr(
-				Td(
-					VCard(
-						VCardText(
-							content,
-						),
-					).Class("mb-2").Outlined(true),
-				),
-				Td(
+			return VCard(
+				VToolbar(
+					VSpacer(),
 					VBtn("Delete").Icon(true).
-						Color("error").Children(
-						VIcon("clear"),
-					).Attr("@click", web.Plaid().
+						Children(
+							VIcon("delete"),
+						).Attr("@click", web.Plaid().
 						EventFunc(removeRowEvent).
 						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 						Query(ParamRemoveRowFormKey, formKey).
 						Go()),
-				).Style("width: 1%"),
-			)
+				).Flat(true).Dense(true),
+				VCardText(
+					content,
+				),
+			).Class("mb-2").Outlined(true)
 		})
 	}
 
@@ -111,11 +108,12 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 
 	return Div(
 		web.Scope(
-			Div(
+			VToolbar(
 				Label(b.fieldContext.Label).Class("v-label v-label--active").Style("font-size: 12px"),
+				VSpacer(),
 				If(haveSorterIcon,
 					If(!isSortStart,
-						VBtn("SortStart").Class("float-right").Icon(true).Children(
+						VBtn("SortStart").Icon(true).Children(
 							VIcon("sort"),
 						).Attr("@click",
 							web.Plaid().
@@ -126,7 +124,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 								Go(),
 						),
 					).Else(
-						VBtn("SortDone").Class("float-right").Icon(true).Children(
+						VBtn("SortDone").Icon(true).Children(
 							VIcon("done"),
 						).Attr("@click",
 							web.Plaid().
@@ -139,25 +137,18 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 						),
 					),
 				),
-			),
+			).Flat(true).Dense(true),
 			sorter,
-			Table(
-				Tbody(
-					form,
-					Tr(
-						Td(
-							VBtn("Add row").
-								Text(true).
-								Color("primary").
-								Attr("@click", web.Plaid().
-									EventFunc(addRowEvent).
-									Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
-									Query(ParamAddRowFormKey, b.fieldContext.FormKey).
-									Go()),
-						),
-						Td(),
-					),
-				),
+			Div(
+				form,
+				VBtn("Add row").
+					Text(true).
+					Color("primary").
+					Attr("@click", web.Plaid().
+						EventFunc(addRowEvent).
+						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+						Query(ParamAddRowFormKey, b.fieldContext.FormKey).
+						Go()),
 			).Attr("v-show", JSONString(!isSortStart)),
 		).Init(JSONString(sorterData)).VSlot("{ locals }"),
 	).MarshalHTML(c)
