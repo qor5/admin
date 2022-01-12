@@ -18,6 +18,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate moq -pkg mock -out mock/mock.go . QorJobInterface
+
 type JobBuilder struct {
 	b    *Builder
 	name string
@@ -65,13 +67,24 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 			if t != nil {
 				v = t.Local().Format("2006-01-02 15:04")
 			}
-			return vx.VXDateTimePicker().FieldName("ScheduleTime").Label(msgr.ScheduleTime).
+			return vx.VXDateTimePicker().FieldName(field.Name).Label(msgr.ScheduleTime).
 				Value(v).
 				TimePickerProps(vx.TimePickerProps{
 					Format:     "24hr",
 					Scrollable: true,
 				}).
 				ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText)
+		}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			v := ctx.R.Form.Get(field.Name)
+			if v == "" {
+				return nil
+			}
+			t, err := time.ParseInLocation("2006-01-02 15:04", v, time.Local)
+			if err != nil {
+				return err
+			}
+			obj.(Scheduler).SetScheduleTime(&t)
+			return nil
 		})
 	}
 	return jb
@@ -96,18 +109,9 @@ func (jb *JobBuilder) newResourceObject() interface{} {
 func (jb *JobBuilder) unmarshalForm(ctx *web.EventContext) (args interface{}, err error) {
 	args = jb.newResourceObject()
 	if args != nil {
-		if v := ctx.R.Form.Get("ScheduleTime"); v != "" {
-			t, err := time.ParseInLocation("2006-01-02 15:04", v, time.Local)
-			if err != nil {
-				return nil, err
-			}
-			ft := t.Format(time.RFC3339)
-			ctx.R.Form.Set("ScheduleTime", ft)
-			ctx.R.MultipartForm.Value["ScheduleTime"] = []string{ft}
-		}
-		err = ctx.UnmarshalForm(args)
-		if err != nil {
-			return nil, err
+		vErr := jb.rmb.Editing().RunSetterFunc(ctx, false, args)
+		if vErr.HaveErrors() {
+			return nil, &vErr
 		}
 	}
 
@@ -202,6 +206,7 @@ type QorJobInterface interface {
 	SetProgress(uint) error
 	SetProgressText(string) error
 	AddLog(string) error
+	AddLogf(format string, a ...interface{}) error
 }
 
 var _ QueJobInterface = (*QorJobInstance)(nil)
@@ -294,6 +299,18 @@ func (job *QorJobInstance) AddLog(log string) error {
 	defer job.mutex.Unlock()
 
 	job.Log += "\n" + log
+	if job.shouldCallSave() {
+		return job.callSave()
+	}
+
+	return nil
+}
+
+func (job *QorJobInstance) AddLogf(format string, a ...interface{}) error {
+	job.mutex.Lock()
+	defer job.mutex.Unlock()
+
+	job.Log += "\n" + fmt.Sprintf(format, a...)
 	if job.shouldCallSave() {
 		return job.callSave()
 	}
