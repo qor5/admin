@@ -10,7 +10,6 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
-	"github.com/thoas/go-funk"
 )
 
 type Builder struct {
@@ -45,7 +44,7 @@ func (b *Builder) newElementValue() interface{} {
 
 func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 	ctx := web.MustGetEventContext(c)
-
+	formKey := b.fieldContext.FormKey
 	var form HTMLComponent
 	if b.value != nil {
 		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
@@ -71,17 +70,14 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 		})
 	}
 
-	isSortStart := ctx.R.FormValue(ParamIsStartSort) == "1" && ctx.R.FormValue(ParamSortSectionFormKey) == b.fieldContext.FormKey
+	isSortStart := ctx.R.FormValue(ParamIsStartSort) == "1" && ctx.R.FormValue(ParamSortSectionFormKey) == formKey
 	haveSorterIcon := true
-	var i = 0
-	var j = 0
 	var sorter HTMLComponent
 	var sorterData Sorter
 	if b.value != nil {
 		deletedIndexes := presets.ContextModifiedIndexesBuilder(ctx)
 
-		funk.ForEach(b.value, func(obj interface{}) {
-			defer func() { i++ }()
+		deletedIndexes.SortedForEach(b.value, formKey, func(obj interface{}, i int) {
 			if deletedIndexes.DeletedContains(b.fieldContext.FormKey, i) {
 				return
 			}
@@ -89,8 +85,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 			if b.displayFieldInSorter != "" {
 				label = fmt.Sprint(reflectutils.MustGet(obj, b.displayFieldInSorter))
 			} else {
-				j++
-				label = fmt.Sprintf("Item %d", j)
+				label = fmt.Sprintf("Item %d", i)
 			}
 			sorterData.Items = append(sorterData.Items, SorterItem{Label: label, Index: i})
 		})

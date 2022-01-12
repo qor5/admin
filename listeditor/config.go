@@ -37,7 +37,7 @@ func Configure(mbs ...*presets.ModelBuilder) {
 func addRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), true, ctx)
+		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), false, ctx)
 
 		formKey := ctx.R.FormValue(ParamAddRowFormKey)
 		t := reflectutils.GetType(obj, formKey+"[0]")
@@ -55,7 +55,7 @@ func removeRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), true, ctx)
+		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), false, ctx)
 
 		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
 		lb := strings.LastIndex(formKey, "[")
@@ -76,7 +76,7 @@ func removeRow(mb *presets.ModelBuilder) web.EventFunc {
 func sort(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), true, ctx)
+		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), false, ctx)
 		sortSectionFormKey := ctx.R.FormValue(ParamSortSectionFormKey)
 
 		isStartSort := ctx.R.FormValue(ParamIsStartSort)
