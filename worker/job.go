@@ -106,16 +106,13 @@ func (jb *JobBuilder) newResourceObject() interface{} {
 	return reflect.New(reflect.TypeOf(jb.r).Elem()).Interface()
 }
 
-func (jb *JobBuilder) unmarshalForm(ctx *web.EventContext) (args interface{}, err error) {
+func (jb *JobBuilder) unmarshalForm(ctx *web.EventContext) (args interface{}, vErr web.ValidationErrors) {
 	args = jb.newResourceObject()
 	if args != nil {
-		vErr := jb.rmb.Editing().RunSetterFunc(ctx, false, args)
-		if vErr.HaveErrors() {
-			return nil, &vErr
-		}
+		vErr = jb.rmb.Editing().RunSetterFunc(ctx, false, args)
 	}
 
-	return args, nil
+	return args, vErr
 }
 
 func (jb *JobBuilder) parseArgs(in string) (args interface{}, err error) {

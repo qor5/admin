@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -142,6 +143,12 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		URIName("workers").
 		MenuIcon("smart_toy")
 
+	mb.RegisterEventFunc("worker_selectJob", b.eventSelectJob)
+	mb.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
+	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
+	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
+	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
+
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.RowMenu().Empty()
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
@@ -200,44 +207,73 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	})
 
 	eb := mb.Editing("Job")
+
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
+		qorJob := obj.(*QorJob)
+		if qorJob.Job == "" {
+			err.FieldError("Job", msgr.PleaseSelectJob)
+		}
+
+		return err
+	})
+
 	type JobSelectItem struct {
 		Label string
 		Value string
 	}
 	eb.Field("Job").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		ctx.Hub.RegisterEventFunc("worker_renderJobEditingContent", b.eventRenderJobEditingContent)
-
-		items := make([]JobSelectItem, 0, len(b.jbs))
-		for _, jb := range b.jbs {
-			label := getTJob(ctx.R, jb.name)
-			if editIsAllowed(ctx.R, jb.name) == nil {
-				items = append(items, JobSelectItem{
-					Label: label,
-					Value: jb.name,
-				})
+		qorJob := obj.(*QorJob)
+		return web.Portal(b.jobSelectList(ctx, qorJob.Job)).Name("worker_jobSelectList")
+	})
+	eb.Field("Args").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+			if fvErr := vErr.GetFieldErrors(field.Name); len(fvErr) > 0 {
+				errM := make(map[string][]string)
+				if err := json.Unmarshal([]byte(fvErr[0]), &errM); err == nil {
+					for f, es := range errM {
+						for _, e := range es {
+							ve.FieldError(f, e)
+						}
+					}
+				}
 			}
 		}
-		return Div(
-			VSelect().
-				Items(items).
-				ItemText("Label").
-				ItemValue("Value").
-				Attr(web.VFieldName("Job")...).
-				On("input", web.Plaid().EventFunc("worker_renderJobEditingContent").Query("jobName", web.Var("$event")).Go()),
-			web.Portal().Name("worker_jobEditingContent"),
-		)
+
+		qorJob := obj.(*QorJob)
+		return web.Portal(b.jobEditingContent(ctx, qorJob.Job, qorJob.args)).Name("worker_jobEditingContent")
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		qorJob := obj.(*QorJob)
+		if qorJob.Job == "" {
+			return nil
+		}
+		jb := b.mustGetJobBuilder(qorJob.Job)
+		args, vErr := jb.unmarshalForm(ctx)
+		qorJob.args = args
+		if vErr.HaveErrors() {
+			errM := make(map[string][]string)
+			argsT := reflect.TypeOf(jb.r).Elem()
+			for i := 0; i < argsT.NumField(); i++ {
+				fName := argsT.Field(i).Name
+				errM[fName] = vErr.GetFieldErrors(fName)
+			}
+			bErrM, _ := json.Marshal(errM)
+			err = errors.New(string(bErrM))
+		}
+		return err
 	})
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		qorJob := obj.(*QorJob)
+		if qorJob.Job == "" {
+			return errors.New("job is required")
+		}
 		if pErr := editIsAllowed(ctx.R, qorJob.Job); pErr != nil {
 			return pErr
 		}
 
 		jb := b.mustGetJobBuilder(qorJob.Job)
-		args, err := jb.unmarshalForm(ctx)
-		if err != nil {
-			return err
-		}
 
 		return b.db.Transaction(func(tx *gorm.DB) error {
 			j := QorJob{
@@ -249,7 +285,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				return err
 			}
 
-			inst, err := jb.newJobInstance(j.ID, qorJob.Job, args)
+			inst, err := jb.newJobInstance(j.ID, qorJob.Job, qorJob.args)
 			if err != nil {
 				return err
 			}
@@ -260,11 +296,6 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 	mb.Detailing("DetailingPage").Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
-
-		ctx.Hub.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
-		ctx.Hub.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
-		ctx.Hub.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
-		ctx.Hub.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
 
 		qorJob := obj.(*QorJob)
 		inst, err := getModelQorJobInstance(b.db, qorJob.ID)
@@ -331,16 +362,18 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	})
 }
 
-func (b *Builder) eventRenderJobEditingContent(ctx *web.EventContext) (er web.EventResponse, err error) {
-	jb := b.mustGetJobBuilder(ctx.R.FormValue("jobName"))
-	var body HTMLComponent
-	if jb.rmb != nil {
-		body = jb.rmb.Editing().ToComponent(jb.rmb.Info(), jb.r, ctx)
-	}
-	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-		Name: "worker_jobEditingContent",
-		Body: body,
-	})
+func (b *Builder) eventSelectJob(ctx *web.EventContext) (er web.EventResponse, err error) {
+	job := ctx.R.FormValue("jobName")
+	er.UpdatePortals = append(er.UpdatePortals,
+		&web.PortalUpdate{
+			Name: "worker_jobEditingContent",
+			Body: b.jobEditingContent(ctx, job, nil),
+		},
+		&web.PortalUpdate{
+			Name: "worker_jobSelectList",
+			Body: b.jobSelectList(ctx, job),
+		},
+	)
 
 	return
 }
@@ -443,9 +476,9 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	}
 
 	jb := b.mustGetJobBuilder(qorJobName)
-	newArgs, err := jb.unmarshalForm(ctx)
-	if err != nil {
-		return er, err
+	newArgs, argsVErr := jb.unmarshalForm(ctx)
+	if argsVErr.HaveErrors() {
+		return er, errors.New("invalid arguments")
 	}
 
 	old, err := jb.getJobInstance(qorJobID)
@@ -583,4 +616,74 @@ func jobProgressing(
 			),
 		),
 	)
+}
+
+func (b *Builder) jobSelectList(
+	ctx *web.EventContext,
+	job string,
+) HTMLComponent {
+	var vErr web.ValidationErrors
+	if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		vErr = *ve
+	}
+	var alert HTMLComponent
+	if v := vErr.GetFieldErrors("Job"); len(v) > 0 {
+		alert = VAlert(Text(strings.Join(v, ","))).Type("error")
+	}
+
+	items := make([]HTMLComponent, 0, len(b.jbs))
+	for _, jb := range b.jbs {
+		label := getTJob(ctx.R, jb.name)
+		if editIsAllowed(ctx.R, jb.name) == nil {
+			items = append(items,
+				VListItem(VListItemContent(VListItemTitle(
+					A(Text(label)).Attr("@click",
+						web.Plaid().EventFunc("worker_selectJob").
+							Query("jobName", jb.name).
+							Go(),
+					),
+				))),
+			)
+		}
+	}
+
+	return Div(
+		Input("").Type("hidden").Value(job).Attr(web.VFieldName("Job")...),
+		If(job == "",
+			alert,
+			VList(items...).Nav(true).Dense(true),
+		).Else(
+			Div(
+				VIcon("arrow_back").Attr("@click",
+					web.Plaid().EventFunc("worker_selectJob").
+						Query("jobName", "").
+						Go(),
+				),
+			).Class("mb-3"),
+			Div(Text(getTJob(ctx.R, job))).Class("mb-3 text-h6").Style("font-weight: inherit"),
+		),
+	)
+}
+
+func (b *Builder) jobEditingContent(
+	ctx *web.EventContext,
+	job string,
+	args interface{},
+) HTMLComponent {
+	if job == "" {
+		return Template()
+	}
+
+	jb := b.mustGetJobBuilder(job)
+	var argsObj interface{}
+	if args != nil {
+		argsObj = args
+	} else {
+		argsObj = jb.r
+	}
+
+	if jb.rmb == nil {
+		return Template()
+	}
+	return jb.rmb.Editing().ToComponent(jb.rmb.Info(), argsObj, ctx)
 }
