@@ -11,7 +11,8 @@ type QorJob struct {
 	gorm.Model
 
 	Job    string
-	Status string `sql:"default:'new'"`
+	Status string      `sql:"default:'new'"`
+	args   interface{} `sql:"-"`
 }
 
 type QorJobInstance struct {
