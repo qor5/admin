@@ -22,18 +22,15 @@ import (
 var Plugins = []string{"alignment", "table", "video", "imageinsert"}
 var PluginsJS [][]byte
 var PluginsCSS [][]byte
-var ToolbarFixedTarget = string(`.v-navigation-drawer--temporary .v-navigation-drawer__content`)
 
 type RichEditorBuilder struct {
-	db                    *gorm.DB
-	name                  string
-	value                 string
-	label                 string
-	placeholder           string
-	plugins               []string
-	setPlugins            bool
-	toolbarFixedTarget    string
-	setToolbarFixedTarget bool
+	db          *gorm.DB
+	name        string
+	value       string
+	label       string
+	placeholder string
+	plugins     []string
+	setPlugins  bool
 }
 
 func RichEditor(db *gorm.DB, name string) (r *RichEditorBuilder) {
@@ -62,33 +59,22 @@ func (b *RichEditorBuilder) Plugins(v []string) (r *RichEditorBuilder) {
 	return b
 }
 
-func (b *RichEditorBuilder) ToolbarFixedTarget(v string) (r *RichEditorBuilder) {
-	b.toolbarFixedTarget = v
-	b.setToolbarFixedTarget = true
-	return b
-}
-
 func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	p := Plugins
 	if b.setPlugins {
 		p = b.plugins
 	}
-
-	t := ToolbarFixedTarget
-	if b.setToolbarFixedTarget {
-		t = b.toolbarFixedTarget
-	}
 	r := h.Components(
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
-			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p, ToolbarFixedTarget: t}).Attr(web.VFieldName(b.name)...),
+			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p}).Attr(web.VFieldName(b.name)...),
 			h.Div(
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),
 			).Class("hidden-screen-only"),
-		).Class("pb-4").Rounded(true).Attr("data-type", "redactor"),
+		).Class("pb-4").Rounded(true).Attr("data-type", "redactor").Attr("style", "position: relative; z-index:1;"),
 	)
 	return r.MarshalHTML(ctx)
 }

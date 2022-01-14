@@ -37,7 +37,7 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN)
 }
 
-func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
+func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
 		id := ctx.R.FormValue(presets.ParamID)
 		if len(id) == 0 {

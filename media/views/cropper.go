@@ -150,7 +150,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, mb, field, cfg),
+			Body: mediaBoxThumbnails(ctx, mb, field, cfg, false),
 		})
 		return
 	}

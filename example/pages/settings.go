@@ -18,11 +18,13 @@ func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		ctx.Hub.RegisterEventFunc("logInfo", logInfo)
 		r.PageTitle = "Settings"
+
 		r.Body = h.Div(
-			h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
 			VContainer(
+
 				VRow(
 					VCol(
+						h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
 						media_view.QMediaBox(db).
 							FieldName("test").
 							Value(&media_library.MediaBox{}).
@@ -44,13 +46,8 @@ func Settings(db *gorm.DB) web.PageFunc {
 
 				VRow(
 					VCol(
-						richeditor.RichEditor(db, "Body").
-							ToolbarFixedTarget(".v-main__wrap>div").
-							Plugins([]string{"alignment", "video", "table", "imageinsert"}).
-							Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
-						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).
-							Label("Body").
-							Placeholder("Place Holder"),
+						richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "table", "imageinsert"}).Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
+						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).Label("Body").Placeholder("Place Holder"),
 					),
 				),
 

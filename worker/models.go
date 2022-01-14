@@ -11,7 +11,8 @@ type QorJob struct {
 	gorm.Model
 
 	Job    string
-	Status string `sql:"default:'new'"`
+	Status string      `sql:"default:'new'"`
+	args   interface{} `sql:"-"`
 }
 
 type QorJobInstance struct {
@@ -35,6 +36,7 @@ type QorJobInstance struct {
 
 type Scheduler interface {
 	GetScheduleTime() *time.Time
+	SetScheduleTime(t *time.Time)
 }
 
 // Schedule could be embedded as job argument, then the job will get run as scheduled feature
@@ -50,4 +52,8 @@ func (schedule *Schedule) GetScheduleTime() *time.Time {
 		}
 	}
 	return nil
+}
+
+func (schedule *Schedule) SetScheduleTime(t *time.Time) {
+	schedule.ScheduleTime = t
 }

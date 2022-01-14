@@ -26,7 +26,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
 	var (
-		mb        = b.Model(ab.logModel)
+		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
 		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
 		detailing = mb.Detailing("ModelLink", "ModelDiffs")
 	)

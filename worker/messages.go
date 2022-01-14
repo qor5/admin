@@ -33,6 +33,7 @@ type Messages struct {
 	ScheduleTime             string
 	DateTimePickerClearText  string
 	DateTimePickerOkText     string
+	PleaseSelectJob          string
 }
 
 var Messages_en_US = &Messages{
@@ -59,6 +60,7 @@ var Messages_en_US = &Messages{
 	ScheduleTime:             "Schedule Time",
 	DateTimePickerClearText:  "Clear",
 	DateTimePickerOkText:     "OK",
+	PleaseSelectJob:          "Please select job",
 }
 
 var Messages_zh_CN = &Messages{
@@ -74,17 +76,18 @@ var Messages_zh_CN = &Messages{
 	FilterTabScheduled:       "计划",
 	FilterTabDone:            "完成",
 	FilterTabErrors:          "错误",
-	ActionCancelJob:          "取消任务",
-	ActionAbortJob:           "中止任务",
-	ActionUpdateJob:          "更新任务",
-	ActionRerunJob:           "重跑任务",
+	ActionCancelJob:          "取消Job",
+	ActionAbortJob:           "中止Job",
+	ActionUpdateJob:          "更新Job",
+	ActionRerunJob:           "重跑Job",
 	DetailTitleStatus:        "状态",
 	DetailTitleLog:           "日志",
-	NoticeJobCannotBeAborted: "任务状态已经改变，不能被中止/取消/更新",
-	NoticeJobWontBeExecuted:  "任务代码被删除/修改, 这个任务不会被执行",
+	NoticeJobCannotBeAborted: "Job状态已经改变，不能被中止/取消/更新",
+	NoticeJobWontBeExecuted:  "Job代码被删除/修改, 这个Job不会被执行",
 	ScheduleTime:             "执行时间",
 	DateTimePickerClearText:  "清空",
 	DateTimePickerOkText:     "确定",
+	PleaseSelectJob:          "请选择Job",
 }
 
 func getTStatus(msgr *Messages, status string) string {

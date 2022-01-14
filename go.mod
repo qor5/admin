@@ -10,8 +10,8 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.22-0.20211130072140-c74595eb9bef
-	github.com/goplaid/x v1.0.21-0.20211215015610-b809a30fe509
+	github.com/goplaid/web v1.1.25
+	github.com/goplaid/x v1.0.23-0.20220114035651-389e5e1517dd
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -24,7 +24,7 @@ require (
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
-	github.com/sunfmin/reflectutils v1.0.2
+	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.7
 	github.com/theplant/gofixtures v1.1.0
@@ -40,5 +40,4 @@ require (
 )
 
 // replace github.com/goplaid/web => ../goplaid/web
-// replace github.com/goplaid/x => ../goplaid/x
-// replace github.com/sunfmin/reflectutils => ../../reflectutils
+// replace github.com/goplaid/x => ../../goplaid/x
