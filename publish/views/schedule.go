@@ -46,20 +46,28 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 					VTextField().Label(msgr.UnPublishedAt).Value(unpublishedAt).Disabled(true),
 				).Cols(6),
 			),
-			VRow(
-				VCol(
-					vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
-						TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-						ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-					//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
-				).Cols(6),
-				VCol(
-					vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
-						TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-						ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-				//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
-				).Cols(6),
-			),
+			web.Scope(
+				VBtn(`{{ locals.show ? 'Hide Publish Schedule' : 'Show Publish Schedule' }}`).Attr("@click", "locals.show = !locals.show"),
+				VExpandTransition(
+					h.Div(
+						VRow(
+							VCol(
+								vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
+									TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+									ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+								//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
+							).Cols(6),
+							VCol(
+								vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
+									TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+									ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+								//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
+							).Cols(6),
+						),
+					).Attr("v-show", "locals.show"),
+				),
+			).Init(`{ show: false}`).
+				VSlot("{ locals }"),
 		)
 	}
 }
