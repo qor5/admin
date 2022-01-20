@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss"
@@ -170,8 +171,7 @@ func (x SliceProductWithoutVersion) Swap(i, j int)      { x[i], x[j] = x[j], x[i
 
 type MockStorage struct {
 	oss.StorageInterface
-	Objects        map[string][]string
-	DeletedObjects map[string]bool
+	Objects map[string]string
 }
 
 func (m *MockStorage) Get(path string) (*os.File, error) {
@@ -179,27 +179,22 @@ func (m *MockStorage) Get(path string) (*os.File, error) {
 }
 
 func (m *MockStorage) Put(path string, r io.Reader) (*oss.Object, error) {
+	fmt.Println("Calling mock s3 client - Put: ", path)
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		panic(err)
 	}
 	if m.Objects == nil {
-		m.Objects = make(map[string][]string)
+		m.Objects = make(map[string]string)
 	}
-	if _, ok := m.Objects[path]; !ok {
-		m.Objects[path] = []string{}
-	}
-	m.Objects[path] = append([]string{string(b)}, m.Objects[path]...)
+	m.Objects[path] = string(b)
 
 	return &oss.Object{}, nil
 }
 
 func (m *MockStorage) Delete(path string) error {
 	fmt.Println("Calling mock s3 client - Delete: ", path)
-	if m.DeletedObjects == nil {
-		m.DeletedObjects = make(map[string]bool)
-	}
-	m.DeletedObjects[path] = true
+	delete(m.Objects, path)
 	return nil
 }
 
@@ -337,11 +332,11 @@ func TestPublishList(t *testing.T) {
 
 	var expected string
 	expected = "product:1 product:3 pageNumber:1"
-	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+	if storage.Objects["/product_without_version/list/1.html"] != expected {
 		t.Error(errors.New(fmt.Sprintf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+`, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
 	publisher.Publish(&productV2)
@@ -350,11 +345,11 @@ get: %v
 	}
 
 	expected = "product:1 product:2 product:3 pageNumber:1"
-	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+	if storage.Objects["/product_without_version/list/1.html"] != expected {
 		t.Error(errors.New(fmt.Sprintf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+`, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
 	publisher.UnPublish(&productV2)
@@ -363,11 +358,11 @@ get: %v
 	}
 
 	expected = "product:1 product:3 pageNumber:1"
-	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+	if storage.Objects["/product_without_version/list/1.html"] != expected {
 		t.Error(errors.New(fmt.Sprintf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+`, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
 	publisher.UnPublish(&productV3)
@@ -376,11 +371,74 @@ get: %v
 	}
 
 	expected = "product:1 pageNumber:1"
-	if storage.Objects["/product_without_version/list/1.html"][0] != expected {
+	if storage.Objects["/product_without_version/list/1.html"] != expected {
 		t.Error(errors.New(fmt.Sprintf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"][0])))
+`, expected, storage.Objects["/product_without_version/list/1.html"])))
+	}
+}
+
+func TestSchedulePublish(t *testing.T) {
+	db := ConnectDB()
+	db.Migrator().DropTable(&Product{})
+	db.AutoMigrate(&Product{})
+	storage := &MockStorage{}
+
+	productV1 := Product{
+		Model:   gorm.Model{ID: 1},
+		Version: publish.Version{Version: "2021-12-19-v01"},
+		Code:    "1",
+		Name:    "1",
+		Status:  publish.Status{Status: publish.StatusDraft},
+	}
+
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV1)
+
+	publisher := publish.New(db, storage)
+	publisher.Publish(&productV1)
+
+	var expected string
+	expected = "11"
+	if storage.Objects["test/product/1/index.html"] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+	want: %v
+	get: %v
+	`, expected, storage.Objects["test/product/1/index.html"])))
+	}
+
+	productV1.Name = "2"
+	var startAt = db.NowFunc().Add(-24 * time.Hour)
+	productV1.SetScheduledStartAt(&startAt)
+	if err := db.Save(&productV1).Error; err != nil {
+		panic(err)
+	}
+	schedulePublisher := publish.NewSchedulePublishBuilder(publisher)
+	if err := schedulePublisher.Run(productV1); err != nil {
+		panic(err)
+	}
+	expected = "12"
+	if storage.Objects["test/product/1/index.html"] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+	want: %v
+	get: %v
+	`, expected, storage.Objects["test/product/1/index.html"])))
+	}
+
+	var endAt = startAt.Add(time.Second * 2)
+	productV1.SetScheduledEndAt(&endAt)
+	if err := db.Save(&productV1).Error; err != nil {
+		panic(err)
+	}
+	if err := schedulePublisher.Run(productV1); err != nil {
+		panic(err)
+	}
+	expected = ""
+	if storage.Objects["test/product/1/index.html"] != expected {
+		t.Error(errors.New(fmt.Sprintf(`
+	want: %v
+	get: %v
+	`, expected, storage.Objects["test/product/1/index.html"])))
 	}
 }
 
@@ -446,6 +504,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	}
 
 }
+
 func assertUpdateStatus(db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) (err error) {
 	var pindb Product
 	err = db.Model(&Product{}).Where("id = ? AND version_name = ?", p.ID, p.VersionName).First(&pindb).Error
