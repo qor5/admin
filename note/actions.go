@@ -1,13 +1,15 @@
 package note
 
 import (
+	"net/url"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"gorm.io/gorm"
 )
 
-func createNoteAction(db *gorm.DB) web.EventFunc {
+func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
@@ -44,11 +46,16 @@ func createNoteAction(db *gorm.DB) web.EventFunc {
 			Body: notesSection,
 		})
 
+		var pageURL *url.URL
+		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
+			mb.Listing().ReloadList(ctx, &r, pageURL)
+		}
+
 		return
 	}
 }
 
-func updateUserNoteAction(db *gorm.DB) web.EventFunc {
+func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
@@ -69,6 +76,11 @@ func updateUserNoteAction(db *gorm.DB) web.EventFunc {
 
 		if err = db.Save(&userNote).Error; err != nil {
 			return
+		}
+
+		var pageURL *url.URL
+		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
+			mb.Listing().ReloadList(ctx, &r, pageURL)
 		}
 
 		return
