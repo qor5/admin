@@ -43,15 +43,24 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 	//If model is Product{}
 	//Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
+	flagTime := scope.NowFunc().Add(time.Minute)
+	var unpublishAfterPublishRecords []interface{}
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_end_at <= ?", scope.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_end_at <= ?", flagTime).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
 		needUnpublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needUnpublishReflectValues.Len(); i++ {
+			{
+				record := needUnpublishReflectValues.Index(i).Interface().(ScheduleInterface)
+				if record.GetScheduledStartAt() != nil && record.GetScheduledStartAt().Sub(*record.GetScheduledEndAt()) < 0 {
+					unpublishAfterPublishRecords = append(unpublishAfterPublishRecords, record)
+					continue
+				}
+			}
 			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
@@ -63,7 +72,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_start_at <= ?", scope.NowFunc().Add(time.Minute)).Find(&tempRecords).Error
+		err = scope.Where("scheduled_start_at <= ?", flagTime).Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
@@ -71,6 +80,17 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
 			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
 				if err2 := b.publisher.Publish(record); err2 != nil {
+					log.Printf("error: %s\n", err2)
+					err = err2
+				}
+			}
+		}
+	}
+
+	{
+		for _, interfaceRecord := range unpublishAfterPublishRecords {
+			if record, ok := interfaceRecord.(UnPublishInterface); ok {
+				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = err2
 				}
