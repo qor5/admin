@@ -14,6 +14,8 @@ type Messages struct {
 	Areyousure              string
 	ScheduledStartAt        string
 	ScheduledEndAt          string
+	PublishedAt             string
+	UnPublishedAt           string
 	DateTimePickerClearText string
 	DateTimePickerOkText    string
 	SaveAsNewVersion        string
@@ -33,6 +35,8 @@ var Messages_en_US = &Messages{
 	Areyousure:              "Are you sure?",
 	ScheduledStartAt:        "Scheduled start at",
 	ScheduledEndAt:          "Scheduled end at",
+	PublishedAt:             "Published at",
+	UnPublishedAt:           "UnPublished at",
 	DateTimePickerClearText: "Clear",
 	DateTimePickerOkText:    "OK",
 	SaveAsNewVersion:        "Save As New Version",

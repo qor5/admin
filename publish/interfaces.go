@@ -49,6 +49,11 @@ type ScheduleInterface interface {
 	GetScheduledEndAt() *time.Time
 	SetScheduledStartAt(v *time.Time)
 	SetScheduledEndAt(v *time.Time)
+
+	GetPublishedAt() *time.Time
+	GetUnPublishedAt() *time.Time
+	SetPublishedAt(v *time.Time)
+	SetUnPublishedAt(v *time.Time)
 }
 
 type ListInterface interface {

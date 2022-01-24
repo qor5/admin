@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -16,7 +17,11 @@ const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
 func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
-		if _, ok := m.NewModel().(publish.VersionInterface); ok {
+		if model, ok := m.NewModel().(publish.VersionInterface); ok {
+			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
+				publish.VersionPublishModels = append(publish.VersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+			}
+
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
 			m.Listing().Searcher(searcher(db, m))
 
@@ -31,6 +36,16 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 
 			m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
 			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
+		} else {
+			if schedulePublishModel, ok := m.NewModel().(publish.ScheduleInterface); ok {
+				publish.NonVersionPublishModels = append(publish.NonVersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+			}
+		}
+
+		if model, ok := m.NewModel().(publish.ListInterface); ok {
+			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
+				publish.ListPublishModels = append(publish.ListPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+			}
 		}
 
 		registerEventFuncs(db, m, publisher)

@@ -170,10 +170,10 @@ func NewConfig() Config {
 	pm := b.Model(&pagebuilder.Page{})
 	l := b.Model(&models.ListModel{})
 
-	publish_view.Configure(b, db, publisher, pm, l)
+	publish_view.Configure(b, db, publisher, l)
 
 	l.Listing("ID", "Title", "Status")
-	l.Editing("Status", "Title")
+	l.Editing("Status", "Schedule", "Title")
 
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
