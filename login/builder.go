@@ -224,7 +224,7 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 
 func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/auth/") {
+		if strings.HasPrefix(r.URL.Path, "/auth/") && !strings.HasPrefix(r.URL.Path, "/auth/login") {
 			in(w, r)
 			return
 		}
@@ -243,6 +243,18 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 		}
 		var claims UserClaims
 		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
+
+		if strings.HasPrefix(r.URL.Path, "/auth/login") {
+			if err != nil || claims.Email == "" {
+				in(w, r)
+				return
+			}
+			if err == nil && claims.Email != "" {
+				http.Redirect(w, r, "/admin", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
 		if err != nil {
 			log.Println(err)
 			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
