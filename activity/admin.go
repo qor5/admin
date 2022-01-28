@@ -76,7 +76,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 				Key:          "created",
 				Label:        msgr.FilterCreatedAt,
 				ItemType:     vuetifyx.ItemTypeDate,
-				SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
+				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "creator",

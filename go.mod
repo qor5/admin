@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.1.25
-	github.com/goplaid/x v1.0.23-0.20220114035651-389e5e1517dd
+	github.com/goplaid/x v1.0.23-0.20220128031632-b8f2afe15d7e
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
