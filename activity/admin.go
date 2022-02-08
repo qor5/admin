@@ -2,15 +2,17 @@ package activity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
-	vuetify "github.com/goplaid/x/vuetify"
+	"github.com/goplaid/x/vuetify"
 	"github.com/goplaid/x/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -134,6 +136,29 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 
 	detailing.Field("ModelDiffs").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+			record := obj.(interface {
+				GetAction() string
+				GetCreatedAt() time.Time
+			})
+
+			action := record.GetAction()
+			if action == ActivityCreate || action == ActivityDelete {
+				msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+
+				title := msgr.DiffNew
+				message := msgr.TheRecordWasCreatedAt
+				if action == ActivityDelete {
+					title = msgr.DiffDelete
+					message = msgr.TheRecordWasDeletedAt
+				}
+				return vuetify.VCard(
+					vuetify.VCardTitle(h.Text(title)),
+					vuetify.VCardText(
+						h.Text(fmt.Sprintf(message, record.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))),
+					),
+				).Attr("style", "margin-top:15px;")
+			}
+
 			d := field.Value(obj).(string)
 			if d == "" {
 				return nil

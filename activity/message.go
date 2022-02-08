@@ -29,6 +29,9 @@ type Messages struct {
 	DiffOld     string
 	DiffNow     string
 	DiffValue   string
+
+	TheRecordWasCreatedAt string
+	TheRecordWasDeletedAt string
 }
 
 var Messages_en_US = &Messages{
@@ -60,6 +63,9 @@ var Messages_en_US = &Messages{
 	DiffOld:     "Old",
 	DiffNow:     "Now",
 	DiffValue:   "Value",
+
+	TheRecordWasCreatedAt: "The record was created at %s",
+	TheRecordWasDeletedAt: "The record was deleted at %s",
 }
 
 var Messages_zh_CN = &Messages{
@@ -91,4 +97,7 @@ var Messages_zh_CN = &Messages{
 	DiffOld:     "之前的值",
 	DiffNow:     "当前的值",
 	DiffValue:   "值",
+
+	TheRecordWasCreatedAt: "该记录于创建于 %s",
+	TheRecordWasDeletedAt: "该记录于 %s 被删除",
 }
