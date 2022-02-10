@@ -377,7 +377,7 @@ func (b *Builder) getContainerBuilders(cs []*Container) (r []*editorContainer) {
 	return
 }
 
-func (b *Builder) pageEditorLayout(in web.PageFunc) (out web.PageFunc) {
+func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 
 		ctx.Injector.HeadHTML(strings.Replace(`
