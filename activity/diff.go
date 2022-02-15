@@ -3,6 +3,7 @@ package activity
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/qor/qor5/media/media_library"
@@ -30,15 +31,15 @@ var (
 			nowMediaBox := now.(media_library.MediaBox)
 
 			if oldMediaBox.Url != nowMediaBox.Url {
-				diffs = append(diffs, Diff{Field: fmt.Sprintf("%s.Url", prefixField), Old: oldMediaBox.Url, Now: nowMediaBox.Url})
+				diffs = append(diffs, Diff{Field: formatFieldByDot(prefixField, "Url"), Old: oldMediaBox.Url, Now: nowMediaBox.Url})
 			}
 
 			if oldMediaBox.Description != nowMediaBox.Description {
-				diffs = append(diffs, Diff{Field: fmt.Sprintf("%s.Description", prefixField), Old: oldMediaBox.Description, Now: nowMediaBox.Description})
+				diffs = append(diffs, Diff{Field: formatFieldByDot(prefixField, "Description"), Old: oldMediaBox.Description, Now: nowMediaBox.Description})
 			}
 
 			if oldMediaBox.VideoLink != nowMediaBox.VideoLink {
-				diffs = append(diffs, Diff{Field: fmt.Sprintf("%s.VideoLink", prefixField), Old: oldMediaBox.VideoLink, Now: nowMediaBox.VideoLink})
+				diffs = append(diffs, Diff{Field: formatFieldByDot(prefixField, "VideoLink"), Old: oldMediaBox.VideoLink, Now: nowMediaBox.VideoLink})
 			}
 
 			return diffs
@@ -131,7 +132,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 				continue
 			}
 
-			newPrefixField := fmt.Sprintf("%s.%s", prefixField, field.Name)
+			newPrefixField := formatFieldByDot(prefixField, field.Name)
 			if f := DefaultTypeHandles[field.Type]; f != nil {
 				db.diffs = append(db.diffs, f(old.Field(i).Interface(), now.Field(i).Interface(), newPrefixField)...)
 				continue
@@ -177,7 +178,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		}
 
 		for i := 0; i < minLen; i++ {
-			newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
+			newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
 			err := db.diffLoop(old.Index(i), now.Index(i), newPrefixField)
 			if err != nil {
 				return err
@@ -186,14 +187,14 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 
 		if added {
 			for i := minLen; i < nowLen; i++ {
-				newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
+				newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
 				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", Now: fmt.Sprintf("%+v", now.Index(i).Interface())})
 			}
 		}
 
 		if deleted {
 			for i := minLen; i < oldLen; i++ {
-				newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
+				newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
 				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", old.Index(i).Interface()), Now: ""})
 			}
 		}
@@ -238,7 +239,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		}
 
 		for _, key := range sameKeys {
-			newPrefixField := fmt.Sprintf("%s.%v", prefixField, key)
+			newPrefixField := formatFieldByDot(prefixField, key.String())
 			err := db.diffLoop(old.MapIndex(key), now.MapIndex(key), newPrefixField)
 			if err != nil {
 				return err
@@ -246,12 +247,12 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		}
 
 		for _, key := range addedKeys {
-			newPrefixField := fmt.Sprintf("%s.%v", prefixField, key)
+			newPrefixField := formatFieldByDot(prefixField, key.String())
 			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", Now: fmt.Sprintf("%+v", now.MapIndex(key).Interface())})
 		}
 
 		for _, key := range deletedKeys {
-			newPrefixField := fmt.Sprintf("%s.%v", prefixField, key)
+			newPrefixField := formatFieldByDot(prefixField, key.String())
 			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", old.MapIndex(key).Interface()), Now: ""})
 		}
 	default:
@@ -260,4 +261,14 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 		}
 	}
 	return nil
+}
+
+func formatFieldByDot(prefix string, suffix string) string {
+	if len(prefix) == 0 {
+		return suffix
+	}
+	if len(suffix) == 0 {
+		return prefix
+	}
+	return prefix + "." + suffix
 }

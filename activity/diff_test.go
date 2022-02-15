@@ -50,12 +50,12 @@ func TestDiff(t *testing.T) {
 			now:          Post{Title: "test1", Content: "124"},
 			want: []Diff{
 				{
-					Field: ".Title",
+					Field: "Title",
 					Old:   "test",
 					Now:   "test1",
 				},
 				{
-					Field: ".Content",
+					Field: "Content",
 					Old:   "",
 					Now:   "124",
 				}},
@@ -67,17 +67,17 @@ func TestDiff(t *testing.T) {
 			now:          Post{PublishedDate: time.Unix(1457894000, 0), Image: media_library.MediaBox{ID: json.Number("2"), Url: "https://s3.com/2.jpg", Description: "test2"}},
 			want: []Diff{
 				{
-					Field: ".PublishedDate",
+					Field: "PublishedDate",
 					Old:   "2009-11-11T08:00:00+09:00", // db TimeZone=Asia/Tokyo
 					Now:   "2016-03-14T03:33:20+09:00", // db TimeZone=Asia/Tokyo
 				},
 				{
-					Field: ".Image.Url",
+					Field: "Image.Url",
 					Old:   "https://s3.com/1.jpg",
 					Now:   "https://s3.com/2.jpg",
 				},
 				{
-					Field: ".Image.Description",
+					Field: "Image.Description",
 					Old:   "test",
 					Now:   "test2",
 				},
@@ -97,7 +97,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Author: Author{Name: "test1", Age: 12}},
 			want: []Diff{
 				{
-					Field: ".Author.Age",
+					Field: "Author.Age",
 					Old:   "10",
 					Now:   "12",
 				},
@@ -117,7 +117,7 @@ func TestDiff(t *testing.T) {
 			now: Post{Author: Author{Name: "test1", Age: 12}},
 			want: []Diff{
 				{
-					Field: ".Author.Name",
+					Field: "Author.Name",
 					Old:   "test",
 					Now:   "test1",
 				},
@@ -130,12 +130,12 @@ func TestDiff(t *testing.T) {
 			now:          Post{Comments: []Comment{{Text: "1.1"}, {Text: "2.2"}}},
 			want: []Diff{
 				{
-					Field: ".Comments.0.Text",
+					Field: "Comments.0.Text",
 					Old:   "1",
 					Now:   "1.1",
 				},
 				{
-					Field: ".Comments.1.Text",
+					Field: "Comments.1.Text",
 					Old:   "2",
 					Now:   "2.2",
 				},
@@ -148,12 +148,12 @@ func TestDiff(t *testing.T) {
 			now:          Post{Comments: []Comment{{Text: "1.1"}}},
 			want: []Diff{
 				{
-					Field: ".Comments.0.Text",
+					Field: "Comments.0.Text",
 					Old:   "1",
 					Now:   "1.1",
 				},
 				{
-					Field: ".Comments.1",
+					Field: "Comments.1",
 					Old:   "{Text:2}",
 					Now:   "",
 				},
@@ -166,12 +166,12 @@ func TestDiff(t *testing.T) {
 			now:          Post{Comments: []Comment{{Text: "1.1"}, {Text: "2"}}},
 			want: []Diff{
 				{
-					Field: ".Comments.0.Text",
+					Field: "Comments.0.Text",
 					Old:   "1",
 					Now:   "1.1",
 				},
 				{
-					Field: ".Comments.1",
+					Field: "Comments.1",
 					Old:   "",
 					Now:   "{Text:2}",
 				},
@@ -184,7 +184,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Comments: []Comment{{Text: "1.1"}, {Text: "2"}}},
 			want: []Diff{
 				{
-					Field: ".Comments",
+					Field: "Comments",
 					Old:   "",
 					Now:   "[{Text:1.1} {Text:2}]",
 				},
@@ -197,7 +197,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{},
 			want: []Diff{
 				{
-					Field: ".Comments",
+					Field: "Comments",
 					Old:   "[{Text:1.1} {Text:2}]",
 					Now:   "",
 				},
@@ -210,7 +210,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}}},
 			want: []Diff{
 				{
-					Field: ".Tags.tag1.Name",
+					Field: "Tags.tag1.Name",
 					Old:   "tst1",
 					Now:   "tst12",
 				},
@@ -223,12 +223,12 @@ func TestDiff(t *testing.T) {
 			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}, "tag2": {Name: "tst121"}}},
 			want: []Diff{
 				{
-					Field: ".Tags.tag1.Name",
+					Field: "Tags.tag1.Name",
 					Old:   "tst1",
 					Now:   "tst12",
 				},
 				{
-					Field: ".Tags.tag2",
+					Field: "Tags.tag2",
 					Old:   "",
 					Now:   "{Name:tst121}",
 				},
@@ -241,7 +241,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
 			want: []Diff{
 				{
-					Field: ".Tags.tag2",
+					Field: "Tags.tag2",
 					Old:   "{Name:tst1}",
 					Now:   "",
 				},
@@ -254,7 +254,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
 			want: []Diff{
 				{
-					Field: ".Tags",
+					Field: "Tags",
 					Old:   "",
 					Now:   "map[tag1:{Name:tst1}]",
 				},
@@ -267,7 +267,7 @@ func TestDiff(t *testing.T) {
 			now:          Post{Tags: nil},
 			want: []Diff{
 				{
-					Field: ".Tags",
+					Field: "Tags",
 					Old:   "map[tag1:{Name:tst1}]",
 					Now:   "",
 				},
