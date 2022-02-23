@@ -109,6 +109,10 @@ func NewConfig() Config {
 			"Setting",
 			"QorSEOSetting",
 		).Icon("settings"),
+		b.MenuGroup("Product Management").SubItems(
+			"Product",
+			"Category",
+		).Icon("shopping_cart"),
 	)
 
 	m := b.Model(&models.Post{})
@@ -149,6 +153,8 @@ func NewConfig() Config {
 	configInputHarness(b, db)
 	configUser(b, db)
 	configRole(b, db)
+	configProduct(b, db)
+	configCategory(b, db)
 
 	_ = m
 	// Use m to customize the model, Or config more models here.

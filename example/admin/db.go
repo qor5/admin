@@ -29,6 +29,8 @@ func ConnectDB() *gorm.DB {
 		&models.Customer{},
 		&models.Address{},
 		&models.Phone{},
+		&models.Product{},
+		&models.Category{},
 	); err != nil {
 		panic(err)
 	}
