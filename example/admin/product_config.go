@@ -55,7 +55,7 @@ func productsSelector(db *gorm.DB) web.EventFunc {
 		var ps []models.Product
 		var items []productItem
 		searchKey := ctx.R.FormValue("keyword")
-		sql := db.Order("name").Limit(10)
+		sql := db.Order("created_at desc").Limit(10)
 		if searchKey != "" {
 			key := fmt.Sprintf("%%%s%%", searchKey)
 			sql = sql.Where("name ILIKE ? or code ILIKE ?", key, key)

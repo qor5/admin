@@ -42,6 +42,7 @@ func configCategory(b *presets.Builder, db *gorm.DB) {
 								Name:  p.Name,
 								Image: p.Image.URL("thumb"),
 							})
+							break
 						}
 					}
 				}
