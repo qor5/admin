@@ -27,6 +27,12 @@ var _ worker.QorJobInterface = &QorJobInterfaceMock{}
 // 			GetArgumentFunc: func() (interface{}, error) {
 // 				panic("mock out the GetArgument method")
 // 			},
+// 			GetIDFunc: func() uint {
+// 				panic("mock out the GetID method")
+// 			},
+// 			GetOperatorFunc: func() string {
+// 				panic("mock out the GetOperator method")
+// 			},
 // 			SetProgressFunc: func(v uint) error {
 // 				panic("mock out the SetProgress method")
 // 			},
@@ -48,6 +54,12 @@ type QorJobInterfaceMock struct {
 
 	// GetArgumentFunc mocks the GetArgument method.
 	GetArgumentFunc func() (interface{}, error)
+
+	// GetIDFunc mocks the GetID method.
+	GetIDFunc func() uint
+
+	// GetOperatorFunc mocks the GetOperator method.
+	GetOperatorFunc func() string
 
 	// SetProgressFunc mocks the SetProgress method.
 	SetProgressFunc func(v uint) error
@@ -72,6 +84,12 @@ type QorJobInterfaceMock struct {
 		// GetArgument holds details about calls to the GetArgument method.
 		GetArgument []struct {
 		}
+		// GetID holds details about calls to the GetID method.
+		GetID []struct {
+		}
+		// GetOperator holds details about calls to the GetOperator method.
+		GetOperator []struct {
+		}
 		// SetProgress holds details about calls to the SetProgress method.
 		SetProgress []struct {
 			// V is the v argument value.
@@ -86,6 +104,8 @@ type QorJobInterfaceMock struct {
 	lockAddLog          sync.RWMutex
 	lockAddLogf         sync.RWMutex
 	lockGetArgument     sync.RWMutex
+	lockGetID           sync.RWMutex
+	lockGetOperator     sync.RWMutex
 	lockSetProgress     sync.RWMutex
 	lockSetProgressText sync.RWMutex
 }
@@ -179,6 +199,58 @@ func (mock *QorJobInterfaceMock) GetArgumentCalls() []struct {
 	mock.lockGetArgument.RLock()
 	calls = mock.calls.GetArgument
 	mock.lockGetArgument.RUnlock()
+	return calls
+}
+
+// GetID calls GetIDFunc.
+func (mock *QorJobInterfaceMock) GetID() uint {
+	if mock.GetIDFunc == nil {
+		panic("QorJobInterfaceMock.GetIDFunc: method is nil but QorJobInterface.GetID was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetID.Lock()
+	mock.calls.GetID = append(mock.calls.GetID, callInfo)
+	mock.lockGetID.Unlock()
+	return mock.GetIDFunc()
+}
+
+// GetIDCalls gets all the calls that were made to GetID.
+// Check the length with:
+//     len(mockedQorJobInterface.GetIDCalls())
+func (mock *QorJobInterfaceMock) GetIDCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetID.RLock()
+	calls = mock.calls.GetID
+	mock.lockGetID.RUnlock()
+	return calls
+}
+
+// GetOperator calls GetOperatorFunc.
+func (mock *QorJobInterfaceMock) GetOperator() string {
+	if mock.GetOperatorFunc == nil {
+		panic("QorJobInterfaceMock.GetOperatorFunc: method is nil but QorJobInterface.GetOperator was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetOperator.Lock()
+	mock.calls.GetOperator = append(mock.calls.GetOperator, callInfo)
+	mock.lockGetOperator.Unlock()
+	return mock.GetOperatorFunc()
+}
+
+// GetOperatorCalls gets all the calls that were made to GetOperator.
+// Check the length with:
+//     len(mockedQorJobInterface.GetOperatorCalls())
+func (mock *QorJobInterfaceMock) GetOperatorCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetOperator.RLock()
+	calls = mock.calls.GetOperator
+	mock.lockGetOperator.RUnlock()
 	return calls
 }
 

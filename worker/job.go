@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -157,7 +158,12 @@ func (jb *JobBuilder) getJobInstance(qorJobID uint) (*QorJobInstance, error) {
 	return inst, nil
 }
 
-func (jb *JobBuilder) newJobInstance(qorJobID uint, qorJobName string, args interface{}) (*QorJobInstance, error) {
+func (jb *JobBuilder) newJobInstance(
+	r *http.Request,
+	qorJobID uint,
+	qorJobName string,
+	args interface{},
+) (*QorJobInstance, error) {
 	var mArgs string
 	if v, ok := args.(string); ok {
 		mArgs = v
@@ -174,6 +180,9 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, qorJobName string, args inte
 		Job:      qorJobName,
 		Status:   JobStatusNew,
 	}
+	if jb.b.operatorGetter != nil {
+		inst.Operator = jb.b.operatorGetter(r)
+	}
 	err := jb.b.db.Create(&inst).Error
 	if err != nil {
 		return nil, err
@@ -185,8 +194,6 @@ func (jb *JobBuilder) newJobInstance(qorJobID uint, qorJobName string, args inte
 type QueJobInterface interface {
 	QorJobInterface
 
-	GetJobName() string
-	GetJobID() string
 	GetStatus() string
 	FetchAndSetStatus() (string, error)
 	SetStatus(string) error
@@ -199,6 +206,9 @@ type QueJobInterface interface {
 
 // for job handler
 type QorJobInterface interface {
+	GetJobID() string
+	GetJobName() string
+	GetOperator() string
 	GetArgument() (interface{}, error)
 	SetProgress(uint) error
 	SetProgressText(string) error
@@ -346,6 +356,10 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 
 func (job *QorJobInstance) GetArgument() (interface{}, error) {
 	return job.jb.parseArgs(job.Args)
+}
+
+func (job *QorJobInstance) GetOperator() string {
+	return job.Operator
 }
 
 func (job *QorJobInstance) shouldCallSave() bool {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -20,11 +21,12 @@ import (
 )
 
 type Builder struct {
-	db         *gorm.DB
-	q          Queue
-	jpb        *presets.Builder
-	jbs        []*JobBuilder
-	configured bool
+	db             *gorm.DB
+	q              Queue
+	jpb            *presets.Builder
+	jbs            []*JobBuilder
+	operatorGetter func(r *http.Request) string
+	configured     bool
 }
 
 func New(db *gorm.DB) *Builder {
@@ -49,6 +51,11 @@ func New(db *gorm.DB) *Builder {
 // default queue is go-que queue
 func (b *Builder) Queue(q Queue) *Builder {
 	b.q = q
+	return b
+}
+
+func (b *Builder) OperatorGetter(f func(r *http.Request) string) *Builder {
+	b.operatorGetter = f
 	return b
 }
 
@@ -285,7 +292,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				return err
 			}
 
-			inst, err := jb.newJobInstance(j.ID, qorJob.Job, qorJob.args)
+			inst, err := jb.newJobInstance(ctx.R, j.ID, qorJob.Job, qorJob.args)
 			if err != nil {
 				return err
 			}
@@ -451,7 +458,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 		return er, errors.New("job is not done")
 	}
 
-	inst, err := jb.newJobInstance(qorJobID, qorJobName, old.Args)
+	inst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, old.Args)
 	if err != nil {
 		return er, err
 	}
@@ -501,7 +508,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, nil
 	}
 
-	newInst, err := jb.newJobInstance(qorJobID, qorJobName, newArgs)
+	newInst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, newArgs)
 	if err != nil {
 		return er, err
 	}

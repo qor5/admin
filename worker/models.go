@@ -20,6 +20,8 @@ type QorJobInstance struct {
 
 	QorJobID uint `gorm:"index"`
 
+	Operator string
+
 	Job    string
 	Status string `sql:"default:'new'"`
 	Args   string
