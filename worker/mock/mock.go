@@ -27,8 +27,11 @@ var _ worker.QorJobInterface = &QorJobInterfaceMock{}
 // 			GetArgumentFunc: func() (interface{}, error) {
 // 				panic("mock out the GetArgument method")
 // 			},
-// 			GetIDFunc: func() uint {
-// 				panic("mock out the GetID method")
+// 			GetJobIDFunc: func() string {
+// 				panic("mock out the GetJobID method")
+// 			},
+// 			GetJobNameFunc: func() string {
+// 				panic("mock out the GetJobName method")
 // 			},
 // 			GetOperatorFunc: func() string {
 // 				panic("mock out the GetOperator method")
@@ -55,8 +58,11 @@ type QorJobInterfaceMock struct {
 	// GetArgumentFunc mocks the GetArgument method.
 	GetArgumentFunc func() (interface{}, error)
 
-	// GetIDFunc mocks the GetID method.
-	GetIDFunc func() uint
+	// GetJobIDFunc mocks the GetJobID method.
+	GetJobIDFunc func() string
+
+	// GetJobNameFunc mocks the GetJobName method.
+	GetJobNameFunc func() string
 
 	// GetOperatorFunc mocks the GetOperator method.
 	GetOperatorFunc func() string
@@ -84,8 +90,11 @@ type QorJobInterfaceMock struct {
 		// GetArgument holds details about calls to the GetArgument method.
 		GetArgument []struct {
 		}
-		// GetID holds details about calls to the GetID method.
-		GetID []struct {
+		// GetJobID holds details about calls to the GetJobID method.
+		GetJobID []struct {
+		}
+		// GetJobName holds details about calls to the GetJobName method.
+		GetJobName []struct {
 		}
 		// GetOperator holds details about calls to the GetOperator method.
 		GetOperator []struct {
@@ -104,7 +113,8 @@ type QorJobInterfaceMock struct {
 	lockAddLog          sync.RWMutex
 	lockAddLogf         sync.RWMutex
 	lockGetArgument     sync.RWMutex
-	lockGetID           sync.RWMutex
+	lockGetJobID        sync.RWMutex
+	lockGetJobName      sync.RWMutex
 	lockGetOperator     sync.RWMutex
 	lockSetProgress     sync.RWMutex
 	lockSetProgressText sync.RWMutex
@@ -202,29 +212,55 @@ func (mock *QorJobInterfaceMock) GetArgumentCalls() []struct {
 	return calls
 }
 
-// GetID calls GetIDFunc.
-func (mock *QorJobInterfaceMock) GetID() uint {
-	if mock.GetIDFunc == nil {
-		panic("QorJobInterfaceMock.GetIDFunc: method is nil but QorJobInterface.GetID was just called")
+// GetJobID calls GetJobIDFunc.
+func (mock *QorJobInterfaceMock) GetJobID() string {
+	if mock.GetJobIDFunc == nil {
+		panic("QorJobInterfaceMock.GetJobIDFunc: method is nil but QorJobInterface.GetJobID was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetID.Lock()
-	mock.calls.GetID = append(mock.calls.GetID, callInfo)
-	mock.lockGetID.Unlock()
-	return mock.GetIDFunc()
+	mock.lockGetJobID.Lock()
+	mock.calls.GetJobID = append(mock.calls.GetJobID, callInfo)
+	mock.lockGetJobID.Unlock()
+	return mock.GetJobIDFunc()
 }
 
-// GetIDCalls gets all the calls that were made to GetID.
+// GetJobIDCalls gets all the calls that were made to GetJobID.
 // Check the length with:
-//     len(mockedQorJobInterface.GetIDCalls())
-func (mock *QorJobInterfaceMock) GetIDCalls() []struct {
+//     len(mockedQorJobInterface.GetJobIDCalls())
+func (mock *QorJobInterfaceMock) GetJobIDCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetID.RLock()
-	calls = mock.calls.GetID
-	mock.lockGetID.RUnlock()
+	mock.lockGetJobID.RLock()
+	calls = mock.calls.GetJobID
+	mock.lockGetJobID.RUnlock()
+	return calls
+}
+
+// GetJobName calls GetJobNameFunc.
+func (mock *QorJobInterfaceMock) GetJobName() string {
+	if mock.GetJobNameFunc == nil {
+		panic("QorJobInterfaceMock.GetJobNameFunc: method is nil but QorJobInterface.GetJobName was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetJobName.Lock()
+	mock.calls.GetJobName = append(mock.calls.GetJobName, callInfo)
+	mock.lockGetJobName.Unlock()
+	return mock.GetJobNameFunc()
+}
+
+// GetJobNameCalls gets all the calls that were made to GetJobName.
+// Check the length with:
+//     len(mockedQorJobInterface.GetJobNameCalls())
+func (mock *QorJobInterfaceMock) GetJobNameCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetJobName.RLock()
+	calls = mock.calls.GetJobName
+	mock.lockGetJobName.RUnlock()
 	return calls
 }
 
