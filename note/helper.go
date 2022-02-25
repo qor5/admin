@@ -6,6 +6,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/vuetify"
 	. "github.com/goplaid/x/vuetify"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -63,13 +64,13 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 	db.Where("resource_type = ? and resource_id = ?", resourceType, resourceId).
 		Order("id DESC").Find(&notes)
 
+	var panels []h.HTMLComponent
 	for _, note := range notes {
-		c.AppendChildren(
-			VCard(
-				VCardTitle(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
-				VCardText(h.Text(note.Content)),
-			),
-		)
+		panels = append(panels, vuetify.VExpansionPanel(
+			vuetify.VExpansionPanelHeader(h.Span(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
+			vuetify.VExpansionPanelContent(h.Text(note.Content)),
+		))
 	}
+	c.AppendChildren(vuetify.VExpansionPanels(panels...).Focusable(true))
 	return c
 }
