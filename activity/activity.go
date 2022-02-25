@@ -328,31 +328,30 @@ func (mb *ModelBuilder) UseDefaultTab() *ModelBuilder {
 	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
 		logs := mb.activity.GetCustomizeActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		logList := h.HTMLComponents{}
 
 		logsvalues := reflect.Indirect(reflect.ValueOf(logs))
+		var panels []h.HTMLComponent
+
 		for i := 0; i < logsvalues.Len(); i++ {
 			log := logsvalues.Index(i).Interface().(ActivityLogInterface)
 			var headerText string
 			if mb.activity.tabHeading != nil {
 				headerText = mb.activity.tabHeading(log)
 			} else {
-				headerText = fmt.Sprintf("%s %s at %s", log.GetCreator(), log.GetAction(), log.GetCreatedAt().String())
+				headerText = fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))
 			}
-			record := h.Div(
-				vuetify.VExpansionPanels(
-					vuetify.VExpansionPanel(
-						vuetify.VExpansionPanelHeader(h.Span(headerText)),
-						vuetify.VExpansionPanelContent(DiffComponent(log.GetModelDiffs(), ctx.R)),
-					),
-				),
-			)
-			logList = append(logList, record)
+
+			panels = append(panels, vuetify.VExpansionPanel(
+				vuetify.VExpansionPanelHeader(h.Span(headerText)),
+				vuetify.VExpansionPanelContent(DiffComponent(log.GetModelDiffs(), ctx.R)),
+			))
 		}
 
 		return h.Components(
 			vuetify.VTab(h.Text(msgr.Activities)),
-			vuetify.VTabItem(logList),
+			vuetify.VTabItem(
+				vuetify.VExpansionPanels(panels...).Focusable(true).Attr("style", "padding:10px;"),
+			),
 		)
 	})
 
