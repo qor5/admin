@@ -8,7 +8,6 @@ type MicrositeModel struct {
 	microsite.MicroSite
 }
 
-func (m MicrositeModel) SetVersionPriority(s string) {
-	//TODO implement me
-	panic("implement me")
-}
+//func (m MicrositeModel) SetVersionPriority(s string) {
+//	panic("implement me")
+//}

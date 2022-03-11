@@ -1,11 +1,9 @@
-package microsite
+package utils
 
 import (
 	"fmt"
 	"io"
 	"log"
-	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -24,24 +22,18 @@ func RemoveUselessArchiveFiles(list []string) (result []string) {
 	return
 }
 
-func RemoveFirstDir(relPath string) (rootDirName string) {
-	splitPath := strings.Split(relPath, string(os.PathSeparator))
-	rootDirName = path.Join("/", path.Join(splitPath[1:]...))
-	return
-}
-
-func upload(storage oss.StorageInterface, path string, reader io.Reader) (err error) {
+func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err error) {
 	timeBegin := time.Now()
 	_, err = storage.Put(path, reader)
 	if err != nil {
 		log.Println(err)
 	}
 	timeFinish := time.Now()
-	fmt.Printf("uploading: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+	fmt.Printf("upload: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
 	return
 }
 
-func deleteObjects(storage oss.StorageInterface, paths []string) (err error) {
+func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	timeBegin := time.Now()
 	for _, v := range paths {
 		err = storage.Delete(v)
@@ -50,6 +42,6 @@ func deleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 		}
 	}
 	timeFinish := time.Now()
-	fmt.Printf("deleting: %s, time_spent_ms: %s \n", paths, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+	fmt.Printf("delete: %s, time_spent_ms: %s \n", paths, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
 	return
 }

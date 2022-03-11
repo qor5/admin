@@ -31,6 +31,7 @@ func ConnectDB() *gorm.DB {
 		&models.Phone{},
 		&models.Product{},
 		&models.Category{},
+		&models.MicrositeModel{},
 	); err != nil {
 		panic(err)
 	}
