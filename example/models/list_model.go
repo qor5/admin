@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/qor/oss"
 	"github.com/qor/qor5/publish"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ type ListModel struct {
 	publish.List
 }
 
-func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
 		Content:  this.getPublishContent(),
@@ -37,7 +38,7 @@ func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs
 	return
 }
 
-func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.GetOnlineUrl(),
 		IsDelete: true,

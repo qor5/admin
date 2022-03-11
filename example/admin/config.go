@@ -20,6 +20,7 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor/qor5/microsite"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
@@ -180,6 +181,8 @@ func NewConfig() Config {
 
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Schedule", "Title")
+
+	microsite.Configure(b, db, oss.Storage, publisher, &models.MicrositeModel{})
 
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).

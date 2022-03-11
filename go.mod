@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
+	github.com/gen2brain/go-unarr v0.1.2
 	github.com/go-chi/chi v1.5.4
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/golang/protobuf v1.5.2 // indirect
