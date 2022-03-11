@@ -24,24 +24,44 @@ func RemoveUselessArchiveFiles(list []string) (result []string) {
 
 func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err error) {
 	timeBegin := time.Now()
+	defer func() {
+		timeFinish := time.Now()
+		if err != nil {
+			//todo error log
+			log.Println(err)
+		} else {
+			fmt.Printf("upload: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+		}
+	}()
 	_, err = storage.Put(path, reader)
 	if err != nil {
-		log.Println(err)
+		return
 	}
-	timeFinish := time.Now()
-	fmt.Printf("upload: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
 	return
 }
 
 func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	timeBegin := time.Now()
+	defer func() {
+		timeFinish := time.Now()
+		if err != nil {
+			//todo error log
+			log.Println(err)
+		} else {
+			fmt.Printf("delete: %s, time_spent_ms: %s \n", paths, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+		}
+	}()
+
+	if storage, ok := storage.(DeleteObjecter); ok {
+		return storage.DeleteObjects(paths)
+	}
+
 	for _, v := range paths {
 		err = storage.Delete(v)
 		if err != nil {
-			log.Println(err)
+			return
 		}
 	}
-	timeFinish := time.Now()
-	fmt.Printf("delete: %s, time_spent_ms: %s \n", paths, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+
 	return
 }

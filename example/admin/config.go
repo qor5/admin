@@ -20,7 +20,7 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
-	"github.com/qor/qor5/microsite/views"
+	microsite_views "github.com/qor/qor5/microsite/views"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
@@ -188,7 +188,7 @@ func NewConfig() Config {
 		SearchColumns("ID", "Name").
 		PerPage(10)
 	mm.Editing("Name", "Status", "Schedule", "PrePath", "FilesList", "Package")
-	views.Configure(b, db, oss.Storage, domain, publisher, mm)
+	microsite_views.Configure(b, db, oss.Storage, domain, publisher, mm)
 
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
