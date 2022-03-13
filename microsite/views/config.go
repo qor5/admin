@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path"
 	"path/filepath"
-	"time"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -44,7 +41,6 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 					}
 					return
 				}
-				var filePath string
 				var fileName = fs[0].Filename
 				var packagePath = this.GetPackagePath(fileName)
 
@@ -58,20 +54,7 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 					return err
 				}
 
-				now := time.Now().Unix()
-				tempDir, err := microsite.GetTempFileDir()
-				if err != nil {
-					return
-				}
-				//filePath = path.Join(tempDir, fmt.Sprintf("%d_%s_%d.zip", this.GetId(), this.VersionName, now))
-				filePath = path.Join(tempDir, fmt.Sprintf("%s_%d_%d.zip", microsite.PackageAndPreviewPrepath, this.GetId(), now))
-				err = ioutil.WriteFile(filePath, fileBytes, 0666)
-				if err != nil {
-					return err
-				}
-				defer os.Remove(filePath)
-
-				filesList, err := this.GetFilesListAndPublishPreviewFiles(fileName, filePath, storage)
+				filesList, err := this.GetFilesListAndPublishPreviewFiles(fileName, fileBytes, storage)
 				if err != nil {
 					return
 				}

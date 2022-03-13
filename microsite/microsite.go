@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gen2brain/go-unarr"
 	"github.com/qor/oss"
@@ -102,30 +100,17 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 
 func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
 	if len(this.GetFileList()) > 0 {
-		file, err := storage.Get(this.Package.Url)
+		f, err := storage.Get(this.Package.Url)
 		if err != nil {
 			panic(err)
 		}
 
-		now := time.Now().Unix()
-		tempDir, err := GetTempFileDir()
+		fileBytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			return
-		}
-		//filePath = path.Join(tempDir, fmt.Sprintf("%d_%s_%d.zip", this.GetId(), this.VersionName, now))
-		filePath := path.Join(tempDir, fmt.Sprintf("%s_%d_%d.zip", PackageAndPreviewPrepath, this.GetId(), now))
-
-		var dst *os.File
-		if dst, err = os.Create(filePath); err != nil {
 			panic(err)
 		}
-		if _, err = io.Copy(dst, file); err != nil {
-			panic(err)
-		}
-		dst.Close()
-		defer os.Remove(filePath)
 
-		err = this.PublishArchiveFiles(this.Package.FileName, filePath, storage)
+		err = this.PublishArchiveFiles(this.Package.FileName, fileBytes, storage)
 		if err != nil {
 			panic(err)
 		}
@@ -138,7 +123,6 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 		if err != nil {
 			panic(err)
 		}
-
 	}
 	return
 }
@@ -155,26 +139,11 @@ func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, sto
 	return
 }
 
-func (this *MicroSite) PublishArchiveFiles(fileName, filePath string, storage oss.StorageInterface) (err error) {
-	a, err := unarr.NewArchive(filePath)
+func (this *MicroSite) PublishArchiveFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (err error) {
+	a, err := unarr.NewArchiveFromMemory(fileBytes)
 	if err != nil {
 		if err.Error() == INVALID_ARCHIVER_ERROR.Error() {
-			var f *os.File
-			f, err = os.Open(filePath)
-			if err != nil {
-				return
-			}
-			var data []byte
-			data, err = ioutil.ReadAll(f)
-			if err != nil {
-				return
-			}
-			err = f.Close()
-			if err != nil {
-				return
-			}
-
-			utils.Upload(storage, this.GetPublishedPath(fileName), bytes.NewReader(data))
+			utils.Upload(storage, this.GetPublishedPath(fileName), bytes.NewReader(fileBytes))
 			return nil
 		}
 		return
@@ -194,7 +163,7 @@ func (this *MicroSite) PublishArchiveFiles(fileName, filePath string, storage os
 
 	var wg = sync.WaitGroup{}
 	var putError error
-	var putSemaphore = make(chan struct{}, MaxNumberOfFilesUploadedAtTheSameTime)
+	var putSemaphore = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
 
 	for _, v := range filesList {
 		if putError != nil {
@@ -240,28 +209,12 @@ func (this *MicroSite) PublishArchiveFiles(fileName, filePath string, storage os
 	return
 }
 
-func (this *MicroSite) GetFilesListAndPublishPreviewFiles(fileName, filePath string, storage oss.StorageInterface) (filesList []string, err error) {
-	a, err := unarr.NewArchive(filePath)
+func (this *MicroSite) GetFilesListAndPublishPreviewFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (filesList []string, err error) {
+	a, err := unarr.NewArchiveFromMemory(fileBytes)
 	if err != nil {
 		if err.Error() == INVALID_ARCHIVER_ERROR.Error() {
 			filesList = append(filesList, fileName)
-
-			var f *os.File
-			f, err = os.Open(filePath)
-			if err != nil {
-				return
-			}
-			var data []byte
-			data, err = ioutil.ReadAll(f)
-			if err != nil {
-				return
-			}
-			err = f.Close()
-			if err != nil {
-				return
-			}
-
-			utils.Upload(storage, this.GetPreviewPath(fileName), bytes.NewReader(data))
+			utils.Upload(storage, this.GetPreviewPath(fileName), bytes.NewReader(fileBytes))
 			return filesList, nil
 		}
 		return
@@ -281,7 +234,7 @@ func (this *MicroSite) GetFilesListAndPublishPreviewFiles(fileName, filePath str
 
 	var wg = sync.WaitGroup{}
 	var putError error
-	var putSemaphore = make(chan struct{}, MaxNumberOfFilesUploadedAtTheSameTime)
+	var putSemaphore = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
 
 	for _, v := range filesList {
 		if putError != nil {

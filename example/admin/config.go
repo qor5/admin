@@ -187,7 +187,7 @@ func NewConfig() Config {
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
 		PerPage(10)
-	mm.Editing("Name", "Status", "Schedule", "PrePath", "FilesList", "Package")
+	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, oss.Storage, domain, publisher, mm)
 
 	pageBuilder.

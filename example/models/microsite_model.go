@@ -5,9 +5,6 @@ import (
 )
 
 type MicrositeModel struct {
+	Description string
 	microsite.MicroSite
 }
-
-//func (m MicrositeModel) SetVersionPriority(s string) {
-//	panic("implement me")
-//}
