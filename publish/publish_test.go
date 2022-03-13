@@ -50,7 +50,7 @@ func (p *Product) getListContent() string {
 	return fmt.Sprintf("list page  %s", p.Code)
 }
 
-func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -81,7 +81,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 	})
 	return
 }
-func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
 		IsDelete: true,
@@ -113,7 +113,7 @@ func (p *ProductWithoutVersion) getUrl() string {
 	return fmt.Sprintf("test/product_no_version/%s/index.html", p.Code)
 }
 
-func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -130,7 +130,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 	p.SetOnlineUrl(p.getUrl())
 	return
 }
-func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
 		IsDelete: true,

@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	var b *Builder
 	var ok bool
 	if b, ok = ctx.Value("pagebuilder").(*Builder); !ok || b == nil {
@@ -43,7 +43,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 	return
 }
-func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
 		IsDelete: true,

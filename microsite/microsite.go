@@ -106,21 +106,21 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 	return
 }
 
-func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) > 0 {
 		f, err := storage.Get(this.Package.Url)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		fileBytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		err = this.PublishArchiveFiles(this.Package.FileName, fileBytes, storage)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		var previewPaths []string
@@ -129,20 +129,20 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 		}
 		err = utils.DeleteObjects(storage, previewPaths)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 	return
 }
 
-func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	var paths []string
 	for _, v := range this.GetFileList() {
 		paths = append(paths, this.GetPublishedPath(v))
 	}
-	err := utils.DeleteObjects(storage, paths)
+	err = utils.DeleteObjects(storage, paths)
 	if err != nil {
-		panic(err)
+		return
 	}
 	return
 }

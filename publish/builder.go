@@ -39,7 +39,10 @@ func (b *Builder) Publish(record interface{}) (err error) {
 		// publish content
 		if r, ok := record.(PublishInterface); ok {
 			var objs []*PublishAction
-			objs = r.GetPublishActions(b.db, b.context, b.storage)
+			objs, err = r.GetPublishActions(b.db, b.context, b.storage)
+			if err != nil {
+				return
+			}
 			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}
@@ -93,7 +96,10 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 		// unpublish content
 		if r, ok := record.(UnPublishInterface); ok {
 			var objs []*PublishAction
-			objs = r.GetUnPublishActions(b.db, b.context, b.storage)
+			objs, err = r.GetUnPublishActions(b.db, b.context, b.storage)
+			if err != nil {
+				return
+			}
 			if err = UploadOrDelete(objs, b.storage); err != nil {
 				return
 			}

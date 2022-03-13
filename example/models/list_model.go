@@ -20,7 +20,7 @@ type ListModel struct {
 	publish.List
 }
 
-func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
 		Content:  this.getPublishContent(),
@@ -38,7 +38,7 @@ func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 	return
 }
 
-func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction) {
+func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.GetOnlineUrl(),
 		IsDelete: true,
