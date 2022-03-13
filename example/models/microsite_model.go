@@ -5,6 +5,7 @@ import (
 )
 
 type MicrositeModel struct {
+	Name        string
 	Description string
 	microsite.MicroSite
 }

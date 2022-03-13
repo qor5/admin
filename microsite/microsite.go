@@ -27,7 +27,6 @@ type MicroSite struct {
 	publish.Schedule
 	//publish.Version
 
-	Name    string
 	PrePath string
 
 	Package   FileSystem `gorm:"type:text"`
