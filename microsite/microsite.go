@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gen2brain/go-unarr"
 	"github.com/qor/oss"
@@ -31,10 +32,17 @@ type MicroSite struct {
 
 	Package   FileSystem `gorm:"type:text"`
 	FilesList string     `gorm:"type:text"`
+
+	UnixKey string
 }
 
-func (this MicroSite) GetId() uint {
-	return this.ID
+func (this MicroSite) GetUnixKey() string {
+	return this.UnixKey
+}
+
+func (this *MicroSite) SetUnixKey() {
+	this.UnixKey = strconv.FormatInt(time.Now().UnixMilli(), 10)
+	return
 }
 
 //func (this MicroSite) GetVersionName() string {
@@ -51,11 +59,11 @@ func (this MicroSite) GetId() uint {
 //}
 
 func (this MicroSite) GetPackagePath(fileName string) string {
-	return fmt.Sprintf("/%s/__package__/%d/%s", PackageAndPreviewPrepath, this.GetId(), fileName)
+	return fmt.Sprintf("/%s/__package__/%s/%s", PackageAndPreviewPrepath, this.UnixKey, fileName)
 }
 
 func (this MicroSite) GetPreviewPrePath() string {
-	return "/" + path.Join(PackageAndPreviewPrepath, "__preview__", strconv.Itoa(int(this.GetId()))) + "/"
+	return fmt.Sprintf("/%s/__preview__/%s", PackageAndPreviewPrepath, this.UnixKey)
 }
 
 func (this MicroSite) GetPreviewPath(fileName string) string {

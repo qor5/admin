@@ -32,6 +32,9 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 					}
 				}()
 				this := obj.(microsite.MicroSiteInterface)
+				if this.GetUnixKey() == "" {
+					this.SetUnixKey()
+				}
 				fs := ctx.R.MultipartForm.File[field.Name]
 				if len(fs) == 0 {
 					//todo delete flag
