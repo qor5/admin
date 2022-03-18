@@ -3,6 +3,9 @@ package admin
 import (
 	"embed"
 	"fmt"
+	"github.com/goplaid/x/perm"
+	"github.com/qor/qor5/role"
+	"net/http"
 	"os"
 	"strings"
 
@@ -90,6 +93,18 @@ func NewConfig() Config {
 			)
 			return
 		})
+	b.Permission(
+		perm.New().Policies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles", "*:users", "*:roles:*", "*:users:*"),
+			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
+		).SubjectsFunc(func(r *http.Request) []string {
+			u := getCurrentUser(r)
+			if u == nil {
+				return nil
+			}
+			return u.GetRoles()
+		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}),
+	)
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
@@ -152,7 +167,14 @@ func NewConfig() Config {
 
 	configInputHarness(b, db)
 	configUser(b, db)
-	configRole(b, db)
+	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
+		{Text: "All", Value: "*"},
+		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
+		{Text: "Posts", Value: "*:posts:*"},
+		{Text: "Customers", Value: "*:customers:*"},
+		{Text: "Products", Value: "*:products:*"},
+		{Text: "Categories", Value: "*:categories:*"},
+	})
 	configProduct(b, db)
 	configCategory(b, db)
 

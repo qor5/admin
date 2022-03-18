@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"github.com/qor/qor5/role"
 	"net/url"
 	"strconv"
 
@@ -18,14 +19,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type Item struct {
-	Text     string `json:"text"`
-	Value    string `json:"value"`
-	disabled bool   `json:"disabled"`
-	divider  bool   `json:"divider"`
-	header   string `json:"header"`
-}
-
 func configUser(b *presets.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
 	note.Configure(db, b, user)
@@ -34,7 +27,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Name",
 		"Company",
 		"Email",
-		"Permission",
 		"Roles",
 		"Status",
 	)
@@ -50,15 +42,15 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var selectedItems = []Item{}
+			var selectedItems = []DefaultOptionItem{}
 			var values = []string{}
 			u, ok := obj.(*models.User)
 			if ok {
-				var roles []models.Role
+				var roles []role.Role
 				db.Model(u).Association("Roles").Find(&roles)
 				for _, r := range roles {
 					values = append(values, fmt.Sprint(r.ID))
-					selectedItems = append(selectedItems, Item{
+					selectedItems = append(selectedItems, DefaultOptionItem{
 						Text:  r.Name,
 						Value: fmt.Sprint(r.ID),
 					})
@@ -81,13 +73,13 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				return
 			}
 			rids := ctx.R.Form[field.Name]
-			var roles []models.Role
+			var roles []role.Role
 			for _, id := range rids {
 				uid, err1 := strconv.Atoi(id)
 				if err1 != nil {
 					continue
 				}
-				roles = append(roles, models.Role{
+				roles = append(roles, role.Role{
 					Model: gorm.Model{ID: uint(uid)},
 				})
 			}
@@ -159,8 +151,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 func rolesSelector(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var roles []models.Role
-		var items []Item
+		var roles []role.Role
+		var items []DefaultOptionItem
 		searchKey := ctx.R.FormValue("keyword")
 		sql := db.Order("name").Limit(3)
 		if searchKey != "" {
@@ -168,7 +160,7 @@ func rolesSelector(db *gorm.DB) web.EventFunc {
 		}
 		sql.Find(&roles)
 		for _, r := range roles {
-			items = append(items, Item{
+			items = append(items, DefaultOptionItem{
 				Text:  r.Name,
 				Value: fmt.Sprint(r.ID),
 			})

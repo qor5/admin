@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"github.com/goplaid/x/perm"
+	"github.com/qor/qor5/role"
 	"os"
 
 	"github.com/qor/qor5/example/models"
@@ -25,7 +27,8 @@ func ConnectDB() *gorm.DB {
 		&models.InputHarness{},
 		&models.User{},
 		&models.ListModel{},
-		&models.Role{},
+		&role.Role{},
+		&perm.DefaultDBPolicy{},
 		&models.Customer{},
 		&models.Address{},
 		&models.Phone{},
