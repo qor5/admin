@@ -22,10 +22,9 @@ import (
 
 type MicroSite struct {
 	gorm.Model
-
 	publish.Status
 	publish.Schedule
-	//publish.Version
+	publish.Version
 
 	PrePath string
 
@@ -33,6 +32,26 @@ type MicroSite struct {
 	FilesList string     `gorm:"type:text"`
 
 	UnixKey string
+}
+
+func (this *MicroSite) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
+}
+
+func (this *MicroSite) PrimaryColumnValuesBySlug(slug string) [][]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return [][]string{
+		{"id", segs[0]},
+		{"version", segs[1]},
+	}
+}
+
+func (this MicroSite) GetID() uint {
+	return this.ID
 }
 
 func (this MicroSite) GetUnixKey() string {
@@ -43,10 +62,6 @@ func (this *MicroSite) SetUnixKey() {
 	this.UnixKey = strconv.FormatInt(time.Now().UnixMilli(), 10)
 	return
 }
-
-//func (this MicroSite) GetVersionName() string {
-//	return this.VersionName
-//}
 
 //func (this *MicroSite) BeforeDelete(db *gorm.DB) (err error) {
 //	if this.Status == Status_published {

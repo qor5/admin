@@ -3,10 +3,10 @@ package microsite
 import "github.com/qor/oss"
 
 type MicroSiteInterface interface {
+	GetID() uint
+	GetVersionName() string
 	GetUnixKey() string
 	SetUnixKey()
-	//GetVersionName() string
-	//SetVersionPriority(string)
 	GetStatus() string
 
 	GetPackagePath(fileName string) string

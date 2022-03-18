@@ -19,6 +19,13 @@ import (
 func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, domain string, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	publish_view.Configure(b, db, publisher, models...)
 	for _, model := range models {
+		//model.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+		//	if ctx.R.FormValue("__execute_event__") == "publish_SaveNewVersionEvent" {
+		//		this := obj.(microsite.MicroSiteInterface)
+		//		this.SetPackage("", "")
+		//		this.SetFilesList(nil)
+		//	}
+		//})
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)
 			if this.GetPackage().FileName == "" {
@@ -39,10 +46,11 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 				}
 				fs := ctx.R.MultipartForm.File[field.Name]
 				if len(fs) == 0 {
-					//todo delete flag
-					err = db.Select("files_list").Find(&this).Error
-					if err != nil {
-						return
+					if this.GetID() != 0 {
+						err = db.Where("id = ? AND version_name = ?", this.GetID(), this.GetVersionName()).Select("files_list").Find(&this).Error
+						if err != nil {
+							return
+						}
 					}
 					return
 				}
