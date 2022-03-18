@@ -2,9 +2,7 @@ package views
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
-	"path/filepath"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -23,14 +21,18 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 	for _, model := range models {
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)
-			return vuetify.VFileInput().Chips(true).Label(field.Label).Value(this.GetPackage().FileName).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
+			if this.GetPackage().FileName == "" {
+				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
+			}
+			return h.Div(
+				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar"),
+				h.Div(
+					vuetify.VRow(h.Label("CurrentPackage")),
+					vuetify.VRow(h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName)),
+				).Style("margin-top: 4px; padding-top: 12px"),
+			)
 		}).
 			SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-				defer func() {
-					if err != nil {
-						fmt.Println(err)
-					}
-				}()
 				this := obj.(microsite.MicroSiteInterface)
 				if this.GetUnixKey() == "" {
 					this.SetUnixKey()
@@ -76,25 +78,14 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 		model.Editing().Field("FilesList").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(microsite.MicroSiteInterface)
-				if this.GetStatus() == publish.StatusOffline {
+				if this.GetStatus() == publish.StatusOffline || len(this.GetFileList()) == 0 {
 					return nil
-				}
-				htmlFiles := []string{}
-				otherFiles := []string{}
-
-				for _, v := range this.GetFileList() {
-					if filepath.Ext(v) == ".html" {
-						htmlFiles = append(htmlFiles, v)
-					} else {
-						otherFiles = append(otherFiles, v)
-					}
 				}
 
 				var content []h.HTMLComponent
 				content = append(content, vuetify.VRow(h.Label(field.Label)))
 
-				// List all html files first
-				for _, v := range htmlFiles {
+				for _, v := range this.GetFileList() {
 					if this.GetStatus() == publish.StatusOnline {
 						content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v))))
 					} else {
@@ -102,20 +93,7 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 					}
 				}
 
-				if len(otherFiles) > 0 {
-					content = append(content, vuetify.VRow(h.Text("Assets")))
-					for _, v := range otherFiles {
-						if this.GetStatus() == publish.StatusOnline {
-							content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v))))
-						} else {
-							content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v))))
-						}
-					}
-				}
-
-				return h.Components(
-					h.Div(content...).Style("margin-top: 4px; padding-top: 12px"),
-				)
+				return h.Div(content...).Style("margin-top: 4px; padding-top: 12px")
 			},
 		)
 	}

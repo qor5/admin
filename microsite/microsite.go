@@ -81,6 +81,10 @@ func (this MicroSite) GetPublishedUrl(domain, fileName string) string {
 	return strings.TrimSuffix(domain, "/") + this.GetPublishedPath(fileName)
 }
 
+func (this MicroSite) GetPackageUrl(domain string) string {
+	return strings.TrimSuffix(domain, "/") + this.Package.Url
+}
+
 func (this MicroSite) GetFileList() (arr []string) {
 	json.Unmarshal([]byte(this.FilesList), &arr)
 	return

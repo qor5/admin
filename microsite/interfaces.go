@@ -18,6 +18,7 @@ type MicroSiteInterface interface {
 	SetFilesList(filesList []string)
 	GetPackage() FileSystem
 	SetPackage(fileName, url string)
+	GetPackageUrl(domain string) string
 	GetFilesListAndPublishPreviewFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (filesList []string, err error)
 	PublishArchiveFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (err error)
 }
