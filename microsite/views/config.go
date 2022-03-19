@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss"
@@ -13,10 +14,17 @@ import (
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
+const I18nMicrositeKey i18n.ModuleKey = "I18nMicrositeKey"
+
 func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, domain string, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+	b.I18n().
+		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
+
 	publish_view.Configure(b, db, publisher, models...)
 	for _, model := range models {
 		//model.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
@@ -28,13 +36,15 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 		//})
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nMicrositeKey, Messages_en_US).(*Messages)
+
 			if this.GetPackage().FileName == "" {
 				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
 			}
 			return h.Div(
 				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar"),
 				h.Div(
-					vuetify.VRow(h.Label("CurrentPackage")),
+					vuetify.VRow(h.Label(msgr.CurrentPackage)),
 					vuetify.VRow(h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName)),
 				).Style("margin-top: 4px; padding-top: 12px"),
 			)
@@ -100,7 +110,6 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 						content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v))))
 					}
 				}
-
 				return h.Div(content...).Style("margin-top: 4px; padding-top: 12px")
 			},
 		)
