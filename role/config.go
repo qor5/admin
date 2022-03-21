@@ -13,6 +13,7 @@ import (
 )
 
 var DefaultActions = []DefaultOptionItem{
+	{Text: "All", Value: "*"},
 	{Text: "List", Value: presets.PermList},
 	{Text: "Get", Value: presets.PermGet},
 	{Text: "Create", Value: presets.PermCreate},

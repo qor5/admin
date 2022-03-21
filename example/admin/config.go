@@ -93,9 +93,10 @@ func NewConfig() Config {
 			)
 			return
 		})
+	//perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles", "*:users", "*:roles:*", "*:users:*"),
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles:*", "*:users:*"),
 			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
@@ -171,9 +172,15 @@ func NewConfig() Config {
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
 		{Text: "Posts", Value: "*:posts:*"},
+		{Text: "Settings", Value: "*:settings:*,*:site_management:"},
+		{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
 		{Text: "Customers", Value: "*:customers:*"},
-		{Text: "Products", Value: "*:products:*"},
-		{Text: "Categories", Value: "*:categories:*"},
+		{Text: "Products", Value: "*:products:*,*:product_management:"},
+		{Text: "Categories", Value: "*:categories:*,*:product_management:"},
+		{Text: "Pages", Value: "*:pages:*"},
+		{Text: "ListModels", Value: "*:list_models:*"},
+		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
+		{Text: "Workers", Value: "*:workers:*"},
 	})
 	configProduct(b, db)
 	configCategory(b, db)
