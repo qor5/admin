@@ -36,7 +36,6 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 		//})
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)
-			msgr := i18n.MustGetModuleMessages(ctx.R, I18nMicrositeKey, Messages_en_US).(*Messages)
 
 			if this.GetPackage().FileName == "" {
 				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
@@ -44,7 +43,7 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 			return h.Div(
 				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar"),
 				h.Div(
-					vuetify.VRow(h.Label(msgr.CurrentPackage)),
+					vuetify.VRow(h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package"))),
 					vuetify.VRow(h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName)),
 				).Style("margin-top: 4px; padding-top: 12px"),
 			)
@@ -101,7 +100,7 @@ func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, do
 				}
 
 				var content []h.HTMLComponent
-				content = append(content, vuetify.VRow(h.Label(field.Label)))
+				content = append(content, vuetify.VRow(h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), field.Label))))
 
 				for _, v := range this.GetFileList() {
 					if this.GetStatus() == publish.StatusOnline {
