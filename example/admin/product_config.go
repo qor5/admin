@@ -15,8 +15,8 @@ import (
 func configProduct(b *presets.Builder, db *gorm.DB) {
 	p := b.Model(&models.Product{})
 
-	eb := p.Editing("Code", "Name", "Image")
-	p.Listing("Code", "Name", "Image")
+	eb := p.Editing("Code", "Name", "Price", "Image")
+	p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.Product)

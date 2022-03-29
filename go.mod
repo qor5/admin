@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.1.28-0.20220324101132-35f4ff477179
-	github.com/goplaid/x v1.0.28-0.20220324103153-a6067e784d98
+	github.com/goplaid/x v1.0.28-0.20220329083217-5e2c1fad4cd3
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
