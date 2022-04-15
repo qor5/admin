@@ -10,7 +10,8 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.1.28-0.20220324101132-35f4ff477179
-	github.com/goplaid/x v1.0.28-0.20220406013939-4c3368ab6473
+	github.com/goplaid/x v1.0.28-0.20220415162035-c884e32131b8
+	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -48,7 +49,6 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
-	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.0 // indirect

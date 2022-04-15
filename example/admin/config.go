@@ -3,14 +3,13 @@ package admin
 import (
 	"embed"
 	"fmt"
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/role"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
@@ -29,6 +28,7 @@ import (
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/richeditor"
+	"github.com/qor/qor5/role"
 	"github.com/qor/qor5/slug"
 	"github.com/qor/qor5/utils"
 	"github.com/qor/qor5/worker"
@@ -112,7 +112,14 @@ func NewConfig() Config {
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
+			u := getCurrentUser(r)
+			if u.Name == "中文" {
+				return b.I18n().GetSupportLanguages()[1:]
+			}
+			return b.I18n().GetSupportLanguages()
+		})
 	utils.Configure(b)
 
 	media_view.Configure(b, db)
