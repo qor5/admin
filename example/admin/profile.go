@@ -24,18 +24,19 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
 			h.Div(
 				vuetify.VRow(
-					vuetify.VAvatar().Color("primary").Size(40).Children(
+					h.Div(vuetify.VAvatar().Color("primary").Size(24).Children(
 						h.If(u.AvatarURL == "",
-							vuetify.VIcon("account_circle").Size(40),
+							vuetify.VIcon("account_circle"),
 						).Else(
 							h.Img(u.AvatarURL).Alt(u.Name),
 						)),
-					h.Div(
 						h.Text(u.Name), h.If(len(u.Roles) > 0, h.Text("("+strings.Join(roles, ",")+")")),
-						h.Br(),
+					).Style(`width:100%;`).Class("text-button"),
+					h.Div(
 						h.Text(u.Email),
-					).Style(`padding-left:5px;`),
-				)).Attr("v-bind", "attrs").Attr("v-on", "on"),
+					),
+				),
+			).Attr("v-bind", "attrs").Attr("v-on", "on"),
 		),
 		vuetify.VList(
 			h.Div(
