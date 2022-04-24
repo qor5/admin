@@ -350,7 +350,7 @@ func (mb *ModelBuilder) UseDefaultTab() *ModelBuilder {
 		return h.Components(
 			vuetify.VTab(h.Text(msgr.Activities)),
 			vuetify.VTabItem(
-				vuetify.VExpansionPanels(panels...).Focusable(true).Attr("style", "padding:10px;"),
+				vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
 			),
 		)
 	})

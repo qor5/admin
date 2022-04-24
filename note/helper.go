@@ -71,6 +71,6 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 			vuetify.VExpansionPanelContent(h.Text(note.Content)),
 		))
 	}
-	c.AppendChildren(vuetify.VExpansionPanels(panels...).Focusable(true))
+	c.AppendChildren(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
 	return c
 }
