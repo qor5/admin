@@ -270,9 +270,13 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 		if err != nil {
 			log.Println(err)
 			if b.homeURL != r.RequestURI {
+				continueURL := r.RequestURI
+				if strings.Contains(r.RequestURI, "?__execute_event__=") {
+					continueURL = r.Referer()
+				}
 				http.SetCookie(w, &http.Cookie{
 					Name:     b.continueUrlCookieName,
-					Value:    r.RequestURI,
+					Value:    continueURL,
 					Path:     "/",
 					HttpOnly: true,
 				})
