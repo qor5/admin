@@ -9,7 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.28-0.20220324101132-35f4ff477179
+	github.com/goplaid/web v1.1.30
 	github.com/goplaid/x v1.0.29-0.20220425022648-dadb98395824
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
@@ -94,5 +94,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-// replace github.com/goplaid/web => ../goplaid/web
-// replace github.com/goplaid/x =>  ../../goplaid/x
+replace github.com/goplaid/web => ../../goplaid/web
+
+replace github.com/goplaid/x => ../../goplaid/x

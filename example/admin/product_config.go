@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
+	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
+	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"strconv"
 )
@@ -16,7 +19,34 @@ func configProduct(b *presets.Builder, db *gorm.DB) {
 	p := b.Model(&models.Product{})
 
 	eb := p.Editing("Code", "Name", "Price", "Image")
-	p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
+	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
+	listing.ActionsAsMenu(true)
+	listing.BulkAction("longRunningJob").
+		ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+			return VBtn("Long Running Job").
+				Color("primary").
+				Depressed(true).
+				Class("ml-2").
+				Attr("@click", web.Plaid().
+					URL("/admin/workers").
+					EventFunc("worker_createJob").
+					Query("jobName", "longRunningJob").
+					//Query(presets.ParamOverlay, actions.Dialog).
+					Go())
+		})
+
+	listing.BulkAction("NewPost").
+		ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+			return VBtn("NewPost").
+				Color("primary").
+				Depressed(true).
+				Class("ml-2").
+				Attr("@click", web.Plaid().
+					URL("/admin/posts").
+					EventFunc(actions.New).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Go())
+		})
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.Product)

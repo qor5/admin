@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/goplaid/x/presets/actions"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -23,7 +24,8 @@ import (
 type Builder struct {
 	db             *gorm.DB
 	q              Queue
-	jpb            *presets.Builder
+	jpb            *presets.Builder // for render job form
+	pb             *presets.Builder
 	jbs            []*JobBuilder
 	operatorGetter func(r *http.Request) string
 	configured     bool
@@ -118,6 +120,7 @@ var permVerifier *perm.Verifier
 
 func (b *Builder) Configure(pb *presets.Builder) {
 	b.configured = true
+	b.pb = pb
 	var jds []*QorJobDefinition
 	for _, jb := range b.jbs {
 		jds = append(jds, &QorJobDefinition{
@@ -151,6 +154,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		MenuIcon("smart_toy")
 
 	mb.RegisterEventFunc("worker_selectJob", b.eventSelectJob)
+	mb.RegisterEventFunc("worker_createJob", b.eventCreateJob)
 	mb.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
@@ -276,29 +280,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		if qorJob.Job == "" {
 			return errors.New("job is required")
 		}
-		if pErr := editIsAllowed(ctx.R, qorJob.Job); pErr != nil {
-			return pErr
-		}
-
-		jb := b.mustGetJobBuilder(qorJob.Job)
-
-		return b.db.Transaction(func(tx *gorm.DB) error {
-			j := QorJob{
-				Job:    qorJob.Job,
-				Status: JobStatusNew,
-			}
-			err = b.db.Create(&j).Error
-			if err != nil {
-				return err
-			}
-
-			inst, err := jb.newJobInstance(ctx.R, j.ID, qorJob.Job, qorJob.args)
-			if err != nil {
-				return err
-			}
-
-			return b.q.Add(inst)
-		})
+		_, err = b.createJob(ctx, qorJob.Job)
+		return
 	})
 
 	mb.Detailing("DetailingPage").Field("DetailingPage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
@@ -358,6 +341,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				Div(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
+							URL(b.pb.Prefix()+"/workers").
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 							Query("job", qorJob.Job),
 						).
@@ -367,6 +351,48 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			web.Portal().Name("worker_snackbar"),
 		)
 	})
+}
+
+func (b *Builder) eventCreateJob(ctx *web.EventContext) (r web.EventResponse, err error) {
+	jobName := ctx.R.FormValue("jobName")
+	var job *QorJob
+	job, err = b.createJob(ctx, jobName)
+	if err != nil {
+		return
+	}
+
+	r.VarsScript = web.Plaid().
+		URL(b.pb.Prefix()+"/workers").
+		EventFunc(actions.Show).
+		Query(presets.ParamOverlay, actions.Dialog).
+		Query(presets.ParamID, fmt.Sprint(job.ID)).
+		Go()
+	return
+}
+
+func (b *Builder) createJob(ctx *web.EventContext, jobName string) (j *QorJob, err error) {
+	if err = editIsAllowed(ctx.R, jobName); err != nil {
+		return
+	}
+	jb := b.mustGetJobBuilder(jobName)
+	b.db.Transaction(func(tx *gorm.DB) error {
+		j = &QorJob{
+			Job:    jobName,
+			Status: JobStatusNew,
+		}
+		err = b.db.Create(j).Error
+		if err != nil {
+			return err
+		}
+		var inst *QorJobInstance
+		inst, err = jb.newJobInstance(ctx.R, j.ID, j.Job, j.args)
+		if err != nil {
+			return err
+		}
+
+		return b.q.Add(inst)
+	})
+	return
 }
 
 func (b *Builder) eventSelectJob(ctx *web.EventContext) (er web.EventResponse, err error) {
@@ -637,7 +663,6 @@ func (b *Builder) jobSelectList(
 	if v := vErr.GetFieldErrors("Job"); len(v) > 0 {
 		alert = VAlert(Text(strings.Join(v, ","))).Type("error")
 	}
-
 	items := make([]HTMLComponent, 0, len(b.jbs))
 	for _, jb := range b.jbs {
 		label := getTJob(ctx.R, jb.name)
