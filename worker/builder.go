@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/goplaid/x/presets/actions"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -27,8 +26,8 @@ type Builder struct {
 	jpb            *presets.Builder // for render job form
 	pb             *presets.Builder
 	jbs            []*JobBuilder
+	mb             *presets.ModelBuilder
 	operatorGetter func(r *http.Request) string
-	configured     bool
 }
 
 func New(db *gorm.DB) *Builder {
@@ -62,10 +61,6 @@ func (b *Builder) OperatorGetter(f func(r *http.Request) string) *Builder {
 }
 
 func (b *Builder) NewJob(name string) *JobBuilder {
-	if b.configured {
-		panic(fmt.Sprintf("Job should be registered before Worker configured into admin, but %v is registered after that", name))
-	}
-
 	for _, jb := range b.jbs {
 		if jb.name == name {
 			panic(fmt.Sprintf("worker %s already exists", name))
@@ -119,30 +114,7 @@ func (b *Builder) setStatus(id uint, status string) error {
 var permVerifier *perm.Verifier
 
 func (b *Builder) Configure(pb *presets.Builder) {
-	b.configured = true
 	b.pb = pb
-	var jds []*QorJobDefinition
-	for _, jb := range b.jbs {
-		jds = append(jds, &QorJobDefinition{
-			Name:    jb.name,
-			Handler: jb.h,
-		})
-	}
-	err := b.q.Listen(jds, func(qorJobID uint) (QueJobInterface, error) {
-		jb, err := b.getJobBuilderByQorJobID(qorJobID)
-		if err != nil {
-			return nil, err
-		}
-		if jb == nil {
-			return nil, errors.New("failed to find job (job name modified?)")
-		}
-
-		return jb.getJobInstance(qorJobID)
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 	pb.I18n().
 		RegisterForModule(language.English, I18nWorkerKey, Messages_en_US).
@@ -153,12 +125,14 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		URIName("workers").
 		MenuIcon("smart_toy")
 
+	b.mb = mb
 	mb.RegisterEventFunc("worker_selectJob", b.eventSelectJob)
-	mb.RegisterEventFunc("worker_createJob", b.eventCreateJob)
 	mb.RegisterEventFunc("worker_abortJob", b.eventAbortJob)
 	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
+	mb.RegisterEventFunc(JobActionCreate, b.eventJobActionCreate)
+	mb.RegisterEventFunc(JobActionShowParams, b.eventJobActionShowParams)
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.RowMenu().Empty()
@@ -280,7 +254,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		if qorJob.Job == "" {
 			return errors.New("job is required")
 		}
-		_, err = b.createJob(ctx, qorJob.Job)
+		_, err = b.createJob(ctx, qorJob)
 		return
 	})
 
@@ -310,12 +284,14 @@ func (b *Builder) Configure(pb *presets.Builder) {
 							VSpacer(),
 							VBtn(msgr.ActionCancelJob).Color("error").Class("mr-2").
 								Attr("@click", web.Plaid().
+									URL(b.mb.Info().ListingHref()).
 									EventFunc("worker_abortJob").
 									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 									Query("job", qorJob.Job).
 									Go()),
 							VBtn(msgr.ActionUpdateJob).Color("primary").
 								Attr("@click", web.Plaid().
+									URL(b.mb.Info().ListingHref()).
 									EventFunc("worker_updateJob").
 									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 									Query("job", qorJob.Job).
@@ -341,9 +317,10 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				Div(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
-							URL(b.pb.Prefix()+"/workers").
+							URL(b.mb.Info().ListingHref()).
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
-							Query("job", qorJob.Job),
+							Query("job", qorJob.Job).
+							Query("hideLog", ctx.R.FormValue("hideLog")),
 						).
 						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
 				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
@@ -353,31 +330,38 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	})
 }
 
-func (b *Builder) eventCreateJob(ctx *web.EventContext) (r web.EventResponse, err error) {
-	jobName := ctx.R.FormValue("jobName")
-	var job *QorJob
-	job, err = b.createJob(ctx, jobName)
-	if err != nil {
-		return
+func (b *Builder) Listen() {
+	var jds []*QorJobDefinition
+	for _, jb := range b.jbs {
+		jds = append(jds, &QorJobDefinition{
+			Name:    jb.name,
+			Handler: jb.h,
+		})
 	}
+	err := b.q.Listen(jds, func(qorJobID uint) (QueJobInterface, error) {
+		jb, err := b.getJobBuilderByQorJobID(qorJobID)
+		if err != nil {
+			return nil, err
+		}
+		if jb == nil {
+			return nil, errors.New("failed to find job (job name modified?)")
+		}
 
-	r.VarsScript = web.Plaid().
-		URL(b.pb.Prefix()+"/workers").
-		EventFunc(actions.Show).
-		Query(presets.ParamOverlay, actions.Dialog).
-		Query(presets.ParamID, fmt.Sprint(job.ID)).
-		Go()
-	return
+		return jb.getJobInstance(qorJobID)
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func (b *Builder) createJob(ctx *web.EventContext, jobName string) (j *QorJob, err error) {
-	if err = editIsAllowed(ctx.R, jobName); err != nil {
+func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, err error) {
+	if err = editIsAllowed(ctx.R, qorJob.Job); err != nil {
 		return
 	}
-	jb := b.mustGetJobBuilder(jobName)
+	jb := b.mustGetJobBuilder(qorJob.Job)
 	b.db.Transaction(func(tx *gorm.DB) error {
 		j = &QorJob{
-			Job:    jobName,
+			Job:    qorJob.Job,
 			Status: JobStatusNew,
 		}
 		err = b.db.Create(j).Error
@@ -385,7 +369,7 @@ func (b *Builder) createJob(ctx *web.EventContext, jobName string) (j *QorJob, e
 			return err
 		}
 		var inst *QorJobInstance
-		inst, err = jb.newJobInstance(ctx.R, j.ID, j.Job, j.args)
+		inst, err = jb.newJobInstance(ctx.R, j.ID, qorJob.Job, qorJob.args)
 		if err != nil {
 			return err
 		}
@@ -560,7 +544,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	canEdit := editIsAllowed(ctx.R, qorJobName) == nil
-	er.Body = jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
+	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText, ctx.R.FormValue("hideLog") == "true")
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
@@ -569,7 +553,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	return er, nil
 }
 
-func jobProgressing(
+func (b *Builder) jobProgressing(
 	canEdit bool,
 	msgr *Messages,
 	id uint,
@@ -578,6 +562,7 @@ func jobProgressing(
 	progress uint,
 	log string,
 	progressText string,
+	hideLog bool,
 ) HTMLComponent {
 	// https://stackoverflow.com/a/44051405/10150757
 	var logLines []HTMLComponent
@@ -606,21 +591,24 @@ func jobProgressing(
 			),
 			VProgressLinear().Value(int(progress)),
 		),
-		Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
-		Div().Class("mb-3").Style(fmt.Sprintf(`
-	background-color: #222;
-    color: #fff;
-    font-family: menlo,Roboto,Helvetica,Arial,sans-serif;
-    height: 300px;
-    padding: 8px;
-    overflow: auto;
-    box-sizing: border-box;
-    font-size: 12px;
-	line-height: 1;
-	%s
-	`, reverseStyle)).Children(
-			logLines...,
+		If(!hideLog,
+			Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
+			Div().Class("mb-3").Style(fmt.Sprintf(`
+		background-color: #222;
+		color: #fff;
+		font-family: menlo,Roboto,Helvetica,Arial,sans-serif;
+		height: 300px;
+		padding: 8px;
+		overflow: auto;
+		box-sizing: border-box;
+		font-size: 12px;
+		line-height: 1;
+		%s
+		`, reverseStyle)).Children(
+				logLines...,
+			),
 		),
+
 		If(progressText != "",
 			Div().Class("mb-3").Children(
 				RawHTML(progressText),
@@ -633,6 +621,7 @@ func jobProgressing(
 				If(inRefresh,
 					VBtn(msgr.ActionAbortJob).Color("error").
 						Attr("@click", web.Plaid().
+							URL(b.mb.Info().ListingHref()).
 							EventFunc("worker_abortJob").
 							Query("jobID", fmt.Sprintf("%d", id)).
 							Query("job", job).
@@ -641,6 +630,7 @@ func jobProgressing(
 				If(status == JobStatusDone,
 					VBtn(msgr.ActionRerunJob).Color("primary").
 						Attr("@click", web.Plaid().
+							URL(b.mb.Info().ListingHref()).
 							EventFunc("worker_rerunJob").
 							Query("jobID", fmt.Sprintf("%d", id)).
 							Query("job", job).
