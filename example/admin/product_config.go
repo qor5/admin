@@ -1,52 +1,92 @@
 package admin
 
 import (
+	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/actions"
-	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
-	h "github.com/theplant/htmlgo"
+	"github.com/qor/qor5/worker"
 	"gorm.io/gorm"
-	"strconv"
 )
 
-func configProduct(b *presets.Builder, db *gorm.DB) {
+func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 	p := b.Model(&models.Product{})
 
 	eb := p.Editing("Code", "Name", "Price", "Image")
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
-	listing.BulkAction("longRunningJob").
-		ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			return VBtn("Long Running Job").
-				Color("primary").
-				Depressed(true).
-				Class("ml-2").
-				Attr("@click", web.Plaid().
-					URL("/admin/workers").
-					EventFunc("worker_createJob").
-					Query("jobName", "longRunningJob").
-					//Query(presets.ParamOverlay, actions.Dialog).
-					Go())
-		})
+	listing.BulkAction("Job Action - Without Params").
+		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
+			Name: "Job Action Without Params",
+			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
+				for i := 1; i <= 20; i++ {
+					select {
+					case <-ctx.Done():
+						job.AddLog("job aborted")
+						return nil
+					default:
+						job.AddLog(fmt.Sprintf("%v", i))
+						job.SetProgress(uint(i * 5))
+						time.Sleep(time.Second)
+					}
+				}
+				return nil
+			},
+		}))
 
-	listing.BulkAction("NewPost").
-		ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			return VBtn("NewPost").
-				Color("primary").
-				Depressed(true).
-				Class("ml-2").
-				Attr("@click", web.Plaid().
-					URL("/admin/posts").
-					EventFunc(actions.New).
-					Query(presets.ParamOverlay, actions.Dialog).
-					Go())
-		})
+	listing.BulkAction("Job Action - Having Params").
+		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
+			Name:   "Job Action Having Params",
+			Params: &struct{ Name string }{},
+			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
+				params, _ := job.GetArgument()
+				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
+
+				for i := 1; i <= 20; i++ {
+					select {
+					case <-ctx.Done():
+						job.AddLog("job aborted")
+						return nil
+					default:
+						job.AddLog(fmt.Sprintf("%v", i))
+						job.SetProgress(uint(i * 5))
+						time.Sleep(time.Second)
+					}
+				}
+				return nil
+			},
+		}))
+
+	listing.BulkAction("Job Action - Hide Log").
+		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
+			Name:    "Job Action Hide Log",
+			Params:  &struct{ Name string }{},
+			HideLog: true,
+			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
+				params, _ := job.GetArgument()
+				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
+
+				for i := 1; i <= 20; i++ {
+					select {
+					case <-ctx.Done():
+						job.AddLog("job aborted")
+						return nil
+					default:
+						job.AddLog(fmt.Sprintf("%v", i))
+						job.SetProgress(uint(i * 5))
+						time.Sleep(time.Second)
+					}
+				}
+				return nil
+			},
+		}))
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.Product)

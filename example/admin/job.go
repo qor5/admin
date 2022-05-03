@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -56,21 +55,7 @@ func addJobs(w *worker.Builder) {
 		}
 		return nil
 	})
-	w.NewJob("longRunningJob").
-		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			for i := 1; i <= 20; i++ {
-				select {
-				case <-ctx.Done():
-					job.AddLog("job aborted")
-					return nil
-				default:
-					job.AddLog(fmt.Sprintf("%v", i))
-					job.SetProgress(uint(i * 5))
-					time.Sleep(time.Second)
-				}
-			}
-			return nil
-		})
+
 	type ScheduleJobResource struct {
 		F1 string
 		worker.Schedule

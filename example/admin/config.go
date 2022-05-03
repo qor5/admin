@@ -150,6 +150,11 @@ func NewConfig() Config {
 
 	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
 
+	w := worker.New(db)
+	defer w.Listen()
+	w.Configure(b)
+	addJobs(w)
+
 	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
@@ -192,7 +197,7 @@ func NewConfig() Config {
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
 	})
-	configProduct(b, db)
+	configProduct(b, db, w)
 	configCategory(b, db)
 
 	_ = m
@@ -239,10 +244,6 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
-
-	w := worker.New(db)
-	addJobs(w)
-	w.Configure(b)
 
 	return Config{
 		pb:          b,
