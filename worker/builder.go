@@ -132,7 +132,10 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
 	mb.RegisterEventFunc(JobActionCreate, b.eventJobActionCreate)
-	mb.RegisterEventFunc(JobActionShowParams, b.eventJobActionShowParams)
+	mb.RegisterEventFunc(JobActionCreateWithParams, b.eventJobActionCreateWithParams)
+	mb.RegisterEventFunc(JobActionResponse, b.eventJobActionResponse)
+	mb.RegisterEventFunc(JobActionClose, b.eventJobActionClose)
+	mb.RegisterEventFunc(JobActionProgressing, b.eventJobActionProgressing)
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.RowMenu().Empty()
@@ -319,8 +322,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
 							URL(b.mb.Info().ListingHref()).
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
-							Query("job", qorJob.Job).
-							Query("hideLog", ctx.R.FormValue("hideLog")),
+							Query("job", qorJob.Job),
 						).
 						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
 				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
@@ -544,7 +546,8 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	canEdit := editIsAllowed(ctx.R, qorJobName) == nil
-	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText, ctx.R.FormValue("hideLog") == "true")
+
+	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
@@ -562,7 +565,6 @@ func (b *Builder) jobProgressing(
 	progress uint,
 	log string,
 	progressText string,
-	hideLog bool,
 ) HTMLComponent {
 	// https://stackoverflow.com/a/44051405/10150757
 	var logLines []HTMLComponent
@@ -591,9 +593,9 @@ func (b *Builder) jobProgressing(
 			),
 			VProgressLinear().Value(int(progress)),
 		),
-		If(!hideLog,
-			Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
-			Div().Class("mb-3").Style(fmt.Sprintf(`
+
+		Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
+		Div().Class("mb-3").Style(fmt.Sprintf(`
 		background-color: #222;
 		color: #fff;
 		font-family: menlo,Roboto,Helvetica,Arial,sans-serif;
@@ -605,8 +607,7 @@ func (b *Builder) jobProgressing(
 		line-height: 1;
 		%s
 		`, reverseStyle)).Children(
-				logLines...,
-			),
+			logLines...,
 		),
 
 		If(progressText != "",

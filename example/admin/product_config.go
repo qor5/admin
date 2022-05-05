@@ -22,68 +22,71 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 	eb := p.Editing("Code", "Name", "Price", "Image")
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
-	listing.BulkAction("Job Action - Without Params").
+	listing.BulkAction("Job Action - No parameters, run directly").
 		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
-			Name: "Job Action Without Params",
+			Name: "Job Action - No parameters, run directly",
 			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
-				for i := 1; i <= 20; i++ {
+				for i := 1; i <= 10; i++ {
 					select {
 					case <-ctx.Done():
 						job.AddLog("job aborted")
 						return nil
 					default:
 						job.AddLog(fmt.Sprintf("%v", i))
-						job.SetProgress(uint(i * 5))
+						job.SetProgress(uint(i * 10))
 						time.Sleep(time.Second)
 					}
 				}
+				job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 				return nil
 			},
 		}))
 
-	listing.BulkAction("Job Action - Having Params").
+	listing.BulkAction("Job Action - Display parameter input box").
 		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
-			Name:   "Job Action Having Params",
+			Name:   "Job Action - Display parameter input box",
 			Params: &struct{ Name string }{},
 			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
 				params, _ := job.GetArgument()
 				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
 
-				for i := 1; i <= 20; i++ {
+				for i := 1; i <= 10; i++ {
 					select {
 					case <-ctx.Done():
 						job.AddLog("job aborted")
 						return nil
 					default:
 						job.AddLog(fmt.Sprintf("%v", i))
-						job.SetProgress(uint(i * 5))
+						job.SetProgress(uint(i * 10))
 						time.Sleep(time.Second)
 					}
 				}
+				job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 				return nil
 			},
 		}))
 
-	listing.BulkAction("Job Action - Hide Log").
+	listing.BulkAction("Job Action - Display log").
 		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
-			Name:    "Job Action Hide Log",
-			Params:  &struct{ Name string }{},
-			HideLog: true,
+			Name:       "Job Action - Display log",
+			DisplayLog: true,
+			Params:     &struct{ Name string }{},
 			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
 				params, _ := job.GetArgument()
 				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
 
-				for i := 1; i <= 20; i++ {
+				for i := 1; i <= 10; i++ {
 					select {
 					case <-ctx.Done():
 						job.AddLog("job aborted")
 						return nil
 					default:
 						job.AddLog(fmt.Sprintf("%v", i))
-						job.SetProgress(uint(i * 5))
+						job.SetProgress(uint(i * 10))
 						time.Sleep(time.Second)
 					}
 				}
+				job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 				return nil
 			},
 		}))
