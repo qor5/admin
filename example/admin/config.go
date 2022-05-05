@@ -93,7 +93,7 @@ func NewConfig() Config {
 			)
 			return
 		})
-	//perm.Verbose = true
+	// perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles:*", "*:users:*"),
@@ -199,7 +199,9 @@ func NewConfig() Config {
 	// Use m to customize the model, Or config more models here.
 
 	type Setting struct{}
-	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
+	sm := b.Model(&Setting{})
+	sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
+	sm.Listing().PageFunc(pages.Settings(db))
 
 	type ListEditorExample struct{}
 	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
