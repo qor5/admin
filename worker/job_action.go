@@ -188,7 +188,7 @@ func (b *Builder) eventJobActionResponse(ctx *web.EventContext) (r web.EventResp
 							).AutoReloadInterval("vars.jobActionProgressingInterval"),
 						).Attr(web.InitContextVars, "{jobActionProgressingInterval: 2000, jobActionFinshed: false}"),
 					),
-				)).
+				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
 		).VSlot("{ plaidForm }"),
