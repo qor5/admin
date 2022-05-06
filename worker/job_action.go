@@ -91,7 +91,11 @@ func (action *JobActionBuilder) Description(description string) *JobActionBuilde
 	return action
 }
 
-func (action *JobActionBuilder) URL() string {
+func (action JobActionBuilder) GetParamsModelBuilder() *presets.ModelBuilder {
+	return action.jb.rmb
+}
+
+func (action JobActionBuilder) URL() string {
 	return web.Plaid().URL(action.b.mb.Info().ListingHref()).EventFunc(JobActionInputParams).Query("jobName", action.fullname).Go()
 }
 
