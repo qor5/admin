@@ -18,18 +18,47 @@ const (
 	JobActionProgressing      = "worker_job_action_progressing"
 )
 
+var (
+	DefaultOriginalPageContextHandles = map[string]func(*web.EventContext) interface{}{
+		"URL": func(ctx *web.EventContext) interface{} {
+			return ctx.R.Header.Get("Referer")
+		},
+	}
+
+	actionConfigs = map[string]*actionConfig{}
+)
+
+type JobActionArgs struct {
+	OriginalPageContext map[string]interface{}
+	ActionParams        interface{}
+}
+
 type JobActionConfig struct {
 	Name   string
 	Hander JobHandler //optional
 
-	Params       interface{}           // optional
-	ModelBuilder *presets.ModelBuilder // Params ModelBuilder optional
-	DisplayLog   bool                  // optional
+	OriginalPageContextHandles map[string]func(*web.EventContext) interface{} //optional
+	Params                     interface{}                                    // optional
+	ParamsModelBuilder         *presets.ModelBuilder                          // Params ModelBuilder optional
+
+	DisplayLog bool // optional
+}
+
+type actionConfig struct {
+	hasParams      bool
+	displayLog     bool
+	contextHandles map[string]func(*web.EventContext) interface{}
 }
 
 func (b *Builder) JobAction(cfg *JobActionConfig) presets.ComponentFunc {
 	if cfg.Name == "" {
 		panic("job name is required")
+	}
+
+	actionConfigs[cfg.Name] = &actionConfig{
+		hasParams:      cfg.Params != nil,
+		displayLog:     cfg.DisplayLog,
+		contextHandles: cfg.OriginalPageContextHandles,
 	}
 
 	if job := b.getJobBuilder(cfg.Name); job != nil {
@@ -47,11 +76,11 @@ func (b *Builder) JobAction(cfg *JobActionConfig) presets.ComponentFunc {
 		jb.Resource(cfg.Params)
 	}
 
-	if cfg.ModelBuilder != nil {
+	if cfg.ParamsModelBuilder != nil {
 		if cfg.Params == nil {
-			cfg.Params = cfg.ModelBuilder.NewModel()
+			cfg.Params = cfg.ParamsModelBuilder.NewModel()
 		}
-		jb.b.mb = cfg.ModelBuilder
+		jb.b.mb = cfg.ParamsModelBuilder
 	}
 	return b.actionComponentFunc(cfg)
 }
@@ -71,25 +100,37 @@ func (b *Builder) actionComponentFunc(cfg *JobActionConfig) presets.ComponentFun
 				URL(b.mb.Info().ListingHref()).
 				EventFunc(eventName).
 				Query("jobName", cfg.Name).
-				Query("displayLog", cfg.DisplayLog).
-				Query("hasParams", cfg.Params != nil).
 				Go())
 	}
 }
 
 func (b *Builder) eventJobActionCreate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		jobName    = ctx.R.FormValue("jobName")
-		displayLog = ctx.R.FormValue("displayLog")
-		qorJob     = &QorJob{Job: jobName}
+		jobName = ctx.R.FormValue("jobName")
+		config  = actionConfigs[jobName]
+		qorJob  = &QorJob{Job: jobName}
 	)
 
-	if ctx.R.FormValue("hasParams") == "true" {
+	if config == nil {
+		return r, fmt.Errorf("job %s not found", jobName)
+	}
+
+	args := JobActionArgs{
+		OriginalPageContext: make(map[string]interface{}),
+	}
+	for key, f := range DefaultOriginalPageContextHandles {
+		args.OriginalPageContext[key] = f(ctx)
+	}
+	for key, f := range config.contextHandles {
+		args.OriginalPageContext[key] = f(ctx)
+	}
+	if config.hasParams {
 		jb := b.mustGetJobBuilder(jobName)
-		if args, err := jb.unmarshalForm(ctx); !err.HaveErrors() {
-			qorJob.args = args
+		if actionParams, err := jb.unmarshalForm(ctx); !err.HaveErrors() {
+			args.ActionParams = actionParams
 		}
 	}
+	qorJob.args = args
 
 	job, err := b.createJob(ctx, qorJob)
 	if err != nil {
@@ -100,7 +141,6 @@ func (b *Builder) eventJobActionCreate(ctx *web.EventContext) (r web.EventRespon
 		URL(b.mb.Info().ListingHref()).
 		EventFunc(JobActionResponse).
 		Query(presets.ParamID, fmt.Sprint(job.ID)).
-		Query("displayLog", displayLog).
 		Query("jobID", fmt.Sprintf("%d", job.ID)).
 		Query("jobName", job.Job).
 		Go()
@@ -109,11 +149,14 @@ func (b *Builder) eventJobActionCreate(ctx *web.EventContext) (r web.EventRespon
 
 func (b *Builder) eventJobActionCreateWithParams(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		jobName    = ctx.R.FormValue("jobName")
-		displayLog = ctx.R.FormValue("displayLog")
-		hasParams  = ctx.R.FormValue("hasParams")
-		msgr       = presets.MustGetMessages(ctx.R)
+		jobName = ctx.R.FormValue("jobName")
+		msgr    = presets.MustGetMessages(ctx.R)
+		config  = actionConfigs[jobName]
 	)
+
+	if config == nil {
+		return r, fmt.Errorf("job %s not found", jobName)
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "presets_DialogPortalName",
@@ -130,7 +173,6 @@ func (b *Builder) eventJobActionCreateWithParams(ctx *web.EventContext) (r web.E
 					vuetify.VCardText(
 						b.jobEditingContent(ctx, jobName, nil),
 					),
-
 					vuetify.VCardActions(
 						vuetify.VSpacer(),
 						vuetify.VBtn(msgr.Cancel).Elevation(0).Attr("@click", "vars.presetsDialog=false"),
@@ -139,8 +181,6 @@ func (b *Builder) eventJobActionCreateWithParams(ctx *web.EventContext) (r web.E
 								URL(b.mb.Info().ListingHref()).
 								EventFunc(JobActionCreate).
 								Query("jobName", jobName).
-								Query("displayLog", displayLog).
-								Query("hasParams", hasParams).
 								Go()),
 					),
 				)).
@@ -154,9 +194,8 @@ func (b *Builder) eventJobActionCreateWithParams(ctx *web.EventContext) (r web.E
 
 func (b *Builder) eventJobActionResponse(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		jobName    = ctx.R.FormValue("jobName")
-		jobID      = ctx.R.FormValue("jobID")
-		displayLog = ctx.R.FormValue("displayLog")
+		jobName = ctx.R.FormValue("jobName")
+		jobID   = ctx.R.FormValue("jobID")
 	)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -183,8 +222,7 @@ func (b *Builder) eventJobActionResponse(ctx *web.EventContext) (r web.EventResp
 								web.Plaid().EventFunc(JobActionProgressing).
 									URL(b.mb.Info().ListingHref()).
 									Query("jobID", jobID).
-									Query("jobName", jobName).
-									Query("displayLog", displayLog),
+									Query("jobName", jobName),
 							).AutoReloadInterval("vars.jobActionProgressingInterval"),
 						).Attr(web.InitContextVars, "{jobActionProgressingInterval: 2000, jobActionFinshed: false}"),
 					),
@@ -227,8 +265,13 @@ func (b *Builder) eventJobActionClose(ctx *web.EventContext) (er web.EventRespon
 func (b *Builder) eventJobActionProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
 	var (
 		qorJobID   = uint(ctx.QueryAsInt("jobID"))
-		displayLog = ctx.R.FormValue("displayLog")
+		qorJobName = ctx.R.FormValue("jobName")
+		config     = actionConfigs[qorJobName]
 	)
+
+	if config == nil {
+		return er, fmt.Errorf("job %s not found", qorJobName)
+	}
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
 	if err != nil {
@@ -239,7 +282,7 @@ func (b *Builder) eventJobActionProgressing(ctx *web.EventContext) (er web.Event
 		h.Div(vuetify.VProgressLinear(
 			h.Strong(fmt.Sprintf("%d%%", inst.Progress)),
 		).Value(int(inst.Progress)).Height(20)).Class("mb-5"),
-		h.If(displayLog == `true`, jobActionLog(inst.Log)),
+		h.If(config.displayLog, jobActionLog(inst.Log)),
 		h.If(inst.ProgressText != "",
 			h.Div().Class("mb-3").Children(
 				h.RawHTML(inst.ProgressText),

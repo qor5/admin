@@ -47,9 +47,6 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			Name:   "Job Action - Display parameter input box",
 			Params: &struct{ Name string }{},
 			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
-				params, _ := job.GetArgument()
-				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
-
 				for i := 1; i <= 10; i++ {
 					select {
 					case <-ctx.Done():
@@ -72,9 +69,6 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			DisplayLog: true,
 			Params:     &struct{ Name string }{},
 			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
-				params, _ := job.GetArgument()
-				job.AddLog(fmt.Sprintf("Params is  %#+v", params))
-
 				for i := 1; i <= 10; i++ {
 					select {
 					case <-ctx.Done():
@@ -82,6 +76,70 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 						return nil
 					default:
 						job.AddLog(fmt.Sprintf("%v", i))
+						job.SetProgress(uint(i * 10))
+						time.Sleep(time.Second)
+					}
+				}
+				job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
+				return nil
+			},
+		}))
+
+	listing.BulkAction("Job Action - Get Action Params").
+		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
+			Name:       "Job Action - Get Action Params",
+			DisplayLog: true,
+			Params:     &struct{ Name string }{},
+			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
+				args, err := job.GetArgument()
+				if err != nil {
+					return err
+				}
+
+				jobActionArgs := args.(*worker.JobActionArgs)
+				actionParams := jobActionArgs.ActionParams.(*struct{ Name string })
+				job.AddLog(fmt.Sprintf("Action Params Name is  %#+v", actionParams.Name))
+
+				for i := 1; i <= 10; i++ {
+					select {
+					case <-ctx.Done():
+						return nil
+					default:
+						job.SetProgress(uint(i * 10))
+						time.Sleep(time.Second)
+					}
+				}
+				job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
+				return nil
+			},
+		}))
+
+	listing.BulkAction("Job Action - Get Original Page Context").
+		ButtonCompFunc(wb.JobAction(&worker.JobActionConfig{
+			Name:       "Job Action - Get Page Context",
+			DisplayLog: true,
+			Params:     &struct{ Name string }{},
+			OriginalPageContextHandles: map[string]func(*web.EventContext) interface{}{
+				"AuthInfo": func(ctx *web.EventContext) interface{} {
+					auth, err := ctx.R.Cookie("auth")
+					if err == nil {
+						return auth.Value
+					}
+					return nil
+				},
+			},
+			Hander: func(ctx context.Context, job worker.QorJobInterface) error {
+				params, _ := job.GetArgument()
+				args := params.(*worker.JobActionArgs)
+				job.AddLog(fmt.Sprintf("AuthInfo is  %#+v", args.OriginalPageContext["AuthInfo"]))
+				job.AddLog(fmt.Sprintf("URL is  %#+v", args.OriginalPageContext["URL"]))
+
+				for i := 1; i <= 10; i++ {
+					select {
+					case <-ctx.Done():
+						job.AddLog("job aborted")
+						return nil
+					default:
 						job.SetProgress(uint(i * 10))
 						time.Sleep(time.Second)
 					}

@@ -117,17 +117,22 @@ func (jb *JobBuilder) unmarshalForm(ctx *web.EventContext) (args interface{}, vE
 }
 
 func (jb *JobBuilder) parseArgs(in string) (args interface{}, err error) {
-	if jb.r == nil {
-		return nil, nil
-	}
-
-	args = jb.newResourceObject()
+	args = jb.getArgsRes()
 	err = json.Unmarshal([]byte(in), args)
 	if err != nil {
 		return nil, err
 	}
 
 	return args, nil
+}
+
+func (jb *JobBuilder) getArgsRes() (args interface{}) {
+	if jb.r == nil {
+		return nil
+	}
+
+	args = jb.newResourceObject()
+	return args
 }
 
 func getModelQorJobInstance(db *gorm.DB, qorJobID uint) (*QorJobInstance, error) {
@@ -355,6 +360,14 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 }
 
 func (job *QorJobInstance) GetArgument() (interface{}, error) {
+	var jobActionArgs = &JobActionArgs{
+		ActionParams: job.jb.getArgsRes(),
+	}
+
+	if json.Unmarshal([]byte(job.Args), jobActionArgs) == nil && jobActionArgs.OriginalPageContext != nil {
+		return jobActionArgs, nil
+	}
+
 	return job.jb.parseArgs(job.Args)
 }
 
