@@ -360,12 +360,12 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 }
 
 func (job *QorJobInstance) GetArgument() (interface{}, error) {
-	var jobActionArgs = &JobActionArgs{
-		ActionParams: job.jb.getArgsRes(),
-	}
-
-	if json.Unmarshal([]byte(job.Args), jobActionArgs) == nil && jobActionArgs.OriginalPageContext != nil {
-		return jobActionArgs, nil
+	if strings.HasPrefix(job.Job, "Job Action") {
+		var jobActionArgs = &JobActionArgs{
+			ActionParams: job.jb.getArgsRes(),
+		}
+		err := json.Unmarshal([]byte(job.Args), jobActionArgs)
+		return jobActionArgs, err
 	}
 
 	return job.jb.parseArgs(job.Args)

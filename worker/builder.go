@@ -655,6 +655,9 @@ func (b *Builder) jobSelectList(
 	}
 	items := make([]HTMLComponent, 0, len(b.jbs))
 	for _, jb := range b.jbs {
+		if strings.HasPrefix(jb.name, "Job Action") {
+			continue
+		}
 		label := getTJob(ctx.R, jb.name)
 		if editIsAllowed(ctx.R, jb.name) == nil {
 			items = append(items,
