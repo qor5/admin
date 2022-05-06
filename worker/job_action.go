@@ -224,7 +224,7 @@ func (b *Builder) eventJobActionResponse(ctx *web.EventContext) (r web.EventResp
 									Query("jobID", jobID).
 									Query("jobName", jobName),
 							).AutoReloadInterval("vars.jobActionProgressingInterval"),
-						).Attr(web.InitContextVars, "{jobActionProgressingInterval: 2000, jobActionFinshed: false}"),
+						).Attr(web.InitContextVars, "{jobActionProgressingInterval: 2000}"),
 					),
 				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
@@ -291,7 +291,7 @@ func (b *Builder) eventJobActionProgressing(ctx *web.EventContext) (er web.Event
 	)
 
 	if inst.Status == JobStatusDone || inst.Status == JobStatusException {
-		er.VarsScript = "vars.jobActionProgressingInterval = 0; vars.jobActionFinshed=true;"
+		er.VarsScript = "vars.jobActionProgressingInterval = 0;"
 	} else {
 		er.VarsScript = "vars.jobActionProgressingInterval = 2000;"
 	}
