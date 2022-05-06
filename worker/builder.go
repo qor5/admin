@@ -131,8 +131,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
+	mb.RegisterEventFunc(JobActionInputParams, b.eventJobActionInputParams)
 	mb.RegisterEventFunc(JobActionCreate, b.eventJobActionCreate)
-	mb.RegisterEventFunc(JobActionCreateWithParams, b.eventJobActionCreateWithParams)
 	mb.RegisterEventFunc(JobActionResponse, b.eventJobActionResponse)
 	mb.RegisterEventFunc(JobActionClose, b.eventJobActionClose)
 	mb.RegisterEventFunc(JobActionProgressing, b.eventJobActionProgressing)
@@ -375,7 +375,6 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 		if err != nil {
 			return err
 		}
-
 		return b.q.Add(inst)
 	})
 	return
