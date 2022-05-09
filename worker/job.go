@@ -209,12 +209,17 @@ type QueJobInterface interface {
 	GetHandler() JobHandler
 }
 
+type JobInfo struct {
+	JobID    string
+	JobName  string
+	Operator string
+	Argument interface{}
+	Context  map[string]interface{}
+}
+
 // for job handler
 type QorJobInterface interface {
-	GetJobID() string
-	GetJobName() string
-	GetOperator() string
-	GetArgument() (interface{}, error)
+	GetJobInfo() (*JobInfo, error)
 	SetProgress(uint) error
 	SetProgressText(string) error
 	AddLog(string) error
@@ -223,12 +228,26 @@ type QorJobInterface interface {
 
 var _ QueJobInterface = (*QorJobInstance)(nil)
 
-func (job *QorJobInstance) GetJobName() string {
-	return job.Job
-}
+func (job *QorJobInstance) GetJobInfo() (ji *JobInfo, err error) {
+	var arg interface{}
+	arg, err = job.getArgument()
+	if err != nil {
+		return
+	}
 
-func (job *QorJobInstance) GetJobID() string {
-	return fmt.Sprint(job.QorJobID)
+	var context map[string]interface{}
+	if jaa, ok := arg.(*JobActionArgs); ok {
+		context = jaa.OriginalPageContext
+		arg = jaa.ActionParams
+	}
+
+	return &JobInfo{
+		JobID:    fmt.Sprint(job.QorJobID),
+		JobName:  job.Job,
+		Operator: job.Operator,
+		Argument: arg,
+		Context:  context,
+	}, nil
 }
 
 func (job *QorJobInstance) GetStatus() string {
@@ -359,7 +378,7 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 	return job.jb.h
 }
 
-func (job *QorJobInstance) GetArgument() (interface{}, error) {
+func (job *QorJobInstance) getArgument() (interface{}, error) {
 	if strings.HasPrefix(job.Job, "Job Action") {
 		var jobActionArgs = &JobActionArgs{
 			ActionParams: job.jb.getArgsRes(),
@@ -369,10 +388,6 @@ func (job *QorJobInstance) GetArgument() (interface{}, error) {
 	}
 
 	return job.jb.parseArgs(job.Args)
-}
-
-func (job *QorJobInstance) GetOperator() string {
-	return job.Operator
 }
 
 func (job *QorJobInstance) shouldCallSave() bool {
