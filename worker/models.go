@@ -28,12 +28,19 @@ type QorJobInstance struct {
 
 	Progress     uint
 	ProgressText string
-	Log          string `sql:"size:65532"`
 
 	jb          *JobBuilder `sql:"-"`
 	mutex       sync.Mutex  `sql:"-"`
 	stopRefresh bool        `sql:"-"`
 	inRefresh   bool        `sql:"-"`
+}
+
+type QorJobLog struct {
+	ID        uint      `gorm:"primarykey"`
+	CreatedAt time.Time `gorm:"index"`
+
+	QorJobInstanceID uint `gorm:"index"`
+	Log              string
 }
 
 type Scheduler interface {

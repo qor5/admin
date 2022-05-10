@@ -34,7 +34,7 @@ func New(db *gorm.DB) *Builder {
 		panic("db can not be nil")
 	}
 
-	err := db.AutoMigrate(&QorJob{}, &QorJobInstance{})
+	err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{})
 	if err != nil {
 		panic(err)
 	}
@@ -155,6 +155,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
+	mb.RegisterEventFunc("worker_loadHiddenLogs", b.eventLoadHiddenLogs)
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.RowMenu().Empty()
@@ -534,12 +535,74 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	canEdit := editIsAllowed(ctx.R, qorJobName) == nil
-	er.Body = jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, inst.Log, inst.ProgressText)
+	logs := make([]string, 0, 100)
+	hasMoreLogs := false
+	{
+		var count int64
+		err = b.db.Model(&QorJobLog{}).
+			Where("qor_job_instance_id = ?", inst.ID).
+			Count(&count).
+			Error
+		if err != nil {
+			return er, err
+		}
+		if count > 100 {
+			hasMoreLogs = true
+		}
+		if count > 0 {
+			var mLogs []*QorJobLog
+			err = b.db.Where("qor_job_instance_id = ?", inst.ID).
+				Order("created_at desc").
+				Limit(100).
+				Find(&mLogs).
+				Error
+			if err != nil {
+				return er, err
+			}
+			for i := len(mLogs) - 1; i >= 0; i-- {
+				logs = append(logs, mLogs[i].Log)
+			}
+		}
+	}
+	er.Body = jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, logs, hasMoreLogs, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
 	}
+	return er, nil
+}
+
+func (b *Builder) eventLoadHiddenLogs(ctx *web.EventContext) (er web.EventResponse, err error) {
+	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	currentCount := ctx.QueryAsInt("currentCount")
+
+	inst, err := getModelQorJobInstance(b.db, qorJobID)
+	if err != nil {
+		return er, err
+	}
+
+	var logs []*QorJobLog
+	err = b.db.Where("qor_job_instance_id = ?", inst.ID).
+		Order("created_at desc").
+		Offset(currentCount).
+		Find(&logs).
+		Error
+	if err != nil {
+		return er, err
+	}
+	logLines := make([]HTMLComponent, 0, len(logs))
+	for i := len(logs) - 1; i >= 0; i-- {
+		logLines = append(logLines, P().Style(`
+    margin: 0;
+    margin-bottom: 4px;`).Children(Text(logs[i].Log)))
+	}
+	er.UpdatePortals = append(er.UpdatePortals,
+		&web.PortalUpdate{
+			Name: "worker_hiddenLogs",
+			Body: Div(logLines...),
+		},
+	)
 	return er, nil
 }
 
@@ -550,25 +613,32 @@ func jobProgressing(
 	job string,
 	status string,
 	progress uint,
-	log string,
+	logs []string,
+	hasMoreLogs bool,
 	progressText string,
 ) HTMLComponent {
+	logLines := make([]HTMLComponent, 0, len(logs)+1)
+	if hasMoreLogs {
+		logLines = append(logLines, web.Portal(
+			VBtn("Load hidden logs").Attr("@click", web.Plaid().EventFunc("worker_loadHiddenLogs").
+				Query("jobID", id).
+				Query("currentCount", len(logs)).Go()).
+				Small(true).
+				Depressed(true).
+				Class("mb-3"),
+		).Name("worker_hiddenLogs"))
+	}
+	for _, l := range logs {
+		logLines = append(logLines, P().Style(`
+    margin: 0;
+    margin-bottom: 4px;`).Children(Text(l)))
+	}
 	// https://stackoverflow.com/a/44051405/10150757
-	var logLines []HTMLComponent
-	logs := strings.Split(log, "\n")
 	var reverseStyle string
 	if len(logs) > 18 {
 		reverseStyle = "display: flex;flex-direction: column-reverse;"
-		for i := len(logs) - 1; i >= 0; i-- {
-			logLines = append(logLines, P().Style(`
-    margin: 0;
-    margin-bottom: 4px;`).Children(Text(logs[i])))
-		}
-	} else {
-		for _, l := range logs {
-			logLines = append(logLines, P().Style(`
-    margin: 0;
-    margin-bottom: 4px;`).Children(Text(l)))
+		for i, j := 0, len(logLines)-1; i < j; i, j = i+1, j-1 {
+			logLines[i], logLines[j] = logLines[j], logLines[i]
 		}
 	}
 	inRefresh := status == JobStatusNew || status == JobStatusRunning
