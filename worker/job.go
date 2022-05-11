@@ -340,27 +340,18 @@ func (job *QorJobInstance) SetProgressText(s string) error {
 }
 
 func (job *QorJobInstance) AddLog(log string) error {
-	job.mutex.Lock()
-	defer job.mutex.Unlock()
-
-	job.Log += "\n" + log
-	if job.shouldCallSave() {
-		return job.callSave()
+	if err := job.jb.b.db.Create(&QorJobLog{
+		QorJobInstanceID: job.ID,
+		Log:              log,
+	}).Error; err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (job *QorJobInstance) AddLogf(format string, a ...interface{}) error {
-	job.mutex.Lock()
-	defer job.mutex.Unlock()
-
-	job.Log += "\n" + fmt.Sprintf(format, a...)
-	if job.shouldCallSave() {
-		return job.callSave()
-	}
-
-	return nil
+	return job.AddLog(fmt.Sprintf(format, a...))
 }
 
 func (job *QorJobInstance) StartRefresh() {

@@ -142,7 +142,6 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	}
 
 	ctx := web.MustGetEventContext(c)
-	registerEventFuncs(ctx.Hub, b.db)
 
 	portalName := mainPortalName(b.fieldName)
 

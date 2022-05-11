@@ -9,8 +9,8 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.30
-	github.com/goplaid/x v1.0.29-0.20220425022648-dadb98395824
+	github.com/goplaid/web v1.2.0
+	github.com/goplaid/x v1.1.0
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
