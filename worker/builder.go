@@ -131,11 +131,11 @@ func (b *Builder) Configure(pb *presets.Builder) {
 	mb.RegisterEventFunc("worker_rerunJob", b.eventRerunJob)
 	mb.RegisterEventFunc("worker_updateJob", b.eventUpdateJob)
 	mb.RegisterEventFunc("worker_updateJobProgressing", b.eventUpdateJobProgressing)
-	mb.RegisterEventFunc(JobActionInputParams, b.eventJobActionInputParams)
-	mb.RegisterEventFunc(JobActionCreate, b.eventJobActionCreate)
-	mb.RegisterEventFunc(JobActionResponse, b.eventJobActionResponse)
-	mb.RegisterEventFunc(JobActionClose, b.eventJobActionClose)
-	mb.RegisterEventFunc(JobActionProgressing, b.eventJobActionProgressing)
+	mb.RegisterEventFunc(ActionJobInputParams, b.eventActionJobInputParams)
+	mb.RegisterEventFunc(ActionJobCreate, b.eventActionJobCreate)
+	mb.RegisterEventFunc(ActionJobResponse, b.eventActionJobResponse)
+	mb.RegisterEventFunc(ActionJobClose, b.eventActionJobClose)
+	mb.RegisterEventFunc(ActionJobProgressing, b.eventActionJobProgressing)
 
 	lb := mb.Listing("ID", "Job", "Status", "CreatedAt")
 	lb.RowMenu().Empty()
@@ -232,26 +232,8 @@ func (b *Builder) Configure(pb *presets.Builder) {
 
 		qorJob := obj.(*QorJob)
 		return web.Portal(b.jobEditingContent(ctx, qorJob.Job, qorJob.args)).Name("worker_jobEditingContent")
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		qorJob := obj.(*QorJob)
-		if qorJob.Job == "" {
-			return nil
-		}
-		jb := b.mustGetJobBuilder(qorJob.Job)
-		args, vErr := jb.unmarshalForm(ctx)
-		qorJob.args = args
-		if vErr.HaveErrors() {
-			errM := make(map[string][]string)
-			argsT := reflect.TypeOf(jb.r).Elem()
-			for i := 0; i < argsT.NumField(); i++ {
-				fName := argsT.Field(i).Name
-				errM[fName] = vErr.GetFieldErrors(fName)
-			}
-			bErrM, _ := json.Marshal(errM)
-			err = errors.New(string(bErrM))
-		}
-		return err
 	})
+
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		qorJob := obj.(*QorJob)
 		if qorJob.Job == "" {
@@ -360,7 +342,35 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 	if err = editIsAllowed(ctx.R, qorJob.Job); err != nil {
 		return
 	}
+
 	jb := b.mustGetJobBuilder(qorJob.Job)
+
+	// encode args
+	args, vErr := jb.unmarshalForm(ctx)
+	if vErr.HaveErrors() {
+		errM := make(map[string][]string)
+		argsT := reflect.TypeOf(jb.r).Elem()
+		for i := 0; i < argsT.NumField(); i++ {
+			fName := argsT.Field(i).Name
+			errM[fName] = vErr.GetFieldErrors(fName)
+		}
+		bErrM, _ := json.Marshal(errM)
+		err = errors.New(string(bErrM))
+		return
+	}
+
+	// encode context
+	var context = make(map[string]interface{})
+	for key, v := range DefaultOriginalPageContextHandler(ctx) {
+		context[key] = v
+	}
+
+	if jb.contextHandler != nil {
+		for key, v := range jb.contextHandler(ctx) {
+			context[key] = v
+		}
+	}
+
 	b.db.Transaction(func(tx *gorm.DB) error {
 		j = &QorJob{
 			Job:    qorJob.Job,
@@ -371,7 +381,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 			return err
 		}
 		var inst *QorJobInstance
-		inst, err = jb.newJobInstance(ctx.R, j.ID, qorJob.Job, qorJob.args)
+		inst, err = jb.newJobInstance(ctx.R, j.ID, qorJob.Job, args, context)
 		if err != nil {
 			return err
 		}
@@ -469,7 +479,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 		return er, errors.New("job is not done")
 	}
 
-	inst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, old.Args)
+	inst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, old.Args, old.Context)
 	if err != nil {
 		return er, err
 	}
@@ -499,6 +509,16 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, errors.New("invalid arguments")
 	}
 
+	var contexts = make(map[string]interface{})
+	for key, v := range DefaultOriginalPageContextHandler(ctx) {
+		contexts[key] = v
+	}
+	if jb.contextHandler != nil {
+		for key, v := range jb.contextHandler(ctx) {
+			contexts[key] = v
+		}
+	}
+
 	old, err := jb.getJobInstance(qorJobID)
 	if err != nil {
 		return er, err
@@ -519,7 +539,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, nil
 	}
 
-	newInst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, newArgs)
+	newInst, err := jb.newJobInstance(ctx.R, qorJobID, qorJobName, newArgs, contexts)
 	if err != nil {
 		return er, err
 	}
@@ -655,7 +675,7 @@ func (b *Builder) jobSelectList(
 	}
 	items := make([]HTMLComponent, 0, len(b.jbs))
 	for _, jb := range b.jbs {
-		if strings.HasPrefix(jb.name, "Job Action") {
+		if !jb.global {
 			continue
 		}
 		label := getTJob(ctx.R, jb.name)

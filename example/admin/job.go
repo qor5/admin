@@ -36,8 +36,9 @@ func addJobs(w *worker.Builder) {
 	ajb := w.NewJob("argJob").
 		Resource(&ArgJobResource{}).
 		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			args, _ := job.GetArgument()
-			job.AddLog(fmt.Sprintf("%#+v", args))
+			jobInfo, _ := job.GetJobInfo()
+			job.AddLog(fmt.Sprintf("Argument %#+v", jobInfo.Argument))
+			job.AddLog(fmt.Sprintf("Context %#+v", jobInfo.Context))
 			return nil
 		})
 	ajb.GetResourceBuilder().Editing().Field("F1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -63,8 +64,8 @@ func addJobs(w *worker.Builder) {
 	w.NewJob("scheduleJob").
 		Resource(&ScheduleJobResource{}).
 		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			args, _ := job.GetArgument()
-			job.AddLog(fmt.Sprintf("%#+v", args))
+			jobInfo, _ := job.GetJobInfo()
+			job.AddLog(fmt.Sprintf("%#+v", jobInfo.Argument))
 			return nil
 		})
 

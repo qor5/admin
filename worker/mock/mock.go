@@ -24,17 +24,8 @@ var _ worker.QorJobInterface = &QorJobInterfaceMock{}
 // 			AddLogfFunc: func(format string, a ...interface{}) error {
 // 				panic("mock out the AddLogf method")
 // 			},
-// 			GetArgumentFunc: func() (interface{}, error) {
-// 				panic("mock out the GetArgument method")
-// 			},
-// 			GetJobIDFunc: func() string {
-// 				panic("mock out the GetJobID method")
-// 			},
-// 			GetJobNameFunc: func() string {
-// 				panic("mock out the GetJobName method")
-// 			},
-// 			GetOperatorFunc: func() string {
-// 				panic("mock out the GetOperator method")
+// 			GetJobInfoFunc: func() (*worker.JobInfo, error) {
+// 				panic("mock out the GetJobInfo method")
 // 			},
 // 			SetProgressFunc: func(v uint) error {
 // 				panic("mock out the SetProgress method")
@@ -55,17 +46,8 @@ type QorJobInterfaceMock struct {
 	// AddLogfFunc mocks the AddLogf method.
 	AddLogfFunc func(format string, a ...interface{}) error
 
-	// GetArgumentFunc mocks the GetArgument method.
-	GetArgumentFunc func() (interface{}, error)
-
-	// GetJobIDFunc mocks the GetJobID method.
-	GetJobIDFunc func() string
-
-	// GetJobNameFunc mocks the GetJobName method.
-	GetJobNameFunc func() string
-
-	// GetOperatorFunc mocks the GetOperator method.
-	GetOperatorFunc func() string
+	// GetJobInfoFunc mocks the GetJobInfo method.
+	GetJobInfoFunc func() (*worker.JobInfo, error)
 
 	// SetProgressFunc mocks the SetProgress method.
 	SetProgressFunc func(v uint) error
@@ -87,17 +69,8 @@ type QorJobInterfaceMock struct {
 			// A is the a argument value.
 			A []interface{}
 		}
-		// GetArgument holds details about calls to the GetArgument method.
-		GetArgument []struct {
-		}
-		// GetJobID holds details about calls to the GetJobID method.
-		GetJobID []struct {
-		}
-		// GetJobName holds details about calls to the GetJobName method.
-		GetJobName []struct {
-		}
-		// GetOperator holds details about calls to the GetOperator method.
-		GetOperator []struct {
+		// GetJobInfo holds details about calls to the GetJobInfo method.
+		GetJobInfo []struct {
 		}
 		// SetProgress holds details about calls to the SetProgress method.
 		SetProgress []struct {
@@ -112,10 +85,7 @@ type QorJobInterfaceMock struct {
 	}
 	lockAddLog          sync.RWMutex
 	lockAddLogf         sync.RWMutex
-	lockGetArgument     sync.RWMutex
-	lockGetJobID        sync.RWMutex
-	lockGetJobName      sync.RWMutex
-	lockGetOperator     sync.RWMutex
+	lockGetJobInfo      sync.RWMutex
 	lockSetProgress     sync.RWMutex
 	lockSetProgressText sync.RWMutex
 }
@@ -186,107 +156,29 @@ func (mock *QorJobInterfaceMock) AddLogfCalls() []struct {
 	return calls
 }
 
-// GetArgument calls GetArgumentFunc.
-func (mock *QorJobInterfaceMock) GetArgument() (interface{}, error) {
-	if mock.GetArgumentFunc == nil {
-		panic("QorJobInterfaceMock.GetArgumentFunc: method is nil but QorJobInterface.GetArgument was just called")
+// GetJobInfo calls GetJobInfoFunc.
+func (mock *QorJobInterfaceMock) GetJobInfo() (*worker.JobInfo, error) {
+	if mock.GetJobInfoFunc == nil {
+		panic("QorJobInterfaceMock.GetJobInfoFunc: method is nil but QorJobInterface.GetJobInfo was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetArgument.Lock()
-	mock.calls.GetArgument = append(mock.calls.GetArgument, callInfo)
-	mock.lockGetArgument.Unlock()
-	return mock.GetArgumentFunc()
+	mock.lockGetJobInfo.Lock()
+	mock.calls.GetJobInfo = append(mock.calls.GetJobInfo, callInfo)
+	mock.lockGetJobInfo.Unlock()
+	return mock.GetJobInfoFunc()
 }
 
-// GetArgumentCalls gets all the calls that were made to GetArgument.
+// GetJobInfoCalls gets all the calls that were made to GetJobInfo.
 // Check the length with:
-//     len(mockedQorJobInterface.GetArgumentCalls())
-func (mock *QorJobInterfaceMock) GetArgumentCalls() []struct {
+//     len(mockedQorJobInterface.GetJobInfoCalls())
+func (mock *QorJobInterfaceMock) GetJobInfoCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetArgument.RLock()
-	calls = mock.calls.GetArgument
-	mock.lockGetArgument.RUnlock()
-	return calls
-}
-
-// GetJobID calls GetJobIDFunc.
-func (mock *QorJobInterfaceMock) GetJobID() string {
-	if mock.GetJobIDFunc == nil {
-		panic("QorJobInterfaceMock.GetJobIDFunc: method is nil but QorJobInterface.GetJobID was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetJobID.Lock()
-	mock.calls.GetJobID = append(mock.calls.GetJobID, callInfo)
-	mock.lockGetJobID.Unlock()
-	return mock.GetJobIDFunc()
-}
-
-// GetJobIDCalls gets all the calls that were made to GetJobID.
-// Check the length with:
-//     len(mockedQorJobInterface.GetJobIDCalls())
-func (mock *QorJobInterfaceMock) GetJobIDCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetJobID.RLock()
-	calls = mock.calls.GetJobID
-	mock.lockGetJobID.RUnlock()
-	return calls
-}
-
-// GetJobName calls GetJobNameFunc.
-func (mock *QorJobInterfaceMock) GetJobName() string {
-	if mock.GetJobNameFunc == nil {
-		panic("QorJobInterfaceMock.GetJobNameFunc: method is nil but QorJobInterface.GetJobName was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetJobName.Lock()
-	mock.calls.GetJobName = append(mock.calls.GetJobName, callInfo)
-	mock.lockGetJobName.Unlock()
-	return mock.GetJobNameFunc()
-}
-
-// GetJobNameCalls gets all the calls that were made to GetJobName.
-// Check the length with:
-//     len(mockedQorJobInterface.GetJobNameCalls())
-func (mock *QorJobInterfaceMock) GetJobNameCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetJobName.RLock()
-	calls = mock.calls.GetJobName
-	mock.lockGetJobName.RUnlock()
-	return calls
-}
-
-// GetOperator calls GetOperatorFunc.
-func (mock *QorJobInterfaceMock) GetOperator() string {
-	if mock.GetOperatorFunc == nil {
-		panic("QorJobInterfaceMock.GetOperatorFunc: method is nil but QorJobInterface.GetOperator was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetOperator.Lock()
-	mock.calls.GetOperator = append(mock.calls.GetOperator, callInfo)
-	mock.lockGetOperator.Unlock()
-	return mock.GetOperatorFunc()
-}
-
-// GetOperatorCalls gets all the calls that were made to GetOperator.
-// Check the length with:
-//     len(mockedQorJobInterface.GetOperatorCalls())
-func (mock *QorJobInterfaceMock) GetOperatorCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetOperator.RLock()
-	calls = mock.calls.GetOperator
-	mock.lockGetOperator.RUnlock()
+	mock.lockGetJobInfo.RLock()
+	calls = mock.calls.GetJobInfo
+	mock.lockGetJobInfo.RUnlock()
 	return calls
 }
 

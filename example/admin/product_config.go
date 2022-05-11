@@ -25,9 +25,9 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
 
-	noParametersJob := wb.JobAction(
+	noParametersJob := wb.ActionJob(
 		"No parameters",
-		p.Info().URIName(),
+		p,
 		func(ctx context.Context, job worker.QorJobInterface) error {
 			for i := 1; i <= 10; i++ {
 				select {
@@ -45,9 +45,9 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 		},
 	).Description("This test demo is used to show that an no parameter job can be executed")
 
-	parametersBoxJob := wb.JobAction(
+	parametersBoxJob := wb.ActionJob(
 		"Parameter input box",
-		p.Info().URIName(),
+		p,
 		func(ctx context.Context, job worker.QorJobInterface) error {
 			for i := 1; i <= 10; i++ {
 				select {
@@ -63,11 +63,12 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 			return nil
 		},
-	).Description("This test demo is used to show that an input box when there are parameters").Params(&struct{ Name string }{})
+	).Description("This test demo is used to show that an input box when there are parameters").
+		Params(&struct{ Name string }{})
 
-	displayLogJob := wb.JobAction(
+	displayLogJob := wb.ActionJob(
 		"Display log",
-		p.Info().URIName(),
+		p,
 		func(ctx context.Context, job worker.QorJobInterface) error {
 			for i := 1; i <= 10; i++ {
 				select {
@@ -83,23 +84,22 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 			return nil
 		},
-	).Description("This test demo is used to show the log section of this job").Params(&struct{ Name string }{}).DisplayLog(true)
+	).Description("This test demo is used to show the log section of this job").
+		Params(&struct{ Name string }{}).
+		DisplayLog(true)
 
-	getArgsJob := wb.JobAction(
+	getArgsJob := wb.ActionJob(
 		"Get Args",
-		p.Info().URIName(),
+		p,
 		func(ctx context.Context, job worker.QorJobInterface) error {
-			args, err := job.GetArgument()
+			jobInfo, err := job.GetJobInfo()
 			if err != nil {
 				return err
 			}
 
-			jobActionArgs := args.(*worker.JobActionArgs)
-			actionParams := jobActionArgs.ActionParams.(*struct{ Name string })
-			job.AddLog(fmt.Sprintf("Action Params Name is  %#+v", actionParams.Name))
-
-			job.AddLog(fmt.Sprintf("Origina Context AuthInfo is  %#+v", jobActionArgs.OriginalPageContext["AuthInfo"]))
-			job.AddLog(fmt.Sprintf("Origina Context URL is  %#+v", jobActionArgs.OriginalPageContext["URL"]))
+			job.AddLog(fmt.Sprintf("Action Params Name is  %#+v", jobInfo.Argument.(*struct{ Name string }).Name))
+			job.AddLog(fmt.Sprintf("Origina Context AuthInfo is  %#+v", jobInfo.Context["AuthInfo"]))
+			job.AddLog(fmt.Sprintf("Origina Context URL is  %#+v", jobInfo.Context["URL"]))
 
 			for i := 1; i <= 10; i++ {
 				select {
@@ -113,7 +113,9 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			job.SetProgressText(`<a href="https://qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/37/file.@qor_preview.png">Please download this file</a>`)
 			return nil
 		},
-	).Description("This test demo is used to show how to get the action's arguments and original page context").Params(&struct{ Name string }{}).DisplayLog(true).
+	).Description("This test demo is used to show how to get the action's arguments and original page context").
+		Params(&struct{ Name string }{}).
+		DisplayLog(true).
 		ContextHandler(func(ctx *web.EventContext) map[string]interface{} {
 			auth, err := ctx.R.Cookie("auth")
 			if err == nil {
@@ -122,29 +124,30 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 			return nil
 		})
 
-	listing.BulkAction("Job Action - No parameters").
+	listing.BulkAction("Action Job - No parameters").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Job Action - No parameters").Color("primary").Depressed(true).Class("ml-2").Attr("@click", noParametersJob.URL())
+				return vuetify.VBtn("Action Job - No parameters").Color("primary").Depressed(true).Class("ml-2").
+					Attr("@click", noParametersJob.URL())
 			})
 
-	listing.BulkAction("Job Action - Parameter input box").
+	listing.BulkAction("Action Job - Parameter input box").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Job Action - Parameter input box").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Parameter input box").Color("primary").Depressed(true).Class("ml-2").
 					Attr("@click", parametersBoxJob.URL())
 			})
-	listing.BulkAction("Job Action - Display log").
+	listing.BulkAction("Action Job - Display log").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Job Action - Display log").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Display log").Color("primary").Depressed(true).Class("ml-2").
 					Attr("@click", displayLogJob.URL())
 			})
 
-	listing.BulkAction("Job Action - Get Args").
+	listing.BulkAction("Action Job - Get Args").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Job Action - Get Args").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Get Args").Color("primary").Depressed(true).Class("ml-2").
 					Attr("@click", getArgsJob.URL())
 			})
 
