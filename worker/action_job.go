@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -29,11 +28,12 @@ var (
 )
 
 type ActionJobBuilder struct {
-	fullname    string
-	shortname   string
-	description string //optional
-	hasParams   bool
-	displayLog  bool //optional
+	fullname            string
+	shortname           string
+	description         string //optional
+	hasParams           bool
+	displayLog          bool //optional
+	progressingInterval int
 
 	b  *Builder    // worker builder
 	jb *JobBuilder // job builder
@@ -55,10 +55,11 @@ func (b *Builder) ActionJob(jobName string, model *presets.ModelBuilder, hander 
 	}
 
 	action := &ActionJobBuilder{
-		fullname:  fullname,
-		shortname: jobName,
-		jb:        b.NewJob(fullname).Handler(hander),
-		b:         b,
+		fullname:            fullname,
+		shortname:           jobName,
+		progressingInterval: 2000,
+		jb:                  b.NewJob(fullname).Handler(hander),
+		b:                   b,
 	}
 	actionJobs[fullname] = action
 	action.jb.global = false
@@ -73,6 +74,11 @@ func (action *ActionJobBuilder) Params(params interface{}) *ActionJobBuilder {
 
 func (action *ActionJobBuilder) Global(b bool) *ActionJobBuilder {
 	action.jb.global = b
+	return action
+}
+
+func (action *ActionJobBuilder) ProgressingInterval(interval int) *ActionJobBuilder {
+	action.progressingInterval = interval
 	return action
 }
 
@@ -213,7 +219,7 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 									Query("jobID", jobID).
 									Query("jobName", jobName),
 							).AutoReloadInterval("vars.actionJobProgressingInterval"),
-						).Attr(web.InitContextVars, "{actionJobProgressingInterval: 2000}"),
+						).Attr(web.InitContextVars, fmt.Sprintf("{actionJobProgressingInterval: %d}", config.progressingInterval)),
 					),
 				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
@@ -271,7 +277,7 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 		h.Div(vuetify.VProgressLinear(
 			h.Strong(fmt.Sprintf("%d%%", inst.Progress)),
 		).Value(int(inst.Progress)).Height(20)).Class("mb-5"),
-		h.If(config.displayLog, ActionJobLog(inst.Log)),
+		h.If(config.displayLog, actionJobLog(*config.b, inst)),
 		h.If(inst.ProgressText != "",
 			h.Div().Class("mb-3").Children(
 				h.RawHTML(inst.ProgressText),
@@ -282,16 +288,26 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	if inst.Status == JobStatusDone || inst.Status == JobStatusException {
 		er.VarsScript = "vars.actionJobProgressingInterval = 0;"
 	} else {
-		er.VarsScript = "vars.actionJobProgressingInterval = 2000;"
+		er.VarsScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
 	}
 	return er, nil
 }
 
-func ActionJobLog(log string) h.HTMLComponent {
+func actionJobLog(b Builder, inst *QorJobInstance) h.HTMLComponent {
 	var logLines []h.HTMLComponent
-	logs := strings.Split(log, "\n")
-	var reverseStyle string
+	logs := make([]string, 0, 100)
 
+	var mLogs []*QorJobLog
+	b.db.Where("qor_job_instance_id = ?", inst.ID).
+		Order("created_at desc").
+		Limit(100).
+		Find(&mLogs)
+
+	for i := len(mLogs) - 1; i >= 0; i-- {
+		logs = append(logs, mLogs[i].Log)
+	}
+
+	var reverseStyle string
 	if len(logs) > 18 {
 		reverseStyle = "display: flex;flex-direction: column-reverse;"
 		for i := len(logs) - 1; i >= 0; i-- {

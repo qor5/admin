@@ -35,7 +35,6 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 					job.AddLog("job aborted")
 					return nil
 				default:
-					job.AddLog(fmt.Sprintf("%v", i))
 					job.SetProgress(uint(i * 10))
 					time.Sleep(time.Second)
 				}
@@ -55,7 +54,6 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 					job.AddLog("job aborted")
 					return nil
 				default:
-					job.AddLog(fmt.Sprintf("%v", i))
 					job.SetProgress(uint(i * 10))
 					time.Sleep(time.Second)
 				}
@@ -76,8 +74,8 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 					job.AddLog("job aborted")
 					return nil
 				default:
-					job.AddLog(fmt.Sprintf("%v", i))
 					job.SetProgress(uint(i * 10))
+					job.AddLog(fmt.Sprintf("%v", i))
 					time.Sleep(time.Second)
 				}
 			}
@@ -86,7 +84,8 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 		},
 	).Description("This test demo is used to show the log section of this job").
 		Params(&struct{ Name string }{}).
-		DisplayLog(true)
+		DisplayLog(true).
+		ProgressingInterval(4000)
 
 	getArgsJob := wb.ActionJob(
 		"Get Args",
