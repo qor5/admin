@@ -22,9 +22,10 @@ type QorJobInstance struct {
 
 	Operator string
 
-	Job    string
-	Status string `sql:"default:'new'"`
-	Args   string
+	Job     string
+	Status  string `sql:"default:'new'"`
+	Args    string
+	Context string
 
 	Progress     uint
 	ProgressText string

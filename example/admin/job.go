@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
@@ -37,8 +36,9 @@ func addJobs(w *worker.Builder) {
 	ajb := w.NewJob("argJob").
 		Resource(&ArgJobResource{}).
 		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			args, _ := job.GetArgument()
-			job.AddLog(fmt.Sprintf("%#+v", args))
+			jobInfo, _ := job.GetJobInfo()
+			job.AddLog(fmt.Sprintf("Argument %#+v", jobInfo.Argument))
+			job.AddLog(fmt.Sprintf("Context %#+v", jobInfo.Context))
 			return nil
 		})
 	ajb.GetResourceBuilder().Editing().Field("F1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -56,21 +56,7 @@ func addJobs(w *worker.Builder) {
 		}
 		return nil
 	})
-	w.NewJob("longRunningJob").
-		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			for i := 1; i <= 20; i++ {
-				select {
-				case <-ctx.Done():
-					job.AddLog("job aborted")
-					return nil
-				default:
-					job.AddLog(fmt.Sprintf("%v", i))
-					job.SetProgress(uint(i * 5))
-					time.Sleep(time.Second)
-				}
-			}
-			return nil
-		})
+
 	type ScheduleJobResource struct {
 		F1 string
 		worker.Schedule
@@ -78,8 +64,8 @@ func addJobs(w *worker.Builder) {
 	w.NewJob("scheduleJob").
 		Resource(&ScheduleJobResource{}).
 		Handler(func(ctx context.Context, job worker.QorJobInterface) error {
-			args, _ := job.GetArgument()
-			job.AddLog(fmt.Sprintf("%#+v", args))
+			jobInfo, _ := job.GetJobInfo()
+			job.AddLog(fmt.Sprintf("%#+v", jobInfo.Argument))
 			return nil
 		})
 

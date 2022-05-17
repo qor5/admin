@@ -98,32 +98,33 @@ func (c *cron) Add(job QueJobInterface) (err error) {
 	c.parseJobs()
 	defer c.writeCronJob()
 
+	jobInfo, err := job.GetJobInfo()
+	if err != nil {
+		return err
+	}
+
 	var binaryFile string
 	if binaryFile, err = filepath.Abs(os.Args[0]); err == nil {
 		var jobs []*cronJob
 		for _, cronJob := range c.Jobs {
-			if cronJob.JobID != job.GetJobID() {
+			if cronJob.JobID != jobInfo.JobID {
 				jobs = append(jobs, cronJob)
 			}
 		}
 
-		args, err := job.GetArgument()
-		if err != nil {
-			return err
-		}
-		if scheduler, ok := args.(Scheduler); ok && scheduler.GetScheduleTime() != nil {
+		if scheduler, ok := jobInfo.Argument.(Scheduler); ok && scheduler.GetScheduleTime() != nil {
 			scheduleTime := scheduler.GetScheduleTime().In(time.Local)
 			job.SetStatus(JobStatusScheduled)
 
 			currentPath, _ := os.Getwd()
 			jobs = append(jobs, &cronJob{
-				JobID:   job.GetJobID(),
-				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, job.GetJobID()),
+				JobID:   jobInfo.JobID,
+				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, jobInfo.JobID),
 			})
 		} else {
-			cmd := exec.Command(binaryFile, "--qor-job", job.GetJobID())
+			cmd := exec.Command(binaryFile, "--qor-job", jobInfo.JobID)
 			if err = cmd.Start(); err == nil {
-				jobs = append(jobs, &cronJob{JobID: job.GetJobID(), Pid: cmd.Process.Pid})
+				jobs = append(jobs, &cronJob{JobID: jobInfo.JobID, Pid: cmd.Process.Pid})
 				cmd.Process.Release()
 			}
 		}
@@ -134,10 +135,15 @@ func (c *cron) Add(job QueJobInterface) (err error) {
 }
 
 // Run a job from cron queue
-func (c *cron) run(qorJob QueJobInterface) error {
+func (c *cron) run(qorJob QueJobInterface) (err error) {
+	jobInfo, err := qorJob.GetJobInfo()
+	if err != nil {
+		return err
+	}
+
 	h := qorJob.GetHandler()
 	if h == nil {
-		panic(fmt.Sprintf("job %v no handler", qorJob.GetJobName()))
+		panic(fmt.Sprintf("job %v no handler", jobInfo.JobName))
 	}
 
 	go func() {
@@ -160,12 +166,12 @@ func (c *cron) run(qorJob QueJobInterface) error {
 	qorJob.StartRefresh()
 	defer qorJob.StopRefresh()
 
-	err := h(context.Background(), qorJob)
+	err = h(context.Background(), qorJob)
 	if err == nil {
 		c.parseJobs()
 		defer c.writeCronJob()
 		for _, cronJob := range c.Jobs {
-			if cronJob.JobID == qorJob.GetJobID() {
+			if cronJob.JobID == jobInfo.JobID {
 				cronJob.Delete = true
 			}
 		}
@@ -178,8 +184,13 @@ func (c *cron) Kill(job QueJobInterface) (err error) {
 	c.parseJobs()
 	defer c.writeCronJob()
 
+	jobInfo, err := job.GetJobInfo()
+	if err != nil {
+		return err
+	}
+
 	for _, cronJob := range c.Jobs {
-		if cronJob.JobID == job.GetJobID() {
+		if cronJob.JobID == jobInfo.JobID {
 			if process, err := os.FindProcess(cronJob.Pid); err == nil {
 				if err = process.Kill(); err == nil {
 					cronJob.Delete = true
@@ -197,8 +208,13 @@ func (c *cron) Remove(job QueJobInterface) error {
 	c.parseJobs()
 	defer c.writeCronJob()
 
+	jobInfo, err := job.GetJobInfo()
+	if err != nil {
+		return err
+	}
+
 	for _, cronJob := range c.Jobs {
-		if cronJob.JobID == job.GetJobID() {
+		if cronJob.JobID == jobInfo.JobID {
 			if cronJob.Pid == 0 {
 				cronJob.Delete = true
 				return job.SetStatus(JobStatusKilled)

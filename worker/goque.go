@@ -42,19 +42,20 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 }
 
 func (q *goque) Add(job QueJobInterface) error {
-	args, err := job.GetArgument()
+	jobInfo, err := job.GetJobInfo()
+
 	if err != nil {
 		return err
 	}
 	runAt := time.Now()
-	if scheduler, ok := args.(Scheduler); ok && scheduler.GetScheduleTime() != nil {
+	if scheduler, ok := jobInfo.Argument.(Scheduler); ok && scheduler.GetScheduleTime() != nil {
 		runAt = scheduler.GetScheduleTime().In(time.Local)
 		job.SetStatus(JobStatusScheduled)
 	}
 
 	_, err = q.q.Enqueue(context.Background(), nil, que.Plan{
-		Queue: "worker_" + job.GetJobName(),
-		Args:  que.Args(job.GetJobID(), args),
+		Queue: "worker_" + jobInfo.JobName,
+		Args:  que.Args(jobInfo.JobID, jobInfo.Argument),
 		RunAt: runAt,
 	})
 	if err != nil {
