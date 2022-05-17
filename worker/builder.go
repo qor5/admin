@@ -35,7 +35,7 @@ func New(db *gorm.DB) *Builder {
 		panic("db can not be nil")
 	}
 
-	err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{})
+	err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{}, &GoQueError{})
 	if err != nil {
 		panic(err)
 	}

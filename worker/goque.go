@@ -16,7 +16,8 @@ import (
 )
 
 type goque struct {
-	q que.Queue
+	q  que.Queue
+	db *gorm.DB
 }
 
 func NewGoQueQueue(db *gorm.DB) Queue {
@@ -37,7 +38,8 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 	}
 
 	return &goque{
-		q: q,
+		q:  q,
+		db: db,
 	}
 }
 
@@ -177,8 +179,13 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 		}
 
 		go func() {
-			err := worker.Run()
-			fmt.Println("worker Run() error:", err)
+			if err := worker.Run(); err != nil {
+				errStr := fmt.Sprintf("worker Run() error: %s", err.Error())
+				fmt.Println(errStr)
+				q.db.Create(&GoQueError{
+					Error: errStr,
+				})
+			}
 		}()
 	}
 

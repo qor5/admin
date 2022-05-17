@@ -67,3 +67,8 @@ func (schedule *Schedule) GetScheduleTime() *time.Time {
 func (schedule *Schedule) SetScheduleTime(t *time.Time) {
 	schedule.ScheduleTime = t
 }
+
+type GoQueError struct {
+	gorm.Model
+	Error string
+}
