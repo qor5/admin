@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/goplaid/web"
@@ -57,7 +58,12 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 							).Cols(8).Class("text--secondary"),
 						).NoGutters(true),
 						h.Div(
-							VIcon("publish"),
+							VTooltip(
+								web.Slot(
+									VIcon("publish").Attr("v-bind", "attrs", "v-on", "on"),
+								).Name("activator").Scope("{ on, attrs }"),
+								h.Span(strings.ReplaceAll(msgr.PublishScheduleTip, "{SchedulePublishTime}", msgr.SchedulePublishTime)),
+							).Bottom(true).MaxWidth(285),
 						).Class("v-expansion-panel-header__icon"),
 					).Class("v-expansion-panel-header"),
 				),

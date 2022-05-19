@@ -20,6 +20,7 @@ type Messages struct {
 	SchedulePublishTime     string
 	NotSet                  string
 	WhenDoYouWantToPublish  string
+	PublishScheduleTip      string
 	DateTimePickerClearText string
 	DateTimePickerOkText    string
 	SaveAsNewVersion        string
@@ -45,6 +46,7 @@ var Messages_en_US = &Messages{
 	SchedulePublishTime:     "Schedule Publish Time",
 	NotSet:                  "Not set",
 	WhenDoYouWantToPublish:  "When do you want to publish?",
+	PublishScheduleTip:      "After you set the {SchedulePublishTime}, the system will automatically publish/unpublish it.",
 	DateTimePickerClearText: "Clear",
 	DateTimePickerOkText:    "OK",
 	SaveAsNewVersion:        "Save As New Version",
@@ -70,6 +72,7 @@ var Messages_zh_CN = &Messages{
 	SchedulePublishTime:     "计划发布时间",
 	NotSet:                  "未设定",
 	WhenDoYouWantToPublish:  "你希望什么时候发布？",
+	PublishScheduleTip:      "设定好 {SchedulePublishTime} 之后, 系统会按照时间自动将它发布/下线。",
 	DateTimePickerClearText: "清空",
 	DateTimePickerOkText:    "确定",
 	SaveAsNewVersion:        "保存为一个新版本",
