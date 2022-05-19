@@ -38,18 +38,52 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 			unpublishedAt = s.GetUnPublishedAt().Format("2006-01-02 15:04")
 		}
 		return h.Div(
-			VRow(
-				VCol(
-					VTextField().Label(msgr.PublishedAt).Value(publishedAt).Disabled(true),
-				).Cols(6),
-				VCol(
-					VTextField().Label(msgr.UnPublishedAt).Value(unpublishedAt).Disabled(true),
-				).Cols(6),
-			),
-			web.Scope(
-				VBtn(`{{ locals.show ? 'Hide Publish Schedule' : 'Show Publish Schedule' }}`).Attr("@click", "locals.show = !locals.show"),
-				VExpandTransition(
+			h.If(s.GetStatus() != "",
+				h.Div(
+					VRow(
+						VCol(
+							h.Text(msgr.ActualPublishTime),
+						).Cols(4),
+						VCol(
+							VRow(
+								VCol(
+									h.If(publishedAt == "", h.Text(fmt.Sprintf("%v: %v ", msgr.PublishedAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.PublishedAt, publishedAt))),
+								).Cols(6),
+								VCol(
+									h.If(unpublishedAt == "", h.Text(fmt.Sprintf("%v: %v ", msgr.UnPublishedAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.UnPublishedAt, unpublishedAt))),
+								).Cols(6),
+							).NoGutters(true).Attr(`style="width: 100%"`),
+						).Cols(8).Class("text--secondary"),
+					).NoGutters(true),
 					h.Div(
+						VIcon("publish"),
+					).Class("v-expansion-panel-header__icon"),
+				).Class("v-expansion-panel-header"),
+			),
+
+			VExpansionPanels(
+				VExpansionPanel(
+					VExpansionPanelHeader(
+						VRow(
+							VCol(
+								h.Text(msgr.SchedulePublishTime),
+							).Cols(4),
+							VCol(
+								VFadeTransition(
+									h.Span(msgr.WhenDoYouWantToPublish).Attr("v-if", "open"),
+									VRow(
+										VCol(
+											h.If(start == "", h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledStartAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledStartAt, start))),
+										).Cols(6),
+										VCol(
+											h.If(end == "", h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledEndAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledEndAt, end))),
+										).Cols(6),
+									).NoGutters(true).Attr("v-else").Attr(`style="width: 100%"`),
+								).LeaveAbsolute(true),
+							).Cols(8).Class("text--secondary"),
+						).NoGutters(true),
+					).Attr("v-slot", "{ open }"),
+					VExpansionPanelContent(
 						VRow(
 							VCol(
 								vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
@@ -64,10 +98,9 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 								//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
 							).Cols(6),
 						),
-					).Attr("v-show", "locals.show"),
+					),
 				),
-			).Init(`{ show: false}`).
-				VSlot("{ locals }"),
+			).Flat(true).Hover(true),
 		)
 	}
 }
