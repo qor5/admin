@@ -19,7 +19,7 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 	for _, m := range models {
 		if model, ok := m.NewModel().(publish.VersionInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.VersionPublishModels = append(publish.VersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
@@ -38,13 +38,13 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
 		} else {
 			if schedulePublishModel, ok := m.NewModel().(publish.ScheduleInterface); ok {
-				publish.NonVersionPublishModels = append(publish.NonVersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
 		if model, ok := m.NewModel().(publish.ListInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.ListPublishModels = append(publish.ListPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 

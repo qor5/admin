@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/example/admin"
-	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/publish"
 )
 
@@ -28,16 +25,20 @@ func main() {
 		publisher := publish.New(db, storage)
 		scheduleP := publish.NewSchedulePublishBuilder(publisher)
 
-		for _, model := range publish.NonVersionPublishModels {
-			go RunJob("schedule-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
+		for name, model := range publish.NonVersionPublishModels {
+			name := name
+			model := model
+			go RunJob("schedule-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
 					panic(err)
 				}
 			})
 		}
 
-		for _, model := range publish.VersionPublishModels {
-			go RunJob("schedule-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
+		for name, model := range publish.VersionPublishModels {
+			name := name
+			model := model
+			go RunJob("schedule-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
 					panic(err)
 				}
@@ -47,8 +48,10 @@ func main() {
 
 	{ // list publisher
 		listP := publish.NewListPublishBuilder(db, storage)
-		for _, model := range publish.ListPublishModels {
-			go RunJob("list-publisher"+"-"+strings.ToLower(reflect.TypeOf(models.ListModel{}).Name()), time.Minute, time.Minute*5, func() {
+		for name, model := range publish.ListPublishModels {
+			name := name
+			model := model
+			go RunJob("list-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := listP.Run(model); err != nil {
 					panic(err)
 				}
