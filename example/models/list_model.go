@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/qor/qor5/publish"
 	"github.com/theplant/sliceutils"
@@ -11,12 +12,30 @@ import (
 )
 
 type ListModel struct {
-	ID    uint
+	gorm.Model
+
 	Title string
 
 	publish.Status
 	publish.Schedule
 	publish.List
+	publish.Version
+}
+
+func (this *ListModel) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
+}
+
+func (this *ListModel) PrimaryColumnValuesBySlug(slug string) [][]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return [][]string{
+		{"id", segs[0]},
+		{"version", segs[1]},
+	}
 }
 
 func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {

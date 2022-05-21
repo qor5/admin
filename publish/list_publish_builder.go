@@ -109,8 +109,12 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 	if err != nil {
 		return
 	}
+	republishItems, err := getRepublishItems(b.db, records)
+	if err != nil {
+		return
+	}
 
-	if len(deleteItems) == 0 && len(addItems) == 0 {
+	if len(deleteItems) == 0 && len(addItems) == 0 && len(republishItems) == 0 {
 		return nil
 	}
 
@@ -141,13 +145,9 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		newItems = append(newItems, addItems...)
 	}
 
-	republishItems, err := getRepublishItems(b.db, records)
-	if err != nil {
-		return
-	}
-
 	lp := model.(ListPublisher)
 	lp.Sort(newItems)
+
 	var oldResult []*OnePageItems
 	if len(oldItems) > 0 {
 		oldResult = paginate(oldItems)

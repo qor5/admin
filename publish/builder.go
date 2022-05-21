@@ -47,19 +47,38 @@ func (b *Builder) Publish(record interface{}) (err error) {
 
 		// update status
 		if r, ok := record.(StatusInterface); ok {
-			var updateMap = make(map[string]interface{})
-			if _, ok := record.(VersionInterface); ok {
+			now := b.db.NowFunc()
+			if version, ok := record.(VersionInterface); ok {
 				var modelSchema *schema.Schema
 				modelSchema, err = schema.Parse(record, &sync.Map{}, b.db.NamingStrategy)
 				if err != nil {
 					return
 				}
-				if err = SetPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("status = ?", StatusOnline).Updates(map[string]interface{}{"status": StatusOffline}).Error; err != nil {
+				scope := SetPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.GetVersion(), StatusOnline)
+				var count int64
+				if err = scope.Count(&count).Error; err != nil {
 					return
 				}
+
+				// update old version
+				if count > 0 {
+					var oldVersionUpdateMap = make(map[string]interface{})
+					if _, ok := record.(ScheduleInterface); ok {
+						oldVersionUpdateMap["scheduled_end_at"] = nil
+						oldVersionUpdateMap["actual_end_at"] = &now
+					}
+					if _, ok := record.(ListInterface); ok {
+						oldVersionUpdateMap["list_deleted"] = true
+					}
+					oldVersionUpdateMap["status"] = StatusOffline
+					if err = scope.Updates(oldVersionUpdateMap).Error; err != nil {
+						return
+					}
+				}
 			}
+			var updateMap = make(map[string]interface{})
+
 			if r, ok := record.(ScheduleInterface); ok {
-				now := b.db.NowFunc()
 				r.SetPublishedAt(&now)
 				r.SetScheduledStartAt(nil)
 				updateMap["scheduled_start_at"] = r.GetScheduledStartAt()
@@ -74,8 +93,6 @@ func (b *Builder) Publish(record interface{}) (err error) {
 				return
 			}
 		}
-
-		// TODO update schedule
 
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
@@ -110,7 +127,6 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 				updateMap["actual_end_at"] = r.GetUnPublishedAt()
 			}
 			if _, ok := record.(ListInterface); ok {
-				// Update ListDeleted, ListUpdated
 				updateMap["list_deleted"] = true
 			}
 			updateMap["status"] = StatusOffline
