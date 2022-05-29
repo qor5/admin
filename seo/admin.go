@@ -90,7 +90,7 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 							collection.vseo(fieldPrefix, seo, &setting, ctx.R),
 						),
 					).Elevation(0),
-				),
+				).Eager(true),
 			),
 		),
 	).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).
