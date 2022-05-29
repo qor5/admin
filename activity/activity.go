@@ -448,6 +448,24 @@ func (ab *ActivityBuilder) AddRecords(action string, ctx context.Context, vs ...
 	return nil
 }
 
+// AddCustomizedRecord add customized record
+func (ab *ActivityBuilder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj interface{}) error {
+	var (
+		creator = ctx.Value(ab.creatorContextKey)
+		db      = ab.getDBFromContext(ctx)
+	)
+
+	if !diff {
+		return ab.save(creator, action, obj, db, "")
+	}
+
+	old, ok := findOld(obj, db)
+	if !ok {
+		return fmt.Errorf("can't find old data for %+v ", obj)
+	}
+	return ab.addDiff(action, creator, old, obj, db)
+}
+
 // AddViewRecord add view record
 func (ab *ActivityBuilder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
 	return ab.save(creator, ActivityView, v, db, "")
@@ -483,6 +501,10 @@ func (ab *ActivityBuilder) AddEditRecord(creator interface{}, now interface{}, d
 
 // AddEditRecord add edit record
 func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now interface{}, db *gorm.DB) error {
+	return ab.addDiff(ActivityEdit, creator, old, now, db)
+}
+
+func (ab *ActivityBuilder) addDiff(action string, creator, old, now interface{}, db *gorm.DB) error {
 	diffs, err := ab.Diff(old, now)
 	if err != nil {
 		return err
