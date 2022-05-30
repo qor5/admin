@@ -124,6 +124,7 @@ func NewConfig() Config {
 
 	media_view.Configure(b, db)
 	// media_view.MediaLibraryPerPage = 3
+	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(

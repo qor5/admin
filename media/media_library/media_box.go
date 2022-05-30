@@ -75,3 +75,11 @@ func (mediaBox *MediaBox) URL(styles ...string) string {
 	}
 	return mediaBox.Url
 }
+
+func (mediaBox MediaBox) WebpURL(styles ...string) string {
+	url := mediaBox.URL(styles...)
+	ext := path.Ext(url)
+	extArr := strings.Split(ext, "?")
+	i := strings.LastIndex(url, ext)
+	return url[:i] + strings.Replace(url[i:], extArr[0], ".webp", 1)
+}
