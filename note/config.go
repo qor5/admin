@@ -26,6 +26,7 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 	}
 
 	for _, m := range models {
+		m.Detailing().AppendTabsPanelFunc(tabsPanel(db, m))
 		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
 		m.RegisterEventFunc(createNoteEvent, createNoteAction(db, m))
 		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db, m))
