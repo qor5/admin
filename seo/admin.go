@@ -74,25 +74,27 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 	}
 
 	return web.Scope(
-		h.Label(msgr.Seo).Class("v-label theme--light"),
-		VExpansionPanels(
-			VExpansionPanel(
-				VExpansionPanelHeader(
-					h.HTMLComponents{
-						VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);event.stopPropagation();"),
-						VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
-					},
-				).Attr("style", "padding: 0px 24px;"),
+		h.Div(
+			h.Label(msgr.Seo).Class("v-label theme--light"),
+			VExpansionPanels(
+				VExpansionPanel(
+					VExpansionPanelHeader(
+						h.HTMLComponents{
+							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);event.stopPropagation();"),
+							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
+						},
+					).Attr("style", "padding: 0px 24px;"),
 
-				VExpansionPanelContent(
-					VCard(
-						VCardText(
-							collection.vseo(fieldPrefix, seo, &setting, ctx.R),
-						),
-					).Elevation(0),
-				).Eager(true),
+					VExpansionPanelContent(
+						VCard(
+							VCardText(
+								collection.vseo(fieldPrefix, seo, &setting, ctx.R),
+							),
+						).Elevation(0),
+					).Eager(true),
+				),
 			),
-		),
+		).Class("pb-4"),
 	).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).
 		VSlot("{ locals }")
 }
