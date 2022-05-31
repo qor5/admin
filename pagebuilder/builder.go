@@ -102,12 +102,12 @@ func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
 }
 
 type ContainerBuilder struct {
-	builder       *Builder
-	name          string
-	mb            *presets.ModelBuilder
-	model         interface{}
-	modelType     reflect.Type
-	containerFunc RenderFunc
+	builder    *Builder
+	name       string
+	mb         *presets.ModelBuilder
+	model      interface{}
+	modelType  reflect.Type
+	renderFunc RenderFunc
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -133,7 +133,7 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 }
 
 func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
-	b.containerFunc = v
+	b.renderFunc = v
 	return b
 }
 
@@ -145,7 +145,7 @@ func (b *ContainerBuilder) ModelTypeName() string {
 	return b.modelType.String()
 }
 
-func (b *ContainerBuilder) Editing(vs ...string) *presets.EditingBuilder {
+func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 	return b.mb.Editing(vs...)
 }
 

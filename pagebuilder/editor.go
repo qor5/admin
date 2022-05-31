@@ -132,7 +132,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, preview b
 			return
 		}
 
-		pure := ec.builder.containerFunc(obj, ctx)
+		pure := ec.builder.renderFunc(obj, ctx)
 
 		if preview {
 			r = append(r, pure)
