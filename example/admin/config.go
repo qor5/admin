@@ -229,7 +229,7 @@ func NewConfig() Config {
 	l.Editing("Status", "Schedule", "Title")
 
 	pageBuilder.
-		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
+		PageStyle(h.RawHTML(`<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)).
 		Prefix("/admin/page_builder")
 	pageBuilder.Configure(b, pm)
 

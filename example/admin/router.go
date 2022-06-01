@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/goplaid/web"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/sitemap"
 )
@@ -13,15 +12,15 @@ func Router() (mux *http.ServeMux) {
 	mux = http.NewServeMux()
 	c := NewConfig()
 	c.lb.Mount(mux)
-	mux.Handle("/frontstyle.css", c.pb.GetWebBuilder().PacksHandler("text/css", web.ComponentsPack(`
-:host {
-	all: initial;
-	display: block;
-}
-div {
-	background-color:orange;
-}
-`)))
+	//	mux.Handle("/frontstyle.css", c.pb.GetWebBuilder().PacksHandler("text/css", web.ComponentsPack(`
+	//:host {
+	//	all: initial;
+	//	display: block;
+	//}
+	//div {
+	//	background-color:orange;
+	//}
+	//`)))
 
 	mux.Handle("/admin/page_builder/", authenticate(c.lb)(c.pageBuilder))
 	// example of seo
