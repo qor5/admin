@@ -295,7 +295,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 					h.Div(
 						b.pageStyle,
 						c,
-					),
+					).Style("position:relative; z-index: 0;"),
 				),
 			).Class("page-builder-container mx-auto").Attr("style", width),
 		).Cols(10).Class("pa-0"),
