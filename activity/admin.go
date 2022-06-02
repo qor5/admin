@@ -32,7 +32,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
 		detailing = mb.Detailing("ModelLink", "ModelDiffs")
 	)
-
+	ab.lmb = mb
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
 

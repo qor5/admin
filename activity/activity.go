@@ -36,6 +36,7 @@ type ActivityBuilder struct {
 	creatorContextKey interface{} // get the creator from context
 	dbContextKey      interface{} // get the db from context
 
+	lmb        *presets.ModelBuilder             // log model builder
 	logModel   ActivityLogInterface              // log model
 	models     []*ModelBuilder                   // registered model builders
 	tabHeading func(ActivityLogInterface) string // tab heading format
@@ -79,6 +80,11 @@ func New(b *presets.Builder, db *gorm.DB, logModel ...ActivityLogInterface) *Act
 
 	ab.configureAdmin(b)
 	return ab
+}
+
+// GetPresetModelBuilder return the preset model builder
+func (ab ActivityBuilder) GetPresetModelBuilder() *presets.ModelBuilder {
+	return ab.lmb
 }
 
 // GetActivityLogs get activity logs
