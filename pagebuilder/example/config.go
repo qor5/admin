@@ -8,7 +8,7 @@ import (
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/pagebuilder"
-	"github.com/qor/qor5/pagebuilder/containers"
+	"github.com/qor/qor5/pagebuilder/example/containers"
 	"github.com/qor/qor5/richeditor"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
