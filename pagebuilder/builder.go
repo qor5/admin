@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"reflect"
 	"strings"
@@ -16,6 +17,23 @@ import (
 
 type RenderFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
 
+type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent
+
+type PageLayoutInput struct {
+	Page              *Page
+	SeoTags           template.HTML
+	CanonicalLink     template.HTML
+	StructuredData    template.HTML
+	FreeStyleCss      []string
+	FreeStyleTopJs    []string
+	FreeStyleBottomJs []string
+	Header            h.HTMLComponent
+	Footer            h.HTMLComponent
+	IsEditor          bool
+	IsPreview         bool
+	Locale            string
+}
+
 type Builder struct {
 	prefix            string
 	wb                *web.Builder
@@ -23,6 +41,7 @@ type Builder struct {
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
 	pageStyle         h.HTMLComponent
+	pageLayoutFunc    PageLayoutFunc
 	preview           http.Handler
 }
 
@@ -69,6 +88,11 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
+	b.pageLayoutFunc = v
 	return b
 }
 

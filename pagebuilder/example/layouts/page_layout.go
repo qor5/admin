@@ -2,59 +2,14 @@ package layouts
 
 import (
 	"fmt"
-	"html/template"
 	"strings"
 
+	"github.com/goplaid/web"
+	"github.com/qor/qor5/pagebuilder"
 	. "github.com/theplant/htmlgo"
 )
 
-type LayoutInput struct {
-	SeoTags           template.HTML
-	CanonicalLink     template.HTML
-	StructuredData    template.HTML
-	FreeStyleCss      []string
-	FreeStyleTopJs    []string
-	FreeStyleBottomJs []string
-	Header            HTMLComponent
-	HeaderClass       string
-	Footer            HTMLComponent
-	HeaderColor       string
-	IsPreview         bool
-	Locale            string
-	LangSwitchUrls    []string
-}
-
-func scriptWithCodes(jscodes []string) HTMLComponent {
-	var js HTMLComponent
-	if len(jscodes) > 0 {
-		js = Script(fmt.Sprintf(`
-try {
-	%s
-} catch (error) {
-	console.log(error);
-}
-`, strings.Join(jscodes, "\n")))
-	}
-	return js
-}
-
-func DefaultLayout(input *LayoutInput, body HTMLComponent) HTMLComponent {
-	if input.Locale == "" {
-		input.Locale = "en"
-	}
-
-	if input.HeaderColor == "" {
-		input.HeaderColor = "back"
-	}
-
-	//if input.Header == nil {
-	//	input.Header = HeaderTemplate()
-	//}
-
-	//if input.Footer == nil {
-	//	input.Footer = FooterTemplate()
-	//}
-
+func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
 	var seoTags HTMLComponent
 	if len(input.SeoTags) > 0 {
 		seoTags = RawHTML(input.SeoTags)
@@ -77,7 +32,6 @@ func DefaultLayout(input *LayoutInput, body HTMLComponent) HTMLComponent {
 
 	js := "https://the-plant.com/assets/app/container.9506d40.js"
 	css := "https://the-plant.com/assets/app/container.9506d40.css"
-
 	domain := "https://example.qor5.theplant-dev.com"
 
 	return Components(
@@ -103,12 +57,26 @@ func DefaultLayout(input *LayoutInput, body HTMLComponent) HTMLComponent {
 
 			Body(
 				//It's required as the body first element!
-				//input.Header,
+				If(input.Header != nil, input.Header),
 				body,
-				//input.Footer,
+				If(input.Footer != nil, input.Footer),
 				Script("").Src(js),
 				scriptWithCodes(input.FreeStyleBottomJs),
 			).Attr("data-site-domain", domain),
 		),
 	)
+}
+
+func scriptWithCodes(jscodes []string) HTMLComponent {
+	var js HTMLComponent
+	if len(jscodes) > 0 {
+		js = Script(fmt.Sprintf(`
+try {
+	%s
+} catch (error) {
+	console.log(error);
+}
+`, strings.Join(jscodes, "\n")))
+	}
+	return js
 }

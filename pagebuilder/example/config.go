@@ -9,6 +9,7 @@ import (
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example/containers"
+	"github.com/qor/qor5/pagebuilder/example/layouts"
 	"github.com/qor/qor5/richeditor"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -52,6 +53,7 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	pb.PageLayout(layouts.DefaultPageLayoutFunc)
 
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)

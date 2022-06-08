@@ -12,7 +12,6 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
-	"github.com/qor/qor5/pagebuilder/layouts"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
@@ -43,15 +42,16 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 	if err != nil {
 		return
 	}
-	input := &layouts.LayoutInput{
-		IsPreview: true,
-		Locale:    "en",
-	}
+
 	r.PageTitle = p.Title
-	r.Body = layouts.DefaultLayout(
-		input,
-		h.Components(comps...),
-	)
+	r.Body = h.Components(comps...)
+	if b.pageLayoutFunc != nil {
+		input := &PageLayoutInput{
+			IsPreview: true,
+			Page:      p,
+		}
+		r.Body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+	}
 	return
 }
 
@@ -69,14 +69,15 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 	device, _ := b.getDevice(ctx)
-	input := &layouts.LayoutInput{
-		IsPreview: true,
-		Locale:    "en",
+	var body h.HTMLComponent
+	body = h.Components(comps...)
+	if b.pageLayoutFunc != nil {
+		input := &PageLayoutInput{
+			IsEditor: true,
+			Page:     p,
+		}
+		body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
 	}
-	body := layouts.DefaultLayout(
-		input,
-		h.Components(comps...),
-	)
 	r.Body = h.Components(
 		VAppBar(
 			VSpacer(),
