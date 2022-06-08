@@ -38,7 +38,6 @@ func addRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
 		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), false, ctx)
-
 		formKey := ctx.R.FormValue(ParamAddRowFormKey)
 		t := reflectutils.GetType(obj, formKey+"[0]")
 		newVal := reflect.New(t.Elem()).Interface()
@@ -53,7 +52,6 @@ func addRow(mb *presets.ModelBuilder) web.EventFunc {
 
 func removeRow(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-
 		me := mb.Editing()
 		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(presets.ParamID), false, ctx)
 

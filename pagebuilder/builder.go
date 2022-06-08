@@ -132,6 +132,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) GetModelBuilder() *presets.ModelBuilder {
+	return b.mb
+}
+
 func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
 	b.renderFunc = v
 	return b

@@ -3,6 +3,8 @@ package containers
 import (
 	"strings"
 
+	"github.com/qor/qor5/media/media_library"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	v "github.com/goplaid/x/vuetify"
@@ -52,4 +54,13 @@ func LinkTextWithArrow(text, link string, class ...string) HTMLComponent {
 		c = strings.Join(class, " ")
 	}
 	return A(Span(text), LINK_ARROW_SVG).Class(c).Href(link)
+}
+
+func LazyImageHtml(m media_library.MediaBox, class ...string) HTMLComponent {
+	class = append(class, "lazyload")
+	return Img("").Attr("data-src", m.URL()).Alt(m.Description).Class(class...)
+}
+
+func ImageHtml(m media_library.MediaBox, class ...string) HTMLComponent {
+	return Img("").Attr("src", m.URL()).Alt(m.Description).Class(class...)
 }
