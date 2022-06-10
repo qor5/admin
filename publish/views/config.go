@@ -7,6 +7,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	"golang.org/x/text/language"
@@ -15,7 +16,7 @@ import (
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, ab *activity.ActivityBuilder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
 		if model, ok := m.NewModel().(publish.VersionInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
@@ -48,7 +49,7 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 			}
 		}
 
-		registerEventFuncs(db, m, publisher)
+		registerEventFuncs(db, m, publisher, ab)
 	}
 
 	b.FieldDefaults(presets.LIST).

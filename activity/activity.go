@@ -260,6 +260,16 @@ func (ab ActivityBuilder) GetModelBuilder(v interface{}) (*ModelBuilder, bool) {
 	return &ModelBuilder{}, false
 }
 
+// GetModelBuilders 	get all model builders
+func (ab ActivityBuilder) GetModelBuilders() []*ModelBuilder {
+	return ab.models
+}
+
+// GetType get ModelBuilder type
+func (mb *ModelBuilder) GetType() reflect.Type {
+	return mb.typ
+}
+
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	mb.keys = append(mb.keys, keys...)
