@@ -14,6 +14,10 @@ type WebFooter struct {
 	JapaneseUrl string
 }
 
+func (*WebFooter) TableName() string {
+	return "container_footers"
+}
+
 func RegisterFooter(pb *pagebuilder.Builder) {
 	footer := pb.RegisterContainer("Footer").
 		RenderFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {

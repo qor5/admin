@@ -35,6 +35,10 @@ type Heading struct {
 	Text              string
 }
 
+func (*Heading) TableName() string {
+	return "container_headings"
+}
+
 func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("Heading").
 		RenderFunc(func(obj interface{}, ctx *web.EventContext) HTMLComponent {

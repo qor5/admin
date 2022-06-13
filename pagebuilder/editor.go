@@ -30,15 +30,16 @@ func ShadowDomComponentsPack() web.ComponentsPack {
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.R.FormValue("id")
+	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var comps []h.HTMLComponent
 	var p *Page
-	err = b.db.First(&p, "id = ?", id).Error
+	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, true)
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
 	if err != nil {
 		return
 	}
@@ -57,13 +58,14 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := pat.Param(ctx.R, "id")
+	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
 	var p *Page
-	err = b.db.First(&p, "id = ?", id).Error
+	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, false)
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
 	if err != nil {
 		return
 	}
@@ -84,22 +86,22 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"phone"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"phone"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "phone"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"tablet"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"tablet"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"laptop"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"laptop"}}).PushState(true).Go()).
 				InputValue(device == "laptop"),
 
 			VSpacer(),
-			VBtn("Preview").Text(true).Href(b.prefix+"/preview?id="+id).Target("_blank"),
-			b.addContainerMenu(id),
+			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
+			b.addContainerMenu(id, version),
 		).Dark(true).
 			Color("primary").
 			App(true),
@@ -132,9 +134,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, preview bool) (r []h.HTMLComponent, err error) {
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, preview bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", pageID).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
 		return
 	}
@@ -166,10 +168,11 @@ const MoveContainerEvent = "page_builder_MoveContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerName := ctx.R.FormValue(paramContainerName)
 
 	var modelID uint
-	modelID, err = b.AddContainerToPage(pageID, containerName)
+	modelID, err = b.AddContainerToPage(pageID, pageVersion, containerName)
 
 	// r.Location = web.Location(url.Values{})
 	r.VarsScript = web.Plaid().
@@ -183,8 +186,9 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	direction := ctx.R.FormValue(paramDirection)
 	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerID := ctx.QueryAsInt(paramContainerID)
-	err = b.MoveContainerOrder(pageID, containerID, direction)
+	err = b.MoveContainerOrder(pageID, pageVersion, containerID, direction)
 
 	r.PushState = web.Location(url.Values{})
 
@@ -198,7 +202,7 @@ const (
 	down moveDirection = "down"
 )
 
-func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction string) (err error) {
+func (b *Builder) MoveContainerOrder(pageID int, pageVersion string, containerID int, direction string) (err error) {
 
 	var current Container
 	err = b.db.Find(&current, "id = ?", containerID).Error
@@ -210,13 +214,13 @@ func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction stri
 
 	if moveDirection(direction) == up {
 		b.db.Order("display_order DESC").
-			Where("page_id = ?", pageID).
+			Where("page_id = ? and page_version = ?", pageID, pageVersion).
 			Limit(2).
 			Find(&closest, "display_order < ?", current.DisplayOrder)
 
 	} else {
 		b.db.Order("display_order ASC").
-			Where("page_id = ?", pageID).
+			Where("page_id = ? and page_version = ?", pageID, pageVersion).
 			Limit(2).
 			Find(&closest, "display_order > ?", current.DisplayOrder)
 	}
@@ -243,10 +247,11 @@ func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction stri
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.QueryAsInt(paramPageID)
+	//pageID := ctx.QueryAsInt(paramPageID)
+	//pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerID := ctx.QueryAsInt(paramContainerID)
 
-	err = b.db.Delete(&Container{}, "id = ? AND page_id = ?", containerID, pageID).Error
+	err = b.db.Delete(&Container{}, "id = ?", containerID).Error
 	if err != nil {
 		return
 	}
@@ -254,7 +259,7 @@ func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 	return
 }
 
-func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID uint, err error) {
+func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName string) (modelID uint, err error) {
 	model := b.ContainerByName(containerName).NewModel()
 	err = b.db.Create(model).Error
 	if err != nil {
@@ -262,7 +267,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	}
 
 	var maxOrder sql.NullFloat64
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ?", pageID).Scan(&maxOrder).Error
+	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ? and page_version = ?", pageID, pageVersion).Scan(&maxOrder).Error
 	if err != nil {
 		return
 	}
@@ -270,6 +275,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	modelID = reflectutils.MustGet(model, "ID").(uint)
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
+		PageVersion:  pageVersion,
 		Name:         containerName,
 		ModelID:      modelID,
 		DisplayOrder: maxOrder.Float64 + 8,
@@ -282,6 +288,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 
 const (
 	paramPageID        = "pageID"
+	paramPageVersion   = "pageVersion"
 	paramContainerID   = "containerID"
 	paramDirection     = "direction"
 	paramContainerName = "containerName"
@@ -328,6 +335,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 							EventFunc(MoveContainerEvent).
 							Query(paramDirection, string(up)).
 							Query(paramPageID, ec.container.PageID).
+							Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -340,6 +348,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 							EventFunc(MoveContainerEvent).
 							Query(paramDirection, string(down)).
 							Query(paramPageID, ec.container.PageID).
+							Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -351,7 +360,8 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
 							EventFunc(DeleteContainerEvent).
-							Query(paramPageID, ec.container.PageID).
+							//Query(paramPageID, ec.container.PageID).
+							//Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -450,7 +460,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 	}
 }
 
-func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
+func (b *Builder) addContainerMenu(pageID, pageVersion string) h.HTMLComponent {
 	var items []h.HTMLComponent
 
 	for _, builder := range b.containerBuilders {
@@ -465,7 +475,8 @@ func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
 							Text(true).
 							Color("primary").Attr("@click",
 							web.Plaid().EventFunc(AddContainerEvent).
-								Query(paramPageID, id).
+								Query(paramPageID, pageID).
+								Query(paramPageVersion, pageVersion).
 								Query(paramContainerName, builder.name).
 								Go(),
 						),

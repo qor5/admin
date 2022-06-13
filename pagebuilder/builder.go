@@ -108,7 +108,7 @@ func (b *Builder) Configure(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		return h.Td(
 			h.A().Children(
 				h.Text(fmt.Sprintf("Editor for %d", p.ID)),
-			).Href(fmt.Sprintf("%s/editors/%d", b.prefix, p.ID)).
+			).Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
 				Target("_blank"),
 			VIcon("open_in_new").Size(16).Class("ml-1"),
 		)

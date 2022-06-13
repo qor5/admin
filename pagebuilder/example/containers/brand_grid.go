@@ -30,6 +30,10 @@ type Brand struct {
 	Name  string
 }
 
+func (*BrandGrid) TableName() string {
+	return "container_brand_grids"
+}
+
 type Brands []*Brand
 
 func (this Brands) Value() (driver.Value, error) {

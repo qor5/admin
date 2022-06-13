@@ -26,6 +26,10 @@ type VideoBanner struct {
 	Link                  string
 }
 
+func (*VideoBanner) TableName() string {
+	return "container_video_banners"
+}
+
 func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 	vb := pb.RegisterContainer("Video Banner").
 		RenderFunc(func(obj interface{}, ctx *web.EventContext) HTMLComponent {

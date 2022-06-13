@@ -15,6 +15,10 @@ type WebHeader struct {
 	Color string
 }
 
+func (*WebHeader) TableName() string {
+	return "container_headers"
+}
+
 func RegisterHeader(pb *pagebuilder.Builder) {
 	header := pb.RegisterContainer("Header").
 		RenderFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
