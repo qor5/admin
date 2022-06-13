@@ -111,9 +111,9 @@ func TestUpdatePage(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	mb := pb.Model(&pagebuilder.Page{})
-	publish_view.Configure(pb, db, publisher, mb)
-	pageBuilder.Configure(pb, mb)
+	mb := pageBuilder.Configure(pb)
+	publish_view.Configure(pb, db, nil, publisher, mb)
+
 	// _ = publisher
 	pb.Model(&pagebuilder.Page{})
 

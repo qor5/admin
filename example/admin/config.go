@@ -220,7 +220,6 @@ func NewConfig() Config {
 	pageBuilder := example.ConfigPageBuilder(db)
 	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
 
-	pm := b.Model(&pagebuilder.Page{})
 	l := b.Model(&models.ListModel{})
 
 	l.Listing("ID", "Title", "Status")
@@ -229,7 +228,7 @@ func NewConfig() Config {
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)).
 		Prefix("/admin/page_builder")
-	pageBuilder.Configure(b, pm)
+	pm := pageBuilder.Configure(b)
 
 	note.Configure(db, b, m, pm)
 
@@ -309,7 +308,7 @@ func NewConfig() Config {
 		}
 	})
 
-	publish_view.Configure(b, ab, db, publisher, m, l, pm)
+	publish_view.Configure(b, db, ab, publisher, m, l, pm)
 
 	return Config{
 		pb:          b,

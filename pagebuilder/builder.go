@@ -100,7 +100,8 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Page{})
 	list := pm.Listing("ID", "Title", "Slug")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -114,6 +115,7 @@ func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
 	})
 
 	pm.Editing("Status", "Schedule", "Title", "Slug")
+	return
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
