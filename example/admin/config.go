@@ -143,6 +143,9 @@ func NewConfig() Config {
 			"Product",
 			"Category",
 		).Icon("shopping_cart"),
+		b.MenuGroup("Page Builder").SubItems(
+			"Page",
+		).Icon("view_quilt"),
 	)
 
 	m := b.Model(&models.Post{})
@@ -194,7 +197,7 @@ func NewConfig() Config {
 		{Text: "Customers", Value: "*:customers:*"},
 		{Text: "Products", Value: "*:products:*,*:product_management:"},
 		{Text: "Categories", Value: "*:categories:*,*:product_management:"},
-		{Text: "Pages", Value: "*:pages:*"},
+		{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
 		{Text: "ListModels", Value: "*:list_models:*"},
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
