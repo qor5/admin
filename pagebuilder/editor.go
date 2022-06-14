@@ -156,7 +156,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		} else {
 			_, width := b.getDevice(ctx)
 
-			r = append(r, b.containerEditor(obj, ec, pure, width))
+			r = append(r, b.containerEditor(ctx, obj, ec, pure, width))
 		}
 	}
 	return
@@ -247,8 +247,8 @@ func (b *Builder) MoveContainerOrder(pageID int, pageVersion string, containerID
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	//pageID := ctx.QueryAsInt(paramPageID)
-	//pageVersion := ctx.R.FormValue(paramPageVersion)
+	// pageID := ctx.QueryAsInt(paramPageID)
+	// pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerID := ctx.QueryAsInt(paramContainerID)
 
 	err = b.db.Delete(&Container{}, "id = ?", containerID).Error
@@ -294,17 +294,20 @@ const (
 	paramContainerName = "containerName"
 )
 
-func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
-
+func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
+	containerContent := h.Div(
+		b.pageStyle,
+		c,
+	)
 	return VRow(
 		VCol(
 			h.Div(
-				h.Tag("shadow-root").Children(
-					h.Div(
-						b.pageStyle,
-						c,
-					).Style("position:relative; z-index: 0;"),
-				),
+				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.scrollHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
+					strings.ReplaceAll(
+						h.MustString(containerContent, ctx.R.Context()),
+						"\"",
+						"&quot;"),
+				)),
 			).Class("page-builder-container mx-auto").Attr("style", width),
 		).Cols(10).Class("pa-0"),
 
@@ -360,8 +363,8 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
 							EventFunc(DeleteContainerEvent).
-							//Query(paramPageID, ec.container.PageID).
-							//Query(paramPageVersion, ec.container.PageVersion).
+							// Query(paramPageID, ec.container.PageID).
+							// Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
