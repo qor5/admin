@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
@@ -61,26 +63,32 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	id := pat.Param(ctx.R, "id")
 	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
+	var body h.HTMLComponent
+	var device string
 	var p *Page
 	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
-	if err != nil {
-		return
-	}
-	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
-	device, _ := b.getDevice(ctx)
-	var body h.HTMLComponent
-	body = h.Components(comps...)
-	if b.pageLayoutFunc != nil {
-		input := &PageLayoutInput{
-			IsEditor: true,
-			Page:     p,
+	if p.GetStatus() == publish.StatusDraft {
+		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
+		if err != nil {
+			return
 		}
-		body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+		r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+		device, _ = b.getDevice(ctx)
+		body = h.Components(comps...)
+		if b.pageLayoutFunc != nil {
+			input := &PageLayoutInput{
+				IsEditor: true,
+				Page:     p,
+			}
+			body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+		}
+	} else {
+		body = h.Text(perm.PermissionDenied.Error())
 	}
+
 	r.Body = h.Components(
 		VAppBar(
 			VSpacer(),

@@ -12,6 +12,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/publish/views"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -124,12 +125,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		return h.Div(
-			VBtn("Edit Container").
-				Target("_blank").
-				Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
-				Color("secondary"),
-		)
+		if p.GetStatus() == publish.StatusDraft {
+			return h.Div(
+				VBtn("Edit Container").
+					Target("_blank").
+					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+					Color("secondary"),
+			)
+		}
+		return nil
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
