@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -105,11 +104,8 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Page{})
-	list := pm.Listing("ID", "Title", "Slug")
-	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		return h.Td(h.Text(strconv.Itoa(int(p.ID))))
-	})
+	pm.Listing("ID", "Title", "Slug")
+
 	//list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	p := obj.(*Page)
 	//	return h.Td(
