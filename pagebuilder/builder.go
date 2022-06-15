@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -106,16 +107,30 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	list := pm.Listing("ID", "Title", "Slug")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		return h.Td(
-			h.A().Children(
-				h.Text(fmt.Sprintf("Editor for %d", p.ID)),
-			).Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
-				Target("_blank"),
-			VIcon("open_in_new").Size(16).Class("ml-1"),
+		return h.Td(h.Text(strconv.Itoa(int(p.ID))))
+	})
+	//list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	//	p := obj.(*Page)
+	//	return h.Td(
+	//		h.A().Children(
+	//			h.Text(fmt.Sprintf("Editor for %d", p.ID)),
+	//		).Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+	//			Target("_blank"),
+	//		VIcon("open_in_new").Size(16).Class("ml-1"),
+	//	)
+	//})
+
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "EditContainer")
+
+	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		return h.Div(
+			VBtn("Edit Container").
+				Target("_blank").
+				Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+				Color("secondary"),
 		)
 	})
-
-	eb := pm.Editing("Status", "Schedule", "Title", "Slug")
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
