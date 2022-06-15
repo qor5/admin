@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/qor/qor5/example/admin"
 )
 
@@ -18,8 +18,10 @@ func main() {
 	}
 	fmt.Println("Served at http://localhost:" + port + "/admin")
 	http.Handle("/",
-		middleware.Logger(
-			middleware.RequestID(mux),
+		middleware.RequestID(
+			middleware.Logger(
+				middleware.Recoverer(mux),
+			),
 		),
 	)
 	err := http.ListenAndServe(":"+port, nil)
