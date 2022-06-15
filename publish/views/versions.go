@@ -163,17 +163,10 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 				return
 			}
 		}
+
 		if err = me.Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
 			me.UpdateOverlayContent(ctx, &r, obj, "", err)
 			return
-		}
-
-		if i, ok := obj.(publish.AfterSaveNewVersionInterface); ok {
-			// to pass pagebuilder
-			if err = i.AfterSaveNewVersion(db, publisher.Context()); err != nil {
-				me.UpdateOverlayContent(ctx, &r, obj, "", err)
-				return
-			}
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -276,7 +269,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		saveNewVersionBtn := VBtn(msgr.SaveAsNewVersion).
 			Color("secondary").
 			Attr("@click", web.Plaid().
-				EventFunc(saveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
+				EventFunc(SaveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)

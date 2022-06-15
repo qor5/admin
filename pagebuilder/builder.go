@@ -11,6 +11,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/publish/views"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -100,7 +101,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Page{})
 	list := pm.Listing("ID", "Title", "Slug")
 	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -114,10 +115,24 @@ func (b *Builder) Configure(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		)
 	})
 
-	pm.Editing("Status", "Schedule", "Title", "Slug")
-	//eb.SaveFunc(
-	//	eb.Saver()
-	//	)
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug")
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			p := obj.(*Page)
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+			if !strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
+				return
+			}
+			if inerr = b.CopyContainers(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
+				return
+			}
+			return
+		})
+		return
+	})
 	return
 }
 

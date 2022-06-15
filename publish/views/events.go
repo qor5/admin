@@ -13,7 +13,7 @@ const (
 	republishEvent      = "publish_republishEvent"
 	unpublishEvent      = "publish_UnpublishEvent"
 	switchVersionEvent  = "publish_SwitchVersionEvent"
-	saveNewVersionEvent = "publish_SaveNewVersionEvent"
+	SaveNewVersionEvent = "publish_SaveNewVersionEvent"
 
 	ActivityPublish   = "Publish"
 	ActivityRepublish = "Republish"
@@ -25,7 +25,7 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 	mb.RegisterEventFunc(republishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(switchVersionEvent, switchVersionAction(db, mb, publisher))
-	mb.RegisterEventFunc(saveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
+	mb.RegisterEventFunc(SaveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
 }
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {

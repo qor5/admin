@@ -20,7 +20,7 @@ func main() {
 	pb := example.ConfigPageBuilder(db)
 	pb.PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`))
 
-	pb.Configure(p)
+	pb.Configure(p, db)
 
 	mux := http.NewServeMux()
 

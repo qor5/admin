@@ -15,6 +15,7 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 //go:embed dist
@@ -286,26 +287,26 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 	return
 }
 
-func (b *Builder) CopyContainers(pageID int, oldPageVersion, newPageVersion string) (err error) {
+func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
 	if err != nil {
 		return
 	}
 
 	for _, c := range cons {
 		model := b.ContainerByName(c.Name).NewModel()
-		if err = b.db.First(model, "id = ?", c.ModelID).Error; err != nil {
+		if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
 			return
 		}
 		if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
 			return
 		}
-		if err = b.db.Create(model).Error; err != nil {
+		if err = db.Create(model).Error; err != nil {
 			return
 		}
 		newModelID := reflectutils.MustGet(model, "ID").(uint)
-		if err = b.db.Create(&Container{
+		if err = db.Create(&Container{
 			PageID:       uint(pageID),
 			PageVersion:  newPageVersion,
 			Name:         c.Name,

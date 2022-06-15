@@ -231,7 +231,7 @@ func NewConfig() Config {
 	pageBuilder.
 		PageStyle(h.RawHTML(`<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)).
 		Prefix("/admin/page_builder")
-	pm := pageBuilder.Configure(b)
+	pm := pageBuilder.Configure(b, db)
 
 	note.Configure(db, b, m, pm)
 
