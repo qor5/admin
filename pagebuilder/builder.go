@@ -115,6 +115,9 @@ func (b *Builder) Configure(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	})
 
 	pm.Editing("Status", "Schedule", "Title", "Slug")
+	//eb.SaveFunc(
+	//	eb.Saver()
+	//	)
 	return
 }
 

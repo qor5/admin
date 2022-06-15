@@ -30,6 +30,10 @@ type AfterUnPublishInterface interface {
 	AfterUnPublish(db *gorm.DB, storage oss.StorageInterface, ctx context.Context) error
 }
 
+type AfterSaveNewVersionInterface interface {
+	AfterSaveNewVersion(db *gorm.DB, ctx context.Context) error
+}
+
 type StatusInterface interface {
 	GetStatus() string
 	SetStatus(s string)

@@ -33,6 +33,15 @@ func (b *Builder) WithValue(key, val interface{}) *Builder {
 	return b
 }
 
+func (b *Builder) WithPageBuilder(val interface{}) *Builder {
+	b.context = context.WithValue(b.context, "pagebuilder", val)
+	return b
+}
+
+func (b *Builder) Context() context.Context {
+	return b.context
+}
+
 // 幂等
 func (b *Builder) Publish(record interface{}) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {

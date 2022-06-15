@@ -286,6 +286,38 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 	return
 }
 
+func (b *Builder) CopyContainers(pageID int, oldPageVersion, newPageVersion string) (err error) {
+	var cons []*Container
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		model := b.ContainerByName(c.Name).NewModel()
+		if err = b.db.First(model, "id = ?", c.ModelID).Error; err != nil {
+			return
+		}
+		if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+			return
+		}
+		if err = b.db.Create(model).Error; err != nil {
+			return
+		}
+		newModelID := reflectutils.MustGet(model, "ID").(uint)
+		if err = b.db.Create(&Container{
+			PageID:       uint(pageID),
+			PageVersion:  newPageVersion,
+			Name:         c.Name,
+			ModelID:      newModelID,
+			DisplayOrder: c.DisplayOrder,
+		}).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
 const (
 	paramPageID        = "pageID"
 	paramPageVersion   = "pageVersion"

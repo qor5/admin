@@ -221,7 +221,7 @@ func NewConfig() Config {
 	configCustomer(b, db)
 
 	pageBuilder := example.ConfigPageBuilder(db)
-	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
+	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
 
