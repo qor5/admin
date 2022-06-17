@@ -73,11 +73,11 @@ func (this *MicroSite) SetUnixKey() {
 //}
 
 func (this MicroSite) GetPackagePath(fileName string) string {
-	return fmt.Sprintf("/%s/__package__/%s/%s", PackageAndPreviewPrepath, this.UnixKey, fileName)
+	return fmt.Sprintf("/%s/__package__/%s/%s", PackageAndPreviewPrepath, this.GetUnixKey(), fileName)
 }
 
 func (this MicroSite) GetPreviewPrePath() string {
-	return fmt.Sprintf("/%s/__preview__/%s", PackageAndPreviewPrepath, this.UnixKey)
+	return fmt.Sprintf("/%s/__preview__/%s", PackageAndPreviewPrepath, this.GetUnixKey())
 }
 
 func (this MicroSite) GetPreviewPath(fileName string) string {

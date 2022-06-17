@@ -2,6 +2,7 @@ package views
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/goplaid/web"
@@ -41,15 +42,23 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 			if this.GetPackage().FileName == "" {
 				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
 			}
-			return h.Div(
-				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar"),
+			return web.Scope(h.Div(
+				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").
+					Attr("v-model", "locals.file").On("change", "locals.change = true"),
 				h.Div(
 					vuetify.VRow(h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package"))),
 					vuetify.VRow(h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName)),
 				).Style("margin-top: 4px; padding-top: 12px"),
-			)
+				h.Input("").Attr(web.VFieldName("PackageChanged")...).Attr("v-model", "locals.change").Type("hidden"),
+			)).Init(fmt.Sprintf(`{ file: new File([""], "%v", {
+                  lastModified: 0,
+                }) , change: false}`, this.GetPackage().FileName)).
+				VSlot("{ locals }")
 		}).
 			SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+				if ctx.R.FormValue("PackageChanged") == "false" {
+					return nil
+				}
 				this := obj.(microsite.MicroSiteInterface)
 				if this.GetUnixKey() == "" {
 					this.SetUnixKey()
@@ -110,7 +119,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 						content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v))))
 					}
 				}
-				return h.Div(content...).Style("margin-top: 4px; padding-top: 12px")
+				return h.Div(content...).Class("v-text-field")
 			},
 		)
 	}
