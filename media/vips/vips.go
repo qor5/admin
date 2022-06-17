@@ -37,15 +37,18 @@ func (bimgImageHandler) CouldHandle(media media.Media) bool {
 }
 
 // Crop & Resize
-func (bimgImageHandler) Handle(media media.Media, file media.FileInterface, option *media.Option) (err error) {
+func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *media.Option) (err error) {
 	buffer := new(bytes.Buffer)
 	if _, err := io.Copy(buffer, file); err != nil {
 		return err
 	}
+	fileSizes := m.GetFileSizes()
+	fileSizes["original"] = buffer.Len()
 
 	// Auto Rotate by EXIF
 	img := copyImage(buffer.Bytes())
 	metaData, _ := img.Metadata()
+	media.SetWeightHeight(m, metaData.Size.Width, metaData.Size.Height)
 	if metaData.EXIF.Orientation > 1 {
 		rotatedBuf, err := img.AutoRotate()
 		if err != nil {
@@ -59,49 +62,51 @@ func (bimgImageHandler) Handle(media media.Media, file media.FileInterface, opti
 
 	// Save Original Image
 	{
-		if err = media.Store(media.URL("original"), option, bytes.NewReader(buffer.Bytes())); err != nil {
+		if err = m.Store(m.URL("original"), option, bytes.NewReader(buffer.Bytes())); err != nil {
 			return err
 		}
 
 		img := copyImage(buffer.Bytes())
-		if err = generateWebp(media, option, bimg.Options{}, img, "original"); err != nil {
+		if err = generateWebp(m, option, bimg.Options{}, img, "original"); err != nil {
 			return err
 		}
 	}
 
 	// TODO support crop gif
-	if isGif(media.URL()) {
-		if err = media.Store(media.URL(), option, file); err != nil {
+	if isGif(m.URL()) {
+		if err = m.Store(m.URL(), option, file); err != nil {
 			return err
 		}
 		img := copyImage(buffer.Bytes())
 		bimgOption := bimg.Options{Palette: true, Compression: PNGCompression}
-		if err = generateWebp(media, option, bimgOption, img); err != nil {
+		if err = generateWebp(m, option, bimgOption, img); err != nil {
 			return err
 		}
-		for key, _ := range media.GetSizes() {
+		for key, _ := range m.GetSizes() {
 			if key == "original" {
 				continue
 			}
 			img := copyImage(buffer.Bytes())
-			if err = media.Store(media.URL(key), option, file); err != nil {
+			if err = m.Store(m.URL(key), option, file); err != nil {
 				return err
 			}
-			if err = generateWebp(media, option, bimgOption, img, key); err != nil {
+			fileSizes[key] = buffer.Len()
+			if err = generateWebp(m, option, bimgOption, img, key); err != nil {
 				return err
 			}
 		}
+		media.SetFileSizes(m, fileSizes)
 		return
 	}
 
-	quality := getQualityByImageType(media.URL())
+	quality := getQualityByImageType(m.URL())
 
 	// Handle default image
 	{
 		img := copyImage(buffer.Bytes())
 		bimgOption := bimg.Options{Quality: quality, Palette: true, Compression: PNGCompression}
 		// Crop original image if specified
-		if cropOption := media.GetCropOption("original"); cropOption != nil {
+		if cropOption := m.GetCropOption("original"); cropOption != nil {
 			options := bimg.Options{
 				Quality:    100, // Don't compress twice
 				Top:        cropOption.Min.Y,
@@ -118,24 +123,25 @@ func (bimgImageHandler) Handle(media media.Media, file media.FileInterface, opti
 		}
 		copy := copyImage(img.Image())
 		if buf, err := img.Process(bimgOption); err == nil {
-			if err = media.Store(media.URL(), option, bytes.NewReader(buf)); err != nil {
+			if err = m.Store(m.URL(), option, bytes.NewReader(buf)); err != nil {
 				return err
 			}
+			fileSizes[media.DefaultSizeKey] = len(buf)
 		} else {
 			return err
 		}
-		if err = generateWebp(media, option, bimgOption, copy); err != nil {
+		if err = generateWebp(m, option, bimgOption, copy); err != nil {
 			return err
 		}
 	}
 
 	// Handle size images
-	for key, size := range media.GetSizes() {
+	for key, size := range m.GetSizes() {
 		if key == "original" {
 			continue
 		}
 		img := copyImage(buffer.Bytes())
-		if cropOption := media.GetCropOption(key); cropOption != nil {
+		if cropOption := m.GetCropOption(key); cropOption != nil {
 			options := bimg.Options{
 				Quality:    100, // Don't compress twice
 				Top:        cropOption.Min.Y,
@@ -161,32 +167,34 @@ func (bimgImageHandler) Handle(media media.Media, file media.FileInterface, opti
 		}
 		// Process & Save size image
 		if buf, err := img.Process(bimgOption); err == nil {
-			if err = media.Store(media.URL(key), option, bytes.NewReader(buf)); err != nil {
+			if err = m.Store(m.URL(key), option, bytes.NewReader(buf)); err != nil {
 				return err
 			}
+			fileSizes[key] = len(buf)
 		} else {
 			return err
 		}
-		if err = generateWebp(media, option, bimgOption, copy, key); err != nil {
+		if err = generateWebp(m, option, bimgOption, copy, key); err != nil {
 			return err
 		}
 	}
+	media.SetFileSizes(m, fileSizes)
 	return
 }
 
-func generateWebp(media media.Media, option *media.Option, bimgOption bimg.Options, img *bimg.Image, size ...string) (err error) {
+func generateWebp(m media.Media, option *media.Option, bimgOption bimg.Options, img *bimg.Image, size ...string) (err error) {
 	if !EnableGenerateWebp {
 		return
 	}
 	bimgOption.Type = bimg.WEBP
-	bimgOption.Quality = getWebpQualityByImageType(media.URL())
+	bimgOption.Quality = getWebpQualityByImageType(m.URL())
 	if buf, err := img.Process(bimgOption); err == nil {
-		url := media.URL(size...)
+		url := m.URL(size...)
 		ext := path.Ext(url)
 		extArr := strings.Split(ext, "?")
 		i := strings.LastIndex(url, ext)
 		webpUrl := url[:i] + strings.Replace(url[i:], extArr[0], ".webp", 1)
-		media.Store(webpUrl, option, bytes.NewReader(buf))
+		m.Store(webpUrl, option, bytes.NewReader(buf))
 	} else {
 		return err
 	}

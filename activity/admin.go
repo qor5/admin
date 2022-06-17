@@ -32,7 +32,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
 		detailing = mb.Detailing("ModelLink", "ModelDiffs")
 	)
-
+	ab.lmb = mb
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
 
@@ -44,10 +44,10 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 		)
 
 		contextDB.Select("creator").Group("creator").Find(logs)
-		reflectVlaue := reflect.Indirect(reflect.ValueOf(logs))
+		reflectValue := reflect.Indirect(reflect.ValueOf(logs))
 		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < reflectVlaue.Len(); i++ {
-			creator := reflect.Indirect(reflectVlaue.Index(i)).FieldByName("Creator").String()
+		for i := 0; i < reflectValue.Len(); i++ {
+			creator := reflect.Indirect(reflectValue.Index(i)).FieldByName("Creator").String()
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
 				Text:  creator,
 				Value: creator,

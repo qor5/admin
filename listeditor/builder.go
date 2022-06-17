@@ -53,6 +53,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 					Children(
 						VIcon("delete"),
 					).Attr("@click", web.Plaid().
+					URL(b.fieldContext.ModelInfo.ListingHref()).
 					EventFunc(removeRowEvent).
 					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 					Query(ParamRemoveRowFormKey, formKey).
@@ -114,6 +115,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 							VIcon("sort"),
 						).Attr("@click",
 							web.Plaid().
+								URL(b.fieldContext.ModelInfo.ListingHref()).
 								EventFunc(sortEvent).
 								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -125,6 +127,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 							VIcon("done"),
 						).Attr("@click",
 							web.Plaid().
+								URL(b.fieldContext.ModelInfo.ListingHref()).
 								EventFunc(sortEvent).
 								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -142,6 +145,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 					Text(true).
 					Color("primary").
 					Attr("@click", web.Plaid().
+						URL(b.fieldContext.ModelInfo.ListingHref()).
 						EventFunc(addRowEvent).
 						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 						Query(ParamAddRowFormKey, b.fieldContext.FormKey).

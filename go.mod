@@ -1,23 +1,21 @@
 module github.com/qor/qor5
 
-go 1.16
+go 1.17
 
 require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
 	github.com/gen2brain/go-unarr v0.1.2
-	github.com/go-chi/chi v1.5.4
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.1.27
-	github.com/goplaid/x v1.0.27
+	github.com/goplaid/web v1.2.1
+	github.com/goplaid/x v1.1.2-0.20220615095758-23e05e9516a8
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
-	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
@@ -27,7 +25,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
-	github.com/theplant/docgo v0.0.10
+	github.com/theplant/docgo v0.0.12
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
@@ -35,7 +33,6 @@ require (
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.3.7
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/postgres v1.2.1
 	gorm.io/gorm v1.22.2
 )

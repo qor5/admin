@@ -81,6 +81,8 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		var pageURL *url.URL
 		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
 			mb.Listing().ReloadList(ctx, &r, pageURL)
+			// notify notification center after note read. if notification center is not enabled, this one would just do nothing
+			r.ReloadPortals = append(r.ReloadPortals, presets.NotificationCenterPortalName)
 		}
 
 		return

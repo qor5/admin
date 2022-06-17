@@ -33,21 +33,23 @@ type Provider struct {
 }
 
 type Builder struct {
-	secret               string
-	loginURL             string
-	fetchUserFunc        FetchUserToContextFunc
-	authParamName        string
-	homeURL              string
-	extractors           []request.Extractor
-	loginPageContentFunc ContentFunc
-	providers            []*Provider
+	secret                string
+	loginURL              string
+	fetchUserFunc         FetchUserToContextFunc
+	authParamName         string
+	homeURL               string
+	continueUrlCookieName string
+	extractors            []request.Extractor
+	loginPageContentFunc  ContentFunc
+	providers             []*Provider
 }
 
 func New() *Builder {
 	r := &Builder{
-		authParamName: "auth",
-		loginURL:      "/auth/login",
-		homeURL:       "/",
+		authParamName:         "auth",
+		loginURL:              "/auth/login",
+		homeURL:               "/",
+		continueUrlCookieName: "qor5_continue_url",
 	}
 	return r
 }
@@ -110,13 +112,23 @@ type UserClaims struct {
 
 // CompleteUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
-
 	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
 		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
 		return
 	}
+	redirectURL := b.homeURL
+	c, _ := r.Cookie(b.continueUrlCookieName)
+	if c != nil && c.Value != "" {
+		redirectURL = c.Value
+		http.SetCookie(w, &http.Cookie{
+			Name:   b.continueUrlCookieName,
+			Value:  "",
+			MaxAge: -1,
+			Path:   "/",
+		})
+	}
 
-	http.Redirect(w, r, b.homeURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) loginFailCode {
@@ -257,6 +269,18 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 
 		if err != nil {
 			log.Println(err)
+			if b.homeURL != r.RequestURI {
+				continueURL := r.RequestURI
+				if strings.Contains(r.RequestURI, "?__execute_event__=") {
+					continueURL = r.Referer()
+				}
+				http.SetCookie(w, &http.Cookie{
+					Name:     b.continueUrlCookieName,
+					Value:    continueURL,
+					Path:     "/",
+					HttpOnly: true,
+				})
+			}
 			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
 			return
 		}

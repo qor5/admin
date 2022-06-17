@@ -43,6 +43,7 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 		FetchUserToContextFunc(func(claim *login.UserClaims, r *http.Request) (newR *http.Request, err error) {
 			u := &models.User{}
 			err = db.Where("o_auth_provider = ? and o_auth_user_id = ?", claim.Provider, claim.UserID).
+				Preload("Roles").
 				First(u).
 				Error
 			if err == gorm.ErrRecordNotFound {

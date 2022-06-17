@@ -39,8 +39,9 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 }
 
 type Container struct {
-	ID           uint
+	gorm.Model
 	PageID       uint
+	PageVersion  string
 	Name         string
 	ModelID      uint
 	DisplayOrder float64

@@ -45,6 +45,8 @@ type VersionInterface interface {
 }
 
 type ScheduleInterface interface {
+	GetStatus() string
+
 	GetScheduledStartAt() *time.Time
 	GetScheduledEndAt() *time.Time
 	SetScheduledStartAt(v *time.Time)

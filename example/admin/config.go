@@ -3,14 +3,19 @@ package admin
 import (
 	"embed"
 	"fmt"
+	"net/http"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
+	"github.com/goplaid/x/vuetifyx"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
@@ -27,6 +32,7 @@ import (
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/richeditor"
+	"github.com/qor/qor5/role"
 	"github.com/qor/qor5/slug"
 	"github.com/qor/qor5/utils"
 	"github.com/qor/qor5/worker"
@@ -92,14 +98,38 @@ func NewConfig() Config {
 			)
 			return
 		})
+	// perm.Verbose = true
+	b.Permission(
+		perm.New().Policies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles:*", "*:users:*"),
+			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
+			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
+			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
+			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
+		).SubjectsFunc(func(r *http.Request) []string {
+			u := getCurrentUser(r)
+			if u == nil {
+				return nil
+			}
+			return u.GetRoles()
+		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}),
+	)
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
+			u := getCurrentUser(r)
+			if u.Name == "中文" {
+				return b.I18n().GetSupportLanguages()[1:]
+			}
+			return b.I18n().GetSupportLanguages()
+		})
 	utils.Configure(b)
 
 	media_view.Configure(b, db)
 	// media_view.MediaLibraryPerPage = 3
+	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(
@@ -115,6 +145,9 @@ func NewConfig() Config {
 			"Product",
 			"Category",
 		).Icon("shopping_cart"),
+		b.MenuGroup("Page Builder").SubItems(
+			"Page",
+		).Icon("view_quilt"),
 	)
 
 	m := b.Model(&models.Post{})
@@ -124,7 +157,10 @@ func NewConfig() Config {
 		SearchColumns("title", "body").
 		PerPage(10)
 
-	publish_view.Configure(b, db, publish.New(db, oss.Storage), m)
+	w := worker.New(db)
+	defer w.Listen()
+	w.Configure(b)
+	addJobs(w)
 
 	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
@@ -154,15 +190,29 @@ func NewConfig() Config {
 
 	configInputHarness(b, db)
 	configUser(b, db)
-	configRole(b, db)
-	configProduct(b, db)
+	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
+		{Text: "All", Value: "*"},
+		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
+		{Text: "Posts", Value: "*:posts:*"},
+		{Text: "Settings", Value: "*:settings:*,*:site_management:"},
+		{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
+		{Text: "Customers", Value: "*:customers:*"},
+		{Text: "Products", Value: "*:products:*,*:product_management:"},
+		{Text: "Categories", Value: "*:categories:*,*:product_management:"},
+		{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
+		{Text: "ListModels", Value: "*:list_models:*"},
+		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
+		{Text: "Workers", Value: "*:workers:*"},
+	})
+	configProduct(b, db, w)
 	configCategory(b, db)
 
-	_ = m
 	// Use m to customize the model, Or config more models here.
 
 	type Setting struct{}
-	b.Model(&Setting{}).Listing().PageFunc(pages.Settings(db))
+	sm := b.Model(&Setting{})
+	sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
+	sm.Listing().PageFunc(pages.Settings(db))
 
 	type ListEditorExample struct{}
 	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
@@ -173,29 +223,17 @@ func NewConfig() Config {
 	configCustomer(b, db)
 
 	pageBuilder := example.ConfigPageBuilder(db)
-	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
+	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
-	pm := b.Model(&pagebuilder.Page{})
 	l := b.Model(&models.ListModel{})
-
-	publish_view.Configure(b, db, publisher, l)
 
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Schedule", "Title")
 
-	mm := b.Model(&models.MicrositeModel{})
-	mm.Listing("ID", "Name", "PrePath", "Status").
-		SearchColumns("ID", "Name").
-		PerPage(10)
-	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, oss.Storage, domain, publisher, mm)
-
 	pageBuilder.
-		PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`)).
+		PageStyle(h.RawHTML(`<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)).
 		Prefix("/admin/page_builder")
-	pageBuilder.Configure(b, pm)
-
-	publish_view.Configure(b, db, publisher, pm)
+	pm := pageBuilder.Configure(b, db)
 
 	note.Configure(db, b, m, pm)
 
@@ -209,10 +247,80 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
+	ab.RegisterModels(m, l, pm)
+	ab.GetPresetModelBuilder().Listing().FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		var (
+			logs         = ab.NewLogModelSlice()
+			activityMsgr = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
+			publishMsgr  = i18n.MustGetModuleMessages(ctx.R, publish_view.I18nPublishKey, publish_view.Messages_en_US).(*publish_view.Messages)
+			contextDB    = db
+		)
 
-	w := worker.New(db)
-	addJobs(w)
-	w.Configure(b)
+		contextDB.Select("creator").Group("creator").Find(logs)
+		reflectValue := reflect.Indirect(reflect.ValueOf(logs))
+		var creatorOptions []*vuetifyx.SelectItem
+		for i := 0; i < reflectValue.Len(); i++ {
+			creator := reflect.Indirect(reflectValue.Index(i)).FieldByName("Creator").String()
+			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
+				Text:  creator,
+				Value: creator,
+			})
+		}
+
+		var modelOptions []*vuetifyx.SelectItem
+		for _, m := range ab.GetModelBuilders() {
+			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
+				Text:  m.GetType().Name(),
+				Value: m.GetType().Name(),
+			})
+		}
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "action",
+				Label:        activityMsgr.FilterAction,
+				ItemType:     vuetifyx.ItemTypeSelect,
+				SQLCondition: `action %s ?`,
+				Options: []*vuetifyx.SelectItem{
+					{Text: activityMsgr.ActionEdit, Value: activity.ActivityEdit},
+					{Text: activityMsgr.ActionCreate, Value: activity.ActivityCreate},
+					{Text: activityMsgr.ActionDelete, Value: activity.ActivityDelete},
+					{Text: publishMsgr.Publish, Value: publish_view.ActivityPublish},
+					{Text: publishMsgr.Republish, Value: publish_view.ActivityRepublish},
+					{Text: publishMsgr.Unpublish, Value: publish_view.ActivityUnPublish},
+				},
+			},
+			{
+				Key:          "created",
+				Label:        activityMsgr.FilterCreatedAt,
+				ItemType:     vuetifyx.ItemTypeDate,
+				SQLCondition: `created_at %s ?`,
+			},
+			{
+				Key:          "creator",
+				Label:        activityMsgr.FilterCreator,
+				ItemType:     vuetifyx.ItemTypeSelect,
+				SQLCondition: `creator %s ?`,
+				Options:      creatorOptions,
+			},
+			{
+				Key:          "model",
+				Label:        activityMsgr.FilterModel,
+				ItemType:     vuetifyx.ItemTypeSelect,
+				SQLCondition: `model_name %s ?`,
+				Options:      modelOptions,
+			},
+		}
+	})
+
+	mm := b.Model(&models.MicrositeModel{})
+	mm.Listing("ID", "Name", "PrePath", "Status").
+		SearchColumns("ID", "Name").
+		PerPage(10)
+	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
+	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
+
+	publish_view.Configure(b, db, ab, publisher, m, l, pm)
 
 	return Config{
 		pb:          b,

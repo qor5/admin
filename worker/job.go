@@ -22,11 +22,13 @@ import (
 //go:generate moq -pkg mock -out mock/mock.go . QorJobInterface
 
 type JobBuilder struct {
-	b    *Builder
-	name string
-	r    interface{}
-	rmb  *presets.ModelBuilder
-	h    JobHandler
+	b              *Builder
+	name           string
+	r              interface{}
+	rmb            *presets.ModelBuilder
+	h              JobHandler
+	contextHandler func(*web.EventContext) map[string]interface{} //optional
+	global         bool
 }
 
 func newJob(b *Builder, name string) *JobBuilder {
@@ -38,8 +40,9 @@ func newJob(b *Builder, name string) *JobBuilder {
 	}
 
 	return &JobBuilder{
-		b:    b,
-		name: name,
+		b:      b,
+		name:   name,
+		global: true,
 	}
 }
 
@@ -100,6 +103,11 @@ func (jb *JobBuilder) Handler(h JobHandler) *JobBuilder {
 	return jb
 }
 
+func (jb *JobBuilder) ContextHandler(handler func(*web.EventContext) map[string]interface{}) *JobBuilder {
+	jb.contextHandler = handler
+	return jb
+}
+
 func (jb *JobBuilder) newResourceObject() interface{} {
 	if jb.r == nil {
 		return nil
@@ -120,7 +128,6 @@ func (jb *JobBuilder) parseArgs(in string) (args interface{}, err error) {
 	if jb.r == nil {
 		return nil, nil
 	}
-
 	args = jb.newResourceObject()
 	err = json.Unmarshal([]byte(in), args)
 	if err != nil {
@@ -163,6 +170,7 @@ func (jb *JobBuilder) newJobInstance(
 	qorJobID uint,
 	qorJobName string,
 	args interface{},
+	context interface{},
 ) (*QorJobInstance, error) {
 	var mArgs string
 	if v, ok := args.(string); ok {
@@ -174,9 +182,22 @@ func (jb *JobBuilder) newJobInstance(
 		}
 		mArgs = string(bArgs)
 	}
+
+	var ctx string
+	if v, ok := context.(string); ok {
+		ctx = v
+	} else {
+		bArgs, err := json.Marshal(context)
+		if err != nil {
+			return nil, err
+		}
+		ctx = string(bArgs)
+	}
+
 	inst := QorJobInstance{
 		QorJobID: qorJobID,
 		Args:     mArgs,
+		Context:  ctx,
 		Job:      qorJobName,
 		Status:   JobStatusNew,
 	}
@@ -204,12 +225,17 @@ type QueJobInterface interface {
 	GetHandler() JobHandler
 }
 
+type JobInfo struct {
+	JobID    string
+	JobName  string
+	Operator string
+	Argument interface{}
+	Context  map[string]interface{}
+}
+
 // for job handler
 type QorJobInterface interface {
-	GetJobID() string
-	GetJobName() string
-	GetOperator() string
-	GetArgument() (interface{}, error)
+	GetJobInfo() (*JobInfo, error)
 	SetProgress(uint) error
 	SetProgressText(string) error
 	AddLog(string) error
@@ -218,12 +244,24 @@ type QorJobInterface interface {
 
 var _ QueJobInterface = (*QorJobInstance)(nil)
 
-func (job *QorJobInstance) GetJobName() string {
-	return job.Job
-}
+func (job *QorJobInstance) GetJobInfo() (ji *JobInfo, err error) {
+	arg, err := job.getArgument()
+	if err != nil {
+		return
+	}
 
-func (job *QorJobInstance) GetJobID() string {
-	return fmt.Sprint(job.QorJobID)
+	context, err := job.getContext()
+	if err != nil {
+		return
+	}
+
+	return &JobInfo{
+		JobID:    fmt.Sprint(job.QorJobID),
+		JobName:  job.Job,
+		Operator: job.Operator,
+		Argument: arg,
+		Context:  context,
+	}, nil
 }
 
 func (job *QorJobInstance) GetStatus() string {
@@ -302,27 +340,18 @@ func (job *QorJobInstance) SetProgressText(s string) error {
 }
 
 func (job *QorJobInstance) AddLog(log string) error {
-	job.mutex.Lock()
-	defer job.mutex.Unlock()
-
-	job.Log += "\n" + log
-	if job.shouldCallSave() {
-		return job.callSave()
+	if err := job.jb.b.db.Create(&QorJobLog{
+		QorJobInstanceID: job.ID,
+		Log:              log,
+	}).Error; err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (job *QorJobInstance) AddLogf(format string, a ...interface{}) error {
-	job.mutex.Lock()
-	defer job.mutex.Unlock()
-
-	job.Log += "\n" + fmt.Sprintf(format, a...)
-	if job.shouldCallSave() {
-		return job.callSave()
-	}
-
-	return nil
+	return job.AddLog(fmt.Sprintf(format, a...))
 }
 
 func (job *QorJobInstance) StartRefresh() {
@@ -354,12 +383,14 @@ func (job *QorJobInstance) GetHandler() JobHandler {
 	return job.jb.h
 }
 
-func (job *QorJobInstance) GetArgument() (interface{}, error) {
+func (job *QorJobInstance) getArgument() (interface{}, error) {
 	return job.jb.parseArgs(job.Args)
 }
 
-func (job *QorJobInstance) GetOperator() string {
-	return job.Operator
+func (job *QorJobInstance) getContext() (map[string]interface{}, error) {
+	var context = make(map[string]interface{})
+	err := json.Unmarshal([]byte(job.Context), &context)
+	return context, err
 }
 
 func (job *QorJobInstance) shouldCallSave() bool {

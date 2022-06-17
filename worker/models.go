@@ -22,18 +22,26 @@ type QorJobInstance struct {
 
 	Operator string
 
-	Job    string
-	Status string `sql:"default:'new'"`
-	Args   string
+	Job     string
+	Status  string `sql:"default:'new'"`
+	Args    string
+	Context string
 
 	Progress     uint
 	ProgressText string
-	Log          string `sql:"size:65532"`
 
 	jb          *JobBuilder `sql:"-"`
 	mutex       sync.Mutex  `sql:"-"`
 	stopRefresh bool        `sql:"-"`
 	inRefresh   bool        `sql:"-"`
+}
+
+type QorJobLog struct {
+	ID        uint      `gorm:"primarykey"`
+	CreatedAt time.Time `gorm:"index"`
+
+	QorJobInstanceID uint `gorm:"index"`
+	Log              string
 }
 
 type Scheduler interface {
@@ -58,4 +66,9 @@ func (schedule *Schedule) GetScheduleTime() *time.Time {
 
 func (schedule *Schedule) SetScheduleTime(t *time.Time) {
 	schedule.ScheduleTime = t
+}
+
+type GoQueError struct {
+	gorm.Model
+	Error string
 }

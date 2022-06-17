@@ -9,6 +9,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/oss"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/microsite"
 	"github.com/qor/qor5/microsite/utils"
 	"github.com/qor/qor5/publish"
@@ -20,12 +21,12 @@ import (
 
 const I18nMicrositeKey i18n.ModuleKey = "I18nMicrositeKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, storage oss.StorageInterface, domain string, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, storage oss.StorageInterface, domain string, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
 
-	publish_view.Configure(b, db, publisher, models...)
+	publish_view.Configure(b, db, ab, publisher, models...)
 	for _, model := range models {
 		//model.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 		//	if ctx.R.FormValue("__execute_event__") == "publish_SaveNewVersionEvent" {

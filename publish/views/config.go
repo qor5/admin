@@ -7,6 +7,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	"golang.org/x/text/language"
@@ -15,11 +16,11 @@ import (
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
 		if model, ok := m.NewModel().(publish.VersionInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.VersionPublishModels = append(publish.VersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
@@ -38,17 +39,17 @@ func Configure(b *presets.Builder, db *gorm.DB, publisher *publish.Builder, mode
 			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
 		} else {
 			if schedulePublishModel, ok := m.NewModel().(publish.ScheduleInterface); ok {
-				publish.NonVersionPublishModels = append(publish.NonVersionPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
 		if model, ok := m.NewModel().(publish.ListInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.ListPublishModels = append(publish.ListPublishModels, reflect.ValueOf(schedulePublishModel).Elem().Interface())
+				publish.ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
-		registerEventFuncs(db, m, publisher)
+		registerEventFuncs(db, m, publisher, ab)
 	}
 
 	b.FieldDefaults(presets.LIST).

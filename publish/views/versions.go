@@ -251,29 +251,39 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		var buttonLabel = gmsgr.Create
 		m.RightDrawerWidth("800")
+		var disableUpdateBtn bool
 		if ctx.R.FormValue("id") != "" {
 			buttonLabel = gmsgr.Update
 			m.RightDrawerWidth("1200")
+			disableUpdateBtn = m.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-
+		updateBtn := VBtn(buttonLabel).
+			Color("primary").
+			Attr("@click", web.Plaid().
+				EventFunc(actions.Update).Query("id", ctx.R.FormValue("id")).
+				URL(m.Info().ListingHref()).
+				Go(),
+			)
+		saveNewVersionBtn := VBtn(msgr.SaveAsNewVersion).
+			Color("secondary").
+			Attr("@click", web.Plaid().
+				EventFunc(SaveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
+				URL(m.Info().ListingHref()).
+				Go(),
+			)
+		if disableUpdateBtn {
+			updateBtn = updateBtn.Disabled(disableUpdateBtn)
+			saveNewVersionBtn = saveNewVersionBtn.Disabled(disableUpdateBtn)
+		} else {
+			updateBtn = updateBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
+			saveNewVersionBtn = saveNewVersionBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
+		}
 		return h.Components(
 			VSpacer(),
-			VBtn(msgr.SaveAsNewVersion).
-				Color("secondary").
-				Attr("@click", web.Plaid().
-					EventFunc(saveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
-					URL(m.Info().ListingHref()).
-					Go(),
-				).Disabled(ctx.R.FormValue("id") == ""),
-			VBtn(buttonLabel).
-				Color("primary").
-				Attr("@click", web.Plaid().
-					EventFunc(actions.Update).Query("id", ctx.R.FormValue("id")).
-					URL(m.Info().ListingHref()).
-					Go(),
-				),
+			saveNewVersionBtn,
+			updateBtn,
 		)
 	}
 }

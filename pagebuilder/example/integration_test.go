@@ -37,7 +37,7 @@ INSERT INTO public.text_and_images (text, image, id) VALUES ('Hello Text and Ima
 
 	for _, oc := range orderCases {
 		t.Run(oc.name, func(t *testing.T) {
-			err := pb.MoveContainerOrder(1, oc.containerID, oc.direction)
+			err := pb.MoveContainerOrder(1, "", oc.containerID, oc.direction)
 			if err != nil {
 				t.Error(err)
 			}
@@ -61,7 +61,7 @@ INSERT INTO public.text_and_images (text, image, id) VALUES ('Hello Text and Ima
 		t.Error(w.Body.String())
 	}
 
-	_, err := pb.AddContainerToPage(1, "text_and_image")
+	_, err := pb.AddContainerToPage(1, "", "text_and_image")
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,9 +110,10 @@ func TestUpdatePage(t *testing.T) {
 	db := example.ConnectDB()
 	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pageBuilder := example.ConfigPageBuilder(db)
-	publisher := publish.New(db, oss.Storage).WithValue("pagebuilder", pageBuilder)
-	publish_view.Configure(pb, db, publisher, &pagebuilder.Page{})
-	pageBuilder.Configure(pb)
+	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
+	mb := pageBuilder.Configure(pb)
+	publish_view.Configure(pb, db, nil, publisher, mb)
+
 	// _ = publisher
 	pb.Model(&pagebuilder.Page{})
 

@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"reflect"
 	"strings"
@@ -10,11 +11,30 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/publish"
+	"github.com/qor/qor5/publish/views"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 type RenderFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
+
+type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent
+
+type PageLayoutInput struct {
+	Page              *Page
+	SeoTags           template.HTML
+	CanonicalLink     template.HTML
+	StructuredData    template.HTML
+	FreeStyleCss      []string
+	FreeStyleTopJs    []string
+	FreeStyleBottomJs []string
+	Header            h.HTMLComponent
+	Footer            h.HTMLComponent
+	IsEditor          bool
+	IsPreview         bool
+	Locale            string
+}
 
 type Builder struct {
 	prefix            string
@@ -23,6 +43,7 @@ type Builder struct {
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
 	pageStyle         h.HTMLComponent
+	pageLayoutFunc    PageLayoutFunc
 	preview           http.Handler
 }
 
@@ -72,24 +93,62 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
+func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
+	b.pageLayoutFunc = v
+	return b
+}
+
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, pm *presets.ModelBuilder) {
-	list := pm.Listing("ID", "Title", "Slug")
-	list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Page{})
+	pm.Listing("ID", "Title", "Slug")
+
+	//list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	//	p := obj.(*Page)
+	//	return h.Td(
+	//		h.A().Children(
+	//			h.Text(fmt.Sprintf("Editor for %d", p.ID)),
+	//		).Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+	//			Target("_blank"),
+	//		VIcon("open_in_new").Size(16).Class("ml-1"),
+	//	)
+	//})
+
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "EditContainer")
+
+	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		return h.Td(
-			h.A().Children(
-				h.Text(fmt.Sprintf("Editor for %d", p.ID)),
-			).Href(fmt.Sprintf("%s/editors/%d", b.prefix, p.ID)).
-				Target("_blank"),
-			VIcon("open_in_new").Size(16).Class("ml-1"),
-		)
+		if p.GetStatus() == publish.StatusDraft {
+			return h.Div(
+				VBtn("Edit Container").
+					Target("_blank").
+					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+					Color("secondary"),
+			)
+		}
+		return nil
 	})
 
-	pm.Editing("Status", "Schedule", "Title", "Slug")
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			p := obj.(*Page)
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+			if !strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
+				return
+			}
+			if inerr = b.CopyContainers(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
+				return
+			}
+			return
+		})
+		return
+	})
+	return
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
@@ -102,12 +161,12 @@ func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
 }
 
 type ContainerBuilder struct {
-	builder       *Builder
-	name          string
-	mb            *presets.ModelBuilder
-	model         interface{}
-	modelType     reflect.Type
-	containerFunc RenderFunc
+	builder    *Builder
+	name       string
+	mb         *presets.ModelBuilder
+	model      interface{}
+	modelType  reflect.Type
+	renderFunc RenderFunc
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -132,8 +191,12 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) GetModelBuilder() *presets.ModelBuilder {
+	return b.mb
+}
+
 func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
-	b.containerFunc = v
+	b.renderFunc = v
 	return b
 }
 
@@ -145,7 +208,7 @@ func (b *ContainerBuilder) ModelTypeName() string {
 	return b.modelType.String()
 }
 
-func (b *ContainerBuilder) Editing(vs ...string) *presets.EditingBuilder {
+func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 	return b.mb.Editing(vs...)
 }
 

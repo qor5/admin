@@ -9,12 +9,15 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 //go:embed dist
@@ -30,38 +33,61 @@ func ShadowDomComponentsPack() web.ComponentsPack {
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.R.FormValue("id")
+	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var comps []h.HTMLComponent
 	var p *Page
-	err = b.db.First(&p, "id = ?", id).Error
+	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, true)
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
 	if err != nil {
 		return
 	}
 
 	r.PageTitle = p.Title
 	r.Body = h.Components(comps...)
+	if b.pageLayoutFunc != nil {
+		input := &PageLayoutInput{
+			IsPreview: true,
+			Page:      p,
+		}
+		r.Body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+	}
 	return
 }
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := pat.Param(ctx.R, "id")
+	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
+	var body h.HTMLComponent
+	var device string
 	var p *Page
-	err = b.db.First(&p, "id = ?", id).Error
+	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, false)
-	if err != nil {
-		return
+	if p.GetStatus() == publish.StatusDraft {
+		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
+		if err != nil {
+			return
+		}
+		r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+		device, _ = b.getDevice(ctx)
+		body = h.Components(comps...)
+		if b.pageLayoutFunc != nil {
+			input := &PageLayoutInput{
+				IsEditor: true,
+				Page:     p,
+			}
+			body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+		}
+	} else {
+		body = h.Text(perm.PermissionDenied.Error())
 	}
-	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
-	device, _ := b.getDevice(ctx)
 
 	r.Body = h.Components(
 		VAppBar(
@@ -69,28 +95,28 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"phone"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"phone"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "phone"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"tablet"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"tablet"}}).PushState(true).Go()).
 				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"device": []string{"laptop"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"laptop"}}).PushState(true).Go()).
 				InputValue(device == "laptop"),
 
 			VSpacer(),
-			VBtn("Preview").Text(true).Href(b.prefix+"/preview?id="+id).Target("_blank"),
-			b.addContainerMenu(id),
+			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
+			b.addContainerMenu(id, version),
 		).Dark(true).
 			Color("primary").
 			App(true),
 
 		VMain(
-			VContainer(comps...).Attr("v-keep-scroll", "true").
+			VContainer(body).Attr("v-keep-scroll", "true").
 				Class("mt-6").
 				Fluid(true),
 		),
@@ -117,9 +143,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, preview bool) (r []h.HTMLComponent, err error) {
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, preview bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ?", pageID).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
 		return
 	}
@@ -132,14 +158,14 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, preview b
 			return
 		}
 
-		pure := ec.builder.containerFunc(obj, ctx)
+		pure := ec.builder.renderFunc(obj, ctx)
 
 		if preview {
 			r = append(r, pure)
 		} else {
 			_, width := b.getDevice(ctx)
 
-			r = append(r, b.containerEditor(obj, ec, pure, width))
+			r = append(r, b.containerEditor(ctx, obj, ec, pure, width))
 		}
 	}
 	return
@@ -151,10 +177,11 @@ const MoveContainerEvent = "page_builder_MoveContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerName := ctx.R.FormValue(paramContainerName)
 
 	var modelID uint
-	modelID, err = b.AddContainerToPage(pageID, containerName)
+	modelID, err = b.AddContainerToPage(pageID, pageVersion, containerName)
 
 	// r.Location = web.Location(url.Values{})
 	r.VarsScript = web.Plaid().
@@ -168,8 +195,9 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	direction := ctx.R.FormValue(paramDirection)
 	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerID := ctx.QueryAsInt(paramContainerID)
-	err = b.MoveContainerOrder(pageID, containerID, direction)
+	err = b.MoveContainerOrder(pageID, pageVersion, containerID, direction)
 
 	r.PushState = web.Location(url.Values{})
 
@@ -183,7 +211,7 @@ const (
 	down moveDirection = "down"
 )
 
-func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction string) (err error) {
+func (b *Builder) MoveContainerOrder(pageID int, pageVersion string, containerID int, direction string) (err error) {
 
 	var current Container
 	err = b.db.Find(&current, "id = ?", containerID).Error
@@ -195,13 +223,13 @@ func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction stri
 
 	if moveDirection(direction) == up {
 		b.db.Order("display_order DESC").
-			Where("page_id = ?", pageID).
+			Where("page_id = ? and page_version = ?", pageID, pageVersion).
 			Limit(2).
 			Find(&closest, "display_order < ?", current.DisplayOrder)
 
 	} else {
 		b.db.Order("display_order ASC").
-			Where("page_id = ?", pageID).
+			Where("page_id = ? and page_version = ?", pageID, pageVersion).
 			Limit(2).
 			Find(&closest, "display_order > ?", current.DisplayOrder)
 	}
@@ -228,10 +256,11 @@ func (b *Builder) MoveContainerOrder(pageID int, containerID int, direction stri
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.QueryAsInt(paramPageID)
+	// pageID := ctx.QueryAsInt(paramPageID)
+	// pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerID := ctx.QueryAsInt(paramContainerID)
 
-	err = b.db.Delete(&Container{}, "id = ? AND page_id = ?", containerID, pageID).Error
+	err = b.db.Delete(&Container{}, "id = ?", containerID).Error
 	if err != nil {
 		return
 	}
@@ -239,7 +268,7 @@ func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 	return
 }
 
-func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID uint, err error) {
+func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName string) (modelID uint, err error) {
 	model := b.ContainerByName(containerName).NewModel()
 	err = b.db.Create(model).Error
 	if err != nil {
@@ -247,7 +276,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	}
 
 	var maxOrder sql.NullFloat64
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ?", pageID).Scan(&maxOrder).Error
+	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ? and page_version = ?", pageID, pageVersion).Scan(&maxOrder).Error
 	if err != nil {
 		return
 	}
@@ -255,6 +284,7 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	modelID = reflectutils.MustGet(model, "ID").(uint)
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
+		PageVersion:  pageVersion,
 		Name:         containerName,
 		ModelID:      modelID,
 		DisplayOrder: maxOrder.Float64 + 8,
@@ -265,24 +295,60 @@ func (b *Builder) AddContainerToPage(pageID int, containerName string) (modelID 
 	return
 }
 
+func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
+	var cons []*Container
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		model := b.ContainerByName(c.Name).NewModel()
+		if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+			return
+		}
+		if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+			return
+		}
+		if err = db.Create(model).Error; err != nil {
+			return
+		}
+		newModelID := reflectutils.MustGet(model, "ID").(uint)
+		if err = db.Create(&Container{
+			PageID:       uint(pageID),
+			PageVersion:  newPageVersion,
+			Name:         c.Name,
+			ModelID:      newModelID,
+			DisplayOrder: c.DisplayOrder,
+		}).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
 const (
 	paramPageID        = "pageID"
+	paramPageVersion   = "pageVersion"
 	paramContainerID   = "containerID"
 	paramDirection     = "direction"
 	paramContainerName = "containerName"
 )
 
-func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
-
+func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
+	containerContent := h.Div(
+		b.pageStyle,
+		c,
+	)
 	return VRow(
 		VCol(
 			h.Div(
-				h.Tag("shadow-root").Children(
-					h.Div(
-						b.pageStyle,
-						c,
-					),
-				),
+				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.scrollHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
+					strings.ReplaceAll(
+						h.MustString(containerContent, ctx.R.Context()),
+						"\"",
+						"&quot;"),
+				)),
 			).Class("page-builder-container mx-auto").Attr("style", width),
 		).Cols(10).Class("pa-0"),
 
@@ -313,6 +379,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 							EventFunc(MoveContainerEvent).
 							Query(paramDirection, string(up)).
 							Query(paramPageID, ec.container.PageID).
+							Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -325,6 +392,7 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 							EventFunc(MoveContainerEvent).
 							Query(paramDirection, string(down)).
 							Query(paramPageID, ec.container.PageID).
+							Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -336,7 +404,8 @@ func (b *Builder) containerEditor(obj interface{}, ec *editorContainer, c h.HTML
 						web.Plaid().
 							URL(ec.builder.mb.Info().ListingHref()).
 							EventFunc(DeleteContainerEvent).
-							Query(paramPageID, ec.container.PageID).
+							// Query(paramPageID, ec.container.PageID).
+							// Query(paramPageVersion, ec.container.PageVersion).
 							Query(paramContainerID, ec.container.ID).
 							Go(),
 					),
@@ -435,7 +504,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 	}
 }
 
-func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
+func (b *Builder) addContainerMenu(pageID, pageVersion string) h.HTMLComponent {
 	var items []h.HTMLComponent
 
 	for _, builder := range b.containerBuilders {
@@ -450,7 +519,8 @@ func (b *Builder) addContainerMenu(id string) h.HTMLComponent {
 							Text(true).
 							Color("primary").Attr("@click",
 							web.Plaid().EventFunc(AddContainerEvent).
-								Query(paramPageID, id).
+								Query(paramPageID, pageID).
+								Query(paramPageVersion, pageVersion).
 								Query(paramContainerName, builder.name).
 								Go(),
 						),

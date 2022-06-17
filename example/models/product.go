@@ -10,5 +10,6 @@ type Product struct {
 
 	Code  string
 	Name  string
+	Price int
 	Image media_library.MediaBox `sql:"type:text;"`
 }

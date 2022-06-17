@@ -16,7 +16,6 @@ import (
 
 func Settings(db *gorm.DB) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		ctx.Hub.RegisterEventFunc("logInfo", logInfo)
 		r.PageTitle = "Settings"
 
 		r.Body = h.Div(
@@ -57,7 +56,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 						Value(cropper.Value{X: 1141, Y: 540, Width: 713, Height: 466}).
 						AspectRatio(713, 466).
 						Attr("@input", web.Plaid().
-							FieldValue("CropperEvent", web.Var("JSON.stringify($event)")).EventFunc("logInfo").Go()),
+							FieldValue("CropperEvent", web.Var("JSON.stringify($event)")).EventFunc(LogInfoEvent).Go()),
 				),
 			).Fluid(true),
 		)
@@ -65,7 +64,9 @@ func Settings(db *gorm.DB) web.PageFunc {
 	}
 }
 
-func logInfo(ctx *web.EventContext) (r web.EventResponse, err error) {
+const LogInfoEvent = "logInfo"
+
+func LogInfo(ctx *web.EventContext) (r web.EventResponse, err error) {
 	log.Println("CropperEvent", ctx.R.FormValue("CropperEvent"))
 	return
 }
