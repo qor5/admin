@@ -42,15 +42,21 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 			if this.GetPackage().FileName == "" {
 				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
 			}
-			return web.Scope(h.Div(
+			return web.Scope(
 				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").
 					Attr("v-model", "locals.file").On("change", "locals.change = true"),
+
 				h.Div(
-					vuetify.VRow(h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package"))),
-					vuetify.VRow(h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName)),
-				).Style("margin-top: 4px; padding-top: 12px"),
+					h.Div(
+						h.Div(
+							h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+							h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName),
+						).Class("v-text-field__slot"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
+
 				h.Input("").Attr(web.VFieldName("PackageChanged")...).Attr("v-model", "locals.change").Type("hidden"),
-			)).Init(fmt.Sprintf(`{ file: new File([""], "%v", {
+			).Init(fmt.Sprintf(`{ file: new File([""], "%v", {
                   lastModified: 0,
                 }) , change: false}`, this.GetPackage().FileName)).
 				VSlot("{ locals }")
@@ -110,16 +116,25 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 				}
 
 				var content []h.HTMLComponent
-				content = append(content, vuetify.VRow(h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), field.Label))))
+
+				content = append(content,
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+				)
 
 				for _, v := range this.GetFileList() {
 					if this.GetStatus() == publish.StatusOnline {
-						content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v))))
+						content = append(content, h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v)))
 					} else {
-						content = append(content, vuetify.VRow(h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v))))
+						content = append(content, h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v)))
 					}
 				}
-				return h.Div(content...).Class("v-text-field")
+				return h.Div(
+					h.Div(
+						h.Div(
+							content...,
+						).Class("v-text-field__slot"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
 		)
 	}
