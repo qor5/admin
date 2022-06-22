@@ -20,7 +20,7 @@ func (*WebFooter) TableName() string {
 
 func RegisterFooter(pb *pagebuilder.Builder) {
 	footer := pb.RegisterContainer("Footer").
-		RenderFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) h.HTMLComponent {
 			footer := obj.(*WebFooter)
 			return FooterTemplate(footer.EnglishUrl, footer.JapaneseUrl)
 		})

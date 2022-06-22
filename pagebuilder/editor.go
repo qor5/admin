@@ -42,7 +42,7 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 	if err != nil {
 		return
 	}
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
 	if err != nil {
 		return
 	}
@@ -71,7 +71,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		return
 	}
 	if p.GetStatus() == publish.StatusDraft {
-		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
+		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
 		if err != nil {
 			return
 		}
@@ -133,9 +133,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 
 	switch device {
 	case "phone":
-		style = "width: 600px"
+		style = "width: 414px"
 	case "tablet":
-		style = "width: 960px"
+		style = "width: 768px"
 	case "laptop":
 		style = "width: 1264px"
 	}
@@ -143,7 +143,7 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, preview bool) (r []h.HTMLComponent, err error) {
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, isEditor bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
 	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
@@ -157,15 +157,18 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		if err != nil {
 			return
 		}
+		device, width := b.getDevice(ctx)
+		input := RenderInput{
+			IsEditor: isEditor,
+			Device:   device,
+		}
+		pure := ec.builder.renderFunc(obj, &input, ctx)
 
-		pure := ec.builder.renderFunc(obj, ctx)
-
-		if preview {
-			r = append(r, pure)
-		} else {
-			_, width := b.getDevice(ctx)
+		if isEditor {
 
 			r = append(r, b.containerEditor(ctx, obj, ec, pure, width))
+		} else {
+			r = append(r, pure)
 		}
 	}
 	return
@@ -343,7 +346,7 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 	return VRow(
 		VCol(
 			h.Div(
-				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.scrollHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
+				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
 					strings.ReplaceAll(
 						h.MustString(containerContent, ctx.R.Context()),
 						"\"",

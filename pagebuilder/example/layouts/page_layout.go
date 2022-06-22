@@ -10,6 +10,9 @@ import (
 )
 
 func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
+	if input.IsEditor {
+		return body
+	}
 	var seoTags HTMLComponent
 	if len(input.SeoTags) > 0 {
 		seoTags = RawHTML(input.SeoTags)

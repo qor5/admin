@@ -53,9 +53,9 @@ func (this *Brands) Scan(value interface{}) error {
 
 func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("BrandGrid").
-		RenderFunc(func(obj interface{}, ctx *web.EventContext) HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*BrandGrid)
-			return BrandGridBody(v)
+			return BrandGridBody(v, input)
 		})
 	mb := vb.Model(&BrandGrid{})
 	listeditor.Configure(mb.GetModelBuilder())
@@ -71,23 +71,27 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	})
 }
 
-func BrandGridBody(data *BrandGrid) (body HTMLComponent) {
+func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
 		fmt.Sprintf("brand_grid_%v", data.ID), data.AnchorID, "container-brand_grid", "", "", "",
 		data.AddTopSpace, data.AddBottomSpace,
 		Div(
-			BrandsBody(data.Brands),
+			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),
 	)
 	return
 }
 
-func BrandsBody(brands []*Brand) HTMLComponent {
+func BrandsBody(brands []*Brand, input *pagebuilder.RenderInput) HTMLComponent {
 	brandsDiv := Div().Class("container-brand_grid-wrap")
 	for _, b := range brands {
+		img := LazyImageHtml(b.Image)
+		if input.IsEditor {
+			img = ImageHtml(b.Image)
+		}
 		brandsDiv.AppendChildren(
 			Div(
-				LazyImageHtml(b.Image),
+				img,
 			).Class("container-brand_grid-item"),
 		)
 	}

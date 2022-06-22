@@ -17,7 +17,12 @@ import (
 	"gorm.io/gorm"
 )
 
-type RenderFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
+type RenderInput struct {
+	IsEditor bool
+	Device   string
+}
+
+type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
 
 type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent
 

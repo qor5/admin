@@ -32,7 +32,7 @@ func (*VideoBanner) TableName() string {
 
 func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 	vb := pb.RegisterContainer("Video Banner").
-		RenderFunc(func(obj interface{}, ctx *web.EventContext) HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*VideoBanner)
 			return VideoBannerBody(v)
 		})

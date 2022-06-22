@@ -21,9 +21,9 @@ func (*WebHeader) TableName() string {
 
 func RegisterHeader(pb *pagebuilder.Builder) {
 	header := pb.RegisterContainer("Header").
-		RenderFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) h.HTMLComponent {
 			header := obj.(*WebHeader)
-			return HeaderTemplate(header.Color)
+			return HeaderTemplate(header.Color, input)
 		})
 
 	ed := header.Model(&WebHeader{}).Editing("Color")
@@ -36,8 +36,12 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 	})
 }
 
-func HeaderTemplate(color string) h.HTMLComponent {
-	return h.RawHTML(fmt.Sprintf(`<header data-navigation-color="%s" class="container-instance container-header">
+func HeaderTemplate(color string, input *pagebuilder.RenderInput) h.HTMLComponent {
+	style := ""
+	if input.IsEditor && (input.Device == "phone" || input.Device == "tablet") {
+		style = "position:relative;background:black;"
+	}
+	return h.RawHTML(fmt.Sprintf(`<header data-navigation-color="%s" class="container-instance container-header" style="%s">
 <div class="container-wrapper">
 <a href="/" class="container-header-logo"><svg viewBox="0 0 29 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.399 10.054V0L0 10.054V29.73h28.792V0L14.4 10.054z" fill="currentColor"><title>The Plant</title></path></svg></a>
 <ul data-list-unset="true" class="container-header-links">
@@ -58,5 +62,5 @@ func HeaderTemplate(color string) h.HTMLComponent {
 <span class="container-header-menu-icon"></span>
 </button>
 </div>
-</header>`, color))
+</header>`, color, style))
 }
