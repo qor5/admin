@@ -3,7 +3,6 @@ package views
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -133,11 +132,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 			return
 		}
 
-		intID, err := strconv.Atoi(id)
-		if err != nil {
-			return
-		}
-		if err = reflectutils.Set(obj, "ID", uint(intID)); err != nil {
+		if err = reflectutils.Set(obj, "ID", id); err != nil {
 			return
 		}
 
