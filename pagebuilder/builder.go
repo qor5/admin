@@ -83,6 +83,9 @@ func New(db *gorm.DB) *Builder {
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainerEvent)
+	r.ps.GetWebBuilder().RegisterEventFunc(RenameDialogEvent, r.RenameDialogEvent)
+	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainerEvent)
 	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
 	return r
 }

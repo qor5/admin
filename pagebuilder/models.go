@@ -45,6 +45,8 @@ type Container struct {
 	Name         string
 	ModelID      uint
 	DisplayOrder float64
+	Shared       bool
+	DisplayName  string
 }
 
 func (*Container) TableName() string {

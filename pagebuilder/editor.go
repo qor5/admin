@@ -177,6 +177,9 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 const AddContainerEvent = "page_builder_AddContainerEvent"
 const DeleteContainerEvent = "page_builder_DeleteContainerEvent"
 const MoveContainerEvent = "page_builder_MoveContainerEvent"
+const MarkAsSharedContainerEvent = "page_builder_MarkAsSharedContainerEvent"
+const RenameDialogEvent = "page_builder_RenameDialogEvent"
+const RenameContainerEvent = "page_builder_RenameContainerEvent"
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
@@ -289,6 +292,7 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 		PageID:       uint(pageID),
 		PageVersion:  pageVersion,
 		Name:         containerName,
+		DisplayName:  containerName,
 		ModelID:      modelID,
 		DisplayOrder: maxOrder.Float64 + 8,
 	}).Error
@@ -306,27 +310,103 @@ func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPag
 	}
 
 	for _, c := range cons {
-		model := b.ContainerByName(c.Name).NewModel()
-		if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
-			return
+		newModelID := c.ModelID
+		if !c.Shared {
+			model := b.ContainerByName(c.Name).NewModel()
+			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+				return
+			}
+			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+				return
+			}
+			if err = db.Create(model).Error; err != nil {
+				return
+			}
+			newModelID = reflectutils.MustGet(model, "ID").(uint)
 		}
-		if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
-			return
-		}
-		if err = db.Create(model).Error; err != nil {
-			return
-		}
-		newModelID := reflectutils.MustGet(model, "ID").(uint)
+
 		if err = db.Create(&Container{
 			PageID:       uint(pageID),
 			PageVersion:  newPageVersion,
 			Name:         c.Name,
+			DisplayName:  c.DisplayName,
 			ModelID:      newModelID,
 			DisplayOrder: c.DisplayOrder,
+			Shared:       c.Shared,
 		}).Error; err != nil {
 			return
 		}
 	}
+	return
+}
+
+func (b *Builder) MarkAsSharedContainerEvent(ctx *web.EventContext) (r web.EventResponse, err error) {
+	containerID := ctx.QueryAsInt(paramContainerID)
+	err = b.db.Model(&Container{}).Where("id = ?", containerID).Update("shared", true).Error
+	if err != nil {
+		return
+	}
+	r.PushState = web.Location(url.Values{})
+	return
+
+	return
+}
+
+func (b *Builder) RenameContainerEvent(ctx *web.EventContext) (r web.EventResponse, err error) {
+	containerID := ctx.QueryAsInt(paramContainerID)
+	name := ctx.R.FormValue("DisplayName")
+	var c Container
+	err = b.db.First(&c, "id = ?  ", containerID).Error
+	if err != nil {
+		return
+	}
+	if c.Shared {
+		err = b.db.Model(&Container{}).Where("name = ? AND model_id = ?", c.Name, c.ModelID).Update("display_name", name).Error
+		if err != nil {
+			return
+		}
+	} else {
+		err = b.db.Model(&Container{}).Where("id = ?", containerID).Update("display_name", name).Error
+		if err != nil {
+			return
+		}
+	}
+
+	r.PushState = web.Location(url.Values{})
+	return
+}
+
+func (b *Builder) RenameDialogEvent(ctx *web.EventContext) (r web.EventResponse, err error) {
+	containerID := ctx.QueryAsInt(paramContainerID)
+	name := ctx.R.FormValue(paramContainerName)
+	okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: dialogPortalName,
+		Body: web.Scope(
+			VDialog(
+				VCard(
+					VCardTitle(h.Text("Rename")),
+					VCardText(
+						VTextField().FieldName("DisplayName").Value(name),
+					),
+					VCardActions(
+						VSpacer(),
+						VBtn("Cancel").
+							Depressed(true).
+							Class("ml-2").
+							On("click", "locals.renameDialog = false"),
+
+						VBtn("OK").
+							Color("primary").
+							Depressed(true).
+							Dark(true).
+							Attr("@click", okAction),
+					),
+				),
+			).MaxWidth("400px").
+				Attr("v-model", "locals.renameDialog"),
+		).Init("{renameDialog:true}").VSlot("{locals}"),
+	})
 	return
 }
 
@@ -343,6 +423,10 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 		b.pageStyle,
 		c,
 	)
+	containerName := ec.container.DisplayName
+	if containerName == "" {
+		containerName = ec.container.Name
+	}
 	return VRow(
 		VCol(
 			h.Div(
@@ -373,6 +457,30 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 							EventFunc(actions.Edit).
 							Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 							Go(),
+					),
+					VListItem(
+						VListItemTitle(h.Text("Rename")),
+					).Attr("@click",
+						web.Plaid().
+							URL(ec.builder.mb.Info().ListingHref()).
+							EventFunc(RenameDialogEvent).
+							Query(paramContainerID, ec.container.ID).
+							Query(paramContainerName, containerName).
+							Query(presets.ParamOverlay, actions.Dialog).
+							Go(),
+					),
+					h.If(!ec.container.Shared,
+						VListItem(
+							VListItemTitle(h.Text("Mark As Shared Container")),
+						).Attr("@click",
+							web.Plaid().
+								URL(ec.builder.mb.Info().ListingHref()).
+								EventFunc(MarkAsSharedContainerEvent).
+								// Query(paramPageID, ec.container.PageID).
+								// Query(paramPageVersion, ec.container.PageVersion).
+								Query(paramContainerID, ec.container.ID).
+								Go(),
+						),
 					),
 					VListItem(
 						VListItemTitle(h.Text("Move Up")),
@@ -416,7 +524,8 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 			).OffsetY(true),
 
 			VBtn("").Color("primary").Children(
-				h.Text(ec.builder.name),
+				h.If(ec.container.Shared, VIcon("shared")),
+				h.Text(containerName),
 			).Text(true).
 				Class("my-2 float-right").Attr("@click",
 				web.Plaid().
@@ -448,6 +557,10 @@ func (b *Builder) getContainerBuilders(cs []*Container) (r []*editorContainer) {
 	}
 	return
 }
+
+const (
+	dialogPortalName = "pagebuilder_DialogPortalName"
+)
 
 func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
@@ -499,9 +612,10 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 		pr.Body = VApp(
 
 			web.Portal().Name(presets.RightDrawerPortalName),
+			web.Portal().Name(dialogPortalName),
 
 			innerPr.Body.(h.HTMLComponent),
-		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false}`)
+		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, dialogPortalName: false}`)
 
 		return
 	}
