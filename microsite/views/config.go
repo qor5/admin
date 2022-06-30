@@ -29,23 +29,15 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 
 	publish_view.Configure(b, db, ab, publisher, models...)
 	for _, model := range models {
-		//model.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		//	if ctx.R.FormValue("__execute_event__") == "publish_SaveNewVersionEvent" {
-		//		this := obj.(microsite.MicroSiteInterface)
-		//		this.SetPackage("", "")
-		//		this.SetFilesList(nil)
-		//	}
-		//})
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)
 
 			if this.GetPackage().FileName == "" {
-				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar")
+				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
+					On("change", web.Plaid().
+						FieldValue("PackageChanged", "true").String())
 			}
 			return web.Scope(
-				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").
-					Attr("v-model", "locals.file").On("change", "locals.change = true"),
-
 				h.Div(
 					h.Div(
 						h.Div(
@@ -55,15 +47,17 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
 
-				h.Input("").Attr(web.VFieldName("PackageChanged")...).Attr("v-model", "locals.change").Type("hidden"),
+				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
+					Attr("v-model", "locals.file").On("change", web.Plaid().
+					FieldValue("PackageChanged", "true").String()),
 			).Init(fmt.Sprintf(`{ file: new File([""], "%v", {
                   lastModified: 0,
                 }) , change: false}`, this.GetPackage().FileName)).
 				VSlot("{ locals }")
 		}).
 			SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-				if ctx.R.FormValue("PackageChanged") == "false" {
-					return nil
+				if ctx.R.FormValue("PackageChanged") != "true" {
+					return
 				}
 				this := obj.(microsite.MicroSiteInterface)
 				if this.GetUnixKey() == "" {
@@ -89,7 +83,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 
 				fileBytes, err := ioutil.ReadAll(f)
 				if err != nil {
-					return err
+					return
 				}
 
 				filesList, err := this.GetFilesListAndPublishPreviewFiles(fileName, fileBytes, storage)
@@ -121,13 +115,22 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 				)
 
-				for _, v := range this.GetFileList() {
-					if this.GetStatus() == publish.StatusOnline {
+				if this.GetStatus() == publish.StatusOnline {
+					for k, v := range this.GetFileList() {
+						if k != 0 {
+							content = append(content, h.Br())
+						}
 						content = append(content, h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v)))
-					} else {
+					}
+				} else {
+					for k, v := range this.GetFileList() {
+						if k != 0 {
+							content = append(content, h.Br())
+						}
 						content = append(content, h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v)))
 					}
 				}
+
 				return h.Div(
 					h.Div(
 						h.Div(
@@ -136,7 +139,9 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
-		)
+		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
 	}
 
 	return
