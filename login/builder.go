@@ -42,6 +42,9 @@ type Builder struct {
 	extractors            []request.Extractor
 	loginPageContentFunc  ContentFunc
 	providers             []*Provider
+	// seconds
+	sessionMaxAge     int
+	autoExtendSession bool
 }
 
 func New() *Builder {
@@ -50,6 +53,8 @@ func New() *Builder {
 		loginURL:              "/auth/login",
 		homeURL:               "/",
 		continueUrlCookieName: "qor5_continue_url",
+		sessionMaxAge:         60 * 60,
+		autoExtendSession:     true,
 	}
 	return r
 }
@@ -99,6 +104,19 @@ func (b *Builder) FetchUserToContextFunc(v FetchUserToContextFunc) (r *Builder) 
 	return b
 }
 
+// seconds
+// default 1h
+func (b *Builder) SessionMaxAge(v int) (r *Builder) {
+	b.sessionMaxAge = v
+	return b
+}
+
+// default true
+func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
+	b.autoExtendSession = v
+	return b
+}
+
 type UserClaims struct {
 	Provider  string
 	Email     string
@@ -121,10 +139,11 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 	if c != nil && c.Value != "" {
 		redirectURL = c.Value
 		http.SetCookie(w, &http.Cookie{
-			Name:   b.continueUrlCookieName,
-			Value:  "",
-			MaxAge: -1,
-			Path:   "/",
+			Name:    b.continueUrlCookieName,
+			Value:   "",
+			MaxAge:  -1,
+			Expires: time.Unix(1, 0),
+			Path:    "/",
 		})
 	}
 
@@ -162,7 +181,8 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		Name:     b.authParamName,
 		Value:    ss,
 		Path:     "/",
-		Expires:  time.Now().Add(time.Hour),
+		MaxAge:   b.sessionMaxAge,
+		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 		HttpOnly: true,
 	})
 
@@ -186,7 +206,8 @@ func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		Domain:   "",
-		Expires:  time.Now(),
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
 	})
 
@@ -296,17 +317,19 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 			return
 		}
 
-		// extend the cookie to one hour later if successfully authenticated
-		c, err := r.Cookie(b.authParamName)
-		if err == nil {
-			newExpire := time.Now().Add(time.Hour)
-			http.SetCookie(w, &http.Cookie{
-				Name:     b.authParamName,
-				Value:    c.Value,
-				Path:     "/",
-				Expires:  newExpire,
-				HttpOnly: true,
-			})
+		// extend the cookie if successfully authenticated
+		if b.autoExtendSession {
+			c, err := r.Cookie(b.authParamName)
+			if err == nil {
+				http.SetCookie(w, &http.Cookie{
+					Name:     b.authParamName,
+					Value:    c.Value,
+					Path:     "/",
+					MaxAge:   b.sessionMaxAge,
+					Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
+					HttpOnly: true,
+				})
+			}
 		}
 
 		in.ServeHTTP(w, newReq)
