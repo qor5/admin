@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/qor/oss"
 	"github.com/qor/qor5/publish"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
@@ -38,7 +39,7 @@ func (this *ListModel) PrimaryColumnValuesBySlug(slug string) [][]string {
 	}
 }
 
-func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
 		Content:  this.getPublishContent(),
@@ -56,7 +57,7 @@ func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context) (objs
 	return
 }
 
-func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      this.GetOnlineUrl(),
 		IsDelete: true,

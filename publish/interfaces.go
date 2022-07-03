@@ -15,11 +15,11 @@ type PublishAction struct {
 }
 
 type PublishInterface interface {
-	GetPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
+	GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
 }
 
 type UnPublishInterface interface {
-	GetUnPublishActions(db *gorm.DB, ctx context.Context) (actions []*PublishAction)
+	GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
 }
 
 type AfterPublishInterface interface {

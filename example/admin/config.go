@@ -25,6 +25,7 @@ import (
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/oss"
 	media_view "github.com/qor/qor5/media/views"
+	microsite_views "github.com/qor/qor5/microsite/views"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
@@ -50,6 +51,7 @@ type Config struct {
 
 func NewConfig() Config {
 	db := ConnectDB()
+	domain := os.Getenv("Site_Domain")
 
 	sess := session.Must(session.NewSession())
 
@@ -310,6 +312,13 @@ func NewConfig() Config {
 			},
 		}
 	})
+
+	mm := b.Model(&models.MicrositeModel{})
+	mm.Listing("ID", "Name", "PrePath", "Status").
+		SearchColumns("ID", "Name").
+		PerPage(10)
+	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
+	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
 
 	publish_view.Configure(b, db, ab, publisher, m, l, pm)
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qor/oss"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/seo"
@@ -46,10 +47,10 @@ func (p *Post) PrimaryColumnValuesBySlug(slug string) [][]string {
 	}
 }
 
-func (p *Post) GetPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (p *Post) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
 }
 
-func (p *Post) GetUnPublishActions(db *gorm.DB, ctx context.Context) (objs []*publish.PublishAction) {
+func (p *Post) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
 }
