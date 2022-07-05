@@ -20,6 +20,24 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	AddContainerDialogEvent    = "page_builder_AddContainerDialogEvent"
+	AddContainerEvent          = "page_builder_AddContainerEvent"
+	DeleteContainerEvent       = "page_builder_DeleteContainerEvent"
+	MoveContainerEvent         = "page_builder_MoveContainerEvent"
+	MarkAsSharedContainerEvent = "page_builder_MarkAsSharedContainerEvent"
+	RenameDialogEvent          = "page_builder_RenameDialogEvent"
+	RenameContainerEvent       = "page_builder_RenameContainerEvent"
+
+	paramPageID          = "pageID"
+	paramPageVersion     = "pageVersion"
+	paramContainerID     = "containerID"
+	paramDirection       = "direction"
+	paramContainerName   = "containerName"
+	paramSharedContainer = "sharedContainer"
+	paramModelID         = "modelID"
+)
+
 //go:embed dist
 var box embed.FS
 
@@ -110,7 +128,14 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VSpacer(),
 			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
-			b.addContainerMenu(id, version),
+			VBtn("Add Container").Text(true).Attr("@click",
+				web.Plaid().
+					EventFunc(AddContainerDialogEvent).
+					Query(paramPageID, id).
+					Query(paramPageVersion, version).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Go(),
+			),
 		).Dark(true).
 			Color("primary").
 			App(true),
@@ -174,27 +199,25 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 	return
 }
 
-const AddContainerEvent = "page_builder_AddContainerEvent"
-const DeleteContainerEvent = "page_builder_DeleteContainerEvent"
-const MoveContainerEvent = "page_builder_MoveContainerEvent"
-const MarkAsSharedContainerEvent = "page_builder_MarkAsSharedContainerEvent"
-const RenameDialogEvent = "page_builder_RenameDialogEvent"
-const RenameContainerEvent = "page_builder_RenameContainerEvent"
-
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
 	containerName := ctx.R.FormValue(paramContainerName)
+	sharedContainer := ctx.R.FormValue(paramSharedContainer)
+	modelID := ctx.QueryAsInt(paramModelID)
+	var newModelID uint
+	if sharedContainer == "true" {
+		err = b.AddSharedContainerToPage(pageID, pageVersion, containerName, uint(modelID))
+		r.PushState = web.Location(url.Values{})
+	} else {
+		newModelID, err = b.AddContainerToPage(pageID, pageVersion, containerName)
+		r.VarsScript = web.Plaid().
+			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+			EventFunc(actions.Edit).
+			Query(presets.ParamID, fmt.Sprint(newModelID)).
+			Go()
+	}
 
-	var modelID uint
-	modelID, err = b.AddContainerToPage(pageID, pageVersion, containerName)
-
-	// r.Location = web.Location(url.Values{})
-	r.VarsScript = web.Plaid().
-		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-		EventFunc(actions.Edit).
-		Query(presets.ParamID, fmt.Sprint(modelID)).
-		Go()
 	return
 }
 
@@ -294,6 +317,33 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 		Name:         containerName,
 		DisplayName:  containerName,
 		ModelID:      modelID,
+		DisplayOrder: maxOrder.Float64 + 8,
+	}).Error
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (b *Builder) AddSharedContainerToPage(pageID int, pageVersion, containerName string, modelID uint) (err error) {
+	var c Container
+	err = b.db.First(&c, "name = ? AND model_id = ? AND shared = true", containerName, modelID).Error
+	if err != nil {
+		return
+	}
+	var maxOrder sql.NullFloat64
+	err = b.db.Model(&Container{}).Select("MAX(display_order)").Where("page_id = ? and page_version = ?", pageID, pageVersion).Scan(&maxOrder).Error
+	if err != nil {
+		return
+	}
+
+	err = b.db.Create(&Container{
+		PageID:       uint(pageID),
+		PageVersion:  pageVersion,
+		Name:         containerName,
+		DisplayName:  c.DisplayName,
+		ModelID:      modelID,
+		Shared:       true,
 		DisplayOrder: maxOrder.Float64 + 8,
 	}).Error
 	if err != nil {
@@ -410,13 +460,103 @@ func (b *Builder) RenameDialogEvent(ctx *web.EventContext) (r web.EventResponse,
 	return
 }
 
-const (
-	paramPageID        = "pageID"
-	paramPageVersion   = "pageVersion"
-	paramContainerID   = "containerID"
-	paramDirection     = "direction"
-	paramContainerName = "containerName"
-)
+func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
+	//okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+
+	var containers []h.HTMLComponent
+	for _, builder := range b.containerBuilders {
+		containers = append(containers,
+			VCol(
+				VCard(
+					VCardTitle(h.Text(builder.name)),
+					VCardActions(
+						VSpacer(),
+						VBtn("Select").
+							Text(true).
+							Color("primary").Attr("@click",
+							"locals.addContainerDialog = false;"+web.Plaid().EventFunc(AddContainerEvent).
+								Query(paramPageID, pageID).
+								Query(paramPageVersion, pageVersion).
+								Query(paramContainerName, builder.name).
+								Go(),
+						),
+					),
+				),
+			).Cols(6),
+		)
+	}
+
+	var cons []*Container
+	err = b.db.Select("display_name,name,model_id").Where("shared = true").Group("display_name,name,model_id").Find(&cons).Error
+	if err != nil {
+		return
+	}
+
+	var sharedContainers []h.HTMLComponent
+	for _, sharedC := range cons {
+		sharedContainers = append(sharedContainers,
+			VCol(
+				VCard(
+					VCardTitle(h.Text(sharedC.DisplayName)),
+					VCardActions(
+						VSpacer(),
+						VBtn("Select").
+							Text(true).
+							Color("primary").Attr("@click",
+							"locals.addContainerDialog = false;"+web.Plaid().EventFunc(AddContainerEvent).
+								Query(paramPageID, pageID).
+								Query(paramPageVersion, pageVersion).
+								Query(paramContainerName, sharedC.Name).
+								Query(paramModelID, sharedC.ModelID).
+								Query(paramSharedContainer, "true").
+								Go(),
+						),
+					),
+				),
+			).Cols(6),
+		)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: dialogPortalName,
+		Body: web.Scope(
+			VDialog(
+				web.Slot(
+					VBtn("Add Container").Text(true).
+						Attr("v-bind", "attrs", "v-on", "on"),
+				).Name("activator").Scope("{ on, attrs }"),
+				VCard(
+					VTabs(
+						VTab(h.Text("New")),
+						VTabItem(
+							VSheet(
+								VContainer(
+									VRow(
+										containers...,
+									),
+								),
+							),
+						),
+						VTab(h.Text("Shared")),
+						VTabItem(
+							VSheet(
+								VContainer(
+									VRow(
+										sharedContainers...,
+									),
+								),
+							),
+						),
+					),
+				),
+			).Width("800px").Attr("v-model", "locals.addContainerDialog"),
+		).Init("{addContainerDialog:true}").VSlot("{locals}"),
+	})
+
+	return
+}
 
 func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
 	containerContent := h.Div(
@@ -619,45 +759,4 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 
 		return
 	}
-}
-
-func (b *Builder) addContainerMenu(pageID, pageVersion string) h.HTMLComponent {
-	var items []h.HTMLComponent
-
-	for _, builder := range b.containerBuilders {
-		items = append(items,
-			VCol(
-				VCard(
-
-					VCardTitle(h.Text(builder.name)),
-					VCardActions(
-						VSpacer(),
-						VBtn("Select").
-							Text(true).
-							Color("primary").Attr("@click",
-							web.Plaid().EventFunc(AddContainerEvent).
-								Query(paramPageID, pageID).
-								Query(paramPageVersion, pageVersion).
-								Query(paramContainerName, builder.name).
-								Go(),
-						),
-					),
-				),
-			).Cols(4),
-		)
-	}
-
-	return VMenu(
-		web.Slot(
-			VBtn("Add Container").Text(true).
-				Attr("v-bind", "attrs", "v-on", "on"),
-		).Name("activator").Scope("{ on, attrs }"),
-		VSheet(
-			VContainer(
-				VRow(
-					items...,
-				),
-			),
-		),
-	).OffsetY(true).NudgeWidth(600).CloseOnContentClick(true)
 }
