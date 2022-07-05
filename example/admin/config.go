@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
@@ -112,7 +113,7 @@ func NewConfig() Config {
 				return nil
 			}
 			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}),
+		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
 	)
 
 	b.I18n().
