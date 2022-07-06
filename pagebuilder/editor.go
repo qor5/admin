@@ -664,7 +664,7 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 			).OffsetY(true),
 
 			VBtn("").Color("primary").Children(
-				h.If(ec.container.Shared, VIcon("shared")),
+				h.If(ec.container.Shared, VIcon("shared").Small(true).Right(true)),
 				h.Text(containerName),
 			).Text(true).
 				Class("my-2 float-right").Attr("@click",
@@ -673,7 +673,7 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
 					Go(),
-			),
+			).Class("pa-0"),
 		).Cols(2).Class("pa-0"),
 	).Attr("style", "border-top: 0.5px dashed gray")
 
