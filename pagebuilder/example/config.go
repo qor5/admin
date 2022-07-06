@@ -1,7 +1,12 @@
 package example
 
 import (
+	"embed"
+	"io/fs"
+	"net/http"
 	"os"
+
+	h "github.com/theplant/htmlgo"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss/s3"
@@ -27,7 +32,10 @@ func ConnectDB() (db *gorm.DB) {
 	return
 }
 
-func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
+//go:embed assets/images
+var containerImages embed.FS
+
+func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
 	sess := session.Must(session.NewSession())
 
 	oss.Storage = s3.New(&s3.Config{
@@ -47,6 +55,12 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 		panic(err)
 	}
 	pb := pagebuilder.New(db)
+	if prefix != "" {
+		pb.Prefix(prefix)
+	}
+	if style != "" {
+		pb.PageStyle(h.RawHTML(style))
+	}
 
 	media_view.Configure(pb.GetPresetsBuilder(), db)
 
@@ -54,7 +68,8 @@ func ConfigPageBuilder(db *gorm.DB) *pagebuilder.Builder {
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pb.PageLayout(layouts.DefaultPageLayoutFunc)
-
+	fSys, _ := fs.Sub(containerImages, "assets/images")
+	pb.Images(http.StripPrefix(prefix+"/assets/images", http.FileServer(http.FS(fSys))), "/assets/images")
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)

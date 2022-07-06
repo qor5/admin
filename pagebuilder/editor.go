@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -190,7 +191,6 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 
 		if isEditor {
-
 			r = append(r, b.containerEditor(ctx, obj, ec, pure, width))
 		} else {
 			r = append(r, pure)
@@ -398,8 +398,6 @@ func (b *Builder) MarkAsSharedContainerEvent(ctx *web.EventContext) (r web.Event
 	}
 	r.PushState = web.Location(url.Values{})
 	return
-
-	return
 }
 
 func (b *Builder) RenameContainerEvent(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -467,11 +465,16 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 
 	var containers []h.HTMLComponent
 	for _, builder := range b.containerBuilders {
+		cover := builder.cover
+		if cover == "" {
+			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+		}
 		containers = append(containers,
 			VCol(
 				VCard(
-					VCardTitle(h.Text(builder.name)),
+					VImg().Src(cover).Height(200),
 					VCardActions(
+						VCardTitle(h.Text(builder.name)),
 						VSpacer(),
 						VBtn("Select").
 							Text(true).
@@ -484,7 +487,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 						),
 					),
 				),
-			).Cols(6),
+			).Cols(4),
 		)
 	}
 
@@ -496,11 +499,17 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 
 	var sharedContainers []h.HTMLComponent
 	for _, sharedC := range cons {
+		c := b.ContainerByName(sharedC.Name)
+		cover := c.cover
+		if cover == "" {
+			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+		}
 		sharedContainers = append(sharedContainers,
 			VCol(
 				VCard(
-					VCardTitle(h.Text(sharedC.DisplayName)),
+					VImg().Src(cover).Height(200),
 					VCardActions(
+						VCardTitle(h.Text(sharedC.DisplayName)),
 						VSpacer(),
 						VBtn("Select").
 							Text(true).
@@ -515,7 +524,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 						),
 					),
 				),
-			).Cols(6),
+			).Cols(4),
 		)
 	}
 
@@ -551,7 +560,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 						),
 					),
 				),
-			).Width("800px").Attr("v-model", "locals.addContainerDialog"),
+			).Width("1200px").Attr("v-model", "locals.addContainerDialog"),
 		).Init("{addContainerDialog:true}").VSlot("{locals}"),
 	})
 
@@ -667,7 +676,7 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 				h.If(ec.container.Shared, VIcon("shared").Small(true).Right(true)),
 				h.Text(containerName),
 			).Text(true).
-				Class("my-2 float-right").Attr("@click",
+				Class("my-2 float-right text-capitalize").Attr("@click",
 				web.Plaid().
 					URL(ec.builder.mb.Info().ListingHref()).
 					EventFunc(actions.Edit).

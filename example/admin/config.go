@@ -223,18 +223,14 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db)
+	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
+	pm := pageBuilder.Configure(b, db)
+
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
-
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Schedule", "Title")
-
-	pageBuilder.
-		PageStyle(h.RawHTML(`<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)).
-		Prefix("/admin/page_builder")
-	pm := pageBuilder.Configure(b, db)
 
 	note.Configure(db, b, m, pm)
 

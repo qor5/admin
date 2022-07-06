@@ -8,7 +8,6 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/qor/qor5/pagebuilder/example"
-	h "github.com/theplant/htmlgo"
 )
 
 func main() {
@@ -17,8 +16,7 @@ func main() {
 	p := presets.New().
 		URIPrefix("/admin").
 		DataOperator(gorm2op.DataOperator(db))
-	pb := example.ConfigPageBuilder(db)
-	pb.PageStyle(h.RawHTML(`<link rel="stylesheet" href="/frontstyle.css">`))
+	pb := example.ConfigPageBuilder(db, "/page_builder", `<link rel="stylesheet" href="/frontstyle.css">`)
 
 	pb.Configure(p, db)
 

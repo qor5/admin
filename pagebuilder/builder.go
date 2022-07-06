@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"path"
 	"reflect"
 	"strings"
 
@@ -50,6 +51,8 @@ type Builder struct {
 	pageStyle         h.HTMLComponent
 	pageLayoutFunc    PageLayoutFunc
 	preview           http.Handler
+	images            http.Handler
+	imagesPrefix      string
 }
 
 func New(db *gorm.DB) *Builder {
@@ -107,6 +110,12 @@ func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) Images(v http.Handler, imagesPrefix string) (r *Builder) {
+	b.images = v
+	b.imagesPrefix = imagesPrefix
+	return b
+}
+
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
@@ -132,7 +141,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			return h.Div(
-				VBtn("Edit Container").
+				VBtn("Edit Containers").
 					Target("_blank").
 					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
 					Color("secondary"),
@@ -157,6 +166,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		})
 		return
 	})
+
 	return
 }
 
@@ -176,6 +186,7 @@ type ContainerBuilder struct {
 	model      interface{}
 	modelType  reflect.Type
 	renderFunc RenderFunc
+	cover      string
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -209,6 +220,11 @@ func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) Cover(v string) *ContainerBuilder {
+	b.cover = v
+	return b
+}
+
 func (b *ContainerBuilder) NewModel() interface{} {
 	return reflect.New(b.modelType).Interface()
 }
@@ -224,6 +240,11 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.Index(r.RequestURI, b.prefix+"/preview") >= 0 {
 		b.preview.ServeHTTP(w, r)
+		return
+	}
+
+	if strings.Index(r.RequestURI, path.Join(b.prefix, "/assets/images/")) >= 0 {
+		b.images.ServeHTTP(w, r)
 		return
 	}
 	b.ps.ServeHTTP(w, r)
