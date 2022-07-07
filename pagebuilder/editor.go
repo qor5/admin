@@ -532,10 +532,6 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 		Name: dialogPortalName,
 		Body: web.Scope(
 			VDialog(
-				web.Slot(
-					VBtn("Add Container").Text(true).
-						Attr("v-bind", "attrs", "v-on", "on"),
-				).Name("activator").Scope("{ on, attrs }"),
 				VCard(
 					VTabs(
 						VTab(h.Text("New")),
@@ -559,7 +555,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							),
 						),
 					),
-				),
+				).Height(660),
 			).Width("1200px").Attr("v-model", "locals.addContainerDialog"),
 		).Init("{addContainerDialog:true}").VSlot("{locals}"),
 	})
