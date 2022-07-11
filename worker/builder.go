@@ -195,7 +195,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		return Td(Text(getTStatus(msgr, qorJob.Status)))
 	})
 
-	eb := mb.Editing("Job")
+	eb := mb.Editing("Job", "Args")
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
