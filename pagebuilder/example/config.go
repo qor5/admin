@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 
 	h "github.com/theplant/htmlgo"
 
@@ -69,7 +70,8 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pb.PageLayout(layouts.DefaultPageLayoutFunc)
 	fSys, _ := fs.Sub(containerImages, "assets/images")
-	pb.Images(http.StripPrefix(prefix+"/assets/images", http.FileServer(http.FS(fSys))), "/assets/images")
+	imagePrefix := "/assets/images"
+	pb.Images(http.StripPrefix(path.Join(prefix, imagePrefix), http.FileServer(http.FS(fSys))), imagePrefix)
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)

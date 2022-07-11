@@ -243,7 +243,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.Index(r.RequestURI, path.Join(b.prefix, "/assets/images/")) >= 0 {
+	if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
 		b.images.ServeHTTP(w, r)
 		return
 	}
