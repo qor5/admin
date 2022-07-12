@@ -532,30 +532,28 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 		Name: dialogPortalName,
 		Body: web.Scope(
 			VDialog(
-				VCard(
-					VTabs(
-						VTab(h.Text("New")),
-						VTabItem(
-							VSheet(
-								VContainer(
-									VRow(
-										containers...,
-									),
+				VTabs(
+					VTab(h.Text("New")),
+					VTabItem(
+						VSheet(
+							VContainer(
+								VRow(
+									containers...,
 								),
 							),
 						),
-						VTab(h.Text("Shared")),
-						VTabItem(
-							VSheet(
-								VContainer(
-									VRow(
-										sharedContainers...,
-									),
+					).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+					VTab(h.Text("Shared")),
+					VTabItem(
+						VSheet(
+							VContainer(
+								VRow(
+									sharedContainers...,
 								),
 							),
 						),
-					),
-				).Height(660),
+					).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+				),
 			).Width("1200px").Attr("v-model", "locals.addContainerDialog"),
 		).Init("{addContainerDialog:true}").VSlot("{locals}"),
 	})
