@@ -148,6 +148,7 @@ func NewConfig() Config {
 		).Icon("shopping_cart"),
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
+			"shared_containers",
 		).Icon("view_quilt"),
 	)
 

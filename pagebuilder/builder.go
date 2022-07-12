@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
 	"github.com/goplaid/x/presets/gorm2op"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/publish"
@@ -167,7 +169,114 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		return
 	})
 
+	b.configSharedContainer(pb, db)
 	return
+}
+
+func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
+	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	listing.RowMenu("").Empty()
+	//ed := pm.Editing("SelectContainer")
+	//ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	//	var containers []h.HTMLComponent
+	//	for _, builder := range b.containerBuilders {
+	//		cover := builder.cover
+	//		if cover == "" {
+	//			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+	//		}
+	//		containers = append(containers,
+	//			VCol(
+	//				VCard(
+	//					VImg().Src(cover).Height(200),
+	//					VCardActions(
+	//						VCardTitle(h.Text(builder.name)),
+	//						VSpacer(),
+	//						VBtn("Select").
+	//							Text(true).
+	//							Color("primary").Attr("@click",
+	//							web.Plaid().
+	//								EventFunc(actions.New).
+	//								URL(builder.GetModelBuilder().Info().ListingHref()).
+	//								Go()),
+	//					),
+	//				),
+	//			).Cols(6),
+	//		)
+	//	}
+	//	return VSheet(
+	//		VContainer(
+	//			VRow(
+	//				containers...,
+	//			),
+	//		),
+	//	)
+	//})
+	pb.GetPermission().Policies(
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
+	)
+	listing.Field("DisplayName").Label("Name")
+	listing.Searcher(sharedContainersearcher(db, pm))
+	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		tdbind := cell
+		c := obj.(*Container)
+
+		tdbind.SetAttr("@click.self",
+			web.Plaid().
+				EventFunc(actions.Edit).
+				URL(b.ContainerByName(c.Name).GetModelBuilder().Info().ListingHref()).
+				Query(presets.ParamID, c.ModelID).
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+
+		return tdbind
+	})
+	return
+}
+
+func sharedContainersearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
+	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		ilike := "ILIKE"
+		if db.Dialector.Name() == "sqlite" {
+			ilike = "LIKE"
+		}
+
+		wh := db.Model(obj)
+		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
+			var segs []string
+			var args []interface{}
+			for _, c := range params.KeywordColumns {
+				segs = append(segs, fmt.Sprintf("%s %s ?", c, ilike))
+				args = append(args, fmt.Sprintf("%%%s%%", params.Keyword))
+			}
+			wh = wh.Where(strings.Join(segs, " OR "), args...)
+		}
+
+		for _, cond := range params.SQLConditions {
+			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+		}
+
+		var c int64
+		if err = wh.Select("count(display_name)").Where("shared = true").Group("display_name,name,model_id").Count(&c).Error; err != nil {
+			return
+		}
+		totalCount = int(c)
+
+		if params.PerPage > 0 {
+			wh = wh.Limit(int(params.PerPage))
+			page := params.Page
+			if page == 0 {
+				page = 1
+			}
+			offset := (page - 1) * params.PerPage
+			wh = wh.Offset(int(offset))
+		}
+
+		if err = wh.Select("display_name,name,model_id").Find(obj).Error; err != nil {
+			return
+		}
+		r = reflect.ValueOf(obj).Elem().Interface()
+		return
+	}
 }
 
 func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
