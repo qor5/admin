@@ -38,6 +38,32 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 	}
 }
 
+type Template struct {
+	gorm.Model
+	Name string
+	Desc string
+}
+
+func (*Template) TableName() string {
+	return "page_builder_templates"
+}
+
+func (m *Template) Page() *Page {
+	return &Page{
+		Model: m.Model,
+		Title: m.Name,
+		Slug:  "",
+		Status: publish.Status{
+			Status:    publish.StatusDraft,
+			OnlineUrl: "",
+		},
+		Schedule: publish.Schedule{},
+		Version: publish.Version{
+			Version: "tpl",
+		},
+	}
+}
+
 type Container struct {
 	gorm.Model
 	PageID       uint

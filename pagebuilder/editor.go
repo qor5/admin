@@ -51,15 +51,26 @@ func ShadowDomComponentsPack() web.ComponentsPack {
 }
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
+	isTpl := ctx.R.FormValue("tpl") != ""
 	id := ctx.R.FormValue("id")
 	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var comps []h.HTMLComponent
 	var p *Page
-	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-	if err != nil {
-		return
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", id).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
+		if err != nil {
+			return
+		}
 	}
 	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
 	if err != nil {
@@ -79,15 +90,29 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 }
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
+	isTpl := ctx.R.FormValue("tpl") != ""
 	id := pat.Param(ctx.R, "id")
 	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
 	var body h.HTMLComponent
 	var device string
 	var p *Page
-	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-	if err != nil {
-		return
+	var previewHref string
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", id).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
+		if err != nil {
+			return
+		}
+		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
 	}
 	if p.GetStatus() == publish.StatusDraft {
 		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
@@ -128,7 +153,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 				InputValue(device == "laptop"),
 
 			VSpacer(),
-			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
+			VBtn("Preview").Text(true).Href(b.prefix+previewHref).Target("_blank"),
 			VBtn("Add Container").Text(true).Attr("@click",
 				web.Plaid().
 					EventFunc(AddContainerDialogEvent).

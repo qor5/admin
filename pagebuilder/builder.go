@@ -60,6 +60,7 @@ type Builder struct {
 func New(db *gorm.DB) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
+		&Template{},
 		&Container{},
 	)
 
@@ -170,6 +171,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	b.configSharedContainer(pb, db)
+	b.configTemplate(pb, db)
 	return
 }
 
@@ -230,6 +232,28 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 
 		return tdbind
 	})
+	return
+}
+
+func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
+
+	pm.Listing("ID", "Name", "Desc")
+
+	eb := pm.Editing("Name", "Desc", "EditContainer")
+	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		m := obj.(*Template)
+		if m.ID == 0 {
+			return nil
+		}
+		return h.Div(
+			VBtn("Edit Containers").
+				Target("_blank").
+				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
+				Color("secondary"),
+		)
+	})
+
 	return
 }
 
