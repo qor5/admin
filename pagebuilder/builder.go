@@ -61,6 +61,7 @@ func New(db *gorm.DB) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
 		&Container{},
+		&DemoContainer{},
 	)
 
 	if err != nil {
@@ -170,6 +171,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	b.configSharedContainer(pb, db)
+	b.configDemoContainer(pb, db)
 	return
 }
 
@@ -225,6 +227,105 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 			web.Plaid().
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.Name).GetModelBuilder().Info().ListingHref()).
+				Query(presets.ParamID, c.ModelID).
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+
+		return tdbind
+	})
+	return
+}
+func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
+
+	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		modelID := ctx.QueryAsInt(presets.ParamOverlayUpdateID)
+		modelName := ctx.R.FormValue("ModelName")
+		db.Where(DemoContainer{ModelName: modelName}).FirstOrCreate(&DemoContainer{
+			ModelName: modelName,
+			ModelID:   uint(modelID),
+		})
+		r.Reload = true
+		return
+	})
+	listing := pm.Listing("ModelName").SearchColumns("ModelName")
+	listing.Field("ModelName").Label("Name")
+	ed := pm.Editing("SelectContainer")
+	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var demoContainers []DemoContainer
+		db.Find(&demoContainers)
+
+		var containers []h.HTMLComponent
+		for _, builder := range b.containerBuilders {
+			cover := builder.cover
+			if cover == "" {
+				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+			}
+			c := VCol(
+				VCard(
+					VImg().Src(cover).Height(200),
+					VCardActions(
+						VCardTitle(h.Text(builder.name)),
+						VSpacer(),
+						VBtn("Select").
+							Text(true).
+							Color("primary").Attr("@click",
+							web.Plaid().
+								EventFunc(actions.New).
+								URL(builder.GetModelBuilder().Info().ListingHref()).
+								Query(presets.ParamOverlayAfterUpdateScript, web.POST().Query("ModelName", builder.name).EventFunc("addDemoContainer").Go()).
+								Go()),
+					),
+				),
+			).Cols(6)
+
+			var isExists bool
+			var modelID uint
+			for _, dc := range demoContainers {
+				if dc.ModelName == builder.name {
+					isExists = true
+					modelID = dc.ModelID
+					break
+				}
+			}
+			if isExists {
+				c = VCol(
+					VCard(
+						VImg().Src(cover).Height(200),
+						VCardActions(
+							VCardTitle(h.Text(builder.name)),
+							VSpacer(),
+							VBtn("Edit").
+								Text(true).
+								Color("primary").Attr("@click",
+								web.Plaid().
+									EventFunc(actions.Edit).
+									URL(builder.GetModelBuilder().Info().ListingHref()).
+									Query(presets.ParamID, fmt.Sprint(modelID)).
+									Go()),
+						),
+					),
+				).Cols(6)
+			}
+
+			containers = append(containers, c)
+		}
+		return VSheet(
+			VContainer(
+				VRow(
+					containers...,
+				),
+			),
+		)
+	})
+
+	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		tdbind := cell
+		c := obj.(*DemoContainer)
+
+		tdbind.SetAttr("@click.self",
+			web.Plaid().
+				EventFunc(actions.Edit).
+				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
 				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
 

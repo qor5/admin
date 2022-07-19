@@ -149,6 +149,7 @@ func NewConfig() Config {
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
+			"demo_containers",
 		).Icon("view_quilt"),
 	)
 
