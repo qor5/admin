@@ -98,6 +98,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	var device string
 	var p *Page
 	var previewHref string
+	deviceQueries := url.Values{}
 	if isTpl {
 		tpl := &Template{}
 		err = b.db.First(tpl, "id = ?", id).Error
@@ -107,12 +108,14 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		p = tpl.Page()
 		version = p.Version.Version
 		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
+		deviceQueries.Add("tpl", "1")
 	} else {
 		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
 		if err != nil {
 			return
 		}
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
+		deviceQueries.Add("version", version)
 	}
 	if p.GetStatus() == publish.StatusDraft {
 		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
@@ -139,17 +142,17 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"phone"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
 				Class("mr-10").InputValue(device == "phone"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"tablet"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "tablet").PushState(true).Go()).
 				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"laptop"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "laptop").PushState(true).Go()).
 				InputValue(device == "laptop"),
 
 			VSpacer(),
@@ -486,7 +489,7 @@ func (b *Builder) RenameDialogEvent(ctx *web.EventContext) (r web.EventResponse,
 func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
-	//okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+	// okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
 
 	var containers []h.HTMLComponent
 	for _, builder := range b.containerBuilders {
