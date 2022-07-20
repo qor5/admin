@@ -127,7 +127,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	pm = pb.Model(&Page{})
 	pm.Listing("ID", "Title", "Slug")
 
-	//list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	// list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	p := obj.(*Page)
 	//	return h.Td(
 	//		h.A().Children(
@@ -136,9 +136,25 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	//			Target("_blank"),
 	//		VIcon("open_in_new").Size(16).Class("ml-1"),
 	//	)
-	//})
+	// })
 
-	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "EditContainer")
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "TemplateSelection", "EditContainer")
+
+	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		// Only displayed when create action
+		if p.GetStatus() == "" {
+			tpls := []*Template{}
+
+			if err := db.Model(&Template{}).Find(&tpls).Error; err != nil {
+				panic(err)
+			}
+
+			// TODO: display preview picture
+			return VAutocomplete().Label("Template").Items(tpls).ItemValue("ID").ItemText("Name").FieldName("TemplateSelectionID")
+		}
+		return nil
+	})
 
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -154,8 +170,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		templateSelectionID := ctx.R.FormValue("TemplateSelectionID")
+		containers := []*Container{}
+		if templateSelectionID != "" {
+			if err = db.Model(&Container{}).Where("page_id = ? AND page_version = ?", templateSelectionID, "tpl").Find(&containers).Error; err != nil {
+				panic(err)
+			}
+		}
+
+		p := obj.(*Page)
+
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			p := obj.(*Page)
 			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
 				return
 			}
@@ -167,6 +192,24 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			}
 			return
 		})
+
+		// Create page from template
+		if templateSelectionID != "" {
+			for _, container := range containers {
+				err = db.Create(&Container{
+					PageID:       p.ID,
+					PageVersion:  p.GetVersion(),
+					Name:         container.Name,
+					DisplayName:  container.DisplayName,
+					ModelID:      container.ModelID,
+					DisplayOrder: container.DisplayOrder,
+				}).Error
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+
 		return
 	})
 
@@ -179,8 +222,8 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
 	listing.RowMenu("").Empty()
-	//ed := pm.Editing("SelectContainer")
-	//ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	// ed := pm.Editing("SelectContainer")
+	// ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	var containers []h.HTMLComponent
 	//	for _, builder := range b.containerBuilders {
 	//		cover := builder.cover
@@ -213,7 +256,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//			),
 	//		),
 	//	)
-	//})
+	// })
 	pb.GetPermission().Policies(
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 	)
