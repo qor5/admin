@@ -150,8 +150,47 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				panic(err)
 			}
 
-			// TODO: display preview picture
-			return VAutocomplete().Label("Template").Items(tpls).ItemValue("ID").ItemText("Name").FieldName("TemplateSelectionID")
+			var tplHTMLComponents []h.HTMLComponent
+			for _, tpl := range tpls {
+				// Avoid layout errors
+				var name string
+				var desc string
+				if tpl.Name == "" {
+					name = "Unnamed"
+				} else {
+					name = tpl.Name
+				}
+				if tpl.Desc == "" {
+					desc = "Not described"
+				} else {
+					desc = tpl.Desc
+				}
+
+				tplHTMLComponents = append(tplHTMLComponents,
+					VCol(
+						VCard(
+							h.Div(
+								h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+									Attr("weight", "100%", "height", "150", "frameborder", "no").Style("transform-origin: left top; transform: scale(0.78);"),
+							),
+							VCardTitle(h.Text(name)),
+							VCardSubtitle(h.Text(desc)),
+							VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
+								Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).Target("_blank").Color("primary"),
+							h.Div(
+								// TODO: radio checkbox
+								VCheckbox().Value(tpl.ID).FieldName("TemplateSelectionID"),
+							).Class("ml-4 mt-n6 float-right"),
+						).Height(280).Class("text-truncate").Outlined(true),
+					).Cols(4))
+			}
+
+			return h.Div(
+				h.Label("Create From Template").Class("mb-2"),
+				VCard(
+					VRow(tplHTMLComponents...),
+				).Class("mx-0 my-2 px-4 py-4"),
+			).Class("my-4 mb-8")
 		}
 		return nil
 	})
