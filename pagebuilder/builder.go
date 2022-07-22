@@ -57,6 +57,11 @@ type Builder struct {
 	imagesPrefix      string
 }
 
+const (
+	openTemplateDialogEvent = "openTemplateDialogEvent"
+	selectTemplateEvent     = "selectTemplateEvent"
+)
+
 func New(db *gorm.DB) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
@@ -126,6 +131,8 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Page{})
 	pm.Listing("ID", "Title", "Slug")
+	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
+	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 
 	// list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	p := obj.(*Page)
@@ -144,66 +151,27 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		// Only displayed when create action
 		if p.GetStatus() == "" {
-			tpls := []*Template{}
-
-			if err := db.Model(&Template{}).Find(&tpls).Error; err != nil {
-				panic(err)
-			}
-
-			var tplHTMLComponents []h.HTMLComponent
-
-			if len(tpls) == 0 {
-				msgr := presets.MustGetMessages(ctx.R)
-				tplHTMLComponents = append(tplHTMLComponents,
-					h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2"),
-				)
-			} else {
-				for _, tpl := range tpls {
-					// Avoid layout errors
-					var name string
-					var desc string
-					if tpl.Name == "" {
-						name = "Unnamed"
-					} else {
-						name = tpl.Name
-					}
-					if tpl.Desc == "" {
-						desc = "Not described"
-					} else {
-						desc = tpl.Desc
-					}
-
-					tplHTMLComponents = append(tplHTMLComponents,
-						VCol(
-							VCard(
-								h.Div(
-									h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
-										Attr("weight", "100%", "height", "150", "frameborder", "no").Style("transform-origin: left top; transform: scale(0.78);"),
-								),
-								VCardTitle(h.Text(name)),
-								VCardSubtitle(h.Text(desc)),
-								VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
-									Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).Target("_blank").Color("primary"),
-								h.Div(
-									// TODO: cancel selection
-									h.Input("").Type("radio").
-										Value(fmt.Sprintf("%d", tpl.ID)).
-										Attr(web.VFieldName("TemplateSelectionID")...).
-										Name("TemplateSelectionID").Style("width: 18px; height: 18px"),
-								).Class("mr-4 float-right"),
-							).Height(280).Class("text-truncate").Outlined(true),
-						).Cols(4),
-					)
-				}
-			}
-
 			return h.Div(
-				h.Label("Create From Template").Class("mb-2"),
-				VCard(
-					VRow(tplHTMLComponents...).ClassIf("d-none", len(tpls) == 0),
-					h.Div(tplHTMLComponents...).ClassIf("d-none", len(tpls) != 0),
-				).Class("mx-0 my-2 px-4 py-4"),
-			).Class("my-4 mb-8")
+				web.Portal().Name("TemplateDialog"),
+				VRow(
+					VCol(
+						web.Portal(
+							VTextField().Disabled(true).Label("Template ID"),
+						).Name("TemplateIDTextField"),
+					),
+					VCol(
+						web.Portal(
+							VTextField().Disabled(true).Label("Template Name"),
+						).Name("TemplateNameTextField"),
+					),
+				),
+				VRow(
+					VCol(
+						VBtn("Create From Template").Color("primary").
+							Attr("@click", web.Plaid().EventFunc(openTemplateDialogEvent).Go()),
+					),
+				),
+			).Class("my-2").Attr(web.InitContextVars, `{showTemplateDialog: false}`)
 		}
 		return nil
 	})
@@ -268,6 +236,145 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	b.configSharedContainer(pb, db)
 	b.configTemplate(pb, db)
 	return
+}
+
+func selectTemplate(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
+		templateSelectionID := ctx.R.FormValue("TemplateSelectionID")
+
+		tpl := Template{}
+		isBlank := true
+		if templateSelectionID != "0" {
+			if err = db.Model(&Template{}).Where("id = ?", templateSelectionID).First(&tpl).Error; err != nil {
+				panic(err)
+			}
+			isBlank = false
+		}
+
+		var ID string
+		var Name string
+		if isBlank {
+			ID = ""
+			Name = "Blank"
+		} else {
+			ID = string(tpl.ID)
+			Name = tpl.Name
+		}
+
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: "TemplateIDTextField",
+			Body: VTextField().Disabled(true).Label("Template ID").Value(ID),
+		})
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: "TemplateNameTextField",
+			Body: VTextField().Disabled(true).Label("Template Name").Value(Name),
+		})
+
+		return
+	}
+}
+
+func openTemplateDialog(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
+		msgr := presets.MustGetMessages(ctx.R)
+		tpls := []*Template{}
+
+		if err := db.Model(&Template{}).Find(&tpls).Error; err != nil {
+			panic(err)
+		}
+
+		var tplHTMLComponents []h.HTMLComponent
+
+		if len(tpls) == 0 {
+			tplHTMLComponents = append(tplHTMLComponents,
+				h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2"),
+			)
+		} else {
+			tplHTMLComponents = append(tplHTMLComponents,
+				getTplColComponent(&Template{
+					Model: gorm.Model{},
+					Name:  "Blank",
+					Desc:  "New page",
+				}, true),
+			)
+			for _, tpl := range tpls {
+				tplHTMLComponents = append(tplHTMLComponents,
+					getTplColComponent(tpl, false),
+				)
+			}
+		}
+
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: "TemplateDialog",
+			Body: VDialog(
+				VCard(
+					VCardTitle(
+						h.Text("Create From Template"),
+						VSpacer(),
+						VBtn("").Icon(true).
+							Children(VIcon("close")).
+							Large(true).
+							On("click", fmt.Sprintf("vars.showTemplateDialog=false")),
+					),
+					VCardActions(
+						VRow(tplHTMLComponents...).ClassIf("d-none", len(tpls) == 0),
+						h.Div(tplHTMLComponents...).ClassIf("d-none", len(tpls) != 0),
+					),
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
+						VBtn(msgr.OK).Color("primary").
+							Attr("@click", fmt.Sprintf("%s;vars.showTemplateDialog=false",
+								web.Plaid().EventFunc(selectTemplateEvent).
+									Query("TemplateSelectionID", ctx.R.Form).Go()),
+							),
+					).Class("pb-4"),
+				).Tile(true),
+			).MaxWidth("80%").
+				Attr("v-model", fmt.Sprintf("vars.showTemplateDialog")).
+				Attr(web.InitContextVars, fmt.Sprintf(`{showTemplateDialog: false}`)),
+		})
+
+		er.VarsScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
+		return
+	}
+}
+
+func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
+	// Avoid layout errors
+	var name string
+	var desc string
+	if tpl.Name == "" {
+		name = "Unnamed"
+	} else {
+		name = tpl.Name
+	}
+	if tpl.Desc == "" {
+		desc = "Not described"
+	} else {
+		desc = tpl.Desc
+	}
+
+	return VCol(
+		VCard(
+			h.Div(
+				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+					Attr("weight", "100%", "height", "150", "frameborder", "no").
+					Style("transform-origin: left top; transform: scale(1, 1);"),
+			),
+			VCardTitle(h.Text(name)),
+			VCardSubtitle(h.Text(desc)),
+			VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
+				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+				Target("_blank").Color("primary").ClassIf("d-none", isBlank),
+			h.Div(
+				h.Input("").Type("radio").Checked(isBlank).
+					Value(fmt.Sprintf("%d", tpl.ID)).
+					Attr(web.VFieldName("TemplateSelectionID")...).
+					Name("TemplateSelectionID").Style("width: 18px; height: 18px"),
+			).Class("mr-4 float-right"),
+		).Height(280).Class("text-truncate").Outlined(true),
+	).Cols(3)
 }
 
 func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
