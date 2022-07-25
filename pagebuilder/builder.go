@@ -249,7 +249,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	})
 	listing := pm.Listing("ModelName").SearchColumns("ModelName")
 	listing.Field("ModelName").Label("Name")
-	ed := pm.Editing("SelectContainer")
+	ed := pm.Editing("SelectContainer").ActionsFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent { return nil })
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
