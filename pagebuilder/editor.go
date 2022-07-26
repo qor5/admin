@@ -51,15 +51,26 @@ func ShadowDomComponentsPack() web.ComponentsPack {
 }
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
+	isTpl := ctx.R.FormValue("tpl") != ""
 	id := ctx.R.FormValue("id")
 	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var comps []h.HTMLComponent
 	var p *Page
-	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-	if err != nil {
-		return
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", id).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
+		if err != nil {
+			return
+		}
 	}
 	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
 	if err != nil {
@@ -79,15 +90,32 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 }
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
+	isTpl := ctx.R.FormValue("tpl") != ""
 	id := pat.Param(ctx.R, "id")
 	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
 	var body h.HTMLComponent
 	var device string
 	var p *Page
-	err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-	if err != nil {
-		return
+	var previewHref string
+	deviceQueries := url.Values{}
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", id).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
+		deviceQueries.Add("tpl", "1")
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
+		if err != nil {
+			return
+		}
+		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
+		deviceQueries.Add("version", version)
 	}
 	if p.GetStatus() == publish.StatusDraft {
 		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
@@ -114,21 +142,21 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VBtn("").Icon(true).Children(
 				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"phone"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
 				Class("mr-10").InputValue(device == "phone"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"tablet"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "tablet").PushState(true).Go()).
 				Class("mr-10").InputValue(device == "tablet"),
 
 			VBtn("").Icon(true).Children(
 				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().Queries(url.Values{"version": []string{version}, "device": []string{"laptop"}}).PushState(true).Go()).
+			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "laptop").PushState(true).Go()).
 				InputValue(device == "laptop"),
 
 			VSpacer(),
-			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
+			VBtn("Preview").Text(true).Href(b.prefix+previewHref).Target("_blank"),
 			VBtn("Add Container").Text(true).Attr("@click",
 				web.Plaid().
 					EventFunc(AddContainerDialogEvent).
@@ -359,9 +387,13 @@ func (b *Builder) AddSharedContainerToPage(pageID int, pageVersion, containerNam
 	return
 }
 
-func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
+func (b *Builder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, pageID, newPageVersion)
+}
+
+func (b *Builder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion string, toPageID int, toPageVersion string) (err error) {
 	var cons []*Container
-	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
 		return
 	}
@@ -383,8 +415,8 @@ func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPag
 		}
 
 		if err = db.Create(&Container{
-			PageID:       uint(pageID),
-			PageVersion:  newPageVersion,
+			PageID:       uint(toPageID),
+			PageVersion:  toPageVersion,
 			Name:         c.Name,
 			DisplayName:  c.DisplayName,
 			ModelID:      newModelID,
@@ -468,7 +500,7 @@ func (b *Builder) RenameDialogEvent(ctx *web.EventContext) (r web.EventResponse,
 func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
-	//okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+	// okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
 
 	var containers []h.HTMLComponent
 	for _, builder := range b.containerBuilders {
