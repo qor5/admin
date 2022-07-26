@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -190,45 +191,32 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		templateSelectionID := ctx.R.FormValue("TemplateSelectionID")
-		containers := []*Container{}
-		if templateSelectionID != "" {
-			if err = db.Model(&Container{}).Where("page_id = ? AND page_version = ?", templateSelectionID, "tpl").Find(&containers).Error; err != nil {
-				panic(err)
-			}
-		}
-
 		p := obj.(*Page)
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
 			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
 				return
 			}
-			if !strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
+
+			if strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
+					return
+				}
 				return
 			}
-			if inerr = b.CopyContainers(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
-				return
+
+			if v := ctx.R.FormValue("TemplateSelectionID"); v != "" {
+				var tplID int
+				tplID, inerr = strconv.Atoi(v)
+				if inerr != nil {
+					return
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, int(p.ID), p.GetVersion()); inerr != nil {
+					return
+				}
 			}
 			return
 		})
-
-		// Create page from template
-		if templateSelectionID != "" {
-			for _, container := range containers {
-				err = db.Create(&Container{
-					PageID:       p.ID,
-					PageVersion:  p.GetVersion(),
-					Name:         container.Name,
-					DisplayName:  container.DisplayName,
-					ModelID:      container.ModelID,
-					DisplayOrder: container.DisplayOrder,
-				}).Error
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
 
 		return
 	})

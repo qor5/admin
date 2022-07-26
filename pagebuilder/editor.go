@@ -380,9 +380,13 @@ func (b *Builder) AddSharedContainerToPage(pageID int, pageVersion, containerNam
 	return
 }
 
-func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
+func (b *Builder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, oldPageVersion, newPageVersion string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, pageID, newPageVersion)
+}
+
+func (b *Builder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion string, toPageID int, toPageVersion string) (err error) {
 	var cons []*Container
-	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, oldPageVersion).Error
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
 		return
 	}
@@ -404,8 +408,8 @@ func (b *Builder) CopyContainers(db *gorm.DB, pageID int, oldPageVersion, newPag
 		}
 
 		if err = db.Create(&Container{
-			PageID:       uint(pageID),
-			PageVersion:  newPageVersion,
+			PageID:       uint(toPageID),
+			PageVersion:  toPageVersion,
 			Name:         c.Name,
 			DisplayName:  c.DisplayName,
 			ModelID:      newModelID,

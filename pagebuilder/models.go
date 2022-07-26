@@ -48,6 +48,8 @@ func (*Template) TableName() string {
 	return "page_builder_templates"
 }
 
+const templateVersion = "tpl"
+
 func (m *Template) Page() *Page {
 	return &Page{
 		Model: m.Model,
@@ -59,7 +61,7 @@ func (m *Template) Page() *Page {
 		},
 		Schedule: publish.Schedule{},
 		Version: publish.Version{
-			Version: "tpl",
+			Version: templateVersion,
 		},
 	}
 }
