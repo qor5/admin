@@ -359,7 +359,7 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 		VCard(
 			h.Div(
 				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
-					Attr("weight", "100%", "height", "150", "frameborder", "no").
+					Attr("width", "100%", "height", "150", "frameborder", "no").
 					Style("transform-origin: left top; transform: scale(1, 1);"),
 			),
 			VCardTitle(h.Text(name)),
