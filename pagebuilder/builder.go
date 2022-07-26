@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"path"
 	"reflect"
 	"strings"
 
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -61,6 +63,7 @@ func New(db *gorm.DB) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
 		&Container{},
+		&Category{},
 	)
 
 	if err != nil {
@@ -170,6 +173,52 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	b.configSharedContainer(pb, db)
+	b.configCategory(pb, db)
+	return
+}
+
+func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+
+	lb := pm.Listing("Name", "Path", "Desc", "ModelType").OrderBy("Path")
+	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		category := obj.(*Category)
+		paths := []string{}
+		linq.From(strings.Split(category.Path, "/")).Where(func(i interface{}) bool {
+			return i != ""
+		}).ToSlice(&paths)
+
+		categories := []*Category{}
+		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+
+		icon := "folder"
+		if len(paths) > 0 {
+			icon = "insert_drive_file"
+		}
+
+		return h.Td(
+			h.Div(
+				VIcon(icon).Small(true).Class("mb-1"),
+				h.Text(category.Name),
+			).Style(fmt.Sprintf("padding-left: %dpx;", (len(paths)-1)*16)),
+		)
+	})
+
+	eb := pm.Editing("Name", "Path", "Desc", "ModelType")
+	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		category := obj.(*Category)
+
+		return h.Div(
+			VTextField().Label("Path").Value(category.Path).Class("mb-n4").FieldName("Path"),
+			h.Label(os.Getenv("BASE_URL")+category.Path).Style("color: rgba(0,0,0,0.45); font-style: italic;").ClassIf("d-none", category.ID == 0),
+		).Class("mb-4")
+	})
+	eb.Field("ModelType").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return VAutocomplete().Label("Model Type").FieldName("ModelType")
+	})
+
 	return
 }
 

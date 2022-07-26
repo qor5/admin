@@ -38,6 +38,21 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 	}
 }
 
+type Category struct {
+	gorm.Model
+	Name      string
+	Path      string
+	Desc      string
+	ModelType string
+	// BreadcrumbsPosition       int
+	// ShowOnSubNav              bool
+	// HideCategoryOnBreadcrumbs bool
+}
+
+func (*Category) TableName() string {
+	return "page_builder_categories"
+}
+
 type Container struct {
 	gorm.Model
 	PageID       uint

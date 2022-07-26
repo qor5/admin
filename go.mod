@@ -39,6 +39,7 @@ require (
 require (
 	cloud.google.com/go v0.67.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
+	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
