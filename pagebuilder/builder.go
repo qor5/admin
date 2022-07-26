@@ -245,7 +245,7 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			ID = ""
 			Name = "Blank"
 		} else {
-			ID = string(tpl.ID)
+			ID = strconv.Itoa(int(tpl.ID))
 			Name = tpl.Name
 		}
 
