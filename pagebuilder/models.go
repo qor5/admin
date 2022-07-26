@@ -37,18 +37,3 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 		{"version", segs[1]},
 	}
 }
-
-type Container struct {
-	gorm.Model
-	PageID       uint
-	PageVersion  string
-	Name         string
-	ModelID      uint
-	DisplayOrder float64
-	Shared       bool
-	DisplayName  string
-}
-
-func (*Container) TableName() string {
-	return "page_builder_containers"
-}

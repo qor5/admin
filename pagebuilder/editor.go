@@ -299,6 +299,13 @@ func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 
 func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName string) (modelID uint, err error) {
 	model := b.ContainerByName(containerName).NewModel()
+	var dc DemoContainer
+	b.db.Where("model_name = ?", containerName).First(&dc)
+	if dc.ID != 0 && dc.ModelID != 0 {
+		b.db.Where("id = ?", dc.ModelID).First(model)
+		reflectutils.Set(model, "ID", uint(0))
+	}
+
 	err = b.db.Create(model).Error
 	if err != nil {
 		return
