@@ -67,3 +67,41 @@ type Container struct {
 func (*Container) TableName() string {
 	return "page_builder_containers"
 }
+
+type DemoContainer struct {
+	gorm.Model
+	ModelName string
+	ModelID   uint
+}
+
+func (*DemoContainer) TableName() string {
+	return "page_builder_demo_containers"
+}
+
+type Template struct {
+	gorm.Model
+	Name string
+	Desc string
+}
+
+func (*Template) TableName() string {
+	return "page_builder_templates"
+}
+
+const templateVersion = "tpl"
+
+func (m *Template) Page() *Page {
+	return &Page{
+		Model: m.Model,
+		Title: m.Name,
+		Slug:  "",
+		Status: publish.Status{
+			Status:    publish.StatusDraft,
+			OnlineUrl: "",
+		},
+		Schedule: publish.Schedule{},
+		Version: publish.Version{
+			Version: templateVersion,
+		},
+	}
+}
