@@ -42,7 +42,7 @@ type Container struct {
 	gorm.Model
 	PageID       uint
 	PageVersion  string
-	Name         string
+	ModelName    string
 	ModelID      uint
 	DisplayOrder float64
 	Shared       bool

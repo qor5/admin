@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -160,9 +161,9 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			VBtn("Preview").Text(true).Href(b.prefix+previewHref).Target("_blank"),
 			VBtn("").Text(true).Children(VIcon("reorder")).Attr("@click",
 				web.Plaid().
-					//URL("/admin/pages").
 					EventFunc(ContainerListEvent).
-					Query(presets.ParamID, "1_2022-07-11-v01").
+					Query(paramPageID, id).
+					Query(paramPageVersion, version).
 					Go(),
 			),
 			//VBtn("Add Container").Text(true).Attr("@click",
@@ -195,11 +196,11 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 
 	switch device {
 	case "phone":
-		style = "width: 414px"
+		style = "width: 414px;"
 	case "tablet":
-		style = "width: 768px"
+		style = "width: 768px;"
 	case "laptop":
-		style = "width: 1264px"
+		style = "width: 1264px;"
 	}
 
 	return
@@ -227,7 +228,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 
 		if isEditor {
-			r = append(r, b.containerEditor(ctx, obj, ec, pure, width))
+			r = append(r, b.containerEditor(ctx, obj, ec, pure, device, width))
 		} else {
 			r = append(r, pure)
 		}
@@ -236,6 +237,56 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 }
 
 func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err error) {
+	pageID := ctx.QueryAsInt(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
+
+	var cons []*Container
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
+	if err != nil {
+		return
+	}
+
+	type SorterItem struct {
+		Index     int    `json:"index"`
+		Label     string `json:"label"`
+		ModelName string `json:"model_name"`
+		ModelID   string `json:"model_id"`
+		URL       string `json:"url"`
+	}
+	type Sorter struct {
+		Items []SorterItem `json:"items"`
+	}
+
+	var sorterData Sorter
+	for i, c := range cons {
+		sorterData.Items = append(sorterData.Items, SorterItem{Label: c.DisplayName, Index: i, ModelName: c.ModelName, ModelID: strconv.Itoa(int(c.ModelID)), URL: b.ContainerByName(c.ModelName).mb.Info().ListingHref()})
+	}
+	list := VList().Class("py-0")
+	for _, c := range cons {
+		list.AppendChildren(
+			VListItem(
+				VListItemContent(
+					VListItemTitle(h.Text(c.DisplayName)),
+				),
+				VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit"))).Attr("@click",
+					web.Plaid().
+						URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+						EventFunc(actions.Edit).
+						Query(presets.ParamID, c.ModelID).
+						Go(),
+				).Class("my-2"),
+				VListItemIcon(VBtn("").Icon(true).Children(VIcon("delete"))).Attr("@click",
+					web.Plaid().
+						URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+						EventFunc(DeleteContainerEvent).
+						Query(paramContainerID, c.ID).
+						Go(),
+				).Class("my-2"),
+				VListItemIcon(VBtn("").Icon(true).Children(VIcon("reorder"))).Class("ml-0 my-2"),
+			),
+			VDivider(),
+		)
+	}
 
 	form := web.Scope(
 		VAppBar(
@@ -248,9 +299,57 @@ func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
-			VCard(h.Div(h.Text("text"))).Flat(true),
-		).Class("pa-2"),
-	).VSlot("{ plaidForm }")
+			VCard(
+				list,
+				VListItem(
+					VListItemIcon(VIcon("add").Color("primary")).Class("ma-4"),
+					VListItemTitle(VBtn("Add Containers").Color("primary").Text(true)),
+				).Attr("@click",
+					web.Plaid().
+						EventFunc(AddContainerDialogEvent).
+						Query(paramPageID, pageID).
+						Query(paramPageVersion, pageVersion).
+						Query(presets.ParamOverlay, actions.Dialog).
+						Go(),
+				),
+				//VList(
+				//h.Tag("vx-draggable").Attr("v-model", "locals.items", "draggable", ".item", "animation", "300").Children(
+				//	h.Div(
+				//		VListItem(
+				//			VListItemContent(
+				//				VListItemTitle(h.Text("{{item.label}}")),
+				//			),
+				//			VListItemIcon(VIcon("edit")).Attr("@click",
+				//				"{{item[url]}"),
+				//			//web.Plaid().
+				//			//	URL("{{item.url}}").
+				//			//	EventFunc(actions.Edit).
+				//			//	Query(presets.ParamID, "{{item.model_id}}").
+				//			//	Go(),
+				//			//),
+				//			VListItemIcon(VIcon("delete")),
+				//			VListItemIcon(VIcon("reorder")),
+				//		),
+				//		VDivider().Attr("v-if", "index < locals.items.length ", ":key", "index"),
+				//	).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),
+				//	h.Div(
+				//		VListItem(
+				//			VListItemIcon(VIcon("add").Color("primary")),
+				//			VListItemTitle(VBtn("Add Containers").Color("primary").Text(true)),
+				//		),
+				//	).Attr("color", "primary").Attr("@click",
+				//		web.Plaid().
+				//			EventFunc(AddContainerDialogEvent).
+				//			Query(paramPageID, pageID).
+				//			Query(paramPageVersion, pageVersion).
+				//			Query(presets.ParamOverlay, actions.Dialog).
+				//			Go(),
+				//	),
+				//),
+				//),
+			),
+		).Class("pa-6"),
+	).Init(h.JSONString(sorterData)).VSlot("{ plaidForm, locals }")
 	b.ps.RightDrawer(&r, form, "")
 	return
 }
@@ -377,7 +476,7 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
 		PageVersion:  pageVersion,
-		Name:         containerName,
+		ModelName:    containerName,
 		DisplayName:  containerName,
 		ModelID:      modelID,
 		DisplayOrder: maxOrder.Float64 + 8,
@@ -403,7 +502,7 @@ func (b *Builder) AddSharedContainerToPage(pageID int, pageVersion, containerNam
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
 		PageVersion:  pageVersion,
-		Name:         containerName,
+		ModelName:    containerName,
 		DisplayName:  c.DisplayName,
 		ModelID:      modelID,
 		Shared:       true,
@@ -429,7 +528,7 @@ func (b *Builder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersi
 	for _, c := range cons {
 		newModelID := c.ModelID
 		if !c.Shared {
-			model := b.ContainerByName(c.Name).NewModel()
+			model := b.ContainerByName(c.ModelName).NewModel()
 			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
 				return
 			}
@@ -445,7 +544,7 @@ func (b *Builder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersi
 		if err = db.Create(&Container{
 			PageID:       uint(toPageID),
 			PageVersion:  toPageVersion,
-			Name:         c.Name,
+			ModelName:    c.ModelName,
 			DisplayName:  c.DisplayName,
 			ModelID:      newModelID,
 			DisplayOrder: c.DisplayOrder,
@@ -476,7 +575,7 @@ func (b *Builder) RenameContainerEvent(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	if c.Shared {
-		err = b.db.Model(&Container{}).Where("name = ? AND model_id = ?", c.Name, c.ModelID).Update("display_name", name).Error
+		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ?", c.ModelName, c.ModelID).Update("display_name", name).Error
 		if err != nil {
 			return
 		}
@@ -559,14 +658,14 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 	}
 
 	var cons []*Container
-	err = b.db.Select("display_name,name,model_id").Where("shared = true").Group("display_name,name,model_id").Find(&cons).Error
+	err = b.db.Select("display_name,model_name,model_id").Where("shared = true").Group("display_name,model_name,model_id").Find(&cons).Error
 	if err != nil {
 		return
 	}
 
 	var sharedContainers []h.HTMLComponent
 	for _, sharedC := range cons {
-		c := b.ContainerByName(sharedC.Name)
+		c := b.ContainerByName(sharedC.ModelName)
 		cover := c.cover
 		if cover == "" {
 			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
@@ -584,7 +683,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							"locals.addContainerDialog = false;"+web.Plaid().EventFunc(AddContainerEvent).
 								Query(paramPageID, pageID).
 								Query(paramPageVersion, pageVersion).
-								Query(paramContainerName, sharedC.Name).
+								Query(paramContainerName, sharedC.ModelName).
 								Query(paramModelID, sharedC.ModelID).
 								Query(paramSharedContainer, "true").
 								Go(),
@@ -628,14 +727,20 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 	return
 }
 
-func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, width string) (r h.HTMLComponent) {
+func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, device, width string) (r h.HTMLComponent) {
 	containerContent := h.Div(
 		b.pageStyle,
 		c,
 	)
 	containerName := ec.container.DisplayName
 	if containerName == "" {
-		containerName = ec.container.Name
+		containerName = ec.container.ModelName
+	}
+	ml := "margin-left: 28rem;"
+	if device == "laptop" {
+		ml = "margin-left: 1.5rem;"
+	} else if device == "tablet" {
+		ml = "margin-left: 6rem;"
 	}
 	return VRow(
 		VCol(
@@ -646,7 +751,7 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 						"\"",
 						"&quot;"),
 				)),
-			).Class("page-builder-container mx-auto").Attr("style", width),
+			).Class("page-builder-container").Attr("style", width+ml),
 		).Cols(12).Class("pa-0"),
 
 		//VCol(
@@ -757,7 +862,7 @@ type editorContainer struct {
 func (b *Builder) getContainerBuilders(cs []*Container) (r []*editorContainer) {
 	for _, c := range cs {
 		for _, cb := range b.containerBuilders {
-			if cb.name == c.Name {
+			if cb.name == c.ModelName {
 				r = append(r, &editorContainer{
 					builder:   cb,
 					container: c,

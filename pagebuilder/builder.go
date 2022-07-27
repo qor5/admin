@@ -419,7 +419,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		tdbind.SetAttr("@click.self",
 			web.Plaid().
 				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.Name).GetModelBuilder().Info().ListingHref()).
+				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
 				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
 
