@@ -95,4 +95,4 @@ require (
 )
 
 // replace github.com/goplaid/web => ../goplaid/web
-// replace github.com/goplaid/x => ../../goplaid/x
+ replace github.com/goplaid/x => ../../goplaid/x

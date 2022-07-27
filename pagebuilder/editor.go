@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	ContainerListEvent         = "page_builder_ContainerListEvent"
 	AddContainerDialogEvent    = "page_builder_AddContainerDialogEvent"
 	AddContainerEvent          = "page_builder_AddContainerEvent"
 	DeleteContainerEvent       = "page_builder_DeleteContainerEvent"
@@ -107,7 +108,6 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	} else {
 		body = h.Text(perm.PermissionDenied.Error())
 	}
-
 	r.Body = h.Components(
 		VAppBar(
 			VSpacer(),
@@ -129,14 +129,21 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VSpacer(),
 			VBtn("Preview").Text(true).Href(b.prefix+fmt.Sprintf("/preview?id=%s&version=%s", id, version)).Target("_blank"),
-			VBtn("Add Container").Text(true).Attr("@click",
+			VBtn("").Text(true).Children(VIcon("reorder")).Attr("@click",
 				web.Plaid().
-					EventFunc(AddContainerDialogEvent).
-					Query(paramPageID, id).
-					Query(paramPageVersion, version).
-					Query(presets.ParamOverlay, actions.Dialog).
+					//URL("/admin/pages").
+					EventFunc(ContainerListEvent).
+					Query(presets.ParamID, "1_2022-07-11-v01").
 					Go(),
 			),
+			//VBtn("Add Container").Text(true).Attr("@click",
+			//	web.Plaid().
+			//		EventFunc(AddContainerDialogEvent).
+			//		Query(paramPageID, id).
+			//		Query(paramPageVersion, version).
+			//		Query(presets.ParamOverlay, actions.Dialog).
+			//		Go(),
+			//),
 		).Dark(true).
 			Color("primary").
 			App(true),
@@ -196,6 +203,26 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 			r = append(r, pure)
 		}
 	}
+	return
+}
+
+func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err error) {
+
+	form := web.Scope(
+		VAppBar(
+			VToolbarTitle("").Class("pl-2").
+				Children(h.Text("Containers")),
+			VSpacer(),
+			VBtn("").Icon(true).Children(
+				VIcon("close"),
+			).Attr("@click.stop", "vars.presetsRightDrawer = false"),
+		).Color("white").Elevation(0).Dense(true),
+
+		VSheet(
+			VCard(h.Div(h.Text("text"))).Flat(true),
+		).Class("pa-2"),
+	).VSlot("{ plaidForm }")
+	b.ps.RightDrawer(&r, form, "")
 	return
 }
 
@@ -587,104 +614,104 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 						"&quot;"),
 				)),
 			).Class("page-builder-container mx-auto").Attr("style", width),
-		).Cols(10).Class("pa-0"),
+		).Cols(12).Class("pa-0"),
 
-		VCol(
-			VMenu(
-				web.Slot(
-					VBtn("").Color("secondary").Children(
-						VIcon("settings"),
-					).Icon(true).Class("my-2 mr-4 float-right").
-						Attr("v-bind", "attrs", "v-on", "on"),
-				).Name("activator").Scope("{ on, attrs }"),
-
-				VList(
-					VListItem(
-						VListItemTitle(h.Text("Edit")),
-					).Attr("@click",
-						web.Plaid().
-							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(actions.Edit).
-							Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
-							Go(),
-					),
-					VListItem(
-						VListItemTitle(h.Text("Rename")),
-					).Attr("@click",
-						web.Plaid().
-							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(RenameDialogEvent).
-							Query(paramContainerID, ec.container.ID).
-							Query(paramContainerName, containerName).
-							Query(presets.ParamOverlay, actions.Dialog).
-							Go(),
-					),
-					h.If(!ec.container.Shared,
-						VListItem(
-							VListItemTitle(h.Text("Mark As Shared Container")),
-						).Attr("@click",
-							web.Plaid().
-								URL(ec.builder.mb.Info().ListingHref()).
-								EventFunc(MarkAsSharedContainerEvent).
-								// Query(paramPageID, ec.container.PageID).
-								// Query(paramPageVersion, ec.container.PageVersion).
-								Query(paramContainerID, ec.container.ID).
-								Go(),
-						),
-					),
-					VListItem(
-						VListItemTitle(h.Text("Move Up")),
-					).Attr("@click",
-						web.Plaid().
-							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(MoveContainerEvent).
-							Query(paramDirection, string(up)).
-							Query(paramPageID, ec.container.PageID).
-							Query(paramPageVersion, ec.container.PageVersion).
-							Query(paramContainerID, ec.container.ID).
-							Go(),
-					),
-
-					VListItem(
-						VListItemTitle(h.Text("Move Down")),
-					).Attr("@click",
-						web.Plaid().
-							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(MoveContainerEvent).
-							Query(paramDirection, string(down)).
-							Query(paramPageID, ec.container.PageID).
-							Query(paramPageVersion, ec.container.PageVersion).
-							Query(paramContainerID, ec.container.ID).
-							Go(),
-					),
-					VDivider(),
-
-					VListItem(
-						VListItemTitle(h.Text("Delete")),
-					).Attr("@click",
-						web.Plaid().
-							URL(ec.builder.mb.Info().ListingHref()).
-							EventFunc(DeleteContainerEvent).
-							// Query(paramPageID, ec.container.PageID).
-							// Query(paramPageVersion, ec.container.PageVersion).
-							Query(paramContainerID, ec.container.ID).
-							Go(),
-					),
-				),
-			).OffsetY(true),
-
-			VBtn("").Color("primary").Children(
-				h.If(ec.container.Shared, VIcon("shared").Small(true).Right(true)),
-				h.Text(containerName),
-			).Text(true).
-				Class("my-2 float-right text-capitalize").Attr("@click",
-				web.Plaid().
-					URL(ec.builder.mb.Info().ListingHref()).
-					EventFunc(actions.Edit).
-					Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
-					Go(),
-			).Class("pa-0"),
-		).Cols(2).Class("pa-0"),
+		//VCol(
+		//	VMenu(
+		//		web.Slot(
+		//			VBtn("").Color("secondary").Children(
+		//				VIcon("settings"),
+		//			).Icon(true).Class("my-2 mr-4 float-right").
+		//				Attr("v-bind", "attrs", "v-on", "on"),
+		//		).Name("activator").Scope("{ on, attrs }"),
+		//
+		//		VList(
+		//			VListItem(
+		//				VListItemTitle(h.Text("Edit")),
+		//			).Attr("@click",
+		//				web.Plaid().
+		//					URL(ec.builder.mb.Info().ListingHref()).
+		//					EventFunc(actions.Edit).
+		//					Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+		//					Go(),
+		//			),
+		//			VListItem(
+		//				VListItemTitle(h.Text("Rename")),
+		//			).Attr("@click",
+		//				web.Plaid().
+		//					URL(ec.builder.mb.Info().ListingHref()).
+		//					EventFunc(RenameDialogEvent).
+		//					Query(paramContainerID, ec.container.ID).
+		//					Query(paramContainerName, containerName).
+		//					Query(presets.ParamOverlay, actions.Dialog).
+		//					Go(),
+		//			),
+		//			h.If(!ec.container.Shared,
+		//				VListItem(
+		//					VListItemTitle(h.Text("Mark As Shared Container")),
+		//				).Attr("@click",
+		//					web.Plaid().
+		//						URL(ec.builder.mb.Info().ListingHref()).
+		//						EventFunc(MarkAsSharedContainerEvent).
+		//						// Query(paramPageID, ec.container.PageID).
+		//						// Query(paramPageVersion, ec.container.PageVersion).
+		//						Query(paramContainerID, ec.container.ID).
+		//						Go(),
+		//				),
+		//			),
+		//			VListItem(
+		//				VListItemTitle(h.Text("Move Up")),
+		//			).Attr("@click",
+		//				web.Plaid().
+		//					URL(ec.builder.mb.Info().ListingHref()).
+		//					EventFunc(MoveContainerEvent).
+		//					Query(paramDirection, string(up)).
+		//					Query(paramPageID, ec.container.PageID).
+		//					Query(paramPageVersion, ec.container.PageVersion).
+		//					Query(paramContainerID, ec.container.ID).
+		//					Go(),
+		//			),
+		//
+		//			VListItem(
+		//				VListItemTitle(h.Text("Move Down")),
+		//			).Attr("@click",
+		//				web.Plaid().
+		//					URL(ec.builder.mb.Info().ListingHref()).
+		//					EventFunc(MoveContainerEvent).
+		//					Query(paramDirection, string(down)).
+		//					Query(paramPageID, ec.container.PageID).
+		//					Query(paramPageVersion, ec.container.PageVersion).
+		//					Query(paramContainerID, ec.container.ID).
+		//					Go(),
+		//			),
+		//			VDivider(),
+		//
+		//			VListItem(
+		//				VListItemTitle(h.Text("Delete")),
+		//			).Attr("@click",
+		//				web.Plaid().
+		//					URL(ec.builder.mb.Info().ListingHref()).
+		//					EventFunc(DeleteContainerEvent).
+		//					// Query(paramPageID, ec.container.PageID).
+		//					// Query(paramPageVersion, ec.container.PageVersion).
+		//					Query(paramContainerID, ec.container.ID).
+		//					Go(),
+		//			),
+		//		),
+		//	).OffsetY(true),
+		//
+		//	VBtn("").Color("primary").Children(
+		//		h.If(ec.container.Shared, VIcon("shared").Small(true).Right(true)),
+		//		h.Text(containerName),
+		//	).Text(true).
+		//		Class("my-2 float-right text-capitalize").Attr("@click",
+		//		web.Plaid().
+		//			URL(ec.builder.mb.Info().ListingHref()).
+		//			EventFunc(actions.Edit).
+		//			Query(presets.ParamID, fmt.Sprint(reflectutils.MustGet(obj, "ID"))).
+		//			Go(),
+		//	).Class("pa-0"),
+		//).Cols(2).Class("pa-0"),
 	).Attr("style", "border-top: 0.5px dashed gray")
 
 }
