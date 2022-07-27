@@ -150,6 +150,7 @@ func NewConfig() Config {
 			"Page",
 			"shared_containers",
 			"demo_containers",
+			"page_templates",
 		).Icon("view_quilt"),
 	)
 
