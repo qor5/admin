@@ -10,8 +10,9 @@ import (
 
 type Page struct {
 	gorm.Model
-	Title string
-	Slug  string
+	Title      string
+	Slug       string
+	CategoryID uint
 
 	publish.Status
 	publish.Schedule
@@ -40,13 +41,9 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 
 type Category struct {
 	gorm.Model
-	Name      string
-	Path      string
-	Desc      string
-	ModelType string
-	// BreadcrumbsPosition       int
-	// ShowOnSubNav              bool
-	// HideCategoryOnBreadcrumbs bool
+	Name string
+	Path string
+	Desc string
 }
 
 func (*Category) TableName() string {

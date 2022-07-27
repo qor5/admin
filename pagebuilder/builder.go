@@ -150,7 +150,31 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	//	)
 	// })
 
-	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "TemplateSelection", "EditContainer")
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "CategoryID", "TemplateSelection", "EditContainer")
+
+	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		categories := []*Category{}
+		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+		var showURL h.HTMLComponent
+		if p.CategoryID != 0 {
+			var c Category
+			if err := db.Model(&Category{}).Where("id = ?", p.CategoryID).First(&c).Error; err != nil {
+				panic(err)
+			}
+			u := os.Getenv("BASE_URL") + c.Path + "/" + p.Slug
+			showURL = h.Div(
+				h.A().Text(u).Href(u).Target("_blank"),
+			).Class("mt-n2")
+		}
+		return h.Div(
+			VAutocomplete().Label("Category").FieldName(field.Name).
+				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID"),
+			showURL,
+		).ClassIf("mb-4", p.GetStatus() != "")
+	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -235,7 +259,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
-	lb := pm.Listing("Name", "Path", "Desc", "ModelType").OrderBy("Path")
+	lb := pm.Listing("Name", "Path", "Desc").OrderBy("Path")
 	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
 		paths := []string{}
@@ -261,17 +285,17 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 		)
 	})
 
-	eb := pm.Editing("Name", "Path", "Desc", "ModelType")
+	eb := pm.Editing("Name", "Path", "Desc")
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
-
+		// TODO: Verify the legality of the Path
+		u := os.Getenv("BASE_URL") + category.Path
 		return h.Div(
 			VTextField().Label("Path").Value(category.Path).Class("mb-n4").FieldName("Path"),
-			h.Label(os.Getenv("BASE_URL")+category.Path).Style("color: rgba(0,0,0,0.45); font-style: italic;").ClassIf("d-none", category.ID == 0),
-		).Class("mb-4")
-	})
-	eb.Field("ModelType").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VAutocomplete().Label("Model Type").FieldName("ModelType")
+			h.Div(
+				h.A().Text(u).Href(u).Target("_blank").ClassIf("d-none", category.ID == 0),
+			).Class("mt-2"),
+		).Class("mb-2")
 	})
 
 	return
