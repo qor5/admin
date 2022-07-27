@@ -272,8 +272,36 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 			panic(err)
 		}
 
+		var pathDisArr []int
+		for _, c := range categories {
+			if c.ID == category.ID {
+				continue
+			}
+			ps := []string{}
+			linq.From(strings.Split(c.Path, "/")).Where(func(i interface{}) bool {
+				return i != ""
+			}).ToSlice(&ps)
+
+			// is sub path
+			if len(paths) > len(ps) {
+				pathDisArr = append(pathDisArr, getSameElemsNum(paths, ps))
+			}
+		}
+
+		var pathDis int
+		if len(pathDisArr) == 0 {
+			pathDis = 0
+		} else {
+			pathDis = linq.From([]int{
+				linq.From(pathDisArr).Where(func(i interface{}) bool {
+					return i.(int) > 0
+				}).Count(),
+				linq.From(pathDisArr).Max().(int),
+			}).Min().(int)
+		}
+
 		icon := "folder"
-		if len(paths) > 0 {
+		if pathDis != 0 {
 			icon = "insert_drive_file"
 		}
 
@@ -281,7 +309,7 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 			h.Div(
 				VIcon(icon).Small(true).Class("mb-1"),
 				h.Text(category.Name),
-			).Style(fmt.Sprintf("padding-left: %dpx;", (len(paths)-1)*16)),
+			).Style(fmt.Sprintf("padding-left: %dpx;", pathDis*32)),
 		)
 	})
 
@@ -299,6 +327,20 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	})
 
 	return
+}
+
+func getSameElemsNum(arr1 []string, arr2 []string) int {
+	for i := 0; i < linq.From([]int{len(arr1), len(arr2)}).Max().(int); i++ {
+		if i >= len(arr1) || i >= len(arr2) {
+			return i
+		}
+		if arr1[i] == arr2[i] {
+			continue
+		} else {
+			return i
+		}
+	}
+	return len(arr1)
 }
 
 func selectTemplate(db *gorm.DB) web.EventFunc {
