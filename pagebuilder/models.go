@@ -41,9 +41,9 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 
 type Category struct {
 	gorm.Model
-	Name string
-	Path string
-	Desc string
+	Name        string
+	Path        string
+	Description string
 
 	IndentLevel int `gorm:"-"`
 }
@@ -79,8 +79,8 @@ func (*DemoContainer) TableName() string {
 
 type Template struct {
 	gorm.Model
-	Name string
-	Desc string
+	Name        string
+	Description string
 }
 
 func (*Template) TableName() string {
