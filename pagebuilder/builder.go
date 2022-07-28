@@ -7,10 +7,10 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/ahmetb/go-linq/v3"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -58,15 +58,6 @@ type Builder struct {
 	preview           http.Handler
 	images            http.Handler
 	imagesPrefix      string
-}
-
-type categoryWithPathDis struct {
-	gorm.Model
-	Name string
-	Path string
-	Desc string
-
-	PathDis int
 }
 
 const (
@@ -269,88 +260,50 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	return
 }
 
+// cats should be ordered by path
+func fillCategoryIndentLevels(cats []*Category) {
+	for i, cat := range cats {
+		if cat.Path == "/" {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if strings.HasPrefix(cat.Path, cats[j].Path+"/") {
+				cat.IndentLevel = cats[j].IndentLevel + 1
+				break
+			}
+		}
+	}
+}
+
 func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
-	lb := pm.Listing("Name", "Path", "Desc").OrderBy("Path")
+	lb := pm.Listing("Name", "Path", "Desc")
 
-	lb.Searcher(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-		categories := []*Category{}
-		if err = db.Model(&Category{}).Find(&categories).Error; err != nil {
-			return []*categoryWithPathDis{}, 0, nil
-		}
-
-		categoriesWithPathDis := []*categoryWithPathDis{}
-
-		for _, category := range categories {
-			paths := []string{}
-			linq.From(strings.Split(category.Path, "/")).Where(func(i interface{}) bool {
-				return i != ""
-			}).ToSlice(&paths)
-
-			var pathDisArr []int
-			for _, c := range categories {
-				if c.ID == category.ID {
-					continue
-				}
-				ps := []string{}
-				linq.From(strings.Split(c.Path, "/")).Where(func(i interface{}) bool {
-					return i != ""
-				}).ToSlice(&ps)
-
-				sameElemsNum := getSameElemsNum(paths, ps)
-				// For parent path
-				if len(paths) > len(ps) && sameElemsNum == len(ps) {
-					pathDisArr = append(pathDisArr, sameElemsNum)
-				}
-			}
-
-			var pathDis int
-			if len(pathDisArr) == 0 {
-				pathDis = 0
-			} else {
-				pathDis = linq.From(pathDisArr).Where(func(i interface{}) bool {
-					return i.(int) > 0
-				}).Distinct().Count()
-			}
-
-			categoriesWithPathDis = append(categoriesWithPathDis, &categoryWithPathDis{
-				Model: gorm.Model{
-					ID:        category.ID,
-					CreatedAt: category.CreatedAt,
-					UpdatedAt: category.UpdatedAt,
-					DeletedAt: category.DeletedAt,
-				},
-				Name:    category.Name,
-				Path:    category.Path,
-				Desc:    category.Desc,
-				PathDis: pathDis,
-			})
-		}
-
-		res := []*categoryWithPathDis{}
-		linq.From(categoriesWithPathDis).OrderBy(func(i interface{}) interface{} {
-			return i.(*categoryWithPathDis).Path
-		}).ToSlice(&res)
-		totalCount = len(categoriesWithPathDis)
-
-		return res, totalCount, err
+	oldSearcher := lb.Searcher
+	lb.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		r, totalCount, err = oldSearcher(model, params, ctx)
+		cats := r.([]*Category)
+		sort.Slice(cats, func(i, j int) bool {
+			return cats[i].Path < cats[j].Path
+		})
+		fillCategoryIndentLevels(cats)
+		return
 	})
 
 	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		category := obj.(*categoryWithPathDis)
-		pathDis := category.PathDis
+		cat := obj.(*Category)
 
 		icon := "folder"
-		if pathDis != 0 {
+		if cat.IndentLevel != 0 {
 			icon = "insert_drive_file"
 		}
 
 		return h.Td(
 			h.Div(
 				VIcon(icon).Small(true).Class("mb-1"),
-				h.Text(category.Name),
-			).Style(fmt.Sprintf("padding-left: %dpx;", pathDis*32)),
+				h.Text(cat.Name),
+			).Style(fmt.Sprintf("padding-left: %dpx;", cat.IndentLevel*32)),
 		)
 	})
 
@@ -368,20 +321,6 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	})
 
 	return
-}
-
-func getSameElemsNum(arr1 []string, arr2 []string) int {
-	for i := 0; i < linq.From([]int{len(arr1), len(arr2)}).Max().(int); i++ {
-		if i >= len(arr1) || i >= len(arr2) {
-			return i
-		}
-		if arr1[i] == arr2[i] {
-			continue
-		} else {
-			return i
-		}
-	}
-	return len(arr1)
 }
 
 func selectTemplate(db *gorm.DB) web.EventFunc {
@@ -566,7 +505,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 	)
 	listing.Field("DisplayName").Label("Name")
-	listing.Searcher(sharedContainersearcher(db, pm))
+	listing.SearchFunc(sharedContainersearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*Container)
@@ -576,7 +515,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.Name).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
 	})
@@ -676,7 +615,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
 	})

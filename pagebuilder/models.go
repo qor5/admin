@@ -44,6 +44,8 @@ type Category struct {
 	Name string
 	Path string
 	Desc string
+
+	IndentLevel int `gorm:"-"`
 }
 
 func (*Category) TableName() string {
