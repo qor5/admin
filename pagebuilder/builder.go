@@ -152,6 +152,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "CategoryID", "TemplateSelection", "EditContainer")
 
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Page)
+		err = pageValidator(c)
+		return
+	})
+
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
@@ -171,12 +177,19 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			u := os.Getenv("BASE_URL") + c.Path + "/" + p.Slug
 			showURL = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
-			).Class("mt-n2")
+			).Class("mt-n2 mb-4")
 		}
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
 		return h.Div(
-			VAutocomplete().Label("Category").FieldName(field.Name).
-				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID"),
 			showURL,
+			VAutocomplete().Label("Category").FieldName(field.Name).
+				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
+				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
 		).ClassIf("mb-4", p.GetStatus() != "")
 	})
 
@@ -308,16 +321,37 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	})
 
 	eb := pm.Editing("Name", "Path", "Desc")
+
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Category)
+		err = categoryValidator(c)
+		return
+	})
+
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
-		// TODO: Verify the legality of the Path
 		u := os.Getenv("BASE_URL") + category.Path
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
 		return h.Div(
-			VTextField().Label("Path").Value(category.Path).Class("mb-n4").FieldName("Path"),
+			VTextField().Label("Path").Value(category.Path).Class("mb-n4").
+				FieldName("Path").
+				ErrorMessages(vErr.GetFieldErrors("Category.Category")...),
 			h.Div(
 				h.A().Text(u).Href(u).Target("_blank").ClassIf("d-none", category.ID == 0),
-			).Class("mt-2"),
+			).Class("mt-4"),
 		).Class("mb-2")
+	})
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		c := obj.(*Category)
+		c.Path = path.Clean(c.Path)
+		err = db.Save(c).Error
+		return
 	})
 
 	return
