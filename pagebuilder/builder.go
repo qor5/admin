@@ -60,6 +60,15 @@ type Builder struct {
 	imagesPrefix      string
 }
 
+type categoryWithPathDis struct {
+	gorm.Model
+	Name string
+	Path string
+	Desc string
+
+	PathDis int
+}
+
 const (
 	openTemplateDialogEvent = "openTemplateDialogEvent"
 	selectTemplateEvent     = "selectTemplateEvent"
@@ -160,10 +169,14 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		}
 		var showURL h.HTMLComponent
 		if p.CategoryID != 0 {
-			var c Category
-			if err := db.Model(&Category{}).Where("id = ?", p.CategoryID).First(&c).Error; err != nil {
-				panic(err)
+			var c *Category
+			for _, e := range categories {
+				if e.ID == p.CategoryID {
+					c = e
+					break
+				}
 			}
+
 			u := os.Getenv("BASE_URL") + c.Path + "/" + p.Slug
 			showURL = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
@@ -260,45 +273,73 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
 	lb := pm.Listing("Name", "Path", "Desc").OrderBy("Path")
-	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		category := obj.(*Category)
-		paths := []string{}
-		linq.From(strings.Split(category.Path, "/")).Where(func(i interface{}) bool {
-			return i != ""
-		}).ToSlice(&paths)
 
+	lb.Searcher(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		categories := []*Category{}
-		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
-			panic(err)
+		if err = db.Model(&Category{}).Find(&categories).Error; err != nil {
+			return []*categoryWithPathDis{}, 0, nil
 		}
 
-		var pathDisArr []int
-		for _, c := range categories {
-			if c.ID == category.ID {
-				continue
-			}
-			ps := []string{}
-			linq.From(strings.Split(c.Path, "/")).Where(func(i interface{}) bool {
+		categoriesWithPathDis := []*categoryWithPathDis{}
+
+		for _, category := range categories {
+			paths := []string{}
+			linq.From(strings.Split(category.Path, "/")).Where(func(i interface{}) bool {
 				return i != ""
-			}).ToSlice(&ps)
+			}).ToSlice(&paths)
 
-			// is sub path
-			if len(paths) > len(ps) {
-				pathDisArr = append(pathDisArr, getSameElemsNum(paths, ps))
+			var pathDisArr []int
+			for _, c := range categories {
+				if c.ID == category.ID {
+					continue
+				}
+				ps := []string{}
+				linq.From(strings.Split(c.Path, "/")).Where(func(i interface{}) bool {
+					return i != ""
+				}).ToSlice(&ps)
+
+				sameElemsNum := getSameElemsNum(paths, ps)
+				// For parent path
+				if len(paths) > len(ps) && sameElemsNum == len(ps) {
+					pathDisArr = append(pathDisArr, sameElemsNum)
+				}
 			}
+
+			var pathDis int
+			if len(pathDisArr) == 0 {
+				pathDis = 0
+			} else {
+				pathDis = linq.From(pathDisArr).Where(func(i interface{}) bool {
+					return i.(int) > 0
+				}).Distinct().Count()
+			}
+
+			categoriesWithPathDis = append(categoriesWithPathDis, &categoryWithPathDis{
+				Model: gorm.Model{
+					ID:        category.ID,
+					CreatedAt: category.CreatedAt,
+					UpdatedAt: category.UpdatedAt,
+					DeletedAt: category.DeletedAt,
+				},
+				Name:    category.Name,
+				Path:    category.Path,
+				Desc:    category.Desc,
+				PathDis: pathDis,
+			})
 		}
 
-		var pathDis int
-		if len(pathDisArr) == 0 {
-			pathDis = 0
-		} else {
-			pathDis = linq.From([]int{
-				linq.From(pathDisArr).Where(func(i interface{}) bool {
-					return i.(int) > 0
-				}).Count(),
-				linq.From(pathDisArr).Max().(int),
-			}).Min().(int)
-		}
+		res := []*categoryWithPathDis{}
+		linq.From(categoriesWithPathDis).OrderBy(func(i interface{}) interface{} {
+			return i.(*categoryWithPathDis).Path
+		}).ToSlice(&res)
+		totalCount = len(categoriesWithPathDis)
+
+		return res, totalCount, err
+	})
+
+	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		category := obj.(*categoryWithPathDis)
+		pathDis := category.PathDis
 
 		icon := "folder"
 		if pathDis != 0 {
