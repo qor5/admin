@@ -291,7 +291,7 @@ func fillCategoryIndentLevels(cats []*Category) {
 func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
-	lb := pm.Listing("Name", "Path", "Desc")
+	lb := pm.Listing("Name", "Path", "Description")
 
 	oldSearcher := lb.Searcher
 	lb.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -320,7 +320,7 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 		)
 	})
 
-	eb := pm.Editing("Name", "Path", "Desc")
+	eb := pm.Editing("Name", "Path", "Description")
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
@@ -411,9 +411,9 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		} else {
 			tplHTMLComponents = append(tplHTMLComponents,
 				getTplColComponent(&Template{
-					Model: gorm.Model{},
-					Name:  "Blank",
-					Desc:  "New page",
+					Model:       gorm.Model{},
+					Name:        "Blank",
+					Description: "New page",
 				}, true),
 			)
 			for _, tpl := range tpls {
@@ -468,10 +468,10 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 	} else {
 		name = tpl.Name
 	}
-	if tpl.Desc == "" {
+	if tpl.Description == "" {
 		desc = "Not described"
 	} else {
-		desc = tpl.Desc
+		desc = tpl.Description
 	}
 
 	return VCol(
@@ -659,9 +659,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
 
-	pm.Listing("ID", "Name", "Desc")
+	pm.Listing("ID", "Name", "Description")
 
-	eb := pm.Editing("Name", "Desc", "EditContainer")
+	eb := pm.Editing("Name", "Description", "EditContainer")
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		m := obj.(*Template)
 		if m.ID == 0 {
