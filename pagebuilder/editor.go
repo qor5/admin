@@ -23,7 +23,6 @@ import (
 )
 
 const (
-	ContainerListEvent         = "page_builder_ContainerListEvent"
 	AddContainerDialogEvent    = "page_builder_AddContainerDialogEvent"
 	AddContainerEvent          = "page_builder_AddContainerEvent"
 	DeleteContainerEvent       = "page_builder_DeleteContainerEvent"
@@ -97,6 +96,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	version := ctx.R.FormValue("version")
 	var comps []h.HTMLComponent
 	var body h.HTMLComponent
+	var containerList h.HTMLComponent
 	var device string
 	var p *Page
 	var previewHref string
@@ -133,6 +133,11 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 				Page:     p,
 			}
 			body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+
+			containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion())
+			if err != nil {
+				return
+			}
 		}
 	} else {
 		body = h.Text(perm.PermissionDenied.Error())
@@ -159,21 +164,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			VSpacer(),
 
 			VBtn("Preview").Text(true).Href(b.prefix+previewHref).Target("_blank"),
-			VBtn("").Text(true).Children(VIcon("reorder")).Attr("@click",
-				web.Plaid().
-					EventFunc(ContainerListEvent).
-					Query(paramPageID, id).
-					Query(paramPageVersion, version).
-					Go(),
-			),
-			//VBtn("Add Container").Text(true).Attr("@click",
-			//	web.Plaid().
-			//		EventFunc(AddContainerDialogEvent).
-			//		Query(paramPageID, id).
-			//		Query(paramPageVersion, version).
-			//		Query(presets.ParamOverlay, actions.Dialog).
-			//		Go(),
-			//),
+			VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 		).Dark(true).
 			Color("primary").
 			App(true),
@@ -182,6 +173,14 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			VContainer(body).Attr("v-keep-scroll", "true").
 				Class("mt-6").
 				Fluid(true),
+			VNavigationDrawer(containerList).
+				App(true).
+				Right(true).
+				Fixed(true).
+				Value(true).
+				Width(420).
+				Attr("v-model", "vars.navDrawer").
+				Attr(web.InitContextVars, `{navDrawer: null}`),
 		),
 	)
 
@@ -236,10 +235,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 	return
 }
 
-func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.QueryAsInt(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-
+func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageVersion string) (r h.HTMLComponent, err error) {
 	var cons []*Container
 	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
 	if err != nil {
@@ -263,6 +259,7 @@ func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err
 	}
 	list := VList().Class("py-0")
 	for _, c := range cons {
+		cb := b.ContainerByName(c.ModelName)
 		list.AppendChildren(
 			VListItem(
 				VListItemContent(
@@ -270,32 +267,67 @@ func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err
 				),
 				VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit"))).Attr("@click",
 					web.Plaid().
-						URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+						URL(cb.mb.Info().ListingHref()).
 						EventFunc(actions.Edit).
+						Query(presets.ParamOverlay, actions.Dialog).
 						Query(presets.ParamID, c.ModelID).
 						Go(),
 				).Class("my-2"),
 				VListItemIcon(VBtn("").Icon(true).Children(VIcon("delete"))).Attr("@click",
 					web.Plaid().
-						URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+						URL(cb.mb.Info().ListingHref()).
 						EventFunc(DeleteContainerEvent).
 						Query(paramContainerID, c.ID).
 						Go(),
 				).Class("my-2"),
 				VListItemIcon(VBtn("").Icon(true).Children(VIcon("reorder"))).Class("ml-0 my-2"),
+				VMenu(
+					web.Slot(
+						VBtn("").Children(
+							VIcon("more_horiz"),
+						).Attr("v-on", "on").Text(true).Fab(true).Small(true),
+					).Name("activator").Scope("{ on }"),
+
+					VList(
+						VListItem(
+							VListItemTitle(h.Text("Rename")),
+						).Attr("@click",
+							web.Plaid().
+								URL(cb.mb.Info().ListingHref()).
+								EventFunc(RenameDialogEvent).
+								Query(paramContainerID, c.ID).
+								Query(paramContainerName, c.ModelName).
+								Query(presets.ParamOverlay, actions.Dialog).
+								Go(),
+						),
+						h.If(!c.Shared,
+							VListItem(
+								VListItemTitle(h.Text("Mark As Shared Container")),
+							).Attr("@click",
+								web.Plaid().
+									URL(cb.mb.Info().ListingHref()).
+									EventFunc(MarkAsSharedContainerEvent).
+									// Query(paramPageID, ec.container.PageID).
+									// Query(paramPageVersion, ec.container.PageVersion).
+									Query(paramContainerID, c.ID).
+									Go(),
+							),
+						),
+					),
+				),
 			),
 			VDivider(),
 		)
 	}
 
-	form := web.Scope(
+	r = web.Scope(
 		VAppBar(
 			VToolbarTitle("").Class("pl-2").
 				Children(h.Text("Containers")),
 			VSpacer(),
-			VBtn("").Icon(true).Children(
-				VIcon("close"),
-			).Attr("@click.stop", "vars.presetsRightDrawer = false"),
+			//VBtn("").Icon(true).Children(
+			//	VIcon("close"),
+			//).Attr("@click.stop", "vars.presetsRightDrawer = false"),
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
@@ -350,7 +382,6 @@ func (b *Builder) ContainerList(ctx *web.EventContext) (r web.EventResponse, err
 			),
 		).Class("pa-6"),
 	).Init(h.JSONString(sorterData)).VSlot("{ plaidForm, locals }")
-	b.ps.RightDrawer(&r, form, "")
 	return
 }
 
@@ -736,23 +767,21 @@ func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *ed
 	if containerName == "" {
 		containerName = ec.container.ModelName
 	}
-	ml := "margin-left: 28rem;"
-	if device == "laptop" {
-		ml = "margin-left: 1.5rem;"
-	} else if device == "tablet" {
-		ml = "margin-left: 6rem;"
-	}
+	mx := "mx-auto"
+	//if device == "laptop" {
+	//	mx = "mx-2"
+	//}
 	return VRow(
-		VCol(
-			h.Div(
-				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
-					strings.ReplaceAll(
-						h.MustString(containerContent, ctx.R.Context()),
-						"\"",
-						"&quot;"),
-				)),
-			).Class("page-builder-container").Attr("style", width+ml),
-		).Cols(12).Class("pa-0"),
+		//VCol(
+		h.Div(
+			h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
+				strings.ReplaceAll(
+					h.MustString(containerContent, ctx.R.Context()),
+					"\"",
+					"&quot;"),
+			)),
+		).Class("page-builder-container "+mx).Attr("style", width),
+		//).Cols(8).Class("pa-0"),
 
 		//VCol(
 		//	VMenu(
@@ -927,10 +956,11 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 		pr.Body = VApp(
 
 			web.Portal().Name(presets.RightDrawerPortalName),
+			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(dialogPortalName),
 
 			innerPr.Body.(h.HTMLComponent),
-		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, dialogPortalName: false}`)
+		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)
 
 		return
 	}
