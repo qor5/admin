@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -69,6 +71,7 @@ func New(db *gorm.DB) *Builder {
 		&Template{},
 		&Container{},
 		&DemoContainer{},
+		&Category{},
 	)
 
 	if err != nil {
@@ -147,7 +150,48 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	//	)
 	// })
 
-	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "TemplateSelection", "EditContainer")
+	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "CategoryID", "TemplateSelection", "EditContainer")
+
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Page)
+		err = pageValidator(c)
+		return
+	})
+
+	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		categories := []*Category{}
+		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+		var showURL h.HTMLComponent
+		if p.CategoryID != 0 {
+			var c *Category
+			for _, e := range categories {
+				if e.ID == p.CategoryID {
+					c = e
+					break
+				}
+			}
+
+			u := os.Getenv("BASE_URL") + c.Path + "/" + p.Slug
+			showURL = h.Div(
+				h.A().Text(u).Href(u).Target("_blank"),
+			).Class("mt-n2 mb-4")
+		}
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return h.Div(
+			showURL,
+			VAutocomplete().Label("Category").FieldName(field.Name).
+				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
+				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
+		).ClassIf("mb-4", p.GetStatus() != "")
+	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -225,6 +269,91 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	b.configSharedContainer(pb, db)
 	b.configDemoContainer(pb, db)
 	b.configTemplate(pb, db)
+	b.configCategory(pb, db)
+	return
+}
+
+// cats should be ordered by path
+func fillCategoryIndentLevels(cats []*Category) {
+	for i, cat := range cats {
+		if cat.Path == "/" {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if strings.HasPrefix(cat.Path, cats[j].Path+"/") {
+				cat.IndentLevel = cats[j].IndentLevel + 1
+				break
+			}
+		}
+	}
+}
+
+func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+
+	lb := pm.Listing("Name", "Path", "Description")
+
+	oldSearcher := lb.Searcher
+	lb.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		r, totalCount, err = oldSearcher(model, params, ctx)
+		cats := r.([]*Category)
+		sort.Slice(cats, func(i, j int) bool {
+			return cats[i].Path < cats[j].Path
+		})
+		fillCategoryIndentLevels(cats)
+		return
+	})
+
+	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		cat := obj.(*Category)
+
+		icon := "folder"
+		if cat.IndentLevel != 0 {
+			icon = "insert_drive_file"
+		}
+
+		return h.Td(
+			h.Div(
+				VIcon(icon).Small(true).Class("mb-1"),
+				h.Text(cat.Name),
+			).Style(fmt.Sprintf("padding-left: %dpx;", cat.IndentLevel*32)),
+		)
+	})
+
+	eb := pm.Editing("Name", "Path", "Description")
+
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Category)
+		err = categoryValidator(c)
+		return
+	})
+
+	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		category := obj.(*Category)
+		u := os.Getenv("BASE_URL") + category.Path
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return h.Div(
+			VTextField().Label("Path").Value(category.Path).Class("mb-n4").
+				FieldName("Path").
+				ErrorMessages(vErr.GetFieldErrors("Category.Category")...),
+			h.Div(
+				h.A().Text(u).Href(u).Target("_blank").ClassIf("d-none", category.ID == 0),
+			).Class("mt-4"),
+		).Class("mb-2")
+	})
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		c := obj.(*Category)
+		c.Path = path.Clean(c.Path)
+		err = db.Save(c).Error
+		return
+	})
+
 	return
 }
 
@@ -282,9 +411,9 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		} else {
 			tplHTMLComponents = append(tplHTMLComponents,
 				getTplColComponent(&Template{
-					Model: gorm.Model{},
-					Name:  "Blank",
-					Desc:  "New page",
+					Model:       gorm.Model{},
+					Name:        "Blank",
+					Description: "New page",
 				}, true),
 			)
 			for _, tpl := range tpls {
@@ -339,10 +468,10 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 	} else {
 		name = tpl.Name
 	}
-	if tpl.Desc == "" {
+	if tpl.Description == "" {
 		desc = "Not described"
 	} else {
-		desc = tpl.Desc
+		desc = tpl.Description
 	}
 
 	return VCol(
@@ -410,7 +539,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 	)
 	listing.Field("DisplayName").Label("Name")
-	listing.Searcher(sharedContainersearcher(db, pm))
+	listing.SearchFunc(sharedContainersearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*Container)
@@ -420,7 +549,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
 	})
@@ -520,7 +649,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, c.ModelID))
+				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
 	})
@@ -530,9 +659,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
 
-	pm.Listing("ID", "Name", "Desc")
+	pm.Listing("ID", "Name", "Description")
 
-	eb := pm.Editing("Name", "Desc", "EditContainer")
+	eb := pm.Editing("Name", "Description", "EditContainer")
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		m := obj.(*Template)
 		if m.ID == 0 {

@@ -10,8 +10,9 @@ import (
 
 type Page struct {
 	gorm.Model
-	Title string
-	Slug  string
+	Title      string
+	Slug       string
+	CategoryID uint
 
 	publish.Status
 	publish.Schedule
@@ -36,6 +37,19 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
 		{"id", segs[0]},
 		{"version", segs[1]},
 	}
+}
+
+type Category struct {
+	gorm.Model
+	Name        string
+	Path        string
+	Description string
+
+	IndentLevel int `gorm:"-"`
+}
+
+func (*Category) TableName() string {
+	return "page_builder_categories"
 }
 
 type Container struct {
@@ -65,8 +79,8 @@ func (*DemoContainer) TableName() string {
 
 type Template struct {
 	gorm.Model
-	Name string
-	Desc string
+	Name        string
+	Description string
 }
 
 func (*Template) TableName() string {
