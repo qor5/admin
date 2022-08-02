@@ -154,8 +154,18 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(c)
+		err = pageValidator(c, db)
 		return
+	})
+
+	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).
+			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
 	})
 
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -166,18 +176,18 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		}
 		var showURL h.HTMLComponent
 		if p.CategoryID != 0 {
-			var c *Category
+			var c Category
 			for _, e := range categories {
 				if e.ID == p.CategoryID {
-					c = e
+					c = *e
 					break
 				}
 			}
 
-			u := os.Getenv("BASE_URL") + c.Path + "/" + p.Slug
+			u := os.Getenv("BASE_URL") + c.Path + p.Slug
 			showURL = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
-			).Class("mt-n2 mb-4")
+			).Class("mb-4")
 		}
 
 		var vErr web.ValidationErrors
@@ -237,6 +247,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		p := obj.(*Page)
+		p.Slug = path.Clean(p.Slug)
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
 			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
@@ -324,7 +335,7 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
-		err = categoryValidator(c)
+		err = categoryValidator(c, db)
 		return
 	})
 
