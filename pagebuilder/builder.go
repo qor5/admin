@@ -98,11 +98,13 @@ func New(db *gorm.DB) *Builder {
 		PageFunc(r.Editor)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainerEvent)
-	r.ps.GetWebBuilder().RegisterEventFunc(RenameDialogEvent, r.RenameDialogEvent)
-	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainerEvent)
+	r.ps.GetWebBuilder().RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
+	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(RenameCotainerDialogEvent, r.RenameContainerDialog)
+	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
 	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
 	return r
 }
@@ -547,7 +549,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		tdbind.SetAttr("@click.self",
 			web.Plaid().
 				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.Name).GetModelBuilder().Info().ListingHref()).
+				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
 				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
@@ -701,7 +703,7 @@ func sharedContainersearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 		}
 
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true").Group("display_name,name,model_id").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true").Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
 			return
 		}
 		totalCount = int(c)
@@ -716,7 +718,7 @@ func sharedContainersearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 			wh = wh.Offset(int(offset))
 		}
 
-		if err = wh.Select("display_name,name,model_id").Find(obj).Error; err != nil {
+		if err = wh.Select("display_name,model_name,model_id").Find(obj).Error; err != nil {
 			return
 		}
 		r = reflect.ValueOf(obj).Elem().Interface()
