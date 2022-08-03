@@ -380,7 +380,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					//).Class("py-0"),
 				),
 			),
-		).Class("pa-6"),
+		).Class("pa-4 pt-2"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
 	return
 }
