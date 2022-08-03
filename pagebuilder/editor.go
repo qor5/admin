@@ -333,6 +333,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 
 								VList(
 									VListItem(
+										VListItemIcon(VIcon("edit_note")).Class("pl-0 mr-2"),
 										VListItemTitle(h.Text("Rename")),
 									).Attr("@click",
 										web.Plaid().
@@ -343,6 +344,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											Go(),
 									),
 									VListItem(
+										VListItemIcon(VIcon("delete")).Class("pl-0 mr-2"),
 										VListItemTitle(h.Text("Delete")),
 									).Attr("@click", web.Plaid().
 										EventFunc(DeleteContainerConfirmationEvent).
@@ -351,6 +353,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										Go(),
 									),
 									VListItem(
+										VListItemIcon(VIcon("share")).Class("pl-0 mr-2"),
 										VListItemTitle(h.Text("Mark As Shared Container")),
 									).Attr("@click",
 										web.Plaid().
@@ -358,7 +361,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											Query(paramContainerID, web.Var("item.container_id")).
 											Go(),
 									).Attr("v-if", "!item.shared"),
-								),
+								).Dense(true),
 							).Left(true),
 						),
 						VDivider().Attr("v-if", "index < locals.items.length "),
