@@ -516,7 +516,7 @@ func (b *Builder) AddContainerToPage(pageID int, pageVersion, containerName stri
 
 func (b *Builder) AddSharedContainerToPage(pageID int, pageVersion, containerName string, modelID uint) (err error) {
 	var c Container
-	err = b.db.First(&c, "name = ? AND model_id = ? AND shared = true", containerName, modelID).Error
+	err = b.db.First(&c, "model_name = ? AND model_id = ? AND shared = true", containerName, modelID).Error
 	if err != nil {
 		return
 	}
