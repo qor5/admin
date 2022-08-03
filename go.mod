@@ -11,7 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.2.1
-	github.com/goplaid/x v1.1.2-0.20220728033612-4dc350238fe2
+	github.com/goplaid/x v1.1.2-0.20220803084927-3c648058c6ef
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -94,5 +94,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-// replace github.com/goplaid/web => ../goplaid/web
- replace github.com/goplaid/x => ../../goplaid/x
+//replace github.com/goplaid/web => ../../goplaid/web
+//replace github.com/goplaid/x => ../../goplaid/x

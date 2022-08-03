@@ -60,6 +60,7 @@ type Container struct {
 	ModelID      uint
 	DisplayOrder float64
 	Shared       bool
+	Hidden       bool
 	DisplayName  string
 }
 

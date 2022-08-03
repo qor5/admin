@@ -194,6 +194,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 }
 
 func fileThumb(filename string) h.HTMLComponent {
+
 	return h.Div(
 		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
 	).Class("d-flex align-center justify-center")
@@ -286,7 +287,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
-	if mediaBox.ID.String() != "" {
+	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		row := VRow()
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
@@ -337,7 +338,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	}
 
 	mediaBoxValue := ""
-	if mediaBox.ID.String() != "" {
+	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		mediaBoxValue = h.JSONString(mediaBox)
 	}
 
@@ -356,7 +357,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				Go(),
 			).Disabled(disabled),
 
-		h.If(mediaBox != nil && mediaBox.ID.String() != "",
+		h.If(mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0",
 			VBtn(msgr.Delete).
 				Depressed(true).
 				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
