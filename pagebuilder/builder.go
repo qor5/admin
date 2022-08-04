@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -332,6 +333,26 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
+
+	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		var count int64
+		if err = db.Model(&Page{}).Where("category_id = ?", id).Count(&count).Error; err != nil {
+			return
+		}
+		if count > 0 {
+			err = errors.New(unableDeleteCategoryMsg)
+			return
+		}
+
+		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
+			if err1 = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err != nil {
+				return
+			}
+			return
+		})
+
+		return
+	})
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)

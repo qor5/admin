@@ -13,31 +13,41 @@ var (
 	slugWithCategoryRe = regexp.MustCompile(`^/[0-9a-zA-Z]*$`)
 )
 
-const queryPathWithSlugSQL = `
+const (
+	queryPathWithSlugSQL = `
 SELECT pages.id, categories.path || pages.slug AS path_with_slug
 FROM page_builder_pages pages
          LEFT JOIN page_builder_categories categories ON category_id = categories.id
 WHERE pages.deleted_at IS NULL
 `
+	missingCategoryOrSlugMsg = "Category or Slug is required"
+	invalidSlugMsg           = "Invalid Slug format"
+	invalidPathMsg           = "Invalid Path format"
+	conflictSlugMsg          = "Conflicting Slug"
+	conflictPathMsg          = "Conflicting Path"
+	existingPathMsg          = "Existing Path"
+
+	unableDeleteCategoryMsg = "this category cannot be deleted because it has used with pages"
+)
 
 func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 	if p.CategoryID == 0 && p.Slug == "" {
-		err.FieldError("Page.Category", "Category or Slug is required")
-		err.FieldError("Page.Slug", "Category or Slug is required")
+		err.FieldError("Page.Category", missingCategoryOrSlugMsg)
+		err.FieldError("Page.Slug", missingCategoryOrSlugMsg)
 		return
 	}
 
 	if p.CategoryID == 0 {
 		s := path.Clean(p.Slug)
 		if s != "" && !pathRe.MatchString(s) {
-			err.FieldError("Page.Slug", "Invalid Slug format")
+			err.FieldError("Page.Slug", invalidSlugMsg)
 			return
 		}
 	} else {
 		if p.Slug != "" {
 			s := path.Clean(p.Slug)
 			if !slugWithCategoryRe.MatchString(s) {
-				err.FieldError("Page.Slug", "Invalid Slug format")
+				err.FieldError("Page.Slug", invalidSlugMsg)
 				return
 			}
 		}
@@ -69,14 +79,14 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 
 	for _, r := range results {
 		if r.PathWithSlug == urlPath {
-			err.FieldError("Page.Slug", "Conflicting Slug")
+			err.FieldError("Page.Slug", conflictSlugMsg)
 			return
 		}
 	}
 
 	for _, e := range categories {
 		if e.Path == urlPath {
-			err.FieldError("Page.Slug", "Conflicting Slug")
+			err.FieldError("Page.Slug", conflictSlugMsg)
 			return
 		}
 	}
@@ -87,7 +97,7 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 func categoryValidator(category *Category, db *gorm.DB) (err web.ValidationErrors) {
 	p := path.Clean(category.Path)
 	if p != "" && !pathRe.MatchString(p) {
-		err.FieldError("Category.Category", "Invalid Path format")
+		err.FieldError("Category.Category", invalidPathMsg)
 		return
 	}
 
@@ -104,7 +114,7 @@ func categoryValidator(category *Category, db *gorm.DB) (err web.ValidationError
 
 	for _, r := range results {
 		if r.PathWithSlug == p {
-			err.FieldError("Category.Category", "Conflicting Path")
+			err.FieldError("Category.Category", conflictPathMsg)
 			return
 		}
 	}
@@ -117,7 +127,7 @@ func categoryValidator(category *Category, db *gorm.DB) (err web.ValidationError
 
 	for _, c := range categories {
 		if c.Path == p {
-			err.FieldError("Category.Category", "Existing Path")
+			err.FieldError("Category.Category", existingPathMsg)
 			return
 		}
 	}
