@@ -84,10 +84,12 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 		}
 	}
 
-	for _, e := range categories {
-		if e.Path == urlPath {
-			err.FieldError("Page.Slug", conflictSlugMsg)
-			return
+	if p.Slug != "" {
+		for _, e := range categories {
+			if e.Path == urlPath {
+				err.FieldError("Page.Slug", conflictSlugMsg)
+				return
+			}
 		}
 	}
 

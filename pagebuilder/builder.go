@@ -176,7 +176,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			panic(err)
 		}
 		var showURL h.HTMLComponent
-		if p.CategoryID != 0 {
+		if p.ID != 0 {
 			var c Category
 			for _, e := range categories {
 				if e.ID == p.CategoryID {
@@ -248,7 +248,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		p := obj.(*Page)
-		p.Slug = path.Clean(p.Slug)
+		if p.Slug != "" {
+			p.Slug = path.Clean(p.Slug)
+		}
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
 			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
