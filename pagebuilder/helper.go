@@ -15,10 +15,10 @@ var (
 
 const (
 	queryPathWithSlugSQL = `
-SELECT pages.id, categories.path || pages.slug AS path_with_slug
+SELECT pages.id, pages.version, categories.path || pages.slug AS path_with_slug
 FROM page_builder_pages pages
          LEFT JOIN page_builder_categories categories ON category_id = categories.id
-WHERE pages.deleted_at IS NULL
+WHERE pages.deleted_at IS NULL AND categories.deleted_at IS NULL
 `
 	missingCategoryOrSlugMsg = "Category or Slug is required"
 	invalidSlugMsg           = "Invalid Slug format"
@@ -69,6 +69,7 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 
 	type result struct {
 		ID           uint
+		Version      string
 		PathWithSlug string
 	}
 
@@ -78,6 +79,9 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 	}
 
 	for _, r := range results {
+		if r.ID == p.ID && r.Version == p.Version.Version {
+			continue
+		}
 		if r.PathWithSlug == urlPath {
 			err.FieldError("Page.Slug", conflictSlugMsg)
 			return
@@ -128,6 +132,9 @@ func categoryValidator(category *Category, db *gorm.DB) (err web.ValidationError
 	}
 
 	for _, c := range categories {
+		if c.ID == category.ID {
+			continue
+		}
 		if c.Path == p {
 			err.FieldError("Category.Category", existingPathMsg)
 			return
