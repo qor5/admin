@@ -56,6 +56,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 					URL(b.fieldContext.ModelInfo.ListingHref()).
 					EventFunc(removeRowEvent).
 					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+					Query(presets.ParamOverlay, ctx.R.FormValue(presets.ParamOverlay)).
 					Query(ParamRemoveRowFormKey, formKey).
 					Go()),
 				VCardText(
@@ -118,6 +119,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 								URL(b.fieldContext.ModelInfo.ListingHref()).
 								EventFunc(sortEvent).
 								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+								Query(presets.ParamOverlay, ctx.R.FormValue(presets.ParamOverlay)).
 								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
 								Query(ParamIsStartSort, "1").
 								Go(),
@@ -130,6 +132,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 								URL(b.fieldContext.ModelInfo.ListingHref()).
 								EventFunc(sortEvent).
 								Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+								Query(presets.ParamOverlay, ctx.R.FormValue(presets.ParamOverlay)).
 								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
 								FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
 								Query(ParamIsStartSort, "0").
@@ -148,6 +151,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 						URL(b.fieldContext.ModelInfo.ListingHref()).
 						EventFunc(addRowEvent).
 						Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+						Query(presets.ParamOverlay, ctx.R.FormValue(presets.ParamOverlay)).
 						Query(ParamAddRowFormKey, b.fieldContext.FormKey).
 						Go()),
 			).Attr("v-show", JSONString(!isSortStart)),
