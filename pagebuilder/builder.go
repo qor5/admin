@@ -284,8 +284,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	b.configSharedContainer(pb, db)
 	b.configDemoContainer(pb, db)
-	b.configTemplate(pb, db)
-	b.configCategory(pb, db)
 	return
 }
 
@@ -304,7 +302,7 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
 	lb := pm.Listing("Name", "Path", "Description")
@@ -347,14 +345,9 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 			err = errors.New(unableDeleteCategoryMsg)
 			return
 		}
-
-		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
-			if err1 = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err1 != nil {
-				return
-			}
+		if err = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err != nil {
 			return
-		})
-
+		}
 		return
 	})
 
@@ -692,7 +685,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	return
 }
 
-func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
 
 	pm.Listing("ID", "Name", "Description")

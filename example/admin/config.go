@@ -229,6 +229,8 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
 	pm := pageBuilder.Configure(b, db)
+	tm := pageBuilder.ConfigTemplate(b, db)
+	cm := pageBuilder.ConfigCategory(b, db)
 
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
@@ -248,7 +250,7 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
-	ab.RegisterModels(m, l, pm)
+	ab.RegisterModels(m, l, pm, tm, cm)
 	ab.GetPresetModelBuilder().Listing().FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
 			logs         = ab.NewLogModelSlice()
