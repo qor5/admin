@@ -347,7 +347,7 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 		}
 
 		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
-			if err1 = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err != nil {
+			if err1 = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err1 != nil {
 				return
 			}
 			return
