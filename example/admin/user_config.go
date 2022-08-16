@@ -2,11 +2,11 @@ package admin
 
 import (
 	"fmt"
-	"github.com/qor/qor5/role"
 	"net/url"
 	"strconv"
 
 	"github.com/qor/qor5/note"
+	"github.com/qor/qor5/role"
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/goplaid/web"
@@ -25,20 +25,38 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	ed := user.Editing(
 		"Name",
+		"Username",
+		"Password",
 		"Company",
-		"Email",
 		"Roles",
 		"Status",
 	)
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
-		if u.Email == "" {
+		if u.Username == "" {
 			err.FieldError("Email", "Email is required")
 		}
 		return
 	})
 	user.RegisterEventFunc("roles_selector", rolesSelector(db))
+
+	ed.Field("Username").Label("Email")
+
+	ed.Field("Password").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// TODO: polish UI
+		return VTextField().
+			FieldName(field.Name).
+			Label(field.Label).
+			Type("password")
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		u := obj.(*models.User)
+		if v := ctx.R.FormValue(field.Name); v != "" {
+			u.Password = v
+			u.EncryptPassword()
+		}
+		return nil
+	})
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -102,7 +120,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	cl := user.Listing("ID", "Name", "Email", "Status", "Notes").PerPage(10)
+	cl := user.Listing("ID", "Name", "Username", "Status", "Notes").PerPage(10)
+	cl.Field("Username").Label("Email")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
 		return []*v.FilterItem{

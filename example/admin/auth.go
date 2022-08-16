@@ -30,7 +30,8 @@ type contextUserKey int
 const _userKey contextUserKey = 1
 
 func newLoginBuilder(db *gorm.DB) *login.Builder {
-	return login.New().
+	return login.New(db).
+		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
 		Providers(
 			&login.Provider{
@@ -42,21 +43,30 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 		).
 		FetchUserToContextFunc(func(claim *login.UserClaims, r *http.Request) (newR *http.Request, err error) {
 			u := &models.User{}
-			err = db.Where("o_auth_provider = ? and o_auth_user_id = ?", claim.Provider, claim.UserID).
-				Preload("Roles").
-				First(u).
-				Error
-			if err == gorm.ErrRecordNotFound {
-				u = &models.User{
-					Name:          claim.Name,
-					Email:         claim.Email,
-					AvatarURL:     claim.AvatarURL,
-					OAuthProvider: claim.Provider,
-					OAuthUserID:   claim.UserID,
-				}
-				err = db.Create(u).Error
-				if err != nil {
-					panic(err)
+			if claim.Provider == "" {
+				err = db.Where("id = ?", claim.UserID).
+					Preload("Roles").
+					First(u).
+					Error
+			} else {
+				err = db.Where("o_auth_provider = ? and o_auth_user_id = ?", claim.Provider, claim.UserID).
+					Preload("Roles").
+					First(u).
+					Error
+				if err == gorm.ErrRecordNotFound {
+					u = &models.User{
+						UserPass: login.UserPass{
+							Username: claim.Email,
+						},
+						Name:          claim.Name,
+						AvatarURL:     claim.AvatarURL,
+						OAuthProvider: claim.Provider,
+						OAuthUserID:   claim.UserID,
+					}
+					err = db.Create(u).Error
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 			if err != nil {
@@ -66,7 +76,7 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 
 			newR = r.WithContext(context.WithValue(r.Context(), _userKey, u))
 			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserIDKey, u.ID))
-			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Email)))
+			newR = newR.WithContext(context.WithValue(newR.Context(), note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Username)))
 			return
 		}).
 		HomeURL("/admin")

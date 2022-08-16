@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -13,9 +14,11 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang-jwt/jwt/v4/request"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/stripeui"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 var (
@@ -33,6 +36,8 @@ type Provider struct {
 }
 
 type Builder struct {
+	db *gorm.DB
+
 	secret                string
 	loginURL              string
 	fetchUserFunc         FetchUserToContextFunc
@@ -45,10 +50,14 @@ type Builder struct {
 	// seconds
 	sessionMaxAge     int
 	autoExtendSession bool
+
+	tUser        reflect.Type
+	withUserPass bool
 }
 
-func New() *Builder {
+func New(db *gorm.DB) *Builder {
 	r := &Builder{
+		db:                    db,
 		authParamName:         "auth",
 		loginURL:              "/auth/login",
 		homeURL:               "/",
@@ -117,6 +126,32 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	return b
 }
 
+func underlyingReflectType(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Ptr {
+		return underlyingReflectType(t.Elem())
+	}
+	return t
+}
+
+func (b *Builder) UserModel(v interface{}) (r *Builder) {
+	b.tUser = underlyingReflectType(reflect.TypeOf(v))
+	if _, ok := v.(UserPasser); ok {
+		b.withUserPass = true
+	}
+	return b
+}
+
+func (b *Builder) authUserPass(username string, password string) (userID string, ok bool) {
+	u := reflect.New(b.tUser).Interface()
+	if err := b.db.Where("username = ?", username).First(u).Error; err != nil {
+		return "", false
+	}
+	if c := u.(UserPasser).IsPasswordCorrect(password); !c {
+		return "", false
+	}
+	return stripeui.ObjectID(u), true
+}
+
 type UserClaims struct {
 	Provider  string
 	Email     string
@@ -131,7 +166,7 @@ type UserClaims struct {
 // CompleteUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
-		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
+		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
 		return
 	}
 	redirectURL := b.homeURL
@@ -147,31 +182,53 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) loginFailCode {
-	user, err := gothic.CompleteUserAuth(w, r)
-	if err != nil {
-		log.Println("completeUserAuthWithSetCookie", err)
-		return completeUserAuthFailed
-	}
+	var claims UserClaims
+	if r.FormValue("login_type") == "1" {
+		userID, ok := b.authUserPass(r.FormValue("username"), r.FormValue("password"))
+		if !ok {
+			// TODO: form flash
+			return completeUserAuthFailed
+		}
 
-	claims := UserClaims{
-		Provider:  user.Provider,
-		Email:     user.Email,
-		Name:      user.Name,
-		UserID:    user.UserID,
-		AvatarURL: user.AvatarURL,
-		RegisteredClaims: jwt.RegisteredClaims{
-			// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
-			// access token expire time
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			Subject:   user.Email,
-			ID:        user.UserID,
-		},
+		claims = UserClaims{
+			UserID: userID,
+			RegisteredClaims: jwt.RegisteredClaims{
+				// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
+				// access token expire time
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				NotBefore: jwt.NewNumericDate(time.Now()),
+				Subject:   userID,
+				ID:        userID,
+			},
+		}
+	} else {
+		user, err := gothic.CompleteUserAuth(w, r)
+		if err != nil {
+			log.Println("completeUserAuthWithSetCookie", err)
+			return completeUserAuthFailed
+		}
+
+		claims = UserClaims{
+			Provider:  user.Provider,
+			Email:     user.Email,
+			Name:      user.Name,
+			UserID:    user.UserID,
+			AvatarURL: user.AvatarURL,
+			RegisteredClaims: jwt.RegisteredClaims{
+				// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
+				// access token expire time
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				NotBefore: jwt.NewNumericDate(time.Now()),
+				Subject:   user.Email,
+				ID:        user.UserID,
+			},
+		}
 	}
 	ss, err := b.SignClaims(&claims)
 	if err != nil {
@@ -211,15 +268,14 @@ func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	w.Header().Set("Location", b.loginURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	http.Redirect(w, r, b.loginURL, http.StatusFound)
 }
 
 // BeginAuth is for url "/auth/{provider}"
 func (b *Builder) BeginAuth(w http.ResponseWriter, r *http.Request) {
 	// try to get the user without re-authenticating
 	if b.completeUserAuthWithSetCookie(w, r) == 0 {
-		http.Redirect(w, r, b.homeURL, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, b.homeURL, http.StatusFound)
 		return
 	}
 	gothic.BeginAuthHandler(w, r)
@@ -283,7 +339,7 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 				return
 			}
 			if err == nil && claims.Email != "" {
-				http.Redirect(w, r, "/admin", http.StatusTemporaryRedirect)
+				http.Redirect(w, r, "/admin", http.StatusFound)
 				return
 			}
 		}
@@ -302,7 +358,7 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 					HttpOnly: true,
 				})
 			}
-			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, b.loginURL, http.StatusFound)
 			return
 		}
 
@@ -313,7 +369,7 @@ func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
 			if err == ErrUserNotFound {
 				code = userNotFound
 			}
-			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
+			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
 			return
 		}
 
@@ -383,8 +439,9 @@ func (b *Builder) getLoginFailText(r *http.Request) string {
 }
 
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
+	wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
-	ul := Div().Class("flex flex-col justify-center mt-8")
+	ul := Div().Class("flex flex-col justify-center mt-8 text-center")
 	for _, provider := range b.providers {
 		ul.AppendChildren(
 			A().
@@ -398,6 +455,26 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 	}
 
 	loginFailText := b.getLoginFailText(ctx.R)
+	var userPassHTML HTMLComponent
+	if b.withUserPass {
+		wrapperClass += " pt-16"
+		userPassHTML = Div(
+			Form(
+				Input("login_type").Type("hidden").Value("1"),
+				Div(
+					Label("Username").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("username"),
+					Input("username").Placeholder("Username").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+				),
+				Div(
+					Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+					Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+				).Class("mt-6"),
+				Div(
+					Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+				).Class("mt-6"),
+			).Method("post").Action("/auth/userpass/login"),
+		)
+	}
 	var body HTMLComponent = Div(
 		Style(StyleCSS),
 		If(loginFailText != "",
@@ -408,10 +485,11 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 				),
 		),
 		Div(
+			userPassHTML,
 			Div(
 				ul,
-			).Class("max-w-xs sm:max-w-xl"),
-		).Class("flex mt-4 justify-center h-screen"),
+			),
+		).Class(wrapperClass),
 	)
 	if b.loginPageContentFunc != nil {
 		body = b.loginPageContentFunc(ctx, b.providers, body)
@@ -425,5 +503,6 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/logout", b.Logout)
 	mux.HandleFunc("/auth/begin", b.BeginAuth)
 	mux.HandleFunc("/auth/callback", b.CompleteUserAuthCallback)
+	mux.HandleFunc("/auth/userpass/login", b.CompleteUserAuthCallback)
 	mux.Handle("/auth/login", web.New().Page(b.defaultLoginPage))
 }
