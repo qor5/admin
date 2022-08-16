@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	errUserNotFound = errors.New("user not found")
 )
 
 type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
@@ -189,7 +189,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		userID, ok := b.authUserPass(r.FormValue("username"), r.FormValue("password"))
 		if !ok {
 			// TODO: form flash
-			return completeUserAuthFailed
+			return incorrectUsernameOrPassword
 		}
 
 		claims = UserClaims{
@@ -315,12 +315,14 @@ const (
 	systemError loginFailCode = iota + 1
 	completeUserAuthFailed
 	userNotFound
+	incorrectUsernameOrPassword
 )
 
 var loginFailTexts = map[loginFailCode]string{
-	systemError:            "System Error",
-	completeUserAuthFailed: "Complete User Auth Failed",
-	userNotFound:           "User Not Found",
+	systemError:                 "System Error",
+	completeUserAuthFailed:      "Complete User Auth Failed",
+	userNotFound:                "User Not Found",
+	incorrectUsernameOrPassword: "Incorrect username or password",
 }
 
 var loginFailCodeQuery = "login_fc"
@@ -421,6 +423,9 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 }
 
 func (b *Builder) Mount(mux *http.ServeMux) {
+	if len(b.secret) == 0 {
+		panic("secret is empty")
+	}
 
 	mux.HandleFunc("/auth/logout", b.Logout)
 	mux.HandleFunc("/auth/begin", b.BeginAuth)

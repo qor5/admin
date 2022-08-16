@@ -48,6 +48,9 @@ func fetchUserToContext(db *gorm.DB, tUser reflect.Type, claim *UserClaims, r *h
 			u.(OAuthUser).SetAvatar(claim.AvatarURL)
 		}
 	}
+	if err == gorm.ErrRecordNotFound {
+		return r, errUserNotFound
+	}
 	if err != nil {
 		return r, err
 	}
@@ -62,19 +65,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			if r.URL.Path == "" || r.URL.Path == "/" {
-				http.Redirect(w, r, b.homeURL, http.StatusFound)
-				return
-			}
 
-			if strings.HasPrefix(r.URL.Path, "/auth/") && !strings.HasPrefix(r.URL.Path, "/auth/login") {
+			path := strings.TrimRight(r.URL.Path, "/")
+			if strings.HasPrefix(path, "/auth/") && path != "/auth/login" {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			if len(b.secret) == 0 {
-				panic("secret is empty")
-			}
 			extractor := request.MultiExtractor(b.extractors)
 			if len(b.extractors) == 0 {
 				extractor = request.MultiExtractor{
@@ -86,18 +83,6 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 			var claims UserClaims
 			_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
-
-			if strings.HasPrefix(r.URL.Path, "/auth/login") {
-				if err != nil || claims.Email == "" {
-					next.ServeHTTP(w, r)
-					return
-				}
-				if err == nil && claims.Email != "" {
-					http.Redirect(w, r, "/admin", http.StatusFound)
-					return
-				}
-			}
-
 			if err != nil {
 				log.Println(err)
 				if b.homeURL != r.RequestURI {
@@ -112,7 +97,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						HttpOnly: true,
 					})
 				}
-				http.Redirect(w, r, b.loginURL, http.StatusFound)
+				if path == "/auth/login" {
+					next.ServeHTTP(w, r)
+				} else {
+					http.Redirect(w, r, b.loginURL, http.StatusFound)
+				}
 				return
 			}
 
@@ -120,10 +109,19 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			if err != nil {
 				log.Println(err)
 				code := systemError
-				if err == ErrUserNotFound {
+				if err == errUserNotFound {
 					code = userNotFound
 				}
-				http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
+				if path == "/auth/login" {
+					next.ServeHTTP(w, r)
+				} else {
+					http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
+				}
+				return
+			}
+
+			if path == "/auth/login" {
+				http.Redirect(w, r, b.homeURL, http.StatusFound)
 				return
 			}
 
