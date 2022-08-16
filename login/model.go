@@ -40,3 +40,21 @@ func (up *UserPass) genSalt() string {
 	rand.Read(b)
 	return hex.EncodeToString(b)
 }
+
+type OAuthUser interface {
+	SetAvatar(v string)
+}
+
+type OAuthInfo struct {
+	OAuthProvider string `gorm:"index:uidx_users_oauth,unique,where:o_auth_provider!='' and o_auth_user_id!=''"`
+	OAuthUserID   string `gorm:"index:uidx_users_oauth,unique,where:o_auth_provider!='' and o_auth_user_id!=''"`
+	// the value that user can get to indentify his account
+	// in most cases is email or account name
+	// it is used to find the user record on the first login
+	OAuthIndentifier string
+	OAuthAvatar      string `gorm:"-"`
+}
+
+func (oa *OAuthInfo) SetAvatar(v string) {
+	oa.OAuthAvatar = v
+}

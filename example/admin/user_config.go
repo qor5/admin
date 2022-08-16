@@ -25,6 +25,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	ed := user.Editing(
 		"Name",
+		"OAuthProvider",
 		"Username",
 		"Password",
 		"Company",
@@ -35,13 +36,31 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
 		if u.Username == "" {
-			err.FieldError("Email", "Email is required")
+			err.FieldError("Username", "Email is required")
 		}
 		return
 	})
 	user.RegisterEventFunc("roles_selector", rolesSelector(db))
 
-	ed.Field("Username").Label("Email")
+	ed.Field("Username").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return VTextField().
+			FieldName(field.Name).
+			Label(field.Label).
+			Value(field.Value(obj)).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		u := obj.(*models.User)
+		email := ctx.R.FormValue(field.Name)
+		u.Username = email
+		u.OAuthIndentifier = email
+		return nil
+	})
+
+	ed.Field("OAuthProvider").Label("OAuthProvider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return VSelect().FieldName(field.Name).
+			Label(field.Label).Value(field.Value(obj)).
+			Items([]string{"google", "microsoftonline"})
+	})
 
 	ed.Field("Password").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: polish UI

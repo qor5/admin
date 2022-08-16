@@ -12,17 +12,14 @@ type User struct {
 	gorm.Model
 	// Username is email
 	login.UserPass
+	login.OAuthInfo
 
 	Name      string
 	Company   string
 	Roles     []role.Role `gorm:"many2many:user_role_join;"`
 	Status    string
-	AvatarURL string
 	UpdatedAt time.Time
 	CreatedAt time.Time
-
-	OAuthProvider string `gorm:"index:uidx_users_oauth,unique,where:o_auth_provider!='' and o_auth_user_id!=''"`
-	OAuthUserID   string `gorm:"index:uidx_users_oauth,unique,where:o_auth_provider!='' and o_auth_user_id!=''"`
 }
 
 func (u User) GetName() string {

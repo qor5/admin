@@ -25,10 +25,10 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 			h.Div(
 				vuetify.VRow(
 					h.Div(vuetify.VAvatar().Color("primary").Size(24).Children(
-						h.If(u.AvatarURL == "",
+						h.If(u.OAuthAvatar == "",
 							vuetify.VIcon("account_circle"),
 						).Else(
-							h.Img(u.AvatarURL).Alt(u.Name),
+							h.Img(u.OAuthAvatar).Alt(u.Name),
 						)),
 						h.Text(u.Name), h.If(len(u.Roles) > 0, h.Text("("+strings.Join(roles, ",")+")")),
 					).Style(`width:100%;`).Class("text-button"),

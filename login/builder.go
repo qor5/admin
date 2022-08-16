@@ -14,9 +14,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang-jwt/jwt/v4/request"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/stripeui"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
+	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -40,7 +40,6 @@ type Builder struct {
 
 	secret                string
 	loginURL              string
-	fetchUserFunc         FetchUserToContextFunc
 	authParamName         string
 	homeURL               string
 	continueUrlCookieName string
@@ -53,6 +52,7 @@ type Builder struct {
 
 	tUser        reflect.Type
 	withUserPass bool
+	withOAuth    bool
 }
 
 func New(db *gorm.DB) *Builder {
@@ -108,11 +108,6 @@ func (b *Builder) AuthParamName(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) FetchUserToContextFunc(v FetchUserToContextFunc) (r *Builder) {
-	b.fetchUserFunc = v
-	return b
-}
-
 // seconds
 // default 1h
 func (b *Builder) SessionMaxAge(v int) (r *Builder) {
@@ -138,6 +133,9 @@ func (b *Builder) UserModel(v interface{}) (r *Builder) {
 	if _, ok := v.(UserPasser); ok {
 		b.withUserPass = true
 	}
+	if _, ok := v.(OAuthUser); ok {
+		b.withOAuth = true
+	}
 	return b
 }
 
@@ -149,7 +147,7 @@ func (b *Builder) authUserPass(username string, password string) (userID string,
 	if c := u.(UserPasser).IsPasswordCorrect(password); !c {
 		return "", false
 	}
-	return stripeui.ObjectID(u), true
+	return fmt.Sprint(reflectutils.MustGet(u, "ID")), true
 }
 
 type UserClaims struct {
@@ -311,87 +309,6 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 	return []byte(b.secret), nil
 }
 
-func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/auth/") && !strings.HasPrefix(r.URL.Path, "/auth/login") {
-			in(w, r)
-			return
-		}
-
-		if len(b.secret) == 0 {
-			panic("secret is empty")
-		}
-		extractor := request.MultiExtractor(b.extractors)
-		if len(b.extractors) == 0 {
-			extractor = request.MultiExtractor{
-				CookieExtractor(b.authParamName),
-				AuthorizationHeaderExtractor{},
-				request.ArgumentExtractor{b.authParamName},
-				request.HeaderExtractor{b.authParamName},
-			}
-		}
-		var claims UserClaims
-		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
-
-		if strings.HasPrefix(r.URL.Path, "/auth/login") {
-			if err != nil || claims.Email == "" {
-				in(w, r)
-				return
-			}
-			if err == nil && claims.Email != "" {
-				http.Redirect(w, r, "/admin", http.StatusFound)
-				return
-			}
-		}
-
-		if err != nil {
-			log.Println(err)
-			if b.homeURL != r.RequestURI {
-				continueURL := r.RequestURI
-				if strings.Contains(r.RequestURI, "?__execute_event__=") {
-					continueURL = r.Referer()
-				}
-				http.SetCookie(w, &http.Cookie{
-					Name:     b.continueUrlCookieName,
-					Value:    continueURL,
-					Path:     "/",
-					HttpOnly: true,
-				})
-			}
-			http.Redirect(w, r, b.loginURL, http.StatusFound)
-			return
-		}
-
-		newReq, err := b.fetchUserFunc(&claims, r)
-		if err != nil {
-			log.Println(err)
-			code := systemError
-			if err == ErrUserNotFound {
-				code = userNotFound
-			}
-			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
-			return
-		}
-
-		// extend the cookie if successfully authenticated
-		if b.autoExtendSession {
-			c, err := r.Cookie(b.authParamName)
-			if err == nil {
-				http.SetCookie(w, &http.Cookie{
-					Name:     b.authParamName,
-					Value:    c.Value,
-					Path:     "/",
-					MaxAge:   b.sessionMaxAge,
-					Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
-					HttpOnly: true,
-				})
-			}
-		}
-
-		in.ServeHTTP(w, newReq)
-	}
-}
-
 type loginFailCode int
 
 const (
@@ -439,22 +356,29 @@ func (b *Builder) getLoginFailText(r *http.Request) string {
 }
 
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
+	loginFailText := b.getLoginFailText(ctx.R)
 	wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
-	ul := Div().Class("flex flex-col justify-center mt-8 text-center")
-	for _, provider := range b.providers {
-		ul.AppendChildren(
-			A().
-				Href("/auth/begin?provider="+provider.Key).
-				Class("px-6 py-3 mt-4 font-semibold text-gray-900 bg-white border-2 border-gray-500 rounded-md shadow outline-none hover:bg-yellow-50 hover:border-yellow-400 focus:outline-none").
-				Children(
-					provider.Logo,
-					Text(provider.Text),
-				),
+	var oauthHTML HTMLComponent
+	if b.withOAuth {
+		ul := Div().Class("flex flex-col justify-center mt-8 text-center")
+		for _, provider := range b.providers {
+			ul.AppendChildren(
+				A().
+					Href("/auth/begin?provider="+provider.Key).
+					Class("px-6 py-3 mt-4 font-semibold text-gray-900 bg-white border-2 border-gray-500 rounded-md shadow outline-none hover:bg-yellow-50 hover:border-yellow-400 focus:outline-none").
+					Children(
+						provider.Logo,
+						Text(provider.Text),
+					),
+			)
+		}
+
+		oauthHTML = Div(
+			ul,
 		)
 	}
 
-	loginFailText := b.getLoginFailText(ctx.R)
 	var userPassHTML HTMLComponent
 	if b.withUserPass {
 		wrapperClass += " pt-16"
@@ -486,9 +410,7 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 		),
 		Div(
 			userPassHTML,
-			Div(
-				ul,
-			),
+			oauthHTML,
 		).Class(wrapperClass),
 	)
 	if b.loginPageContentFunc != nil {
