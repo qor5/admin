@@ -1,9 +1,7 @@
 package login
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserPasser interface {
@@ -13,32 +11,22 @@ type UserPasser interface {
 
 type UserPass struct {
 	Username string `gorm:"index:uidx_users_username,unique,where:username!=''"`
-	Password string
-	Salt     string
+	Password string `gorm:"size:60"`
 }
 
 func (up *UserPass) EncryptPassword() {
 	if up.Password == "" {
 		return
 	}
-	up.Salt = up.genSalt()
-	up.Password = up.doEncryptPassword(up.Password, up.Salt)
-}
-
-func (up *UserPass) doEncryptPassword(password string, salt string) string {
-	sum := sha256.Sum256([]byte(salt + password))
-	return hex.EncodeToString(sum[:])
+	hash, err := bcrypt.GenerateFromPassword([]byte(up.Password), 10)
+	if err != nil {
+		panic(err)
+	}
+	up.Password = string(hash)
 }
 
 func (up *UserPass) IsPasswordCorrect(password string) bool {
-	ep := up.doEncryptPassword(password, up.Salt)
-	return ep == up.Password
-}
-
-func (up *UserPass) genSalt() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	return bcrypt.CompareHashAndPassword([]byte(up.Password), []byte(password)) == nil
 }
 
 type OAuthUser interface {
