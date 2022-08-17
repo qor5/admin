@@ -67,7 +67,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			path := strings.TrimRight(r.URL.Path, "/")
-			if strings.HasPrefix(path, "/auth/") && path != "/auth/login" {
+			if strings.HasPrefix(path, "/auth/") && path != b.loginURL {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -97,7 +97,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						HttpOnly: true,
 					})
 				}
-				if path == "/auth/login" {
+				if path == b.loginURL {
 					next.ServeHTTP(w, r)
 				} else {
 					http.Redirect(w, r, b.loginURL, http.StatusFound)
@@ -112,7 +112,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				if err == errUserNotFound {
 					code = userNotFound
 				}
-				if path == "/auth/login" {
+				if path == b.loginURL {
 					next.ServeHTTP(w, r)
 				} else {
 					b.setFlash(w, loginFlash{
@@ -123,7 +123,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			if path == "/auth/login" {
+			if path == b.loginURL {
 				http.Redirect(w, r, b.homeURL, http.StatusFound)
 				return
 			}

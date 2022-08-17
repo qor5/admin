@@ -452,5 +452,5 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/begin", b.BeginAuth)
 	mux.HandleFunc("/auth/callback", b.CompleteUserAuthCallback)
 	mux.HandleFunc("/auth/userpass/login", b.CompleteUserAuthCallback)
-	mux.Handle("/auth/login", web.New().Page(b.defaultLoginPage))
+	mux.Handle(b.loginURL, web.New().Page(b.defaultLoginPage))
 }
