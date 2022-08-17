@@ -1,13 +1,13 @@
 package login
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -164,7 +164,7 @@ type UserClaims struct {
 // CompleteUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
-		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
+		http.Redirect(w, r, b.loginURL, http.StatusFound)
 		return
 	}
 	redirectURL := b.homeURL
@@ -186,9 +186,15 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) loginFailCode {
 	var claims UserClaims
 	if r.FormValue("login_type") == "1" {
-		userID, ok := b.authUserPass(r.FormValue("username"), r.FormValue("password"))
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+		userID, ok := b.authUserPass(username, password)
 		if !ok {
-			// TODO: form flash
+			b.setFlash(w, loginFlash{
+				Fc: incorrectUsernameOrPassword,
+				Iu: username,
+				Ip: password,
+			})
 			return incorrectUsernameOrPassword
 		}
 
@@ -208,6 +214,9 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		user, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
 			log.Println("completeUserAuthWithSetCookie", err)
+			b.setFlash(w, loginFlash{
+				Fc: completeUserAuthFailed,
+			})
 			return completeUserAuthFailed
 		}
 
@@ -230,6 +239,9 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	}
 	ss, err := b.SignClaims(&claims)
 	if err != nil {
+		b.setFlash(w, loginFlash{
+			Fc: systemError,
+		})
 		return systemError
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -309,6 +321,14 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 	return []byte(b.secret), nil
 }
 
+type loginFlash struct {
+	Fc loginFailCode // fail code
+	Iu string        // incorrect username
+	Ip string        // incorrect password
+}
+
+const loginFlashCookieName = "qor5_login_flash"
+
 type loginFailCode int
 
 const (
@@ -325,40 +345,39 @@ var loginFailTexts = map[loginFailCode]string{
 	incorrectUsernameOrPassword: "Incorrect username or password",
 }
 
-var loginFailCodeQuery = "login_fc"
-
-func (b *Builder) urlWithLoginFailCode(u string, code loginFailCode) string {
-	pu, err := url.Parse(u)
-	if err != nil {
-		return u
-	}
-	q := pu.Query()
-	q.Add(loginFailCodeQuery, fmt.Sprint(code))
-	pu.RawQuery = q.Encode()
-	return pu.String()
+func (b *Builder) setFlash(w http.ResponseWriter, f loginFlash) {
+	bf, _ := json.Marshal(&f)
+	http.SetCookie(w, &http.Cookie{
+		Name:  loginFlashCookieName,
+		Value: base64.StdEncoding.EncodeToString(bf),
+		Path:  "/",
+	})
 }
 
-func (b *Builder) getLoginFailText(r *http.Request) string {
-	sCode := r.URL.Query().Get(loginFailCodeQuery)
-	if sCode == "" {
-		return ""
-	}
-	code, err := strconv.Atoi(sCode)
+func (b *Builder) getFlash(w http.ResponseWriter, r *http.Request) (f loginFlash) {
+	c, err := r.Cookie(loginFlashCookieName)
 	if err != nil {
-		return ""
+		return f
 	}
-	if code == 0 {
-		return ""
+
+	http.SetCookie(w, &http.Cookie{
+		Name:   loginFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+
+	sf, _ := base64.StdEncoding.DecodeString(c.Value)
+	err = json.Unmarshal([]byte(sf), &f)
+	if err != nil {
+		panic(err)
 	}
-	text := loginFailTexts[loginFailCode(code)]
-	if text == "" {
-		text = loginFailTexts[systemError]
-	}
-	return text
+	return f
 }
 
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
-	loginFailText := b.getLoginFailText(ctx.R)
+	flash := b.getFlash(ctx.W, ctx.R)
+	loginFailText := loginFailTexts[flash.Fc]
+
 	wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
 	var oauthHTML HTMLComponent
@@ -389,11 +408,13 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 				Input("login_type").Type("hidden").Value("1"),
 				Div(
 					Label("Username").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("username"),
-					Input("username").Placeholder("Username").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					Input("username").Placeholder("Username").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+						Value(flash.Iu),
 				),
 				Div(
 					Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
-					Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+						Value(flash.Ip),
 				).Class("mt-6"),
 				Div(
 					Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),

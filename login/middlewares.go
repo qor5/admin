@@ -115,7 +115,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				if path == "/auth/login" {
 					next.ServeHTTP(w, r)
 				} else {
-					http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusFound)
+					b.setFlash(w, loginFlash{
+						Fc: code,
+					})
+					http.Redirect(w, r, b.loginURL, http.StatusFound)
 				}
 				return
 			}
