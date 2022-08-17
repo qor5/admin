@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +165,7 @@ type UserClaims struct {
 // CompleteUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
+		b.setFailCodeFlash(w, code)
 		http.Redirect(w, r, b.loginURL, http.StatusFound)
 		return
 	}
@@ -190,8 +192,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		password := r.FormValue("password")
 		userID, ok := b.authUserPass(username, password)
 		if !ok {
-			b.setFlash(w, loginFlash{
-				Fc: incorrectUsernameOrPassword,
+			b.setWrongInputFlash(w, wrongInputFlash{
 				Iu: username,
 				Ip: password,
 			})
@@ -214,9 +215,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		user, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
 			log.Println("completeUserAuthWithSetCookie", err)
-			b.setFlash(w, loginFlash{
-				Fc: completeUserAuthFailed,
-			})
 			return completeUserAuthFailed
 		}
 
@@ -239,9 +237,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	}
 	ss, err := b.SignClaims(&claims)
 	if err != nil {
-		b.setFlash(w, loginFlash{
-			Fc: systemError,
-		})
 		return systemError
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -321,13 +316,7 @@ func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
 	return []byte(b.secret), nil
 }
 
-type loginFlash struct {
-	Fc loginFailCode // fail code
-	Iu string        // incorrect username
-	Ip string        // incorrect password
-}
-
-const loginFlashCookieName = "qor5_login_flash"
+const failCodeFlashCookieName = "qor5_login_fc_flash"
 
 type loginFailCode int
 
@@ -345,38 +334,66 @@ var loginFailTexts = map[loginFailCode]string{
 	incorrectUsernameOrPassword: "Incorrect username or password",
 }
 
-func (b *Builder) setFlash(w http.ResponseWriter, f loginFlash) {
+func (b *Builder) setFailCodeFlash(w http.ResponseWriter, c loginFailCode) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  failCodeFlashCookieName,
+		Value: fmt.Sprint(c),
+		Path:  "/",
+	})
+}
+
+const wrongInputFlashCookieName = "qor5_login_wi_flash"
+
+type wrongInputFlash struct {
+	Iu string // incorrect username
+	Ip string // incorrect password
+}
+
+func (b *Builder) setWrongInputFlash(w http.ResponseWriter, f wrongInputFlash) {
 	bf, _ := json.Marshal(&f)
 	http.SetCookie(w, &http.Cookie{
-		Name:  loginFlashCookieName,
+		Name:  wrongInputFlashCookieName,
 		Value: base64.StdEncoding.EncodeToString(bf),
 		Path:  "/",
 	})
 }
 
+type loginFlash struct {
+	fc         loginFailCode
+	wrongInput wrongInputFlash
+}
+
 func (b *Builder) getFlash(w http.ResponseWriter, r *http.Request) (f loginFlash) {
-	c, err := r.Cookie(loginFlashCookieName)
-	if err != nil {
-		return f
+	c, err := r.Cookie(failCodeFlashCookieName)
+	if err == nil {
+		v, _ := strconv.Atoi(c.Value)
+		f.fc = loginFailCode(v)
+		http.SetCookie(w, &http.Cookie{
+			Name:   failCodeFlashCookieName,
+			Path:   "/",
+			MaxAge: -1,
+		})
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:   loginFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
-	})
-
-	sf, _ := base64.StdEncoding.DecodeString(c.Value)
-	err = json.Unmarshal([]byte(sf), &f)
-	if err != nil {
-		panic(err)
+	c, err = r.Cookie(wrongInputFlashCookieName)
+	if err == nil {
+		v, _ := base64.StdEncoding.DecodeString(c.Value)
+		wi := wrongInputFlash{}
+		json.Unmarshal([]byte(v), &wi)
+		f.wrongInput = wi
+		http.SetCookie(w, &http.Cookie{
+			Name:   wrongInputFlashCookieName,
+			Path:   "/",
+			MaxAge: -1,
+		})
 	}
+
 	return f
 }
 
 func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
 	flash := b.getFlash(ctx.W, ctx.R)
-	loginFailText := loginFailTexts[flash.Fc]
+	loginFailText := loginFailTexts[flash.fc]
 
 	wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
@@ -409,12 +426,12 @@ func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, e
 				Div(
 					Label("Username").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("username"),
 					Input("username").Placeholder("Username").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
-						Value(flash.Iu),
+						Value(flash.wrongInput.Iu),
 				),
 				Div(
 					Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
 					Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
-						Value(flash.Ip),
+						Value(flash.wrongInput.Ip),
 				).Class("mt-6"),
 				Div(
 					Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
