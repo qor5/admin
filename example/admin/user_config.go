@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/role"
@@ -71,7 +70,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			Type("password")
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
-		u.LastPassChangedDate = time.Now()
 		if v := ctx.R.FormValue(field.Name); v != "" {
 			u.Password = v
 			u.EncryptPassword()

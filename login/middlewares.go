@@ -27,6 +27,11 @@ func fetchUserToContext(db *gorm.DB, tUser reflect.Type, claim *UserClaims, r *h
 		err = db.Where("id = ?", claim.UserID).
 			First(u).
 			Error
+		if err == nil {
+			if u.(UserPasser).GetPassUpdatedAt() != claim.PassUpdatedAt {
+				return r, errUserPassChanged
+			}
+		}
 	} else {
 		err = db.Where("o_auth_provider = ? and o_auth_user_id = ?", claim.Provider, claim.UserID).
 			First(u).
@@ -112,18 +117,14 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				if err == errUserNotFound {
 					code = userNotFound
 				}
-				if path == b.loginURL {
-					next.ServeHTTP(w, r)
-				} else {
-					b.setFailCodeFlash(w, code)
-					http.Redirect(w, r, b.loginURL, http.StatusFound)
+				if err == errUserPassChanged {
+					code = 0
 				}
-				return
-			}
-
-			t := b.getLastPassChangedDateByUid(claims.UserID)
-			if t != nil && !claims.LastPassChangedDate.Equal(*t) {
+				if code != 0 {
+					b.setFailCodeFlash(w, code)
+				}
 				http.Redirect(w, r, "/auth/logout", http.StatusFound)
+				return
 			}
 
 			if path == b.loginURL {

@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	errUserNotFound = errors.New("user not found")
+	errUserNotFound    = errors.New("user not found")
+	errUserPassChanged = errors.New("password changed")
 )
 
 type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
@@ -140,35 +141,26 @@ func (b *Builder) UserModel(v interface{}) (r *Builder) {
 	return b
 }
 
-func (b *Builder) authUserPass(username string, password string) (userID string, ok bool) {
+func (b *Builder) authUserPass(username string, password string) (user interface{}, ok bool) {
 	u := reflect.New(b.tUser).Interface()
 	if err := b.db.Where("username = ?", username).First(u).Error; err != nil {
-		return "", false
+		return nil, false
 	}
 	if c := u.(UserPasser).IsPasswordCorrect(password); !c {
-		return "", false
+		return nil, false
 	}
-	return fmt.Sprint(reflectutils.MustGet(u, "ID")), true
-}
-
-func (b *Builder) getLastPassChangedDateByUid(userID string) (lastPassChangedDate *time.Time) {
-	u := reflect.New(b.tUser).Interface()
-	if err := b.db.Where("id = ?", userID).First(u).Error; err != nil {
-		return nil
-	}
-	d := u.(UserPasser).GetLastPassChangedDate()
-	return &d
+	return u, true
 }
 
 type UserClaims struct {
-	Provider            string
-	Email               string
-	Name                string
-	UserID              string
-	AvatarURL           string
-	Location            string
-	IDToken             string
-	LastPassChangedDate time.Time
+	Provider      string
+	Email         string
+	Name          string
+	UserID        string
+	AvatarURL     string
+	Location      string
+	IDToken       string
+	PassUpdatedAt string
 	jwt.RegisteredClaims
 }
 
@@ -200,7 +192,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	if r.FormValue("login_type") == "1" {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-		userID, ok := b.authUserPass(username, password)
+		user, ok := b.authUserPass(username, password)
 		if !ok {
 			b.setWrongInputFlash(w, wrongInputFlash{
 				Iu: username,
@@ -209,13 +201,10 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			return incorrectUsernameOrPassword
 		}
 
-		d := b.getLastPassChangedDateByUid(userID)
-		if d == nil {
-			d = &time.Time{}
-		}
-
+		userID := fmt.Sprint(reflectutils.MustGet(user, "ID"))
 		claims = UserClaims{
-			UserID: userID,
+			UserID:        userID,
+			PassUpdatedAt: user.(UserPasser).GetPassUpdatedAt(),
 			RegisteredClaims: jwt.RegisteredClaims{
 				// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
 				// access token expire time
@@ -225,18 +214,12 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 				Subject:   userID,
 				ID:        userID,
 			},
-			LastPassChangedDate: *d,
 		}
 	} else {
 		user, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
 			log.Println("completeUserAuthWithSetCookie", err)
 			return completeUserAuthFailed
-		}
-
-		d := b.getLastPassChangedDateByUid(user.UserID)
-		if d == nil {
-			d = &time.Time{}
 		}
 
 		claims = UserClaims{
@@ -254,7 +237,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 				Subject:   user.Email,
 				ID:        user.UserID,
 			},
-			LastPassChangedDate: *d,
 		}
 	}
 	ss, err := b.SignClaims(&claims)
