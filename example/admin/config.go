@@ -209,8 +209,8 @@ func NewConfig() Config {
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
 	})
-	configProduct(b, db, w)
-	configCategory(b, db)
+	product := configProduct(b, db, w)
+	category := configCategory(b, db)
 
 	// Use m to customize the model, Or config more models here.
 
@@ -321,7 +321,7 @@ func NewConfig() Config {
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
 
-	publish_view.Configure(b, db, ab, publisher, m, l, pm)
+	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
 
 	return Config{
 		pb:          b,

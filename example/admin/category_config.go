@@ -1,19 +1,20 @@
 package admin
 
 import (
+	"strconv"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	v "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-	"strconv"
 )
 
-func configCategory(b *presets.Builder, db *gorm.DB) {
+func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	p := b.Model(&models.Category{})
 
-	eb := p.Editing("Name", "Products")
+	eb := p.Editing("Status", "Schedule", "Name", "Products")
 	p.Listing("Name")
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -55,4 +56,5 @@ func configCategory(b *presets.Builder, db *gorm.DB) {
 				SearchItemsFunc("products_selector")
 		})
 
+	return p
 }
