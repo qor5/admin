@@ -151,14 +151,24 @@ func (b *Builder) authUserPass(username string, password string) (userID string,
 	return fmt.Sprint(reflectutils.MustGet(u, "ID")), true
 }
 
+func (b *Builder) getLastPassChangedDateByUid(userID string) (lastPassChangedDate *time.Time) {
+	u := reflect.New(b.tUser).Interface()
+	if err := b.db.Where("id = ?", userID).First(u).Error; err != nil {
+		return nil
+	}
+	d := u.(UserPasser).GetLastPassChangedDate()
+	return &d
+}
+
 type UserClaims struct {
-	Provider  string
-	Email     string
-	Name      string
-	UserID    string
-	AvatarURL string
-	Location  string
-	IDToken   string
+	Provider            string
+	Email               string
+	Name                string
+	UserID              string
+	AvatarURL           string
+	Location            string
+	IDToken             string
+	LastPassChangedDate time.Time
 	jwt.RegisteredClaims
 }
 
@@ -199,6 +209,11 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			return incorrectUsernameOrPassword
 		}
 
+		d := b.getLastPassChangedDateByUid(userID)
+		if d == nil {
+			d = &time.Time{}
+		}
+
 		claims = UserClaims{
 			UserID: userID,
 			RegisteredClaims: jwt.RegisteredClaims{
@@ -210,12 +225,18 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 				Subject:   userID,
 				ID:        userID,
 			},
+			LastPassChangedDate: *d,
 		}
 	} else {
 		user, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
 			log.Println("completeUserAuthWithSetCookie", err)
 			return completeUserAuthFailed
+		}
+
+		d := b.getLastPassChangedDateByUid(user.UserID)
+		if d == nil {
+			d = &time.Time{}
 		}
 
 		claims = UserClaims{
@@ -233,6 +254,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 				Subject:   user.Email,
 				ID:        user.UserID,
 			},
+			LastPassChangedDate: *d,
 		}
 	}
 	ss, err := b.SignClaims(&claims)

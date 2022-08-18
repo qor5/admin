@@ -121,6 +121,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
+			t := b.getLastPassChangedDateByUid(claims.UserID)
+			if t != nil && !claims.LastPassChangedDate.Equal(*t) {
+				http.Redirect(w, r, "/auth/logout", http.StatusFound)
+			}
+
 			if path == b.loginURL {
 				http.Redirect(w, r, b.homeURL, http.StatusFound)
 				return

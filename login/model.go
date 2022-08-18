@@ -2,16 +2,19 @@ package login
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type UserPasser interface {
 	EncryptPassword()
 	IsPasswordCorrect(password string) bool
+	GetLastPassChangedDate() time.Time
 }
 
 type UserPass struct {
-	Username string `gorm:"index:uidx_users_username,unique,where:username!=''"`
-	Password string `gorm:"size:60"`
+	Username            string `gorm:"index:uidx_users_username,unique,where:username!=''"`
+	Password            string `gorm:"size:60"`
+	LastPassChangedDate time.Time
 }
 
 func (up *UserPass) EncryptPassword() {
@@ -27,6 +30,10 @@ func (up *UserPass) EncryptPassword() {
 
 func (up *UserPass) IsPasswordCorrect(password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(up.Password), []byte(password)) == nil
+}
+
+func (up *UserPass) GetLastPassChangedDate() time.Time {
+	return up.LastPassChangedDate
 }
 
 type OAuthUser interface {
