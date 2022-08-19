@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 var (
@@ -99,13 +100,13 @@ func parseBaseClaimsFromCookie(r *http.Request, cookieName string, secret string
 }
 
 // maxAge seconds
-func genBaseClaims(id string, maxAge int) jwt.RegisteredClaims {
+func genBaseClaims(sub string, maxAge int) jwt.RegisteredClaims {
 	now := time.Now()
 	return jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(maxAge) * time.Second)),
 		IssuedAt:  jwt.NewNumericDate(now),
 		NotBefore: jwt.NewNumericDate(now),
-		Subject:   id,
-		ID:        id,
+		Subject:   sub,
+		ID:        uuid.New().String(),
 	}
 }
