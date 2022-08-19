@@ -55,12 +55,13 @@ func (d *userDao) getUserByOAuthIndentifier(provider string, indentifier string)
 	return user, nil
 }
 
-func (d *userDao) updateOAuthUserID(id string, oid string) (user interface{}, err error) {
+func (d *userDao) updateOAuthUserIDAndLoginSalt(id string, oid string, salt string) (user interface{}, err error) {
 	user = reflect.New(d.tUser).Interface()
 	err = d.db.Model(user).
 		Where("id=?", id).
 		Updates(map[string]interface{}{
-			"o_auth_user_id": oid,
+			"o_auth_user_id":    oid,
+			"o_auth_login_salt": salt,
 		}).
 		Error
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -31,7 +30,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := parseUserClaims(r, b.authParamName, b.secret)
+			claims, err := parseUserClaims(r, b.authCookieName, b.secret)
 			if err != nil {
 				log.Println(err)
 				if b.homeURL != r.RequestURI {
@@ -55,6 +54,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			var user interface{}
+			var secureSalt string
 			if b.tUser == nil {
 				user = &claims
 			} else {
@@ -63,43 +63,44 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					if err == nil && user.(UserPasser).getPassUpdatedAt() != claims.PassUpdatedAt {
 						err = errUserPassChanged
 					}
+					secureSalt = user.(UserPasser).getPassLoginSalt()
 				} else {
 					user, err = b.ud.getUserByOAuthUserID(claims.Provider, claims.UserID)
 					if err == nil {
 						user.(OAuthUser).setAvatar(claims.AvatarURL)
 					}
+					secureSalt = user.(OAuthUser).getOAuthLoginSalt()
+				}
+				if err != nil {
+					log.Println(err)
+					code := FailCodeSystemError
+					if err == gorm.ErrRecordNotFound {
+						code = FailCodeUserNotFound
+					}
+					if err == errUserPassChanged {
+						code = 0
+					}
+					if code != 0 {
+						setFailCodeFlash(w, code)
+					}
+					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					return
+				}
+				_, err := parseBaseClaims(r, b.authSecureCookieName, b.secret+secureSalt)
+				if err != nil {
+					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					return
 				}
 			}
-			if err != nil {
-				log.Println(err)
-				code := FailCodeSystemError
-				if err == gorm.ErrRecordNotFound {
-					code = FailCodeUserNotFound
-				}
-				if err == errUserPassChanged {
-					code = 0
-				}
-				if code != 0 {
-					setFailCodeFlash(w, code)
-				}
-				http.Redirect(w, r, "/auth/logout", http.StatusFound)
-				return
-			}
+
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
-			// extend the cookie if successfully authenticated
 			if b.autoExtendSession {
-				c, err := r.Cookie(b.authParamName)
-				if err == nil {
-					http.SetCookie(w, &http.Cookie{
-						Name:     b.authParamName,
-						Value:    c.Value,
-						Path:     "/",
-						MaxAge:   b.sessionMaxAge,
-						Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
-						HttpOnly: true,
-					})
-					// FIXME: extend token lifetime
+				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
+				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
+					setFailCodeFlash(w, FailCodeSystemError)
+					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					return
 				}
 			}
 

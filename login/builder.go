@@ -33,7 +33,8 @@ type Provider struct {
 type Builder struct {
 	secret                string
 	providers             []*Provider
-	authParamName         string
+	authCookieName        string
+	authSecureCookieName  string
 	continueUrlCookieName string
 	// seconds
 	sessionMaxAge     int
@@ -50,7 +51,8 @@ type Builder struct {
 
 func New() *Builder {
 	r := &Builder{
-		authParamName:         "auth",
+		authCookieName:        "auth",
+		authSecureCookieName:  "qor5_auth_secure",
 		continueUrlCookieName: "qor5_continue_url",
 		loginURL:              "/auth/login",
 		homeURL:               "/",
@@ -80,8 +82,8 @@ func (b *Builder) Providers(vs ...*Provider) (r *Builder) {
 	return b
 }
 
-func (b *Builder) AuthParamName(v string) (r *Builder) {
-	b.authParamName = v
+func (b *Builder) AuthCookieName(v string) (r *Builder) {
+	b.authCookieName = v
 	return b
 }
 
@@ -107,6 +109,7 @@ func (b *Builder) SessionMaxAge(v int) (r *Builder) {
 	return b
 }
 
+// extend the session if successfully authenticated
 // default true
 func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	b.autoExtendSession = v
@@ -165,8 +168,64 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
+func (b *Builder) genBaseSessionClaim(id string) jwt.RegisteredClaims {
+	return genBaseClaims(id, b.sessionMaxAge)
+}
+
+func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *UserClaims, secureSalt string) error {
+	ss, err := signClaims(claims, b.secret)
+	if err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authCookieName,
+		Value:    ss,
+		Path:     "/",
+		MaxAge:   b.sessionMaxAge,
+		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
+		HttpOnly: true,
+	})
+
+	ss, err = signClaims(&claims.RegisteredClaims, b.secret+secureSalt)
+	if err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authSecureCookieName,
+		Value:    ss,
+		Path:     "/",
+		MaxAge:   b.sessionMaxAge,
+		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
+		HttpOnly: true,
+	})
+
+	return nil
+}
+
+func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authCookieName,
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authSecureCookieName,
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		HttpOnly: true,
+	})
+}
+
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
 	var claims UserClaims
+	var secureSalt string
 	if r.FormValue("login_type") == "1" {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
@@ -182,18 +241,11 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 
 		userID := fmt.Sprint(reflectutils.MustGet(user, "ID"))
 		claims = UserClaims{
-			UserID:        userID,
-			PassUpdatedAt: user.(UserPasser).getPassUpdatedAt(),
-			RegisteredClaims: jwt.RegisteredClaims{
-				// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
-				// access token expire time
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now()),
-				NotBefore: jwt.NewNumericDate(time.Now()),
-				Subject:   userID,
-				ID:        userID,
-			},
+			UserID:           userID,
+			PassUpdatedAt:    user.(UserPasser).getPassUpdatedAt(),
+			RegisteredClaims: b.genBaseSessionClaim(userID),
 		}
+		secureSalt = user.(UserPasser).getPassLoginSalt()
 	} else {
 		ouser, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
@@ -202,7 +254,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			return err
 		}
 		if b.tUser != nil {
-			_, err = b.ud.getUserByOAuthUserID(ouser.Provider, ouser.UserID)
+			user, err := b.ud.getUserByOAuthUserID(ouser.Provider, ouser.UserID)
 			if err != nil {
 				if err != gorm.ErrRecordNotFound {
 					setFailCodeFlash(w, FailCodeSystemError)
@@ -219,44 +271,29 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 					}
 					return err
 				}
-				user, err = b.ud.updateOAuthUserID(fmt.Sprint(reflectutils.MustGet(user, "ID")), ouser.UserID)
+				user, err = b.ud.updateOAuthUserIDAndLoginSalt(fmt.Sprint(reflectutils.MustGet(user, "ID")), ouser.UserID, genHashSalt())
 				if err != nil {
 					setFailCodeFlash(w, FailCodeSystemError)
 					return err
 				}
 			}
+			secureSalt = user.(OAuthUser).getOAuthLoginSalt()
 		}
 
 		claims = UserClaims{
-			Provider:  ouser.Provider,
-			Email:     ouser.Email,
-			Name:      ouser.Name,
-			UserID:    ouser.UserID,
-			AvatarURL: ouser.AvatarURL,
-			RegisteredClaims: jwt.RegisteredClaims{
-				// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
-				// access token expire time
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now()),
-				NotBefore: jwt.NewNumericDate(time.Now()),
-				Subject:   ouser.Email,
-				ID:        ouser.UserID,
-			},
+			Provider:         ouser.Provider,
+			Email:            ouser.Email,
+			Name:             ouser.Name,
+			UserID:           ouser.UserID,
+			AvatarURL:        ouser.AvatarURL,
+			RegisteredClaims: b.genBaseSessionClaim(ouser.UserID),
 		}
 	}
-	ss, err := signClaims(&claims, b.secret)
-	if err != nil {
+
+	if err := b.setAuthCookiesFromUserClaims(w, &claims, secureSalt); err != nil {
 		setFailCodeFlash(w, FailCodeSystemError)
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     b.authParamName,
-		Value:    ss,
-		Path:     "/",
-		MaxAge:   b.sessionMaxAge,
-		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
-		HttpOnly: true,
-	})
 
 	return nil
 }
@@ -267,26 +304,13 @@ func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     b.authParamName,
-		Value:    "",
-		Path:     "/",
-		Domain:   "",
-		MaxAge:   -1,
-		Expires:  time.Unix(1, 0),
-		HttpOnly: true,
-	})
 
+	b.cleanAuthCookies(w)
 	http.Redirect(w, r, b.loginURL, http.StatusFound)
 }
 
 // beginAuth is for url "/auth/{provider}"
 func (b *Builder) beginAuth(w http.ResponseWriter, r *http.Request) {
-	// try to get the user without re-authenticating
-	if err := b.completeUserAuthWithSetCookie(w, r); err == nil {
-		http.Redirect(w, r, b.homeURL, http.StatusFound)
-		return
-	}
 	gothic.BeginAuthHandler(w, r)
 }
 

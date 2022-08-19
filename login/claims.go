@@ -3,6 +3,7 @@ package login
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -60,6 +61,30 @@ func parseUserClaims(r *http.Request, cookieName string, secret string) (rc *Use
 		return nil, err
 	}
 	rc, ok := c.(*UserClaims)
+	if !ok {
+		return nil, errInvalidToken
+	}
+	return rc, nil
+}
+
+// maxAge seconds
+func genBaseClaims(id string, maxAge int) jwt.RegisteredClaims {
+	now := time.Now()
+	return jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(maxAge) * time.Second)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
+		Subject:   id,
+		ID:        id,
+	}
+}
+
+func parseBaseClaims(r *http.Request, cookieName string, secret string) (rc *jwt.RegisteredClaims, err error) {
+	c, err := parseClaimsFromCookie(r, cookieName, &jwt.RegisteredClaims{}, secret)
+	if err != nil {
+		return nil, err
+	}
+	rc, ok := c.(*jwt.RegisteredClaims)
 	if !ok {
 		return nil, errInvalidToken
 	}
