@@ -30,7 +30,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := parseUserClaims(r, b.authCookieName, b.secret)
+			claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
 			if err != nil {
 				log.Println(err)
 				if b.homeURL != r.RequestURI {
@@ -86,7 +86,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return
 				}
-				_, err := parseBaseClaims(r, b.authSecureCookieName, b.secret+secureSalt)
+				_, err := parseBaseClaimsFromCookie(r, b.authSecureCookieName, b.secret+secureSalt)
 				if err != nil {
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return
