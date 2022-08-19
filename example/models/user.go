@@ -10,9 +10,6 @@ import (
 
 type User struct {
 	gorm.Model
-	// Username is email
-	login.UserPass
-	login.OAuthInfo
 
 	Name      string
 	Company   string
@@ -20,6 +17,10 @@ type User struct {
 	Status    string
 	UpdatedAt time.Time
 	CreatedAt time.Time
+
+	// Username is email
+	login.UserPass
+	login.OAuthInfo
 }
 
 func (u User) GetName() string {

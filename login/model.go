@@ -10,7 +10,8 @@ import (
 type UserPasser interface {
 	EncryptPassword()
 	IsPasswordCorrect(password string) bool
-	GetPassUpdatedAt() string
+
+	getPassUpdatedAt() string
 }
 
 type UserPass struct {
@@ -36,12 +37,12 @@ func (up *UserPass) IsPasswordCorrect(password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(up.Password), []byte(password)) == nil
 }
 
-func (up *UserPass) GetPassUpdatedAt() string {
+func (up *UserPass) getPassUpdatedAt() string {
 	return up.PassUpdatedAt
 }
 
 type OAuthUser interface {
-	SetAvatar(v string)
+	setAvatar(v string)
 }
 
 type OAuthInfo struct {
@@ -54,6 +55,6 @@ type OAuthInfo struct {
 	OAuthAvatar      string `gorm:"-"`
 }
 
-func (oa *OAuthInfo) SetAvatar(v string) {
+func (oa *OAuthInfo) setAvatar(v string) {
 	oa.OAuthAvatar = v
 }

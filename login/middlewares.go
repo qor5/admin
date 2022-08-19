@@ -2,17 +2,13 @@ package login
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4/request"
-	"github.com/sunfmin/reflectutils"
-	"gorm.io/gorm"
+	"github.com/jinzhu/gorm"
 )
 
 type contextUserKey int
@@ -20,48 +16,6 @@ type contextUserKey int
 const _userKey contextUserKey = 1
 
 var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
-
-func fetchUserToContext(db *gorm.DB, tUser reflect.Type, claim *UserClaims, r *http.Request) (newR *http.Request, err error) {
-	u := reflect.New(tUser).Interface()
-	if claim.Provider == "" {
-		err = db.Where("id = ?", claim.UserID).
-			First(u).
-			Error
-		if err == nil {
-			if u.(UserPasser).GetPassUpdatedAt() != claim.PassUpdatedAt {
-				return r, errUserPassChanged
-			}
-		}
-	} else {
-		err = db.Where("o_auth_provider = ? and o_auth_user_id = ?", claim.Provider, claim.UserID).
-			First(u).
-			Error
-		if err == gorm.ErrRecordNotFound {
-			err = db.Where("o_auth_provider = ? and o_auth_indentifier = ?", claim.Provider, claim.Email).
-				First(u).
-				Error
-			if err == nil {
-				err = db.Model(u).
-					Where("id=?", fmt.Sprint(reflectutils.MustGet(u, "ID"))).
-					Updates(map[string]interface{}{
-						"o_auth_user_id": claim.UserID,
-					}).
-					Error
-			}
-		}
-		if err == nil {
-			u.(OAuthUser).SetAvatar(claim.AvatarURL)
-		}
-	}
-	if err == gorm.ErrRecordNotFound {
-		return r, errUserNotFound
-	}
-	if err != nil {
-		return r, err
-	}
-
-	return r.WithContext(context.WithValue(r.Context(), _userKey, u)), nil
-}
 
 func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -77,17 +31,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			extractor := request.MultiExtractor(b.extractors)
-			if len(b.extractors) == 0 {
-				extractor = request.MultiExtractor{
-					CookieExtractor(b.authParamName),
-					AuthorizationHeaderExtractor{},
-					request.ArgumentExtractor{b.authParamName},
-					request.HeaderExtractor{b.authParamName},
-				}
-			}
-			var claims UserClaims
-			_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
+			claims, err := parseUserClaims(r, b.authParamName, b.secret)
 			if err != nil {
 				log.Println(err)
 				if b.homeURL != r.RequestURI {
@@ -110,27 +54,38 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			newReq, err := fetchUserToContext(b.db, b.tUser, &claims, r)
+			var user interface{}
+			if b.tUser == nil {
+				user = &claims
+			} else {
+				if claims.Provider == "" {
+					user, err = b.ud.getUserByID(claims.UserID)
+					if err == nil && user.(UserPasser).getPassUpdatedAt() != claims.PassUpdatedAt {
+						err = errUserPassChanged
+					}
+				} else {
+					user, err = b.ud.getUserByOAuthUserID(claims.Provider, claims.UserID)
+					if err == nil {
+						user.(OAuthUser).setAvatar(claims.AvatarURL)
+					}
+				}
+			}
 			if err != nil {
 				log.Println(err)
-				code := systemError
-				if err == errUserNotFound {
-					code = userNotFound
+				code := FailCodeSystemError
+				if err == gorm.ErrRecordNotFound {
+					code = FailCodeUserNotFound
 				}
 				if err == errUserPassChanged {
 					code = 0
 				}
 				if code != 0 {
-					b.setFailCodeFlash(w, code)
+					setFailCodeFlash(w, code)
 				}
 				http.Redirect(w, r, "/auth/logout", http.StatusFound)
 				return
 			}
-
-			if path == b.loginURL {
-				http.Redirect(w, r, b.homeURL, http.StatusFound)
-				return
-			}
+			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
 			// extend the cookie if successfully authenticated
 			if b.autoExtendSession {
@@ -144,10 +99,16 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 						HttpOnly: true,
 					})
+					// FIXME: extend token lifetime
 				}
 			}
 
-			next.ServeHTTP(w, newReq)
+			if path == b.loginURL {
+				http.Redirect(w, r, b.homeURL, http.StatusFound)
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }

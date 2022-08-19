@@ -29,8 +29,8 @@ type contextUserKey int
 const _userKey contextUserKey = 1
 
 func newLoginBuilder(db *gorm.DB) *login.Builder {
-	return login.New(db).
-		UserModel(&models.User{}).
+	return login.New().
+		UserModel(db, &models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
 		Providers(
 			&login.Provider{
