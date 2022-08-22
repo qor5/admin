@@ -173,7 +173,6 @@ func (b *Builder) authUserPass(username string, password string) (user interface
 		}
 		return nil, err
 	}
-	userID := objectID(user)
 
 	u := user.(UserPasser)
 	if u.GetLocked() {
@@ -181,12 +180,12 @@ func (b *Builder) authUserPass(username string, password string) (user interface
 	}
 
 	if !u.IsPasswordCorrect(password) {
-		if err = u.IncreaseRetryCount(b.db, b.newUserObject(), userID); err != nil {
+		if err = u.IncreaseRetryCount(b.db, b.newUserObject()); err != nil {
 			return nil, err
 		}
 
 		if u.GetLoginRetryCount() >= b.maxRetryCount {
-			if err = u.LockUser(b.db, b.newUserObject(), userID); err != nil {
+			if err = u.LockUser(b.db, b.newUserObject()); err != nil {
 				return nil, err
 			}
 			return nil, errUserLocked
@@ -196,7 +195,7 @@ func (b *Builder) authUserPass(username string, password string) (user interface
 	}
 
 	if u.GetLoginRetryCount() != 0 {
-		if err = u.UnlockUser(b.db, b.newUserObject(), userID); err != nil {
+		if err = u.UnlockUser(b.db, b.newUserObject()); err != nil {
 			return nil, err
 		}
 	}
