@@ -43,10 +43,12 @@ type Builder struct {
 	homeURL           string
 	loginPageFunc     web.PageFunc
 
-	ud           *userDao
-	tUser        reflect.Type
-	withUserPass bool
-	withOAuth    bool
+	db              *gorm.DB
+	ud              *userDao
+	tUser           reflect.Type
+	withDBUser      bool
+	userPassEnabled bool
+	oauthEnabled    bool
 }
 
 func New() *Builder {
@@ -72,7 +74,7 @@ func (b *Builder) Providers(vs ...*Provider) (r *Builder) {
 	if len(vs) == 0 {
 		return b
 	}
-	b.withOAuth = true
+	b.oauthEnabled = true
 	b.providers = vs
 	var gothProviders []goth.Provider
 	for _, v := range vs {
@@ -116,19 +118,22 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	return b
 }
 
-func (b *Builder) UserModel(db *gorm.DB, m interface{}) (r *Builder) {
+func (b *Builder) DB(v *gorm.DB) (r *Builder) {
+	b.db = v
+	return b
+}
+
+func (b *Builder) UserModel(m interface{}) (r *Builder) {
 	b.tUser = underlyingReflectType(reflect.TypeOf(m))
 	if _, ok := m.(UserPasser); ok {
-		b.withUserPass = true
+		b.withDBUser = true
+		b.userPassEnabled = true
 	}
 	if _, ok := m.(OAuthUser); ok {
-		b.withOAuth = true
+		b.withDBUser = true
+		b.oauthEnabled = true
 	}
 
-	b.ud = &userDao{
-		db:    db,
-		tUser: b.tUser,
-	}
 	return b
 }
 
@@ -253,7 +258,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			setFailCodeFlash(w, FailCodeCompleteUserAuthFailed)
 			return err
 		}
-		if b.tUser != nil {
+		if b.withDBUser {
 			user, err := b.ud.getUserByOAuthUserID(ouser.Provider, ouser.UserID)
 			if err != nil {
 				if err != gorm.ErrRecordNotFound {
@@ -317,6 +322,18 @@ func (b *Builder) beginAuth(w http.ResponseWriter, r *http.Request) {
 func (b *Builder) Mount(mux *http.ServeMux) {
 	if len(b.secret) == 0 {
 		panic("secret is empty")
+	}
+	if b.withDBUser {
+		if b.db == nil {
+			panic("db is required")
+		}
+		if b.tUser == nil {
+			panic("user model is required")
+		}
+		b.ud = &userDao{
+			db:    b.db,
+			tUser: b.tUser,
+		}
 	}
 
 	mux.HandleFunc("/auth/logout", b.logout)

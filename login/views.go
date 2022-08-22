@@ -22,7 +22,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
 		var oauthHTML HTMLComponent
-		if b.withOAuth {
+		if b.oauthEnabled {
 			ul := Div().Class("flex flex-col justify-center mt-8 text-center")
 			for _, provider := range b.providers {
 				ul.AppendChildren(
@@ -42,7 +42,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 
 		var userPassHTML HTMLComponent
-		if b.withUserPass {
+		if b.userPassEnabled {
 			wrapperClass += " pt-16"
 			userPassHTML = Div(
 				Form(

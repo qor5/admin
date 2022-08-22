@@ -55,9 +55,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			var user interface{}
 			var secureSalt string
-			if b.tUser == nil {
-				user = &claims
-			} else {
+			if b.withDBUser {
 				if claims.Provider == "" {
 					user, err = b.ud.getUserByID(claims.UserID)
 					if err == nil && user.(UserPasser).getPassUpdatedAt() != claims.PassUpdatedAt {
@@ -91,6 +89,8 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return
 				}
+			} else {
+				user = &claims
 			}
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
