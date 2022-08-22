@@ -111,7 +111,7 @@ func (up *UserPass) UnlockUser(db *gorm.DB, model interface{}, id string) error 
 
 func (up *UserPass) IncreaseRetryCount(db *gorm.DB, model interface{}, id string) error {
 	if err := db.Model(model).Where(fmt.Sprintf("%s = ?", snakePrimaryField(model)), id).Updates(map[string]interface{}{
-		"login_retry_count": gorm.Expr("login_retry_count + 1"),
+		"login_retry_count": gorm.Expr("coalesce(login_retry_count,0) + 1"),
 	}).Error; err != nil {
 		return err
 	}
