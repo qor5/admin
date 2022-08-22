@@ -15,6 +15,7 @@ const (
 	FailCodeCompleteUserAuthFailed
 	FailCodeUserNotFound
 	FailCodeIncorrectUsernameOrPassword
+	FailCodeUserLocked
 )
 
 const failCodeFlashCookieName = "qor5_login_fc_flash"

@@ -20,6 +20,7 @@ var (
 	errUserNotFound    = errors.New("user not found")
 	errUserPassChanged = errors.New("password changed")
 	errWrongPassword   = errors.New("wrong password")
+	errUserLocked      = errors.New("user locked")
 )
 
 type Provider struct {
@@ -38,6 +39,7 @@ type Builder struct {
 	// seconds
 	sessionMaxAge     int
 	autoExtendSession bool
+	maxRetryCount     int
 	loginURL          string
 	homeURL           string
 	loginPageFunc     web.PageFunc
@@ -60,6 +62,7 @@ func New() *Builder {
 		homeURL:               "/",
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
+		maxRetryCount:         1000,
 	}
 	r.loginPageFunc = defaultLoginPage(r)
 	return r
@@ -118,6 +121,11 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) MaxRetryCount(v int) (r *Builder) {
+	b.maxRetryCount = v
+	return b
+}
+
 func (b *Builder) DB(v *gorm.DB) (r *Builder) {
 	b.db = v
 	return b
@@ -165,8 +173,31 @@ func (b *Builder) authUserPass(username string, password string) (user interface
 		}
 		return nil, err
 	}
-	if c := user.(UserPasser).IsPasswordCorrect(password); !c {
+
+	u := user.(UserPasser)
+	if u.GetLocked() {
+		return nil, errUserLocked
+	}
+
+	if !u.IsPasswordCorrect(password) {
+		if err = u.IncreaseRetryCount(b.db, b.newUserObject(), username); err != nil {
+			return nil, err
+		}
+
+		if u.GetLoginRetryCount() >= b.maxRetryCount {
+			if err = u.LockUser(b.db, b.newUserObject(), username); err != nil {
+				return nil, err
+			}
+			return nil, errUserLocked
+		}
+
 		return nil, errWrongPassword
+	}
+
+	if u.GetLoginRetryCount() != 0 {
+		if err = u.UnlockUser(b.db, b.newUserObject(), username); err != nil {
+			return nil, err
+		}
 	}
 	return user, nil
 }
@@ -259,11 +290,23 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		password := r.FormValue("password")
 		user, err = b.authUserPass(username, password)
 		if err != nil {
-			setFailCodeFlash(w, FailCodeIncorrectUsernameOrPassword)
-			setWrongLoginInputFlash(w, WrongLoginInputFlash{
-				Iu: username,
-				Ip: password,
-			})
+			code := FailCodeSystemError
+			switch err {
+			case errWrongPassword, errUserNotFound:
+				code = FailCodeIncorrectUsernameOrPassword
+			case errUserLocked:
+				code = FailCodeUserLocked
+			}
+
+			setFailCodeFlash(w, code)
+
+			if code == FailCodeIncorrectUsernameOrPassword {
+				setWrongLoginInputFlash(w, WrongLoginInputFlash{
+					Iu: username,
+					Ip: password,
+				})
+			}
+
 			return err
 		}
 

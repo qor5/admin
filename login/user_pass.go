@@ -14,13 +14,21 @@ type UserPasser interface {
 	EncryptPassword()
 	IsPasswordCorrect(password string) bool
 	GetPasswordUpdatedAt() string
+	GetLoginRetryCount() int
+	GetLocked() bool
+	IncreaseRetryCount(db *gorm.DB, model interface{}, username string) error
+	LockUser(db *gorm.DB, model interface{}, username string) error
+	UnlockUser(db *gorm.DB, model interface{}, username string) error
 }
 
 type UserPass struct {
 	Username string `gorm:"index:uidx_users_username,unique,where:username!=''"`
 	Password string `gorm:"size:60"`
 	// UnixNano string
-	PassUpdatedAt string
+	PassUpdatedAt   string
+	LoginRetryCount int
+	Locked          bool
+	LockedAt        *time.Time
 }
 
 var _ UserPasser = (*UserPass)(nil)
@@ -37,6 +45,17 @@ func (up *UserPass) FindUser(db *gorm.DB, model interface{}, username string) (u
 
 func (up *UserPass) GetUsername() string {
 	return up.Username
+}
+
+func (up *UserPass) GetLoginRetryCount() int {
+	return up.LoginRetryCount
+}
+
+func (up *UserPass) GetLocked() bool {
+	if !up.Locked {
+		return false
+	}
+	return up.Locked && up.LockedAt != nil && time.Now().Sub(*up.LockedAt) <= time.Hour
 }
 
 func (up *UserPass) EncryptPassword() {
@@ -57,4 +76,46 @@ func (up *UserPass) IsPasswordCorrect(password string) bool {
 
 func (up *UserPass) GetPasswordUpdatedAt() string {
 	return up.PassUpdatedAt
+}
+
+func (up *UserPass) LockUser(db *gorm.DB, model interface{}, username string) error {
+	lockedAt := time.Now()
+	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+		"locked":    true,
+		"locked_at": &lockedAt,
+	}).Error; err != nil {
+		return err
+	}
+
+	up.Locked = true
+	up.LockedAt = &lockedAt
+
+	return nil
+}
+
+func (up *UserPass) UnlockUser(db *gorm.DB, model interface{}, username string) error {
+	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+		"locked":            false,
+		"login_retry_count": 0,
+		"locked_at":         nil,
+	}).Error; err != nil {
+		return err
+	}
+
+	up.Locked = false
+	up.LoginRetryCount = 0
+	up.LockedAt = nil
+
+	return nil
+}
+
+func (up *UserPass) IncreaseRetryCount(db *gorm.DB, model interface{}, username string) error {
+	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+		"login_retry_count": gorm.Expr("login_retry_count + 1"),
+	}).Error; err != nil {
+		return err
+	}
+	up.LoginRetryCount++
+
+	return nil
 }

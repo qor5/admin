@@ -11,6 +11,7 @@ var loginFailTexts = map[FailCode]string{
 	FailCodeCompleteUserAuthFailed:      "Complete User Auth Failed",
 	FailCodeUserNotFound:                "User Not Found",
 	FailCodeIncorrectUsernameOrPassword: "Incorrect username or password",
+	FailCodeUserLocked:                  "User Locked",
 }
 
 func defaultLoginPage(b *Builder) web.PageFunc {

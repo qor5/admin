@@ -24,6 +24,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
+		"Actions",
 		"Name",
 		"OAuthProvider",
 		"Username",
@@ -41,6 +42,38 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return
 	})
 	user.RegisterEventFunc("roles_selector", rolesSelector(db))
+	user.RegisterEventFunc("eventUnlockUser", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		uid := ctx.R.FormValue("id")
+		u := models.User{}
+		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
+			return r, err
+		}
+		if err = u.UnlockUser(db, &models.User{}, u.Username); err != nil {
+			return r, err
+		}
+		ed.UpdateOverlayContent(ctx, &r, &u, "", nil)
+		return r, nil
+	})
+
+	ed.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var actionBtns h.HTMLComponents
+		u := obj.(*models.User)
+		if u.GetLocked() {
+			actionBtns = append(actionBtns,
+				VBtn("Unlock").Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventUnlockUser").
+						Query("id", u.ID).Go(),
+					),
+			)
+		}
+
+		if len(actionBtns) == 0 {
+			return nil
+		}
+		return h.Div(
+			actionBtns...,
+		).Class("mb-5 text-right")
+	})
 
 	ed.Field("Username").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VTextField().
