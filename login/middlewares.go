@@ -61,6 +61,9 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						if user.(UserPasser).GetPasswordUpdatedAt() != claims.PassUpdatedAt {
 							err = errUserPassChanged
 						}
+						if user.(UserPasser).GetLocked() {
+							err = errUserLocked
+						}
 					} else {
 						user.(OAuthUser).SetAvatar(claims.AvatarURL)
 					}
@@ -70,6 +73,9 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					code := FailCodeSystemError
 					if err == errUserNotFound {
 						code = FailCodeUserNotFound
+					}
+					if err == errUserLocked {
+						code = FailCodeUserLocked
 					}
 					if err == errUserPassChanged {
 						code = 0
