@@ -16,9 +16,9 @@ type UserPasser interface {
 	GetPasswordUpdatedAt() string
 	GetLoginRetryCount() int
 	GetLocked() bool
-	IncreaseRetryCount(db *gorm.DB, model interface{}, username string) error
-	LockUser(db *gorm.DB, model interface{}, username string) error
-	UnlockUser(db *gorm.DB, model interface{}, username string) error
+	IncreaseRetryCount(db *gorm.DB, model interface{}, id string) error
+	LockUser(db *gorm.DB, model interface{}, id string) error
+	UnlockUser(db *gorm.DB, model interface{}, id string) error
 }
 
 type UserPass struct {
@@ -78,9 +78,9 @@ func (up *UserPass) GetPasswordUpdatedAt() string {
 	return up.PassUpdatedAt
 }
 
-func (up *UserPass) LockUser(db *gorm.DB, model interface{}, username string) error {
+func (up *UserPass) LockUser(db *gorm.DB, model interface{}, id string) error {
 	lockedAt := time.Now()
-	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+	if err := db.Model(model).Where(fmt.Sprintf("%s = ?", snakePrimaryField(model)), id).Updates(map[string]interface{}{
 		"locked":    true,
 		"locked_at": &lockedAt,
 	}).Error; err != nil {
@@ -93,8 +93,8 @@ func (up *UserPass) LockUser(db *gorm.DB, model interface{}, username string) er
 	return nil
 }
 
-func (up *UserPass) UnlockUser(db *gorm.DB, model interface{}, username string) error {
-	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+func (up *UserPass) UnlockUser(db *gorm.DB, model interface{}, id string) error {
+	if err := db.Model(model).Where(fmt.Sprintf("%s = ?", snakePrimaryField(model)), id).Updates(map[string]interface{}{
 		"locked":            false,
 		"login_retry_count": 0,
 		"locked_at":         nil,
@@ -109,8 +109,8 @@ func (up *UserPass) UnlockUser(db *gorm.DB, model interface{}, username string) 
 	return nil
 }
 
-func (up *UserPass) IncreaseRetryCount(db *gorm.DB, model interface{}, username string) error {
-	if err := db.Model(model).Where("username = ?", username).Updates(map[string]interface{}{
+func (up *UserPass) IncreaseRetryCount(db *gorm.DB, model interface{}, id string) error {
+	if err := db.Model(model).Where(fmt.Sprintf("%s = ?", snakePrimaryField(model)), id).Updates(map[string]interface{}{
 		"login_retry_count": gorm.Expr("login_retry_count + 1"),
 	}).Error; err != nil {
 		return err

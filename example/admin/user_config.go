@@ -48,7 +48,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
 			return r, err
 		}
-		if err = u.UnlockUser(db, &models.User{}, u.Username); err != nil {
+		if err = u.UnlockUser(db, &models.User{}, uid); err != nil {
 			return r, err
 		}
 		ed.UpdateOverlayContent(ctx, &r, &u, "", nil)
