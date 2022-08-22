@@ -21,6 +21,7 @@ type User struct {
 	// Username is email
 	login.UserPass
 	login.OAuthInfo
+	login.SessionSecure
 }
 
 func (u User) GetName() string {

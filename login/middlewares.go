@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/jinzhu/gorm"
 )
 
 type contextUserKey int
@@ -55,24 +53,22 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			var user interface{}
 			var secureSalt string
-			if b.withDBUser {
-				if claims.Provider == "" {
-					user, err = b.ud.getUserByID(claims.UserID)
-					if err == nil && user.(UserPasser).getPassUpdatedAt() != claims.PassUpdatedAt {
-						err = errUserPassChanged
+			if b.userModel != nil {
+				var err error
+				user, err = b.findUserByID(claims.UserID)
+				if err == nil {
+					if claims.Provider == "" {
+						if user.(UserPasser).GetPasswordUpdatedAt() != claims.PassUpdatedAt {
+							err = errUserPassChanged
+						}
+					} else {
+						user.(OAuthUser).SetAvatar(claims.AvatarURL)
 					}
-					secureSalt = user.(UserPasser).getPassLoginSalt()
-				} else {
-					user, err = b.ud.getUserByOAuthUserID(claims.Provider, claims.UserID)
-					if err == nil {
-						user.(OAuthUser).setAvatar(claims.AvatarURL)
-					}
-					secureSalt = user.(OAuthUser).getOAuthLoginSalt()
 				}
 				if err != nil {
 					log.Println(err)
 					code := FailCodeSystemError
-					if err == gorm.ErrRecordNotFound {
+					if err == errUserNotFound {
 						code = FailCodeUserNotFound
 					}
 					if err == errUserPassChanged {
@@ -84,10 +80,14 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return
 				}
-				_, err := parseBaseClaimsFromCookie(r, b.authSecureCookieName, b.secret+secureSalt)
-				if err != nil {
-					http.Redirect(w, r, "/auth/logout", http.StatusFound)
-					return
+
+				if b.sessionSecureEnabled {
+					secureSalt = user.(SessionSecurer).GetSecure()
+					_, err := parseBaseClaimsFromCookie(r, b.authSecureCookieName, b.secret+secureSalt)
+					if err != nil {
+						http.Redirect(w, r, "/auth/logout", http.StatusFound)
+						return
+					}
 				}
 			} else {
 				user = &claims

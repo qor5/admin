@@ -12,7 +12,6 @@ import (
 	"github.com/goplaid/web"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
-	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -43,12 +42,13 @@ type Builder struct {
 	homeURL           string
 	loginPageFunc     web.PageFunc
 
-	db              *gorm.DB
-	ud              *userDao
-	tUser           reflect.Type
-	withDBUser      bool
-	userPassEnabled bool
-	oauthEnabled    bool
+	db                   *gorm.DB
+	userModel            interface{}
+	snakePrimaryField    string
+	tUser                reflect.Type
+	userPassEnabled      bool
+	oauthEnabled         bool
+	sessionSecureEnabled bool
 }
 
 func New() *Builder {
@@ -124,21 +124,41 @@ func (b *Builder) DB(v *gorm.DB) (r *Builder) {
 }
 
 func (b *Builder) UserModel(m interface{}) (r *Builder) {
+	b.userModel = m
 	b.tUser = underlyingReflectType(reflect.TypeOf(m))
+	b.snakePrimaryField = snakePrimaryField(m)
 	if _, ok := m.(UserPasser); ok {
-		b.withDBUser = true
 		b.userPassEnabled = true
 	}
 	if _, ok := m.(OAuthUser); ok {
-		b.withDBUser = true
 		b.oauthEnabled = true
 	}
-
+	if _, ok := m.(SessionSecurer); ok {
+		b.sessionSecureEnabled = true
+	}
 	return b
 }
 
+func (b *Builder) newUserObject() interface{} {
+	return reflect.New(b.tUser).Interface()
+}
+
+func (b *Builder) findUserByID(id string) (user interface{}, err error) {
+	m := b.newUserObject()
+	err = b.db.Where(fmt.Sprintf("%s = ?", b.snakePrimaryField), id).
+		First(m).
+		Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errUserNotFound
+		}
+		return nil, err
+	}
+	return m, nil
+}
+
 func (b *Builder) authUserPass(username string, password string) (user interface{}, err error) {
-	user, err = b.ud.getUserByUsername(username)
+	user, err = b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, errUserNotFound
@@ -191,18 +211,20 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 		HttpOnly: true,
 	})
 
-	ss, err = signClaims(&claims.RegisteredClaims, b.secret+secureSalt)
-	if err != nil {
-		return err
+	if secureSalt != "" {
+		ss, err = signClaims(&claims.RegisteredClaims, b.secret+secureSalt)
+		if err != nil {
+			return err
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     b.authSecureCookieName,
+			Value:    ss,
+			Path:     "/",
+			MaxAge:   b.sessionMaxAge,
+			Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
+			HttpOnly: true,
+		})
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     b.authSecureCookieName,
-		Value:    ss,
-		Path:     "/",
-		MaxAge:   b.sessionMaxAge,
-		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
-		HttpOnly: true,
-	})
 
 	return nil
 }
@@ -229,12 +251,13 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 }
 
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
+	var err error
 	var claims UserClaims
-	var secureSalt string
+	var user interface{}
 	if r.FormValue("login_type") == "1" {
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-		user, err := b.authUserPass(username, password)
+		user, err = b.authUserPass(username, password)
 		if err != nil {
 			setFailCodeFlash(w, FailCodeIncorrectUsernameOrPassword)
 			setWrongLoginInputFlash(w, WrongLoginInputFlash{
@@ -244,13 +267,12 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			return err
 		}
 
-		userID := fmt.Sprint(reflectutils.MustGet(user, "ID"))
+		userID := objectID(user)
 		claims = UserClaims{
 			UserID:           userID,
-			PassUpdatedAt:    user.(UserPasser).getPassUpdatedAt(),
+			PassUpdatedAt:    user.(UserPasser).GetPasswordUpdatedAt(),
 			RegisteredClaims: b.genBaseSessionClaim(userID),
 		}
-		secureSalt = user.(UserPasser).getPassLoginSalt()
 	} else {
 		ouser, err := gothic.CompleteUserAuth(w, r)
 		if err != nil {
@@ -258,8 +280,9 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			setFailCodeFlash(w, FailCodeCompleteUserAuthFailed)
 			return err
 		}
-		if b.withDBUser {
-			user, err := b.ud.getUserByOAuthUserID(ouser.Provider, ouser.UserID)
+		userID := ouser.UserID
+		if b.userModel != nil {
+			user, err = b.userModel.(OAuthUser).FindUserByOAuthUserID(b.db, b.newUserObject(), ouser.Provider, ouser.UserID)
 			if err != nil {
 				if err != gorm.ErrRecordNotFound {
 					setFailCodeFlash(w, FailCodeSystemError)
@@ -267,7 +290,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 				}
 				// TODO: maybe the indentifier of some providers is not email
 				indentifier := ouser.Email
-				user, err := b.ud.getUserByOAuthIndentifier(ouser.Provider, indentifier)
+				user, err = b.userModel.(OAuthUser).FindUserByOAuthIndentifier(b.db, b.newUserObject(), ouser.Provider, indentifier)
 				if err != nil {
 					if err == gorm.ErrRecordNotFound {
 						setFailCodeFlash(w, FailCodeUserNotFound)
@@ -276,25 +299,36 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 					}
 					return err
 				}
-				user, err = b.ud.updateOAuthUserIDAndLoginSalt(fmt.Sprint(reflectutils.MustGet(user, "ID")), ouser.UserID, genHashSalt())
+				err = user.(OAuthUser).InitOAuthUserID(b.db, b.newUserObject(), ouser.Provider, indentifier, ouser.UserID)
 				if err != nil {
 					setFailCodeFlash(w, FailCodeSystemError)
 					return err
 				}
 			}
-			secureSalt = user.(OAuthUser).getOAuthLoginSalt()
+			userID = objectID(user)
 		}
 
 		claims = UserClaims{
 			Provider:         ouser.Provider,
 			Email:            ouser.Email,
 			Name:             ouser.Name,
-			UserID:           ouser.UserID,
+			UserID:           userID,
 			AvatarURL:        ouser.AvatarURL,
-			RegisteredClaims: b.genBaseSessionClaim(ouser.UserID),
+			RegisteredClaims: b.genBaseSessionClaim(userID),
 		}
 	}
 
+	var secureSalt string
+	if b.sessionSecureEnabled {
+		if user.(SessionSecurer).GetSecure() == "" {
+			err = user.(SessionSecurer).UpdateSecure(b.db, b.newUserObject(), objectID(user))
+			if err != nil {
+				setFailCodeFlash(w, FailCodeSystemError)
+				return err
+			}
+		}
+		secureSalt = user.(SessionSecurer).GetSecure()
+	}
 	if err := b.setAuthCookiesFromUserClaims(w, &claims, secureSalt); err != nil {
 		setFailCodeFlash(w, FailCodeSystemError)
 		return err
@@ -323,16 +357,9 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	if len(b.secret) == 0 {
 		panic("secret is empty")
 	}
-	if b.withDBUser {
+	if b.userModel != nil {
 		if b.db == nil {
 			panic("db is required")
-		}
-		if b.tUser == nil {
-			panic("user model is required")
-		}
-		b.ud = &userDao{
-			db:    b.db,
-			tUser: b.tUser,
 		}
 	}
 
