@@ -25,15 +25,15 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 			h.Div(
 				vuetify.VRow(
 					h.Div(vuetify.VAvatar().Color("primary").Size(24).Children(
-						h.If(u.AvatarURL == "",
+						h.If(u.OAuthAvatar == "",
 							vuetify.VIcon("account_circle"),
 						).Else(
-							h.Img(u.AvatarURL).Alt(u.Name),
+							h.Img(u.OAuthAvatar).Alt(u.Name),
 						)),
 						h.Text(u.Name), h.If(len(u.Roles) > 0, h.Text("("+strings.Join(roles, ",")+")")),
 					).Style(`width:100%;`).Class("text-button"),
 					h.Div(
-						h.Text(u.Email),
+						h.Text(u.Account),
 					),
 				),
 			).Attr("v-bind", "attrs").Attr("v-on", "on"),
@@ -55,7 +55,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 func getAvatarShortName(u *models.User) string {
 	name := u.Name
 	if name == "" {
-		name = u.Email
+		name = u.Account
 	}
 	if rs := []rune(name); len(rs) > 1 {
 		name = string(rs[:1])

@@ -5,25 +5,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
-	"strconv"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/golang-jwt/jwt/v4/request"
 	"github.com/goplaid/web"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	errUserNotFound    = errors.New("user not found")
+	errUserPassChanged = errors.New("password changed")
+	errWrongPassword   = errors.New("wrong password")
+	errUserLocked      = errors.New("user locked")
 )
 
-type FetchUserToContextFunc func(claim *UserClaims, r *http.Request) (newR *http.Request, err error)
-type ContentFunc func(ctx *web.EventContext, providers []*Provider, in HTMLComponent) (r HTMLComponent)
+type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
+type PasswordValidationFunc func(password string) (message string, ok bool)
 
 type Provider struct {
 	Goth goth.Provider
@@ -34,28 +36,50 @@ type Provider struct {
 
 type Builder struct {
 	secret                string
-	loginURL              string
-	fetchUserFunc         FetchUserToContextFunc
-	authParamName         string
-	homeURL               string
-	continueUrlCookieName string
-	extractors            []request.Extractor
-	loginPageContentFunc  ContentFunc
 	providers             []*Provider
+	authCookieName        string
+	authSecureCookieName  string
+	continueUrlCookieName string
 	// seconds
-	sessionMaxAge     int
-	autoExtendSession bool
+	sessionMaxAge        int
+	autoExtendSession    bool
+	maxRetryCount        int
+	noForgetPasswordLink bool
+
+	loginURL string
+	homeURL  string
+
+	loginPageFunc                 web.PageFunc
+	forgetPasswordPageFunc        web.PageFunc
+	resetPasswordLinkSentPageFunc web.PageFunc
+	resetPasswordPageFunc         web.PageFunc
+
+	notifyUserOfResetPasswordLinkFunc NotifyUserOfResetPasswordLinkFunc
+	passwordValidationFunc            PasswordValidationFunc
+
+	db                   *gorm.DB
+	userModel            interface{}
+	snakePrimaryField    string
+	tUser                reflect.Type
+	userPassEnabled      bool
+	oauthEnabled         bool
+	sessionSecureEnabled bool
 }
 
 func New() *Builder {
 	r := &Builder{
-		authParamName:         "auth",
+		authCookieName:        "auth",
+		authSecureCookieName:  "qor5_auth_secure",
+		continueUrlCookieName: "qor5_continue_url",
 		loginURL:              "/auth/login",
 		homeURL:               "/",
-		continueUrlCookieName: "qor5_continue_url",
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
 	}
+	r.loginPageFunc = defaultLoginPage(r)
+	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
+	r.resetPasswordLinkSentPageFunc = defaultResetPasswordLinkSentPage(r)
+	r.resetPasswordPageFunc = defaultResetPasswordPage(r)
 	return r
 }
 
@@ -64,12 +88,11 @@ func (b *Builder) Secret(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) LoginURL(v string) (r *Builder) {
-	b.loginURL = v
-	return b
-}
-
 func (b *Builder) Providers(vs ...*Provider) (r *Builder) {
+	if len(vs) == 0 {
+		return b
+	}
+	b.oauthEnabled = true
 	b.providers = vs
 	var gothProviders []goth.Provider
 	for _, v := range vs {
@@ -79,8 +102,13 @@ func (b *Builder) Providers(vs ...*Provider) (r *Builder) {
 	return b
 }
 
-func (b *Builder) Extractors(vs ...request.Extractor) (r *Builder) {
-	b.extractors = vs
+func (b *Builder) AuthCookieName(v string) (r *Builder) {
+	b.authCookieName = v
+	return b
+}
+
+func (b *Builder) LoginURL(v string) (r *Builder) {
+	b.loginURL = v
 	return b
 }
 
@@ -89,18 +117,33 @@ func (b *Builder) HomeURL(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) LoginPageFunc(v ContentFunc) (r *Builder) {
-	b.loginPageContentFunc = v
+func (b *Builder) LoginPageFunc(v web.PageFunc) (r *Builder) {
+	b.loginPageFunc = v
 	return b
 }
 
-func (b *Builder) AuthParamName(v string) (r *Builder) {
-	b.authParamName = v
+func (b *Builder) ForgetPasswordPageFunc(v web.PageFunc) (r *Builder) {
+	b.forgetPasswordPageFunc = v
 	return b
 }
 
-func (b *Builder) FetchUserToContextFunc(v FetchUserToContextFunc) (r *Builder) {
-	b.fetchUserFunc = v
+func (b *Builder) ResetPasswordLinkSentPageFunc(v web.PageFunc) (r *Builder) {
+	b.resetPasswordLinkSentPageFunc = v
+	return b
+}
+
+func (b *Builder) ResetPasswordPageFunc(v web.PageFunc) (r *Builder) {
+	b.resetPasswordPageFunc = v
+	return b
+}
+
+func (b *Builder) NotifyUserOfResetPasswordLinkFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
+	b.notifyUserOfResetPasswordLinkFunc = v
+	return b
+}
+
+func (b *Builder) PasswordValidationFunc(v PasswordValidationFunc) (r *Builder) {
+	b.passwordValidationFunc = v
 	return b
 }
 
@@ -111,27 +154,106 @@ func (b *Builder) SessionMaxAge(v int) (r *Builder) {
 	return b
 }
 
+// extend the session if successfully authenticated
 // default true
 func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	b.autoExtendSession = v
 	return b
 }
 
-type UserClaims struct {
-	Provider  string
-	Email     string
-	Name      string
-	UserID    string
-	AvatarURL string
-	Location  string
-	IDToken   string
-	jwt.RegisteredClaims
+// MaxRetryCount <= 0 means no max retry count limit
+// default 0
+func (b *Builder) MaxRetryCount(v int) (r *Builder) {
+	b.maxRetryCount = v
+	return b
 }
 
-// CompleteUserAuthCallback is for url "/auth/{provider}/callback"
-func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Request) {
-	if code := b.completeUserAuthWithSetCookie(w, r); code != 0 {
-		http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
+func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
+	b.noForgetPasswordLink = v
+	return b
+}
+
+func (b *Builder) DB(v *gorm.DB) (r *Builder) {
+	b.db = v
+	return b
+}
+
+func (b *Builder) UserModel(m interface{}) (r *Builder) {
+	b.userModel = m
+	b.tUser = underlyingReflectType(reflect.TypeOf(m))
+	b.snakePrimaryField = snakePrimaryField(m)
+	if _, ok := m.(UserPasser); ok {
+		b.userPassEnabled = true
+	}
+	if _, ok := m.(OAuthUser); ok {
+		b.oauthEnabled = true
+	}
+	if _, ok := m.(SessionSecurer); ok {
+		b.sessionSecureEnabled = true
+	}
+	return b
+}
+
+func (b *Builder) newUserObject() interface{} {
+	return reflect.New(b.tUser).Interface()
+}
+
+func (b *Builder) findUserByID(id string) (user interface{}, err error) {
+	m := b.newUserObject()
+	err = b.db.Where(fmt.Sprintf("%s = ?", b.snakePrimaryField), id).
+		First(m).
+		Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errUserNotFound
+		}
+		return nil, err
+	}
+	return m, nil
+}
+
+func (b *Builder) authUserPass(account string, password string) (user interface{}, err error) {
+	user, err = b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), account)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errUserNotFound
+		}
+		return nil, err
+	}
+
+	u := user.(UserPasser)
+	if u.GetLocked() {
+		return nil, errUserLocked
+	}
+
+	if !u.IsPasswordCorrect(password) {
+		if b.maxRetryCount > 0 {
+			if err = u.IncreaseRetryCount(b.db, b.newUserObject()); err != nil {
+				return nil, err
+			}
+			if u.GetLoginRetryCount() >= b.maxRetryCount {
+				if err = u.LockUser(b.db, b.newUserObject()); err != nil {
+					return nil, err
+				}
+				return nil, errUserLocked
+			}
+		}
+
+		return nil, errWrongPassword
+	}
+
+	if u.GetLoginRetryCount() != 0 {
+		if err = u.UnlockUser(b.db, b.newUserObject()); err != nil {
+			return nil, err
+		}
+	}
+	return user, nil
+}
+
+// completeUserAuthCallback is for url "/auth/{provider}/callback"
+func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Request) {
+	if err := b.completeUserAuthWithSetCookie(w, r); err != nil {
+		http.Redirect(w, r, b.loginURL, http.StatusFound)
 		return
 	}
 	redirectURL := b.homeURL
@@ -147,38 +269,20 @@ func (b *Builder) CompleteUserAuthCallback(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
-func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) loginFailCode {
-	user, err := gothic.CompleteUserAuth(w, r)
-	if err != nil {
-		log.Println("completeUserAuthWithSetCookie", err)
-		return completeUserAuthFailed
-	}
+func (b *Builder) genBaseSessionClaim(id string) jwt.RegisteredClaims {
+	return genBaseClaims(id, b.sessionMaxAge)
+}
 
-	claims := UserClaims{
-		Provider:  user.Provider,
-		Email:     user.Email,
-		Name:      user.Name,
-		UserID:    user.UserID,
-		AvatarURL: user.AvatarURL,
-		RegisteredClaims: jwt.RegisteredClaims{
-			// Make the jwt 24 hour, don't care about the user.ExpireAt because it is the use refresh token to fetch
-			// access token expire time
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			Subject:   user.Email,
-			ID:        user.UserID,
-		},
-	}
-	ss, err := b.SignClaims(&claims)
+func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *UserClaims, secureSalt string) error {
+	ss, err := signClaims(claims, b.secret)
 	if err != nil {
-		return systemError
+		return err
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     b.authParamName,
+		Name:     b.authCookieName,
 		Value:    ss,
 		Path:     "/",
 		MaxAge:   b.sessionMaxAge,
@@ -186,23 +290,27 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		HttpOnly: true,
 	})
 
-	return 0
-}
-
-func (b *Builder) SignClaims(claims *UserClaims) (signed string, err error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err = token.SignedString([]byte(b.secret))
-	return
-}
-
-// Logout is for url "/logout/{provider}"
-func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
-	err := gothic.Logout(w, r)
-	if err != nil {
-		//
+	if secureSalt != "" {
+		ss, err = signClaims(&claims.RegisteredClaims, b.secret+secureSalt)
+		if err != nil {
+			return err
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     b.authSecureCookieName,
+			Value:    ss,
+			Path:     "/",
+			MaxAge:   b.sessionMaxAge,
+			Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
+			HttpOnly: true,
+		})
 	}
+
+	return nil
+}
+
+func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     b.authParamName,
+		Name:     b.authCookieName,
 		Value:    "",
 		Path:     "/",
 		Domain:   "",
@@ -210,220 +318,306 @@ func (b *Builder) Logout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
 	})
-
-	w.Header().Set("Location", b.loginURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	http.SetCookie(w, &http.Cookie{
+		Name:     b.authSecureCookieName,
+		Value:    "",
+		Path:     "/",
+		Domain:   "",
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		HttpOnly: true,
+	})
 }
 
-// BeginAuth is for url "/auth/{provider}"
-func (b *Builder) BeginAuth(w http.ResponseWriter, r *http.Request) {
-	// try to get the user without re-authenticating
-	if b.completeUserAuthWithSetCookie(w, r) == 0 {
-		http.Redirect(w, r, b.homeURL, http.StatusTemporaryRedirect)
-		return
+func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
+	var err error
+	var claims UserClaims
+	var user interface{}
+	if r.FormValue("login_type") == "1" {
+		account := r.FormValue("account")
+		password := r.FormValue("password")
+		user, err = b.authUserPass(account, password)
+		if err != nil {
+			code := FailCodeSystemError
+			switch err {
+			case errWrongPassword, errUserNotFound:
+				code = FailCodeIncorrectAccountNameOrPassword
+			case errUserLocked:
+				code = FailCodeUserLocked
+			}
+
+			setFailCodeFlash(w, code)
+
+			if code == FailCodeIncorrectAccountNameOrPassword {
+				setWrongLoginInputFlash(w, WrongLoginInputFlash{
+					Ia: account,
+					Ip: password,
+				})
+			}
+
+			return err
+		}
+
+		userID := objectID(user)
+		claims = UserClaims{
+			UserID:           userID,
+			PassUpdatedAt:    user.(UserPasser).GetPasswordUpdatedAt(),
+			RegisteredClaims: b.genBaseSessionClaim(userID),
+		}
+	} else {
+		ouser, err := gothic.CompleteUserAuth(w, r)
+		if err != nil {
+			log.Println("completeUserAuthWithSetCookie", err)
+			setFailCodeFlash(w, FailCodeCompleteUserAuthFailed)
+			return err
+		}
+		userID := ouser.UserID
+		if b.userModel != nil {
+			user, err = b.userModel.(OAuthUser).FindUserByOAuthUserID(b.db, b.newUserObject(), ouser.Provider, ouser.UserID)
+			if err != nil {
+				if err != gorm.ErrRecordNotFound {
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
+				}
+				// TODO: maybe the indentifier of some providers is not email
+				indentifier := ouser.Email
+				user, err = b.userModel.(OAuthUser).FindUserByOAuthIndentifier(b.db, b.newUserObject(), ouser.Provider, indentifier)
+				if err != nil {
+					if err == gorm.ErrRecordNotFound {
+						setFailCodeFlash(w, FailCodeUserNotFound)
+					} else {
+						setFailCodeFlash(w, FailCodeSystemError)
+					}
+					return err
+				}
+				err = user.(OAuthUser).InitOAuthUserID(b.db, b.newUserObject(), ouser.Provider, indentifier, ouser.UserID)
+				if err != nil {
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
+				}
+			}
+			userID = objectID(user)
+		}
+
+		claims = UserClaims{
+			Provider:         ouser.Provider,
+			Email:            ouser.Email,
+			Name:             ouser.Name,
+			UserID:           userID,
+			AvatarURL:        ouser.AvatarURL,
+			RegisteredClaims: b.genBaseSessionClaim(userID),
+		}
 	}
+
+	var secureSalt string
+	if b.sessionSecureEnabled {
+		if user.(SessionSecurer).GetSecure() == "" {
+			err = user.(SessionSecurer).UpdateSecure(b.db, b.newUserObject(), objectID(user))
+			if err != nil {
+				setFailCodeFlash(w, FailCodeSystemError)
+				return err
+			}
+		}
+		secureSalt = user.(SessionSecurer).GetSecure()
+	}
+	if err := b.setAuthCookiesFromUserClaims(w, &claims, secureSalt); err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		return err
+	}
+
+	return nil
+}
+
+// logout is for url "/logout/{provider}"
+func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
+	err := gothic.Logout(w, r)
+	if err != nil {
+		//
+	}
+
+	b.cleanAuthCookies(w)
+	http.Redirect(w, r, b.loginURL, http.StatusFound)
+}
+
+// beginAuth is for url "/auth/{provider}"
+func (b *Builder) beginAuth(w http.ResponseWriter, r *http.Request) {
 	gothic.BeginAuthHandler(w, r)
 }
 
-type CookieExtractor string
+func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
-func (e CookieExtractor) ExtractToken(req *http.Request) (string, error) {
-	ck, err := req.Cookie(string(e))
+	failRedirectURL := "/auth/forget-password"
+
+	account := strings.TrimSpace(r.FormValue("account"))
+	if account == "" {
+		setFailCodeFlash(w, FailCodeAccountIsRequired)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	u, err := b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), account)
 	if err != nil {
-		return "", request.ErrNoTokenInRequest
+		if err == gorm.ErrRecordNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
 
-	if len(ck.Value) == 0 {
-		return "", request.ErrNoTokenInRequest
+	token, err := u.(UserPasser).GenerateResetPasswordToken(b.db, b.newUserObject())
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
 
-	return ck.Value, nil
-}
-
-type AuthorizationHeaderExtractor struct{}
-
-func (e AuthorizationHeaderExtractor) ExtractToken(req *http.Request) (string, error) {
-	if ah := req.Header.Get("Authorization"); ah != "" {
-		// remove bearer
-		segs := strings.Split(ah, " ")
-		return segs[len(segs)-1], nil
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
 	}
-	return "", request.ErrNoTokenInRequest
+	link := fmt.Sprintf("%s://%s/auth/reset-password?id=%s&token=%s", scheme, r.Host, objectID(u), token)
+	if err = b.notifyUserOfResetPasswordLinkFunc(u, link); err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/auth/reset-password-link-sent?a=%s", account), http.StatusFound)
+	return
 }
 
-func (b *Builder) keyFunc(t *jwt.Token) (interface{}, error) {
-	return []byte(b.secret), nil
-}
+func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
-func (b *Builder) Authenticate(in http.HandlerFunc) (r http.HandlerFunc) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/auth/") && !strings.HasPrefix(r.URL.Path, "/auth/login") {
-			in(w, r)
+	userID := r.FormValue("user_id")
+	token := r.FormValue("token")
+	failRedirectURL := fmt.Sprintf("/auth/reset-password?id=%s&token=%s", userID, token)
+	if userID == "" {
+		setFailCodeFlash(w, FailCodeUserNotFound)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if token == "" {
+		setFailCodeFlash(w, FailCodeInvalidToken)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirm_password")
+	if password == "" {
+		setFailCodeFlash(w, FailCodePasswordCannotBeEmpty)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if confirmPassword != password {
+		setFailCodeFlash(w, FailCodePasswordNotMatch)
+		setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+			Password:        password,
+			ConfirmPassword: confirmPassword,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if b.passwordValidationFunc != nil {
+		msg, ok := b.passwordValidationFunc(password)
+		if !ok {
+			setCustomErrorMessageFlash(w, msg)
+			setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+				Password:        password,
+				ConfirmPassword: confirmPassword,
+			})
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
 			return
 		}
-
-		if len(b.secret) == 0 {
-			panic("secret is empty")
-		}
-		extractor := request.MultiExtractor(b.extractors)
-		if len(b.extractors) == 0 {
-			extractor = request.MultiExtractor{
-				CookieExtractor(b.authParamName),
-				AuthorizationHeaderExtractor{},
-				request.ArgumentExtractor{b.authParamName},
-				request.HeaderExtractor{b.authParamName},
-			}
-		}
-		var claims UserClaims
-		_, err := request.ParseFromRequest(r, extractor, b.keyFunc, request.WithClaims(&claims))
-
-		if strings.HasPrefix(r.URL.Path, "/auth/login") {
-			if err != nil || claims.Email == "" {
-				in(w, r)
-				return
-			}
-			if err == nil && claims.Email != "" {
-				http.Redirect(w, r, "/admin", http.StatusTemporaryRedirect)
-				return
-			}
-		}
-
-		if err != nil {
-			log.Println(err)
-			if b.homeURL != r.RequestURI {
-				continueURL := r.RequestURI
-				if strings.Contains(r.RequestURI, "?__execute_event__=") {
-					continueURL = r.Referer()
-				}
-				http.SetCookie(w, &http.Cookie{
-					Name:     b.continueUrlCookieName,
-					Value:    continueURL,
-					Path:     "/",
-					HttpOnly: true,
-				})
-			}
-			http.Redirect(w, r, b.loginURL, http.StatusTemporaryRedirect)
-			return
-		}
-
-		newReq, err := b.fetchUserFunc(&claims, r)
-		if err != nil {
-			log.Println(err)
-			code := systemError
-			if err == ErrUserNotFound {
-				code = userNotFound
-			}
-			http.Redirect(w, r, b.urlWithLoginFailCode(b.loginURL, code), http.StatusTemporaryRedirect)
-			return
-		}
-
-		// extend the cookie if successfully authenticated
-		if b.autoExtendSession {
-			c, err := r.Cookie(b.authParamName)
-			if err == nil {
-				http.SetCookie(w, &http.Cookie{
-					Name:     b.authParamName,
-					Value:    c.Value,
-					Path:     "/",
-					MaxAge:   b.sessionMaxAge,
-					Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
-					HttpOnly: true,
-				})
-			}
-		}
-
-		in.ServeHTTP(w, newReq)
 	}
-}
 
-type loginFailCode int
-
-const (
-	systemError loginFailCode = iota + 1
-	completeUserAuthFailed
-	userNotFound
-)
-
-var loginFailTexts = map[loginFailCode]string{
-	systemError:            "System Error",
-	completeUserAuthFailed: "Complete User Auth Failed",
-	userNotFound:           "User Not Found",
-}
-
-var loginFailCodeQuery = "login_fc"
-
-func (b *Builder) urlWithLoginFailCode(u string, code loginFailCode) string {
-	pu, err := url.Parse(u)
+	u, err := b.findUserByID(userID)
 	if err != nil {
-		return u
+		if err == errUserNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
-	q := pu.Query()
-	q.Add(loginFailCodeQuery, fmt.Sprint(code))
-	pu.RawQuery = q.Encode()
-	return pu.String()
-}
 
-func (b *Builder) getLoginFailText(r *http.Request) string {
-	sCode := r.URL.Query().Get(loginFailCodeQuery)
-	if sCode == "" {
-		return ""
+	storedToken, expired := u.(UserPasser).GetResetPasswordToken()
+	if expired {
+		setFailCodeFlash(w, FailCodeTokenExpired)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
-	code, err := strconv.Atoi(sCode)
+	if token != storedToken {
+		setFailCodeFlash(w, FailCodeInvalidToken)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	err = u.(UserPasser).ConsumeResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
-		return ""
-	}
-	if code == 0 {
-		return ""
-	}
-	text := loginFailTexts[loginFailCode(code)]
-	if text == "" {
-		text = loginFailTexts[systemError]
-	}
-	return text
-}
-
-func (b *Builder) defaultLoginPage(ctx *web.EventContext) (r web.PageResponse, err error) {
-
-	ul := Div().Class("flex flex-col justify-center mt-8")
-	for _, provider := range b.providers {
-		ul.AppendChildren(
-			A().
-				Href("/auth/begin?provider="+provider.Key).
-				Class("px-6 py-3 mt-4 font-semibold text-gray-900 bg-white border-2 border-gray-500 rounded-md shadow outline-none hover:bg-yellow-50 hover:border-yellow-400 focus:outline-none").
-				Children(
-					provider.Logo,
-					Text(provider.Text),
-				),
-		)
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
 
-	loginFailText := b.getLoginFailText(ctx.R)
-	var body HTMLComponent = Div(
-		Style(StyleCSS),
-		If(loginFailText != "",
-			Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
-				Role("alert").
-				Children(
-					Span(loginFailText).Class("block sm:inline"),
-				),
-		),
-		Div(
-			Div(
-				ul,
-			).Class("max-w-xs sm:max-w-xl"),
-		).Class("flex mt-4 justify-center h-screen"),
-	)
-	if b.loginPageContentFunc != nil {
-		body = b.loginPageContentFunc(ctx, b.providers, body)
+	err = u.(UserPasser).SetPassword(b.db, b.newUserObject(), password)
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
 	}
-	r.Body = body
+
+	setNoticeCodeFlash(w, NoticeCodePasswordSuccessfullyReset)
+	http.Redirect(w, r, "/auth/login", http.StatusFound)
 	return
 }
 
 func (b *Builder) Mount(mux *http.ServeMux) {
+	if len(b.secret) == 0 {
+		panic("secret is empty")
+	}
+	if b.userModel != nil {
+		if b.db == nil {
+			panic("db is required")
+		}
+	}
 
-	mux.HandleFunc("/auth/logout", b.Logout)
-	mux.HandleFunc("/auth/begin", b.BeginAuth)
-	mux.HandleFunc("/auth/callback", b.CompleteUserAuthCallback)
-	mux.Handle("/auth/login", web.New().Page(b.defaultLoginPage))
+	wb := web.New()
+
+	mux.HandleFunc("/auth/logout", b.logout)
+	mux.Handle(b.loginURL, wb.Page(b.loginPageFunc))
+
+	if b.userPassEnabled {
+		mux.HandleFunc("/auth/userpass/login", b.completeUserAuthCallback)
+		mux.HandleFunc("/auth/do-reset-password", b.doResetPassword)
+		mux.Handle("/auth/reset-password", wb.Page(b.resetPasswordPageFunc))
+		if !b.noForgetPasswordLink {
+			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
+			mux.Handle("/auth/forget-password", wb.Page(b.forgetPasswordPageFunc))
+			mux.Handle("/auth/reset-password-link-sent", wb.Page(b.resetPasswordLinkSentPageFunc))
+		}
+	}
+	if b.oauthEnabled {
+		mux.HandleFunc("/auth/begin", b.beginAuth)
+		mux.HandleFunc("/auth/callback", b.completeUserAuthCallback)
+	}
 }
