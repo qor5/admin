@@ -47,7 +47,7 @@ func Router() http.Handler {
 	cr := chi.NewRouter()
 	cr.Use(login.Authenticate(c.lb))
 	cr.Use(withRoles(db))
-	cr.Use(fillNoteContext())
+	cr.Use(withNoteContext())
 	cr.Mount("/", mux)
 	return cr
 }
