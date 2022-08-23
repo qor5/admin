@@ -27,9 +27,6 @@ var noticeCodeTexts = map[NoticeCode]string{
 
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		// TODO: remove me
-		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
-
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
 		ncFlash := GetNoticeCodeFlash(ctx.W, ctx.R)
@@ -115,9 +112,6 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 
 func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		// TODO: remove me
-		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
-
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
 		inputFlash := GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
@@ -151,9 +145,6 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 
 func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		// TODO: remove me
-		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
-
 		a := ctx.R.URL.Query().Get("a")
 
 		r.PageTitle = "Forget Your Password?"
@@ -170,9 +161,6 @@ func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 
 func defaultResetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		// TODO: remove me
-		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
-
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		errMsg := failCodeTexts[fcFlash]
 		if errMsg == "" {
