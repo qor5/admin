@@ -73,7 +73,6 @@ func New() *Builder {
 		homeURL:               "/",
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
-		maxRetryCount:         1000,
 	}
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
@@ -155,6 +154,8 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	return b
 }
 
+// MaxRetryCount <= 0 means no max retry count limit
+// default 0
 func (b *Builder) MaxRetryCount(v int) (r *Builder) {
 	b.maxRetryCount = v
 	return b
@@ -219,15 +220,16 @@ func (b *Builder) authUserPass(account string, password string) (user interface{
 	}
 
 	if !u.IsPasswordCorrect(password) {
-		if err = u.IncreaseRetryCount(b.db, b.newUserObject()); err != nil {
-			return nil, err
-		}
-
-		if u.GetLoginRetryCount() >= b.maxRetryCount {
-			if err = u.LockUser(b.db, b.newUserObject()); err != nil {
+		if b.maxRetryCount > 0 {
+			if err = u.IncreaseRetryCount(b.db, b.newUserObject()); err != nil {
 				return nil, err
 			}
-			return nil, errUserLocked
+			if u.GetLoginRetryCount() >= b.maxRetryCount {
+				if err = u.LockUser(b.db, b.newUserObject()); err != nil {
+					return nil, err
+				}
+				return nil, errUserLocked
+			}
 		}
 
 		return nil, errWrongPassword
