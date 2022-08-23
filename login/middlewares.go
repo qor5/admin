@@ -96,7 +96,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					}
 				}
 			} else {
-				user = &claims
+				user = claims
 			}
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
