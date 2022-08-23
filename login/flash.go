@@ -14,8 +14,13 @@ const (
 	FailCodeSystemError FailCode = iota + 1
 	FailCodeCompleteUserAuthFailed
 	FailCodeUserNotFound
-	FailCodeIncorrectUsernameOrPassword
+	FailCodeIncorrectAccountNameOrPassword
 	FailCodeUserLocked
+	FailCodeAccountIsRequired
+	FailCodePasswordCannotBeEmpty
+	FailCodePasswordNotMatch
+	FailCodeInvalidToken
+	FailCodeTokenExpired
 )
 
 const failCodeFlashCookieName = "qor5_login_fc_flash"
@@ -45,7 +50,7 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 const wrongLoginInputFlashCookieName = "qor5_login_wi_flash"
 
 type WrongLoginInputFlash struct {
-	Iu string // incorrect username
+	Ia string // incorrect account name
 	Ip string // incorrect password
 }
 
@@ -72,4 +77,67 @@ func GetWrongLoginInputFlash(w http.ResponseWriter, r *http.Request) WrongLoginI
 	wi := WrongLoginInputFlash{}
 	json.Unmarshal([]byte(v), &wi)
 	return wi
+}
+
+const wrongForgetPasswordInputFlashCookieName = "qor5_login_fpi_flash"
+
+type WrongForgetPasswordInputFlash struct {
+	Account string
+}
+
+func setWrongForgetPasswordInputFlash(w http.ResponseWriter, f WrongForgetPasswordInputFlash) {
+	bf, _ := json.Marshal(&f)
+	http.SetCookie(w, &http.Cookie{
+		Name:  wrongForgetPasswordInputFlashCookieName,
+		Value: base64.StdEncoding.EncodeToString(bf),
+		Path:  "/",
+	})
+}
+
+func GetWrongForgetPasswordInputFlash(w http.ResponseWriter, r *http.Request) WrongForgetPasswordInputFlash {
+	c, err := r.Cookie(wrongForgetPasswordInputFlashCookieName)
+	if err != nil {
+		return WrongForgetPasswordInputFlash{}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   wrongForgetPasswordInputFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := base64.StdEncoding.DecodeString(c.Value)
+	f := WrongForgetPasswordInputFlash{}
+	json.Unmarshal([]byte(v), &f)
+	return f
+}
+
+const wrongResetPasswordInputFlashCookieName = "qor5_login_rpi_flash"
+
+type WrongResetPasswordInputFlash struct {
+	Password        string
+	ConfirmPassword string
+}
+
+func setWrongResetPasswordInputFlash(w http.ResponseWriter, f WrongResetPasswordInputFlash) {
+	bf, _ := json.Marshal(&f)
+	http.SetCookie(w, &http.Cookie{
+		Name:  wrongLoginInputFlashCookieName,
+		Value: base64.StdEncoding.EncodeToString(bf),
+		Path:  "/",
+	})
+}
+
+func GetWrongResetPasswordInputFlash(w http.ResponseWriter, r *http.Request) WrongResetPasswordInputFlash {
+	c, err := r.Cookie(wrongResetPasswordInputFlashCookieName)
+	if err != nil {
+		return WrongResetPasswordInputFlash{}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   wrongResetPasswordInputFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := base64.StdEncoding.DecodeString(c.Value)
+	f := WrongResetPasswordInputFlash{}
+	json.Unmarshal([]byte(v), &f)
+	return f
 }

@@ -1,24 +1,34 @@
 package login
 
 import (
-	"github.com/goplaid/web"
+	"fmt"
 
+	"github.com/goplaid/web"
+	"github.com/jinzhu/gorm"
 	. "github.com/theplant/htmlgo"
 )
 
-var loginFailTexts = map[FailCode]string{
-	FailCodeSystemError:                 "System Error",
-	FailCodeCompleteUserAuthFailed:      "Complete User Auth Failed",
-	FailCodeUserNotFound:                "User Not Found",
-	FailCodeIncorrectUsernameOrPassword: "Incorrect username or password",
-	FailCodeUserLocked:                  "User Locked",
+var failCodeTexts = map[FailCode]string{
+	FailCodeSystemError:                    "System Error",
+	FailCodeCompleteUserAuthFailed:         "Complete User Auth Failed",
+	FailCodeUserNotFound:                   "User Not Found",
+	FailCodeIncorrectAccountNameOrPassword: "Incorrect email or password",
+	FailCodeUserLocked:                     "User Locked",
+	FailCodeAccountIsRequired:              "Email is required",
+	FailCodePasswordCannotBeEmpty:          "Password cannot be empty",
+	FailCodePasswordNotMatch:               "Password do not match",
+	FailCodeInvalidToken:                   "Invalid token",
+	FailCodeTokenExpired:                   "Token expired",
 }
 
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// TODO: remove me
+		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcText := failCodeTexts[fcFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
-		loginFailText := loginFailTexts[fcFlash]
 
 		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
 
@@ -49,9 +59,9 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 				Form(
 					Input("login_type").Type("hidden").Value("1"),
 					Div(
-						Label("Username").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("username"),
-						Input("username").Placeholder("Username").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
-							Value(wlFlash.Iu),
+						Label("Email").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
+						Input("account").Placeholder("Email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+							Value(wlFlash.Ia),
 					),
 					Div(
 						Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
@@ -62,23 +72,160 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 						Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/userpass/login"),
+				If(!b.noForgetPasswordLink,
+					Div(
+						A(Text("Forget your password?")).Href("/auth/forget-password").
+							Class("text-gray-500"),
+					).Class("text-right mt-2"),
+				),
 			)
 		}
 
 		r.PageTitle = "Sign In"
 		r.Body = Div(
 			Style(StyleCSS),
-			If(loginFailText != "",
+			If(fcText != "",
 				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
 					Role("alert").
 					Children(
-						Span(loginFailText).Class("block sm:inline"),
+						Span(fcText).Class("block sm:inline"),
 					),
 			),
 			Div(
 				userPassHTML,
 				oauthHTML,
 			).Class(wrapperClass),
+		)
+		return
+	}
+}
+
+func defaultForgetPasswordPage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// TODO: remove me
+		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
+
+		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcText := failCodeTexts[fcFlash]
+		inputFlash := GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
+
+		r.PageTitle = "Forget Your Password?"
+		r.Body = Div(
+			Style(StyleCSS),
+			If(fcText != "",
+				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
+					Role("alert").
+					Children(
+						Span(fcText).Class("block sm:inline"),
+					),
+			),
+			Div(
+				H1("I forgot my password").Class("leading-tight text-3xl mt-0 mb-6"),
+				Form(
+					Div(
+						Label("Enter your email").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
+						Input("account").Placeholder("email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(inputFlash.Account),
+					),
+					Div(
+						Button("Send reset password link").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+					).Class("mt-6"),
+				).Method("post").Action("/auth/send-reset-password-link"),
+			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
+		)
+		return
+	}
+}
+
+func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// TODO: remove me
+		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
+
+		a := ctx.R.URL.Query().Get("a")
+
+		r.PageTitle = "Forget Your Password?"
+		r.Body = Div(
+			Style(StyleCSS),
+			Div(
+				H1(fmt.Sprintf("A reset password link was sent to %s.", a)).Class("leading-tight text-2xl mt-0 mb-4"),
+				H2("You can close this page and reset your password from this link.").Class("leading-tight text-1xl mt-0"),
+			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
+		)
+		return
+	}
+}
+
+func defaultResetPasswordPage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// TODO: remove me
+		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
+
+		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcText := failCodeTexts[fcFlash]
+
+		var user interface{}
+
+		r.PageTitle = "Reset Password"
+
+		query := ctx.R.URL.Query()
+		id := query.Get("id")
+		if id == "" {
+			r.Body = Div(Text("user not found"))
+			return r, nil
+		} else {
+			user, err = b.findUserByID(id)
+			if err != nil {
+				if err == gorm.ErrRecordNotFound {
+					r.Body = Div(Text("user not found"))
+					return r, nil
+				}
+				r.Body = Div(Text("system error"))
+				return r, nil
+			}
+		}
+		token := query.Get("token")
+		if token == "" {
+			r.Body = Div(Text("invalid token"))
+			return r, nil
+		} else {
+			storedToken, expired := user.(UserPasser).GetResetPasswordToken()
+			if expired {
+				r.Body = Div(Text("token expired"))
+				return r, nil
+			}
+			if token != storedToken {
+				r.Body = Div(Text("invalid token"))
+				return r, nil
+			}
+		}
+
+		r.Body = Div(
+			Style(StyleCSS),
+			If(fcText != "",
+				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
+					Role("alert").
+					Children(
+						Span(fcText).Class("block sm:inline"),
+					),
+			),
+			Div(
+				H1("Reset your password").Class("leading-tight text-3xl mt-0 mb-6"),
+				Form(
+					Input("user_id").Type("hidden").Value(id),
+					Input("token").Type("hidden").Value(token),
+					Div(
+						Label("Change password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					),
+					Div(
+						Label("Re-enter new password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
+						Input("confirm_password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					).Class("mt-6"),
+					Div(
+						Button("Submit").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+					).Class("mt-6"),
+				).Method("post").Action("/auth/do-reset-password"),
+			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
 		)
 		return
 	}

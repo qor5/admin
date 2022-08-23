@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -23,6 +24,8 @@ var (
 	errUserLocked      = errors.New("user locked")
 )
 
+type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
+
 type Provider struct {
 	Goth goth.Provider
 	Key  string
@@ -37,12 +40,20 @@ type Builder struct {
 	authSecureCookieName  string
 	continueUrlCookieName string
 	// seconds
-	sessionMaxAge     int
-	autoExtendSession bool
-	maxRetryCount     int
-	loginURL          string
-	homeURL           string
-	loginPageFunc     web.PageFunc
+	sessionMaxAge        int
+	autoExtendSession    bool
+	maxRetryCount        int
+	noForgetPasswordLink bool
+
+	loginURL string
+	homeURL  string
+
+	loginPageFunc                 web.PageFunc
+	forgetPasswordPageFunc        web.PageFunc
+	resetPasswordLinkSentPageFunc web.PageFunc
+	resetPasswordPageFunc         web.PageFunc
+
+	notifyUserOfResetPasswordLinkFunc NotifyUserOfResetPasswordLinkFunc
 
 	db                   *gorm.DB
 	userModel            interface{}
@@ -65,6 +76,9 @@ func New() *Builder {
 		maxRetryCount:         1000,
 	}
 	r.loginPageFunc = defaultLoginPage(r)
+	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
+	r.resetPasswordLinkSentPageFunc = defaultResetPasswordLinkSentPage(r)
+	r.resetPasswordPageFunc = defaultResetPasswordPage(r)
 	return r
 }
 
@@ -107,6 +121,26 @@ func (b *Builder) LoginPageFunc(v web.PageFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) ForgetPasswordPageFunc(v web.PageFunc) (r *Builder) {
+	b.forgetPasswordPageFunc = v
+	return b
+}
+
+func (b *Builder) ResetPasswordLinkSentPageFunc(v web.PageFunc) (r *Builder) {
+	b.resetPasswordLinkSentPageFunc = v
+	return b
+}
+
+func (b *Builder) ResetPasswordPage(v web.PageFunc) (r *Builder) {
+	b.resetPasswordPageFunc = v
+	return b
+}
+
+func (b *Builder) NotifyUserToResetPasswordFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
+	b.notifyUserOfResetPasswordLinkFunc = v
+	return b
+}
+
 // seconds
 // default 1h
 func (b *Builder) SessionMaxAge(v int) (r *Builder) {
@@ -123,6 +157,11 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 
 func (b *Builder) MaxRetryCount(v int) (r *Builder) {
 	b.maxRetryCount = v
+	return b
+}
+
+func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
+	b.noForgetPasswordLink = v
 	return b
 }
 
@@ -165,8 +204,8 @@ func (b *Builder) findUserByID(id string) (user interface{}, err error) {
 	return m, nil
 }
 
-func (b *Builder) authUserPass(username string, password string) (user interface{}, err error) {
-	user, err = b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), username)
+func (b *Builder) authUserPass(account string, password string) (user interface{}, err error) {
+	user, err = b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), account)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, errUserNotFound
@@ -286,23 +325,23 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 	var claims UserClaims
 	var user interface{}
 	if r.FormValue("login_type") == "1" {
-		username := r.FormValue("username")
+		account := r.FormValue("account")
 		password := r.FormValue("password")
-		user, err = b.authUserPass(username, password)
+		user, err = b.authUserPass(account, password)
 		if err != nil {
 			code := FailCodeSystemError
 			switch err {
 			case errWrongPassword, errUserNotFound:
-				code = FailCodeIncorrectUsernameOrPassword
+				code = FailCodeIncorrectAccountNameOrPassword
 			case errUserLocked:
 				code = FailCodeUserLocked
 			}
 
 			setFailCodeFlash(w, code)
 
-			if code == FailCodeIncorrectUsernameOrPassword {
+			if code == FailCodeIncorrectAccountNameOrPassword {
 				setWrongLoginInputFlash(w, WrongLoginInputFlash{
-					Iu: username,
+					Ia: account,
 					Ip: password,
 				})
 			}
@@ -396,6 +435,140 @@ func (b *Builder) beginAuth(w http.ResponseWriter, r *http.Request) {
 	gothic.BeginAuthHandler(w, r)
 }
 
+func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	failRedirectURL := "/auth/forget-password"
+
+	account := strings.TrimSpace(r.FormValue("account"))
+	if account == "" {
+		setFailCodeFlash(w, FailCodeAccountIsRequired)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	u, err := b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), account)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	token, err := u.(UserPasser).GenerateResetPasswordToken(b.db, b.newUserObject())
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
+	link := fmt.Sprintf("%s://%s/auth/reset-password?id=%s&token=%s", scheme, r.Host, objectID(u), token)
+	if err = b.notifyUserOfResetPasswordLinkFunc(u, link); err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			Account: account,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/auth/reset-password-link-sent?a=%s", account), http.StatusFound)
+	return
+}
+
+func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	userID := r.FormValue("user_id")
+	token := r.FormValue("token")
+	failRedirectURL := fmt.Sprintf("/auth/reset-password?id=%s&token=%s", userID, token)
+	if userID == "" {
+		setFailCodeFlash(w, FailCodeUserNotFound)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if token == "" {
+		setFailCodeFlash(w, FailCodeInvalidToken)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirm_password")
+	if password == "" {
+		setFailCodeFlash(w, FailCodePasswordCannotBeEmpty)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if confirmPassword != password {
+		setFailCodeFlash(w, FailCodePasswordNotMatch)
+		setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+			Password:        password,
+			ConfirmPassword: confirmPassword,
+		})
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	u, err := b.findUserByID(userID)
+	if err != nil {
+		if err == errUserNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	storedToken, expired := u.(UserPasser).GetResetPasswordToken()
+	if expired {
+		setFailCodeFlash(w, FailCodeTokenExpired)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+	if token != storedToken {
+		setFailCodeFlash(w, FailCodeInvalidToken)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	err = u.(UserPasser).ConsumeResetPasswordToken(b.db, b.newUserObject())
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	err = u.(UserPasser).SetPassword(b.db, b.newUserObject(), password)
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, failRedirectURL, http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, "/auth/login", http.StatusFound)
+	return
+}
+
 func (b *Builder) Mount(mux *http.ServeMux) {
 	if len(b.secret) == 0 {
 		panic("secret is empty")
@@ -406,9 +579,23 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 		}
 	}
 
+	wb := web.New()
+
 	mux.HandleFunc("/auth/logout", b.logout)
-	mux.HandleFunc("/auth/begin", b.beginAuth)
-	mux.HandleFunc("/auth/callback", b.completeUserAuthCallback)
-	mux.HandleFunc("/auth/userpass/login", b.completeUserAuthCallback)
-	mux.Handle(b.loginURL, web.New().Page(b.loginPageFunc))
+	mux.Handle(b.loginURL, wb.Page(b.loginPageFunc))
+
+	if b.userPassEnabled {
+		mux.HandleFunc("/auth/userpass/login", b.completeUserAuthCallback)
+		mux.HandleFunc("/auth/do-reset-password", b.doResetPassword)
+		mux.Handle("/auth/reset-password", wb.Page(b.resetPasswordPageFunc))
+		if !b.noForgetPasswordLink {
+			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
+			mux.Handle("/auth/forget-password", wb.Page(b.forgetPasswordPageFunc))
+			mux.Handle("/auth/reset-password-link-sent", wb.Page(b.resetPasswordLinkSentPageFunc))
+		}
+	}
+	if b.oauthEnabled {
+		mux.HandleFunc("/auth/begin", b.beginAuth)
+		mux.HandleFunc("/auth/callback", b.completeUserAuthCallback)
+	}
 }

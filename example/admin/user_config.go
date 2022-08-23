@@ -27,7 +27,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Actions",
 		"Name",
 		"OAuthProvider",
-		"Username",
+		"Account",
 		"Password",
 		"Company",
 		"Roles",
@@ -36,8 +36,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
-		if u.Username == "" {
-			err.FieldError("Username", "Email is required")
+		if u.Account == "" {
+			err.FieldError("Account", "Email is required")
 		}
 		return
 	})
@@ -55,9 +55,31 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return r, nil
 	})
 
+	user.RegisterEventFunc("eventSendResetPasswordEmail", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		uid := ctx.R.FormValue("id")
+		u := models.User{}
+		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
+			return r, err
+		}
+		token, err := u.GenerateResetPasswordToken(db, &models.User{})
+		if err != nil {
+			return r, err
+		}
+		r.VarsScript = fmt.Sprintf(`alert("http://localhost:9500/auth/reset-password?id=%s&token=%s")`, uid, token)
+		return r, nil
+	})
+
 	ed.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
+
+		actionBtns = append(actionBtns,
+			VBtn("Send Reset Password Email").
+				Color("primary").
+				Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
+					Query("id", u.ID).Go()),
+		)
+
 		if u.GetLocked() {
 			actionBtns = append(actionBtns,
 				VBtn("Unlock").Color("primary").
@@ -75,7 +97,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		).Class("mb-5 text-right")
 	})
 
-	ed.Field("Username").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VTextField().
 			FieldName(field.Name).
 			Label(field.Label).
@@ -84,7 +106,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
-		u.Username = email
+		u.Account = email
 		u.OAuthIndentifier = email
 		return nil
 	})
@@ -172,8 +194,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	cl := user.Listing("ID", "Name", "Username", "Status", "Notes").PerPage(10)
-	cl.Field("Username").Label("Email")
+	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
+	cl.Field("Account").Label("Email")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
 		return []*v.FilterItem{
