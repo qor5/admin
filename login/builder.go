@@ -137,7 +137,7 @@ func (b *Builder) ResetPasswordPageFunc(v web.PageFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) NotifyUserToResetPasswordFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
+func (b *Builder) NotifyUserOfResetPasswordLinkFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
 	b.notifyUserOfResetPasswordLinkFunc = v
 	return b
 }

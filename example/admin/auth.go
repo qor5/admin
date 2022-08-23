@@ -43,7 +43,7 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 		).
 		HomeURL("/admin").
 		MaxRetryCount(5).
-		NotifyUserToResetPasswordFunc(func(user interface{}, resetLink string) error {
+		NotifyUserOfResetPasswordLinkFunc(func(user interface{}, resetLink string) error {
 			fmt.Println("#########################################start")
 			fmt.Println("reset password link:", resetLink)
 			fmt.Println("#########################################end")
