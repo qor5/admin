@@ -23,7 +23,14 @@ const (
 	FailCodeTokenExpired
 )
 
+type NoticeCode int
+
+const (
+	NoticeCodePasswordSuccessfullyReset NoticeCode = iota + 1
+)
+
 const failCodeFlashCookieName = "qor5_login_fc_flash"
+const noticeCodeFlashCookieName = "qor5_login_nc_flash"
 
 func setFailCodeFlash(w http.ResponseWriter, c FailCode) {
 	http.SetCookie(w, &http.Cookie{
@@ -45,6 +52,28 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return FailCode(v)
+}
+
+func setNoticeCodeFlash(w http.ResponseWriter, c NoticeCode) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  noticeCodeFlashCookieName,
+		Value: fmt.Sprint(c),
+		Path:  "/",
+	})
+}
+
+func GetNoticeCodeFlash(w http.ResponseWriter, r *http.Request) NoticeCode {
+	c, err := r.Cookie(noticeCodeFlashCookieName)
+	if err != nil {
+		return 0
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   noticeCodeFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := strconv.Atoi(c.Value)
+	return NoticeCode(v)
 }
 
 const wrongLoginInputFlashCookieName = "qor5_login_wi_flash"

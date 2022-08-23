@@ -21,6 +21,10 @@ var failCodeTexts = map[FailCode]string{
 	FailCodeTokenExpired:                   "Token expired",
 }
 
+var noticeCodeTexts = map[NoticeCode]string{
+	NoticeCodePasswordSuccessfullyReset: "Password successfully reset",
+}
+
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// TODO: remove me
@@ -28,6 +32,8 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
+		ncFlash := GetNoticeCodeFlash(ctx.W, ctx.R)
+		ncText := noticeCodeTexts[ncFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
 
 		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
@@ -89,6 +95,13 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 					Role("alert").
 					Children(
 						Span(fcText).Class("block sm:inline"),
+					),
+			),
+			If(ncText != "",
+				Div().Class("bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-center -mb-8").
+					Role("alert").
+					Children(
+						Span(ncText).Class("block sm:inline"),
 					),
 			),
 			Div(
@@ -222,7 +235,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 						Input("confirm_password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
 					).Class("mt-6"),
 					Div(
-						Button("Submit").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/do-reset-password"),
 			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),

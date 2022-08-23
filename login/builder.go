@@ -131,7 +131,7 @@ func (b *Builder) ResetPasswordLinkSentPageFunc(v web.PageFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) ResetPasswordPage(v web.PageFunc) (r *Builder) {
+func (b *Builder) ResetPasswordPageFunc(v web.PageFunc) (r *Builder) {
 	b.resetPasswordPageFunc = v
 	return b
 }
@@ -565,6 +565,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setNoticeCodeFlash(w, NoticeCodePasswordSuccessfullyReset)
 	http.Redirect(w, r, "/auth/login", http.StatusFound)
 	return
 }
