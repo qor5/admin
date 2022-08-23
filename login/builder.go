@@ -25,6 +25,7 @@ var (
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
+type PasswordValidationFunc func(password string) (message string, ok bool)
 
 type Provider struct {
 	Goth goth.Provider
@@ -54,6 +55,7 @@ type Builder struct {
 	resetPasswordPageFunc         web.PageFunc
 
 	notifyUserOfResetPasswordLinkFunc NotifyUserOfResetPasswordLinkFunc
+	passwordValidationFunc            PasswordValidationFunc
 
 	db                   *gorm.DB
 	userModel            interface{}
@@ -137,6 +139,11 @@ func (b *Builder) ResetPasswordPageFunc(v web.PageFunc) (r *Builder) {
 
 func (b *Builder) NotifyUserToResetPasswordFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
 	b.notifyUserOfResetPasswordLinkFunc = v
+	return b
+}
+
+func (b *Builder) PasswordValidationFunc(v PasswordValidationFunc) (r *Builder) {
+	b.passwordValidationFunc = v
 	return b
 }
 
@@ -528,6 +535,18 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		})
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
+	}
+	if b.passwordValidationFunc != nil {
+		msg, ok := b.passwordValidationFunc(password)
+		if !ok {
+			setCustomErrorMessageFlash(w, msg)
+			setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+				Password:        password,
+				ConfirmPassword: confirmPassword,
+			})
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
 	}
 
 	u, err := b.findUserByID(userID)

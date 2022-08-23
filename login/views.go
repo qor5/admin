@@ -174,7 +174,11 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 		ctx.Injector.HeadHTML(`<script src="https://cdn.tailwindcss.com"></script>`)
 
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		fcText := failCodeTexts[fcFlash]
+		errMsg := failCodeTexts[fcFlash]
+		if errMsg == "" {
+			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
+		}
+		wrpiFlash := GetWrongResetPasswordInputFlash(ctx.W, ctx.R)
 
 		var user interface{}
 
@@ -214,11 +218,11 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 
 		r.Body = Div(
 			Style(StyleCSS),
-			If(fcText != "",
+			If(errMsg != "",
 				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
 					Role("alert").
 					Children(
-						Span(fcText).Class("block sm:inline"),
+						Span(errMsg).Class("block sm:inline"),
 					),
 			),
 			Div(
@@ -228,11 +232,11 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 					Input("token").Type("hidden").Value(token),
 					Div(
 						Label("Change password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
-						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.Password),
 					),
 					Div(
 						Label("Re-enter new password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
-						Input("confirm_password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+						Input("confirm_password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.ConfirmPassword),
 					).Class("mt-6"),
 					Div(
 						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),

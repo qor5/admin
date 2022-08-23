@@ -48,6 +48,12 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 			fmt.Println("reset password link:", resetLink)
 			fmt.Println("#########################################end")
 			return nil
+		}).
+		PasswordValidationFunc(func(password string) (message string, ok bool) {
+			if len(password) < 6 {
+				return "Password cannot be less than 6 characters", false
+			}
+			return "", true
 		})
 }
 
