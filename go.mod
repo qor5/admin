@@ -20,6 +20,7 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
@@ -42,6 +43,7 @@ require (
 	cloud.google.com/go v0.67.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/go-playground/form v3.1.4+incompatible // indirect

@@ -1,11 +1,17 @@
 package login
 
 import (
+	"bytes"
 	"fmt"
-	"gorm.io/gorm"
+	"image/png"
+	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/goplaid/web"
+	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 var failCodeTexts = map[FailCode]string{
@@ -19,11 +25,16 @@ var failCodeTexts = map[FailCode]string{
 	FailCodePasswordNotMatch:               "Password do not match",
 	FailCodeInvalidToken:                   "Invalid token",
 	FailCodeTokenExpired:                   "Token expired",
+	FailCodeTOTPInvalidate:                 "TOTP Invalidate",
 }
 
 var noticeCodeTexts = map[NoticeCode]string{
 	NoticeCodePasswordSuccessfullyReset: "Password successfully reset",
 }
+
+const (
+	otpKeyFormat = "otpauth://totp/%s:%s?issuer=%s&secret=%s"
+)
 
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -232,6 +243,110 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 				).Method("post").Action("/auth/do-reset-password"),
 			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
 		)
+		return
+	}
+}
+
+func defaultTOTPConfirmPage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
+		if !b.enable2FA || err != nil || claims == nil {
+			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
+			return
+		}
+
+		if claims.TOTPValidated {
+			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
+			return
+		}
+
+		r.PageTitle = "TOTP Confirm"
+		r.Body = Div(
+			Label(claims.TOTPSecretKey),
+			Img("/auth/totp/qrcode"),
+			Form(
+				Input("key").Value(claims.TOTPSecretKey).Style("display: none;").Class("hidden"),
+				Input("otp"),
+				Button("Confirm"),
+			).Method("POST").Action("/auth/totp/setup"),
+		)
+
+		return
+	}
+}
+
+func defaultTOTPValidatePage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
+		if !b.enable2FA || err != nil || claims == nil {
+			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
+			return
+		}
+
+		if claims.TOTPValidated {
+			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
+			return
+		}
+
+		r.PageTitle = "TOTP Validate"
+		r.Body = Div(
+			Form(
+				Input("otp"),
+				Button("Validate"),
+			).Method("POST").Action("/auth/totp/setup"),
+		)
+
+		return
+	}
+}
+
+func defaultTOTPQRCodePage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
+		if !b.enable2FA || err != nil || claims == nil {
+			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
+			return
+		}
+
+		if claims.TOTPValidated {
+			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
+			return
+		}
+
+		var QRCode bytes.Buffer
+
+		// Generate key from secretKey
+		var key *otp.Key
+		secretKey := claims.TOTPSecretKey
+		if len(secretKey) == 0 {
+			panic(err)
+		}
+		key, err = otp.NewKeyFromURL(
+			fmt.Sprintf(otpKeyFormat,
+				url.PathEscape(b.totpIssuer),
+				url.PathEscape(claims.Email),
+				url.QueryEscape(b.totpIssuer),
+				url.QueryEscape(secretKey),
+			),
+		)
+
+		img, err := key.Image(200, 200)
+		if err != nil {
+			panic(err)
+		}
+
+		err = png.Encode(&QRCode, img)
+		if err != nil {
+			panic(err)
+		}
+
+		w := ctx.W
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Content-Length", strconv.Itoa(len(QRCode.Bytes())))
+		if _, err = w.Write(QRCode.Bytes()); err != nil {
+			panic(err)
+		}
+
 		return
 	}
 }

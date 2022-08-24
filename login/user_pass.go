@@ -12,19 +12,24 @@ import (
 
 type UserPasser interface {
 	FindUser(db *gorm.DB, model interface{}, account string) (user interface{}, err error)
-	GetAccountName() string
 	EncryptPassword()
 	IsPasswordCorrect(password string) bool
+	IncreaseRetryCount(db *gorm.DB, model interface{}) error
+	GenerateResetPasswordToken(db *gorm.DB, model interface{}) (token string, err error)
+	ConsumeResetPasswordToken(db *gorm.DB, model interface{}) error
+
+	GetAccountName() string
 	GetPasswordUpdatedAt() string
 	GetLoginRetryCount() int
 	GetLocked() bool
-	IncreaseRetryCount(db *gorm.DB, model interface{}) error
+	GetTOTPSecretKey() string
+	GetResetPasswordToken() (token string, expired bool)
+
+	SetPassword(db *gorm.DB, model interface{}, password string) error
+	SetTOTPSecretKey(db *gorm.DB, model interface{}, key string) error
+
 	LockUser(db *gorm.DB, model interface{}) error
 	UnlockUser(db *gorm.DB, model interface{}) error
-	GenerateResetPasswordToken(db *gorm.DB, model interface{}) (token string, err error)
-	ConsumeResetPasswordToken(db *gorm.DB, model interface{}) error
-	GetResetPasswordToken() (token string, expired bool)
-	SetPassword(db *gorm.DB, model interface{}, password string) error
 }
 
 type UserPass struct {
@@ -37,6 +42,7 @@ type UserPass struct {
 	LockedAt                    *time.Time
 	ResetPasswordToken          string `gorm:"index:uidx_users_reset_password_token,unique,where:reset_password_token!=''"`
 	ResetPasswordTokenExpiredAt *time.Time
+	TOTPSecretKey               string
 }
 
 var _ UserPasser = (*UserPass)(nil)
@@ -64,6 +70,10 @@ func (up *UserPass) GetLocked() bool {
 		return false
 	}
 	return up.Locked && up.LockedAt != nil && time.Now().Sub(*up.LockedAt) <= time.Hour
+}
+
+func (up *UserPass) GetTOTPSecretKey() string {
+	return up.TOTPSecretKey
 }
 
 func (up *UserPass) EncryptPassword() {
@@ -179,5 +189,17 @@ func (up *UserPass) SetPassword(db *gorm.DB, model interface{}, password string)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (up *UserPass) SetTOTPSecretKey(db *gorm.DB, model interface{}, key string) error {
+	if err := db.Model(model).Where("username = ?", up.Account).Updates(map[string]interface{}{
+		"totp_secret_key": key,
+	}).Error; err != nil {
+		return err
+	}
+
+	up.TOTPSecretKey = key
+
 	return nil
 }
