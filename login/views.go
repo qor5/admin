@@ -115,6 +115,12 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
 		inputFlash := GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
+		secondsToResend := GetSecondsToRedoFlash(ctx.W, ctx.R)
+		activeBtnText := "Send reset password email"
+		activeBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"
+		inactiveBtnText := "Resend reset password email"
+		inactiveBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-gray-500 rounded-md"
+		inactiveBtnTextWithInitSeconds := fmt.Sprintf("%s (%d)", inactiveBtnText, secondsToResend)
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
@@ -126,6 +132,13 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 						Span(fcText).Class("block sm:inline"),
 					),
 			),
+			If(secondsToResend > 0,
+				Div().Class("bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded relative text-center -mb-8").
+					Role("alert").
+					Children(
+						Span("Sending emails too frequently, please try again later").Class("block sm:inline"),
+					),
+			),
 			Div(
 				H1("I forgot my password").Class("leading-tight text-3xl mt-0 mb-6"),
 				Form(
@@ -134,11 +147,36 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 						Input("account").Placeholder("email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(inputFlash.Account),
 					),
 					Div(
-						Button("Send reset password link").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						If(secondsToResend > 0,
+							Button(inactiveBtnTextWithInitSeconds).Id("submitBtn").Class(inactiveBtnClass).Disabled(true),
+						).Else(
+							Button(activeBtnText).Class(activeBtnClass),
+						),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/send-reset-password-link"),
 			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
 		)
+
+		if secondsToResend > 0 {
+			ctx.Injector.TailHTML(fmt.Sprintf(`
+<script>
+var secondsToResend = %d;
+var btnText = "%s";
+var submitBtn = document.getElementById("submitBtn");
+var interv = setInterval(function(){
+    secondsToResend--;
+    if (secondsToResend === 0) {
+        clearInterval(interv);
+        submitBtn.innerText = btnText;
+        submitBtn.className = "%s";
+        submitBtn.disabled = false;
+        return;
+    }
+    submitBtn.innerText = btnText + " (" + secondsToResend + ")" ;
+}, 1000);
+</script>
+        `, secondsToResend, inactiveBtnText, activeBtnClass))
+		}
 		return
 	}
 }
@@ -193,7 +231,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 			r.Body = Div(Text("invalid token"))
 			return r, nil
 		} else {
-			storedToken, expired := user.(UserPasser).GetResetPasswordToken()
+			storedToken, _, expired := user.(UserPasser).GetResetPasswordToken()
 			if expired {
 				r.Body = Div(Text("token expired"))
 				return r, nil

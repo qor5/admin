@@ -193,3 +193,27 @@ func GetWrongResetPasswordInputFlash(w http.ResponseWriter, r *http.Request) Wro
 	json.Unmarshal([]byte(v), &f)
 	return f
 }
+
+const secondsToRedoFlashCookieName = "qor5_fc_flash"
+
+func setSecondsToRedoFlash(w http.ResponseWriter, c int) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  secondsToRedoFlashCookieName,
+		Value: fmt.Sprint(c),
+		Path:  "/",
+	})
+}
+
+func GetSecondsToRedoFlash(w http.ResponseWriter, r *http.Request) int {
+	c, err := r.Cookie(secondsToRedoFlashCookieName)
+	if err != nil {
+		return 0
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   secondsToRedoFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := strconv.Atoi(c.Value)
+	return v
+}
