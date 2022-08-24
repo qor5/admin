@@ -265,6 +265,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		cursor: pointer;
 		opacity: 1;
     }`),
+				h.Script(``),
 			),
 			h.Body(
 				h.Components(r...),
