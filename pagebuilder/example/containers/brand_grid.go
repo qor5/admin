@@ -8,12 +8,13 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/qor/qor5/listeditor"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
 	"github.com/qor/qor5/pagebuilder"
 	. "github.com/theplant/htmlgo"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -66,15 +67,15 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		AllowType: "image",
 	})
 
-	eb.ListField("Brands", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	eb.ListField("Brands", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Name")
 	})
 }
 
 func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf("brand_grid_%v", data.ID), data.AnchorID, "container-brand_grid", "", "", "",
-		data.AddTopSpace, data.AddBottomSpace,
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("BrandGrid"))+"_%v", data.ID), data.AnchorID, "container-brand_grid", "", "", "",
+		data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),

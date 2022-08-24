@@ -3,13 +3,15 @@ package containers
 import (
 	"fmt"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/richeditor"
 	. "github.com/theplant/htmlgo"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -46,25 +48,25 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return HeadingBody(v)
 		})
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
-	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return richeditor.RichEditor(db, "Text").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
 	})
 
-	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(FontColors).
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey)
 	})
-	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(BackgroundColors).
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey)
 	})
-	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(LinkDisplayOptions).
 			Value(field.Value(obj)).
@@ -95,8 +97,8 @@ func HeadingBody(data *Heading) (body HTMLComponent) {
 		).Class("container-heading-inner")
 
 	body = ContainerWrapper(
-		fmt.Sprintf("heading_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, data.FontColor, "",
-		data.AddTopSpace, data.AddBottomSpace,
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, data.FontColor, "",
+		data.AddTopSpace, data.AddBottomSpace, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
 	return

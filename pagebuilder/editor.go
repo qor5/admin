@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	vx "github.com/goplaid/x/vuetifyx"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -216,6 +218,8 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 	}
 
 	cbs := b.getContainerBuilders(cons)
+
+	device, width := b.getDevice(ctx)
 	for _, ec := range cbs {
 		if ec.container.Hidden {
 			continue
@@ -225,18 +229,61 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		if err != nil {
 			return
 		}
-		device, width := b.getDevice(ctx)
+
 		input := RenderInput{
 			IsEditor: isEditor,
 			Device:   device,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
+		r = append(r, pure)
+	}
+	if isEditor {
+		containerContent := h.HTML(
+			h.Head(
+				b.pageStyle,
+				h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
+				h.Style(`
+	.wrapper-shadow {
+		position:absolute;
+		width: 100%; 
+		height: 100%;
+		z-index:9999; 
+		background: rgba(81, 193, 226, 0.25);
+		opacity: 0;
+		top: 0;
+		left: 0;
+	}
+	.wrapper-shadow button{
+		position:absolute;
+		top: 0;
+		right: 0;
+    	line-height: 1;
+		font-size: 0;
+		border: 2px outset #767676;
+	}
+	.wrapper-shadow:hover {
+		cursor: pointer;
+		opacity: 1;
+    }`),
+			),
+			h.Body(
+				h.Components(r...),
+			),
+		)
+		iframe := VRow(
+			h.Div(
+				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" "+
+					"@load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\";'"+
+					"style='width:100%%; display:block; border:none; padding:0; margin:0;'></iframe>",
+					strings.ReplaceAll(
+						h.MustString(containerContent, ctx.R.Context()),
+						"\"",
+						"&quot;"),
+				)),
+			).Class("page-builder-container mx-auto").Attr("style", width),
+		)
 
-		if isEditor {
-			r = append(r, b.containerEditor(ctx, obj, ec, pure, device, width))
-		} else {
-			r = append(r, pure)
-		}
+		r = []h.HTMLComponent{iframe}
 	}
 	return
 }
@@ -759,32 +806,6 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 	return
 }
 
-func (b *Builder) containerEditor(ctx *web.EventContext, obj interface{}, ec *editorContainer, c h.HTMLComponent, device, width string) (r h.HTMLComponent) {
-	containerContent := h.Div(
-		b.pageStyle,
-		c,
-	)
-	containerName := ec.container.DisplayName
-	if containerName == "" {
-		containerName = ec.container.ModelName
-	}
-	mx := "mx-auto"
-	return VRow(
-		//VCol(
-		h.Div(
-			h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" @load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\"' style='width:100%%; display:block; border:none; padding:0; margin:0'></iframe>",
-				strings.ReplaceAll(
-					h.MustString(containerContent, ctx.R.Context()),
-					"\"",
-					"&quot;"),
-			)),
-		).Class("page-builder-container "+mx).Attr("style", width),
-		//).Cols(8).Class("pa-0"),
-
-	).Attr("style", "border-top: 0.5px dashed gray")
-
-}
-
 type editorContainer struct {
 	builder   *ContainerBuilder
 	container *Container
@@ -861,6 +882,14 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
+			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`function(e){
+let arr = e.data.split('_');
+if (arr.length!=2) {
+console.log(arr);
+return 
+}
+$plaid().vars(vars).form(plaidForm).url("%s/"+arr[0]).eventFunc("presets_Edit").query("overlay", "dialog").query("id", arr[1]).go();
+}`, b.prefix)),
 
 			innerPr.Body.(h.HTMLComponent),
 		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)
