@@ -545,6 +545,19 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	_, createdAt, _ := u.(UserPasser).GetResetPasswordToken()
+	if createdAt != nil {
+		v := 60 - int(time.Now().Sub(*createdAt).Seconds())
+		if v > 0 {
+			setSecondsToRedoFlash(w, v)
+			setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+				Account: account,
+			})
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
 	token, err := u.(UserPasser).GenerateResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
 		setFailCodeFlash(w, FailCodeSystemError)
@@ -632,7 +645,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storedToken, expired := u.(UserPasser).GetResetPasswordToken()
+	storedToken, _, expired := u.(UserPasser).GetResetPasswordToken()
 	if expired {
 		setFailCodeFlash(w, FailCodeTokenExpired)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)

@@ -45,7 +45,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("Heading").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*Heading)
-			return HeadingBody(v)
+			return HeadingBody(v, input)
 		})
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
 	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
@@ -75,7 +75,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	})
 }
 
-func HeadingBody(data *Heading) (body HTMLComponent) {
+func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	headingBody :=
 		Div(
 			Div(
@@ -98,7 +98,7 @@ func HeadingBody(data *Heading) (body HTMLComponent) {
 
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, data.FontColor, "",
-		data.AddTopSpace, data.AddBottomSpace, "",
+		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
 	return

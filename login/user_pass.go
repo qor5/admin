@@ -23,7 +23,7 @@ type UserPasser interface {
 	GetLoginRetryCount() int
 	GetLocked() bool
 	GetTOTPSecretKey() string
-	GetResetPasswordToken() (token string, expired bool)
+	GetResetPasswordToken() (token string, createdAt *time.Time, expired bool)
 
 	SetPassword(db *gorm.DB, model interface{}, password string) error
 	SetTOTPSecretKey(db *gorm.DB, model interface{}, key string) error
@@ -41,6 +41,7 @@ type UserPass struct {
 	Locked                      bool
 	LockedAt                    *time.Time
 	ResetPasswordToken          string `gorm:"index:uidx_users_reset_password_token,unique,where:reset_password_token!=''"`
+	ResetPasswordTokenCreatedAt *time.Time
 	ResetPasswordTokenExpiredAt *time.Time
 	TOTPSecretKey               string
 }
@@ -140,11 +141,13 @@ func (up *UserPass) IncreaseRetryCount(db *gorm.DB, model interface{}) error {
 
 func (up *UserPass) GenerateResetPasswordToken(db *gorm.DB, model interface{}) (token string, err error) {
 	token = base64.URLEncoding.EncodeToString([]byte(uuid.NewString()))
-	expiredAt := time.Now().Add(10 * time.Minute)
+	now := time.Now()
+	expiredAt := now.Add(10 * time.Minute)
 	err = db.Model(model).
 		Where("account = ?", up.Account).
 		Updates(map[string]interface{}{
 			"reset_password_token":            token,
+			"reset_password_token_created_at": now,
 			"reset_password_token_expired_at": expiredAt,
 		}).
 		Error
@@ -152,6 +155,7 @@ func (up *UserPass) GenerateResetPasswordToken(db *gorm.DB, model interface{}) (
 		return "", err
 	}
 	up.ResetPasswordToken = token
+	up.ResetPasswordTokenCreatedAt = &now
 	up.ResetPasswordTokenExpiredAt = &expiredAt
 	return token, nil
 }
@@ -169,11 +173,11 @@ func (up *UserPass) ConsumeResetPasswordToken(db *gorm.DB, model interface{}) er
 	return nil
 }
 
-func (up *UserPass) GetResetPasswordToken() (token string, expired bool) {
+func (up *UserPass) GetResetPasswordToken() (token string, createdAt *time.Time, expired bool) {
 	if up.ResetPasswordTokenExpiredAt != nil && time.Now().Sub(*up.ResetPasswordTokenExpiredAt) > 0 {
-		return "", true
+		return "", nil, true
 	}
-	return up.ResetPasswordToken, false
+	return up.ResetPasswordToken, up.ResetPasswordTokenCreatedAt, false
 }
 
 func (up *UserPass) SetPassword(db *gorm.DB, model interface{}, password string) error {
