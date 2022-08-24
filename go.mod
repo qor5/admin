@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/go-cmp v0.5.6
+	github.com/google/uuid v1.3.0
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.2.1
 	github.com/goplaid/x v1.1.2-0.20220803084927-3c648058c6ef
@@ -31,6 +32,7 @@ require (
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	goji.io v2.0.2+incompatible
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/text v0.3.7
 	gorm.io/driver/postgres v1.2.1
 	gorm.io/gorm v1.22.2
@@ -44,7 +46,6 @@ require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
@@ -84,7 +85,6 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect

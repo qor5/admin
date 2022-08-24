@@ -2,9 +2,9 @@ package login
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 
 	"github.com/goplaid/web"
-	"github.com/jinzhu/gorm"
 	. "github.com/theplant/htmlgo"
 )
 
