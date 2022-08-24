@@ -37,17 +37,17 @@ func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 	vb := pb.RegisterContainer("Video Banner").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*VideoBanner)
-			return VideoBannerBody(v)
+			return VideoBannerBody(v, input)
 		})
 	ed := vb.Model(&VideoBanner{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Video", "BackgroundVideo", "MobileBackgroundVideo", "VideoCover", "MobileVideoCover", "Heading", "PopupText", "Text", "LinkText", "Link")
 	ed.Field("Heading").ComponentFunc(TextArea)
 	ed.Field("Text").ComponentFunc(TextArea)
 }
 
-func VideoBannerBody(data *VideoBanner) (body HTMLComponent) {
+func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner", "", "", "",
-		data.AddTopSpace, data.AddBottomSpace, "",
+		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div().Class("container-video_banner-mask"), VideoBannerHeadBody(data), VideoBannerFootBody(data),
 		// If(data.PopupText != "", VideoBannerPopupBody(data)),
 	)

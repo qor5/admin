@@ -25,17 +25,17 @@ func RegisterFooter(pb *pagebuilder.Builder) {
 	footer := pb.RegisterContainer("Footer").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			footer := obj.(*WebFooter)
-			return FooterTemplate(footer)
+			return FooterTemplate(footer, input)
 		})
 
 	footer.Model(&WebFooter{}).Editing("EnglishUrl", "JapaneseUrl")
 
 }
 
-func FooterTemplate(data *WebFooter) (body HTMLComponent) {
+func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("WebFooter"))+"_%v", data.ID), "", "container-footer", "", "", "",
-		false, false, "",
+		false, false, input.IsEditor, "",
 		Div(RawHTML(fmt.Sprintf(`
 <div class="container-footer-main">
 <div class="container-footer-links">

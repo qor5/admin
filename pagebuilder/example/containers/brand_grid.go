@@ -75,7 +75,7 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("BrandGrid"))+"_%v", data.ID), data.AnchorID, "container-brand_grid", "", "", "",
-		data.AddTopSpace, data.AddBottomSpace, "",
+		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(
 			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),
