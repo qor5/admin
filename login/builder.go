@@ -75,6 +75,7 @@ func New() *Builder {
 		homeURL:               "/",
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
+		maxRetryCount:         5,
 	}
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
@@ -161,8 +162,8 @@ func (b *Builder) AutoExtendSession(v bool) (r *Builder) {
 	return b
 }
 
+// default 5
 // MaxRetryCount <= 0 means no max retry count limit
-// default 0
 func (b *Builder) MaxRetryCount(v int) (r *Builder) {
 	b.maxRetryCount = v
 	return b
