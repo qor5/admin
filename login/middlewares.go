@@ -104,7 +104,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
-			if b.totpEnabled && claims.Provider == "" {
+			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
+				if path == b.loginURL {
+					next.ServeHTTP(w, r)
+					return
+				}
 				if !user.(UserPasser).GetIsTOTPSetup() {
 					if path == pathTOTPSetup {
 						next.ServeHTTP(w, r)
@@ -112,16 +116,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					}
 					http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
 					return
-				} else {
-					if !claims.TOTPValidated {
-						if path == pathTOTPValidate {
-							next.ServeHTTP(w, r)
-							return
-						}
-						http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
-						return
-					}
 				}
+				if path == pathTOTPValidate {
+					next.ServeHTTP(w, r)
+					return
+				}
+				http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+				return
 			}
 
 			if b.autoExtendSession {
