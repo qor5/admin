@@ -134,6 +134,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 			}
 
+			if claims.TOTPValidated || claims.Provider != "" {
+				if path == pathTOTPSetup || path == pathTOTPValidate {
+					http.Redirect(w, r, b.homeURL, http.StatusFound)
+					return
+				}
+			}
+
 			if path == b.loginURL {
 				http.Redirect(w, r, b.homeURL, http.StatusFound)
 				return
