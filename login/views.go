@@ -295,7 +295,7 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if len(totpSecret) == 0 {
-			r.Body = errorBody(err.Error())
+			r.Body = errorBody(errNeedTOTPSetup.Error())
 			return
 		}
 		key, err = otp.NewKeyFromURL(
@@ -319,15 +319,34 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 			return
 		}
 
+		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto relative text-center"
+		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
+
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
-			Label(u.GetTOTPSecret()),
-			Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
+			Style(StyleCSS),
+			Div(
+				H1("Two Factor Authentication").
+					Class("text-3xl font-bold mb-4"),
+				Label("Scan this QR code with Google Authenticator (or similar) app").
+					Class(labelClass),
+			),
+			Div(
+				Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
+			).Class("my-2 flex items-center justify-center"),
+			Div(
+				Label("Or manually enter the following code into your preferred authenticator app").
+					Class(labelClass),
+			),
+			Div(Label(u.GetTOTPSecret()).Class("text-sm font-bold")).Class("my-4"),
 			Form(
-				Input("otp"),
-				Button("Confirm"),
+				Label("Then enter the provided one-time code below").Class(labelClass),
+				Input("otp").Placeholder("Enter your passcode here").
+					Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+				Button("Verify").
+					Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 			).Method("POST").Action(pathTOTPDo),
-		)
+		).Class(wrapperClass)
 
 		return
 	}
@@ -335,13 +354,25 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto relative text-center"
+		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
+
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
+			Style(StyleCSS),
+			Div(
+				H1("Two Factor Authentication").
+					Class("text-3xl font-bold mb-4"),
+				Label("Enter the provided one-time code below").
+					Class(labelClass),
+			),
 			Form(
-				Input("otp"),
-				Button("Validate"),
+				Input("otp").Placeholder("Enter your passcode here").
+					Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+				Button("Verify").
+					Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 			).Method("POST").Action(pathTOTPDo),
-		)
+		).Class(wrapperClass)
 
 		return
 	}
