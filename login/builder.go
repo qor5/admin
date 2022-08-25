@@ -32,7 +32,6 @@ const (
 	pathTOTPDo       = "/auth/2fa/totp/do"
 	pathTOTPSetup    = "/auth/2fa/totp/setup"
 	pathTOTPValidate = "/auth/2fa/totp/validate"
-	pathTOTPQRCode   = "/auth/2fa/totp/qrcode"
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
@@ -770,7 +769,6 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 			mux.HandleFunc(pathTOTPDo, b.totpDo)
 			mux.Handle(pathTOTPSetup, wb.Page(b.totpSetupPageFunc))
 			mux.Handle(pathTOTPValidate, wb.Page(b.totpValidatePageFunc))
-			mux.Handle(pathTOTPQRCode, wb.Page(totpQRCodePage(b)))
 		}
 	}
 	if b.oauthEnabled {

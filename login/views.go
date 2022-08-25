@@ -2,6 +2,7 @@ package login
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image/png"
 	"net/url"
@@ -296,52 +297,6 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 		}
 		u := user.(UserPasser)
 
-		r.PageTitle = "TOTP Setup"
-		r.Body = Div(
-			Label(u.GetTOTPSecret()),
-			Img(pathTOTPQRCode),
-			Form(
-				Input("otp"),
-				Button("Confirm"),
-			).Method("POST").Action(pathTOTPDo),
-		)
-
-		return
-	}
-}
-
-func defaultTOTPValidatePage(b *Builder) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		_, err = b.getUserIDFromClaims(ctx.R)
-		if err != nil {
-			panic(err)
-		}
-
-		r.PageTitle = "TOTP Validate"
-		r.Body = Div(
-			Form(
-				Input("otp"),
-				Button("Validate"),
-			).Method("POST").Action(pathTOTPDo),
-		)
-
-		return
-	}
-}
-
-func totpQRCodePage(b *Builder) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		uid, err := b.getUserIDFromClaims(ctx.R)
-		if err != nil {
-			panic(err)
-		}
-
-		user, err := b.findUserByID(uid)
-		if err != nil {
-			panic(err)
-		}
-		u := user.(UserPasser)
-
 		var QRCode bytes.Buffer
 
 		// Generate key from TOTPSecret
@@ -369,12 +324,34 @@ func totpQRCodePage(b *Builder) web.PageFunc {
 			panic(err)
 		}
 
-		w := ctx.W
-		w.Header().Set("Content-Type", "image/png")
-		if _, err = w.Write(QRCode.Bytes()); err != nil {
+		r.PageTitle = "TOTP Setup"
+		r.Body = Div(
+			Label(u.GetTOTPSecret()),
+			Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
+			Form(
+				Input("otp"),
+				Button("Confirm"),
+			).Method("POST").Action(pathTOTPDo),
+		)
+
+		return
+	}
+}
+
+func defaultTOTPValidatePage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		_, err = b.getUserIDFromClaims(ctx.R)
+		if err != nil {
 			panic(err)
 		}
-		r.Body = RawHTML("")
+
+		r.PageTitle = "TOTP Validate"
+		r.Body = Div(
+			Form(
+				Input("otp"),
+				Button("Validate"),
+			).Method("POST").Action(pathTOTPDo),
+		)
 
 		return
 	}
