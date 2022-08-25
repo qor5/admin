@@ -412,13 +412,15 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 						AccountName: u.GetAccountName(),
 					},
 				); err != nil {
-					panic(err)
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
 				}
 
 				totpSecret = key.Secret()
 
 				if err = u.SetTOTPSecret(b.db, b.newUserObject(), totpSecret); err != nil {
-					panic(err)
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
 				}
 
 				err = errNeedTOTPSetup
@@ -699,7 +701,9 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	user, err := b.findUserByID(claims.UserID)
 	if err != nil {
-		panic(err)
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, "/auth/logout", http.StatusFound)
+		return
 	}
 	u := user.(UserPasser)
 
@@ -710,26 +714,26 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	if totp.Validate(otp, key) {
 		if !isTOTPSetup {
 			if err = u.SetIsTOTPSetup(b.db, b.newUserObject(), true); err != nil {
-				panic(err)
+				setFailCodeFlash(w, FailCodeSystemError)
+				http.Redirect(w, r, "/auth/logout", http.StatusFound)
+				return
 			}
 		}
 		claims.TOTPValidated = true
 		err = b.setSecureCookiesByClaims(w, user, *claims)
 		if err != nil {
-			panic(err)
+			setFailCodeFlash(w, FailCodeSystemError)
+			http.Redirect(w, r, "/auth/logout", http.StatusFound)
+			return
 		}
 
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	} else {
-		redirectURL = "/auth/logout"
 		setFailCodeFlash(w, FailCodeInvalidTOTP)
-
-		http.Redirect(w, r, redirectURL, http.StatusFound)
+		http.Redirect(w, r, "/auth/logout", http.StatusFound)
 		return
 	}
-
-	return
 }
 
 func (b *Builder) Mount(mux *http.ServeMux) {

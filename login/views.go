@@ -295,7 +295,8 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if len(totpSecret) == 0 {
-			panic(err)
+			r.Body = errorBody(err.Error())
+			return
 		}
 		key, err = otp.NewKeyFromURL(
 			fmt.Sprintf(otpKeyFormat,
@@ -308,12 +309,14 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 		img, err := key.Image(200, 200)
 		if err != nil {
-			panic(err)
+			r.Body = errorBody(err.Error())
+			return
 		}
 
 		err = png.Encode(&QRCode, img)
 		if err != nil {
-			panic(err)
+			r.Body = errorBody(err.Error())
+			return
 		}
 
 		r.PageTitle = "TOTP Setup"
@@ -342,4 +345,10 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 
 		return
 	}
+}
+
+func errorBody(msg string) HTMLComponent {
+	return Div(
+		Text(msg),
+	)
 }
