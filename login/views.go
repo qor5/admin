@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
-	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/goplaid/web"
 	"github.com/pquerna/otp"
@@ -25,7 +23,7 @@ var failCodeTexts = map[FailCode]string{
 	FailCodePasswordNotMatch:               "Password do not match",
 	FailCodeInvalidToken:                   "Invalid token",
 	FailCodeTokenExpired:                   "Token expired",
-	FailCodeTOTPInvalidate:                 "TOTP Invalidate",
+	FailCodeInvalidTOTP:                    "Invalid TOTP",
 }
 
 var noticeCodeTexts = map[NoticeCode]string{
@@ -285,28 +283,27 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 	}
 }
 
-func defaultTOTPConfirmPage(b *Builder) web.PageFunc {
+func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
-		if !b.enable2FA || err != nil || claims == nil {
-			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
-			return
+		uid, err := b.getUserIDFromClaims(ctx.R)
+		if err != nil {
+			panic(err)
 		}
 
-		if claims.TOTPValidated {
-			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
-			return
+		user, err := b.findUserByID(uid)
+		if err != nil {
+			panic(err)
 		}
+		u := user.(UserPasser)
 
-		r.PageTitle = "TOTP Confirm"
+		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
-			Label(claims.TOTPSecretKey),
-			Img("/auth/totp/qrcode"),
+			Label(u.GetTOTPSecret()),
+			Img(pathTOTPQRCode),
 			Form(
-				Input("key").Value(claims.TOTPSecretKey).Style("display: none;").Class("hidden"),
 				Input("otp"),
 				Button("Confirm"),
-			).Method("POST").Action("/auth/totp/setup"),
+			).Method("POST").Action(pathTOTPDo),
 		)
 
 		return
@@ -315,15 +312,9 @@ func defaultTOTPConfirmPage(b *Builder) web.PageFunc {
 
 func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
-		if !b.enable2FA || err != nil || claims == nil {
-			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
-			return
-		}
-
-		if claims.TOTPValidated {
-			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
-			return
+		_, err = b.getUserIDFromClaims(ctx.R)
+		if err != nil {
+			panic(err)
 		}
 
 		r.PageTitle = "TOTP Validate"
@@ -331,40 +322,40 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 			Form(
 				Input("otp"),
 				Button("Validate"),
-			).Method("POST").Action("/auth/totp/setup"),
+			).Method("POST").Action(pathTOTPDo),
 		)
 
 		return
 	}
 }
 
-func defaultTOTPQRCodePage(b *Builder) web.PageFunc {
+func totpQRCodePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		claims, err := parseUserClaimsFromCookie(ctx.R, b.authCookieName, b.secret)
-		if !b.enable2FA || err != nil || claims == nil {
-			http.Redirect(ctx.W, ctx.R, "/auth/logout", http.StatusFound)
-			return
+		uid, err := b.getUserIDFromClaims(ctx.R)
+		if err != nil {
+			panic(err)
 		}
 
-		if claims.TOTPValidated {
-			http.Redirect(ctx.W, ctx.R, b.homeURL, http.StatusFound)
-			return
+		user, err := b.findUserByID(uid)
+		if err != nil {
+			panic(err)
 		}
+		u := user.(UserPasser)
 
 		var QRCode bytes.Buffer
 
-		// Generate key from secretKey
+		// Generate key from TOTPSecret
 		var key *otp.Key
-		secretKey := claims.TOTPSecretKey
-		if len(secretKey) == 0 {
+		totpSecret := u.GetTOTPSecret()
+		if len(totpSecret) == 0 {
 			panic(err)
 		}
 		key, err = otp.NewKeyFromURL(
 			fmt.Sprintf(otpKeyFormat,
 				url.PathEscape(b.totpIssuer),
-				url.PathEscape(claims.Email),
+				url.PathEscape(u.GetAccountName()),
 				url.QueryEscape(b.totpIssuer),
-				url.QueryEscape(secretKey),
+				url.QueryEscape(totpSecret),
 			),
 		)
 
@@ -380,10 +371,10 @@ func defaultTOTPQRCodePage(b *Builder) web.PageFunc {
 
 		w := ctx.W
 		w.Header().Set("Content-Type", "image/png")
-		w.Header().Set("Content-Length", strconv.Itoa(len(QRCode.Bytes())))
 		if _, err = w.Write(QRCode.Bytes()); err != nil {
 			panic(err)
 		}
+		r.Body = RawHTML("")
 
 		return
 	}

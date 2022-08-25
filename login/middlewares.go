@@ -51,7 +51,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			if b.enable2FA && claims.Provider == "" && !claims.TOTPValidated {
+			if b.totpEnabled && claims.Provider == "" && !claims.TOTPValidated {
 				http.Redirect(w, r, "/auth/logout", http.StatusFound)
 				return
 			}

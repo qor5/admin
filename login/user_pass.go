@@ -22,11 +22,13 @@ type UserPasser interface {
 	GetPasswordUpdatedAt() string
 	GetLoginRetryCount() int
 	GetLocked() bool
-	GetTOTPSecretKey() string
+	GetIsTOTPSetup() bool
+	GetTOTPSecret() string
 	GetResetPasswordToken() (token string, createdAt *time.Time, expired bool)
 
 	SetPassword(db *gorm.DB, model interface{}, password string) error
-	SetTOTPSecretKey(db *gorm.DB, model interface{}, key string) error
+	SetIsTOTPSetup(db *gorm.DB, model interface{}, v bool) error
+	SetTOTPSecret(db *gorm.DB, model interface{}, key string) error
 
 	LockUser(db *gorm.DB, model interface{}) error
 	UnlockUser(db *gorm.DB, model interface{}) error
@@ -43,7 +45,8 @@ type UserPass struct {
 	ResetPasswordToken          string `gorm:"index:uidx_users_reset_password_token,unique,where:reset_password_token!=''"`
 	ResetPasswordTokenCreatedAt *time.Time
 	ResetPasswordTokenExpiredAt *time.Time
-	TOTPSecretKey               string
+	TOTPSecret                  string
+	IsTOTPSetup                 bool
 }
 
 var _ UserPasser = (*UserPass)(nil)
@@ -73,8 +76,12 @@ func (up *UserPass) GetLocked() bool {
 	return up.Locked && up.LockedAt != nil && time.Now().Sub(*up.LockedAt) <= time.Hour
 }
 
-func (up *UserPass) GetTOTPSecretKey() string {
-	return up.TOTPSecretKey
+func (up *UserPass) GetTOTPSecret() string {
+	return up.TOTPSecret
+}
+
+func (up *UserPass) GetIsTOTPSetup() bool {
+	return up.IsTOTPSetup
 }
 
 func (up *UserPass) EncryptPassword() {
@@ -196,14 +203,26 @@ func (up *UserPass) SetPassword(db *gorm.DB, model interface{}, password string)
 	return nil
 }
 
-func (up *UserPass) SetTOTPSecretKey(db *gorm.DB, model interface{}, key string) error {
-	if err := db.Model(model).Where("username = ?", up.Account).Updates(map[string]interface{}{
-		"totp_secret_key": key,
+func (up *UserPass) SetTOTPSecret(db *gorm.DB, model interface{}, key string) error {
+	if err := db.Model(model).Where("account = ?", up.Account).Updates(map[string]interface{}{
+		"totp_secret": key,
 	}).Error; err != nil {
 		return err
 	}
 
-	up.TOTPSecretKey = key
+	up.TOTPSecret = key
+
+	return nil
+}
+
+func (up *UserPass) SetIsTOTPSetup(db *gorm.DB, model interface{}, v bool) error {
+	if err := db.Model(model).Where("account = ?", up.Account).Updates(map[string]interface{}{
+		"is_totp_setup": v,
+	}).Error; err != nil {
+		return err
+	}
+
+	up.IsTOTPSetup = v
 
 	return nil
 }

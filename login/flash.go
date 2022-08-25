@@ -21,7 +21,7 @@ const (
 	FailCodePasswordNotMatch
 	FailCodeInvalidToken
 	FailCodeTokenExpired
-	FailCodeTOTPInvalidate
+	FailCodeInvalidTOTP
 )
 
 type NoticeCode int
