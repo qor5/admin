@@ -286,15 +286,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 
 func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		uid, err := b.getUserIDFromClaims(ctx.R)
-		if err != nil {
-			panic(err)
-		}
-
-		user, err := b.findUserByID(uid)
-		if err != nil {
-			panic(err)
-		}
+		user := GetCurrentUser(ctx.R)
 		u := user.(UserPasser)
 
 		var QRCode bytes.Buffer
@@ -340,11 +332,6 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		_, err = b.getUserIDFromClaims(ctx.R)
-		if err != nil {
-			panic(err)
-		}
-
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
 			Form(

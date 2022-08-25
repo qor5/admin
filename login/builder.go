@@ -682,15 +682,6 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (b *Builder) getUserIDFromClaims(r *http.Request) (id string, err error) {
-	claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
-	if err != nil {
-		return
-	}
-
-	return claims.UserID, nil
-}
-
 func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusNotFound)

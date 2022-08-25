@@ -23,7 +23,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			path := strings.TrimRight(r.URL.Path, "/")
-			if strings.HasPrefix(path, "/auth/") && path != b.loginURL {
+			if strings.HasPrefix(path, "/auth/") &&
+				path != b.loginURL &&
+				path != pathTOTPSetup &&
+				path != pathTOTPValidate {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -48,11 +51,6 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				} else {
 					http.Redirect(w, r, b.loginURL, http.StatusFound)
 				}
-				return
-			}
-
-			if b.totpEnabled && claims.Provider == "" && !claims.TOTPValidated {
-				http.Redirect(w, r, "/auth/logout", http.StatusFound)
 				return
 			}
 
@@ -105,6 +103,26 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
+
+			if b.totpEnabled && claims.Provider == "" {
+				if !user.(UserPasser).GetIsTOTPSetup() {
+					if path == pathTOTPSetup {
+						next.ServeHTTP(w, r)
+						return
+					}
+					http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+					return
+				} else {
+					if !claims.TOTPValidated {
+						if path == pathTOTPValidate {
+							next.ServeHTTP(w, r)
+							return
+						}
+						http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+						return
+					}
+				}
+			}
 
 			if b.autoExtendSession {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
