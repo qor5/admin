@@ -431,7 +431,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 
 		claims = UserClaims{
 			UserID:           userID,
-			Email:            u.GetAccountName(),
 			PassUpdatedAt:    u.GetPasswordUpdatedAt(),
 			TOTPValidated:    false,
 			RegisteredClaims: b.genBaseSessionClaim(userID),
