@@ -401,7 +401,6 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		}
 
 		var totpSecret string
-		userID := objectID(user)
 		u := user.(UserPasser)
 		if b.totpEnabled {
 			if !u.GetIsTOTPSetup() {
@@ -430,6 +429,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			}
 		}
 
+		userID := objectID(user)
 		claims = UserClaims{
 			UserID:           userID,
 			PassUpdatedAt:    u.GetPasswordUpdatedAt(),
@@ -685,7 +685,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -701,7 +701,11 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	user, err := b.findUserByID(claims.UserID)
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		if err == errUserNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
 		http.Redirect(w, r, "/auth/logout", http.StatusFound)
 		return
 	}
@@ -730,8 +734,12 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	} else {
-		setFailCodeFlash(w, FailCodeInvalidTOTP)
-		http.Redirect(w, r, "/auth/logout", http.StatusFound)
+		setFailCodeFlash(w, FailCodeIncorrectTOTP)
+		redirectURL := pathTOTPValidate
+		if !isTOTPSetup {
+			redirectURL = pathTOTPSetup
+		}
+		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	}
 }

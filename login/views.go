@@ -24,7 +24,7 @@ var failCodeTexts = map[FailCode]string{
 	FailCodePasswordNotMatch:               "Password do not match",
 	FailCodeInvalidToken:                   "Invalid token",
 	FailCodeTokenExpired:                   "Token expired",
-	FailCodeInvalidTOTP:                    "Invalid TOTP",
+	FailCodeIncorrectTOTP:                  "Incorrect passcode",
 }
 
 var noticeCodeTexts = map[NoticeCode]string{
@@ -35,6 +35,42 @@ const (
 	otpKeyFormat = "otpauth://totp/%s:%s?issuer=%s&secret=%s"
 )
 
+func errNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center").
+		Role("alert").
+		Children(
+			Span(msg).Class("block sm:inline"),
+		)
+}
+
+func warnNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return Div().Class("bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded relative text-center").
+		Role("alert").
+		Children(
+			Span(msg).Class("block sm:inline"),
+		)
+}
+
+func successNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return Div().Class("bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-center").
+		Role("alert").
+		Children(
+			Span(msg).Class("block sm:inline"),
+		)
+}
+
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
@@ -43,7 +79,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		ncText := noticeCodeTexts[ncFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
 
-		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto"
+		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto"
 
 		var oauthHTML HTMLComponent
 		if b.oauthEnabled {
@@ -97,20 +133,8 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		r.PageTitle = "Sign In"
 		r.Body = Div(
 			Style(StyleCSS),
-			If(fcText != "",
-				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
-					Role("alert").
-					Children(
-						Span(fcText).Class("block sm:inline"),
-					),
-			),
-			If(ncText != "",
-				Div().Class("bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-center -mb-8").
-					Role("alert").
-					Children(
-						Span(ncText).Class("block sm:inline"),
-					),
-			),
+			errNotice(fcText),
+			successNotice(ncText),
 			Div(
 				userPassHTML,
 				oauthHTML,
@@ -135,19 +159,9 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
 			Style(StyleCSS),
-			If(fcText != "",
-				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
-					Role("alert").
-					Children(
-						Span(fcText).Class("block sm:inline"),
-					),
-			),
+			errNotice(fcText),
 			If(secondsToResend > 0,
-				Div().Class("bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded relative text-center -mb-8").
-					Role("alert").
-					Children(
-						Span("Sending emails too frequently, please try again later").Class("block sm:inline"),
-					),
+				warnNotice("Sending emails too frequently, please try again later"),
 			),
 			Div(
 				H1("I forgot my password").Class("leading-tight text-3xl mt-0 mb-6"),
@@ -164,7 +178,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 						),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/send-reset-password-link"),
-			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
+			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 
 		if secondsToResend > 0 {
@@ -201,7 +215,7 @@ func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 			Div(
 				H1(fmt.Sprintf("A reset password link was sent to %s.", a)).Class("leading-tight text-2xl mt-0 mb-4"),
 				H2("You can close this page and reset your password from this link.").Class("leading-tight text-1xl mt-0"),
-			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
+			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
 	}
@@ -254,13 +268,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 
 		r.Body = Div(
 			Style(StyleCSS),
-			If(errMsg != "",
-				Div().Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center -mb-8").
-					Role("alert").
-					Children(
-						Span(errMsg).Class("block sm:inline"),
-					),
-			),
+			errNotice(errMsg),
 			Div(
 				H1("Reset your password").Class("leading-tight text-3xl mt-0 mb-6"),
 				Form(
@@ -278,7 +286,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/do-reset-password"),
-			).Class("flex pt-8 h-screen flex-col max-w-md mx-auto pt-16"),
+			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
 	}
@@ -286,6 +294,9 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 
 func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcText := failCodeTexts[fcFlash]
+
 		user := GetCurrentUser(ctx.R)
 		u := user.(UserPasser)
 
@@ -319,34 +330,37 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 			return
 		}
 
-		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto relative text-center"
+		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
 
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
 			Style(StyleCSS),
+			errNotice(fcText),
 			Div(
-				H1("Two Factor Authentication").
-					Class("text-3xl font-bold mb-4"),
-				Label("Scan this QR code with Google Authenticator (or similar) app").
-					Class(labelClass),
-			),
-			Div(
-				Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
-			).Class("my-2 flex items-center justify-center"),
-			Div(
-				Label("Or manually enter the following code into your preferred authenticator app").
-					Class(labelClass),
-			),
-			Div(Label(u.GetTOTPSecret()).Class("text-sm font-bold")).Class("my-4"),
-			Form(
-				Label("Then enter the provided one-time code below").Class(labelClass),
-				Input("otp").Placeholder("Enter your passcode here").
-					Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
-				Button("Verify").
-					Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
-			).Method("POST").Action(pathTOTPDo),
-		).Class(wrapperClass)
+				Div(
+					H1("Two Factor Authentication").
+						Class("text-3xl font-bold mb-4"),
+					Label("Scan this QR code with Google Authenticator (or similar) app").
+						Class(labelClass),
+				),
+				Div(
+					Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
+				).Class("my-2 flex items-center justify-center"),
+				Div(
+					Label("Or manually enter the following code into your preferred authenticator app").
+						Class(labelClass),
+				),
+				Div(Label(u.GetTOTPSecret()).Class("text-sm font-bold")).Class("my-4"),
+				Form(
+					Label("Then enter the provided one-time code below").Class(labelClass),
+					Input("otp").Placeholder("Enter your passcode here").
+						Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					Button("Verify").
+						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+				).Method("POST").Action(pathTOTPDo),
+			).Class(wrapperClass),
+		)
 
 		return
 	}
@@ -354,25 +368,31 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		wrapperClass := "flex pt-8 h-screen flex-col max-w-md mx-auto relative text-center"
+		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcText := failCodeTexts[fcFlash]
+
+		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
 
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
 			Style(StyleCSS),
+			errNotice(fcText),
 			Div(
-				H1("Two Factor Authentication").
-					Class("text-3xl font-bold mb-4"),
-				Label("Enter the provided one-time code below").
-					Class(labelClass),
-			),
-			Form(
-				Input("otp").Placeholder("Enter your passcode here").
-					Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
-				Button("Verify").
-					Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
-			).Method("POST").Action(pathTOTPDo),
-		).Class(wrapperClass)
+				Div(
+					H1("Two Factor Authentication").
+						Class("text-3xl font-bold mb-4"),
+					Label("Enter the provided one-time code below").
+						Class(labelClass),
+				),
+				Form(
+					Input("otp").Placeholder("Enter your passcode here").
+						Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
+					Button("Verify").
+						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+				).Method("POST").Action(pathTOTPDo),
+			).Class(wrapperClass),
+		)
 
 		return
 	}

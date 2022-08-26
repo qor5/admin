@@ -104,6 +104,15 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
+			if b.autoExtendSession {
+				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
+				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
+					setFailCodeFlash(w, FailCodeSystemError)
+					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					return
+				}
+			}
+
 			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
 				if path == b.loginURL {
 					next.ServeHTTP(w, r)
@@ -123,15 +132,6 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 				http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
 				return
-			}
-
-			if b.autoExtendSession {
-				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
-				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
-					setFailCodeFlash(w, FailCodeSystemError)
-					http.Redirect(w, r, "/auth/logout", http.StatusFound)
-					return
-				}
 			}
 
 			if claims.TOTPValidated || claims.Provider != "" {
