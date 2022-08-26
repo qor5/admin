@@ -13,15 +13,25 @@ import (
 	"github.com/goplaid/web"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 var (
-	errUserNotFound    = errors.New("user not found")
-	errUserPassChanged = errors.New("password changed")
-	errWrongPassword   = errors.New("wrong password")
-	errUserLocked      = errors.New("user locked")
+	errUserNotFound     = errors.New("user not found")
+	errUserPassChanged  = errors.New("password changed")
+	errWrongPassword    = errors.New("wrong password")
+	errUserLocked       = errors.New("user locked")
+	errNeedTOTPSetup    = errors.New("need TOTP setup")
+	errNeedTOTPValidate = errors.New("need TOTP validate")
+)
+
+const (
+	pathTOTPDo       = "/auth/2fa/totp/do"
+	pathTOTPSetup    = "/auth/2fa/totp/setup"
+	pathTOTPValidate = "/auth/2fa/totp/validate"
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
@@ -53,6 +63,8 @@ type Builder struct {
 	forgetPasswordPageFunc        web.PageFunc
 	resetPasswordLinkSentPageFunc web.PageFunc
 	resetPasswordPageFunc         web.PageFunc
+	totpSetupPageFunc             web.PageFunc
+	totpValidatePageFunc          web.PageFunc
 
 	notifyUserOfResetPasswordLinkFunc NotifyUserOfResetPasswordLinkFunc
 	passwordValidationFunc            PasswordValidationFunc
@@ -64,6 +76,8 @@ type Builder struct {
 	userPassEnabled      bool
 	oauthEnabled         bool
 	sessionSecureEnabled bool
+	totpEnabled          bool
+	totpIssuer           string
 }
 
 func New() *Builder {
@@ -76,11 +90,17 @@ func New() *Builder {
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
 		maxRetryCount:         5,
+		totpEnabled:           true,
+		totpIssuer:            "qor5",
 	}
+
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
 	r.resetPasswordLinkSentPageFunc = defaultResetPasswordLinkSentPage(r)
 	r.resetPasswordPageFunc = defaultResetPasswordPage(r)
+	r.totpSetupPageFunc = defaultTOTPSetupPage(r)
+	r.totpValidatePageFunc = defaultTOTPValidatePage(r)
+
 	return r
 }
 
@@ -169,6 +189,16 @@ func (b *Builder) MaxRetryCount(v int) (r *Builder) {
 	return b
 }
 
+func (b *Builder) TOTPEnabled(v bool) (r *Builder) {
+	b.totpEnabled = v
+	return b
+}
+
+func (b *Builder) TOTPIssuer(v string) (r *Builder) {
+	b.totpIssuer = v
+	return b
+}
+
 func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
 	b.noForgetPasswordLink = v
 	return b
@@ -253,11 +283,22 @@ func (b *Builder) authUserPass(account string, password string) (user interface{
 
 // completeUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Request) {
+	redirectURL := b.homeURL
+
 	if err := b.completeUserAuthWithSetCookie(w, r); err != nil {
-		http.Redirect(w, r, b.loginURL, http.StatusFound)
+		switch err {
+		case errNeedTOTPValidate:
+			redirectURL = pathTOTPValidate
+		case errNeedTOTPSetup:
+			redirectURL = pathTOTPSetup
+		default:
+			redirectURL = "/auth/logout"
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	}
-	redirectURL := b.homeURL
+
 	c, _ := r.Cookie(b.continueUrlCookieName)
 	if c != nil && c.Value != "" {
 		redirectURL = c.Value
@@ -271,6 +312,7 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
+	return
 }
 
 func (b *Builder) genBaseSessionClaim(id string) jwt.RegisteredClaims {
@@ -330,8 +372,7 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 	})
 }
 
-func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) error {
-	var err error
+func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) (err error) {
 	var claims UserClaims
 	var user interface{}
 	if r.FormValue("login_type") == "1" {
@@ -359,10 +400,40 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 			return err
 		}
 
+		var totpSecret string
+		u := user.(UserPasser)
+		if b.totpEnabled {
+			if !u.GetIsTOTPSetup() {
+				var key *otp.Key
+				if key, err = totp.Generate(
+					totp.GenerateOpts{
+						Issuer:      b.totpIssuer,
+						AccountName: u.GetAccountName(),
+					},
+				); err != nil {
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
+				}
+
+				totpSecret = key.Secret()
+
+				if err = u.SetTOTPSecret(b.db, b.newUserObject(), totpSecret); err != nil {
+					setFailCodeFlash(w, FailCodeSystemError)
+					return err
+				}
+
+				err = errNeedTOTPSetup
+			} else {
+				totpSecret = u.GetTOTPSecret()
+				err = errNeedTOTPValidate
+			}
+		}
+
 		userID := objectID(user)
 		claims = UserClaims{
 			UserID:           userID,
-			PassUpdatedAt:    user.(UserPasser).GetPasswordUpdatedAt(),
+			PassUpdatedAt:    u.GetPasswordUpdatedAt(),
+			TOTPValidated:    false,
 			RegisteredClaims: b.genBaseSessionClaim(userID),
 		}
 	} else {
@@ -410,6 +481,14 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		}
 	}
 
+	if inErr := b.setSecureCookiesByClaims(w, user, claims); inErr != nil {
+		return inErr
+	}
+
+	return err
+}
+
+func (b *Builder) setSecureCookiesByClaims(w http.ResponseWriter, user interface{}, claims UserClaims) (err error) {
 	var secureSalt string
 	if b.sessionSecureEnabled {
 		if user.(SessionSecurer).GetSecure() == "" {
@@ -421,7 +500,7 @@ func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.R
 		}
 		secureSalt = user.(SessionSecurer).GetSecure()
 	}
-	if err := b.setAuthCookiesFromUserClaims(w, &claims, secureSalt); err != nil {
+	if err = b.setAuthCookiesFromUserClaims(w, &claims, secureSalt); err != nil {
 		setFailCodeFlash(w, FailCodeSystemError)
 		return err
 	}
@@ -605,6 +684,66 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	redirectURL := b.homeURL
+
+	claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
+	if err != nil {
+		redirectURL = "/auth/logout"
+		http.Redirect(w, r, redirectURL, http.StatusFound)
+		return
+	}
+
+	user, err := b.findUserByID(claims.UserID)
+	if err != nil {
+		if err == errUserNotFound {
+			setFailCodeFlash(w, FailCodeUserNotFound)
+		} else {
+			setFailCodeFlash(w, FailCodeSystemError)
+		}
+		http.Redirect(w, r, "/auth/logout", http.StatusFound)
+		return
+	}
+	u := user.(UserPasser)
+
+	key := u.GetTOTPSecret()
+	otp := r.FormValue("otp")
+	isTOTPSetup := u.GetIsTOTPSetup()
+
+	if totp.Validate(otp, key) {
+		if !isTOTPSetup {
+			if err = u.SetIsTOTPSetup(b.db, b.newUserObject(), true); err != nil {
+				setFailCodeFlash(w, FailCodeSystemError)
+				http.Redirect(w, r, "/auth/logout", http.StatusFound)
+				return
+			}
+		}
+		claims.TOTPValidated = true
+		err = b.setSecureCookiesByClaims(w, user, *claims)
+		if err != nil {
+			setFailCodeFlash(w, FailCodeSystemError)
+			http.Redirect(w, r, "/auth/logout", http.StatusFound)
+			return
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusFound)
+		return
+	} else {
+		setFailCodeFlash(w, FailCodeIncorrectTOTP)
+		redirectURL := pathTOTPValidate
+		if !isTOTPSetup {
+			redirectURL = pathTOTPSetup
+		}
+		http.Redirect(w, r, redirectURL, http.StatusFound)
+		return
+	}
+}
+
 func (b *Builder) Mount(mux *http.ServeMux) {
 	if len(b.secret) == 0 {
 		panic("secret is empty")
@@ -628,6 +767,11 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
 			mux.Handle("/auth/forget-password", wb.Page(b.forgetPasswordPageFunc))
 			mux.Handle("/auth/reset-password-link-sent", wb.Page(b.resetPasswordLinkSentPageFunc))
+		}
+		if b.totpEnabled {
+			mux.HandleFunc(pathTOTPDo, b.totpDo)
+			mux.Handle(pathTOTPSetup, wb.Page(b.totpSetupPageFunc))
+			mux.Handle(pathTOTPValidate, wb.Page(b.totpValidatePageFunc))
 		}
 	}
 	if b.oauthEnabled {

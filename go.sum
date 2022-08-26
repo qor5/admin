@@ -51,6 +51,8 @@ github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuP
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
+github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc h1:biVzkmvwrH8WK8raXaxBx6fRVTlJILwEwQGL1I/ByEI=
+github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
@@ -159,8 +161,6 @@ github.com/goplaid/multipartestutils v0.0.3/go.mod h1:jic2wg6tSAdLgLMTs1N+9+KzRu
 github.com/goplaid/web v1.1.26/go.mod h1:wuOBZR8zr6OFD0V/CXtg8UCQXm6KvGEzn5euXs17gI0=
 github.com/goplaid/web v1.2.1 h1:jz+iP+AVduojaNddoDAvVue7nNopEPGaLPMtmda51AI=
 github.com/goplaid/web v1.2.1/go.mod h1:5F3fHRmCH9oxh9lGxeGRtyslOQ4542FreIragR6dk7E=
-github.com/goplaid/x v1.1.2-0.20220803084927-3c648058c6ef h1:799gZ0VpgWbhT7b0sfrUQuFpwlBfLDO9fYsyl2vg4YU=
-github.com/goplaid/x v1.1.2-0.20220803084927-3c648058c6ef/go.mod h1:MgAbpIv0KZITQY+zI/umR2eAGVdrCCvvFLkrO24+964=
 github.com/goplaid/x v1.1.2-0.20220823081218-c425a244e81c h1:hFMvrsRQ3qaG8ObLxKWb2LKlqbK2ppTU44X0KYnbnbg=
 github.com/goplaid/x v1.1.2-0.20220823081218-c425a244e81c/go.mod h1:MgAbpIv0KZITQY+zI/umR2eAGVdrCCvvFLkrO24+964=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
@@ -301,6 +301,8 @@ github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/pquerna/otp v1.3.0 h1:oJV/SkzR33anKXwQU3Of42rL4wbrffP4uvUf1SvS5Xs=
+github.com/pquerna/otp v1.3.0/go.mod h1:dkJfzwRKNiegxyNb54X/3fLwhCynbMspSyWKnvi1AEg=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/qor/oss v0.0.0-20210412121326-3c5583a62015 h1:gmzorMEb+tKC8wkYBsIO9z+tpul0nWyIyKErqj9GG2o=
 github.com/qor/oss v0.0.0-20210412121326-3c5583a62015/go.mod h1:JhtPzUhP5KGtCB2yksmxuYAD4hEWw4qGQJpucjsm3U0=

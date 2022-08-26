@@ -23,7 +23,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			path := strings.TrimRight(r.URL.Path, "/")
-			if strings.HasPrefix(path, "/auth/") && path != b.loginURL {
+			if strings.HasPrefix(path, "/auth/") &&
+				path != b.loginURL &&
+				path != pathTOTPSetup &&
+				path != pathTOTPValidate {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -106,6 +109,34 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(w, FailCodeSystemError)
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					return
+				}
+			}
+
+			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
+				if path == b.loginURL {
+					next.ServeHTTP(w, r)
+					return
+				}
+				if !user.(UserPasser).GetIsTOTPSetup() {
+					if path == pathTOTPSetup {
+						next.ServeHTTP(w, r)
+						return
+					}
+					http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+					return
+				}
+				if path == pathTOTPValidate {
+					next.ServeHTTP(w, r)
+					return
+				}
+				http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+				return
+			}
+
+			if claims.TOTPValidated || claims.Provider != "" {
+				if path == pathTOTPSetup || path == pathTOTPValidate {
+					http.Redirect(w, r, b.homeURL, http.StatusFound)
 					return
 				}
 			}

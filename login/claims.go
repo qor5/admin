@@ -24,6 +24,7 @@ type UserClaims struct {
 	Location      string
 	IDToken       string
 	PassUpdatedAt string
+	TOTPValidated bool
 	jwt.RegisteredClaims
 }
 
