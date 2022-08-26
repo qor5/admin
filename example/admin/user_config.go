@@ -71,14 +71,14 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	user.RegisterEventFunc("eventRevokeTOTP", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		uid := ctx.R.FormValue("id")
-		u := models.User{}
-		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
+		u := &models.User{}
+		if err = db.Where("id = ?", uid).First(u).Error; err != nil {
 			return r, err
 		}
 		if err = u.SetIsTOTPSetup(db, &models.User{}, false); err != nil {
 			return r, err
 		}
-		ed.UpdateOverlayContent(ctx, &r, &u, "", nil)
+		ed.UpdateOverlayContent(ctx, &r, u, "", nil)
 		return r, nil
 	})
 
