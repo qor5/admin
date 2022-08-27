@@ -86,12 +86,14 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
 
-		actionBtns = append(actionBtns,
-			VBtn("Send Reset Password Email").
-				Color("primary").
-				Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
-					Query("id", u.ID).Go()),
-		)
+		if u.Password != "" {
+			actionBtns = append(actionBtns,
+				VBtn("Send Reset Password Email").
+					Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
+						Query("id", u.ID).Go()),
+			)
+		}
 
 		if u.GetLocked() {
 			actionBtns = append(actionBtns,
@@ -139,6 +141,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			Items([]string{"google", "microsoftonline"})
 	})
 
+	// TODO: del below
 	ed.Field("Password").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: polish UI
 		return VTextField().
