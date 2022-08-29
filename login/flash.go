@@ -24,6 +24,12 @@ const (
 	FailCodeIncorrectTOTP
 )
 
+type WarnCode int
+
+const (
+	WarnCodePasswordHasBeenChanged = iota + 1
+)
+
 type NoticeCode int
 
 const (
@@ -31,6 +37,7 @@ const (
 )
 
 const failCodeFlashCookieName = "qor5_fc_flash"
+const warnCodeFlashCookieName = "qor5_wc_flash"
 const noticeCodeFlashCookieName = "qor5_nc_flash"
 
 func setFailCodeFlash(w http.ResponseWriter, c FailCode) {
@@ -53,6 +60,28 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return FailCode(v)
+}
+
+func setWarnCodeFlash(w http.ResponseWriter, c WarnCode) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  warnCodeFlashCookieName,
+		Value: fmt.Sprint(c),
+		Path:  "/",
+	})
+}
+
+func GetWarnCodeFlash(w http.ResponseWriter, r *http.Request) WarnCode {
+	c, err := r.Cookie(warnCodeFlashCookieName)
+	if err != nil {
+		return 0
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   warnCodeFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := strconv.Atoi(c.Value)
+	return WarnCode(v)
 }
 
 func setNoticeCodeFlash(w http.ResponseWriter, c NoticeCode) {

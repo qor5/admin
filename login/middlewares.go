@@ -73,18 +73,15 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 				if err != nil {
 					log.Println(err)
-					code := FailCodeSystemError
-					if err == errUserNotFound {
-						code = FailCodeUserNotFound
-					}
-					if err == errUserLocked {
-						code = FailCodeUserLocked
-					}
-					if err == errUserPassChanged {
-						code = 0
-					}
-					if code != 0 {
-						setFailCodeFlash(w, code)
+					switch err {
+					case errUserNotFound:
+						setFailCodeFlash(w, FailCodeUserNotFound)
+					case errUserLocked:
+						setFailCodeFlash(w, FailCodeUserLocked)
+					case errUserPassChanged:
+						setWarnCodeFlash(w, WarnCodePasswordHasBeenChanged)
+					default:
+						setFailCodeFlash(w, FailCodeSystemError)
 					}
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return

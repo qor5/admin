@@ -27,6 +27,10 @@ var failCodeTexts = map[FailCode]string{
 	FailCodeIncorrectTOTP:                  "Incorrect passcode",
 }
 
+var warnCodeTexts = map[WarnCode]string{
+	WarnCodePasswordHasBeenChanged: "Password has been changed",
+}
+
 var noticeCodeTexts = map[NoticeCode]string{
 	NoticeCodePasswordSuccessfullyReset: "Password successfully reset",
 }
@@ -75,6 +79,8 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
+		wcFlash := GetWarnCodeFlash(ctx.W, ctx.R)
+		wcText := warnCodeTexts[wcFlash]
 		ncFlash := GetNoticeCodeFlash(ctx.W, ctx.R)
 		ncText := noticeCodeTexts[ncFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
@@ -134,6 +140,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		r.Body = Div(
 			Style(StyleCSS),
 			errNotice(fcText),
+			warnNotice(wcText),
 			successNotice(ncText),
 			Div(
 				userPassHTML,
