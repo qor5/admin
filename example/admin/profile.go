@@ -49,7 +49,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 					VListItemIcon(
 						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
 					),
-				).Class("pa-0 my-n4").Dense(true),
+				).Class("pa-0 my-n4 ml-1").Dense(true),
 			).Class("pa-0 ma-n4"),
 		),
 	)
