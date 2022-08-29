@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type contextUserKey int
@@ -92,7 +93,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
-			if b.autoExtendSession {
+			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(w, FailCodeSystemError)
