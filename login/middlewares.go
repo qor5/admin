@@ -34,18 +34,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
 			if err != nil {
 				log.Println(err)
-				if b.homeURL != r.RequestURI {
-					continueURL := r.RequestURI
-					if strings.Contains(r.RequestURI, "?__execute_event__=") {
-						continueURL = r.Referer()
-					}
-					http.SetCookie(w, &http.Cookie{
-						Name:     b.continueUrlCookieName,
-						Value:    continueURL,
-						Path:     "/",
-						HttpOnly: true,
-					})
-				}
+				b.setContinueURL(w, r)
 				if path == b.loginURL {
 					next.ServeHTTP(w, r)
 				} else {

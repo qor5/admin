@@ -299,16 +299,8 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	c, _ := r.Cookie(b.continueUrlCookieName)
-	if c != nil && c.Value != "" {
-		redirectURL = c.Value
-		http.SetCookie(w, &http.Cookie{
-			Name:    b.continueUrlCookieName,
-			Value:   "",
-			MaxAge:  -1,
-			Expires: time.Unix(1, 0),
-			Path:    "/",
-		})
+	if v := b.getContinueURL(w, r); v != "" {
+		redirectURL = v
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
@@ -370,6 +362,38 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
 	})
+}
+
+func (b *Builder) setContinueURL(w http.ResponseWriter, r *http.Request) {
+	continueURL := r.RequestURI
+	if strings.Contains(continueURL, "?__execute_event__=") {
+		continueURL = r.Referer()
+	}
+	if continueURL != b.homeURL && !strings.HasPrefix(continueURL, "/auth/") {
+		http.SetCookie(w, &http.Cookie{
+			Name:     b.continueUrlCookieName,
+			Value:    continueURL,
+			Path:     "/",
+			HttpOnly: true,
+		})
+	}
+}
+
+func (b *Builder) getContinueURL(w http.ResponseWriter, r *http.Request) string {
+	c, err := r.Cookie(b.continueUrlCookieName)
+	if err != nil || c.Value == "" {
+		return ""
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    b.continueUrlCookieName,
+		Value:   "",
+		MaxAge:  -1,
+		Expires: time.Unix(1, 0),
+		Path:    "/",
+	})
+
+	return c.Value
 }
 
 func (b *Builder) completeUserAuthWithSetCookie(w http.ResponseWriter, r *http.Request) (err error) {
@@ -731,6 +755,9 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if v := b.getContinueURL(w, r); v != "" {
+			redirectURL = v
+		}
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
 	} else {
