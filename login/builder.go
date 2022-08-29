@@ -679,7 +679,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setNoticeCodeFlash(w, NoticeCodePasswordSuccessfullyReset)
+	setInfoCodeFlash(w, InfoCodePasswordSuccessfullyReset)
 	http.Redirect(w, r, "/auth/login", http.StatusFound)
 	return
 }

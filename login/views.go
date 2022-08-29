@@ -31,8 +31,8 @@ var warnCodeTexts = map[WarnCode]string{
 	WarnCodePasswordHasBeenChanged: "Password has been changed",
 }
 
-var noticeCodeTexts = map[NoticeCode]string{
-	NoticeCodePasswordSuccessfullyReset: "Password successfully reset",
+var infoCodeTexts = map[InfoCode]string{
+	InfoCodePasswordSuccessfullyReset: "Password successfully reset",
 }
 
 const (
@@ -63,12 +63,12 @@ func warnNotice(msg string) HTMLComponent {
 		)
 }
 
-func successNotice(msg string) HTMLComponent {
+func infoNotice(msg string) HTMLComponent {
 	if msg == "" {
 		return nil
 	}
 
-	return Div().Class("bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative text-center").
+	return Div().Class("bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative text-center").
 		Role("alert").
 		Children(
 			Span(msg).Class("block sm:inline"),
@@ -81,8 +81,8 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		fcText := failCodeTexts[fcFlash]
 		wcFlash := GetWarnCodeFlash(ctx.W, ctx.R)
 		wcText := warnCodeTexts[wcFlash]
-		ncFlash := GetNoticeCodeFlash(ctx.W, ctx.R)
-		ncText := noticeCodeTexts[ncFlash]
+		ncFlash := GetInfoCodeFlash(ctx.W, ctx.R)
+		ncText := infoCodeTexts[ncFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
 
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto"
@@ -141,7 +141,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			Style(StyleCSS),
 			errNotice(fcText),
 			warnNotice(wcText),
-			successNotice(ncText),
+			infoNotice(ncText),
 			Div(
 				userPassHTML,
 				oauthHTML,
