@@ -224,7 +224,7 @@ func GetWrongResetPasswordInputFlash(w http.ResponseWriter, r *http.Request) Wro
 	return f
 }
 
-const secondsToRedoFlashCookieName = "qor5_fc_flash"
+const secondsToRedoFlashCookieName = "qor5_stre_flash"
 
 func setSecondsToRedoFlash(w http.ResponseWriter, c int) {
 	http.SetCookie(w, &http.Cookie{
