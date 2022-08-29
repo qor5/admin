@@ -34,18 +34,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
 			if err != nil {
 				log.Println(err)
-				if b.homeURL != r.RequestURI {
-					continueURL := r.RequestURI
-					if strings.Contains(r.RequestURI, "?__execute_event__=") {
-						continueURL = r.Referer()
-					}
-					http.SetCookie(w, &http.Cookie{
-						Name:     b.continueUrlCookieName,
-						Value:    continueURL,
-						Path:     "/",
-						HttpOnly: true,
-					})
-				}
+				b.setContinueURL(w, r)
 				if path == b.loginURL {
 					next.ServeHTTP(w, r)
 				} else {
@@ -73,18 +62,15 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 				if err != nil {
 					log.Println(err)
-					code := FailCodeSystemError
-					if err == errUserNotFound {
-						code = FailCodeUserNotFound
-					}
-					if err == errUserLocked {
-						code = FailCodeUserLocked
-					}
-					if err == errUserPassChanged {
-						code = 0
-					}
-					if code != 0 {
-						setFailCodeFlash(w, code)
+					switch err {
+					case errUserNotFound:
+						setFailCodeFlash(w, FailCodeUserNotFound)
+					case errUserLocked:
+						setFailCodeFlash(w, FailCodeUserLocked)
+					case errUserPassChanged:
+						setWarnCodeFlash(w, WarnCodePasswordHasBeenChanged)
+					default:
+						setFailCodeFlash(w, FailCodeSystemError)
 					}
 					http.Redirect(w, r, "/auth/logout", http.StatusFound)
 					return

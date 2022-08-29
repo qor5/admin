@@ -24,14 +24,21 @@ const (
 	FailCodeIncorrectTOTP
 )
 
-type NoticeCode int
+type WarnCode int
 
 const (
-	NoticeCodePasswordSuccessfullyReset NoticeCode = iota + 1
+	WarnCodePasswordHasBeenChanged = iota + 1
+)
+
+type InfoCode int
+
+const (
+	InfoCodePasswordSuccessfullyReset InfoCode = iota + 1
 )
 
 const failCodeFlashCookieName = "qor5_fc_flash"
-const noticeCodeFlashCookieName = "qor5_nc_flash"
+const warnCodeFlashCookieName = "qor5_wc_flash"
+const infoCodeFlashCookieName = "qor5_ic_flash"
 
 func setFailCodeFlash(w http.ResponseWriter, c FailCode) {
 	http.SetCookie(w, &http.Cookie{
@@ -55,26 +62,48 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 	return FailCode(v)
 }
 
-func setNoticeCodeFlash(w http.ResponseWriter, c NoticeCode) {
+func setWarnCodeFlash(w http.ResponseWriter, c WarnCode) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  noticeCodeFlashCookieName,
+		Name:  warnCodeFlashCookieName,
 		Value: fmt.Sprint(c),
 		Path:  "/",
 	})
 }
 
-func GetNoticeCodeFlash(w http.ResponseWriter, r *http.Request) NoticeCode {
-	c, err := r.Cookie(noticeCodeFlashCookieName)
+func GetWarnCodeFlash(w http.ResponseWriter, r *http.Request) WarnCode {
+	c, err := r.Cookie(warnCodeFlashCookieName)
 	if err != nil {
 		return 0
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   noticeCodeFlashCookieName,
+		Name:   warnCodeFlashCookieName,
 		Path:   "/",
 		MaxAge: -1,
 	})
 	v, _ := strconv.Atoi(c.Value)
-	return NoticeCode(v)
+	return WarnCode(v)
+}
+
+func setInfoCodeFlash(w http.ResponseWriter, c InfoCode) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  infoCodeFlashCookieName,
+		Value: fmt.Sprint(c),
+		Path:  "/",
+	})
+}
+
+func GetInfoCodeFlash(w http.ResponseWriter, r *http.Request) InfoCode {
+	c, err := r.Cookie(infoCodeFlashCookieName)
+	if err != nil {
+		return 0
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   infoCodeFlashCookieName,
+		Path:   "/",
+		MaxAge: -1,
+	})
+	v, _ := strconv.Atoi(c.Value)
+	return InfoCode(v)
 }
 
 const customErrorMessageFlashCookieName = "qor5_cem_flash"
