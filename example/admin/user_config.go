@@ -178,8 +178,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Value(values).
 				SelectedItems(selectedItems).
 				// Items(items).
-				CacheItems(true).
-				ItemsEventFunc("roles_selector")
+				CacheItems(true)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			u, ok := obj.(*models.User)
