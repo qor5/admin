@@ -25,33 +25,33 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 
 	return VMenu().OffsetY(true).Children(
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
-			h.Div(
-				VRow(
-					h.Div(VAvatar().Color("primary").Size(24).Children(
-						h.If(u.OAuthAvatar == "",
-							VIcon("account_circle"),
-						).Else(
-							h.Img(u.OAuthAvatar).Alt(u.Name),
-						)),
-						h.Text(u.Name), h.If(len(u.Roles) > 0, h.Text("("+strings.Join(roles, ",")+")")),
-					).Style(`width:100%;`).Class("text-button"),
-					h.Div(
-						h.Text(u.Account),
-					),
-				),
-			).Attr("v-bind", "attrs").Attr("v-on", "on"),
-		),
-		VList(
-			h.Div(
+			VList(
 				VListItem(
-					VListItemContent(
-						VListItemTitle(
-							h.Div(h.Text("Logout")).Class("text-button"),
+					VListItemAvatar(
+						VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
+							h.If(u.OAuthAvatar == "",
+								h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
+							).Else(
+								h.Img(u.OAuthAvatar).Alt(u.Name),
+							),
 						),
 					),
-				).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
-			),
-		).Dense(true),
+					VListItemContent(
+						VListItemTitle(h.Text(u.Name)),
+						h.Br(),
+						VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
+					),
+				).Class("pa-0 mb-2"),
+				VListItem(
+					VListItemContent(
+						VListItemTitle(h.Text(u.Account)),
+					),
+					VListItemIcon(
+						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
+					),
+				).Class("pa-0 my-n4").Dense(true),
+			).Class("pa-0 ma-n4"),
+		),
 	)
 }
 
