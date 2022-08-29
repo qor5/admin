@@ -28,7 +28,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Name",
 		"OAuthProvider",
 		"Account",
-		"Password",
 		"Company",
 		"Roles",
 		"Status",
@@ -139,22 +138,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return VSelect().FieldName(field.Name).
 			Label(field.Label).Value(field.Value(obj)).
 			Items([]string{"google", "microsoftonline"})
-	})
-
-	// TODO: del below
-	ed.Field("Password").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// TODO: polish UI
-		return VTextField().
-			FieldName(field.Name).
-			Label(field.Label).
-			Type("password")
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		u := obj.(*models.User)
-		if v := ctx.R.FormValue(field.Name); v != "" {
-			u.Password = v
-			u.EncryptPassword()
-		}
-		return nil
 	})
 
 	ed.Field("Roles").
