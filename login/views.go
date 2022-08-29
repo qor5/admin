@@ -22,6 +22,7 @@ var failCodeTexts = map[FailCode]string{
 	FailCodeAccountIsRequired:              "Email is required",
 	FailCodePasswordCannotBeEmpty:          "Password cannot be empty",
 	FailCodePasswordNotMatch:               "Password do not match",
+	FailCodeIncorrectPassword:              "Old password is incorrect",
 	FailCodeInvalidToken:                   "Invalid token",
 	FailCodeTokenExpired:                   "Token expired",
 	FailCodeIncorrectTOTP:                  "Incorrect passcode",
@@ -32,7 +33,8 @@ var warnCodeTexts = map[WarnCode]string{
 }
 
 var infoCodeTexts = map[InfoCode]string{
-	InfoCodePasswordSuccessfullyReset: "Password successfully reset",
+	InfoCodePasswordSuccessfullyReset:   "Password successfully reset",
+	InfoCodePasswordSuccessfullyChanged: "Password successfully changed",
 }
 
 const (
@@ -84,6 +86,10 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		ncFlash := GetInfoCodeFlash(ctx.W, ctx.R)
 		ncText := infoCodeTexts[ncFlash]
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
+
+		if ncFlash == InfoCodePasswordSuccessfullyChanged {
+			wcText = ""
+		}
 
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto"
 
@@ -293,6 +299,45 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/do-reset-password"),
+			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
+		)
+		return
+	}
+}
+
+func defaultChangePasswordPage(b *Builder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		errMsg := failCodeTexts[fcFlash]
+		if errMsg == "" {
+			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
+		}
+		input := GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
+
+		r.PageTitle = "Change Password"
+
+		r.Body = Div(
+			Style(StyleCSS),
+			errNotice(errMsg),
+			Div(
+				H1("Change your password").Class("leading-tight text-3xl mt-0 mb-6"),
+				Form(
+					Div(
+						Label("Old password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("old_password"),
+						Input("old_password").Placeholder("Old Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.OldPassword),
+					),
+					Div(
+						Label("New password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Input("password").Placeholder("New Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.NewPassword),
+					).Class("mt-6"),
+					Div(
+						Label("Re-enter new password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
+						Input("confirm_password").Placeholder("New Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.ConfirmPassword),
+					).Class("mt-6"),
+					Div(
+						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+					).Class("mt-6"),
+				).Method("post").Action("/auth/do-change-password"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return

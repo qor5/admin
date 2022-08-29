@@ -56,13 +56,16 @@ type Builder struct {
 	maxRetryCount        int
 	noForgetPasswordLink bool
 
-	loginURL string
-	homeURL  string
+	loginURL            string
+	homeURL             string
+	changePasswordURL   string
+	doChangePasswordURL string
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
 	resetPasswordLinkSentPageFunc web.PageFunc
 	resetPasswordPageFunc         web.PageFunc
+	changePasswordPageFunc        web.PageFunc
 	totpSetupPageFunc             web.PageFunc
 	totpValidatePageFunc          web.PageFunc
 
@@ -87,6 +90,8 @@ func New() *Builder {
 		continueUrlCookieName: "qor5_continue_url",
 		loginURL:              "/auth/login",
 		homeURL:               "/",
+		changePasswordURL:     "/auth/change-password",
+		doChangePasswordURL:   "/auth/do-change-password",
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
 		maxRetryCount:         5,
@@ -98,6 +103,7 @@ func New() *Builder {
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
 	r.resetPasswordLinkSentPageFunc = defaultResetPasswordLinkSentPage(r)
 	r.resetPasswordPageFunc = defaultResetPasswordPage(r)
+	r.changePasswordPageFunc = defaultChangePasswordPage(r)
 	r.totpSetupPageFunc = defaultTOTPSetupPage(r)
 	r.totpValidatePageFunc = defaultTOTPValidatePage(r)
 
@@ -155,6 +161,11 @@ func (b *Builder) ResetPasswordLinkSentPageFunc(v web.PageFunc) (r *Builder) {
 
 func (b *Builder) ResetPasswordPageFunc(v web.PageFunc) (r *Builder) {
 	b.resetPasswordPageFunc = v
+	return b
+}
+
+func (b *Builder) ChangePasswordPageFunc(v web.PageFunc) (r *Builder) {
+	b.changePasswordPageFunc = v
 	return b
 }
 
@@ -323,6 +334,7 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 		MaxAge:   b.sessionMaxAge,
 		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 		HttpOnly: true,
+		Secure:   true,
 	})
 
 	if secureSalt != "" {
@@ -337,6 +349,7 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 			MaxAge:   b.sessionMaxAge,
 			Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 			HttpOnly: true,
+			Secure:   true,
 		})
 	}
 
@@ -352,6 +365,7 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
+		Secure:   true,
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authSecureCookieName,
@@ -361,6 +375,7 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
+		Secure:   true,
 	})
 }
 
@@ -386,11 +401,12 @@ func (b *Builder) getContinueURL(w http.ResponseWriter, r *http.Request) string 
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    b.continueUrlCookieName,
-		Value:   "",
-		MaxAge:  -1,
-		Expires: time.Unix(1, 0),
-		Path:    "/",
+		Name:     b.continueUrlCookieName,
+		Value:    "",
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		Path:     "/",
+		HttpOnly: true,
 	})
 
 	return c.Value
@@ -704,7 +720,75 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setInfoCodeFlash(w, InfoCodePasswordSuccessfullyReset)
-	http.Redirect(w, r, "/auth/login", http.StatusFound)
+	http.Redirect(w, r, b.loginURL, http.StatusFound)
+	return
+}
+
+func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	oldPassword := r.FormValue("old_password")
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirm_password")
+
+	user := GetCurrentUser(r).(UserPasser)
+	if !user.IsPasswordCorrect(oldPassword) {
+		setFailCodeFlash(w, FailCodeIncorrectPassword)
+		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+			OldPassword:     oldPassword,
+			NewPassword:     password,
+			ConfirmPassword: confirmPassword,
+		})
+		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		return
+	}
+
+	if password == "" {
+		setFailCodeFlash(w, FailCodePasswordCannotBeEmpty)
+		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+			OldPassword:     oldPassword,
+			NewPassword:     password,
+			ConfirmPassword: confirmPassword,
+		})
+		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		return
+	}
+	if confirmPassword != password {
+		setFailCodeFlash(w, FailCodePasswordNotMatch)
+		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+			OldPassword:     oldPassword,
+			NewPassword:     password,
+			ConfirmPassword: confirmPassword,
+		})
+		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		return
+	}
+	if b.passwordValidationFunc != nil {
+		msg, ok := b.passwordValidationFunc(password)
+		if !ok {
+			setCustomErrorMessageFlash(w, msg)
+			setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+				OldPassword:     oldPassword,
+				NewPassword:     password,
+				ConfirmPassword: confirmPassword,
+			})
+			http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+			return
+		}
+	}
+
+	err := user.SetPassword(b.db, b.newUserObject(), password)
+	if err != nil {
+		setFailCodeFlash(w, FailCodeSystemError)
+		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		return
+	}
+
+	setInfoCodeFlash(w, InfoCodePasswordSuccessfullyChanged)
+	http.Redirect(w, r, b.loginURL, http.StatusFound)
 	return
 }
 
@@ -789,7 +873,9 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	if b.userPassEnabled {
 		mux.HandleFunc("/auth/userpass/login", b.completeUserAuthCallback)
 		mux.HandleFunc("/auth/do-reset-password", b.doResetPassword)
+		mux.HandleFunc(b.doChangePasswordURL, b.doChangePassword)
 		mux.Handle("/auth/reset-password", wb.Page(b.resetPasswordPageFunc))
+		mux.Handle(b.changePasswordURL, wb.Page(b.changePasswordPageFunc))
 		if !b.noForgetPasswordLink {
 			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
 			mux.Handle("/auth/forget-password", wb.Page(b.forgetPasswordPageFunc))
