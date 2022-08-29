@@ -25,6 +25,8 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			path := strings.TrimRight(r.URL.Path, "/")
 			if strings.HasPrefix(path, "/auth/") &&
 				path != b.loginURL &&
+				path != b.changePasswordURL &&
+				path != b.doChangePasswordURL &&
 				path != pathTOTPSetup &&
 				path != pathTOTPValidate {
 				next.ServeHTTP(w, r)

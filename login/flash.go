@@ -19,6 +19,7 @@ const (
 	FailCodeAccountIsRequired
 	FailCodePasswordCannotBeEmpty
 	FailCodePasswordNotMatch
+	FailCodeIncorrectPassword
 	FailCodeInvalidToken
 	FailCodeTokenExpired
 	FailCodeIncorrectTOTP
@@ -34,6 +35,7 @@ type InfoCode int
 
 const (
 	InfoCodePasswordSuccessfullyReset InfoCode = iota + 1
+	InfoCodePasswordSuccessfullyChanged
 )
 
 const failCodeFlashCookieName = "qor5_fc_flash"
@@ -42,9 +44,10 @@ const infoCodeFlashCookieName = "qor5_ic_flash"
 
 func setFailCodeFlash(w http.ResponseWriter, c FailCode) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  failCodeFlashCookieName,
-		Value: fmt.Sprint(c),
-		Path:  "/",
+		Name:     failCodeFlashCookieName,
+		Value:    fmt.Sprint(c),
+		Path:     "/",
+		HttpOnly: true,
 	})
 }
 
@@ -54,9 +57,10 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 		return 0
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   failCodeFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     failCodeFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return FailCode(v)
@@ -64,9 +68,10 @@ func GetFailCodeFlash(w http.ResponseWriter, r *http.Request) FailCode {
 
 func setWarnCodeFlash(w http.ResponseWriter, c WarnCode) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  warnCodeFlashCookieName,
-		Value: fmt.Sprint(c),
-		Path:  "/",
+		Name:     warnCodeFlashCookieName,
+		Value:    fmt.Sprint(c),
+		Path:     "/",
+		HttpOnly: true,
 	})
 }
 
@@ -76,9 +81,10 @@ func GetWarnCodeFlash(w http.ResponseWriter, r *http.Request) WarnCode {
 		return 0
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   warnCodeFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     warnCodeFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return WarnCode(v)
@@ -86,9 +92,10 @@ func GetWarnCodeFlash(w http.ResponseWriter, r *http.Request) WarnCode {
 
 func setInfoCodeFlash(w http.ResponseWriter, c InfoCode) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  infoCodeFlashCookieName,
-		Value: fmt.Sprint(c),
-		Path:  "/",
+		Name:     infoCodeFlashCookieName,
+		Value:    fmt.Sprint(c),
+		Path:     "/",
+		HttpOnly: true,
 	})
 }
 
@@ -98,9 +105,10 @@ func GetInfoCodeFlash(w http.ResponseWriter, r *http.Request) InfoCode {
 		return 0
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   infoCodeFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     infoCodeFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return InfoCode(v)
@@ -110,9 +118,10 @@ const customErrorMessageFlashCookieName = "qor5_cem_flash"
 
 func setCustomErrorMessageFlash(w http.ResponseWriter, f string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  customErrorMessageFlashCookieName,
-		Value: f,
-		Path:  "/",
+		Name:     customErrorMessageFlashCookieName,
+		Value:    f,
+		Path:     "/",
+		HttpOnly: true,
 	})
 }
 
@@ -122,9 +131,10 @@ func GetCustomErrorMessageFlash(w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   customErrorMessageFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     customErrorMessageFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 	})
 	return c.Value
 }
@@ -139,9 +149,11 @@ type WrongLoginInputFlash struct {
 func setWrongLoginInputFlash(w http.ResponseWriter, f WrongLoginInputFlash) {
 	bf, _ := json.Marshal(&f)
 	http.SetCookie(w, &http.Cookie{
-		Name:  wrongLoginInputFlashCookieName,
-		Value: base64.StdEncoding.EncodeToString(bf),
-		Path:  "/",
+		Name:     wrongLoginInputFlashCookieName,
+		Value:    base64.StdEncoding.EncodeToString(bf),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
 	})
 }
 
@@ -151,9 +163,11 @@ func GetWrongLoginInputFlash(w http.ResponseWriter, r *http.Request) WrongLoginI
 		return WrongLoginInputFlash{}
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   wrongLoginInputFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     wrongLoginInputFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
 	})
 	v, _ := base64.StdEncoding.DecodeString(c.Value)
 	wi := WrongLoginInputFlash{}
@@ -170,9 +184,11 @@ type WrongForgetPasswordInputFlash struct {
 func setWrongForgetPasswordInputFlash(w http.ResponseWriter, f WrongForgetPasswordInputFlash) {
 	bf, _ := json.Marshal(&f)
 	http.SetCookie(w, &http.Cookie{
-		Name:  wrongForgetPasswordInputFlashCookieName,
-		Value: base64.StdEncoding.EncodeToString(bf),
-		Path:  "/",
+		Name:     wrongForgetPasswordInputFlashCookieName,
+		Value:    base64.StdEncoding.EncodeToString(bf),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
 	})
 }
 
@@ -182,9 +198,11 @@ func GetWrongForgetPasswordInputFlash(w http.ResponseWriter, r *http.Request) Wr
 		return WrongForgetPasswordInputFlash{}
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   wrongForgetPasswordInputFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     wrongForgetPasswordInputFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
 	})
 	v, _ := base64.StdEncoding.DecodeString(c.Value)
 	f := WrongForgetPasswordInputFlash{}
@@ -202,9 +220,11 @@ type WrongResetPasswordInputFlash struct {
 func setWrongResetPasswordInputFlash(w http.ResponseWriter, f WrongResetPasswordInputFlash) {
 	bf, _ := json.Marshal(&f)
 	http.SetCookie(w, &http.Cookie{
-		Name:  wrongResetPasswordInputFlashCookieName,
-		Value: base64.StdEncoding.EncodeToString(bf),
-		Path:  "/",
+		Name:     wrongResetPasswordInputFlashCookieName,
+		Value:    base64.StdEncoding.EncodeToString(bf),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
 	})
 }
 
@@ -214,12 +234,51 @@ func GetWrongResetPasswordInputFlash(w http.ResponseWriter, r *http.Request) Wro
 		return WrongResetPasswordInputFlash{}
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   wrongResetPasswordInputFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     wrongResetPasswordInputFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
 	})
 	v, _ := base64.StdEncoding.DecodeString(c.Value)
 	f := WrongResetPasswordInputFlash{}
+	json.Unmarshal([]byte(v), &f)
+	return f
+}
+
+const wrongChangePasswordInputFlashCookieName = "qor5_wcpi_flash"
+
+type WrongChangePasswordInputFlash struct {
+	OldPassword     string
+	NewPassword     string
+	ConfirmPassword string
+}
+
+func setWrongChangePasswordInputFlash(w http.ResponseWriter, f WrongChangePasswordInputFlash) {
+	bf, _ := json.Marshal(&f)
+	http.SetCookie(w, &http.Cookie{
+		Name:     wrongChangePasswordInputFlashCookieName,
+		Value:    base64.StdEncoding.EncodeToString(bf),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+	})
+}
+
+func GetWrongChangePasswordInputFlash(w http.ResponseWriter, r *http.Request) WrongChangePasswordInputFlash {
+	c, err := r.Cookie(wrongChangePasswordInputFlashCookieName)
+	if err != nil {
+		return WrongChangePasswordInputFlash{}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     wrongChangePasswordInputFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+	})
+	v, _ := base64.StdEncoding.DecodeString(c.Value)
+	f := WrongChangePasswordInputFlash{}
 	json.Unmarshal([]byte(v), &f)
 	return f
 }
@@ -228,9 +287,10 @@ const secondsToRedoFlashCookieName = "qor5_stre_flash"
 
 func setSecondsToRedoFlash(w http.ResponseWriter, c int) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  secondsToRedoFlashCookieName,
-		Value: fmt.Sprint(c),
-		Path:  "/",
+		Name:     secondsToRedoFlashCookieName,
+		Value:    fmt.Sprint(c),
+		Path:     "/",
+		HttpOnly: true,
 	})
 }
 
@@ -240,9 +300,10 @@ func GetSecondsToRedoFlash(w http.ResponseWriter, r *http.Request) int {
 		return 0
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   secondsToRedoFlashCookieName,
-		Path:   "/",
-		MaxAge: -1,
+		Name:     secondsToRedoFlashCookieName,
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
 	})
 	v, _ := strconv.Atoi(c.Value)
 	return v
