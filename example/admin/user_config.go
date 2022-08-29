@@ -154,6 +154,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return nil
 	})
 
+	var roles []role.Role
+	db.Find(&roles)
+	var allRoleItems = []DefaultOptionItem{}
+	for _, r := range roles {
+		allRoleItems = append(allRoleItems, DefaultOptionItem{
+			Text:  r.Name,
+			Value: fmt.Sprint(r.ID),
+		})
+	}
+
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var selectedItems = []DefaultOptionItem{}
@@ -177,7 +187,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
 				Value(values).
 				SelectedItems(selectedItems).
-				// Items(items).
+				Items(allRoleItems).
 				CacheItems(true)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
