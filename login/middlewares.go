@@ -25,7 +25,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			path := strings.TrimRight(r.URL.Path, "/")
 			if strings.HasPrefix(path, "/auth/") &&
+				// to redirect to login page
 				path != b.loginURL &&
+				// below paths need logged-in status
+				path != b.logoutURL &&
 				path != b.changePasswordURL &&
 				path != b.doChangePasswordURL &&
 				path != pathTOTPSetup &&
@@ -75,7 +78,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					default:
 						setFailCodeFlash(w, FailCodeSystemError)
 					}
-					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					if path == b.logoutURL {
+						next.ServeHTTP(w, r)
+					} else {
+						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+					}
 					return
 				}
 
@@ -83,7 +90,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					secureSalt = user.(SessionSecurer).GetSecure()
 					_, err := parseBaseClaimsFromCookie(r, b.authSecureCookieName, b.secret+secureSalt)
 					if err != nil {
-						http.Redirect(w, r, "/auth/logout", http.StatusFound)
+						if path == b.logoutURL {
+							next.ServeHTTP(w, r)
+						} else {
+							http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						}
 						return
 					}
 				}
@@ -91,16 +102,20 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				user = claims
 			}
 
-			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
-
 			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(w, FailCodeSystemError)
-					http.Redirect(w, r, "/auth/logout", http.StatusFound)
+					if path == b.logoutURL {
+						next.ServeHTTP(w, r)
+					} else {
+						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+					}
 					return
 				}
 			}
+
+			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
 
 			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
 				if path == b.loginURL {

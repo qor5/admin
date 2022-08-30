@@ -20,7 +20,7 @@ import (
 )
 
 func configUser(b *presets.Builder, db *gorm.DB) {
-	user := b.Model(&models.User{})
+	user := b.Model(&models.User{}).MenuIcon("people")
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
@@ -28,7 +28,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Name",
 		"OAuthProvider",
 		"Account",
-		"Password",
 		"Company",
 		"Roles",
 		"Status",
@@ -86,12 +85,14 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
 
-		actionBtns = append(actionBtns,
-			VBtn("Send Reset Password Email").
-				Color("primary").
-				Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
-					Query("id", u.ID).Go()),
-		)
+		if u.OAuthProvider == "" && u.Account != "" {
+			actionBtns = append(actionBtns,
+				VBtn("Send Reset Password Email").
+					Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
+						Query("id", u.ID).Go()),
+			)
+		}
 
 		if u.GetLocked() {
 			actionBtns = append(actionBtns,
@@ -137,21 +138,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return VSelect().FieldName(field.Name).
 			Label(field.Label).Value(field.Value(obj)).
 			Items([]string{"google", "microsoftonline"})
-	})
-
-	ed.Field("Password").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// TODO: polish UI
-		return VTextField().
-			FieldName(field.Name).
-			Label(field.Label).
-			Type("password")
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		u := obj.(*models.User)
-		if v := ctx.R.FormValue(field.Name); v != "" {
-			u.Password = v
-			u.EncryptPassword()
-		}
-		return nil
 	})
 
 	var roles []role.Role

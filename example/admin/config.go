@@ -136,6 +136,7 @@ func NewConfig() Config {
 	b.MenuOrder(
 		"InputHarness",
 		"Post",
+		"profile",
 		"User",
 		"Role",
 		b.MenuGroup("Site Management").SubItems(
@@ -195,6 +196,7 @@ func NewConfig() Config {
 
 	configInputHarness(b, db)
 	configUser(b, db)
+	configProfile(b, db)
 	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},

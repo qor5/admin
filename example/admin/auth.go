@@ -52,5 +52,47 @@ func newLoginBuilder(db *gorm.DB, i18nBuilder *i18n.Builder) *login.Builder {
 				return "Password cannot be less than 6 characters", false
 			}
 			return "", true
-		}).I18n(i18nBuilder)
+		}).I18n(i18nBuilder).
+		AfterLogin(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("logged in")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterFailedToLogin(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("failed to login")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterUserLocked(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("user locked")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterLogout(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("logout")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterSendResetPasswordLink(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("send reset password link")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterResetPassword(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("reset password")
+			fmt.Println("#########################################end")
+			return nil
+		}).
+		AfterChangePassword(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("change password")
+			fmt.Println("#########################################end")
+			return nil
+		})
 }
