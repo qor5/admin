@@ -52,7 +52,8 @@ func newLoginBuilder(db *gorm.DB, i18nBuilder *i18n.Builder) *login.Builder {
 				return "Password cannot be less than 6 characters", false
 			}
 			return "", true
-		}).I18n(i18nBuilder).
+		}).
+		I18n(i18nBuilder).
 		AfterLogin(func(r *http.Request, user interface{}) error {
 			fmt.Println("#########################################start")
 			fmt.Println("logged in")

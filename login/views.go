@@ -8,9 +8,9 @@ import (
 	"net/url"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
@@ -82,8 +82,8 @@ func infoNotice(msg string) HTMLComponent {
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
-		i18nBuilder := b.i18nBuilder
 		var languages []HTMLComponent
+		i18nBuilder := b.i18nBuilder
 		currentLang := i18nBuilder.GetCurrentLangFromCookie(ctx.R)
 		ls := i18nBuilder.GetSupportLanguages()
 		for _, l := range ls {
@@ -93,12 +93,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			}
 			languages = append(languages, elem)
 		}
-		if b.i18nMsgMap == nil {
-			b.i18nMsgMap = make(map[string]Messages)
-			b.RegisterI18nToMap(language.English, Messages_en_US)
-			b.RegisterI18nToMap(language.SimplifiedChinese, Messages_zh_CN)
-		}
-		msgr := b.MustGetI18nMsgFromMap(currentLang, Messages_en_US)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 		// i18n end
 
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
@@ -178,7 +173,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 const lang = document.getElementById("lang");
 document.cookie="lang=" + lang.value;
 location.reload();
-`).Class("mt-6"),
+`).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"),
 			).Class(wrapperClass),
 		)
 
@@ -414,13 +409,15 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
 
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
 			Style(StyleCSS),
 			errNotice(fcText),
 			Div(
 				Div(
-					H1("Two Factor Authentication").
+					H1(msgr.TwoFactorAuthentication).
 						Class("text-3xl font-bold mb-4"),
 					Label("Scan this QR code with Google Authenticator (or similar) app").
 						Class(labelClass),
@@ -455,8 +452,7 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
 
-		currentLang := b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
-		msgr := b.MustGetI18nMsgFromMap(currentLang, Messages_en_US)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(

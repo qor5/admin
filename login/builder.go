@@ -31,6 +31,8 @@ var (
 )
 
 const (
+	I18nLoginKey i18n.ModuleKey = "I18nLoginKey"
+
 	pathTOTPDo       = "/auth/2fa/totp/do"
 	pathTOTPSetup    = "/auth/2fa/totp/setup"
 	pathTOTPValidate = "/auth/2fa/totp/validate"
@@ -95,7 +97,6 @@ type Builder struct {
 	totpIssuer           string
 
 	i18nBuilder *i18n.Builder
-	i18nMsgMap  map[string]Messages
 }
 
 func New() *Builder {
@@ -268,19 +269,13 @@ func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
 
 func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
+	b.registerI18n()
 	return b
 }
 
-func (b *Builder) RegisterI18nToMap(lang language.Tag, msg *Messages) (r *Builder) {
-	b.i18nMsgMap[lang.String()] = *msg
-	return b
-}
-
-func (b *Builder) MustGetI18nMsgFromMap(lang string, defaultMessages *Messages) Messages {
-	if lang == "" {
-		return *defaultMessages
-	}
-	return b.i18nMsgMap[lang]
+func (b *Builder) registerI18n() {
+	b.i18nBuilder.RegisterForModule(language.English, I18nLoginKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nLoginKey, Messages_zh_CN)
 }
 
 func (b *Builder) DB(v *gorm.DB) (r *Builder) {
@@ -1044,23 +1039,23 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	wb := web.New()
 
 	mux.HandleFunc(b.logoutURL, b.logout)
-	mux.Handle(b.loginURL, wb.Page(b.loginPageFunc))
+	mux.Handle(b.loginURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.loginPageFunc)))
 
 	if b.userPassEnabled {
 		mux.HandleFunc("/auth/userpass/login", b.userpassLogin)
 		mux.HandleFunc("/auth/do-reset-password", b.doResetPassword)
 		mux.HandleFunc(b.doChangePasswordURL, b.doChangePassword)
-		mux.Handle("/auth/reset-password", wb.Page(b.resetPasswordPageFunc))
-		mux.Handle(b.changePasswordURL, wb.Page(b.changePasswordPageFunc))
+		mux.Handle("/auth/reset-password", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordPageFunc)))
+		mux.Handle(b.changePasswordURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.changePasswordPageFunc)))
 		if !b.noForgetPasswordLink {
 			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
-			mux.Handle("/auth/forget-password", wb.Page(b.forgetPasswordPageFunc))
-			mux.Handle("/auth/reset-password-link-sent", wb.Page(b.resetPasswordLinkSentPageFunc))
+			mux.Handle("/auth/forget-password", b.i18nBuilder.EnsureLanguage(wb.Page(b.forgetPasswordPageFunc)))
+			mux.Handle("/auth/reset-password-link-sent", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
 		}
 		if b.totpEnabled {
 			mux.HandleFunc(pathTOTPDo, b.totpDo)
-			mux.Handle(pathTOTPSetup, wb.Page(b.totpSetupPageFunc))
-			mux.Handle(pathTOTPValidate, wb.Page(b.totpValidatePageFunc))
+			mux.Handle(pathTOTPSetup, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpSetupPageFunc)))
+			mux.Handle(pathTOTPValidate, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpValidatePageFunc)))
 		}
 	}
 	if b.oauthEnabled {
