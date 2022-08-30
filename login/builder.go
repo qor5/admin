@@ -11,11 +11,13 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 	. "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -81,6 +83,9 @@ type Builder struct {
 	sessionSecureEnabled bool
 	totpEnabled          bool
 	totpIssuer           string
+
+	i18nBuilder *i18n.Builder
+	i18nMsgMap  map[string]Messages
 }
 
 func New() *Builder {
@@ -213,6 +218,23 @@ func (b *Builder) TOTPIssuer(v string) (r *Builder) {
 func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
 	b.noForgetPasswordLink = v
 	return b
+}
+
+func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
+	b.i18nBuilder = v
+	return b
+}
+
+func (b *Builder) RegisterI18nToMap(lang language.Tag, msg *Messages) (r *Builder) {
+	b.i18nMsgMap[lang.String()] = *msg
+	return b
+}
+
+func (b *Builder) MustGetI18nMsgFromMap(lang string, defaultMessages *Messages) Messages {
+	if lang == "" {
+		return *defaultMessages
+	}
+	return b.i18nMsgMap[lang]
 }
 
 func (b *Builder) DB(v *gorm.DB) (r *Builder) {

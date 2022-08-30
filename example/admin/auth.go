@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/goplaid/x/i18n"
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
@@ -25,7 +26,7 @@ type contextUserKey int
 
 const _userKey contextUserKey = 1
 
-func newLoginBuilder(db *gorm.DB) *login.Builder {
+func newLoginBuilder(db *gorm.DB, i18nBuilder *i18n.Builder) *login.Builder {
 	return login.New().
 		DB(db).
 		UserModel(&models.User{}).
@@ -51,5 +52,5 @@ func newLoginBuilder(db *gorm.DB) *login.Builder {
 				return "Password cannot be less than 6 characters", false
 			}
 			return "", true
-		})
+		}).I18n(i18nBuilder)
 }

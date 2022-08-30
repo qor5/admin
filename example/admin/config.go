@@ -325,7 +325,7 @@ func NewConfig() Config {
 
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db),
+		lb:          newLoginBuilder(db, b.I18n()),
 		pageBuilder: pageBuilder,
 	}
 }

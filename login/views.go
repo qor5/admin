@@ -10,6 +10,8 @@ import (
 	"github.com/goplaid/web"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
 
@@ -79,6 +81,26 @@ func infoNotice(msg string) HTMLComponent {
 
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// i18n start
+		i18nBuilder := b.i18nBuilder
+		var languages []HTMLComponent
+		currentLang := i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+		ls := i18nBuilder.GetSupportLanguages()
+		for _, l := range ls {
+			elem := Option(display.Self.Name(l)).Value(l.String())
+			if currentLang == l.String() {
+				elem.Attr("selected", "selected")
+			}
+			languages = append(languages, elem)
+		}
+		if b.i18nMsgMap == nil {
+			b.i18nMsgMap = make(map[string]Messages)
+			b.RegisterI18nToMap(language.English, Messages_en_US)
+			b.RegisterI18nToMap(language.SimplifiedChinese, Messages_zh_CN)
+		}
+		msgr := b.MustGetI18nMsgFromMap(currentLang, Messages_en_US)
+		// i18n end
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
 		fcText := failCodeTexts[fcFlash]
 		wcFlash := GetWarnCodeFlash(ctx.W, ctx.R)
@@ -120,22 +142,22 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 				Form(
 					Input("login_type").Type("hidden").Value("1"),
 					Div(
-						Label("Email").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
+						Label(msgr.Email).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
 						Input("account").Placeholder("Email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
 							Value(wlFlash.Ia),
 					),
 					Div(
-						Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Label(msgr.Password).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
 						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
 							Value(wlFlash.Ip),
 					).Class("mt-6"),
 					Div(
-						Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button(msgr.SignIn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/userpass/login"),
 				If(!b.noForgetPasswordLink,
 					Div(
-						A(Text("Forget your password?")).Href("/auth/forget-password").
+						A(Text(msgr.ForgetPass)).Href("/auth/forget-password").
 							Class("text-gray-500"),
 					).Class("text-right mt-2"),
 				),
@@ -151,8 +173,16 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			Div(
 				userPassHTML,
 				oauthHTML,
+				Select(
+					languages...,
+				).Id("lang").Attr("onchange", `
+const lang = document.getElementById("lang");
+document.cookie="lang=" + lang.value;
+location.reload();
+`).Class("mt-6"),
 			).Class(wrapperClass),
 		)
+
 		return
 	}
 }
@@ -426,15 +456,18 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
 
+		currentLang := b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+		msgr := b.MustGetI18nMsgFromMap(currentLang, Messages_en_US)
+
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
 			Style(StyleCSS),
 			errNotice(fcText),
 			Div(
 				Div(
-					H1("Two Factor Authentication").
+					H1(msgr.TwoFactorAuthentication).
 						Class("text-3xl font-bold mb-4"),
-					Label("Enter the provided one-time code below").
+					Label(msgr.TwoFactorPrompt).
 						Class(labelClass),
 				),
 				Form(
