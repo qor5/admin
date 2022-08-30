@@ -1,18 +1,22 @@
 package admin
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/vuetify"
+	"github.com/goplaid/x/presets"
+	. "github.com/goplaid/x/vuetify"
+	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func profile(ctx *web.EventContext) h.HTMLComponent {
 	u := getCurrentUser(ctx.R)
 	if u == nil {
-		return vuetify.VBtn("Login").Text(true).Href("/auth/login")
+		return VBtn("Login").Text(true).Href("/auth/login")
 	}
 
 	var roles []string
@@ -20,36 +24,107 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		roles = append(roles, role.Name)
 	}
 
-	return vuetify.VMenu().OffsetY(true).Children(
+	return VMenu().OffsetY(true).Children(
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
-			h.Div(
-				vuetify.VRow(
-					h.Div(vuetify.VAvatar().Color("primary").Size(24).Children(
-						h.If(u.OAuthAvatar == "",
-							vuetify.VIcon("account_circle"),
-						).Else(
-							h.Img(u.OAuthAvatar).Alt(u.Name),
-						)),
-						h.Text(u.Name), h.If(len(u.Roles) > 0, h.Text("("+strings.Join(roles, ",")+")")),
-					).Style(`width:100%;`).Class("text-button"),
-					h.Div(
-						h.Text(u.Account),
-					),
-				),
-			).Attr("v-bind", "attrs").Attr("v-on", "on"),
-		),
-		vuetify.VList(
-			h.Div(
-				vuetify.VListItem(
-					vuetify.VListItemContent(
-						vuetify.VListItemTitle(
-							h.Div(h.Text("Logout")).Class("text-button"),
+			VList(
+				VListItem(
+					VListItemAvatar(
+						VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
+							h.If(u.OAuthAvatar == "",
+								h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
+							).Else(
+								h.Img(u.OAuthAvatar).Alt(u.Name),
+							),
 						),
 					),
-				).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
-			),
-		).Dense(true),
+					VListItemContent(
+						VListItemTitle(h.Text(u.Name)),
+						h.Br(),
+						VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
+					),
+				).Class("pa-0 mb-2"),
+				VListItem(
+					VListItemContent(
+						VListItemTitle(h.Text(u.Account)),
+					),
+					VListItemIcon(
+						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
+					),
+				).Class("pa-0 my-n4 ml-1").Dense(true),
+			).Class("pa-0 ma-n4"),
+		),
 	)
+}
+
+type Profile struct{}
+
+func configProfile(b *presets.Builder, db *gorm.DB) {
+	m := b.Model(&Profile{}).URIName("profile").
+		Label("Profile").MenuIcon("person").Singleton(true)
+
+	eb := m.Editing("Info", "ChangePassword")
+
+	eb.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return nil, errors.New("cannot get current user")
+		}
+		return u, nil
+	})
+
+	eb.SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+		u := obj.(*models.User)
+		u.Name = ctx.R.FormValue("name")
+		return
+	})
+
+	eb.Field("Info").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		var roles []string
+		for _, v := range u.Roles {
+			roles = append(roles, v.Name)
+		}
+
+		return h.Div(
+			VRow(
+				VCol(
+					VTextField().Label("Name").Value(u.Name).FieldName("name"),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Email").Value(u.Account),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Company").Value(u.Company),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Role").Value(strings.Join(roles, ", ")),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Status").Value(u.Status),
+				),
+			),
+		).Class("mt-4 ml-2")
+	})
+
+	eb.Field("ChangePassword").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			VRow(
+				VCol(
+					VBtn("").Href("/auth/change-password").
+						Outlined(true).Color("primary").
+						Children(VIcon("lock_outline").Small(true), h.Text("change password")),
+				),
+			),
+		).Class("ml-2")
+	})
 }
 
 func getAvatarShortName(u *models.User) string {
