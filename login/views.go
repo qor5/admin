@@ -357,7 +357,7 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if len(totpSecret) == 0 {
-			r.Body = errorBody(errNeedTOTPSetup.Error())
+			r.Body = errorBody("need setup totp")
 			return
 		}
 		key, err = otp.NewKeyFromURL(
