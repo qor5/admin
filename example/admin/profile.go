@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -59,86 +60,70 @@ type Profile struct{}
 
 func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
-		LayoutConfig(&presets.LayoutConfig{SearchBoxInvisible: true}).
-		Label("Profile").MenuIcon("person")
+		Label("Profile").MenuIcon("person").Singleton(true)
 
-	lb := m.Listing()
+	eb := m.Editing("Info", "ChangePassword")
 
-	m.RegisterEventFunc("eventSaveProfile", func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		uid := ctx.R.Form.Get("id")
-		name := ctx.R.Form.Get("name")
-
-		if err = db.Model(&models.User{}).Where("id = ?", uid).Updates(map[string]interface{}{
-			"name": name,
-		}).Error; err != nil {
-			return
+	eb.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return nil, errors.New("cannot get current user")
 		}
+		return u, nil
+	})
 
-		r.VarsScript = "location.reload();"
-
+	eb.SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+		u := obj.(*models.User)
+		u.Name = ctx.R.FormValue("name")
 		return
 	})
 
-	lb.PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		const rowClass = "my-n6"
-		u := getCurrentUser(ctx.R)
-
+	eb.Field("Info").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
 		var roles []string
 		for _, v := range u.Roles {
 			roles = append(roles, v.Name)
 		}
 
-		r.PageTitle = "Profile"
+		return h.Div(
+			VRow(
+				VCol(
+					VTextField().Label("Name").Value(u.Name).FieldName("name"),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Email").Value(u.Account),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Company").Value(u.Company),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Role").Value(strings.Join(roles, ", ")),
+				),
+			).Class("my-n6"),
+			VRow(
+				VCol(
+					vx.VXReadonlyField().Label("Status").Value(u.Status),
+				),
+			),
+		).Class("mt-4 ml-2")
+	})
 
-		r.Body = h.Div(
-			VContainer(
-				h.Div(
-					VRow(
-						VCol(
-							VTextField().Label("Name").Value(u.Name).FieldName("name"),
-						),
-					).Class(rowClass),
-					VRow(
-						VCol(
-							vx.VXReadonlyField().Label("Email").Value(u.Account),
-						),
-					).Class(rowClass),
-					VRow(
-						VCol(
-							vx.VXReadonlyField().Label("Company").Value(u.Company),
-						),
-					).Class(rowClass),
-					VRow(
-						VCol(
-							vx.VXReadonlyField().Label("Role").Value(strings.Join(roles, ", ")),
-						),
-					).Class(rowClass),
-					VRow(
-						VCol(
-							vx.VXReadonlyField().Label("Status").Value(u.Status),
-						),
-					),
-					VRow(
-						VCol(
-							VBtn("").Href("/auth/change-password").
-								Outlined(true).Color("primary").
-								Children(VIcon("lock_outline").Small(true), h.Text("change password")),
-						),
-					),
-					VRow(
-						VCol(
-							VBtn("Cancel").Class("mr-1").
-								Attr("@click", web.Plaid().Reload().Go()),
-							VBtn("Save").Color("primary").
-								Attr("@click", web.Plaid().EventFunc("eventSaveProfile").
-									Query("id", u.ID).Go(),
-								),
-						).Class("text-right"),
-					),
-				).Class("pa-4 my-2"),
-			).Fluid(true),
-		)
-		return
+	eb.Field("ChangePassword").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			VRow(
+				VCol(
+					VBtn("").Href("/auth/change-password").
+						Outlined(true).Color("primary").
+						Children(VIcon("lock_outline").Small(true), h.Text("change password")),
+				),
+			),
+		).Class("ml-2")
 	})
 }
 

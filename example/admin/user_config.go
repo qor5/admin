@@ -85,7 +85,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
 
-		if u.Password != "" {
+		if u.OAuthProvider == "" && u.Account != "" {
 			actionBtns = append(actionBtns,
 				VBtn("Send Reset Password Email").
 					Color("primary").
