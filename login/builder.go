@@ -267,6 +267,11 @@ func (b *Builder) NoForgetPasswordLink(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) DB(v *gorm.DB) (r *Builder) {
+	b.db = v
+	return b
+}
+
 func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
 	b.registerI18n()
@@ -276,11 +281,6 @@ func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 func (b *Builder) registerI18n() {
 	b.i18nBuilder.RegisterForModule(language.English, I18nLoginKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLoginKey, Messages_zh_CN)
-}
-
-func (b *Builder) DB(v *gorm.DB) (r *Builder) {
-	b.db = v
-	return b
 }
 
 func (b *Builder) UserModel(m interface{}) (r *Builder) {
