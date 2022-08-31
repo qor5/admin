@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -190,38 +191,51 @@ func (b *Builder) PasswordValidationFunc(v PasswordValidationFunc) (r *Builder) 
 	return b
 }
 
+func (b *Builder) wrapHook(v HookFunc) HookFunc {
+	if v == nil {
+		return nil
+	}
+
+	return func(r *http.Request, user interface{}) error {
+		if GetCurrentUser(r) == nil {
+			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
+		}
+		return v(r, user)
+	}
+}
+
 func (b *Builder) AfterLogin(v HookFunc) (r *Builder) {
-	b.afterLoginHook = v
+	b.afterLoginHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterFailedToLogin(v HookFunc) (r *Builder) {
-	b.afterFailedToLoginHook = v
+	b.afterFailedToLoginHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterUserLocked(v HookFunc) (r *Builder) {
-	b.afterUserLockedHook = v
+	b.afterUserLockedHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterLogout(v HookFunc) (r *Builder) {
-	b.afterLogoutHook = v
+	b.afterLogoutHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterSendResetPasswordLink(v HookFunc) (r *Builder) {
-	b.afterSendResetPasswordLinkHook = v
+	b.afterSendResetPasswordLinkHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterResetPassword(v HookFunc) (r *Builder) {
-	b.afterResetPasswordHook = v
+	b.afterResetPasswordHook = b.wrapHook(v)
 	return b
 }
 
 func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
-	b.afterChangePasswordHook = v
+	b.afterChangePasswordHook = b.wrapHook(v)
 	return b
 }
 
@@ -364,8 +378,7 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	if b.afterLoginHook != nil {
-		err = b.afterLoginHook(r, user)
-		if err != nil {
+		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginURL, http.StatusFound)
 			return
@@ -445,8 +458,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 	user, err = b.authUserPass(account, password)
 	if err != nil {
 		if err == errUserGetLocked && b.afterUserLockedHook != nil {
-			err = b.afterUserLockedHook(r, user)
-			if err != nil {
+			if herr := b.afterUserLockedHook(r, user); herr != nil {
 				setFailCodeFlash(w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
@@ -479,8 +491,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 
 	if !b.totpEnabled {
 		if b.afterLoginHook != nil {
-			err = b.afterLoginHook(r, user)
-			if err != nil {
+			if herr := b.afterLoginHook(r, user); herr != nil {
 				setFailCodeFlash(w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
@@ -655,8 +666,7 @@ func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
 	if b.afterLogoutHook != nil {
 		user := GetCurrentUser(r)
 		if user != nil {
-			err = b.afterLogoutHook(r, user)
-			if err != nil {
+			if herr := b.afterLogoutHook(r, user); herr != nil {
 				setFailCodeFlash(w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
@@ -739,8 +749,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if b.afterSendResetPasswordLinkHook != nil {
-		err = b.afterSendResetPasswordLinkHook(r, u)
-		if err != nil {
+		if herr := b.afterSendResetPasswordLinkHook(r, u); herr != nil {
 			setFailCodeFlash(w, FailCodeSystemError)
 			http.Redirect(w, r, failRedirectURL, http.StatusFound)
 			return
@@ -838,8 +847,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b.afterResetPasswordHook != nil {
-		err = b.afterResetPasswordHook(r, u)
-		if err != nil {
+		if herr := b.afterResetPasswordHook(r, u); herr != nil {
 			setFailCodeFlash(w, FailCodeSystemError)
 			http.Redirect(w, r, failRedirectURL, http.StatusFound)
 			return
@@ -915,8 +923,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b.afterChangePasswordHook != nil {
-		err = b.afterChangePasswordHook(r, user)
-		if err != nil {
+		if herr := b.afterChangePasswordHook(r, user); herr != nil {
 			setFailCodeFlash(w, FailCodeSystemError)
 			http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
 			return
@@ -987,8 +994,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b.afterLoginHook != nil {
-		err = b.afterLoginHook(r, user)
-		if err != nil {
+		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginURL, http.StatusFound)
 			return
