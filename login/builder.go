@@ -32,8 +32,6 @@ var (
 )
 
 const (
-	I18nLoginKey i18n.ModuleKey = "I18nLoginKey"
-
 	pathTOTPDo       = "/auth/2fa/totp/do"
 	pathTOTPSetup    = "/auth/2fa/totp/setup"
 	pathTOTPValidate = "/auth/2fa/totp/validate"
@@ -115,7 +113,10 @@ func New() *Builder {
 		maxRetryCount:         5,
 		totpEnabled:           true,
 		totpIssuer:            "qor5",
+		i18nBuilder:           i18n.New(),
 	}
+
+	r.registerI18n()
 
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
