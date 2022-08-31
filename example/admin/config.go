@@ -241,7 +241,7 @@ func NewConfig() Config {
 	note.Configure(db, b, m, pm)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(b, db).SetCreatorContextKey(_userKey).SetTabHeading(
+	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
@@ -327,7 +327,7 @@ func NewConfig() Config {
 
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db, b.I18n()),
+		lb:          newLoginBuilder(db, ab, b.I18n()),
 		pageBuilder: pageBuilder,
 	}
 }

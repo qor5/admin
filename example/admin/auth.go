@@ -7,6 +7,7 @@ import (
 
 	"github.com/goplaid/x/i18n"
 	"github.com/markbates/goth/providers/google"
+	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
 	. "github.com/theplant/htmlgo"
@@ -22,11 +23,8 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-type contextUserKey int
-
-const _userKey contextUserKey = 1
-
-func newLoginBuilder(db *gorm.DB, i18nBuilder *i18n.Builder) *login.Builder {
+func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i18n.Builder) *login.Builder {
+	ab.RegisterModel(&models.User{})
 	return login.New().
 		DB(db).
 		UserModel(&models.User{}).
@@ -55,45 +53,24 @@ func newLoginBuilder(db *gorm.DB, i18nBuilder *i18n.Builder) *login.Builder {
 		}).
 		I18n(i18nBuilder).
 		AfterLogin(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("logged in")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("log-in", false, r.Context(), user)
 		}).
 		AfterFailedToLogin(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("failed to login")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
 		}).
 		AfterUserLocked(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("user locked")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
 		}).
 		AfterLogout(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("logout")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("logout", false, r.Context(), user)
 		}).
 		AfterSendResetPasswordLink(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("send reset password link")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
 		}).
 		AfterResetPassword(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("reset password")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("reset-password", false, r.Context(), user)
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("change password")
-			fmt.Println("#########################################end")
-			return nil
+			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
 		})
 }

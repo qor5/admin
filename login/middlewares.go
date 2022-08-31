@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-type contextUserKey int
+type ContextUserKey int
 
-const _userKey contextUserKey = 1
+const UserKey ContextUserKey = 1
 
 var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
 
@@ -115,7 +115,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 			}
 
-			r = r.WithContext(context.WithValue(r.Context(), _userKey, user))
+			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
 
 			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
 				if path == b.loginURL {
@@ -156,5 +156,5 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 }
 
 func GetCurrentUser(r *http.Request) (u interface{}) {
-	return r.Context().Value(_userKey)
+	return r.Context().Value(UserKey)
 }
