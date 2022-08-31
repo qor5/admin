@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/goplaid/x/i18n"
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
@@ -22,7 +23,7 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder) *login.Builder {
+func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i18n.Builder) *login.Builder {
 	ab.RegisterModel(&models.User{})
 	return login.New().
 		DB(db).
@@ -50,6 +51,7 @@ func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder) *login.Builder {
 			}
 			return "", true
 		}).
+		I18n(i18nBuilder).
 		AfterLogin(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("log-in", false, r.Context(), user)
 		}).

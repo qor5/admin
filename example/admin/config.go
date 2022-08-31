@@ -120,10 +120,6 @@ func NewConfig() Config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
-			u := getCurrentUser(r)
-			if u.Name == "中文" {
-				return b.I18n().GetSupportLanguages()[1:]
-			}
 			return b.I18n().GetSupportLanguages()
 		})
 	utils.Configure(b)
@@ -327,7 +323,7 @@ func NewConfig() Config {
 
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db, ab),
+		lb:          newLoginBuilder(db, ab, b.I18n()),
 		pageBuilder: pageBuilder,
 	}
 }

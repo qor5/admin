@@ -8,33 +8,60 @@ import (
 	"net/url"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
+	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
 
-var failCodeTexts = map[FailCode]string{
-	FailCodeSystemError:                    "System Error",
-	FailCodeCompleteUserAuthFailed:         "Complete User Auth Failed",
-	FailCodeUserNotFound:                   "User Not Found",
-	FailCodeIncorrectAccountNameOrPassword: "Incorrect email or password",
-	FailCodeUserLocked:                     "User Locked",
-	FailCodeAccountIsRequired:              "Email is required",
-	FailCodePasswordCannotBeEmpty:          "Password cannot be empty",
-	FailCodePasswordNotMatch:               "Password do not match",
-	FailCodeIncorrectPassword:              "Old password is incorrect",
-	FailCodeInvalidToken:                   "Invalid token",
-	FailCodeTokenExpired:                   "Token expired",
-	FailCodeIncorrectTOTP:                  "Incorrect passcode",
+func getFailCodeText(msgr *Messages, code FailCode) string {
+	switch code {
+	case FailCodeSystemError:
+		return msgr.ErrorSystemError
+	case FailCodeCompleteUserAuthFailed:
+		return msgr.ErrorCompleteUserAuthFailed
+	case FailCodeUserNotFound:
+		return msgr.ErrorUserNotFound
+	case FailCodeIncorrectAccountNameOrPassword:
+		return msgr.ErrorIncorrectAccountNameOrPassword
+	case FailCodeUserLocked:
+		return msgr.ErrorUserLocked
+	case FailCodeAccountIsRequired:
+		return msgr.ErrorAccountIsRequired
+	case FailCodePasswordCannotBeEmpty:
+		return msgr.ErrorPasswordCannotBeEmpty
+	case FailCodePasswordNotMatch:
+		return msgr.ErrorPasswordNotMatch
+	case FailCodeIncorrectPassword:
+		return msgr.ErrorIncorrectPassword
+	case FailCodeInvalidToken:
+		return msgr.ErrorInvalidToken
+	case FailCodeTokenExpired:
+		return msgr.ErrorTokenExpired
+	case FailCodeIncorrectTOTP:
+		return msgr.ErrorIncorrectTOTP
+	}
+
+	return ""
 }
 
-var warnCodeTexts = map[WarnCode]string{
-	WarnCodePasswordHasBeenChanged: "Password has been changed",
+func getWarnCodeText(msgr *Messages, code WarnCode) string {
+	switch code {
+	case WarnCodePasswordHasBeenChanged:
+		return msgr.WarnPasswordHasBeenChanged
+	}
+	return ""
 }
 
-var infoCodeTexts = map[InfoCode]string{
-	InfoCodePasswordSuccessfullyReset:   "Password successfully reset",
-	InfoCodePasswordSuccessfullyChanged: "Password successfully changed",
+func getInfoCodeText(msgr *Messages, code InfoCode) string {
+	switch code {
+	case InfoCodePasswordSuccessfullyReset:
+		return msgr.InfoPasswordSuccessfullyReset
+	case InfoCodePasswordSuccessfullyChanged:
+		return msgr.InfoPasswordSuccessfullyChanged
+	}
+	return ""
 }
 
 const (
@@ -77,17 +104,40 @@ func infoNotice(msg string) HTMLComponent {
 		)
 }
 
+func errorBody(msg string) HTMLComponent {
+	return Div(
+		Text(msg),
+	)
+}
+
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// i18n start
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+		var languages []HTMLComponent
+		{
+			i18nBuilder := b.i18nBuilder
+			currentLang := i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+			ls := i18nBuilder.GetSupportLanguages()
+			for _, l := range ls {
+				elem := Option(display.Self.Name(l)).Value(l.String())
+				if currentLang == l.String() {
+					elem.Attr("selected", "selected")
+				}
+				languages = append(languages, elem)
+			}
+		}
+		// i18n end
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		fcText := failCodeTexts[fcFlash]
+		fcText := getFailCodeText(msgr, fcFlash)
 		wcFlash := GetWarnCodeFlash(ctx.W, ctx.R)
-		wcText := warnCodeTexts[wcFlash]
-		ncFlash := GetInfoCodeFlash(ctx.W, ctx.R)
-		ncText := infoCodeTexts[ncFlash]
+		wcText := getWarnCodeText(msgr, wcFlash)
+		icFlash := GetInfoCodeFlash(ctx.W, ctx.R)
+		icText := getInfoCodeText(msgr, icFlash)
 		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
 
-		if ncFlash == InfoCodePasswordSuccessfullyChanged {
+		if icFlash == InfoCodePasswordSuccessfullyChanged {
 			wcText = ""
 		}
 
@@ -119,22 +169,22 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			userPassHTML = Div(
 				Form(
 					Div(
-						Label("Email").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
-						Input("account").Placeholder("Email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+						Label(msgr.AccountLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
+						Input("account").Placeholder(msgr.AccountPlaceholder).Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
 							Value(wlFlash.Ia),
 					),
 					Div(
-						Label("Password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
-						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+						Label(msgr.PasswordLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Input("password").Placeholder(msgr.PasswordPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
 							Value(wlFlash.Ip),
 					).Class("mt-6"),
 					Div(
-						Button("Sign In").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/userpass/login"),
 				If(!b.noForgetPasswordLink,
 					Div(
-						A(Text("Forget your password?")).Href("/auth/forget-password").
+						A(Text(msgr.ForgetPasswordLink)).Href("/auth/forget-password").
 							Class("text-gray-500"),
 					).Class("text-right mt-2"),
 				),
@@ -146,25 +196,36 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			Style(StyleCSS),
 			errNotice(fcText),
 			warnNotice(wcText),
-			infoNotice(ncText),
+			infoNotice(icText),
 			Div(
 				userPassHTML,
 				oauthHTML,
+				Select(
+					languages...,
+				).Id("lang").Attr("onchange", `
+const lang = document.getElementById("lang");
+document.cookie="lang=" + lang.value + "; path=/";
+location.reload();
+`).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500").
+					ClassIf("hidden", len(languages) < 2),
 			).Class(wrapperClass),
 		)
+
 		return
 	}
 }
 
 func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		fcText := failCodeTexts[fcFlash]
+		fcText := getFailCodeText(msgr, fcFlash)
 		inputFlash := GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
 		secondsToResend := GetSecondsToRedoFlash(ctx.W, ctx.R)
-		activeBtnText := "Send reset password email"
+		activeBtnText := msgr.SendResetPasswordEmailBtn
 		activeBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"
-		inactiveBtnText := "Resend reset password email"
+		inactiveBtnText := msgr.ResendResetPasswordEmailBtn
 		inactiveBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-gray-500 rounded-md"
 		inactiveBtnTextWithInitSeconds := fmt.Sprintf("%s (%d)", inactiveBtnText, secondsToResend)
 
@@ -173,14 +234,14 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 			Style(StyleCSS),
 			errNotice(fcText),
 			If(secondsToResend > 0,
-				warnNotice("Sending emails too frequently, please try again later"),
+				warnNotice(msgr.SendEmailTooFrequentlyNotice),
 			),
 			Div(
-				H1("I forgot my password").Class("leading-tight text-3xl mt-0 mb-6"),
+				H1(msgr.ForgotMyPasswordTitle).Class("leading-tight text-3xl mt-0 mb-6"),
 				Form(
 					Div(
-						Label("Enter your email").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
-						Input("account").Placeholder("email").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(inputFlash.Account),
+						Label(msgr.ForgetPasswordEmailLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
+						Input("account").Placeholder(msgr.ForgetPasswordEmailPlaceholder).Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(inputFlash.Account),
 					),
 					Div(
 						If(secondsToResend > 0,
@@ -219,14 +280,16 @@ var interv = setInterval(function(){
 
 func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		a := ctx.R.URL.Query().Get("a")
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
 			Style(StyleCSS),
 			Div(
-				H1(fmt.Sprintf("A reset password link was sent to %s.", a)).Class("leading-tight text-2xl mt-0 mb-4"),
-				H2("You can close this page and reset your password from this link.").Class("leading-tight text-1xl mt-0"),
+				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("leading-tight text-2xl mt-0 mb-4"),
+				H2(msgr.ResetPasswordLinkSentPrompt).Class("leading-tight text-1xl mt-0"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
@@ -235,8 +298,10 @@ func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 
 func defaultResetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		errMsg := failCodeTexts[fcFlash]
+		errMsg := getFailCodeText(msgr, fcFlash)
 		if errMsg == "" {
 			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
 		}
@@ -282,20 +347,20 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 			Style(StyleCSS),
 			errNotice(errMsg),
 			Div(
-				H1("Reset your password").Class("leading-tight text-3xl mt-0 mb-6"),
+				H1(msgr.ResetYourPasswordTitle).Class("leading-tight text-3xl mt-0 mb-6"),
 				Form(
 					Input("user_id").Type("hidden").Value(id),
 					Input("token").Type("hidden").Value(token),
 					Div(
-						Label("Change password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
-						Input("password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.Password),
+						Label(msgr.ResetPasswordLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Input("password").Placeholder(msgr.ResetPasswordPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.Password),
 					),
 					Div(
-						Label("Re-enter new password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
-						Input("confirm_password").Placeholder("Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.ConfirmPassword),
+						Label(msgr.ResetPasswordConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
+						Input("confirm_password").Placeholder(msgr.ResetPasswordConfirmPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(wrpiFlash.ConfirmPassword),
 					).Class("mt-6"),
 					Div(
-						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/do-reset-password"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
@@ -306,8 +371,10 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 
 func defaultChangePasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		errMsg := failCodeTexts[fcFlash]
+		errMsg := getFailCodeText(msgr, fcFlash)
 		if errMsg == "" {
 			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
 		}
@@ -319,22 +386,22 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 			Style(StyleCSS),
 			errNotice(errMsg),
 			Div(
-				H1("Change your password").Class("leading-tight text-3xl mt-0 mb-6"),
+				H1(msgr.ChangePasswordTitle).Class("leading-tight text-3xl mt-0 mb-6"),
 				Form(
 					Div(
-						Label("Old password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("old_password"),
-						Input("old_password").Placeholder("Old Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.OldPassword),
+						Label(msgr.ChangePasswordOldLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("old_password"),
+						Input("old_password").Placeholder(msgr.ChangePasswordOldPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.OldPassword),
 					),
 					Div(
-						Label("New password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
-						Input("password").Placeholder("New Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.NewPassword),
+						Label(msgr.ChangePasswordNewLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
+						Input("password").Placeholder(msgr.ChangePasswordNewPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.NewPassword),
 					).Class("mt-6"),
 					Div(
-						Label("Re-enter new password").Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
-						Input("confirm_password").Placeholder("New Password").Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.ConfirmPassword),
+						Label(msgr.ChangePasswordNewConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
+						Input("confirm_password").Placeholder(msgr.ChangePasswordNewConfirmPlaceholder).Type("password").Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(input.ConfirmPassword),
 					).Class("mt-6"),
 					Div(
-						Button("Confirm").Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
 				).Method("post").Action("/auth/do-change-password"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
@@ -345,8 +412,10 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 
 func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		fcText := failCodeTexts[fcFlash]
+		fcText := getFailCodeText(msgr, fcFlash)
 
 		user := GetCurrentUser(ctx.R)
 		u := user.(UserPasser)
@@ -390,24 +459,24 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 			errNotice(fcText),
 			Div(
 				Div(
-					H1("Two Factor Authentication").
+					H1(msgr.TOTPSetupTitle).
 						Class("text-3xl font-bold mb-4"),
-					Label("Scan this QR code with Google Authenticator (or similar) app").
+					Label(msgr.TOTPSetupScanPrompt).
 						Class(labelClass),
 				),
 				Div(
 					Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
 				).Class("my-2 flex items-center justify-center"),
 				Div(
-					Label("Or manually enter the following code into your preferred authenticator app").
+					Label(msgr.TOTPSetupSecretPrompt).
 						Class(labelClass),
 				),
 				Div(Label(u.GetTOTPSecret()).Class("text-sm font-bold")).Class("my-4"),
 				Form(
-					Label("Then enter the provided one-time code below").Class(labelClass),
-					Input("otp").Placeholder("Enter your passcode here").
+					Label(msgr.TOTPSetupEnterCodePrompt).Class(labelClass),
+					Input("otp").Placeholder(msgr.TOTPSetupCodePlaceholder).
 						Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
-					Button("Verify").
+					Button(msgr.Verify).
 						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 				).Method("POST").Action(pathTOTPDo),
 			).Class(wrapperClass),
@@ -419,8 +488,10 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+
 		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
-		fcText := failCodeTexts[fcFlash]
+		fcText := getFailCodeText(msgr, fcFlash)
 
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
 		labelClass := "w-80 text-sm mb-8 font-semibold text-gray-700 tracking-wide"
@@ -431,15 +502,15 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 			errNotice(fcText),
 			Div(
 				Div(
-					H1("Two Factor Authentication").
+					H1(msgr.TOTPValidateTitle).
 						Class("text-3xl font-bold mb-4"),
-					Label("Enter the provided one-time code below").
+					Label(msgr.TOTPValidateEnterCodePrompt).
 						Class(labelClass),
 				),
 				Form(
-					Input("otp").Placeholder("Enter your passcode here").
+					Input("otp").Placeholder(msgr.TOTPValidateCodePlaceholder).
 						Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
-					Button("Verify").
+					Button(msgr.Verify).
 						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 				).Method("POST").Action(pathTOTPDo),
 			).Class(wrapperClass),
@@ -447,10 +518,4 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 
 		return
 	}
-}
-
-func errorBody(msg string) HTMLComponent {
-	return Div(
-		Text(msg),
-	)
 }

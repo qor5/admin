@@ -117,6 +117,11 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
 
+			if path == b.logoutURL {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
 				if path == b.loginURL {
 					next.ServeHTTP(w, r)
