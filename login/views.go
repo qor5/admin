@@ -12,6 +12,7 @@ import (
 	"github.com/goplaid/x/i18n"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
@@ -115,17 +116,27 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
-		var languages []HTMLComponent
-		{
-			i18nBuilder := b.i18nBuilder
-			currentLang := i18nBuilder.GetCurrentLangFromCookie(ctx.R)
-			ls := i18nBuilder.GetSupportLanguages()
-			for _, l := range ls {
-				elem := Option(display.Self.Name(l)).Value(l.String())
-				if currentLang == l.String() {
+		var languagesHTML []HTMLComponent
+		languages := b.i18nBuilder.GetSupportLanguages()
+		if len(languages) > 1 {
+			qn := b.i18nBuilder.GetQueryName()
+			lang := ctx.R.FormValue(qn)
+			if lang == "" {
+				lang = b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+			}
+			accept := ctx.R.Header.Get("Accept-Language")
+			_, mi := language.MatchStrings(language.NewMatcher(languages), lang, accept)
+			for i, l := range languages {
+				u, _ := url.Parse(ctx.R.RequestURI)
+				qs := u.Query()
+				qs.Set(qn, l.String())
+				u.RawQuery = qs.Encode()
+				elem := Option(display.Self.Name(l)).
+					Value(u.String())
+				if i == mi {
 					elem.Attr("selected", "selected")
 				}
-				languages = append(languages, elem)
+				languagesHTML = append(languagesHTML, elem)
 			}
 		}
 		// i18n end
@@ -201,14 +212,12 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			Div(
 				userPassHTML,
 				oauthHTML,
-				Select(
-					languages...,
-				).Id("lang").Attr("onchange", `
-const lang = document.getElementById("lang");
-document.cookie="lang=" + lang.value + "; path=/";
-location.reload();
-`).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500").
-					ClassIf("hidden", len(languages) < 2),
+				If(len(languagesHTML) > 0,
+					Select(
+						languagesHTML...,
+					).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500").
+						Attr("onChange", "window.location.href=this.value"),
+				),
 			).Class(wrapperClass),
 		)
 
