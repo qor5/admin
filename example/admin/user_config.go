@@ -24,6 +24,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
+		"Type",
 		"Actions",
 		"Name",
 		"OAuthProvider",
@@ -81,6 +82,28 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return r, nil
 	})
 
+	ed.Field("Type").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		if u.ID == 0 {
+			return nil
+		}
+
+		var accountType string
+		if u.OAuthProvider == "" && u.Account != "" {
+			accountType = "Main Account"
+		} else {
+			accountType = "Third Party Account"
+		}
+
+		return h.Div(
+			VRow(
+				VCol(
+					h.Text(accountType),
+				).Class("text-left deep-orange--text"),
+			),
+		)
+	})
+
 	ed.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
@@ -135,9 +158,14 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	ed.Field("OAuthProvider").Label("OAuthProvider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VSelect().FieldName(field.Name).
-			Label(field.Label).Value(field.Value(obj)).
-			Items([]string{"google", "microsoftonline"})
+		u := obj.(*models.User)
+		if p := field.Value(obj); p == "" && u.ID != 0 {
+			return nil
+		} else {
+			return VSelect().FieldName(field.Name).
+				Label(field.Label).Value(p).
+				Items([]string{"google", "microsoftonline"})
+		}
 	})
 
 	var roles []role.Role
