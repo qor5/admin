@@ -92,7 +92,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if u.OAuthProvider == "" && u.Account != "" {
 			accountType = "Main Account"
 		} else {
-			accountType = "Third Party Account"
+			accountType = "OAuth Account"
 		}
 
 		return h.Div(

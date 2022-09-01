@@ -149,7 +149,7 @@ func (b *Builder) initAuthPrefixInterceptURLS() {
 	}
 }
 
-func (b *Builder) AddAllowURL(v string) {
+func (b *Builder) AllowURL(v string) {
 	b.allowURLS[v] = void{}
 }
 
