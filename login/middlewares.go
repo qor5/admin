@@ -23,16 +23,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
+			if _, ok := b.allowURLS[r.URL.Path]; ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			path := strings.TrimRight(r.URL.Path, "/")
-			if strings.HasPrefix(path, "/auth/") &&
-				// to redirect to login page
-				path != b.loginURL &&
-				// below paths need logged-in status
-				path != b.logoutURL &&
-				path != b.changePasswordURL &&
-				path != b.doChangePasswordURL &&
-				path != pathTOTPSetup &&
-				path != pathTOTPValidate {
+			if _, ok := b.authPrefixInterceptURLS[path]; strings.HasPrefix(path, "/auth/") && !ok {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -128,23 +125,23 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					return
 				}
 				if !user.(UserPasser).GetIsTOTPSetup() {
-					if path == pathTOTPSetup {
+					if path == totpSetupURL {
 						next.ServeHTTP(w, r)
 						return
 					}
-					http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+					http.Redirect(w, r, totpSetupURL, http.StatusFound)
 					return
 				}
-				if path == pathTOTPValidate {
+				if path == totpValidateURL {
 					next.ServeHTTP(w, r)
 					return
 				}
-				http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+				http.Redirect(w, r, totpValidateURL, http.StatusFound)
 				return
 			}
 
 			if claims.TOTPValidated || claims.Provider != "" {
-				if path == pathTOTPSetup || path == pathTOTPValidate {
+				if path == totpSetupURL || path == totpValidateURL {
 					http.Redirect(w, r, b.homeURL, http.StatusFound)
 					return
 				}

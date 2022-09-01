@@ -32,9 +32,9 @@ var (
 )
 
 const (
-	pathTOTPDo       = "/auth/2fa/totp/do"
-	pathTOTPSetup    = "/auth/2fa/totp/setup"
-	pathTOTPValidate = "/auth/2fa/totp/validate"
+	totpDoURL       = "/auth/2fa/totp/do"
+	totpSetupURL    = "/auth/2fa/totp/setup"
+	totpValidateURL = "/auth/2fa/totp/validate"
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
@@ -47,6 +47,8 @@ type Provider struct {
 	Text string
 	Logo HTMLComponent
 }
+
+type void struct{}
 
 type Builder struct {
 	secret                string
@@ -65,6 +67,9 @@ type Builder struct {
 	logoutURL           string
 	changePasswordURL   string
 	doChangePasswordURL string
+
+	authPrefixInterceptURLS map[string]void
+	allowURLS               map[string]void
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
@@ -108,6 +113,7 @@ func New() *Builder {
 		logoutURL:             "/auth/logout",
 		changePasswordURL:     "/auth/change-password",
 		doChangePasswordURL:   "/auth/do-change-password",
+		allowURLS:             make(map[string]void),
 		sessionMaxAge:         60 * 60,
 		autoExtendSession:     true,
 		maxRetryCount:         5,
@@ -117,6 +123,7 @@ func New() *Builder {
 	}
 
 	r.registerI18n()
+	r.initAuthPrefixInterceptURLS()
 
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
@@ -127,6 +134,23 @@ func New() *Builder {
 	r.totpValidatePageFunc = defaultTOTPValidatePage(r)
 
 	return r
+}
+
+func (b *Builder) initAuthPrefixInterceptURLS() {
+	b.authPrefixInterceptURLS = map[string]void{
+		// to redirect to login page
+		b.loginURL: {},
+		// below paths need logged-in status
+		b.logoutURL:           {},
+		b.changePasswordURL:   {},
+		b.doChangePasswordURL: {},
+		totpSetupURL:          {},
+		totpValidateURL:       {},
+	}
+}
+
+func (b *Builder) AddAllowURL(v string) {
+	b.allowURLS[v] = void{}
 }
 
 func (b *Builder) Secret(v string) (r *Builder) {
@@ -525,7 +549,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 
 	if b.totpEnabled {
 		if u.GetIsTOTPSetup() {
-			http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+			http.Redirect(w, r, totpValidateURL, http.StatusFound)
 			return
 		}
 
@@ -547,7 +571,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+		http.Redirect(w, r, totpSetupURL, http.StatusFound)
 		return
 	}
 
@@ -995,9 +1019,9 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	if !totp.Validate(otp, key) {
 		err = errWrongTOTP
 		setFailCodeFlash(w, FailCodeIncorrectTOTP)
-		redirectURL := pathTOTPValidate
+		redirectURL := totpValidateURL
 		if !isTOTPSetup {
-			redirectURL = pathTOTPSetup
+			redirectURL = totpSetupURL
 		}
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
@@ -1060,9 +1084,9 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 			mux.Handle("/auth/reset-password-link-sent", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
 		}
 		if b.totpEnabled {
-			mux.HandleFunc(pathTOTPDo, b.totpDo)
-			mux.Handle(pathTOTPSetup, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpSetupPageFunc)))
-			mux.Handle(pathTOTPValidate, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpValidatePageFunc)))
+			mux.HandleFunc(totpDoURL, b.totpDo)
+			mux.Handle(totpSetupURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpSetupPageFunc)))
+			mux.Handle(totpValidateURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpValidatePageFunc)))
 		}
 	}
 	if b.oauthEnabled {
