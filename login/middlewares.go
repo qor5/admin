@@ -67,13 +67,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					log.Println(err)
 					switch err {
 					case errUserNotFound:
-						setFailCodeFlash(w, FailCodeUserNotFound)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 					case errUserLocked:
-						setFailCodeFlash(w, FailCodeUserLocked)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeUserLocked)
 					case errUserPassChanged:
-						setWarnCodeFlash(w, WarnCodePasswordHasBeenChanged)
+						setWarnCodeFlash(b.cookieConfig, w, WarnCodePasswordHasBeenChanged)
 					default:
-						setFailCodeFlash(w, FailCodeSystemError)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 					}
 					if path == b.logoutURL {
 						next.ServeHTTP(w, r)
@@ -99,10 +99,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				user = claims
 			}
 
-			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
+			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.cookieConfig.AuthMaxAge)/10 {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
-					setFailCodeFlash(w, FailCodeSystemError)
+					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 					if path == b.logoutURL {
 						next.ServeHTTP(w, r)
 					} else {
