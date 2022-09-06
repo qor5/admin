@@ -101,7 +101,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 					h.Text(accountType),
 				).Class("text-left deep-orange--text"),
 			),
-		)
+		).Class("mb-2")
 	})
 
 	ed.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

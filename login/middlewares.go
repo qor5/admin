@@ -99,7 +99,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				user = claims
 			}
 
-			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.cookieConfig.AuthMaxAge)/10 {
+			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)

@@ -51,10 +51,9 @@ type Provider struct {
 }
 
 type CookieConfig struct {
-	Path       string
-	Domain     string
-	AuthMaxAge int
-	SameSite   http.SameSite
+	Path     string
+	Domain   string
+	SameSite http.SameSite
 }
 
 type Builder struct {
@@ -63,10 +62,12 @@ type Builder struct {
 	authCookieName        string
 	authSecureCookieName  string
 	continueUrlCookieName string
-	cookieConfig          CookieConfig
-	autoExtendSession     bool
-	maxRetryCount         int
-	noForgetPasswordLink  bool
+	// seconds
+	sessionMaxAge        int
+	cookieConfig         CookieConfig
+	autoExtendSession    bool
+	maxRetryCount        int
+	noForgetPasswordLink bool
 
 	homeURL             string
 	loginURL            string
@@ -119,12 +120,12 @@ func New() *Builder {
 		logoutURL:             "/auth/logout",
 		changePasswordURL:     "/auth/change-password",
 		doChangePasswordURL:   "/auth/do-change-password",
+		sessionMaxAge:         60 * 60,
 		allowURLS:             make(map[string]void),
 		cookieConfig: CookieConfig{
-			Path:       "/",
-			Domain:     "",
-			AuthMaxAge: 60 * 60,
-			SameSite:   http.SameSiteStrictMode,
+			Path:     "/",
+			Domain:   "",
+			SameSite: http.SameSiteStrictMode,
 		},
 		autoExtendSession: true,
 		maxRetryCount:     5,
@@ -283,6 +284,13 @@ func (b *Builder) AfterResetPassword(v HookFunc) (r *Builder) {
 
 func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
 	b.afterChangePasswordHook = b.wrapHook(v)
+	return b
+}
+
+// seconds
+// default 1h
+func (b *Builder) SessionMaxAge(v int) (r *Builder) {
+	b.sessionMaxAge = v
 	return b
 }
 
@@ -594,7 +602,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) genBaseSessionClaim(id string) jwt.RegisteredClaims {
-	return genBaseClaims(id, b.cookieConfig.AuthMaxAge)
+	return genBaseClaims(id, b.sessionMaxAge)
 }
 
 func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *UserClaims, secureSalt string) error {
@@ -607,8 +615,8 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 		Value:    ss,
 		Path:     b.cookieConfig.Path,
 		Domain:   b.cookieConfig.Domain,
-		MaxAge:   b.cookieConfig.AuthMaxAge,
-		Expires:  time.Now().Add(time.Duration(b.cookieConfig.AuthMaxAge) * time.Second),
+		MaxAge:   b.sessionMaxAge,
+		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: b.cookieConfig.SameSite,
@@ -624,8 +632,8 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 			Value:    ss,
 			Path:     b.cookieConfig.Path,
 			Domain:   b.cookieConfig.Domain,
-			MaxAge:   b.cookieConfig.AuthMaxAge,
-			Expires:  time.Now().Add(time.Duration(b.cookieConfig.AuthMaxAge) * time.Second),
+			MaxAge:   b.sessionMaxAge,
+			Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: b.cookieConfig.SameSite,
