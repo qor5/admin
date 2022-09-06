@@ -32,20 +32,28 @@ var (
 )
 
 const (
-	pathTOTPDo       = "/auth/2fa/totp/do"
-	pathTOTPSetup    = "/auth/2fa/totp/setup"
-	pathTOTPValidate = "/auth/2fa/totp/validate"
+	totpDoURL       = "/auth/2fa/totp/do"
+	totpSetupURL    = "/auth/2fa/totp/setup"
+	totpValidateURL = "/auth/2fa/totp/validate"
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
 type PasswordValidationFunc func(password string) (message string, ok bool)
 type HookFunc func(r *http.Request, user interface{}) error
 
+type void struct{}
+
 type Provider struct {
 	Goth goth.Provider
 	Key  string
 	Text string
 	Logo HTMLComponent
+}
+
+type CookieConfig struct {
+	Path     string
+	Domain   string
+	SameSite http.SameSite
 }
 
 type Builder struct {
@@ -56,6 +64,7 @@ type Builder struct {
 	continueUrlCookieName string
 	// seconds
 	sessionMaxAge        int
+	cookieConfig         CookieConfig
 	autoExtendSession    bool
 	maxRetryCount        int
 	noForgetPasswordLink bool
@@ -65,6 +74,9 @@ type Builder struct {
 	logoutURL           string
 	changePasswordURL   string
 	doChangePasswordURL string
+
+	authPrefixInterceptURLS map[string]void
+	allowURLS               map[string]void
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
@@ -109,14 +121,21 @@ func New() *Builder {
 		changePasswordURL:     "/auth/change-password",
 		doChangePasswordURL:   "/auth/do-change-password",
 		sessionMaxAge:         60 * 60,
-		autoExtendSession:     true,
-		maxRetryCount:         5,
-		totpEnabled:           true,
-		totpIssuer:            "qor5",
-		i18nBuilder:           i18n.New(),
+		allowURLS:             make(map[string]void),
+		cookieConfig: CookieConfig{
+			Path:     "/",
+			Domain:   "",
+			SameSite: http.SameSiteStrictMode,
+		},
+		autoExtendSession: true,
+		maxRetryCount:     5,
+		totpEnabled:       true,
+		totpIssuer:        "qor5",
+		i18nBuilder:       i18n.New(),
 	}
 
 	r.registerI18n()
+	r.initAuthPrefixInterceptURLS()
 
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
@@ -129,8 +148,30 @@ func New() *Builder {
 	return r
 }
 
+func (b *Builder) initAuthPrefixInterceptURLS() {
+	b.authPrefixInterceptURLS = map[string]void{
+		// to redirect to login page
+		b.loginURL: {},
+		// below paths need logged-in status
+		b.logoutURL:           {},
+		b.changePasswordURL:   {},
+		b.doChangePasswordURL: {},
+		totpSetupURL:          {},
+		totpValidateURL:       {},
+	}
+}
+
+func (b *Builder) AllowURL(v string) {
+	b.allowURLS[v] = void{}
+}
+
 func (b *Builder) Secret(v string) (r *Builder) {
 	b.secret = v
+	return b
+}
+
+func (b *Builder) CookieConfig(v CookieConfig) (r *Builder) {
+	b.cookieConfig = v
 	return b
 }
 
@@ -346,7 +387,7 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 	ouser, err = gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		log.Println("completeUserAuthWithSetCookie", err)
-		setFailCodeFlash(w, FailCodeCompleteUserAuthFailed)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeCompleteUserAuthFailed)
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
 	}
@@ -357,7 +398,7 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 		user, err = b.userModel.(OAuthUser).FindUserByOAuthUserID(b.db, b.newUserObject(), ouser.Provider, ouser.UserID)
 		if err != nil {
 			if err != gorm.ErrRecordNotFound {
-				setFailCodeFlash(w, FailCodeSystemError)
+				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.logoutURL, http.StatusFound)
 				return
 			}
@@ -366,16 +407,16 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 			user, err = b.userModel.(OAuthUser).FindUserByOAuthIndentifier(b.db, b.newUserObject(), ouser.Provider, indentifier)
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
-					setFailCodeFlash(w, FailCodeUserNotFound)
+					setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 				} else {
-					setFailCodeFlash(w, FailCodeSystemError)
+					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				}
 				http.Redirect(w, r, b.logoutURL, http.StatusFound)
 				return
 			}
 			err = user.(OAuthUser).InitOAuthUserID(b.db, b.newUserObject(), ouser.Provider, indentifier, ouser.UserID)
 			if err != nil {
-				setFailCodeFlash(w, FailCodeSystemError)
+				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.logoutURL, http.StatusFound)
 				return
 			}
@@ -397,14 +438,14 @@ func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	if b.afterLoginHook != nil {
 		if herr := b.afterLoginHook(r, user); herr != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginURL, http.StatusFound)
 			return
 		}
 	}
 
 	if err := b.setSecureCookiesByClaims(w, user, claims); err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
 	}
@@ -477,7 +518,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == errUserGetLocked && b.afterUserLockedHook != nil {
 			if herr := b.afterUserLockedHook(r, user); herr != nil {
-				setFailCodeFlash(w, FailCodeSystemError)
+				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
 			}
@@ -490,8 +531,8 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 		case errUserLocked, errUserGetLocked:
 			code = FailCodeUserLocked
 		}
-		setFailCodeFlash(w, code)
-		setWrongLoginInputFlash(w, WrongLoginInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, code)
+		setWrongLoginInputFlash(b.cookieConfig, w, WrongLoginInputFlash{
 			Ia: account,
 			Ip: password,
 		})
@@ -510,7 +551,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 	if !b.totpEnabled {
 		if b.afterLoginHook != nil {
 			if herr := b.afterLoginHook(r, user); herr != nil {
-				setFailCodeFlash(w, FailCodeSystemError)
+				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
 			}
@@ -518,14 +559,14 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = b.setSecureCookiesByClaims(w, user, claims); err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
 	}
 
 	if b.totpEnabled {
 		if u.GetIsTOTPSetup() {
-			http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+			http.Redirect(w, r, totpValidateURL, http.StatusFound)
 			return
 		}
 
@@ -536,18 +577,18 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 				AccountName: u.GetAccountName(),
 			},
 		); err != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.logoutURL, http.StatusFound)
 			return
 		}
 
 		if err = u.SetTOTPSecret(b.db, b.newUserObject(), key.Secret()); err != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.logoutURL, http.StatusFound)
 			return
 		}
 
-		http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+		http.Redirect(w, r, totpSetupURL, http.StatusFound)
 		return
 	}
 
@@ -572,11 +613,13 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authCookieName,
 		Value:    ss,
-		Path:     "/",
+		Path:     b.cookieConfig.Path,
+		Domain:   b.cookieConfig.Domain,
 		MaxAge:   b.sessionMaxAge,
 		Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: b.cookieConfig.SameSite,
 	})
 
 	if secureSalt != "" {
@@ -587,11 +630,13 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 		http.SetCookie(w, &http.Cookie{
 			Name:     b.authSecureCookieName,
 			Value:    ss,
-			Path:     "/",
+			Path:     b.cookieConfig.Path,
+			Domain:   b.cookieConfig.Domain,
 			MaxAge:   b.sessionMaxAge,
 			Expires:  time.Now().Add(time.Duration(b.sessionMaxAge) * time.Second),
 			HttpOnly: true,
 			Secure:   true,
+			SameSite: b.cookieConfig.SameSite,
 		})
 	}
 
@@ -602,8 +647,8 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authCookieName,
 		Value:    "",
-		Path:     "/",
-		Domain:   "",
+		Path:     b.cookieConfig.Path,
+		Domain:   b.cookieConfig.Domain,
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
@@ -612,8 +657,8 @@ func (b *Builder) cleanAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authSecureCookieName,
 		Value:    "",
-		Path:     "/",
-		Domain:   "",
+		Path:     b.cookieConfig.Path,
+		Domain:   b.cookieConfig.Domain,
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
@@ -630,7 +675,8 @@ func (b *Builder) setContinueURL(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     b.continueUrlCookieName,
 			Value:    continueURL,
-			Path:     "/",
+			Path:     b.cookieConfig.Path,
+			Domain:   b.cookieConfig.Domain,
 			HttpOnly: true,
 		})
 	}
@@ -647,7 +693,8 @@ func (b *Builder) getContinueURL(w http.ResponseWriter, r *http.Request) string 
 		Value:    "",
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
-		Path:     "/",
+		Path:     b.cookieConfig.Path,
+		Domain:   b.cookieConfig.Domain,
 		HttpOnly: true,
 	})
 
@@ -685,7 +732,7 @@ func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
 		user := GetCurrentUser(r)
 		if user != nil {
 			if herr := b.afterLogoutHook(r, user); herr != nil {
-				setFailCodeFlash(w, FailCodeSystemError)
+				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginURL, http.StatusFound)
 				return
 			}
@@ -710,7 +757,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 
 	account := strings.TrimSpace(r.FormValue("account"))
 	if account == "" {
-		setFailCodeFlash(w, FailCodeAccountIsRequired)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeAccountIsRequired)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
@@ -718,11 +765,11 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 	u, err := b.userModel.(UserPasser).FindUser(b.db, b.newUserObject(), account)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			setFailCodeFlash(w, FailCodeUserNotFound)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		} else {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		}
-		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+		setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 			Account: account,
 		})
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -733,8 +780,8 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 	if createdAt != nil {
 		v := 60 - int(time.Now().Sub(*createdAt).Seconds())
 		if v > 0 {
-			setSecondsToRedoFlash(w, v)
-			setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+			setSecondsToRedoFlash(b.cookieConfig, w, v)
+			setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 				Account: account,
 			})
 			http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -744,8 +791,8 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 
 	token, err := u.(UserPasser).GenerateResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
-		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 			Account: account,
 		})
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -758,8 +805,8 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 	}
 	link := fmt.Sprintf("%s://%s/auth/reset-password?id=%s&token=%s", scheme, r.Host, objectID(u), token)
 	if err = b.notifyUserOfResetPasswordLinkFunc(u, link); err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
-		setWrongForgetPasswordInputFlash(w, WrongForgetPasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+		setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 			Account: account,
 		})
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -768,7 +815,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 
 	if b.afterSendResetPasswordLinkHook != nil {
 		if herr := b.afterSendResetPasswordLinkHook(r, u); herr != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, failRedirectURL, http.StatusFound)
 			return
 		}
@@ -788,12 +835,12 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	failRedirectURL := fmt.Sprintf("/auth/reset-password?id=%s&token=%s", userID, token)
 	if userID == "" {
-		setFailCodeFlash(w, FailCodeUserNotFound)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 	if token == "" {
-		setFailCodeFlash(w, FailCodeInvalidToken)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeInvalidToken)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
@@ -801,13 +848,13 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	confirmPassword := r.FormValue("confirm_password")
 	if password == "" {
-		setFailCodeFlash(w, FailCodePasswordCannotBeEmpty)
+		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordCannotBeEmpty)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 	if confirmPassword != password {
-		setFailCodeFlash(w, FailCodePasswordNotMatch)
-		setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordNotMatch)
+		setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
 			Password:        password,
 			ConfirmPassword: confirmPassword,
 		})
@@ -817,8 +864,8 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	if b.passwordValidationFunc != nil {
 		msg, ok := b.passwordValidationFunc(password)
 		if !ok {
-			setCustomErrorMessageFlash(w, msg)
-			setWrongResetPasswordInputFlash(w, WrongResetPasswordInputFlash{
+			setCustomErrorMessageFlash(b.cookieConfig, w, msg)
+			setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
 				Password:        password,
 				ConfirmPassword: confirmPassword,
 			})
@@ -830,9 +877,9 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	u, err := b.findUserByID(userID)
 	if err != nil {
 		if err == errUserNotFound {
-			setFailCodeFlash(w, FailCodeUserNotFound)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		} else {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		}
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
@@ -840,39 +887,39 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	storedToken, _, expired := u.(UserPasser).GetResetPasswordToken()
 	if expired {
-		setFailCodeFlash(w, FailCodeTokenExpired)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeTokenExpired)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 	if token != storedToken {
-		setFailCodeFlash(w, FailCodeInvalidToken)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeInvalidToken)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 
 	err = u.(UserPasser).ConsumeResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 
 	err = u.(UserPasser).SetPassword(b.db, b.newUserObject(), password)
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
 		return
 	}
 
 	if b.afterResetPasswordHook != nil {
 		if herr := b.afterResetPasswordHook(r, u); herr != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, failRedirectURL, http.StatusFound)
 			return
 		}
 	}
 
-	setInfoCodeFlash(w, InfoCodePasswordSuccessfullyReset)
+	setInfoCodeFlash(b.cookieConfig, w, InfoCodePasswordSuccessfullyReset)
 	http.Redirect(w, r, b.loginURL, http.StatusFound)
 	return
 }
@@ -889,8 +936,8 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	user := GetCurrentUser(r).(UserPasser)
 	if !user.IsPasswordCorrect(oldPassword) {
-		setFailCodeFlash(w, FailCodeIncorrectPassword)
-		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectPassword)
+		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 			OldPassword:     oldPassword,
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
@@ -900,8 +947,8 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if password == "" {
-		setFailCodeFlash(w, FailCodePasswordCannotBeEmpty)
-		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordCannotBeEmpty)
+		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 			OldPassword:     oldPassword,
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
@@ -910,8 +957,8 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if confirmPassword != password {
-		setFailCodeFlash(w, FailCodePasswordNotMatch)
-		setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordNotMatch)
+		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 			OldPassword:     oldPassword,
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
@@ -922,8 +969,8 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	if b.passwordValidationFunc != nil {
 		msg, ok := b.passwordValidationFunc(password)
 		if !ok {
-			setCustomErrorMessageFlash(w, msg)
-			setWrongChangePasswordInputFlash(w, WrongChangePasswordInputFlash{
+			setCustomErrorMessageFlash(b.cookieConfig, w, msg)
+			setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 				OldPassword:     oldPassword,
 				NewPassword:     password,
 				ConfirmPassword: confirmPassword,
@@ -935,20 +982,20 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	err := user.SetPassword(b.db, b.newUserObject(), password)
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
 		return
 	}
 
 	if b.afterChangePasswordHook != nil {
 		if herr := b.afterChangePasswordHook(r, user); herr != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
 			return
 		}
 	}
 
-	setInfoCodeFlash(w, InfoCodePasswordSuccessfullyChanged)
+	setInfoCodeFlash(b.cookieConfig, w, InfoCodePasswordSuccessfullyChanged)
 	http.Redirect(w, r, b.loginURL, http.StatusFound)
 	return
 }
@@ -979,9 +1026,9 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	user, err = b.findUserByID(claims.UserID)
 	if err != nil {
 		if err == errUserNotFound {
-			setFailCodeFlash(w, FailCodeUserNotFound)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		} else {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		}
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
@@ -994,10 +1041,10 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	if !totp.Validate(otp, key) {
 		err = errWrongTOTP
-		setFailCodeFlash(w, FailCodeIncorrectTOTP)
-		redirectURL := pathTOTPValidate
+		setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+		redirectURL := totpValidateURL
 		if !isTOTPSetup {
-			redirectURL = pathTOTPSetup
+			redirectURL = totpSetupURL
 		}
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
@@ -1005,7 +1052,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	if !isTOTPSetup {
 		if err = u.SetIsTOTPSetup(b.db, b.newUserObject(), true); err != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.logoutURL, http.StatusFound)
 			return
 		}
@@ -1013,7 +1060,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	if b.afterLoginHook != nil {
 		if herr := b.afterLoginHook(r, user); herr != nil {
-			setFailCodeFlash(w, FailCodeSystemError)
+			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginURL, http.StatusFound)
 			return
 		}
@@ -1022,7 +1069,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	claims.TOTPValidated = true
 	err = b.setSecureCookiesByClaims(w, user, *claims)
 	if err != nil {
-		setFailCodeFlash(w, FailCodeSystemError)
+		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
 	}
@@ -1060,9 +1107,9 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 			mux.Handle("/auth/reset-password-link-sent", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
 		}
 		if b.totpEnabled {
-			mux.HandleFunc(pathTOTPDo, b.totpDo)
-			mux.Handle(pathTOTPSetup, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpSetupPageFunc)))
-			mux.Handle(pathTOTPValidate, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpValidatePageFunc)))
+			mux.HandleFunc(totpDoURL, b.totpDo)
+			mux.Handle(totpSetupURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpSetupPageFunc)))
+			mux.Handle(totpValidateURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.totpValidatePageFunc)))
 		}
 	}
 	if b.oauthEnabled {

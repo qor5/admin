@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image/png"
+	"net/http"
 	"net/url"
 
 	"github.com/goplaid/web"
@@ -140,13 +141,13 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 		// i18n end
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		fcText := getFailCodeText(msgr, fcFlash)
-		wcFlash := GetWarnCodeFlash(ctx.W, ctx.R)
+		wcFlash := GetWarnCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		wcText := getWarnCodeText(msgr, wcFlash)
-		icFlash := GetInfoCodeFlash(ctx.W, ctx.R)
+		icFlash := GetInfoCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		icText := getInfoCodeText(msgr, icFlash)
-		wlFlash := GetWrongLoginInputFlash(ctx.W, ctx.R)
+		wlFlash := GetWrongLoginInputFlash(b.cookieConfig, ctx.W, ctx.R)
 
 		if icFlash == InfoCodePasswordSuccessfullyChanged {
 			wcText = ""
@@ -192,7 +193,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method("post").Action("/auth/userpass/login"),
+				).Method(http.MethodPost).Action("/auth/userpass/login"),
 				If(!b.noForgetPasswordLink,
 					Div(
 						A(Text(msgr.ForgetPasswordLink)).Href("/auth/forget-password").
@@ -228,10 +229,10 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		fcText := getFailCodeText(msgr, fcFlash)
-		inputFlash := GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
-		secondsToResend := GetSecondsToRedoFlash(ctx.W, ctx.R)
+		inputFlash := GetWrongForgetPasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
+		secondsToResend := GetSecondsToRedoFlash(b.cookieConfig, ctx.W, ctx.R)
 		activeBtnText := msgr.SendResetPasswordEmailBtn
 		activeBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"
 		inactiveBtnText := msgr.ResendResetPasswordEmailBtn
@@ -259,7 +260,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 							Button(activeBtnText).Class(activeBtnClass),
 						),
 					).Class("mt-6"),
-				).Method("post").Action("/auth/send-reset-password-link"),
+				).Method(http.MethodPost).Action("/auth/send-reset-password-link"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 
@@ -309,12 +310,12 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		errMsg := getFailCodeText(msgr, fcFlash)
 		if errMsg == "" {
-			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
+			errMsg = GetCustomErrorMessageFlash(b.cookieConfig, ctx.W, ctx.R)
 		}
-		wrpiFlash := GetWrongResetPasswordInputFlash(ctx.W, ctx.R)
+		wrpiFlash := GetWrongResetPasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
 
 		var user interface{}
 
@@ -371,7 +372,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method("post").Action("/auth/do-reset-password"),
+				).Method(http.MethodPost).Action("/auth/do-reset-password"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
@@ -382,12 +383,12 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		errMsg := getFailCodeText(msgr, fcFlash)
 		if errMsg == "" {
-			errMsg = GetCustomErrorMessageFlash(ctx.W, ctx.R)
+			errMsg = GetCustomErrorMessageFlash(b.cookieConfig, ctx.W, ctx.R)
 		}
-		input := GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
+		input := GetWrongChangePasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
 
 		r.PageTitle = "Change Password"
 
@@ -412,7 +413,7 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method("post").Action("/auth/do-change-password"),
+				).Method(http.MethodPost).Action("/auth/do-change-password"),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
@@ -423,7 +424,7 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		fcText := getFailCodeText(msgr, fcFlash)
 
 		user := GetCurrentUser(ctx.R)
@@ -487,7 +488,7 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 						Class("my-6 block w-full px-4 py-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"),
 					Button(msgr.Verify).
 						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
-				).Method("POST").Action(pathTOTPDo),
+				).Method(http.MethodPost).Action(totpDoURL),
 			).Class(wrapperClass),
 		)
 
@@ -499,7 +500,7 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
 
-		fcFlash := GetFailCodeFlash(ctx.W, ctx.R)
+		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
 		fcText := getFailCodeText(msgr, fcFlash)
 
 		wrapperClass := "flex pt-8 flex-col max-w-md mx-auto relative text-center"
@@ -522,7 +523,7 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 						Attr("autofocus", true),
 					Button(msgr.Verify).
 						Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
-				).Method("POST").Action(pathTOTPDo),
+				).Method(http.MethodPost).Action(totpDoURL),
 			).Class(wrapperClass),
 		)
 

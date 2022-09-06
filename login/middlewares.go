@@ -23,16 +23,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
+			if _, ok := b.allowURLS[r.URL.Path]; ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			path := strings.TrimRight(r.URL.Path, "/")
-			if strings.HasPrefix(path, "/auth/") &&
-				// to redirect to login page
-				path != b.loginURL &&
-				// below paths need logged-in status
-				path != b.logoutURL &&
-				path != b.changePasswordURL &&
-				path != b.doChangePasswordURL &&
-				path != pathTOTPSetup &&
-				path != pathTOTPValidate {
+			if _, ok := b.authPrefixInterceptURLS[path]; strings.HasPrefix(path, "/auth/") && !ok {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -70,13 +67,13 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					log.Println(err)
 					switch err {
 					case errUserNotFound:
-						setFailCodeFlash(w, FailCodeUserNotFound)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 					case errUserLocked:
-						setFailCodeFlash(w, FailCodeUserLocked)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeUserLocked)
 					case errUserPassChanged:
-						setWarnCodeFlash(w, WarnCodePasswordHasBeenChanged)
+						setWarnCodeFlash(b.cookieConfig, w, WarnCodePasswordHasBeenChanged)
 					default:
-						setFailCodeFlash(w, FailCodeSystemError)
+						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 					}
 					if path == b.logoutURL {
 						next.ServeHTTP(w, r)
@@ -105,7 +102,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
-					setFailCodeFlash(w, FailCodeSystemError)
+					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 					if path == b.logoutURL {
 						next.ServeHTTP(w, r)
 					} else {
@@ -128,23 +125,23 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					return
 				}
 				if !user.(UserPasser).GetIsTOTPSetup() {
-					if path == pathTOTPSetup {
+					if path == totpSetupURL {
 						next.ServeHTTP(w, r)
 						return
 					}
-					http.Redirect(w, r, pathTOTPSetup, http.StatusFound)
+					http.Redirect(w, r, totpSetupURL, http.StatusFound)
 					return
 				}
-				if path == pathTOTPValidate {
+				if path == totpValidateURL {
 					next.ServeHTTP(w, r)
 					return
 				}
-				http.Redirect(w, r, pathTOTPValidate, http.StatusFound)
+				http.Redirect(w, r, totpValidateURL, http.StatusFound)
 				return
 			}
 
 			if claims.TOTPValidated || claims.Provider != "" {
-				if path == pathTOTPSetup || path == pathTOTPValidate {
+				if path == totpSetupURL || path == totpValidateURL {
 					http.Redirect(w, r, b.homeURL, http.StatusFound)
 					return
 				}
