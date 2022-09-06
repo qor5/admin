@@ -98,6 +98,9 @@ func NewConfig() Config {
 				h.P().Text("Change your home page here"),
 			)
 			return
+		}).
+		NotFoundPageLayoutConfig(&presets.LayoutConfig{
+			SearchBoxInvisible: true,
 		})
 	// perm.Verbose = true
 	b.Permission(

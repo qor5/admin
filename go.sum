@@ -161,8 +161,8 @@ github.com/goplaid/multipartestutils v0.0.3/go.mod h1:jic2wg6tSAdLgLMTs1N+9+KzRu
 github.com/goplaid/web v1.1.26/go.mod h1:wuOBZR8zr6OFD0V/CXtg8UCQXm6KvGEzn5euXs17gI0=
 github.com/goplaid/web v1.2.1 h1:jz+iP+AVduojaNddoDAvVue7nNopEPGaLPMtmda51AI=
 github.com/goplaid/web v1.2.1/go.mod h1:5F3fHRmCH9oxh9lGxeGRtyslOQ4542FreIragR6dk7E=
-github.com/goplaid/x v1.1.2-0.20220901070806-4890fabf08e9 h1:n7uKXJ8tFhKlQc7XLG5dVrM7DmaPbXSeGWlhkYXRUH0=
-github.com/goplaid/x v1.1.2-0.20220901070806-4890fabf08e9/go.mod h1:MgAbpIv0KZITQY+zI/umR2eAGVdrCCvvFLkrO24+964=
+github.com/goplaid/x v1.1.2-0.20220906073402-d024c2bb00e2 h1:ksmeWz3p6R6CEjoXlQzOMdaikkYLOoguEmam589LXzk=
+github.com/goplaid/x v1.1.2-0.20220906073402-d024c2bb00e2/go.mod h1:MgAbpIv0KZITQY+zI/umR2eAGVdrCCvvFLkrO24+964=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
