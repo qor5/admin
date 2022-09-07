@@ -84,10 +84,11 @@ type Builder struct {
 	maxRetryCount        int
 	noForgetPasswordLink bool
 
-	homeURL   string
-	loginURL  string
-	logoutURL string
-	allowURLS map[string]void
+	homeURL                  string
+	loginURL                 string
+	logoutURL                string
+	oauthCallbackCompleteURL string
+	allowURLS                map[string]void
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
@@ -123,14 +124,15 @@ type Builder struct {
 
 func New() *Builder {
 	r := &Builder{
-		authCookieName:        "auth",
-		authSecureCookieName:  "qor5_auth_secure",
-		continueUrlCookieName: "qor5_continue_url",
-		homeURL:               "/",
-		loginURL:              "/auth/login",
-		logoutURL:             "/auth/logout",
-		sessionMaxAge:         60 * 60,
-		allowURLS:             make(map[string]void),
+		authCookieName:           "auth",
+		authSecureCookieName:     "qor5_auth_secure",
+		continueUrlCookieName:    "qor5_continue_url",
+		homeURL:                  "/",
+		loginURL:                 "/auth/login",
+		logoutURL:                "/auth/logout",
+		oauthCallbackCompleteURL: "/auth/callback-complete",
+		sessionMaxAge:            60 * 60,
+		allowURLS:                make(map[string]void),
 		cookieConfig: CookieConfig{
 			Path:     "/",
 			Domain:   "",
@@ -383,6 +385,23 @@ func (b *Builder) findUserByID(id string) (user interface{}, err error) {
 
 // completeUserAuthCallback is for url "/auth/{provider}/callback"
 func (b *Builder) completeUserAuthCallback(w http.ResponseWriter, r *http.Request) {
+	if b.cookieConfig.SameSite != http.SameSiteStrictMode {
+		b.completeUserAuthCallbackComplete(w, r)
+		return
+	}
+
+	completeURL := fmt.Sprintf("%s?%s", b.oauthCallbackCompleteURL, r.URL.Query().Encode())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(fmt.Sprintf(`
+<script>
+window.location.href="%s";
+</script>
+<a href="%s">complete</a>
+    `, completeURL, completeURL)))
+	return
+}
+
+func (b *Builder) completeUserAuthCallbackComplete(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var user interface{}
 	defer func() {
@@ -1121,6 +1140,7 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 		}
 	}
 	if b.oauthEnabled {
+		mux.HandleFunc(b.oauthCallbackCompleteURL, b.completeUserAuthCallbackComplete)
 		mux.HandleFunc(oauthBeginURL, b.beginAuth)
 		mux.HandleFunc(oauthCallbackURL, b.completeUserAuthCallback)
 	}
