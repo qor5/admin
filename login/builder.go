@@ -161,13 +161,13 @@ func New() *Builder {
 
 func (b *Builder) initAllowURLS() {
 	b.allowURLS = map[string]void{
-		b.loginURL:            {},
-		b.logoutURL:           {},
-		userPassForgetPassURL: {},
-		oauthBeginURL:         {},
-		oauthCallbackURL:      {},
-		userPassLoginURL:      {},
-		totpDoURL:             {},
+		b.logoutURL:                {},
+		b.oauthCallbackCompleteURL: {},
+		userPassForgetPassURL:      {},
+		oauthBeginURL:              {},
+		oauthCallbackURL:           {},
+		userPassLoginURL:           {},
+		totpDoURL:                  {},
 	}
 }
 
