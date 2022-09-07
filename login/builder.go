@@ -32,9 +32,24 @@ var (
 )
 
 const (
+	// TOTP
 	totpDoURL       = "/auth/2fa/totp/do"
 	totpSetupURL    = "/auth/2fa/totp/setup"
 	totpValidateURL = "/auth/2fa/totp/validate"
+
+	// OAuth
+	oauthBeginURL    = "/auth/begin"
+	oauthCallbackURL = "/auth/callback"
+
+	// UserPass
+	userPassLoginURL               = "/auth/userpass/login"
+	userPassDoResetPassURL         = "/auth/do-reset-password"
+	userPassResetPassURL           = "/auth/reset-password"
+	userPassDoChangePassURL        = "/auth/do-change-password"
+	userPassChangePassURL          = "/auth/change-password"
+	userPassForgetPassURL          = "/auth/forget-password"
+	userPassDoSendResetPassLinkURL = "/auth/send-reset-password-link"
+	userPassResetPassLinkSendURL   = "/auth/reset-password-link-sent"
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
@@ -69,14 +84,10 @@ type Builder struct {
 	maxRetryCount        int
 	noForgetPasswordLink bool
 
-	homeURL             string
-	loginURL            string
-	logoutURL           string
-	changePasswordURL   string
-	doChangePasswordURL string
-
-	authPrefixInterceptURLS map[string]void
-	allowURLS               map[string]void
+	homeURL   string
+	loginURL  string
+	logoutURL string
+	allowURLS map[string]void
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
@@ -118,8 +129,6 @@ func New() *Builder {
 		homeURL:               "/",
 		loginURL:              "/auth/login",
 		logoutURL:             "/auth/logout",
-		changePasswordURL:     "/auth/change-password",
-		doChangePasswordURL:   "/auth/do-change-password",
 		sessionMaxAge:         60 * 60,
 		allowURLS:             make(map[string]void),
 		cookieConfig: CookieConfig{
@@ -135,7 +144,7 @@ func New() *Builder {
 	}
 
 	r.registerI18n()
-	r.initAuthPrefixInterceptURLS()
+	r.initAllowURLS()
 
 	r.loginPageFunc = defaultLoginPage(r)
 	r.forgetPasswordPageFunc = defaultForgetPasswordPage(r)
@@ -148,16 +157,15 @@ func New() *Builder {
 	return r
 }
 
-func (b *Builder) initAuthPrefixInterceptURLS() {
-	b.authPrefixInterceptURLS = map[string]void{
-		// to redirect to login page
-		b.loginURL: {},
-		// below paths need logged-in status
+func (b *Builder) initAllowURLS() {
+	b.allowURLS = map[string]void{
+		b.loginURL:            {},
 		b.logoutURL:           {},
-		b.changePasswordURL:   {},
-		b.doChangePasswordURL: {},
-		totpSetupURL:          {},
-		totpValidateURL:       {},
+		userPassForgetPassURL: {},
+		oauthBeginURL:         {},
+		oauthCallbackURL:      {},
+		userPassLoginURL:      {},
+		totpDoURL:             {},
 	}
 }
 
@@ -753,7 +761,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	failRedirectURL := "/auth/forget-password"
+	failRedirectURL := userPassForgetPassURL
 
 	account := strings.TrimSpace(r.FormValue("account"))
 	if account == "" {
@@ -803,7 +811,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 	if r.TLS == nil {
 		scheme = "http"
 	}
-	link := fmt.Sprintf("%s://%s/auth/reset-password?id=%s&token=%s", scheme, r.Host, objectID(u), token)
+	link := fmt.Sprintf("%s://%s%s?id=%s&token=%s", scheme, r.Host, userPassResetPassURL, objectID(u), token)
 	if err = b.notifyUserOfResetPasswordLinkFunc(u, link); err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
@@ -821,7 +829,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/auth/reset-password-link-sent?a=%s", account), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?a=%s", userPassResetPassLinkSendURL, account), http.StatusFound)
 	return
 }
 
@@ -833,7 +841,7 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	userID := r.FormValue("user_id")
 	token := r.FormValue("token")
-	failRedirectURL := fmt.Sprintf("/auth/reset-password?id=%s&token=%s", userID, token)
+	failRedirectURL := fmt.Sprintf("%s?id=%s&token=%s", userPassResetPassURL, userID, token)
 	if userID == "" {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -942,7 +950,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
 		})
-		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 		return
 	}
 
@@ -953,7 +961,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
 		})
-		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 		return
 	}
 	if confirmPassword != password {
@@ -963,7 +971,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 			NewPassword:     password,
 			ConfirmPassword: confirmPassword,
 		})
-		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 		return
 	}
 	if b.passwordValidationFunc != nil {
@@ -975,7 +983,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 				NewPassword:     password,
 				ConfirmPassword: confirmPassword,
 			})
-			http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+			http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 			return
 		}
 	}
@@ -983,14 +991,14 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	err := user.SetPassword(b.db, b.newUserObject(), password)
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
-		http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+		http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 		return
 	}
 
 	if b.afterChangePasswordHook != nil {
 		if herr := b.afterChangePasswordHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
-			http.Redirect(w, r, b.changePasswordURL, http.StatusFound)
+			http.Redirect(w, r, userPassChangePassURL, http.StatusFound)
 			return
 		}
 	}
@@ -1096,15 +1104,15 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	mux.Handle(b.loginURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.loginPageFunc)))
 
 	if b.userPassEnabled {
-		mux.HandleFunc("/auth/userpass/login", b.userpassLogin)
-		mux.HandleFunc("/auth/do-reset-password", b.doResetPassword)
-		mux.HandleFunc(b.doChangePasswordURL, b.doChangePassword)
-		mux.Handle("/auth/reset-password", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordPageFunc)))
-		mux.Handle(b.changePasswordURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.changePasswordPageFunc)))
+		mux.HandleFunc(userPassLoginURL, b.userpassLogin)
+		mux.HandleFunc(userPassDoResetPassURL, b.doResetPassword)
+		mux.HandleFunc(userPassDoChangePassURL, b.doChangePassword)
+		mux.Handle(userPassResetPassURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordPageFunc)))
+		mux.Handle(userPassChangePassURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.changePasswordPageFunc)))
 		if !b.noForgetPasswordLink {
-			mux.HandleFunc("/auth/send-reset-password-link", b.sendResetPasswordLink)
-			mux.Handle("/auth/forget-password", b.i18nBuilder.EnsureLanguage(wb.Page(b.forgetPasswordPageFunc)))
-			mux.Handle("/auth/reset-password-link-sent", b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
+			mux.HandleFunc(userPassDoSendResetPassLinkURL, b.sendResetPasswordLink)
+			mux.Handle(userPassForgetPassURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.forgetPasswordPageFunc)))
+			mux.Handle(userPassResetPassLinkSendURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
 		}
 		if b.totpEnabled {
 			mux.HandleFunc(totpDoURL, b.totpDo)
@@ -1113,7 +1121,7 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 		}
 	}
 	if b.oauthEnabled {
-		mux.HandleFunc("/auth/begin", b.beginAuth)
-		mux.HandleFunc("/auth/callback", b.completeUserAuthCallback)
+		mux.HandleFunc(oauthBeginURL, b.beginAuth)
+		mux.HandleFunc(oauthCallbackURL, b.completeUserAuthCallback)
 	}
 }

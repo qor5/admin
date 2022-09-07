@@ -29,10 +29,6 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			path := strings.TrimRight(r.URL.Path, "/")
-			if _, ok := b.authPrefixInterceptURLS[path]; strings.HasPrefix(path, "/auth/") && !ok {
-				next.ServeHTTP(w, r)
-				return
-			}
 
 			claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
 			if err != nil {

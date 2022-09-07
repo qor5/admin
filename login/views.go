@@ -161,7 +161,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			for _, provider := range b.providers {
 				ul.AppendChildren(
 					A().
-						Href("/auth/begin?provider="+provider.Key).
+						Href(fmt.Sprintf("%s?provider=%s", oauthBeginURL, provider.Key)).
 						Class("px-6 py-3 mt-4 font-semibold text-gray-900 bg-white border-2 border-gray-500 rounded-md shadow outline-none hover:bg-yellow-50 hover:border-yellow-400 focus:outline-none").
 						Children(
 							provider.Logo,
@@ -193,10 +193,10 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action("/auth/userpass/login"),
+				).Method(http.MethodPost).Action(userPassLoginURL),
 				If(!b.noForgetPasswordLink,
 					Div(
-						A(Text(msgr.ForgetPasswordLink)).Href("/auth/forget-password").
+						A(Text(msgr.ForgetPasswordLink)).Href(userPassForgetPassURL).
 							Class("text-gray-500"),
 					).Class("text-right mt-2"),
 				),
@@ -260,7 +260,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 							Button(activeBtnText).Class(activeBtnClass),
 						),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action("/auth/send-reset-password-link"),
+				).Method(http.MethodPost).Action(userPassDoSendResetPassLinkURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 
@@ -372,7 +372,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action("/auth/do-reset-password"),
+				).Method(http.MethodPost).Action(userPassDoResetPassURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
@@ -413,7 +413,7 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action("/auth/do-change-password"),
+				).Method(http.MethodPost).Action(userPassDoChangePassURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
