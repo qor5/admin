@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
-	"github.com/goplaid/x/vuetifyx"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
@@ -110,6 +107,7 @@ func NewConfig() Config {
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
 			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
+			activity.PermPolicy,
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
 			if u == nil {
@@ -250,71 +248,6 @@ func NewConfig() Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 	ab.RegisterModels(m, l, pm)
-	ab.GetPresetModelBuilder().Listing().FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		var (
-			logs         = ab.NewLogModelSlice()
-			activityMsgr = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
-			publishMsgr  = i18n.MustGetModuleMessages(ctx.R, publish_view.I18nPublishKey, publish_view.Messages_en_US).(*publish_view.Messages)
-			contextDB    = db
-		)
-
-		contextDB.Select("creator").Group("creator").Find(logs)
-		reflectValue := reflect.Indirect(reflect.ValueOf(logs))
-		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < reflectValue.Len(); i++ {
-			creator := reflect.Indirect(reflectValue.Index(i)).FieldByName("Creator").String()
-			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
-			})
-		}
-
-		var modelOptions []*vuetifyx.SelectItem
-		for _, m := range ab.GetModelBuilders() {
-			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
-				Text:  m.GetType().Name(),
-				Value: m.GetType().Name(),
-			})
-		}
-
-		return []*vuetifyx.FilterItem{
-			{
-				Key:          "action",
-				Label:        activityMsgr.FilterAction,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `action %s ?`,
-				Options: []*vuetifyx.SelectItem{
-					{Text: activityMsgr.ActionEdit, Value: activity.ActivityEdit},
-					{Text: activityMsgr.ActionCreate, Value: activity.ActivityCreate},
-					{Text: activityMsgr.ActionDelete, Value: activity.ActivityDelete},
-					{Text: publishMsgr.Publish, Value: publish_view.ActivityPublish},
-					{Text: publishMsgr.Republish, Value: publish_view.ActivityRepublish},
-					{Text: publishMsgr.Unpublish, Value: publish_view.ActivityUnPublish},
-				},
-			},
-			{
-				Key:          "created",
-				Label:        activityMsgr.FilterCreatedAt,
-				ItemType:     vuetifyx.ItemTypeDate,
-				SQLCondition: `created_at %s ?`,
-			},
-			{
-				Key:          "creator",
-				Label:        activityMsgr.FilterCreator,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator %s ?`,
-				Options:      creatorOptions,
-			},
-			{
-				Key:          "model",
-				Label:        activityMsgr.FilterModel,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `model_name %s ?`,
-				Options:      modelOptions,
-			},
-		}
-	})
-
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").

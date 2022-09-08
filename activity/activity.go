@@ -260,6 +260,16 @@ func (ab ActivityBuilder) GetModelBuilder(v interface{}) (*ModelBuilder, bool) {
 	return &ModelBuilder{}, false
 }
 
+// GetModelBuilder 	get model builder
+func (ab ActivityBuilder) GetModelBuilderByName(name string) (*ModelBuilder, bool) {
+	for _, m := range ab.models {
+		if m.typ.Name() == name {
+			return m, true
+		}
+	}
+	return &ModelBuilder{}, false
+}
+
 // GetModelBuilders 	get all model builders
 func (ab ActivityBuilder) GetModelBuilders() []*ModelBuilder {
 	return ab.models

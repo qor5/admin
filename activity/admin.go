@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -30,25 +29,42 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 	var (
 		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
 		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
-		detailing = mb.Detailing("ModelLink", "ModelDiffs")
+		detailing = mb.Detailing("ModelDiffs")
 	)
 	ab.lmb = mb
+	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
+		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST")))
+		},
+	)
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
 
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
-			logs      = ab.NewLogModelSlice()
 			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			contextDB = ab.getDBFromContext(ctx.R.Context())
 		)
 
-		contextDB.Select("creator").Group("creator").Find(logs)
-		reflectValue := reflect.Indirect(reflect.ValueOf(logs))
+		creatorGroups := ab.NewLogModelSlice()
+		contextDB.Select("creator").Group("creator").Find(creatorGroups)
+		creatorGroupsValues := reflect.Indirect(reflect.ValueOf(creatorGroups))
 		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < reflectValue.Len(); i++ {
-			creator := reflect.Indirect(reflectValue.Index(i)).FieldByName("Creator").String()
+		for i := 0; i < creatorGroupsValues.Len(); i++ {
+			creator := reflect.Indirect(creatorGroupsValues.Index(i)).FieldByName("Creator").String()
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
+				Text:  creator,
+				Value: creator,
+			})
+		}
+
+		actionGroups := ab.NewLogModelSlice()
+		contextDB.Select("action").Group("action").Order("action").Find(actionGroups)
+		actionGroupsValues := reflect.Indirect(reflect.ValueOf(actionGroups))
+		var actionOptions []*vuetifyx.SelectItem
+		for i := 0; i < actionGroupsValues.Len(); i++ {
+			creator := reflect.Indirect(actionGroupsValues.Index(i)).FieldByName("Action").String()
+			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
 				Text:  creator,
 				Value: creator,
 			})
@@ -68,11 +84,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 				Label:        msgr.FilterAction,
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `action %s ?`,
-				Options: []*vuetifyx.SelectItem{
-					{Text: msgr.ActionEdit, Value: ActivityEdit},
-					{Text: msgr.ActionCreate, Value: ActivityCreate},
-					{Text: msgr.ActionDelete, Value: ActivityDelete},
-				},
+				Options:      actionOptions,
 			},
 			{
 				Key:          "created",
@@ -119,51 +131,45 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 		}
 	})
 
-	detailing.Field("ModelLink").ComponentFunc(
+	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-			link := field.Value(obj).(string)
-			if link == "" {
-				return nil
-			}
-
-			msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			return vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.ModelLink)),
-				vuetify.VCardText(h.A(h.Text(link)).Href(link)),
+			var (
+				record       = obj.(ActivityLogInterface)
+				msgr         = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+				modelKeyVals = record.GetModelKeys()
 			)
-		},
-	)
 
-	detailing.Field("ModelDiffs").ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-			record := obj.(interface {
-				GetAction() string
-				GetCreatedAt() time.Time
-			})
-
-			action := record.GetAction()
-			if action == ActivityCreate || action == ActivityDelete {
-				msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-
-				title := msgr.DiffNew
-				message := msgr.TheRecordWasCreatedAt
-				if action == ActivityDelete {
-					title = msgr.DiffDelete
-					message = msgr.TheRecordWasDeletedAt
+			if modelBuilder, ok := ab.GetModelBuilderByName(record.GetModelName()); ok {
+				var keyBuilder strings.Builder
+				var keysVals = strings.Split(modelKeyVals, ":")
+				for index, key := range modelBuilder.keys {
+					if index < len(keysVals) {
+						keyBuilder.WriteString(fmt.Sprintf("%s: %v, ", strings.ToTitle(key), keysVals[index]))
+					}
 				}
-				return vuetify.VCard(
-					vuetify.VCardTitle(h.Text(title)),
-					vuetify.VCardText(
-						h.Text(fmt.Sprintf(message, record.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))),
-					),
-				).Attr("style", "margin-top:15px;")
+				modelKeyVals = strings.TrimRight(keyBuilder.String(), ", ")
 			}
 
-			d := field.Value(obj).(string)
-			if d == "" {
-				return nil
+			var detailElems []h.HTMLComponent
+			detailElems = append(detailElems, vuetify.VCard(
+				vuetify.VCardTitle(h.Text(msgr.DiffDetail)),
+				vuetify.VSimpleTable(
+					h.Tbody(
+						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
+						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
+						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
+						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(modelKeyVals))),
+						h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
+					),
+				),
+			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+
+			if d := field.Value(obj).(string); d != "" {
+				detailElems = append(detailElems, DiffComponent(d, ctx.R))
 			}
-			return DiffComponent(d, ctx.R)
+
+			return h.Components(detailElems...)
 		},
 	)
 }
