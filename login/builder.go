@@ -87,7 +87,7 @@ type Builder struct {
 	userPassChangePassPageURL        string
 	userPassForgetPassPageURL        string
 	userPassDoSendResetPassLinkURL   string
-	userPassResetPassLinkSendPageURL string
+	userPassResetPassLinkSentPageURL string
 
 	loginPageFunc                 web.PageFunc
 	forgetPasswordPageFunc        web.PageFunc
@@ -146,7 +146,7 @@ func New() *Builder {
 		userPassChangePassPageURL:        "/auth/change-password",
 		userPassForgetPassPageURL:        "/auth/forget-password",
 		userPassDoSendResetPassLinkURL:   "/auth/send-reset-password-link",
-		userPassResetPassLinkSendPageURL: "/auth/reset-password-link-sent",
+		userPassResetPassLinkSentPageURL: "/auth/reset-password-link-sent",
 
 		sessionMaxAge: 60 * 60,
 		cookieConfig: CookieConfig{
@@ -183,7 +183,7 @@ func (b *Builder) initAllowURLs() {
 		b.userPassLoginPageURL:             {},
 		b.userPassForgetPassPageURL:        {},
 		b.userPassDoSendResetPassLinkURL:   {},
-		b.userPassResetPassLinkSendPageURL: {},
+		b.userPassResetPassLinkSentPageURL: {},
 		b.totpDoURL:                        {},
 	}
 }
@@ -865,7 +865,7 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?a=%s", b.userPassResetPassLinkSendPageURL, account), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?a=%s", b.userPassResetPassLinkSentPageURL, account), http.StatusFound)
 	return
 }
 
@@ -1148,7 +1148,7 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 		if !b.noForgetPasswordLink {
 			mux.HandleFunc(b.userPassDoSendResetPassLinkURL, b.sendResetPasswordLink)
 			mux.Handle(b.userPassForgetPassPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.forgetPasswordPageFunc)))
-			mux.Handle(b.userPassResetPassLinkSendPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
+			mux.Handle(b.userPassResetPassLinkSentPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordLinkSentPageFunc)))
 		}
 		if b.totpEnabled {
 			mux.HandleFunc(b.totpDoURL, b.totpDo)
