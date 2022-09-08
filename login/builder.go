@@ -64,10 +64,10 @@ type Builder struct {
 	noForgetPasswordLink bool
 
 	// Common URLs
-	homeURL   string
-	loginURL  string
-	logoutURL string
-	allowURLs map[string]void
+	homePageURL string
+	loginURL    string
+	logoutURL   string
+	allowURLs   map[string]void
 
 	// TOTP URLs
 	totpDoURL       string
@@ -127,9 +127,9 @@ func New() *Builder {
 		authSecureCookieName:  "qor5_auth_secure",
 		continueUrlCookieName: "qor5_continue_url",
 
-		homeURL:   "/",
-		loginURL:  "/auth/login",
-		logoutURL: "/auth/logout",
+		homePageURL: "/",
+		loginURL:    "/auth/login",
+		logoutURL:   "/auth/logout",
 
 		totpDoURL:       "/auth/2fa/totp/do",
 		totpSetupURL:    "/auth/2fa/totp/setup",
@@ -177,7 +177,6 @@ func New() *Builder {
 
 func (b *Builder) initAllowURLs() {
 	b.allowURLs = map[string]void{
-		b.logoutURL:                      {},
 		b.oauthBeginURL:                  {},
 		b.oauthCallbackURL:               {},
 		b.oauthCallbackCompleteURL:       {},
@@ -227,13 +226,8 @@ func (b *Builder) LoginURL(v string) (r *Builder) {
 	return b
 }
 
-func (b *Builder) LogoutURL(v string) (r *Builder) {
-	b.logoutURL = v
-	return b
-}
-
 func (b *Builder) HomeURL(v string) (r *Builder) {
-	b.homeURL = v
+	b.homePageURL = v
 	return b
 }
 
@@ -570,7 +564,7 @@ func (b *Builder) completeUserAuthCallbackComplete(w http.ResponseWriter, r *htt
 		return
 	}
 
-	redirectURL := b.homeURL
+	redirectURL := b.homePageURL
 	if v := b.getContinueURL(w, r); v != "" {
 		redirectURL = v
 	}
@@ -712,7 +706,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL := b.homeURL
+	redirectURL := b.homePageURL
 	if v := b.getContinueURL(w, r); v != "" {
 		redirectURL = v
 	}
@@ -791,7 +785,7 @@ func (b *Builder) setContinueURL(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(continueURL, "?__execute_event__=") {
 		continueURL = r.Referer()
 	}
-	if continueURL != b.homeURL && !strings.HasPrefix(continueURL, "/auth/") {
+	if continueURL != b.homePageURL && !strings.HasPrefix(continueURL, "/auth/") {
 		http.SetCookie(w, &http.Cookie{
 			Name:     b.continueUrlCookieName,
 			Value:    continueURL,
@@ -1134,7 +1128,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	redirectURL := b.homeURL
+	redirectURL := b.homePageURL
 
 	var claims *UserClaims
 	claims, err = parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
