@@ -23,25 +23,21 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			if _, ok := b.allowURLS[r.URL.Path]; ok {
+			if _, ok := b.allowURLs[r.URL.Path]; ok {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			path := strings.TrimRight(r.URL.Path, "/")
-			if _, ok := b.authPrefixInterceptURLS[path]; strings.HasPrefix(path, "/auth/") && !ok {
-				next.ServeHTTP(w, r)
-				return
-			}
 
 			claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
 			if err != nil {
 				log.Println(err)
 				b.setContinueURL(w, r)
-				if path == b.loginURL {
+				if path == b.loginPageURL {
 					next.ServeHTTP(w, r)
 				} else {
-					http.Redirect(w, r, b.loginURL, http.StatusFound)
+					http.Redirect(w, r, b.loginPageURL, http.StatusFound)
 				}
 				return
 			}
@@ -120,35 +116,35 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
-				if path == b.loginURL {
+				if path == b.loginPageURL {
 					next.ServeHTTP(w, r)
 					return
 				}
 				if !user.(UserPasser).GetIsTOTPSetup() {
-					if path == totpSetupURL {
+					if path == b.totpSetupPageURL {
 						next.ServeHTTP(w, r)
 						return
 					}
-					http.Redirect(w, r, totpSetupURL, http.StatusFound)
+					http.Redirect(w, r, b.totpSetupPageURL, http.StatusFound)
 					return
 				}
-				if path == totpValidateURL {
+				if path == b.totpValidatePageURL {
 					next.ServeHTTP(w, r)
 					return
 				}
-				http.Redirect(w, r, totpValidateURL, http.StatusFound)
+				http.Redirect(w, r, b.totpValidatePageURL, http.StatusFound)
 				return
 			}
 
 			if claims.TOTPValidated || claims.Provider != "" {
-				if path == totpSetupURL || path == totpValidateURL {
-					http.Redirect(w, r, b.homeURL, http.StatusFound)
+				if path == b.totpSetupPageURL || path == b.totpValidatePageURL {
+					http.Redirect(w, r, b.homePageURL, http.StatusFound)
 					return
 				}
 			}
 
-			if path == b.loginURL {
-				http.Redirect(w, r, b.homeURL, http.StatusFound)
+			if path == b.loginPageURL {
+				http.Redirect(w, r, b.homePageURL, http.StatusFound)
 				return
 			}
 
