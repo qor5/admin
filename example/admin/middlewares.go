@@ -43,8 +43,10 @@ func withNoteContext() func(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			newR := r.WithContext(context.WithValue(r.Context(), note.UserIDKey, u.ID))
-			newR = r.WithContext(context.WithValue(r.Context(), note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Account)))
+			ctx := context.WithValue(r.Context(), note.UserIDKey, u.ID)
+			ctx = context.WithValue(ctx, note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Account))
+			newR := r.WithContext(ctx)
+
 			next.ServeHTTP(w, newR)
 		})
 	}
