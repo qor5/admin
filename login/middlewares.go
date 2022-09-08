@@ -23,7 +23,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			if _, ok := b.allowURLS[r.URL.Path]; ok {
+			if _, ok := b.allowURLs[r.URL.Path]; ok {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -121,23 +121,23 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					return
 				}
 				if !user.(UserPasser).GetIsTOTPSetup() {
-					if path == totpSetupURL {
+					if path == b.totpSetupURL {
 						next.ServeHTTP(w, r)
 						return
 					}
-					http.Redirect(w, r, totpSetupURL, http.StatusFound)
+					http.Redirect(w, r, b.totpSetupURL, http.StatusFound)
 					return
 				}
-				if path == totpValidateURL {
+				if path == b.totpValidateURL {
 					next.ServeHTTP(w, r)
 					return
 				}
-				http.Redirect(w, r, totpValidateURL, http.StatusFound)
+				http.Redirect(w, r, b.totpValidateURL, http.StatusFound)
 				return
 			}
 
 			if claims.TOTPValidated || claims.Provider != "" {
-				if path == totpSetupURL || path == totpValidateURL {
+				if path == b.totpSetupURL || path == b.totpValidateURL {
 					http.Redirect(w, r, b.homeURL, http.StatusFound)
 					return
 				}
