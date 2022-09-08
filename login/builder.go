@@ -80,7 +80,7 @@ type Builder struct {
 	oauthCallbackCompleteURL string
 
 	// UserPass URLs
-	userPassLoginPageURL             string
+	userPassLoginURL                 string
 	userPassDoResetPassURL           string
 	userPassResetPassPageURL         string
 	userPassDoChangePassURL          string
@@ -139,7 +139,7 @@ func New() *Builder {
 		oauthCallbackURL:         "/auth/callback",
 		oauthCallbackCompleteURL: "/auth/callback-complete",
 
-		userPassLoginPageURL:             "/auth/userpass/login",
+		userPassLoginURL:                 "/auth/userpass/login",
 		userPassDoResetPassURL:           "/auth/do-reset-password",
 		userPassResetPassPageURL:         "/auth/reset-password",
 		userPassDoChangePassURL:          "/auth/do-change-password",
@@ -180,10 +180,12 @@ func (b *Builder) initAllowURLs() {
 		b.oauthBeginURL:                    {},
 		b.oauthCallbackURL:                 {},
 		b.oauthCallbackCompleteURL:         {},
-		b.userPassLoginPageURL:             {},
+		b.userPassLoginURL:                 {},
 		b.userPassForgetPassPageURL:        {},
 		b.userPassDoSendResetPassLinkURL:   {},
 		b.userPassResetPassLinkSentPageURL: {},
+		b.userPassDoResetPassURL:           {},
+		b.userPassResetPassPageURL:         {},
 		b.totpDoURL:                        {},
 	}
 }
@@ -1140,7 +1142,7 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	mux.Handle(b.loginPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.loginPageFunc)))
 
 	if b.userPassEnabled {
-		mux.HandleFunc(b.userPassLoginPageURL, b.userpassLogin)
+		mux.HandleFunc(b.userPassLoginURL, b.userpassLogin)
 		mux.HandleFunc(b.userPassDoResetPassURL, b.doResetPassword)
 		mux.HandleFunc(b.userPassDoChangePassURL, b.doChangePassword)
 		mux.Handle(b.userPassResetPassPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordPageFunc)))

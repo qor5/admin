@@ -193,7 +193,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 					Div(
 						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action(b.userPassLoginPageURL),
+				).Method(http.MethodPost).Action(b.userPassLoginURL),
 				If(!b.noForgetPasswordLink,
 					Div(
 						A(Text(msgr.ForgetPasswordLink)).Href(b.userPassForgetPassPageURL).
