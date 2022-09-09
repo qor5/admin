@@ -204,7 +204,7 @@ func (b *Builder) CookieConfig(v CookieConfig) (r *Builder) {
 	return b
 }
 
-func (b *Builder) Providers(vs ...*Provider) (r *Builder) {
+func (b *Builder) OAuthProviders(vs ...*Provider) (r *Builder) {
 	if len(vs) == 0 {
 		return b
 	}

@@ -29,7 +29,7 @@ func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i18
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
-		Providers(
+		OAuthProviders(
 			&login.Provider{
 				Goth: google.New(os.Getenv("LOGIN_GOOGLE_KEY"), os.Getenv("LOGIN_GOOGLE_SECRET"), os.Getenv("BASE_URL")+"/auth/callback?provider=google"),
 				Key:  "google",

@@ -18,7 +18,7 @@ func main() {
 
 	b := login.New().
 		Secret("123").
-		Providers(
+		OAuthProviders(
 			&login.Provider{
 				Goth: google.New(os.Getenv("LOGIN_GOOGLE_KEY"), os.Getenv("LOGIN_GOOGLE_SECRET"), "http://localhost:9500/auth/callback?provider=google"),
 				Key:  "google",
