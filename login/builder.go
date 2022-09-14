@@ -34,6 +34,7 @@ var (
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
 type PasswordValidationFunc func(password string) (message string, ok bool)
 type HookFunc func(r *http.Request, user interface{}) error
+type HTMLWrapFunc func(in HTMLComponent) HTMLComponent
 
 type void struct{}
 
@@ -90,6 +91,7 @@ type Builder struct {
 	userPassResetPassLinkSentPageURL string
 
 	loginPageFunc                 web.PageFunc
+	defaultLoginPageFormWrapFunc  HTMLWrapFunc
 	forgetPasswordPageFunc        web.PageFunc
 	resetPasswordLinkSentPageFunc web.PageFunc
 	resetPasswordPageFunc         web.PageFunc
@@ -235,6 +237,11 @@ func (b *Builder) HomeURL(v string) (r *Builder) {
 
 func (b *Builder) LoginPageFunc(v web.PageFunc) (r *Builder) {
 	b.loginPageFunc = v
+	return b
+}
+
+func (b *Builder) DefaultLoginPageFormWrapFunc(v HTMLWrapFunc) (r *Builder) {
+	b.defaultLoginPageFormWrapFunc = v
 	return b
 }
 

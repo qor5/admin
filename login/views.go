@@ -204,21 +204,28 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 
 		r.PageTitle = "Sign In"
+		var bodyForm HTMLComponent
+		bodyForm = Div(
+			userPassHTML,
+			oauthHTML,
+			If(len(languagesHTML) > 0,
+				Select(
+					languagesHTML...,
+				).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500").
+					Attr("onChange", "window.location.href=this.value"),
+			),
+		).Class(wrapperClass)
+
+		if b.defaultLoginPageFormWrapFunc != nil {
+			bodyForm = b.defaultLoginPageFormWrapFunc(bodyForm)
+		}
+
 		r.Body = Div(
 			Style(StyleCSS),
 			errNotice(fcText),
 			warnNotice(wcText),
 			infoNotice(icText),
-			Div(
-				userPassHTML,
-				oauthHTML,
-				If(len(languagesHTML) > 0,
-					Select(
-						languagesHTML...,
-					).Class("mt-12 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500").
-						Attr("onChange", "window.location.href=this.value"),
-				),
-			).Class(wrapperClass),
+			bodyForm,
 		)
 
 		return
