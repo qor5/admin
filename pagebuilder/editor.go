@@ -2,7 +2,6 @@ package pagebuilder
 
 import (
 	"database/sql"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,13 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	vx "github.com/goplaid/x/vuetifyx"
-
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -31,6 +29,7 @@ const (
 	DeleteContainerConfirmationEvent = "page_builder_DeleteContainerConfirmationEvent"
 	DeleteContainerEvent             = "page_builder_DeleteContainerEvent"
 	MoveContainerEvent               = "page_builder_MoveContainerEvent"
+	ReloadEditorPreviewContentEvent  = "page_builder_ReloadEditorPreviewContentEvent"
 	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
 	RenameCotainerDialogEvent        = "page_builder_RenameContainerDialogEvent"
@@ -44,17 +43,6 @@ const (
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
 )
-
-//go:embed dist
-var box embed.FS
-
-func ShadowDomComponentsPack() web.ComponentsPack {
-	v, err := box.ReadFile("dist/shadow.min.js")
-	if err != nil {
-		panic(err)
-	}
-	return web.ComponentsPack(v)
-}
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	isTpl := ctx.R.FormValue("tpl") != ""
@@ -175,7 +163,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			App(true),
 
 		VMain(
-			VContainer(body).Attr("v-keep-scroll", "true").
+			VContainer(body).
 				Class("mt-6").
 				Fluid(true),
 			VNavigationDrawer(containerList).
@@ -338,9 +326,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 			VToolbarTitle("").Class("pl-2").
 				Children(h.Text("Containers")),
 			VSpacer(),
-			//VBtn("").Icon(true).Children(
+			// VBtn("").Icon(true).Children(
 			//	VIcon("close"),
-			//).Attr("@click.stop", "vars.presetsRightDrawer = false"),
+			// ).Attr("@click.stop", "vars.presetsRightDrawer = false"),
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
@@ -351,7 +339,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 						EventFunc(MoveContainerEvent).
 						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
 						Go()).Children(
-					//VList(
+					// VList(
 					h.Div(
 						VListItem(
 							VListItemContent(
@@ -425,7 +413,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 							Query(presets.ParamOverlay, actions.Dialog).
 							Go(),
 					),
-					//).Class("py-0"),
+					// ).Class("py-0"),
 				),
 			),
 		).Class("pa-4 pt-2"),
@@ -453,6 +441,10 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 			Go()
 	}
 
+	return
+}
+
+func (b *Builder) ReloadEditorPreviewContent(ctx *web.EventContext) (r web.EventResponse, err error) {
 	return
 }
 
@@ -840,14 +832,11 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
 
-<style>
-	.page-builder-container {
-		overflow: hidden;
-		box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
-}
-</style>
-
 			<style>
+				.page-builder-container {
+					overflow: hidden;
+					box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
+				}
 				[v-cloak] {
 					display: none;
 				}
@@ -883,13 +872,17 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
-			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`function(e){
-let arr = e.data.split('_');
-if (arr.length!=2) {
-console.log(arr);
-return 
-}
-$plaid().vars(vars).form(plaidForm).url("%s/"+arr[0]).eventFunc("presets_Edit").query("overlay", "dialog").query("id", arr[1]).go();
+			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
+function(e){
+	if (!e.data.split) {
+		return
+	}
+	let arr = e.data.split("_");
+	if (arr.length != 2) {
+		console.log(arr);
+		return
+	}
+	$plaid().vars(vars).form(plaidForm).url("%s/"+arr[0]).eventFunc("presets_Edit").query("overlay", "dialog").query("id", arr[1]).go();
 }`, b.prefix)),
 
 			innerPr.Body.(h.HTMLComponent),
