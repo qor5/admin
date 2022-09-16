@@ -273,6 +273,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 					return
 				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, int(p.ID), p.GetVersion()); inerr != nil {
+					panic(inerr)
 					return
 				}
 			}
@@ -575,7 +576,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 	)
 	listing.Field("DisplayName").Label("Name")
-	listing.SearchFunc(sharedContainersearcher(db, pm))
+	listing.SearchFunc(sharedContainerSearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*Container)
@@ -714,7 +715,7 @@ func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	return
 }
 
-func sharedContainersearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {

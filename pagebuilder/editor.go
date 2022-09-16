@@ -50,44 +50,21 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
-	var comps []h.HTMLComponent
 	var p *Page
-	if isTpl {
-		tpl := &Template{}
-		err = b.db.First(tpl, "id = ?", id).Error
-		if err != nil {
-			return
-		}
-		p = tpl.Page()
-		version = p.Version.Version
-	} else {
-		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-		if err != nil {
-			return
-		}
-	}
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
+	r.Body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, false)
 	if err != nil {
 		return
 	}
-
 	r.PageTitle = p.Title
-	r.Body = h.Components(comps...)
-	if b.pageLayoutFunc != nil {
-		input := &PageLayoutInput{
-			IsPreview: true,
-			Page:      p,
-		}
-		r.Body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
-	}
 	return
 }
+
+const editorPreviewContentPortal = "editorPreviewContentPortal"
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
 	isTpl := ctx.R.FormValue("tpl") != ""
 	id := pat.Param(ctx.R, "id")
 	version := ctx.R.FormValue("version")
-	var comps []h.HTMLComponent
 	var body h.HTMLComponent
 	var containerList h.HTMLComponent
 	var device string
@@ -95,46 +72,25 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	var previewHref string
 	deviceQueries := url.Values{}
 	if isTpl {
-		tpl := &Template{}
-		err = b.db.First(tpl, "id = ?", id).Error
-		if err != nil {
-			return
-		}
-		p = tpl.Page()
-		version = p.Version.Version
 		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
 		deviceQueries.Add("tpl", "1")
 	} else {
-		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-		if err != nil {
-			return
-		}
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
 		deviceQueries.Add("version", version)
 	}
-	if p.GetStatus() == publish.StatusDraft {
-		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
-		if err != nil {
-			return
-		}
-		r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
-		device, _ = b.getDevice(ctx)
-		body = h.Components(comps...)
-		if b.pageLayoutFunc != nil {
-			input := &PageLayoutInput{
-				IsEditor: true,
-				Page:     p,
-			}
-			body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
 
-			containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion())
-			if err != nil {
-				return
-			}
-		}
-	} else {
-		body = h.Text(perm.PermissionDenied.Error())
+	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, true)
+	if err != nil {
+		return
 	}
+	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+	device, _ = b.getDevice(ctx)
+
+	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion())
+	if err != nil {
+		return
+	}
+
 	r.Body = h.Components(
 		VAppBar(
 			VSpacer(),
@@ -163,7 +119,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			App(true),
 
 		VMain(
-			VContainer(body).
+			VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 				Class("mt-6").
 				Fluid(true),
 			VNavigationDrawer(containerList).
@@ -195,6 +151,44 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 		style = "width: 1264px;"
 	}
 
+	return
+}
+
+func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", pageOrTemplateID).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", pageOrTemplateID, version).Error
+		if err != nil {
+			return
+		}
+	}
+
+	if p.GetStatus() != publish.StatusDraft && isEditor {
+		r = h.Text(perm.PermissionDenied.Error())
+		return
+	}
+
+	var comps []h.HTMLComponent
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), isEditor)
+	if err != nil {
+		return
+	}
+	r = h.Components(comps...)
+	if b.pageLayoutFunc != nil {
+		input := &PageLayoutInput{
+			IsEditor:  isEditor,
+			IsPreview: !isEditor,
+			Page:      p,
+		}
+		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+	}
 	return
 }
 
@@ -332,6 +326,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
+			VTextField().Placeholder("hello"),
 			VCard(
 				h.Tag("vx-draggable").
 					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
@@ -445,6 +440,20 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 }
 
 func (b *Builder) ReloadEditorPreviewContent(ctx *web.EventContext) (r web.EventResponse, err error) {
+	pageID := pat.Param(ctx.R, presets.ParamID)
+	pageVersion := ctx.R.FormValue("version")
+	fmt.Println("====", pageID, pageVersion)
+	var body h.HTMLComponent
+	body, _, err = b.renderPageOrTemplate(ctx, false, pageID, pageVersion, true)
+	if err != nil {
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: editorPreviewContentPortal,
+		Body: body,
+	})
+
 	return
 }
 
@@ -865,6 +874,19 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			panic(err)
 		}
 
+		action := web.POST().
+			EventFunc(actions.Edit).
+			URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamID, web.Var("arr[1]")).
+			Query(presets.ParamOverlayAfterUpdateScript,
+				web.Var(
+					h.JSONString(web.POST().
+						EventFunc(ReloadEditorPreviewContentEvent).
+						Query("version", "__version__").
+						Go())+".replace(\"__version__\", version)",
+				),
+			).Go()
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
 		pr.Body = VApp(
 
@@ -882,8 +904,10 @@ function(e){
 		console.log(arr);
 		return
 	}
-	$plaid().vars(vars).form(plaidForm).url("%s/"+arr[0]).eventFunc("presets_Edit").query("overlay", "dialog").query("id", arr[1]).go();
-}`, b.prefix)),
+	let params = new URLSearchParams(location.search);
+	let version = params.get("version");
+	%s
+}`, action)),
 
 			innerPr.Body.(h.HTMLComponent),
 		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)
