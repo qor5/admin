@@ -884,7 +884,8 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 					h.JSONString(web.POST().
 						EventFunc(ReloadEditorPreviewContentEvent).
 						Query("version", "__version__").
-						Go())+".replace(\"__version__\", version)",
+						ThenScript(`setTimeout(function(){ window.scroll({left: __scrollLeft__, top: __scrollTop__, behavior: "auto"}) }, 50)`).
+						Go())+".replace(\"__version__\", version).replace(\"__scrollLeft__\", scrollLeft).replace(\"__scrollTop__\", scrollTop)",
 				),
 			).Go()
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
@@ -906,6 +907,8 @@ function(e){
 	}
 	let params = new URLSearchParams(location.search);
 	let version = params.get("version");
+	let scrollLeft = window.scrollX;
+	let scrollTop = window.scrollY;
 	%s
 }`, action)),
 
