@@ -326,7 +326,6 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
-			VTextField().Placeholder("hello"),
 			VCard(
 				h.Tag("vx-draggable").
 					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
