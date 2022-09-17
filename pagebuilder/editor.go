@@ -29,7 +29,6 @@ const (
 	DeleteContainerConfirmationEvent = "page_builder_DeleteContainerConfirmationEvent"
 	DeleteContainerEvent             = "page_builder_DeleteContainerEvent"
 	MoveContainerEvent               = "page_builder_MoveContainerEvent"
-	ReloadEditorPreviewContentEvent  = "page_builder_ReloadEditorPreviewContentEvent"
 	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
 	RenameCotainerDialogEvent        = "page_builder_RenameContainerDialogEvent"
@@ -434,24 +433,6 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 			Query(presets.ParamID, fmt.Sprint(newModelID)).
 			Go()
 	}
-
-	return
-}
-
-func (b *Builder) ReloadEditorPreviewContent(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := pat.Param(ctx.R, presets.ParamID)
-	pageVersion := ctx.R.FormValue("version")
-	fmt.Println("====", pageID, pageVersion)
-	var body h.HTMLComponent
-	body, _, err = b.renderPageOrTemplate(ctx, false, pageID, pageVersion, true)
-	if err != nil {
-		return
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: editorPreviewContentPortal,
-		Body: body,
-	})
 
 	return
 }
@@ -878,15 +859,16 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 			Query(presets.ParamOverlay, actions.Dialog).
 			Query(presets.ParamID, web.Var("arr[1]")).
-			Query(presets.ParamOverlayAfterUpdateScript,
-				web.Var(
-					h.JSONString(web.POST().
-						EventFunc(ReloadEditorPreviewContentEvent).
-						Query("version", "__version__").
-						ThenScript(`setTimeout(function(){ window.scroll({left: __scrollLeft__, top: __scrollTop__, behavior: "auto"}) }, 50)`).
-						Go())+".replace(\"__version__\", version).replace(\"__scrollLeft__\", scrollLeft).replace(\"__scrollTop__\", scrollTop)",
-				),
-			).Go()
+			// Query(presets.ParamOverlayAfterUpdateScript,
+			// 	web.Var(
+			// 		h.JSONString(web.POST().
+			// 			PushState(web.Location(url.Values{})).
+			// 			MergeQuery(true).
+			// 			ThenScript(`setTimeout(function(){ window.scroll({left: __scrollLeft__, top: __scrollTop__, behavior: "auto"}) }, 50)`).
+			// 			Go())+".replace(\"__scrollLeft__\", scrollLeft).replace(\"__scrollTop__\", scrollTop)",
+			// 	),
+			// ).
+			Go()
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
 		pr.Body = VApp(
 
@@ -894,6 +876,40 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
+			h.Script(`
+(function(){
+
+	let scrollLeft = 0;
+	let scrollTop = 0;
+	
+	function pause(duration) {
+		return new Promise(res => setTimeout(res, duration));
+	}
+	function backoff(retries, fn, delay = 100) {
+		fn().catch(err => retries > 1
+			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
+			: Promise.reject(err));
+	}
+
+	function restoreScroll() {
+		window.scroll({left: scrollLeft, top: scrollTop, behavior: "auto"});
+		if (window.scrollX == scrollLeft && window.scrollY == scrollTop) {
+			return Promise.resolve();
+		}
+		return Promise.reject();
+	}
+
+	window.addEventListener('fetchStart', (event) => {
+		scrollLeft = window.scrollX;
+		scrollTop = window.scrollY;
+	});
+	
+	window.addEventListener('fetchEnd', (event) => {
+		backoff(5, restoreScroll, 100);
+	});
+})()
+
+`),
 			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
 function(e){
 	if (!e.data.split) {
@@ -904,10 +920,6 @@ function(e){
 		console.log(arr);
 		return
 	}
-	let params = new URLSearchParams(location.search);
-	let version = params.get("version");
-	let scrollLeft = window.scrollX;
-	let scrollTop = window.scrollY;
 	%s
 }`, action)),
 
