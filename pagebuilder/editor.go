@@ -2,7 +2,6 @@ package pagebuilder
 
 import (
 	"database/sql"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -11,13 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	vx "github.com/goplaid/x/vuetifyx"
-
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -45,61 +43,27 @@ const (
 	paramModelID         = "modelID"
 )
 
-//go:embed dist
-var box embed.FS
-
-func ShadowDomComponentsPack() web.ComponentsPack {
-	v, err := box.ReadFile("dist/shadow.min.js")
-	if err != nil {
-		panic(err)
-	}
-	return web.ComponentsPack(v)
-}
-
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	isTpl := ctx.R.FormValue("tpl") != ""
 	id := ctx.R.FormValue("id")
 	version := ctx.R.FormValue("version")
 	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
-	var comps []h.HTMLComponent
 	var p *Page
-	if isTpl {
-		tpl := &Template{}
-		err = b.db.First(tpl, "id = ?", id).Error
-		if err != nil {
-			return
-		}
-		p = tpl.Page()
-		version = p.Version.Version
-	} else {
-		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-		if err != nil {
-			return
-		}
-	}
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), false)
+	r.Body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, false)
 	if err != nil {
 		return
 	}
-
 	r.PageTitle = p.Title
-	r.Body = h.Components(comps...)
-	if b.pageLayoutFunc != nil {
-		input := &PageLayoutInput{
-			IsPreview: true,
-			Page:      p,
-		}
-		r.Body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
-	}
 	return
 }
+
+const editorPreviewContentPortal = "editorPreviewContentPortal"
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
 	isTpl := ctx.R.FormValue("tpl") != ""
 	id := pat.Param(ctx.R, "id")
 	version := ctx.R.FormValue("version")
-	var comps []h.HTMLComponent
 	var body h.HTMLComponent
 	var containerList h.HTMLComponent
 	var device string
@@ -107,46 +71,25 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	var previewHref string
 	deviceQueries := url.Values{}
 	if isTpl {
-		tpl := &Template{}
-		err = b.db.First(tpl, "id = ?", id).Error
-		if err != nil {
-			return
-		}
-		p = tpl.Page()
-		version = p.Version.Version
 		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
 		deviceQueries.Add("tpl", "1")
 	} else {
-		err = b.db.First(&p, "id = ? and version = ?", id, version).Error
-		if err != nil {
-			return
-		}
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
 		deviceQueries.Add("version", version)
 	}
-	if p.GetStatus() == publish.StatusDraft {
-		comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), true)
-		if err != nil {
-			return
-		}
-		r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
-		device, _ = b.getDevice(ctx)
-		body = h.Components(comps...)
-		if b.pageLayoutFunc != nil {
-			input := &PageLayoutInput{
-				IsEditor: true,
-				Page:     p,
-			}
-			body = b.pageLayoutFunc(h.Components(comps...), input, ctx)
 
-			containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion())
-			if err != nil {
-				return
-			}
-		}
-	} else {
-		body = h.Text(perm.PermissionDenied.Error())
+	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, true)
+	if err != nil {
+		return
 	}
+	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+	device, _ = b.getDevice(ctx)
+
+	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion())
+	if err != nil {
+		return
+	}
+
 	r.Body = h.Components(
 		VAppBar(
 			VSpacer(),
@@ -175,7 +118,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			App(true),
 
 		VMain(
-			VContainer(body).Attr("v-keep-scroll", "true").
+			VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 				Class("mt-6").
 				Fluid(true),
 			VNavigationDrawer(containerList).
@@ -207,6 +150,44 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 		style = "width: 1264px;"
 	}
 
+	return
+}
+
+func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
+	if isTpl {
+		tpl := &Template{}
+		err = b.db.First(tpl, "id = ?", pageOrTemplateID).Error
+		if err != nil {
+			return
+		}
+		p = tpl.Page()
+		version = p.Version.Version
+	} else {
+		err = b.db.First(&p, "id = ? and version = ?", pageOrTemplateID, version).Error
+		if err != nil {
+			return
+		}
+	}
+
+	if p.GetStatus() != publish.StatusDraft && isEditor {
+		r = h.Text(perm.PermissionDenied.Error())
+		return
+	}
+
+	var comps []h.HTMLComponent
+	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), isEditor)
+	if err != nil {
+		return
+	}
+	r = h.Components(comps...)
+	if b.pageLayoutFunc != nil {
+		input := &PageLayoutInput{
+			IsEditor:  isEditor,
+			IsPreview: !isEditor,
+			Page:      p,
+		}
+		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+	}
 	return
 }
 
@@ -338,9 +319,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 			VToolbarTitle("").Class("pl-2").
 				Children(h.Text("Containers")),
 			VSpacer(),
-			//VBtn("").Icon(true).Children(
+			// VBtn("").Icon(true).Children(
 			//	VIcon("close"),
-			//).Attr("@click.stop", "vars.presetsRightDrawer = false"),
+			// ).Attr("@click.stop", "vars.presetsRightDrawer = false"),
 		).Color("white").Elevation(0).Dense(true),
 
 		VSheet(
@@ -351,7 +332,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 						EventFunc(MoveContainerEvent).
 						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
 						Go()).Children(
-					//VList(
+					// VList(
 					h.Div(
 						VListItem(
 							VListItemContent(
@@ -425,7 +406,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 							Query(presets.ParamOverlay, actions.Dialog).
 							Go(),
 					),
-					//).Class("py-0"),
+					// ).Class("py-0"),
 				),
 			),
 		).Class("pa-4 pt-2"),
@@ -840,14 +821,11 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
 
-<style>
-	.page-builder-container {
-		overflow: hidden;
-		box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
-}
-</style>
-
 			<style>
+				.page-builder-container {
+					overflow: hidden;
+					box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
+				}
 				[v-cloak] {
 					display: none;
 				}
@@ -876,6 +854,21 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			panic(err)
 		}
 
+		action := web.POST().
+			EventFunc(actions.Edit).
+			URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamID, web.Var("arr[1]")).
+			// Query(presets.ParamOverlayAfterUpdateScript,
+			// 	web.Var(
+			// 		h.JSONString(web.POST().
+			// 			PushState(web.Location(url.Values{})).
+			// 			MergeQuery(true).
+			// 			ThenScript(`setTimeout(function(){ window.scroll({left: __scrollLeft__, top: __scrollTop__, behavior: "auto"}) }, 50)`).
+			// 			Go())+".replace(\"__scrollLeft__\", scrollLeft).replace(\"__scrollTop__\", scrollTop)",
+			// 	),
+			// ).
+			Go()
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
 		pr.Body = VApp(
 
@@ -883,14 +876,52 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
-			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`function(e){
-let arr = e.data.split('_');
-if (arr.length!=2) {
-console.log(arr);
-return 
-}
-$plaid().vars(vars).form(plaidForm).url("%s/"+arr[0]).eventFunc("presets_Edit").query("overlay", "dialog").query("id", arr[1]).go();
-}`, b.prefix)),
+			h.Script(`
+(function(){
+
+	let scrollLeft = 0;
+	let scrollTop = 0;
+	
+	function pause(duration) {
+		return new Promise(res => setTimeout(res, duration));
+	}
+	function backoff(retries, fn, delay = 100) {
+		fn().catch(err => retries > 1
+			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
+			: Promise.reject(err));
+	}
+
+	function restoreScroll() {
+		window.scroll({left: scrollLeft, top: scrollTop, behavior: "auto"});
+		if (window.scrollX == scrollLeft && window.scrollY == scrollTop) {
+			return Promise.resolve();
+		}
+		return Promise.reject();
+	}
+
+	window.addEventListener('fetchStart', (event) => {
+		scrollLeft = window.scrollX;
+		scrollTop = window.scrollY;
+	});
+	
+	window.addEventListener('fetchEnd', (event) => {
+		backoff(5, restoreScroll, 100);
+	});
+})()
+
+`),
+			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
+function(e){
+	if (!e.data.split) {
+		return
+	}
+	let arr = e.data.split("_");
+	if (arr.length != 2) {
+		console.log(arr);
+		return
+	}
+	%s
+}`, action)),
 
 			innerPr.Body.(h.HTMLComponent),
 		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)
