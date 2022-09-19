@@ -32,7 +32,7 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
 		m.RegisterEventFunc(createNoteEvent, createNoteAction(db, m))
 		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db, m))
-		m.Listing().Field("Notes").ComponentFunc(noteFunc(db))
+		m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
 	}
 
 	pb.I18n().
@@ -47,7 +47,7 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 			return
 		}
 
-		tn := getTableName(db, mb.NewModel())
+		tn := mb.Info().Label()
 
 		notesSection := getNotesTab(ctx, db, tn, id)
 
@@ -77,9 +77,9 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 	}
 }
 
-func noteFunc(db *gorm.DB) presets.FieldComponentFunc {
+func noteFunc(db *gorm.DB, mb *presets.ModelBuilder) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (c h.HTMLComponent) {
-		tn := getTableName(db, obj)
+		tn := mb.Info().Label()
 
 		id := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 		if ps, ok := obj.(interface {

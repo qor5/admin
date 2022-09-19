@@ -13,6 +13,7 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
+
 		content := ctx.R.FormValue("Content")
 
 		userID, creator := getUserData(ctx)
