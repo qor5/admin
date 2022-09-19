@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	pathRe             = regexp.MustCompile(`^/[0-9a-zA-Z\/]*$`)
-	slugWithCategoryRe = regexp.MustCompile(`^/[0-9a-zA-Z]*$`)
+	pathRe             = regexp.MustCompile(`^/[0-9a-zA-Z-_().\/]*$`)
+	slugWithCategoryRe = regexp.MustCompile(`^/[0-9a-zA-Z-_().]*$`)
 )
 
 const (
