@@ -15,12 +15,11 @@ func Router() http.Handler {
 	c := NewConfig()
 
 	mux := http.NewServeMux()
-	c.lb.Mount(mux)
+	loginBuilder.Mount(mux)
 	//	mux.Handle("/frontstyle.css", c.pb.GetWebBuilder().PacksHandler("text/css", web.ComponentsPack(`
-	//:host {
+	// :host {
 	//	all: initial;
 	//	display: block;
-	//}
 	//div {
 	//	background-color:orange;
 	//}
@@ -45,7 +44,7 @@ func Router() http.Handler {
 	robot.MountTo(mux)
 
 	cr := chi.NewRouter()
-	cr.Use(login.Authenticate(c.lb))
+	cr.Use(login.Authenticate(loginBuilder))
 	cr.Use(withRoles(db))
 	cr.Use(withNoteContext())
 	cr.Mount("/", mux)
