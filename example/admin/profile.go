@@ -10,13 +10,12 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 const (
-	SignOutAllSessionEvent = "SignOutAllSessionEvent"
+	signOutAllSessionEvent = "signOutAllSessionEvent"
 )
 
 func profile(ctx *web.EventContext) h.HTMLComponent {
@@ -64,19 +63,19 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 
 type Profile struct{}
 
-func configProfile(b *presets.Builder, db *gorm.DB, lb *login.Builder) {
+func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
 		Label("Profile").MenuIcon("person").Singleton(true)
 
 	eb := m.Editing("Info", "Actions")
 
-	m.RegisterEventFunc(SignOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
 		err = u.UpdateSecure(db, &models.User{}, strconv.Itoa(int(u.ID)))
 		if err != nil {
 			return
 		}
-		err = lb.RenewSession(ctx.R, ctx.W)
+		err = loginBuilder.RenewSession(ctx.W, ctx.R)
 		if err != nil {
 			return
 		}
@@ -144,7 +143,7 @@ func configProfile(b *presets.Builder, db *gorm.DB, lb *login.Builder) {
 		)
 
 		actionBtns = append(actionBtns,
-			VBtn("").Attr("@click", web.Plaid().EventFunc(SignOutAllSessionEvent).Go()).
+			VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
 				Outlined(true).Color("primary").
 				Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
 		)

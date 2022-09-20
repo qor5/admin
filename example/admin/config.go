@@ -43,7 +43,6 @@ var assets embed.FS
 
 type Config struct {
 	pb          *presets.Builder
-	lb          *login.Builder
 	pageBuilder *pagebuilder.Builder
 }
 
@@ -254,15 +253,14 @@ func NewConfig() Config {
 
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
 
-	lb := newLoginBuilder(db, ab, b.I18n())
+	initLoginBuilder(db, ab, b.I18n())
 
 	configInputHarness(b, db)
 	configUser(b, db)
-	configProfile(b, db, lb)
+	configProfile(b, db)
 
 	return Config{
 		pb:          b,
-		lb:          lb,
 		pageBuilder: pageBuilder,
 	}
 }

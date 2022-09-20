@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	loginBuilder *login.Builder
+)
+
 func getCurrentUser(r *http.Request) (u *models.User) {
 	u, ok := login.GetCurrentUser(r).(*models.User)
 	if !ok {
@@ -23,9 +27,9 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-func newLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i18n.Builder) *login.Builder {
+func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i18n.Builder) {
 	ab.RegisterModel(&models.User{})
-	return login.New().
+	loginBuilder = login.New().
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
