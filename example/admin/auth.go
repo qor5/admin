@@ -50,8 +50,8 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			return nil
 		}).
 		PasswordValidationFunc(func(password string) (message string, ok bool) {
-			if len(password) < 6 {
-				return "Password cannot be less than 6 characters", false
+			if len(password) < 12 {
+				return "Password cannot be less than 12 characters", false
 			}
 			return "", true
 		}).
