@@ -76,6 +76,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		if err != nil {
 			return r, err
 		}
+		presets.ShowMessage(&r, "success", "")
 		return
 	})
 

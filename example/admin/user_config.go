@@ -52,6 +52,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err = u.UnlockUser(db, &models.User{}); err != nil {
 			return r, err
 		}
+		presets.ShowMessage(&r, "success", "")
 		ed.UpdateOverlayContent(ctx, &r, &u, "", nil)
 		return r, nil
 	})
@@ -80,6 +81,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err != nil {
 			return r, err
 		}
+		presets.ShowMessage(&r, "success", "")
 		ed.UpdateOverlayContent(ctx, &r, u, "", nil)
 		return r, nil
 	})
