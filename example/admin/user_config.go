@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/role"
 	"github.com/sunfmin/reflectutils"
@@ -75,7 +76,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err = db.Where("id = ?", uid).First(u).Error; err != nil {
 			return r, err
 		}
-		if err = u.SetIsTOTPSetup(db, &models.User{}, false); err != nil {
+		err = login.RevokeTOTP(db, &models.User{}, fmt.Sprint(u.ID), u, u)
+		if err != nil {
 			return r, err
 		}
 		ed.UpdateOverlayContent(ctx, &r, u, "", nil)

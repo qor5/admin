@@ -2,7 +2,7 @@ package admin
 
 import (
 	"errors"
-	"strconv"
+	"fmt"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -10,6 +10,7 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -71,13 +72,9 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
-		err = u.UpdateSecure(db, &models.User{}, strconv.Itoa(int(u.ID)))
+		err = login.SignOutAllOtherSessions(loginBuilder, ctx.W, ctx.R, db, &models.User{}, fmt.Sprint(u.ID), u)
 		if err != nil {
-			return
-		}
-		err = loginBuilder.RenewSession(ctx.W, ctx.R)
-		if err != nil {
-			return
+			return r, err
 		}
 		return
 	})
