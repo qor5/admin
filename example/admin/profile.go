@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -9,8 +10,13 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+)
+
+const (
+	SignOutAllSessionEvent = "SignOutAllSessionEvent"
 )
 
 func profile(ctx *web.EventContext) h.HTMLComponent {
@@ -58,11 +64,24 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 
 type Profile struct{}
 
-func configProfile(b *presets.Builder, db *gorm.DB) {
+func configProfile(b *presets.Builder, db *gorm.DB, lb *login.Builder) {
 	m := b.Model(&Profile{}).URIName("profile").
 		Label("Profile").MenuIcon("person").Singleton(true)
 
-	eb := m.Editing("Info", "ChangePassword")
+	eb := m.Editing("Info", "Actions")
+
+	m.RegisterEventFunc(SignOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		u := getCurrentUser(ctx.R)
+		err = u.UpdateSecure(db, &models.User{}, strconv.Itoa(int(u.ID)))
+		if err != nil {
+			return
+		}
+		err = lb.RenewSession(ctx.R, ctx.W)
+		if err != nil {
+			return
+		}
+		return
+	})
 
 	eb.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
 		u := getCurrentUser(ctx.R)
@@ -114,16 +133,25 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		).Class("mt-4 ml-2")
 	})
 
-	eb.Field("ChangePassword").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	eb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var actionBtns h.HTMLComponents
+
+		actionBtns = append(actionBtns,
+			VBtn("").Href("/auth/change-password").
+				Outlined(true).Color("primary").
+				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
+				Class("mr-2"),
+		)
+
+		actionBtns = append(actionBtns,
+			VBtn("").Attr("@click", web.Plaid().EventFunc(SignOutAllSessionEvent).Go()).
+				Outlined(true).Color("primary").
+				Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
+		)
+
 		return h.Div(
-			VRow(
-				VCol(
-					VBtn("").Href("/auth/change-password").
-						Outlined(true).Color("primary").
-						Children(VIcon("lock_outline").Small(true), h.Text("change password")),
-				),
-			),
-		).Class("ml-2")
+			actionBtns...,
+		).Class("ml-2 mt-8 text-left")
 	})
 }
 

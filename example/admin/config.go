@@ -191,9 +191,6 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	configInputHarness(b, db)
-	configUser(b, db)
-	configProfile(b, db)
 	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
@@ -257,9 +254,15 @@ func NewConfig() Config {
 
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
 
+	lb := newLoginBuilder(db, ab, b.I18n())
+
+	configInputHarness(b, db)
+	configUser(b, db)
+	configProfile(b, db, lb)
+
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db, ab, b.I18n()),
+		lb:          lb,
 		pageBuilder: pageBuilder,
 	}
 }

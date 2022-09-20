@@ -772,6 +772,25 @@ func (b *Builder) setSecureCookiesByClaims(w http.ResponseWriter, user interface
 	return nil
 }
 
+// RenewSession will reset cookie with the latest user info in DB.
+func (b *Builder) RenewSession(r *http.Request, w http.ResponseWriter) (err error) {
+	claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
+	if err != nil {
+		return
+	}
+
+	var user interface{}
+	user, err = b.findUserByID(claims.UserID)
+	if err != nil {
+		return
+	}
+
+	if err = b.setSecureCookiesByClaims(w, user, *claims); err != nil {
+		return
+	}
+	return nil
+}
+
 // logout is for url "/logout/{provider}"
 func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
 	err := gothic.Logout(w, r)
