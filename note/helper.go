@@ -67,3 +67,7 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 	c.AppendChildren(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
 	return c
 }
+
+var AfterCreateFunc = func(db *gorm.DB, userID uint) (err error) {
+	return
+}
