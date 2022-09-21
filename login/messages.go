@@ -48,6 +48,7 @@ type Messages struct {
 	// TOTP validate page
 	TOTPValidateTitle           string
 	TOTPValidateEnterCodePrompt string
+	TOTPValidateCodeLabel       string
 	TOTPValidateCodePlaceholder string
 	// Error Messages
 	ErrorSystemError                    string
@@ -105,6 +106,7 @@ var Messages_en_US = &Messages{
 	TOTPSetupCodePlaceholder:            "Passcode",
 	TOTPValidateTitle:                   "Two Factor Authentication",
 	TOTPValidateEnterCodePrompt:         "Enter the provided one-time code below",
+	TOTPValidateCodeLabel:               "Authenticator passcode",
 	TOTPValidateCodePlaceholder:         "Passcode",
 	ErrorSystemError:                    "System Error",
 	ErrorCompleteUserAuthFailed:         "Complete User Auth Failed",
@@ -156,10 +158,11 @@ var Messages_zh_CN = &Messages{
 	TOTPSetupScanPrompt:                 "使用Google Authenticator（或类似）应用程序扫描此二维码",
 	TOTPSetupSecretPrompt:               "或者将以下代码手动输入到您首选的验证器应用程序中",
 	TOTPSetupEnterCodePrompt:            "然后在下面输入提供的一次性代码",
-	TOTPSetupCodePlaceholder:            "code",
+	TOTPSetupCodePlaceholder:            "passcode",
 	TOTPValidateTitle:                   "双重认证",
 	TOTPValidateEnterCodePrompt:         "在下面输入提供的一次性代码",
-	TOTPValidateCodePlaceholder:         "code",
+	TOTPValidateCodeLabel:               "Authenticator验证码",
+	TOTPValidateCodePlaceholder:         "passcode",
 	ErrorSystemError:                    "系统错误",
 	ErrorCompleteUserAuthFailed:         "用户认证失败",
 	ErrorUserNotFound:                   "找不到该用户",
@@ -171,7 +174,7 @@ var Messages_zh_CN = &Messages{
 	ErrorIncorrectPassword:              "密码错误",
 	ErrorInvalidToken:                   "token无效",
 	ErrorTokenExpired:                   "token过期",
-	ErrorIncorrectTOTP:                  "code错误",
+	ErrorIncorrectTOTP:                  "passcode错误",
 	WarnPasswordHasBeenChanged:          "密码被修改了，请重新登录",
 	InfoPasswordSuccessfullyReset:       "密码重置成功，请重新登录",
 	InfoPasswordSuccessfullyChanged:     "密码修改成功，请重新登录",

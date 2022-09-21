@@ -291,6 +291,12 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 		inactiveBtnClass := "w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-gray-500 rounded-md"
 		inactiveBtnTextWithInitSeconds := fmt.Sprintf("%s (%d)", inactiveBtnText, secondsToResend)
 
+		doTOTP := ctx.R.URL.Query().Get("totp") == "1"
+		actionURL := b.userPassDoSendResetPassLinkURL
+		if doTOTP {
+			actionURL = mustSetQuery(actionURL, "totp", "1")
+		}
+
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
 			Style(StyleCSS),
@@ -305,6 +311,14 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 						Label(msgr.ForgetPasswordEmailLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("account"),
 						Input("account").Placeholder(msgr.ForgetPasswordEmailPlaceholder).Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").Value(inputFlash.Account),
 					),
+					If(doTOTP,
+						Div(
+							Label(msgr.TOTPValidateCodeLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("otp"),
+							Input("otp").Placeholder(msgr.TOTPValidateCodePlaceholder).
+								Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+								Value(inputFlash.TOTP),
+						).Class("mt-6"),
+					),
 					Div(
 						If(secondsToResend > 0,
 							Button(inactiveBtnTextWithInitSeconds).Id("submitBtn").Class(inactiveBtnClass).Disabled(true),
@@ -312,7 +326,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 							Button(activeBtnText).Class(activeBtnClass),
 						),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action(b.userPassDoSendResetPassLinkURL),
+				).Method(http.MethodPost).Action(actionURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 
@@ -371,6 +385,12 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 		}
 		wrpiFlash := GetWrongResetPasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
 
+		doTOTP := ctx.R.URL.Query().Get("totp") == "1"
+		actionURL := b.userPassDoResetPassURL
+		if doTOTP {
+			actionURL = mustSetQuery(actionURL, "totp", "1")
+		}
+
 		var user interface{}
 
 		r.PageTitle = "Reset Password"
@@ -423,10 +443,18 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 						Label(msgr.ResetPasswordConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
 						passwordInputWithRevealFunction("confirm_password", msgr.ResetPasswordConfirmPlaceholder, "confirm_password", wrpiFlash.ConfirmPassword),
 					).Class("mt-6"),
+					If(doTOTP,
+						Div(
+							Label(msgr.TOTPValidateCodeLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("otp"),
+							Input("otp").Placeholder(msgr.TOTPValidateCodePlaceholder).
+								Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+								Value(wrpiFlash.TOTP),
+						).Class("mt-6"),
+					),
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action(b.userPassDoResetPassURL),
+				).Method(http.MethodPost).Action(actionURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 		return
@@ -464,6 +492,14 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 						Label(msgr.ChangePasswordNewConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
 						passwordInputWithRevealFunction("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "confirm_password", input.ConfirmPassword),
 					).Class("mt-6"),
+					If(b.totpEnabled,
+						Div(
+							Label(msgr.TOTPValidateCodeLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("otp"),
+							Input("otp").Placeholder(msgr.TOTPValidateCodePlaceholder).
+								Class("block w-full px-4 py-2 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40").
+								Value(input.TOTP),
+						).Class("mt-6"),
+					),
 					Div(
 						Button(msgr.Confirm).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
 					).Class("mt-6"),

@@ -3,7 +3,9 @@ package login
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 )
 
@@ -41,4 +43,22 @@ func renewSession(
 		return
 	}
 	return nil
+}
+
+func mustSetQuery(u string, keyVals ...string) string {
+	pu, err := url.Parse(u)
+	if err != nil {
+		panic(err)
+	}
+	if len(keyVals)%2 != 0 {
+		panic("invalid keyVals")
+	}
+
+	q := pu.Query()
+	for i := 0; i < len(keyVals); i += 2 {
+		q.Set(keyVals[i], keyVals[i+1])
+	}
+
+	pu.RawQuery = ""
+	return fmt.Sprintf("%s?%s", pu.String(), q.Encode())
 }
