@@ -102,7 +102,8 @@ func NewConfig() Config {
 			return
 		}).
 		NotFoundPageLayoutConfig(&presets.LayoutConfig{
-			SearchBoxInvisible: true,
+			SearchBoxInvisible:          true,
+			NotificationCenterInvisible: true,
 		})
 	// perm.Verbose = true
 	b.Permission(
