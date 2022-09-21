@@ -239,10 +239,25 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
+	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		if err = db.Save(obj).Error; err != nil {
+			return
+		}
+
+		u := obj.(*models.User)
+		if err = NoteAfterCreateFunc(db, u.ID); err != nil {
+			return
+		}
+
+		return
+	})
+
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
+		u := getCurrentUser(ctx.R)
+
 		return []*v.FilterItem{
 			{
 				Key:          "created",
@@ -266,6 +281,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 					{Text: "Inactive", Value: "inactive"},
 				},
 			},
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", u.ID, "Users"),
+			},
 		}
 	})
 
@@ -282,6 +302,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Label: "All",
 				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
 		}
 	})

@@ -2,8 +2,10 @@ package admin
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
 	"github.com/goplaid/x/vuetify"
+	"github.com/goplaid/x/vuetifyx"
 	"github.com/qor/oss/s3"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
@@ -36,6 +39,7 @@ import (
 	"github.com/qor/qor5/worker"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 //go:embed assets
@@ -87,6 +91,7 @@ func NewConfig() Config {
 	b.URIPrefix("/admin").
 		BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
+		NotificationFunc(NotifierComponent(db), NotifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
@@ -156,9 +161,36 @@ func NewConfig() Config {
 	m := b.Model(&models.Post{})
 	slug.Configure(b, m)
 
-	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
+
+	mListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		u := getCurrentUser(ctx.R)
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", u.ID, "Posts"),
+			},
+		}
+	})
+
+	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "All",
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
+			},
+		}
+	})
 
 	w := worker.New(db)
 	defer w.Listen()
@@ -228,6 +260,33 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
 	pm := pageBuilder.Configure(b, db)
+	pmListing := pm.Listing()
+	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		u := getCurrentUser(ctx.R)
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", u.ID, "Pages"),
+			},
+		}
+	})
+
+	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "All",
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
+			},
+		}
+	})
 
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
@@ -236,6 +295,7 @@ func NewConfig() Config {
 	l.Editing("Status", "Schedule", "Title")
 
 	note.Configure(db, b, m, pm)
+	note.AfterCreateFunc = NoteAfterCreateFunc
 
 	// @snippet_begin(ActivityExample)
 	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
@@ -262,4 +322,57 @@ func NewConfig() Config {
 		lb:          newLoginBuilder(db, ab, b.I18n()),
 		pageBuilder: pageBuilder,
 	}
+}
+
+func NotifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
+	return func(ctx *web.EventContext) int {
+		a, b, c := GetUnreadCount(ctx, db)
+		return a + b + c
+	}
+}
+
+func NotifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
+	return func(ctx *web.EventContext) h.HTMLComponent {
+		a, b, c := GetUnreadCount(ctx, db)
+
+		return vuetify.VList(
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Pages")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
+				),
+			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Posts")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
+				),
+			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Users")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
+				),
+			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+		).Class("mx-auto").Attr("max-width", "140")
+	}
+}
+
+func GetUnreadCount(ctx *web.EventContext, db *gorm.DB) (int, int, int) {
+	user := getCurrentUser(ctx.R)
+	if user == nil {
+		return 0, 0, 0
+	}
+
+	var unreadNote UserUnreadNote
+	if err := db.Where("user_id = ?", user.ID).First(&unreadNote).Error; err != nil {
+		return 0, 0, 0
+	}
+
+	var data map[string]int
+	if err := json.Unmarshal([]byte(unreadNote.Content), &data); err != nil {
+		return 0, 0, 0
+	}
+
+	return data["Pages"], data["Posts"], data["Users"]
 }
