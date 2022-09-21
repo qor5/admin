@@ -115,12 +115,12 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				return
 			}
 
-			if claims.Provider == "" && b.totpEnabled && !claims.TOTPValidated {
-				if path == b.loginPageURL {
-					next.ServeHTTP(w, r)
-					return
-				}
+			if claims.Provider == "" && b.totpEnabled {
 				if !user.(UserPasser).GetIsTOTPSetup() {
+					if path == b.loginPageURL {
+						next.ServeHTTP(w, r)
+						return
+					}
 					if path == b.totpSetupPageURL {
 						next.ServeHTTP(w, r)
 						return
@@ -128,22 +128,22 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					http.Redirect(w, r, b.totpSetupPageURL, http.StatusFound)
 					return
 				}
-				if path == b.totpValidatePageURL {
-					next.ServeHTTP(w, r)
+
+				if !claims.TOTPValidated {
+					if path == b.loginPageURL {
+						next.ServeHTTP(w, r)
+						return
+					}
+					if path == b.totpValidatePageURL {
+						next.ServeHTTP(w, r)
+						return
+					}
+					http.Redirect(w, r, b.totpValidatePageURL, http.StatusFound)
 					return
 				}
-				http.Redirect(w, r, b.totpValidatePageURL, http.StatusFound)
-				return
 			}
 
-			if claims.TOTPValidated || claims.Provider != "" {
-				if path == b.totpSetupPageURL || path == b.totpValidatePageURL {
-					http.Redirect(w, r, b.homePageURL, http.StatusFound)
-					return
-				}
-			}
-
-			if path == b.loginPageURL {
+			if path == b.loginPageURL || path == b.totpSetupPageURL || path == b.totpValidatePageURL {
 				http.Redirect(w, r, b.homePageURL, http.StatusFound)
 				return
 			}

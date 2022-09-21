@@ -586,8 +586,8 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		setFailCodeFlash(b.cookieConfig, w, code)
 		setWrongLoginInputFlash(b.cookieConfig, w, WrongLoginInputFlash{
-			Ia: account,
-			Ip: password,
+			Account:  account,
+			Password: password,
 		})
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return
@@ -806,9 +806,15 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	failRedirectURL := b.userPassForgetPassPageURL
-
 	account := strings.TrimSpace(r.FormValue("account"))
+	passcode := r.FormValue("otp")
+	doTOTP := r.URL.Query().Get("totp") == "1"
+
+	failRedirectURL := b.userPassForgetPassPageURL
+	if doTOTP {
+		failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
+	}
+
 	if account == "" {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeAccountIsRequired)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -842,6 +848,27 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
+	if u.(UserPasser).GetIsTOTPSetup() {
+		if !doTOTP {
+			setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
+				Account: account,
+			})
+			failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+
+		if !totp.Validate(passcode, u.(UserPasser).GetTOTPSecret()) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+			setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
+				Account: account,
+				TOTP:    passcode,
+			})
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
 	token, err := u.(UserPasser).GenerateResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
@@ -857,6 +884,9 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		scheme = "http"
 	}
 	link := fmt.Sprintf("%s://%s%s?id=%s&token=%s", scheme, r.Host, b.userPassResetPassPageURL, objectID(u), token)
+	if doTOTP {
+		link = mustSetQuery(link, "totp", "1")
+	}
 	if err = b.notifyUserOfResetPasswordLinkFunc(u, link); err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
@@ -886,7 +916,13 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	userID := r.FormValue("user_id")
 	token := r.FormValue("token")
+	passcode := r.FormValue("otp")
+	doTOTP := r.URL.Query().Get("totp") == "1"
+
 	failRedirectURL := fmt.Sprintf("%s?id=%s&token=%s", b.userPassResetPassPageURL, userID, token)
+	if doTOTP {
+		failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
+	}
 	if userID == "" {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeUserNotFound)
 		http.Redirect(w, r, failRedirectURL, http.StatusFound)
@@ -950,6 +986,29 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if u.(UserPasser).GetIsTOTPSetup() {
+		if !doTOTP {
+			setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
+				Password:        password,
+				ConfirmPassword: confirmPassword,
+			})
+			failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+
+		if !totp.Validate(passcode, u.(UserPasser).GetTOTPSecret()) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+			setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
+				Password:        password,
+				ConfirmPassword: confirmPassword,
+				TOTP:            passcode,
+			})
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
 	err = u.(UserPasser).ConsumeResetPasswordToken(b.db, b.newUserObject())
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
@@ -986,6 +1045,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	oldPassword := r.FormValue("old_password")
 	password := r.FormValue("password")
 	confirmPassword := r.FormValue("confirm_password")
+	passcode := r.FormValue("otp")
 
 	user := GetCurrentUser(r).(UserPasser)
 	if !user.IsPasswordCorrect(oldPassword) {
@@ -1027,6 +1087,20 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 				OldPassword:     oldPassword,
 				NewPassword:     password,
 				ConfirmPassword: confirmPassword,
+			})
+			http.Redirect(w, r, b.userPassChangePassPageURL, http.StatusFound)
+			return
+		}
+	}
+
+	if b.totpEnabled {
+		if !totp.Validate(passcode, user.GetTOTPSecret()) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+			setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
+				OldPassword:     oldPassword,
+				NewPassword:     password,
+				ConfirmPassword: confirmPassword,
+				TOTP:            passcode,
 			})
 			http.Redirect(w, r, b.userPassChangePassPageURL, http.StatusFound)
 			return

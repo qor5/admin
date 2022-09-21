@@ -47,7 +47,6 @@ var assets embed.FS
 
 type Config struct {
 	pb          *presets.Builder
-	lb          *login.Builder
 	pageBuilder *pagebuilder.Builder
 }
 
@@ -224,9 +223,6 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	configInputHarness(b, db)
-	configUser(b, db)
-	configProfile(b, db)
 	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
@@ -318,9 +314,14 @@ func NewConfig() Config {
 
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
 
+	initLoginBuilder(db, ab, b.I18n())
+
+	configInputHarness(b, db)
+	configUser(b, db)
+	configProfile(b, db)
+
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db, ab, b.I18n()),
 		pageBuilder: pageBuilder,
 	}
 }

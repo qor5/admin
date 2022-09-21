@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -9,8 +10,13 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+)
+
+const (
+	signOutAllSessionEvent = "signOutAllSessionEvent"
 )
 
 func profile(ctx *web.EventContext) h.HTMLComponent {
@@ -62,7 +68,17 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
 		Label("Profile").MenuIcon("person").Singleton(true)
 
-	eb := m.Editing("Info", "ChangePassword")
+	eb := m.Editing("Info", "Actions")
+
+	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		u := getCurrentUser(ctx.R)
+		err = login.SignOutAllOtherSessions(loginBuilder, ctx.W, ctx.R, u, db, &models.User{}, fmt.Sprint(u.ID))
+		if err != nil {
+			return r, err
+		}
+		presets.ShowMessage(&r, "success", "")
+		return
+	})
 
 	eb.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
 		u := getCurrentUser(ctx.R)
@@ -114,16 +130,25 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		).Class("mt-4 ml-2")
 	})
 
-	eb.Field("ChangePassword").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	eb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var actionBtns h.HTMLComponents
+
+		actionBtns = append(actionBtns,
+			VBtn("").Href("/auth/change-password").
+				Outlined(true).Color("primary").
+				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
+				Class("mr-2"),
+		)
+
+		actionBtns = append(actionBtns,
+			VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
+				Outlined(true).Color("primary").
+				Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
+		)
+
 		return h.Div(
-			VRow(
-				VCol(
-					VBtn("").Href("/auth/change-password").
-						Outlined(true).Color("primary").
-						Children(VIcon("lock_outline").Small(true), h.Text("change password")),
-				),
-			),
-		).Class("ml-2")
+			actionBtns...,
+		).Class("ml-2 mt-8 text-left")
 	})
 }
 

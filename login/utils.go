@@ -1,20 +1,40 @@
 package login
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"reflect"
+	"net/http"
+
+	"gorm.io/gorm"
 )
 
-func underlyingReflectType(t reflect.Type) reflect.Type {
-	if t.Kind() == reflect.Ptr {
-		return underlyingReflectType(t.Elem())
+func SignOutAllOtherSessions(
+	b *Builder,
+	w http.ResponseWriter,
+	r *http.Request,
+	ss SessionSecurer,
+	db *gorm.DB,
+	userModel interface{},
+	userID string,
+) (err error) {
+	if err = ss.UpdateSecure(db, userModel, userID); err != nil {
+		return err
 	}
-	return t
+	if err = renewSession(b, w, r); err != nil {
+		return err
+	}
+	return nil
 }
 
-func genHashSalt() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+func RevokeTOTP(
+	ssup SessionSecureUserPasser,
+	db *gorm.DB,
+	userModel interface{},
+	userID string,
+) (err error) {
+	if err = ssup.SetIsTOTPSetup(db, userModel, false); err != nil {
+		return err
+	}
+	if err = ssup.UpdateSecure(db, userModel, userID); err != nil {
+		return err
+	}
+	return nil
 }
