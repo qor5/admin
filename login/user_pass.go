@@ -34,6 +34,11 @@ type UserPasser interface {
 	UnlockUser(db *gorm.DB, model interface{}) error
 }
 
+type SessionSecureUserPasser interface {
+	SessionSecurer
+	UserPasser
+}
+
 type UserPass struct {
 	Account  string `gorm:"index:uidx_users_account,unique,where:account!=''"`
 	Password string `gorm:"size:60"`

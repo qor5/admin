@@ -77,7 +77,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err = db.Where("id = ?", uid).First(u).Error; err != nil {
 			return r, err
 		}
-		err = login.RevokeTOTP(db, &models.User{}, fmt.Sprint(u.ID), u, u)
+		err = login.RevokeTOTP(u, db, &models.User{}, fmt.Sprint(u.ID))
 		if err != nil {
 			return r, err
 		}

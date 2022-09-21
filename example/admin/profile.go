@@ -72,7 +72,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
-		err = login.SignOutAllOtherSessions(loginBuilder, ctx.W, ctx.R, db, &models.User{}, fmt.Sprint(u.ID), u)
+		err = login.SignOutAllOtherSessions(loginBuilder, ctx.W, ctx.R, u, db, &models.User{}, fmt.Sprint(u.ID))
 		if err != nil {
 			return r, err
 		}

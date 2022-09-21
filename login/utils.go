@@ -6,37 +6,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// renewSession will reset cookie with the latest user info in DB.
-func renewSession(
-	b *Builder,
-	w http.ResponseWriter,
-	r *http.Request,
-) (err error) {
-	claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
-	if err != nil {
-		return
-	}
-
-	var user interface{}
-	user, err = b.findUserByID(claims.UserID)
-	if err != nil {
-		return
-	}
-
-	if err = b.setSecureCookiesByClaims(w, user, *claims); err != nil {
-		return
-	}
-	return nil
-}
-
 func SignOutAllOtherSessions(
 	b *Builder,
 	w http.ResponseWriter,
 	r *http.Request,
+	ss SessionSecurer,
 	db *gorm.DB,
 	userModel interface{},
 	userID string,
-	ss SessionSecurer,
 ) (err error) {
 	if err = ss.UpdateSecure(db, userModel, userID); err != nil {
 		return err
@@ -48,16 +25,15 @@ func SignOutAllOtherSessions(
 }
 
 func RevokeTOTP(
+	ssup SessionSecureUserPasser,
 	db *gorm.DB,
 	userModel interface{},
 	userID string,
-	ss SessionSecurer,
-	up UserPasser,
 ) (err error) {
-	if err = up.SetIsTOTPSetup(db, userModel, false); err != nil {
+	if err = ssup.SetIsTOTPSetup(db, userModel, false); err != nil {
 		return err
 	}
-	if err = ss.UpdateSecure(db, userModel, userID); err != nil {
+	if err = ssup.UpdateSecure(db, userModel, userID); err != nil {
 		return err
 	}
 	return nil
