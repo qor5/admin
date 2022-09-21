@@ -586,8 +586,8 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		setFailCodeFlash(b.cookieConfig, w, code)
 		setWrongLoginInputFlash(b.cookieConfig, w, WrongLoginInputFlash{
-			Ia: account,
-			Ip: password,
+			Account:  account,
+			Password: password,
 		})
 		http.Redirect(w, r, b.logoutURL, http.StatusFound)
 		return

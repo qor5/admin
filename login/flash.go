@@ -150,8 +150,8 @@ func GetCustomErrorMessageFlash(config CookieConfig, w http.ResponseWriter, r *h
 const wrongLoginInputFlashCookieName = "qor5_wli_flash"
 
 type WrongLoginInputFlash struct {
-	Ia string // incorrect account name
-	Ip string // incorrect password
+	Account  string
+	Password string
 }
 
 func setWrongLoginInputFlash(config CookieConfig, w http.ResponseWriter, f WrongLoginInputFlash) {
