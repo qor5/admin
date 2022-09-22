@@ -278,6 +278,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 
 		r.Body = Div(
 			If(isRecaptchaEnabled,
+				Style(`.grecaptcha-badge { visibility: hidden; }`),
 				Script("").Src("https://www.google.com/recaptcha/api.js"),
 				Script(`
 function onSubmit(token) {
@@ -321,6 +322,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
 			If(isRecaptchaEnabled,
+				Style(`.grecaptcha-badge { visibility: hidden; }`),
 				Script("").Src("https://www.google.com/recaptcha/api.js"),
 				Script(`
 function onSubmit(token) {
