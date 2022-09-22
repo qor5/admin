@@ -43,6 +43,8 @@ func getFailCodeText(msgr *Messages, code FailCode) string {
 		return msgr.ErrorTokenExpired
 	case FailCodeIncorrectTOTP:
 		return msgr.ErrorIncorrectTOTP
+	case FailCodeIncorrectRecaptchaToken:
+		return msgr.ErrorIncorrectRecaptchaToken
 	}
 
 	return ""
@@ -221,6 +223,8 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			)
 		}
 
+		isRecaptchaEnabled := b.recaptchaEnabled
+
 		var userPassHTML HTMLComponent
 		if b.userPassEnabled {
 			wrapperClass += " pt-16"
@@ -235,10 +239,17 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 						Label(msgr.PasswordLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
 						passwordInputWithRevealFunction("password", msgr.PasswordPlaceholder, "password", wlFlash.Password),
 					).Class("mt-6"),
+					If(isRecaptchaEnabled,
+						Div(
+							// recaptcha response token
+							Input("token").Id("token"),
+						).Class("hidden"),
+					),
 					Div(
-						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50"),
+						Button(msgr.SignInBtn).Class("w-full px-6 py-3 tracking-wide text-white transition-colors duration-200 transform bg-blue-500 rounded-md hover:bg-blue-400 focus:outline-none focus:bg-blue-400 focus:ring focus:ring-blue-300 focus:ring-opacity-50").
+							ClassIf("g-recaptcha", isRecaptchaEnabled).AttrIf("data-sitekey", b.recaptchaConfig.SiteKey, isRecaptchaEnabled).AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action(b.userPassLoginURL),
+				).Id("login-form").Method(http.MethodPost).Action(b.userPassLoginURL),
 				If(!b.noForgetPasswordLink,
 					Div(
 						A(Text(msgr.ForgetPasswordLink)).Href(b.userPassForgetPassPageURL).
@@ -266,6 +277,14 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 
 		r.Body = Div(
+			If(isRecaptchaEnabled,
+				Script("").Src("https://www.google.com/recaptcha/api.js"),
+				Script(`
+function onSubmit(token) {
+	document.getElementById("token").value = token;
+	document.getElementById("login-form").submit();
+}
+`)),
 			Style(StyleCSS),
 			errNotice(fcText),
 			warnNotice(wcText),
@@ -297,8 +316,18 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 			actionURL = mustSetQuery(actionURL, "totp", "1")
 		}
 
+		isRecaptchaEnabled := b.recaptchaEnabled
+
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
+			If(isRecaptchaEnabled,
+				Script("").Src("https://www.google.com/recaptcha/api.js"),
+				Script(`
+function onSubmit(token) {
+	document.getElementById("token").value = token;
+	document.getElementById("forget-form").submit();
+}
+`)),
 			Style(StyleCSS),
 			errNotice(fcText),
 			If(secondsToResend > 0,
@@ -319,14 +348,21 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 								Value(inputFlash.TOTP),
 						).Class("mt-6"),
 					),
+					If(isRecaptchaEnabled,
+						Div(
+							// recaptcha response token
+							Input("token").Id("token"),
+						).Class("hidden"),
+					),
 					Div(
 						If(secondsToResend > 0,
 							Button(inactiveBtnTextWithInitSeconds).Id("submitBtn").Class(inactiveBtnClass).Disabled(true),
 						).Else(
-							Button(activeBtnText).Class(activeBtnClass),
+							Button(activeBtnText).Class(activeBtnClass).
+								ClassIf("g-recaptcha", isRecaptchaEnabled).AttrIf("data-sitekey", b.recaptchaConfig.SiteKey, isRecaptchaEnabled).AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
 						),
 					).Class("mt-6"),
-				).Method(http.MethodPost).Action(actionURL),
+				).Id("forget-form").Method(http.MethodPost).Action(actionURL),
 			).Class("flex pt-8 flex-col max-w-md mx-auto pt-16"),
 		)
 
