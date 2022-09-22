@@ -243,19 +243,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if err = db.Save(obj).Error; err != nil {
-			return
-		}
-
-		u := obj.(*models.User)
-		if err = NoteAfterCreateFunc(db, u.ID); err != nil {
-			return
-		}
-
-		return
-	})
-
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
 

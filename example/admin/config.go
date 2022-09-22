@@ -2,7 +2,6 @@ package admin
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -90,7 +89,7 @@ func NewConfig() Config {
 	b.URIPrefix("/admin").
 		BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
-		NotificationFunc(NotifierComponent(db), NotifierCount(db)).
+		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
@@ -292,6 +291,10 @@ func NewConfig() Config {
 	l.Editing("Status", "Schedule", "Title")
 
 	note.Configure(db, b, m, pm)
+
+	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
+		panic(err)
+	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
 	// @snippet_begin(ActivityExample)
@@ -326,16 +329,26 @@ func NewConfig() Config {
 	}
 }
 
-func NotifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
+func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
 	return func(ctx *web.EventContext) int {
-		a, b, c := GetUnreadCount(ctx, db)
+		data, err := getUnreadNotesCount(ctx, db)
+		if err != nil {
+			return 0
+		}
+
+		a, b, c := data["Pages"], data["Posts"], data["Users"]
 		return a + b + c
 	}
 }
 
-func NotifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
+func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		a, b, c := GetUnreadCount(ctx, db)
+		data, err := getUnreadNotesCount(ctx, db)
+		if err != nil {
+			return nil
+		}
+
+		a, b, c := data["Pages"], data["Posts"], data["Users"]
 
 		return vuetify.VList(
 			vuetify.VListItem(
@@ -358,23 +371,4 @@ func NotifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
 		).Class("mx-auto").Attr("max-width", "140")
 	}
-}
-
-func GetUnreadCount(ctx *web.EventContext, db *gorm.DB) (int, int, int) {
-	user := getCurrentUser(ctx.R)
-	if user == nil {
-		return 0, 0, 0
-	}
-
-	var unreadNote UserUnreadNote
-	if err := db.Where("user_id = ?", user.ID).First(&unreadNote).Error; err != nil {
-		return 0, 0, 0
-	}
-
-	var data map[string]int
-	if err := json.Unmarshal([]byte(unreadNote.Content), &data); err != nil {
-		return 0, 0, 0
-	}
-
-	return data["Pages"], data["Posts"], data["Users"]
 }

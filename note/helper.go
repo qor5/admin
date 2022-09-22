@@ -68,6 +68,6 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 	return c
 }
 
-var AfterCreateFunc = func(db *gorm.DB, userID uint) (err error) {
+var AfterCreateFunc = func(db *gorm.DB) (err error) {
 	return
 }

@@ -47,7 +47,7 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			Body: notesSection,
 		})
 
-		if err = AfterCreateFunc(db, 0); err != nil {
+		if err = AfterCreateFunc(db); err != nil {
 			return
 		}
 
@@ -83,7 +83,7 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		if err = AfterCreateFunc(db, userID); err != nil {
+		if err = AfterCreateFunc(db); err != nil {
 			return
 		}
 
