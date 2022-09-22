@@ -77,6 +77,7 @@ func recaptchaTokenCheck(b *Builder, token string) bool {
 		log.Println(err)
 		return false
 	}
+	defer res.Body.Close()
 
 	var r struct {
 		Success bool `json:"success"`

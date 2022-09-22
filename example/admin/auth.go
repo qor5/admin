@@ -56,7 +56,7 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			return "", true
 		}).
 		I18n(i18nBuilder).
-		RecaptchaConfig(&login.RecaptchaConfig{
+		RecaptchaConfig(login.RecaptchaConfig{
 			SiteKey:   os.Getenv("RECAPTCHA_SITE_KEY"),
 			SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
 		}).
