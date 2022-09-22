@@ -830,11 +830,22 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	failRedirectURL := b.userPassForgetPassPageURL
+
+	// check reCAPTCHA token
+	if b.recaptchaEnabled {
+		token := r.FormValue("token")
+		if !recaptchaTokenCheck(b, token) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectRecaptchaToken)
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
 	account := strings.TrimSpace(r.FormValue("account"))
 	passcode := r.FormValue("otp")
 	doTOTP := r.URL.Query().Get("totp") == "1"
 
-	failRedirectURL := b.userPassForgetPassPageURL
 	if doTOTP {
 		failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
 	}
