@@ -10,10 +10,10 @@ import (
 type QorNote struct {
 	gorm.Model
 
-	UserID       uint
+	UserID       uint `gorm:"index"`
 	Creator      string
-	ResourceType string
-	ResourceID   string
+	ResourceType string `gorm:"index"`
+	ResourceID   string `gorm:"index"`
 	Content      string `sql:"size:5000"`
 }
 
@@ -28,9 +28,9 @@ func (this *QorNote) BeforeCreate(tx *gorm.DB) (err error) {
 type UserNote struct {
 	gorm.Model
 
-	UserID       uint
-	ResourceType string
-	ResourceID   string
+	UserID       uint   `gorm:"index"`
+	ResourceType string `gorm:"index"`
+	ResourceID   string `gorm:"index"`
 	Number       int64
 }
 

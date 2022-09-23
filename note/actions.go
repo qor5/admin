@@ -47,6 +47,10 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			Body: notesSection,
 		})
 
+		if err = AfterCreateFunc(db); err != nil {
+			return
+		}
+
 		var pageURL *url.URL
 		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
 			mb.Listing().ReloadList(ctx, &r, pageURL)
@@ -76,6 +80,10 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		userNote.Number = total
 
 		if err = db.Save(&userNote).Error; err != nil {
+			return
+		}
+
+		if err = AfterCreateFunc(db); err != nil {
 			return
 		}
 

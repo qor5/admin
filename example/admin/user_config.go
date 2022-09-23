@@ -247,6 +247,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	cl.Field("Account").Label("Email")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
+		u := getCurrentUser(ctx.R)
+
 		return []*v.FilterItem{
 			{
 				Key:          "created",
@@ -270,6 +272,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 					{Text: "Inactive", Value: "inactive"},
 				},
 			},
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
+			},
 		}
 	})
 
@@ -286,6 +293,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Label: "All",
 				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
 		}
 	})

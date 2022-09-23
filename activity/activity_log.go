@@ -43,9 +43,10 @@ type ActivityLog struct {
 	CreatedAt  time.Time
 	Creator    string
 	Action     string
-	ModelKeys  string
-	ModelName  string
+	ModelKeys  string `gorm:"index"`
+	ModelName  string `gorm:"index"`
 	ModelLabel string
+
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
 }

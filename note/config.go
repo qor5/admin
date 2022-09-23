@@ -61,15 +61,19 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 			Attr(":value", "locals.unreadNotesCount").
 			Color("red")
 
+		clickEvent := web.Plaid().
+			BeforeScript("locals.unreadNotesCount=0").
+			EventFunc(updateUserNoteEvent).
+			Query("resource_id", id).
+			Query("resource_type", tn).
+			Go()
+		if count == 0 {
+			clickEvent = ""
+		}
 		c = h.Components(
 			VTab(notesTab).
 				Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
-				Attr("@click", web.Plaid().
-					BeforeScript("locals.unreadNotesCount=0").
-					EventFunc(updateUserNoteEvent).
-					Query("resource_id", id).
-					Query("resource_type", tn).
-					Go()),
+				Attr("@click", clickEvent),
 			VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
 		)
 
