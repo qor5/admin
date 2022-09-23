@@ -63,14 +63,9 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Default type handles",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{PublishedDate: time.Unix(1257894000, 0), Image: media_library.MediaBox{ID: json.Number("1"), Url: "https://s3.com/1.jpg", Description: "test"}},
-			now:          Post{PublishedDate: time.Unix(1457894000, 0), Image: media_library.MediaBox{ID: json.Number("2"), Url: "https://s3.com/2.jpg", Description: "test2"}},
+			old:          Post{Image: media_library.MediaBox{ID: json.Number("1"), Url: "https://s3.com/1.jpg", Description: "test"}},
+			now:          Post{Image: media_library.MediaBox{ID: json.Number("2"), Url: "https://s3.com/2.jpg", Description: "test2"}},
 			want: []Diff{
-				{
-					Field: "PublishedDate",
-					Old:   "2009-11-11T08:00:00+09:00", // db TimeZone=Asia/Tokyo
-					Now:   "2016-03-14T03:33:20+09:00", // db TimeZone=Asia/Tokyo
-				},
 				{
 					Field: "Image.Url",
 					Old:   "https://s3.com/1.jpg",

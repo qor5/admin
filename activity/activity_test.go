@@ -1,12 +1,16 @@
 package activity
 
 import (
+	"context"
 	"fmt"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"testing"
 
+	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/gorm2op"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -20,9 +24,10 @@ var (
 
 type (
 	Page struct {
-		ID          uint
+		ID          uint `gorm:"primary_key"`
 		VersionName string
 		Title       string
+		Description string
 		Widgets     Widgets
 	}
 	Widgets []Widget
@@ -34,6 +39,13 @@ type (
 	TestActivityLog struct {
 		ActivityLog
 	}
+
+	TestActivityModel struct {
+		ID          uint `gorm:"primary_key"`
+		VersionName string
+		Title       string
+		Description string
+	}
 )
 
 func init() {
@@ -41,10 +53,15 @@ func init() {
 	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{}); err != nil {
 		panic(err)
 	}
+
+	if err := db.AutoMigrate(&TestActivityModel{}); err != nil {
+		panic(err)
+	}
 }
 
 func resetDB() {
 	db.Exec("truncate test_activity_logs;")
+	db.Exec("truncate test_activity_models;")
 }
 
 func TestModelKeys(t *testing.T) {
@@ -161,7 +178,7 @@ func TestModelTypeHanders(t *testing.T) {
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	wants := `[{"Field":".VersionName","Old":"v1","Now":"v2"},{"Field":".Title","Old":"test","Now":"test1"},{"Field":".Widgets.0","Old":"Text 01","Now":"Text 011"},{"Field":".Widgets.1","Old":"HeroBanner 02","Now":"HeroBanner 022"},{"Field":".Widgets.3","Old":"","Now":"Video 03"}]`
+	wants := `[{"Field":"VersionName","Old":"v1","Now":"v2"},{"Field":"Title","Old":"test","Now":"test1"},{"Field":"Widgets.0","Old":"Text 01","Now":"Text 011"},{"Field":"Widgets.1","Old":"HeroBanner 02","Now":"HeroBanner 022"},{"Field":"Widgets.3","Old":"","Now":"Video 03"}]`
 	if record.GetModelDiffs() != wants {
 		t.Errorf("want the diffs %v, but got %v", wants, record.GetModelDiffs())
 	}
@@ -240,4 +257,109 @@ func TestGetActivityLogs(t *testing.T) {
 		t.Errorf("want the logs %v, but got %v", "Edit:Page:1:v1:creator a", (*testlogs)[2])
 	}
 
+}
+
+func TestMutliModelBuilder(t *testing.T) {
+	builder := New(pb, db, &TestActivityLog{}).SetCreatorContextKey("creator")
+	pb.DataOperator(gorm2op.DataOperator(db))
+
+	pageModel2 := pb.Model(&TestActivityModel{}).URIName("page-02").Label("Page-02")
+	pageModel3 := pb.Model(&TestActivityModel{}).URIName("page-03").Label("Page-03")
+
+	builder.RegisterModel(&TestActivityModel{}).SetKeys("ID")
+	builder.RegisterModel(pageModel2).SetKeys("ID").SkipDelete().AddIgnoredFields("VersionName")
+	builder.RegisterModel(pageModel3).SetKeys("ID").SkipCreate().AddIgnoredFields("Description")
+
+	data1 := &TestActivityModel{ID: 1, VersionName: "v1", Title: "test1", Description: "Description1"}
+	data2 := &TestActivityModel{ID: 2, VersionName: "v2", Title: "test2", Description: "Description3"}
+	data3 := &TestActivityModel{ID: 3, VersionName: "v3", Title: "test3", Description: "Description3"}
+
+	resetDB()
+	// add create record
+	db.Create(data1)
+	builder.AddCreateRecord("Test User", data1, db)
+	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	{
+		for _, id := range []string{"1", "2"} {
+			var log TestActivityLog
+			if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", id).Find(&log); log.ID == 0 {
+				t.Errorf("want the log %v, but got %v", "TestActivityModel:"+id, log)
+			}
+		}
+
+		var log TestActivityLog
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", 3).Find(&log); log.ID != 0 {
+			t.Errorf("want skip the create, but still got the record %v", log)
+		}
+	}
+
+	// add edit record
+	data1.Title = "test1-1"
+	data1.Description = "Description1-1"
+	builder.AddEditRecord("Test User", data1, db)
+	db.Save(data1)
+
+	data2.Title = "test2-1"
+	data2.Description = "Description2-1"
+	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+
+	data3.Title = "test3-1"
+	data3.Description = "Description3-1"
+	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+
+	{
+		var log1 TestActivityLog
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "1").Find(&log1); log1.ID == 0 {
+			t.Errorf("want the log %v, but got %v", "TestActivityModel:1", log1)
+		}
+		if log1.GetModelDiffs() != `[{"Field":"Title","Old":"test1","Now":"test1-1"},{"Field":"Description","Old":"Description1","Now":"Description1-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","Now":"test1-1"},{"Field":"Description","Old":"Description1","Now":"Description1-1"}]`, log1.GetModelDiffs())
+		}
+
+		var log2 TestActivityLog
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "2").Find(&log2); log2.ID == 0 {
+			t.Errorf("want the log %v, but got %v", "TestActivityModel:2", log2)
+		}
+		if log2.GetModelDiffs() != `[{"Field":"Title","Old":"test2","Now":"test2-1"},{"Field":"Description","Old":"Description3","Now":"Description2-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","Now":"test2-1"},{"Field":"Description","Old":"Description3","Now":"Description2-1"}]`, log1.GetModelDiffs())
+		}
+
+		if log2.ModelLabel != "page-02" {
+			t.Errorf("want the log %v, but got %v", "page-02", log2.ModelLabel)
+		}
+
+		var log3 TestActivityLog
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "3").Find(&log3); log3.ID == 0 {
+			t.Errorf("want the log %v, but got %v", "TestActivityModel:3", log3)
+		}
+		if log3.GetModelDiffs() != `[{"Field":"Title","Old":"test3","Now":"test3-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test3","Now":"test3-1"}]`, log1.GetModelDiffs())
+		}
+
+		if log3.ModelLabel != "page-03" {
+			t.Errorf("want the log %v, but got %v", "page-03", log2.ModelLabel)
+		}
+
+	}
+
+	// // add delete record
+	builder.AddDeleteRecord("Test User", data1, db)
+	db.Delete(data1)
+
+	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	{
+		for _, id := range []string{"1", "3"} {
+			var log TestActivityLog
+			if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Delete", "TestActivityModel", id).Find(&log); log.ID == 0 {
+				t.Errorf("want the log %v, but got %v", "TestActivityModel:"+id, log)
+			}
+		}
+
+		var log TestActivityLog
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Delete", "TestActivityModel", "2").Find(&log); log.ID != 0 {
+			t.Errorf("want skip the create, but still got the record %v", log)
+		}
+	}
 }

@@ -14,6 +14,7 @@ type Messages struct {
 	ModelCreator   string
 	ModelKeys      string
 	ModelName      string
+	ModelLabel     string
 	ModelLink      string
 	ModelDiffs     string
 
@@ -40,12 +41,13 @@ var Messages_en_US = &Messages{
 	ActionCreate: "Create",
 	ActionDelete: "Delete",
 
-	ModelUserID:    "User ID",
+	ModelUserID:    "Creator ID",
 	ModelCreatedAt: "Date Time",
 	ModelAction:    "Action",
 	ModelCreator:   "Creator",
 	ModelKeys:      "Keys",
-	ModelName:      "Model",
+	ModelName:      "Table Name",
+	ModelLabel:     "Menu Name",
 	ModelLink:      "Link",
 	ModelDiffs:     "Diffs",
 
@@ -72,12 +74,13 @@ var Messages_zh_CN = &Messages{
 	ActionCreate: "创建",
 	ActionDelete: "删除",
 
-	ModelUserID:    "用户ID",
+	ModelUserID:    "操作者ID",
 	ModelCreatedAt: "日期时间",
 	ModelAction:    "操作",
-	ModelCreator:   "创建者",
-	ModelKeys:      "对象的主键值",
-	ModelName:      "对象",
+	ModelCreator:   "操作者",
+	ModelKeys:      "表的主键值",
+	ModelName:      "表名",
+	ModelLabel:     "菜单名",
 	ModelLink:      "链接",
 	ModelDiffs:     "差异",
 

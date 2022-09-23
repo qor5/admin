@@ -28,7 +28,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 
 	var (
 		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
-		listing   = mb.Listing("CreatedAt", "UserID", "Creator", "Action", "ModelKeys", "ModelName")
+		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		detailing = mb.Detailing("ModelDiffs")
 	)
 	ab.lmb = mb
@@ -39,6 +39,14 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 	)
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
+	listing.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
+		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			if obj.(*ActivityLog).ModelLabel == "" {
+				return h.Td(h.Text("-"))
+			}
+			return h.Td(h.Text(obj.(*ActivityLog).ModelLabel))
+		},
+	)
 
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
@@ -134,21 +142,9 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
-				record       = obj.(ActivityLogInterface)
-				msgr         = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-				modelKeyVals = record.GetModelKeys()
+				record = obj.(ActivityLogInterface)
+				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			)
-
-			if modelBuilder, ok := ab.GetModelBuilderByName(record.GetModelName()); ok {
-				var keyBuilder strings.Builder
-				var keysVals = strings.Split(modelKeyVals, ":")
-				for index, key := range modelBuilder.keys {
-					if index < len(keysVals) {
-						keyBuilder.WriteString(fmt.Sprintf("%s: %v, ", strings.ToTitle(key), keysVals[index]))
-					}
-				}
-				modelKeyVals = strings.TrimRight(keyBuilder.String(), ", ")
-			}
 
 			var detailElems []h.HTMLComponent
 			detailElems = append(detailElems, vuetify.VCard(
@@ -156,9 +152,11 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 				vuetify.VSimpleTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
+						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
 						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
 						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
-						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(modelKeyVals))),
+						h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(record.GetModelLabel()))),
+						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.GetModelKeys()))),
 						h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
 						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
 					),

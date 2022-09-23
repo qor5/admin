@@ -243,7 +243,8 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
-	ab.RegisterModels(m, l, pm)
+	ab.RegisterModel(m).UseDefaultTab()
+	ab.RegisterModels(l, pm)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
