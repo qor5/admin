@@ -171,7 +171,7 @@ func NewConfig() Config {
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", u.ID, "Posts"),
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
 			},
 		}
 	})
@@ -264,7 +264,7 @@ func NewConfig() Config {
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", u.ID, "Pages"),
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
 			},
 		}
 	})
@@ -289,6 +289,8 @@ func NewConfig() Config {
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Schedule", "Title")
+
+	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
 	note.Configure(db, b, m, pm)
 
@@ -369,6 +371,13 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
 			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			h.If(a+b+c > 0,
+				vuetify.VListItem(
+					vuetify.VListItemContent(
+						vuetify.VListItemSubtitle(h.Text("Mark all as read")),
+					),
+				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
+			),
 		).Class("mx-auto").Attr("max-width", "140")
 	}
 }

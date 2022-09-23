@@ -275,7 +275,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", u.ID, "Users"),
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
 			},
 		}
 	})
