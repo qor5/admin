@@ -76,7 +76,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		if err != nil {
 			return r, err
 		}
-		presets.ShowMessage(&r, "success", "")
+		presets.ShowMessage(&r, "All other sessions have successfully been signed out.", "")
 		return
 	})
 
