@@ -28,13 +28,13 @@ type UserClaims struct {
 	jwt.RegisteredClaims
 }
 
-func signClaims(claims jwt.Claims, secret string) (signed string, err error) {
+func mustSignClaims(claims jwt.Claims, secret string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err = token.SignedString([]byte(secret))
+	signed, err := token.SignedString([]byte(secret))
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return signed, nil
+	return signed
 }
 
 func parseClaims(claims jwt.Claims, val string, secret string) (rc jwt.Claims, err error) {
