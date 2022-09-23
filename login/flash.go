@@ -23,6 +23,7 @@ const (
 	FailCodeInvalidToken
 	FailCodeTokenExpired
 	FailCodeIncorrectTOTP
+	FailCodeIncorrectRecaptchaToken
 )
 
 type WarnCode int

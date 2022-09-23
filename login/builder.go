@@ -51,6 +51,11 @@ type CookieConfig struct {
 	SameSite http.SameSite
 }
 
+type RecaptchaConfig struct {
+	SiteKey   string
+	SecretKey string
+}
+
 type Builder struct {
 	secret                string
 	providers             []*Provider
@@ -60,6 +65,8 @@ type Builder struct {
 	// seconds
 	sessionMaxAge        int
 	cookieConfig         CookieConfig
+	recaptchaEnabled     bool
+	recaptchaConfig      RecaptchaConfig
 	autoExtendSession    bool
 	maxRetryCount        int
 	noForgetPasswordLink bool
@@ -203,6 +210,13 @@ func (b *Builder) Secret(v string) (r *Builder) {
 
 func (b *Builder) CookieConfig(v CookieConfig) (r *Builder) {
 	b.cookieConfig = v
+	return b
+}
+
+// RecaptchaConfig should be set if you want to enable Google reCAPTCHA.
+func (b *Builder) RecaptchaConfig(v RecaptchaConfig) (r *Builder) {
+	b.recaptchaConfig = v
+	b.recaptchaEnabled = b.recaptchaConfig.SiteKey != "" && b.recaptchaConfig.SecretKey != ""
 	return b
 }
 
@@ -557,6 +571,16 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check reCAPTCHA token
+	if b.recaptchaEnabled {
+		token := r.FormValue("token")
+		if !recaptchaTokenCheck(b, token) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectRecaptchaToken)
+			http.Redirect(w, r, b.loginPageURL, http.StatusFound)
+			return
+		}
+	}
+
 	var err error
 	var user interface{}
 	defer func() {
@@ -806,11 +830,22 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	failRedirectURL := b.userPassForgetPassPageURL
+
+	// check reCAPTCHA token
+	if b.recaptchaEnabled {
+		token := r.FormValue("token")
+		if !recaptchaTokenCheck(b, token) {
+			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectRecaptchaToken)
+			http.Redirect(w, r, failRedirectURL, http.StatusFound)
+			return
+		}
+	}
+
 	account := strings.TrimSpace(r.FormValue("account"))
 	passcode := r.FormValue("otp")
 	doTOTP := r.URL.Query().Get("totp") == "1"
 
-	failRedirectURL := b.userPassForgetPassPageURL
 	if doTOTP {
 		failRedirectURL = mustSetQuery(failRedirectURL, "totp", "1")
 	}

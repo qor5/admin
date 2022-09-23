@@ -3,10 +3,13 @@ package login
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 )
 
 func underlyingReflectType(t reflect.Type) reflect.Type {
@@ -61,4 +64,29 @@ func mustSetQuery(u string, keyVals ...string) string {
 
 	pu.RawQuery = ""
 	return fmt.Sprintf("%s?%s", pu.String(), q.Encode())
+}
+
+func recaptchaTokenCheck(b *Builder, token string) bool {
+	f := make(url.Values)
+	f.Add("secret", b.recaptchaConfig.SecretKey)
+	f.Add("response", token)
+
+	res, err := http.Post("https://www.google.com/recaptcha/api/siteverify",
+		"application/x-www-form-urlencoded", strings.NewReader(f.Encode()))
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer res.Body.Close()
+
+	var r struct {
+		Success bool `json:"success"`
+	}
+
+	if err = json.NewDecoder(res.Body).Decode(&r); err != nil {
+		log.Println(err)
+		return false
+	}
+
+	return r.Success
 }
