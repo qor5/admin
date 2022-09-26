@@ -43,7 +43,16 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(Setting{}).
-		ComponentFunc(collection.editingComponentFunc)
+		ComponentFunc(collection.editingComponentFunc).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			var setting Setting
+			for key := range ctx.R.Form {
+				if strings.HasPrefix(key, fmt.Sprintf("%s.", field.Name)) {
+					reflectutils.Set(&setting, strings.TrimPrefix(key, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(key))
+				}
+			}
+			return reflectutils.Set(obj, field.Name, setting)
+		})
 
 	b.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
