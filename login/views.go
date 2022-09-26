@@ -41,8 +41,10 @@ func getFailCodeText(msgr *Messages, code FailCode) string {
 		return msgr.ErrorInvalidToken
 	case FailCodeTokenExpired:
 		return msgr.ErrorTokenExpired
-	case FailCodeIncorrectTOTP:
-		return msgr.ErrorIncorrectTOTP
+	case FailCodeIncorrectTOTPCode:
+		return msgr.ErrorIncorrectTOTPCode
+	case FailCodeTOTPCodeHasBeenUsed:
+		return msgr.ErrorTOTPCodeReused
 	case FailCodeIncorrectRecaptchaToken:
 		return msgr.ErrorIncorrectRecaptchaToken
 	}
