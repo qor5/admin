@@ -80,5 +80,11 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
+		}).
+		AfterTOTPCodeReused(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("totp code is reused!")
+			fmt.Println("#########################################end")
+			return nil
 		})
 }

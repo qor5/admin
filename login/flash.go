@@ -22,7 +22,8 @@ const (
 	FailCodeIncorrectPassword
 	FailCodeInvalidToken
 	FailCodeTokenExpired
-	FailCodeIncorrectTOTP
+	FailCodeIncorrectTOTPCode
+	FailCodeTOTPCodeHasBeenUsed
 	FailCodeIncorrectRecaptchaToken
 )
 
