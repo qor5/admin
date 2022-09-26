@@ -24,7 +24,7 @@ type UserPasser interface {
 	GetLocked() bool
 	GetIsTOTPSetup() bool
 	GetTOTPSecret() string
-	GetLastUsedTOTPCode() string
+	GetLastUsedTOTPCode() (code string, usedAt *time.Time)
 	GetResetPasswordToken() (token string, createdAt *time.Time, expired bool)
 
 	SetPassword(db *gorm.DB, model interface{}, password string) error
@@ -55,6 +55,7 @@ type UserPass struct {
 	TOTPSecret                  string
 	IsTOTPSetup                 bool
 	LastUsedTOTPCode            string
+	LastTOTPCodeUsedAt          *time.Time
 }
 
 var _ UserPasser = (*UserPass)(nil)
@@ -236,8 +237,10 @@ func (up *UserPass) SetIsTOTPSetup(db *gorm.DB, model interface{}, v bool) error
 }
 
 func (up *UserPass) SetLastUsedTOTPCode(db *gorm.DB, model interface{}, passcode string) error {
+	now := time.Now()
 	if err := db.Model(model).Where("account = ?", up.Account).Updates(map[string]interface{}{
-		"last_used_totp_code": passcode,
+		"last_used_totp_code":    passcode,
+		"last_totp_code_used_at": &now,
 	}).Error; err != nil {
 		return err
 	}
@@ -247,6 +250,6 @@ func (up *UserPass) SetLastUsedTOTPCode(db *gorm.DB, model interface{}, passcode
 	return nil
 }
 
-func (up *UserPass) GetLastUsedTOTPCode() string {
-	return up.LastUsedTOTPCode
+func (up *UserPass) GetLastUsedTOTPCode() (code string, usedAt *time.Time) {
+	return up.LastUsedTOTPCode, up.LastTOTPCodeUsedAt
 }

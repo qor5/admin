@@ -807,7 +807,11 @@ func (b *Builder) validateTOTPCodeAndSetLastUsedVal(up UserPasser, passcode stri
 	if !totp.Validate(passcode, up.GetTOTPSecret()) {
 		return errWrongTOTPCode
 	}
-	if passcode == up.GetLastUsedTOTPCode() {
+	lastCode, usedAt := up.GetLastUsedTOTPCode()
+	if usedAt != nil && time.Now().Sub(*usedAt) > 90*time.Second {
+		lastCode = ""
+	}
+	if passcode == lastCode {
 		return errTOTPCodeHasBeenUsed
 	}
 	if err := up.SetLastUsedTOTPCode(b.db, b.newUserObject(), passcode); err != nil {
