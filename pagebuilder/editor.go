@@ -252,15 +252,28 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 				h.Components(r...),
 			),
 		)
+		iframeHeightName := "_iframeHeight"
+		iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+		iframeValue := "1000px"
+		if iframeHeightCookie != nil {
+			iframeValue = iframeHeightCookie.Value
+		}
 		iframe := VRow(
 			h.Div(
-				h.RawHTML(fmt.Sprintf("<iframe frameborder='0' scrolling='no' srcdoc=\"%s\" "+
-					"@load='$event.target.style.height=$event.target.contentWindow.document.body.parentElement.offsetHeight+\"px\";'"+
-					"style='width:100%%; display:block; border:none; padding:0; margin:0;'></iframe>",
+				h.RawHTML(fmt.Sprintf(`
+				<iframe frameborder='0' scrolling='no' srcdoc="%s"
+					@load='
+						var height = $event.target.contentWindow.document.body.parentElement.offsetHeight+"px";
+						$event.target.style.height=height;
+						document.cookie="%s="+height;
+					'
+					style='width:100%%; display:block; border:none; padding:0; margin:0; height:%s;'></iframe>`,
 					strings.ReplaceAll(
 						h.MustString(containerContent, ctx.R.Context()),
 						"\"",
 						"&quot;"),
+					iframeHeightName,
+					iframeValue,
 				)),
 			).Class("page-builder-container mx-auto").Attr("style", width),
 		)
