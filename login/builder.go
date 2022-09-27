@@ -521,7 +521,7 @@ func (b *Builder) completeUserAuthCallbackComplete(w http.ResponseWriter, r *htt
 	}
 
 	if b.afterLoginHook != nil {
-		r.AddCookie(&http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
+		setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
 		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -645,7 +645,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 
 	if !b.totpEnabled {
 		if b.afterLoginHook != nil {
-			r.AddCookie(&http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
+			setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
 			if herr := b.afterLoginHook(r, user); herr != nil {
 				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -1274,8 +1274,7 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 
 	claims.TOTPValidated = true
 	if b.afterLoginHook != nil {
-		r.Header.Del("Cookie")
-		r.AddCookie(&http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
+		setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
 		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginPageURL, http.StatusFound)

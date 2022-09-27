@@ -67,3 +67,15 @@ func recaptchaTokenCheck(b *Builder, token string) bool {
 
 	return r.Success
 }
+
+func setCookieForRequest(r *http.Request, c *http.Cookie) {
+	oldCookies := r.Cookies()
+	r.Header.Del("Cookie")
+	for _, oc := range oldCookies {
+		if oc.Name == c.Name {
+			continue
+		}
+		r.AddCookie(oc)
+	}
+	r.AddCookie(c)
+}
