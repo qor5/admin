@@ -80,7 +80,7 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 	}
 
 	for _, r := range results {
-		if r.ID == p.ID && r.Version == p.Version.Version {
+		if r.ID == p.ID {
 			continue
 		}
 		if r.PathWithSlug == urlPath {
