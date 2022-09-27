@@ -16,7 +16,7 @@ import (
 
 var (
 	loginBuilder   *login.Builder
-	AuthCookieName = "auth"
+	authCookieName = "auth"
 )
 
 func getCurrentUser(r *http.Request) (u *models.User) {
@@ -34,7 +34,7 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
-		AuthCookieName(AuthCookieName).
+		AuthCookieName(authCookieName).
 		OAuthProviders(
 			&login.Provider{
 				Goth: google.New(os.Getenv("LOGIN_GOOGLE_KEY"), os.Getenv("LOGIN_GOOGLE_SECRET"), os.Getenv("BASE_URL")+"/auth/callback?provider=google"),
@@ -80,11 +80,11 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
 		}).
 		AfterLogout(func(r *http.Request, user interface{}) error {
-			if err := ab.AddCustomizedRecord("log-in", false, r.Context(), user); err != nil {
+			if err := ab.AddCustomizedRecord("log-out", false, r.Context(), user); err != nil {
 				return err
 			}
 
-			if err := delCurrentSessionLog(r); err != nil {
+			if err := expireCurrentSessionLog(r, user.(*models.User).ID); err != nil {
 				return err
 			}
 
@@ -99,15 +99,8 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		AfterChangePassword(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
 		}).
-		BeforeExtendSessionHook(func(r *http.Request, user interface{}) error {
-			if err := delCurrentSessionLog(r); err != nil {
-				return err
-			}
-
-			return nil
-		}).
-		AfterExtendSessionHook(func(r *http.Request, user interface{}) error {
-			if err := addSessionLogByUserID(r, user.(*models.User).ID); err != nil {
+		AfterExtendSession(func(r *http.Request, user interface{}) error {
+			if err := updateCurrentSessionLog(r, user.(*models.User).ID); err != nil {
 				return err
 			}
 

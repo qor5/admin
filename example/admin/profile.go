@@ -2,6 +2,8 @@ package admin
 
 import (
 	"errors"
+	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -72,7 +74,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
 
-		if err = emptyOtherSessionLog(ctx.R, u.ID); err != nil {
+		if err = expireOtherSessionLogs(ctx.R, u.ID); err != nil {
 			return r, err
 		}
 
@@ -148,30 +150,55 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 	eb.Field("Sessions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		u := obj.(*models.User)
-		sessionItems := []*models.LoginSession{}
-		if err := db.Where("user_id = ?", u.ID).Find(&sessionItems).Error; err != nil {
+		items := []*models.LoginSession{}
+		if err := db.Where("user_id = ?", u.ID).Find(&items).Error; err != nil {
 			panic(err)
 		}
 
-		c, err := ctx.R.Cookie(AuthCookieName)
-		if err != nil {
-			return nil
-		}
-
+		c, _ := ctx.R.Cookie(authCookieName)
 		currentTokenHash := getStringHash(c.Value, LoginTokenHashLen)
 
-		for _, v := range sessionItems {
-			if isTokenExpired(loginBuilder, *v) {
-				v.Status = "Expired"
+		activeDevices := make(map[string]struct{})
+		for _, item := range items {
+			if isTokenValid(*item) {
+				item.Status = "Expired"
 			} else {
-				v.Status = "Valid"
+				item.Status = "Active"
+				activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)] = struct{}{}
 			}
-			if v.TokenHash == currentTokenHash {
-				v.Status = "Current session"
+			if item.TokenHash == currentTokenHash {
+				item.Status = "Current session"
 			}
 
-			v.Time = humanize.Time(v.CreatedAt)
+			item.Time = humanize.Time(item.CreatedAt)
 		}
+
+		{
+			newItems := make([]*models.LoginSession, 0, len(items))
+			for _, item := range items {
+				if item.Status == "Expired" {
+					_, ok := activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)]
+					if ok {
+						continue
+					}
+				}
+				newItems = append(newItems, item)
+			}
+			items = newItems
+		}
+
+		sort.Slice(items, func(i, j int) bool {
+			if items[j].Status == "Current session" {
+				return false
+			}
+			if items[i].Status == "Expired" && items[j].Status == "Active" {
+				return false
+			}
+			if items[i].CreatedAt.Sub(items[j].CreatedAt) < 0 {
+				return false
+			}
+			return true
+		})
 
 		sessionTableHeaders := []DataTableHeader{
 			{"TIME", "Time", "25%", false},
@@ -194,10 +221,9 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).
-					Items(sessionItems).
+					Items(items).
 					ItemsPerPage(-1).
-					HideDefaultFooter(true).
-					SortBy("Status"),
+					HideDefaultFooter(true),
 			),
 		).Class("mx-2 mt-12 mb-4")
 	})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/role"
 	"gorm.io/gorm"
@@ -52,19 +53,28 @@ func withNoteContext() func(next http.Handler) http.Handler {
 	}
 }
 
-func withTokenAuth() func(next http.Handler) http.Handler {
+func validateSessionToken() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logoutURL := "/auth/logout"
-			if r.URL.Path == logoutURL {
+			user := getCurrentUser(r)
+			if user == nil {
 				next.ServeHTTP(w, r)
+				return
+			}
+			if login.IsLoginWIP(r) {
+				next.ServeHTTP(w, r)
+				return
 			}
 
-			if _, err := r.Cookie(AuthCookieName); err != http.ErrNoCookie {
-				if _, ok := isUnexpiredTokenInvalid(r, loginBuilder); ok {
-					http.Redirect(w, r, logoutURL, http.StatusFound)
+			valid, err := checkIsTokenValidFromRequest(r, user.ID)
+			if err != nil || !valid {
+				logoutURL := "/auth/logout"
+				if r.URL.Path == logoutURL {
+					next.ServeHTTP(w, r)
 					return
 				}
+				http.Redirect(w, r, logoutURL, http.StatusFound)
+				return
 			}
 
 			next.ServeHTTP(w, r)

@@ -8,6 +8,7 @@ import (
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
 	"github.com/ua-parser/uap-go/uaparser"
+	"gorm.io/gorm"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 )
 
 func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
-	c, err := r.Cookie(AuthCookieName)
+	c, err := r.Cookie(authCookieName)
 	if err != nil {
 		return err
 	}
@@ -25,8 +26,9 @@ func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
 	if err = db.Model(&models.LoginSession{}).Create(&models.LoginSession{
 		UserID:    userID,
 		Device:    fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
-		IP:        r.RemoteAddr,
+		IP:        ip(r),
 		TokenHash: getStringHash(c.Value, LoginTokenHashLen),
+		ExpiredAt: time.Now().Add(time.Duration(loginBuilder.GetSessionMaxAge()) * time.Second),
 	}).Error; err != nil {
 		return err
 	}
@@ -34,64 +36,80 @@ func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
 	return nil
 }
 
-func delCurrentSessionLog(r *http.Request) (err error) {
-	c, err := r.Cookie(AuthCookieName)
+func updateCurrentSessionLog(r *http.Request, userID uint) (err error) {
+	c, err := r.Cookie(authCookieName)
 	if err != nil {
 		return err
 	}
-
 	tokenHash := getStringHash(c.Value, LoginTokenHashLen)
-	if err = db.Delete(&models.LoginSession{}, "token_hash = ?", tokenHash).Error; err != nil {
+	oldTokenHash := getStringHash(login.GetOldSessionTokenBeforeExtend(r), LoginTokenHashLen)
+	if err = db.Model(&models.LoginSession{}).
+		Where("user_id = ? and token_hash = ?", userID, oldTokenHash).
+		Updates(map[string]interface{}{
+			"token_hash": tokenHash,
+			"expired_at": time.Now().Add(time.Duration(loginBuilder.GetSessionMaxAge()) * time.Second),
+		}).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func isTokenExpired(b *login.Builder, v models.LoginSession) bool {
-	return time.Now().Sub(v.CreatedAt) > time.Duration(b.GetSessionMaxAge())*time.Second
-}
-
-func isUnexpiredTokenInvalid(r *http.Request, b *login.Builder) (err error, ok bool) {
-	c, err := r.Cookie(AuthCookieName)
-	if err != nil {
-		return err, false
-	}
-
-	sessionItems := []*models.LoginSession{}
-	// If this token has been deleted , indicates that this token is invalid,
-	// such as this session token has been signed out by the user actively.
-	if err = db.Model(&models.LoginSession{}).Unscoped().
-		Where("token_hash = ? AND deleted_at IS NOT NULL", getStringHash(c.Value, LoginTokenHashLen)).
-		Find(&sessionItems).Error; err != nil {
-		return err, false
-	}
-
-	// Exclude expired token.
-	var cnt int64
-	for _, s := range sessionItems {
-		if !isTokenExpired(b, *s) {
-			cnt++
-		}
-	}
-
-	// cnt represents the number of token that has not expired but has been deleted.
-	return nil, cnt > 0
-}
-
-// emptyOtherSessionLog will delete other session logs by userID.
-func emptyOtherSessionLog(r *http.Request, userID uint) (err error) {
-	c, err := r.Cookie(AuthCookieName)
+func expireCurrentSessionLog(r *http.Request, userID uint) (err error) {
+	c, err := r.Cookie(authCookieName)
 	if err != nil {
 		return err
 	}
+	tokenHash := getStringHash(c.Value, LoginTokenHashLen)
+	if err = db.Model(&models.LoginSession{}).
+		Where("user_id = ? and token_hash = ?", userID, tokenHash).
+		Updates(map[string]interface{}{
+			"expired_at": time.Now(),
+		}).Error; err != nil {
+		return err
+	}
 
-	if err = db.Delete(
-		&models.LoginSession{},
-		"user_id = ? AND token_hash != ?", userID, getStringHash(c.Value, LoginTokenHashLen)).
+	return nil
+}
+
+func expireAllSessionLogs(userID uint) (err error) {
+	return db.Model(&models.LoginSession{}).
+		Where("user_id = ?", userID).
+		Updates(map[string]interface{}{
+			"expired_at": time.Now(),
+		}).Error
+}
+
+func expireOtherSessionLogs(r *http.Request, userID uint) (err error) {
+	sc, _ := r.Cookie(authCookieName)
+
+	return db.Model(&models.LoginSession{}).
+		Where("user_id = ? AND token_hash != ?", userID, getStringHash(sc.Value, LoginTokenHashLen)).
+		Updates(map[string]interface{}{
+			"expired_at": time.Now(),
+		}).Error
+}
+
+func isTokenValid(v models.LoginSession) bool {
+	return time.Now().Sub(v.ExpiredAt) > 0
+}
+
+func checkIsTokenValidFromRequest(r *http.Request, userID uint) (valid bool, err error) {
+	sc, err := r.Cookie(authCookieName)
+	if err != nil {
+		return false, nil
+	}
+	sessionLog := models.LoginSession{}
+	if err = db.Where("user_id = ? and token_hash = ?", userID, getStringHash(sc.Value, LoginTokenHashLen)).
+		First(&sessionLog).
 		Error; err != nil {
-		return err
+		if err != gorm.ErrRecordNotFound {
+			return false, err
+		}
+		return false, nil
 	}
-
-	return nil
+	if isTokenValid(sessionLog) {
+		return false, nil
+	}
+	return true, nil
 }

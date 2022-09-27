@@ -117,7 +117,6 @@ type Builder struct {
 	afterSendResetPasswordLinkHook HookFunc
 	afterResetPasswordHook         HookFunc
 	afterChangePasswordHook        HookFunc
-	beforeExtendSessionHook        HookFunc
 	afterExtendSessionHook         HookFunc
 	afterTOTPCodeReusedHook        HookFunc
 
@@ -341,12 +340,7 @@ func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) BeforeExtendSessionHook(v HookFunc) (r *Builder) {
-	b.beforeExtendSessionHook = b.wrapHook(v)
-	return b
-}
-
-func (b *Builder) AfterExtendSessionHook(v HookFunc) (r *Builder) {
+func (b *Builder) AfterExtendSession(v HookFunc) (r *Builder) {
 	b.afterExtendSessionHook = b.wrapHook(v)
 	return b
 }

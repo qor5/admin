@@ -46,9 +46,9 @@ func Router() http.Handler {
 	cr := chi.NewRouter()
 	cr.Use(
 		login.Authenticate(loginBuilder),
+		validateSessionToken(),
 		withRoles(db),
 		withNoteContext(),
-		withTokenAuth(),
 	)
 	cr.Mount("/", mux)
 	return cr
