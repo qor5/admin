@@ -51,3 +51,23 @@ func withNoteContext() func(next http.Handler) http.Handler {
 		})
 	}
 }
+
+func withTokenAuth() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logoutURL := "/auth/logout"
+			if r.URL.Path == logoutURL {
+				next.ServeHTTP(w, r)
+			}
+
+			if _, err := r.Cookie(AuthCookieName); err != http.ErrNoCookie {
+				if _, ok := isUnexpiredTokenInvalid(r, loginBuilder); ok {
+					http.Redirect(w, r, logoutURL, http.StatusFound)
+					return
+				}
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

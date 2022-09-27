@@ -116,6 +116,8 @@ type Builder struct {
 	afterSendResetPasswordLinkHook HookFunc
 	afterResetPasswordHook         HookFunc
 	afterChangePasswordHook        HookFunc
+	beforeExtendSessionHook        HookFunc
+	afterExtendSessionHook         HookFunc
 
 	db                   *gorm.DB
 	userModel            interface{}
@@ -337,6 +339,16 @@ func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) BeforeExtendSessionHook(v HookFunc) (r *Builder) {
+	b.beforeExtendSessionHook = b.wrapHook(v)
+	return b
+}
+
+func (b *Builder) AfterExtendSessionHook(v HookFunc) (r *Builder) {
+	b.afterExtendSessionHook = b.wrapHook(v)
+	return b
+}
+
 // seconds
 // default 1h
 func (b *Builder) SessionMaxAge(v int) (r *Builder) {
@@ -382,6 +394,10 @@ func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
 	b.registerI18n()
 	return b
+}
+
+func (b *Builder) GetSessionMaxAge() int {
+	return b.sessionMaxAge
 }
 
 func (b *Builder) registerI18n() {
@@ -1218,7 +1234,10 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	claims.TOTPValidated = true
 	if b.afterLoginHook != nil {
+		r.Header.Del("Cookie")
+		r.AddCookie(&http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
 		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -1226,7 +1245,6 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	claims.TOTPValidated = true
 	err = b.setSecureCookiesByClaims(w, user, *claims)
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)

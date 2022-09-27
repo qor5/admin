@@ -96,6 +96,14 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
+				if b.beforeExtendSessionHook != nil {
+					if herr := b.beforeExtendSessionHook(r, user); herr != nil {
+						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						return
+					}
+				}
+
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
@@ -105,6 +113,16 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						http.Redirect(w, r, b.logoutURL, http.StatusFound)
 					}
 					return
+				}
+
+				if b.afterExtendSessionHook != nil {
+					r.Header.Del("Cookie")
+					r.AddCookie(&http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
+					if herr := b.afterExtendSessionHook(r, user); herr != nil {
+						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						return
+					}
 				}
 			}
 
