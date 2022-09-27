@@ -29,6 +29,8 @@ type ActivityLogInterface interface {
 	GetModelKeys() string
 	SetModelName(string)
 	GetModelName() string
+	SetModelLabel(string)
+	GetModelLabel() string
 	SetModelLink(string)
 	GetModelLink() string
 	SetModelDiffs(string)
@@ -41,8 +43,10 @@ type ActivityLog struct {
 	CreatedAt  time.Time
 	Creator    string
 	Action     string
-	ModelKeys  string
-	ModelName  string
+	ModelKeys  string `gorm:"index"`
+	ModelName  string `gorm:"index"`
+	ModelLabel string
+
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
 }
@@ -93,6 +97,17 @@ func (al *ActivityLog) SetModelName(s string) {
 
 func (al *ActivityLog) GetModelName() string {
 	return al.ModelName
+}
+
+func (al *ActivityLog) SetModelLabel(s string) {
+	al.ModelLabel = s
+}
+
+func (al *ActivityLog) GetModelLabel() string {
+	if al.ModelLabel == "" {
+		return "-"
+	}
+	return al.ModelLabel
 }
 
 func (al *ActivityLog) SetModelLink(s string) {

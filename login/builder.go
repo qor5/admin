@@ -23,12 +23,13 @@ import (
 )
 
 var (
-	errUserNotFound    = errors.New("user not found")
-	errUserPassChanged = errors.New("password changed")
-	errWrongPassword   = errors.New("wrong password")
-	errUserLocked      = errors.New("user locked")
-	errUserGetLocked   = errors.New("user get locked")
-	errWrongTOTP       = errors.New("wrong totp")
+	errUserNotFound        = errors.New("user not found")
+	errUserPassChanged     = errors.New("password changed")
+	errWrongPassword       = errors.New("wrong password")
+	errUserLocked          = errors.New("user locked")
+	errUserGetLocked       = errors.New("user get locked")
+	errWrongTOTPCode       = errors.New("wrong totp code")
+	errTOTPCodeHasBeenUsed = errors.New("totp code has been used")
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
@@ -118,6 +119,7 @@ type Builder struct {
 	afterChangePasswordHook        HookFunc
 	beforeExtendSessionHook        HookFunc
 	afterExtendSessionHook         HookFunc
+	afterTOTPCodeReusedHook        HookFunc
 
 	db                   *gorm.DB
 	userModel            interface{}
@@ -346,6 +348,11 @@ func (b *Builder) BeforeExtendSessionHook(v HookFunc) (r *Builder) {
 
 func (b *Builder) AfterExtendSessionHook(v HookFunc) (r *Builder) {
 	b.afterExtendSessionHook = b.wrapHook(v)
+	return b
+}
+
+func (b *Builder) AfterTOTPCodeReused(v HookFunc) (r *Builder) {
+	b.afterTOTPCodeReusedHook = b.wrapHook(v)
 	return b
 }
 
@@ -810,6 +817,40 @@ func (b *Builder) setSecureCookiesByClaims(w http.ResponseWriter, user interface
 	return nil
 }
 
+func (b *Builder) validateTOTPCodeAndSetLastUsedVal(up UserPasser, passcode string) error {
+	if !totp.Validate(passcode, up.GetTOTPSecret()) {
+		return errWrongTOTPCode
+	}
+	lastCode, usedAt := up.GetLastUsedTOTPCode()
+	if usedAt != nil && time.Now().Sub(*usedAt) > 90*time.Second {
+		lastCode = ""
+	}
+	if passcode == lastCode {
+		return errTOTPCodeHasBeenUsed
+	}
+	if err := up.SetLastUsedTOTPCode(b.db, b.newUserObject(), passcode); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Builder) handleTOTPCodeValidationFailedErrorAndGetFailCode(verr error, r *http.Request, user interface{}) FailCode {
+	fc := FailCodeSystemError
+	switch verr {
+	case errWrongTOTPCode:
+		fc = FailCodeIncorrectTOTPCode
+	case errTOTPCodeHasBeenUsed:
+		fc = FailCodeTOTPCodeHasBeenUsed
+		if b.afterTOTPCodeReusedHook != nil {
+			if herr := b.afterTOTPCodeReusedHook(r, user); herr != nil {
+				fc = FailCodeSystemError
+			}
+		}
+	}
+
+	return fc
+}
+
 // logout is for url "/logout/{provider}"
 func (b *Builder) logout(w http.ResponseWriter, r *http.Request) {
 	err := gothic.Logout(w, r)
@@ -907,8 +948,9 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		if !totp.Validate(passcode, u.(UserPasser).GetTOTPSecret()) {
-			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+		if err = b.validateTOTPCodeAndSetLastUsedVal(u.(UserPasser), passcode); err != nil {
+			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, u)
+			setFailCodeFlash(b.cookieConfig, w, fc)
 			setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 				Account: account,
 				TOTP:    passcode,
@@ -1046,8 +1088,9 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !totp.Validate(passcode, u.(UserPasser).GetTOTPSecret()) {
-			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+		if err = b.validateTOTPCodeAndSetLastUsedVal(u.(UserPasser), passcode); err != nil {
+			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, u)
+			setFailCodeFlash(b.cookieConfig, w, fc)
 			setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
 				Password:        password,
 				ConfirmPassword: confirmPassword,
@@ -1096,8 +1139,9 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	confirmPassword := r.FormValue("confirm_password")
 	passcode := r.FormValue("otp")
 
-	user := GetCurrentUser(r).(UserPasser)
-	if !user.IsPasswordCorrect(oldPassword) {
+	user := GetCurrentUser(r)
+	up := user.(UserPasser)
+	if !up.IsPasswordCorrect(oldPassword) {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectPassword)
 		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 			OldPassword:     oldPassword,
@@ -1143,8 +1187,9 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b.totpEnabled {
-		if !totp.Validate(passcode, user.GetTOTPSecret()) {
-			setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+		if err := b.validateTOTPCodeAndSetLastUsedVal(up, passcode); err != nil {
+			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, user)
+			setFailCodeFlash(b.cookieConfig, w, fc)
 			setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
 				OldPassword:     oldPassword,
 				NewPassword:     password,
@@ -1156,7 +1201,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := user.SetPassword(b.db, b.newUserObject(), password)
+	err := up.SetPassword(b.db, b.newUserObject(), password)
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 		http.Redirect(w, r, b.userPassChangePassPageURL, http.StatusFound)
@@ -1164,7 +1209,7 @@ func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if b.afterChangePasswordHook != nil {
-		if herr := b.afterChangePasswordHook(r, user); herr != nil {
+		if herr := b.afterChangePasswordHook(r, up); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.userPassChangePassPageURL, http.StatusFound)
 			return
@@ -1211,13 +1256,12 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	}
 	u := user.(UserPasser)
 
-	key := u.GetTOTPSecret()
 	otp := r.FormValue("otp")
 	isTOTPSetup := u.GetIsTOTPSetup()
 
-	if !totp.Validate(otp, key) {
-		err = errWrongTOTP
-		setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectTOTP)
+	if err := b.validateTOTPCodeAndSetLastUsedVal(u, otp); err != nil {
+		fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, user)
+		setFailCodeFlash(b.cookieConfig, w, fc)
 		redirectURL := b.totpValidatePageURL
 		if !isTOTPSetup {
 			redirectURL = b.totpSetupPageURL

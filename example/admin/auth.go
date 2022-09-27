@@ -112,5 +112,11 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			}
 
 			return nil
+		}).
+		AfterTOTPCodeReused(func(r *http.Request, user interface{}) error {
+			fmt.Println("#########################################start")
+			fmt.Println("totp code is reused!")
+			fmt.Println("#########################################end")
+			return nil
 		})
 }

@@ -62,7 +62,8 @@ type Messages struct {
 	ErrorIncorrectPassword              string
 	ErrorInvalidToken                   string
 	ErrorTokenExpired                   string
-	ErrorIncorrectTOTP                  string
+	ErrorIncorrectTOTPCode              string
+	ErrorTOTPCodeReused                 string
 	ErrorIncorrectRecaptchaToken        string
 	// Warn Messages
 	WarnPasswordHasBeenChanged string
@@ -120,7 +121,8 @@ var Messages_en_US = &Messages{
 	ErrorIncorrectPassword:              "Old password is incorrect",
 	ErrorInvalidToken:                   "Invalid token",
 	ErrorTokenExpired:                   "Token expired",
-	ErrorIncorrectTOTP:                  "Incorrect passcode",
+	ErrorIncorrectTOTPCode:              "Incorrect passcode",
+	ErrorTOTPCodeReused:                 "This passcode has been used",
 	ErrorIncorrectRecaptchaToken:        "Incorrect reCAPTCHA token",
 	WarnPasswordHasBeenChanged:          "Password has been changed, please sign-in again",
 	InfoPasswordSuccessfullyReset:       "Password successfully reset, please sign-in again",
@@ -176,7 +178,8 @@ var Messages_zh_CN = &Messages{
 	ErrorIncorrectPassword:              "密码错误",
 	ErrorInvalidToken:                   "token无效",
 	ErrorTokenExpired:                   "token过期",
-	ErrorIncorrectTOTP:                  "passcode错误",
+	ErrorIncorrectTOTPCode:              "passcode错误",
+	ErrorTOTPCodeReused:                 "这个passcode已经被使用过了",
 	ErrorIncorrectRecaptchaToken:        "reCAPTCHA token错误",
 	WarnPasswordHasBeenChanged:          "密码被修改了，请重新登录",
 	InfoPasswordSuccessfullyReset:       "密码重置成功，请重新登录",
