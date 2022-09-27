@@ -25,29 +25,6 @@ func genHashSalt() string {
 	return hex.EncodeToString(b)
 }
 
-// renewSession will reset cookie with the latest user info in DB.
-func renewSession(
-	b *Builder,
-	w http.ResponseWriter,
-	r *http.Request,
-) (err error) {
-	claims, err := parseUserClaimsFromCookie(r, b.authCookieName, b.secret)
-	if err != nil {
-		return
-	}
-
-	var user interface{}
-	user, err = b.findUserByID(claims.UserID)
-	if err != nil {
-		return
-	}
-
-	if err = b.setSecureCookiesByClaims(w, user, *claims); err != nil {
-		return
-	}
-	return nil
-}
-
 func mustSetQuery(u string, keyVals ...string) string {
 	pu, err := url.Parse(u)
 	if err != nil {
@@ -89,4 +66,16 @@ func recaptchaTokenCheck(b *Builder, token string) bool {
 	}
 
 	return r.Success
+}
+
+func setCookieForRequest(r *http.Request, c *http.Cookie) {
+	oldCookies := r.Cookies()
+	r.Header.Del("Cookie")
+	for _, oc := range oldCookies {
+		if oc.Name == c.Name {
+			continue
+		}
+		r.AddCookie(oc)
+	}
+	r.AddCookie(c)
 }

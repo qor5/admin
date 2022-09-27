@@ -26,6 +26,7 @@ func ConnectDB() *gorm.DB {
 		&models.Post{},
 		&models.InputHarness{},
 		&models.User{},
+		&models.LoginSession{},
 		&models.ListModel{},
 		&role.Role{},
 		&perm.DefaultDBPolicy{},

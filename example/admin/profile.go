@@ -3,14 +3,15 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -68,15 +69,17 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
 		Label("Profile").MenuIcon("person").Singleton(true)
 
-	eb := m.Editing("Info", "Actions")
+	eb := m.Editing("Info", "Actions", "Sessions")
 
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
-		err = login.SignOutAllOtherSessions(loginBuilder, ctx.W, ctx.R, u, db, &models.User{}, fmt.Sprint(u.ID))
-		if err != nil {
+
+		if err = expireOtherSessionLogs(ctx.R, u.ID); err != nil {
 			return r, err
 		}
-		presets.ShowMessage(&r, "success", "")
+
+		presets.ShowMessage(&r, "All other sessions have successfully been signed out.", "")
+		r.Reload = true
 		return
 	})
 
@@ -127,7 +130,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 					vx.VXReadonlyField().Label("Status").Value(u.Status),
 				),
 			),
-		).Class("mt-4 ml-2")
+		).Class("mx-2 mt-4")
 	})
 
 	eb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -140,15 +143,89 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 				Class("mr-2"),
 		)
 
-		actionBtns = append(actionBtns,
-			VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
-				Outlined(true).Color("primary").
-				Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
-		)
-
 		return h.Div(
 			actionBtns...,
-		).Class("ml-2 mt-8 text-left")
+		).Class("mx-2 mt-4 text-left")
+	})
+
+	eb.Field("Sessions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		items := []*models.LoginSession{}
+		if err := db.Where("user_id = ?", u.ID).Find(&items).Error; err != nil {
+			panic(err)
+		}
+
+		c, _ := ctx.R.Cookie(authCookieName)
+		currentTokenHash := getStringHash(c.Value, LoginTokenHashLen)
+
+		activeDevices := make(map[string]struct{})
+		for _, item := range items {
+			if isTokenValid(*item) {
+				item.Status = "Expired"
+			} else {
+				item.Status = "Active"
+				activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)] = struct{}{}
+			}
+			if item.TokenHash == currentTokenHash {
+				item.Status = "Current session"
+			}
+
+			item.Time = humanize.Time(item.CreatedAt)
+		}
+
+		{
+			newItems := make([]*models.LoginSession, 0, len(items))
+			for _, item := range items {
+				if item.Status == "Expired" {
+					_, ok := activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)]
+					if ok {
+						continue
+					}
+				}
+				newItems = append(newItems, item)
+			}
+			items = newItems
+		}
+
+		sort.Slice(items, func(i, j int) bool {
+			if items[j].Status == "Current session" {
+				return false
+			}
+			if items[i].Status == "Expired" && items[j].Status == "Active" {
+				return false
+			}
+			if items[i].CreatedAt.Sub(items[j].CreatedAt) < 0 {
+				return false
+			}
+			return true
+		})
+
+		sessionTableHeaders := []DataTableHeader{
+			{"TIME", "Time", "25%", false},
+			{"DEVICE", "Device", "25%", false},
+			{"IP ADDRESS", "IP", "25%", false},
+			{"", "Status", "25%", true},
+		}
+
+		return h.Div(
+			VCard(
+				VRow(
+					VCol(
+						VCardTitle(h.Text("Login sessions")),
+						VCardSubtitle(h.Text("Places where you're logged into QOR5 admin.")),
+					),
+					VCol(
+						VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
+							Outlined(true).Color("primary").
+							Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
+					).Class("text-right mt-6 mr-4"),
+				),
+				VDataTable().Headers(sessionTableHeaders).
+					Items(items).
+					ItemsPerPage(-1).
+					HideDefaultFooter(true),
+			),
+		).Class("mx-2 mt-12 mb-4")
 	})
 }
 

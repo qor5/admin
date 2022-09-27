@@ -81,6 +81,10 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err != nil {
 			return r, err
 		}
+		err = expireAllSessionLogs(u.ID)
+		if err != nil {
+			return r, err
+		}
 		presets.ShowMessage(&r, "success", "")
 		ed.UpdateOverlayContent(ctx, &r, u, "", nil)
 		return r, nil

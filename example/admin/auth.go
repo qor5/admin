@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	loginBuilder *login.Builder
+	loginBuilder   *login.Builder
+	authCookieName = "auth"
 )
 
 func getCurrentUser(r *http.Request) (u *models.User) {
@@ -33,6 +34,7 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
+		AuthCookieName(authCookieName).
 		OAuthProviders(
 			&login.Provider{
 				Goth: google.New(os.Getenv("LOGIN_GOOGLE_KEY"), os.Getenv("LOGIN_GOOGLE_SECRET"), os.Getenv("BASE_URL")+"/auth/callback?provider=google"),
@@ -61,7 +63,15 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
 		}).
 		AfterLogin(func(r *http.Request, user interface{}) error {
-			return ab.AddCustomizedRecord("log-in", false, r.Context(), user)
+			if err := ab.AddCustomizedRecord("log-in", false, r.Context(), user); err != nil {
+				return err
+			}
+
+			if err := addSessionLogByUserID(r, user.(*models.User).ID); err != nil {
+				return err
+			}
+
+			return nil
 		}).
 		AfterFailedToLogin(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
@@ -70,7 +80,15 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
 		}).
 		AfterLogout(func(r *http.Request, user interface{}) error {
-			return ab.AddCustomizedRecord("logout", false, r.Context(), user)
+			if err := ab.AddCustomizedRecord("log-out", false, r.Context(), user); err != nil {
+				return err
+			}
+
+			if err := expireCurrentSessionLog(r, user.(*models.User).ID); err != nil {
+				return err
+			}
+
+			return nil
 		}).
 		AfterSendResetPasswordLink(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
@@ -80,6 +98,13 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}) error {
 			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
+		}).
+		AfterExtendSession(func(r *http.Request, user interface{}) error {
+			if err := updateCurrentSessionLog(r, user.(*models.User).ID); err != nil {
+				return err
+			}
+
+			return nil
 		}).
 		AfterTOTPCodeReused(func(r *http.Request, user interface{}) error {
 			fmt.Println("#########################################start")

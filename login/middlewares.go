@@ -11,7 +11,10 @@ import (
 
 type ContextUserKey int
 
-const UserKey ContextUserKey = 1
+const (
+	UserKey ContextUserKey = iota
+	loginWIPKey
+)
 
 var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2)$`)
 
@@ -96,6 +99,8 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			if b.autoExtendSession && time.Now().Sub(claims.IssuedAt.Time).Seconds() > float64(b.sessionMaxAge)/10 {
+				oldSessionToken := b.mustGetSessionToken(*claims)
+
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
@@ -105,6 +110,16 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						http.Redirect(w, r, b.logoutURL, http.StatusFound)
 					}
 					return
+				}
+
+				if b.afterExtendSessionHook != nil {
+					setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
+					r = withOldSessionTokenBeforeExtend(r, oldSessionToken)
+					if herr := b.afterExtendSessionHook(r, user); herr != nil {
+						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						return
+					}
 				}
 			}
 
@@ -121,6 +136,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						next.ServeHTTP(w, r)
 						return
 					}
+					r = r.WithContext(context.WithValue(r.Context(), loginWIPKey, true))
 					if path == b.totpSetupPageURL {
 						next.ServeHTTP(w, r)
 						return
@@ -134,6 +150,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 						next.ServeHTTP(w, r)
 						return
 					}
+					r = r.WithContext(context.WithValue(r.Context(), loginWIPKey, true))
 					if path == b.totpValidatePageURL {
 						next.ServeHTTP(w, r)
 						return
@@ -155,4 +172,12 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 func GetCurrentUser(r *http.Request) (u interface{}) {
 	return r.Context().Value(UserKey)
+}
+
+func IsLoginWIP(r *http.Request) bool {
+	v, ok := r.Context().Value(loginWIPKey).(bool)
+	if !ok {
+		return false
+	}
+	return v
 }

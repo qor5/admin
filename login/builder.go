@@ -117,6 +117,7 @@ type Builder struct {
 	afterSendResetPasswordLinkHook HookFunc
 	afterResetPasswordHook         HookFunc
 	afterChangePasswordHook        HookFunc
+	afterExtendSessionHook         HookFunc
 	afterTOTPCodeReusedHook        HookFunc
 
 	db                   *gorm.DB
@@ -339,6 +340,11 @@ func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) AfterExtendSession(v HookFunc) (r *Builder) {
+	b.afterExtendSessionHook = b.wrapHook(v)
+	return b
+}
+
 func (b *Builder) AfterTOTPCodeReused(v HookFunc) (r *Builder) {
 	b.afterTOTPCodeReusedHook = b.wrapHook(v)
 	return b
@@ -389,6 +395,10 @@ func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
 	b.registerI18n()
 	return b
+}
+
+func (b *Builder) GetSessionMaxAge() int {
+	return b.sessionMaxAge
 }
 
 func (b *Builder) registerI18n() {
@@ -511,6 +521,7 @@ func (b *Builder) completeUserAuthCallbackComplete(w http.ResponseWriter, r *htt
 	}
 
 	if b.afterLoginHook != nil {
+		setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
 		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -634,6 +645,7 @@ func (b *Builder) userpassLogin(w http.ResponseWriter, r *http.Request) {
 
 	if !b.totpEnabled {
 		if b.afterLoginHook != nil {
+			setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(claims)})
 			if herr := b.afterLoginHook(r, user); herr != nil {
 				setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 				http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -689,14 +701,14 @@ func (b *Builder) genBaseSessionClaim(id string) jwt.RegisteredClaims {
 	return genBaseClaims(id, b.sessionMaxAge)
 }
 
+func (b *Builder) mustGetSessionToken(claims UserClaims) string {
+	return mustSignClaims(claims, b.secret)
+}
+
 func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *UserClaims, secureSalt string) error {
-	ss, err := signClaims(claims, b.secret)
-	if err != nil {
-		return err
-	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     b.authCookieName,
-		Value:    ss,
+		Value:    b.mustGetSessionToken(*claims),
 		Path:     b.cookieConfig.Path,
 		Domain:   b.cookieConfig.Domain,
 		MaxAge:   b.sessionMaxAge,
@@ -707,13 +719,9 @@ func (b *Builder) setAuthCookiesFromUserClaims(w http.ResponseWriter, claims *Us
 	})
 
 	if secureSalt != "" {
-		ss, err = signClaims(&claims.RegisteredClaims, b.secret+secureSalt)
-		if err != nil {
-			return err
-		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     b.authSecureCookieName,
-			Value:    ss,
+			Value:    mustSignClaims(&claims.RegisteredClaims, b.secret+secureSalt),
 			Path:     b.cookieConfig.Path,
 			Domain:   b.cookieConfig.Domain,
 			MaxAge:   b.sessionMaxAge,
@@ -1264,7 +1272,9 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	claims.TOTPValidated = true
 	if b.afterLoginHook != nil {
+		setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
 		if herr := b.afterLoginHook(r, user); herr != nil {
 			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 			http.Redirect(w, r, b.loginPageURL, http.StatusFound)
@@ -1272,7 +1282,6 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	claims.TOTPValidated = true
 	err = b.setSecureCookiesByClaims(w, user, *claims)
 	if err != nil {
 		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)

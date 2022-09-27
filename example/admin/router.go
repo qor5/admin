@@ -44,9 +44,12 @@ func Router() http.Handler {
 	robot.MountTo(mux)
 
 	cr := chi.NewRouter()
-	cr.Use(login.Authenticate(loginBuilder))
-	cr.Use(withRoles(db))
-	cr.Use(withNoteContext())
+	cr.Use(
+		login.Authenticate(loginBuilder),
+		validateSessionToken(),
+		withRoles(db),
+		withNoteContext(),
+	)
 	cr.Mount("/", mux)
 	return cr
 }
