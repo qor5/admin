@@ -32,10 +32,10 @@ func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
 	return nil
 }
 
-func updateCurrentSessionLog(r *http.Request, userID uint) (err error) {
+func updateCurrentSessionLog(r *http.Request, userID uint, oldToken string) (err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 	tokenHash := getStringHash(token, LoginTokenHashLen)
-	oldTokenHash := getStringHash(login.GetOldSessionTokenBeforeExtend(r), LoginTokenHashLen)
+	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
 	if err = db.Model(&models.LoginSession{}).
 		Where("user_id = ? and token_hash = ?", userID, oldTokenHash).
 		Updates(map[string]interface{}{

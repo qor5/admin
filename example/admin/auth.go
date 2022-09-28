@@ -60,7 +60,7 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 			SiteKey:   os.Getenv("RECAPTCHA_SITE_KEY"),
 			SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
 		}).
-		AfterLogin(func(r *http.Request, user interface{}) error {
+		AfterLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if err := ab.AddCustomizedRecord("log-in", false, r.Context(), user); err != nil {
 				return err
 			}
@@ -71,13 +71,13 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 
 			return nil
 		}).
-		AfterFailedToLogin(func(r *http.Request, user interface{}) error {
+		AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
 		}).
-		AfterUserLocked(func(r *http.Request, user interface{}) error {
+		AfterUserLocked(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
 		}).
-		AfterLogout(func(r *http.Request, user interface{}) error {
+		AfterLogout(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if err := ab.AddCustomizedRecord("log-out", false, r.Context(), user); err != nil {
 				return err
 			}
@@ -88,23 +88,23 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 
 			return nil
 		}).
-		AfterSendResetPasswordLink(func(r *http.Request, user interface{}) error {
+		AfterSendResetPasswordLink(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
 		}).
-		AfterResetPassword(func(r *http.Request, user interface{}) error {
+		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("reset-password", false, r.Context(), user)
 		}).
-		AfterChangePassword(func(r *http.Request, user interface{}) error {
+		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
 		}).
-		AfterExtendSession(func(r *http.Request, user interface{}) error {
-			if err := updateCurrentSessionLog(r, user.(*models.User).ID); err != nil {
+		AfterExtendSession(func(r *http.Request, user interface{}, vals ...interface{}) error {
+			if err := updateCurrentSessionLog(r, user.(*models.User).ID, vals[0].(string)); err != nil {
 				return err
 			}
 
 			return nil
 		}).
-		AfterTOTPCodeReused(func(r *http.Request, user interface{}) error {
+		AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			fmt.Println("#########################################start")
 			fmt.Println("totp code is reused!")
 			fmt.Println("#########################################end")
