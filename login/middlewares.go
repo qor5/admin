@@ -114,8 +114,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 				if b.afterExtendSessionHook != nil {
 					setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
-					r = withOldSessionTokenBeforeExtend(r, oldSessionToken)
-					if herr := b.afterExtendSessionHook(r, user); herr != nil {
+					if herr := b.afterExtendSessionHook(r, user, oldSessionToken); herr != nil {
 						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 						http.Redirect(w, r, b.logoutURL, http.StatusFound)
 						return

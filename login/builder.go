@@ -34,7 +34,7 @@ var (
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
 type PasswordValidationFunc func(password string) (message string, ok bool)
-type HookFunc func(r *http.Request, user interface{}) error
+type HookFunc func(r *http.Request, user interface{}, vals ...interface{}) error
 type HTMLWrapFunc func(in HTMLComponent) HTMLComponent
 
 type void struct{}
@@ -297,7 +297,7 @@ func (b *Builder) wrapHook(v HookFunc) HookFunc {
 		return nil
 	}
 
-	return func(r *http.Request, user interface{}) error {
+	return func(r *http.Request, user interface{}, vals ...interface{}) error {
 		if GetCurrentUser(r) == nil {
 			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
 		}
@@ -340,6 +340,8 @@ func (b *Builder) AfterChangePassword(v HookFunc) (r *Builder) {
 	return b
 }
 
+// vals:
+// - old session token
 func (b *Builder) AfterExtendSession(v HookFunc) (r *Builder) {
 	b.afterExtendSessionHook = b.wrapHook(v)
 	return b
