@@ -98,6 +98,10 @@ func checkIsTokenValidFromRequest(r *http.Request, userID uint) (valid bool, err
 		}
 		return false, nil
 	}
+	// IP check
+	if sessionLog.IP != ip(r) {
+		return false, nil
+	}
 	if isTokenValid(sessionLog) {
 		return false, nil
 	}
