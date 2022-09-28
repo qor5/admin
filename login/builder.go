@@ -301,7 +301,7 @@ func (b *Builder) wrapHook(v HookFunc) HookFunc {
 		if GetCurrentUser(r) == nil {
 			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
 		}
-		return v(r, user)
+		return v(r, user, vals...)
 	}
 }
 
