@@ -16,18 +16,14 @@ const (
 )
 
 func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
-	c, err := r.Cookie(authCookieName)
-	if err != nil {
-		return err
-	}
-
+	token := login.GetSessionToken(loginBuilder, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
 
 	if err = db.Model(&models.LoginSession{}).Create(&models.LoginSession{
 		UserID:    userID,
 		Device:    fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
 		IP:        ip(r),
-		TokenHash: getStringHash(c.Value, LoginTokenHashLen),
+		TokenHash: getStringHash(token, LoginTokenHashLen),
 		ExpiredAt: time.Now().Add(time.Duration(loginBuilder.GetSessionMaxAge()) * time.Second),
 	}).Error; err != nil {
 		return err
@@ -37,11 +33,8 @@ func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
 }
 
 func updateCurrentSessionLog(r *http.Request, userID uint) (err error) {
-	c, err := r.Cookie(authCookieName)
-	if err != nil {
-		return err
-	}
-	tokenHash := getStringHash(c.Value, LoginTokenHashLen)
+	token := login.GetSessionToken(loginBuilder, r)
+	tokenHash := getStringHash(token, LoginTokenHashLen)
 	oldTokenHash := getStringHash(login.GetOldSessionTokenBeforeExtend(r), LoginTokenHashLen)
 	if err = db.Model(&models.LoginSession{}).
 		Where("user_id = ? and token_hash = ?", userID, oldTokenHash).
@@ -56,11 +49,8 @@ func updateCurrentSessionLog(r *http.Request, userID uint) (err error) {
 }
 
 func expireCurrentSessionLog(r *http.Request, userID uint) (err error) {
-	c, err := r.Cookie(authCookieName)
-	if err != nil {
-		return err
-	}
-	tokenHash := getStringHash(c.Value, LoginTokenHashLen)
+	token := login.GetSessionToken(loginBuilder, r)
+	tokenHash := getStringHash(token, LoginTokenHashLen)
 	if err = db.Model(&models.LoginSession{}).
 		Where("user_id = ? and token_hash = ?", userID, tokenHash).
 		Updates(map[string]interface{}{
@@ -81,10 +71,10 @@ func expireAllSessionLogs(userID uint) (err error) {
 }
 
 func expireOtherSessionLogs(r *http.Request, userID uint) (err error) {
-	sc, _ := r.Cookie(authCookieName)
+	token := login.GetSessionToken(loginBuilder, r)
 
 	return db.Model(&models.LoginSession{}).
-		Where("user_id = ? AND token_hash != ?", userID, getStringHash(sc.Value, LoginTokenHashLen)).
+		Where("user_id = ? AND token_hash != ?", userID, getStringHash(token, LoginTokenHashLen)).
 		Updates(map[string]interface{}{
 			"expired_at": time.Now(),
 		}).Error
@@ -95,12 +85,12 @@ func isTokenValid(v models.LoginSession) bool {
 }
 
 func checkIsTokenValidFromRequest(r *http.Request, userID uint) (valid bool, err error) {
-	sc, err := r.Cookie(authCookieName)
-	if err != nil {
+	token := login.GetSessionToken(loginBuilder, r)
+	if token == "" {
 		return false, nil
 	}
 	sessionLog := models.LoginSession{}
-	if err = db.Where("user_id = ? and token_hash = ?", userID, getStringHash(sc.Value, LoginTokenHashLen)).
+	if err = db.Where("user_id = ? and token_hash = ?", userID, getStringHash(token, LoginTokenHashLen)).
 		First(&sessionLog).
 		Error; err != nil {
 		if err != gorm.ErrRecordNotFound {

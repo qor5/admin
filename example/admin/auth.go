@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	loginBuilder   *login.Builder
-	authCookieName = "auth"
+	loginBuilder *login.Builder
 )
 
 func getCurrentUser(r *http.Request) (u *models.User) {
@@ -34,7 +33,6 @@ func initLoginBuilder(db *gorm.DB, ab *activity.ActivityBuilder, i18nBuilder *i1
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
-		AuthCookieName(authCookieName).
 		OAuthProviders(
 			&login.Provider{
 				Goth: google.New(os.Getenv("LOGIN_GOOGLE_KEY"), os.Getenv("LOGIN_GOOGLE_SECRET"), os.Getenv("BASE_URL")+"/auth/callback?provider=google"),
