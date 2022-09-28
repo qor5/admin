@@ -1,6 +1,8 @@
 package login
 
 import (
+	"net/http"
+
 	"gorm.io/gorm"
 )
 
@@ -17,4 +19,12 @@ func RevokeTOTP(
 		return err
 	}
 	return nil
+}
+
+func GetSessionToken(b *Builder, r *http.Request) string {
+	c, err := r.Cookie(b.authCookieName)
+	if err != nil {
+		return ""
+	}
+	return c.Value
 }

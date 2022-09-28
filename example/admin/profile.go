@@ -12,6 +12,7 @@ import (
 	. "github.com/goplaid/x/vuetify"
 	vx "github.com/goplaid/x/vuetifyx"
 	"github.com/qor/qor5/example/models"
+	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -155,8 +156,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			panic(err)
 		}
 
-		c, _ := ctx.R.Cookie(authCookieName)
-		currentTokenHash := getStringHash(c.Value, LoginTokenHashLen)
+		currentTokenHash := getStringHash(login.GetSessionToken(loginBuilder, ctx.R), LoginTokenHashLen)
 
 		activeDevices := make(map[string]struct{})
 		for _, item := range items {
