@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.2.1
-	github.com/goplaid/x v1.1.2-0.20220929081548-23cefd502642
+	github.com/goplaid/x v1.1.2-0.20220929100329-da04ac45fd0d
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
