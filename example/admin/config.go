@@ -173,6 +173,48 @@ func NewConfig() Config {
 				Invisible:    true,
 				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
 			},
+			{
+				Key:          "created",
+				Label:        "Create Time",
+				ItemType:     vuetifyx.ItemTypeDate,
+				SQLCondition: `created_at %s ?`,
+			},
+			{
+				Key:          "title",
+				Label:        "Title",
+				ItemType:     vuetifyx.ItemTypeString,
+				SQLCondition: `title %s ?`,
+			},
+			{
+				Key:      "status",
+				Label:    "Status",
+				ItemType: vuetifyx.ItemTypeSelect,
+				Options: []*vuetifyx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+			},
+			{
+				Key:      "multi_statuses",
+				Label:    "Multiple Statuses",
+				ItemType: vuetifyx.ItemTypeMultipleSelect,
+				Options: []*vuetifyx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+				Folded:       true,
+			},
+			{
+				Key:          "id",
+				Label:        "ID",
+				ItemType:     vuetifyx.ItemTypeNumber,
+				SQLCondition: `id %s ?`,
+				Folded:       true,
+			},
 		}
 	})
 
