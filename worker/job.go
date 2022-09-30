@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,12 +68,8 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 		jb.rmb.Editing().Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 			t := obj.(Scheduler).GetScheduleTime()
-			var v string
-			if t != nil {
-				v = t.Local().Format("2006-01-02 15:04")
-			}
 			return vx.VXDateTimePicker().FieldName(field.Name).Label(msgr.ScheduleTime).
-				Value(v).
+				Value(t.Unix()).
 				TimePickerProps(vx.TimePickerProps{
 					Format:     "24hr",
 					Scrollable: true,
@@ -83,11 +80,14 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 			if v == "" {
 				return nil
 			}
-			t, err := time.ParseInLocation("2006-01-02 15:04", v, time.Local)
+			uts, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
 				return err
 			}
-			obj.(Scheduler).SetScheduleTime(&t)
+			t := time.Unix(uts, 0)
+			if !t.IsZero() {
+				obj.(Scheduler).SetScheduleTime(&t)
+			}
 			return nil
 		})
 	}
