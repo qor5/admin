@@ -258,7 +258,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "created",
 				Label:        "Create Time",
 				ItemType:     v.ItemTypeDate,
-				SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
+				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "name",
