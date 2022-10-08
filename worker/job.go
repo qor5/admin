@@ -67,9 +67,12 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 	if _, ok := r.(Scheduler); ok {
 		jb.rmb.Editing().Field("ScheduleTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
-			t := obj.(Scheduler).GetScheduleTime()
+			var uts int64
+			if t := obj.(Scheduler).GetScheduleTime(); t != nil {
+				uts = t.Unix()
+			}
 			return vx.VXDateTimePicker().FieldName(field.Name).Label(msgr.ScheduleTime).
-				Value(t.Unix()).
+				Value(uts).
 				TimePickerProps(vx.TimePickerProps{
 					Format:     "24hr",
 					Scrollable: true,
