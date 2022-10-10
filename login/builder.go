@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"reflect"
@@ -1334,4 +1335,11 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 		mux.HandleFunc(b.oauthCallbackURL, b.completeUserAuthCallback)
 		mux.HandleFunc(b.oauthCallbackCompleteURL, b.completeUserAuthCallbackComplete)
 	}
+
+	// assets
+	assetsSubFS, err := fs.Sub(assetsFS, "assets")
+	if err != nil {
+		panic(err)
+	}
+	mux.Handle(assetsPathPrefix, http.StripPrefix(assetsPathPrefix, http.FileServer(http.FS(assetsSubFS))))
 }

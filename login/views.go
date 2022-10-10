@@ -162,6 +162,72 @@ func passwordInputWithRevealFunction(
 	).Class("relative")
 }
 
+func passwordStrengthMeter(inputID string) HTMLComponent {
+	meterID := fmt.Sprintf("%s-strength-meter", inputID)
+	return Div(
+		Div(
+			Div(
+				Div().Class("password-strength-meter-section h-2 rounded-xl transition-colors bg-gray-200"),
+			).Class("w-1/5 px-1"),
+			Div(
+				Div().Class("password-strength-meter-section h-2 rounded-xl transition-colors bg-gray-200"),
+			).Class("w-1/5 px-1"),
+			Div(
+				Div().Class("password-strength-meter-section h-2 rounded-xl transition-colors bg-gray-200"),
+			).Class("w-1/5 px-1"),
+			Div(
+				Div().Class("password-strength-meter-section h-2 rounded-xl transition-colors bg-gray-200"),
+			).Class("w-1/5 px-1"),
+			Div(
+				Div().Class("password-strength-meter-section h-2 rounded-xl transition-colors bg-gray-200"),
+			).Class("w-1/5 px-1"),
+		).Class("flex mt-2 -mx-1 hidden").Id(meterID),
+		Script(fmt.Sprintf(`
+(function(){
+    var passElem = document.getElementById("%s");
+    var meterElem = document.getElementById("%s");
+    var meterSectionElems = document.getElementsByClassName("password-strength-meter-section");
+    function checkStrength(val) {
+        if (!val) {
+            return 0;
+        };
+        return zxcvbn(val).score + 1;
+    };
+    // bg-gray-200 bg-red-400 bg-yellow-400 bg-green-500
+    function updateMeter() {
+        if (passElem.value) {
+            meterElem.classList.remove("hidden");
+        } else {
+            if (!meterElem.classList.contains("hidden")) {
+                meterElem.classList.add("hidden");
+            }
+        }
+        var s = checkStrength(passElem.value);
+        for (var i = 0; i < meterSectionElems.length; i++) {
+            var elem = meterSectionElems[i];
+            if (i >= s) {
+                elem.classList.add("bg-gray-200");
+                elem.classList.remove("bg-red-400", "bg-yellow-400", "bg-green-500");
+            } else if (s <= 2) {
+                elem.classList.add("bg-red-400");
+                elem.classList.remove("bg-gray-200", "bg-yellow-400", "bg-green-500");
+            } else if (s <= 4) {
+                elem.classList.add("bg-yellow-400");
+                elem.classList.remove("bg-red-400", "bg-gray-200", "bg-green-500");
+            } else {
+                elem.classList.add("bg-green-500");
+                elem.classList.remove("bg-red-400", "bg-yellow-400", "bg-gray-200");
+            }
+        }
+    };
+    updateMeter();
+    passElem.oninput = function(e) {
+        updateMeter();
+    };
+})();`, inputID, meterID)),
+	)
+}
+
 func defaultLoginPage(b *Builder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
@@ -279,6 +345,7 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 
 		r.Body = Div(
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
 			If(isRecaptchaEnabled,
 				Style(`.grecaptcha-badge { visibility: hidden; }`),
 				Script("").Src("https://www.google.com/recaptcha/api.js"),
@@ -288,7 +355,6 @@ function onSubmit(token) {
 	document.getElementById("login-form").submit();
 }
 `)),
-			Style(StyleCSS),
 			errNotice(fcText),
 			warnNotice(wcText),
 			infoNotice(icText),
@@ -323,6 +389,7 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
 			If(isRecaptchaEnabled,
 				Style(`.grecaptcha-badge { visibility: hidden; }`),
 				Script("").Src("https://www.google.com/recaptcha/api.js"),
@@ -332,7 +399,6 @@ function onSubmit(token) {
 	document.getElementById("forget-form").submit();
 }
 `)),
-			Style(StyleCSS),
 			errNotice(fcText),
 			If(secondsToResend > 0,
 				warnNotice(msgr.SendEmailTooFrequentlyNotice),
@@ -404,7 +470,7 @@ func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
-			Style(StyleCSS),
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
 			Div(
 				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("leading-tight text-2xl mt-0 mb-4"),
 				H2(msgr.ResetPasswordLinkSentPrompt).Class("leading-tight text-1xl mt-0"),
@@ -468,7 +534,8 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 		}
 
 		r.Body = Div(
-			Style(StyleCSS),
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
+			Script("").Src(zxcvbnJSURL),
 			errNotice(errMsg),
 			Div(
 				H1(msgr.ResetYourPasswordTitle).Class("leading-tight text-3xl mt-0 mb-6"),
@@ -478,6 +545,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Label(msgr.ResetPasswordLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
 						passwordInputWithRevealFunction("password", msgr.ResetPasswordPlaceholder, "password", wrpiFlash.Password),
+						passwordStrengthMeter("password"),
 					),
 					Div(
 						Label(msgr.ResetPasswordConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
@@ -515,7 +583,8 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 		r.PageTitle = "Change Password"
 
 		r.Body = Div(
-			Style(StyleCSS),
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
+			Script("").Src(zxcvbnJSURL),
 			errNotice(errMsg),
 			Div(
 				H1(msgr.ChangePasswordTitle).Class("leading-tight text-3xl mt-0 mb-6"),
@@ -527,6 +596,7 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 					Div(
 						Label(msgr.ChangePasswordNewLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("password"),
 						passwordInputWithRevealFunction("password", msgr.ChangePasswordNewPlaceholder, "password", input.NewPassword),
+						passwordStrengthMeter("password"),
 					).Class("mt-6"),
 					Div(
 						Label(msgr.ChangePasswordNewConfirmLabel).Class("block mb-2 text-sm text-gray-600 dark:text-gray-200").For("confirm_password"),
@@ -595,7 +665,7 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
-			Style(StyleCSS),
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
 			errNotice(fcText),
 			Div(
 				Div(
@@ -638,7 +708,7 @@ func defaultTOTPValidatePage(b *Builder) web.PageFunc {
 
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
-			Style(StyleCSS),
+			Link(styleCSSURL).Type("text/css").Rel("stylesheet"),
 			errNotice(fcText),
 			Div(
 				Div(
