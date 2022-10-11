@@ -25,7 +25,7 @@ import (
 
 type MediaBoxConfigKey int
 
-var MediaLibraryPerPage int = 9
+var MediaLibraryPerPage int = 39
 
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
