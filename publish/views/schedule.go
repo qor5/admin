@@ -125,14 +125,23 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 }
 
 func ScheduleEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-	s := ctx.R.FormValue("ScheduledStartAt")
-	e := ctx.R.FormValue("ScheduledEndAt")
-	if err = setTime(obj, "ScheduledStartAt", s); err != nil {
-		return
+	_, exist := ctx.R.Form["ScheduledStartAt"]
+	if exist {
+		s := ctx.R.FormValue("ScheduledStartAt")
+		if err = setTime(obj, "ScheduledStartAt", s); err != nil {
+			return
+		}
 	}
-	if err = setTime(obj, "ScheduledEndAt", e); err != nil {
-		return
+
+	_, exist = ctx.R.Form["ScheduledEndAt"]
+	if exist {
+		e := ctx.R.FormValue("ScheduledEndAt")
+		if err = setTime(obj, "ScheduledEndAt", e); err != nil {
+			return
+		}
+
 	}
+
 	return
 }
 
