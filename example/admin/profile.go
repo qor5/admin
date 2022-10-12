@@ -68,7 +68,8 @@ type Profile struct{}
 
 func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
-		Label("Profile").MenuIcon("person").Singleton(true)
+		Label("Profile").Singleton(true)
+	//MenuIcon("person")
 
 	eb := m.Editing("Info", "Actions", "Sessions")
 

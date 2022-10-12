@@ -21,7 +21,8 @@ import (
 )
 
 func configUser(b *presets.Builder, db *gorm.DB) {
-	user := b.Model(&models.User{}).MenuIcon("people")
+	user := b.Model(&models.User{})
+	//MenuIcon("people")
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
