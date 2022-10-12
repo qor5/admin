@@ -1,3 +1,7 @@
 module.exports = {
-    content: ['./**/*.go'],
-}
+    content: ["./**/*.go"],
+    corePlugins: {
+        preflight: false,
+    },
+    prefix: "tw-",
+};
