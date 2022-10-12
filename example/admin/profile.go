@@ -138,10 +138,11 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 
 		actionBtns = append(actionBtns,
-			VBtn("").Href(loginBuilder.ChangePasswordPresetsPageURL).
+			VBtn("").
 				Outlined(true).Color("primary").
 				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
-				Class("mr-2"),
+				Class("mr-2").
+				OnClick(loginBuilder.OpenChangePasswordDialogEvent),
 		)
 
 		return h.Div(

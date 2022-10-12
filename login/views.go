@@ -10,6 +10,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/presets"
 	v "github.com/goplaid/x/vuetify"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
@@ -232,7 +233,7 @@ function onSubmit(token) {
 }
 
 func injectZxcvbn(ctx *web.EventContext) {
-	ctx.Injector.TailHTML(fmt.Sprintf(`
+	ctx.Injector.HeadHTML(fmt.Sprintf(`
 <script src="%s"></script>
     `, zxcvbnJSURL))
 }
@@ -598,7 +599,6 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 			Div(
 				H1(msgr.ChangePasswordTitle).Class("tw-leading-tight tw-text-3xl tw-mt-0 tw-mb-6"),
 				Form(
-					Input("is_single_page").Type("hidden").Value("1"),
 					Div(
 						Label(msgr.ChangePasswordOldLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("old_password"),
 						passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, inputFlash.OldPassword, true),
@@ -625,80 +625,66 @@ func defaultChangePasswordPage(b *Builder) web.PageFunc {
 	})
 }
 
-func defaultChangePasswordPresetsPage(b *Builder) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func changePasswordDialog(b *Builder, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
+	pmsgr := presets.MustGetMessages(ctx.R)
+	return v.VDialog(
+		v.VCard(
+			content,
+			v.VCardActions(
+				v.VSpacer(),
+				v.VBtn(pmsgr.Cancel).
+					Depressed(true).
+					Class("ml-2").
+					On("click", fmt.Sprintf("vars.%s = false", showVar)),
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		errMsg := getFailCodeText(msgr, fcFlash)
-		if errMsg == "" {
-			errMsg = GetCustomErrorMessageFlash(b.cookieConfig, ctx.W, ctx.R)
-		}
-		inputFlash := GetWrongChangePasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
-
-		injectZxcvbn(ctx)
-
-		r.PageTitle = "Change Password"
-
-		body := Div(
-			Div(
-				Form(
-					Div(
-						passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, inputFlash.OldPassword, true).
-							Outlined(false).
-							Label(msgr.ChangePasswordOldLabel),
-					),
-					Div(
-						passwordInputWithStrengthMeter(
-							passwordInput("password", msgr.ChangePasswordNewPlaceholder, inputFlash.NewPassword, true).
-								Outlined(false).
-								Label(msgr.ChangePasswordNewLabel),
-							"password", inputFlash.NewPassword),
-					).Class("mt-12"),
-					Div(
-						passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, inputFlash.ConfirmPassword, true).
-							Outlined(false).
-							Label(msgr.ChangePasswordNewConfirmLabel),
-					).Class("mt-12"),
-					If(b.totpEnabled,
-						Div(
-							input("otp", msgr.TOTPValidateCodePlaceholder, inputFlash.TOTP).
-								Outlined(false).
-								Label(msgr.TOTPValidateCodeLabel),
-						).Class("mt-12"),
-					),
-					Div(
-						v.VSpacer(),
-						formSubmitBtn(msgr.Confirm).
-							Block(false).
-							Large(false),
-					).Class("d-flex"),
-				).Method(http.MethodPost).Action(b.ChangePasswordURL),
+				v.VBtn(pmsgr.OK).
+					Color("primary").
+					Depressed(true).
+					Dark(true).
+					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
 			),
-		).Style("width: 400px; margin: 48px auto 12px;")
+		),
+	).MaxWidth("600px").
+		Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
+		Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar))
+}
 
-		if errMsg != "" {
-			// TODO: it should be able to execute `VarScript` on page load
-			body.AppendChildren(
-				Button("msg").
-					Style("visibility: hidden;").
-					Id("changePasswordMsgBtn").
-					Attr("@click", fmt.Sprintf(
-						`vars.presetsMessage = { show: true, message: %s, color: %s}`,
-						JSONString(errMsg), JSONString("error"))),
-			)
-			ctx.Injector.TailHTML(fmt.Sprintf(`
-<script>
-(function(){
-    document.getElementById("changePasswordMsgBtn").click();
-})();
-</script>
-        `))
-		}
-
-		r.Body = body
-
-		return
+func defaultChangePasswordDialogContent(b *Builder) HTMLContentFunc {
+	return func(ctx *web.EventContext) HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+		return Div(
+			v.VCardTitle(Text(msgr.ChangePasswordTitle)),
+			v.VCardText(
+				Div(
+					passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
+						Outlined(false).
+						Label(msgr.ChangePasswordOldLabel).
+						FieldName("old_password"),
+				),
+				Div(
+					passwordInputWithStrengthMeter(
+						passwordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
+							Outlined(false).
+							Label(msgr.ChangePasswordNewLabel).
+							FieldName("password"),
+						"password", ""),
+				).Class("mt-12"),
+				Div(
+					passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
+						Outlined(false).
+						Label(msgr.ChangePasswordNewConfirmLabel).
+						FieldName("confirm_password"),
+				).Class("mt-12"),
+				If(b.totpEnabled,
+					Div(
+						input("otp", msgr.TOTPValidateCodePlaceholder, "").
+							Outlined(false).
+							Label(msgr.TOTPValidateCodeLabel).
+							FieldName("otp"),
+					).Class("mt-12"),
+				),
+			),
+		)
 	}
 }
 

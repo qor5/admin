@@ -32,12 +32,15 @@ var (
 	errUserGetLocked       = errors.New("user get locked")
 	errWrongTOTPCode       = errors.New("wrong totp code")
 	errTOTPCodeHasBeenUsed = errors.New("totp code has been used")
+	errEmptyPassword       = errors.New("empty password")
+	errPasswordNotMatch    = errors.New("password not match")
 )
 
 type NotifyUserOfResetPasswordLinkFunc func(user interface{}, resetLink string) error
 type PasswordValidationFunc func(password string) (message string, ok bool)
 type HookFunc func(r *http.Request, user interface{}, vals ...interface{}) error
 type HTMLWrapFunc func(in h.HTMLComponent) h.HTMLComponent
+type HTMLContentFunc func(ctx *web.EventContext) h.HTMLComponent
 
 type void struct{}
 
@@ -97,8 +100,7 @@ type Builder struct {
 	ResetPasswordURL             string
 	resetPasswordPageURL         string
 	ChangePasswordURL            string
-	ChangePasswordPageURL        string
-	ChangePasswordPresetsPageURL string
+	changePasswordPageURL        string
 	ForgetPasswordPageURL        string
 	SendResetPasswordLinkURL     string
 	resetPasswordLinkSentPageURL string
@@ -109,7 +111,6 @@ type Builder struct {
 	resetPasswordLinkSentPageFunc web.PageFunc
 	resetPasswordPageFunc         web.PageFunc
 	changePasswordPageFunc        web.PageFunc
-	changePasswordPresetsPageFunc web.PageFunc
 	totpSetupPageFunc             web.PageFunc
 	totpValidatePageFunc          web.PageFunc
 
@@ -125,6 +126,12 @@ type Builder struct {
 	afterChangePasswordHook        HookFunc
 	afterExtendSessionHook         HookFunc
 	afterTOTPCodeReusedHook        HookFunc
+
+	// presets event
+	OpenChangePasswordDialogEvent string
+
+	// html content funcs
+	changePasswordDialogContentFunc HTMLContentFunc
 
 	db                   *gorm.DB
 	userModel            interface{}
@@ -163,11 +170,12 @@ func New(pb *presets.Builder) *Builder {
 		ResetPasswordURL:             "/auth/do-reset-password",
 		resetPasswordPageURL:         "/auth/reset-password",
 		ChangePasswordURL:            "/auth/do-change-password",
-		ChangePasswordPageURL:        "/auth/change-password",
-		ChangePasswordPresetsPageURL: fmt.Sprintf("%s/%s", pb.GetURIPrefix(), changePasswordPageURI),
+		changePasswordPageURL:        "/auth/change-password",
 		ForgetPasswordPageURL:        "/auth/forget-password",
 		SendResetPasswordLinkURL:     "/auth/send-reset-password-link",
 		resetPasswordLinkSentPageURL: "/auth/reset-password-link-sent",
+
+		OpenChangePasswordDialogEvent: "login_openChangePasswordDialog",
 
 		sessionMaxAge: 60 * 60,
 		cookieConfig: CookieConfig{
@@ -190,9 +198,10 @@ func New(pb *presets.Builder) *Builder {
 	r.resetPasswordLinkSentPageFunc = defaultResetPasswordLinkSentPage(r)
 	r.resetPasswordPageFunc = defaultResetPasswordPage(r)
 	r.changePasswordPageFunc = defaultChangePasswordPage(r)
-	r.changePasswordPresetsPageFunc = defaultChangePasswordPresetsPage(r)
 	r.totpSetupPageFunc = defaultTOTPSetupPage(r)
 	r.totpValidatePageFunc = defaultTOTPValidatePage(r)
+
+	r.changePasswordDialogContentFunc = defaultChangePasswordDialogContent(r)
 
 	return r
 }
@@ -292,11 +301,6 @@ func (b *Builder) ChangePasswordPageFunc(v web.PageFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) ChangePasswordPresetsPageFunc(v web.PageFunc) (r *Builder) {
-	b.changePasswordPresetsPageFunc = v
-	return b
-}
-
 func (b *Builder) NotifyUserOfResetPasswordLinkFunc(v NotifyUserOfResetPasswordLinkFunc) (r *Builder) {
 	b.notifyUserOfResetPasswordLinkFunc = v
 	return b
@@ -364,6 +368,11 @@ func (b *Builder) AfterExtendSession(v HookFunc) (r *Builder) {
 
 func (b *Builder) AfterTOTPCodeReused(v HookFunc) (r *Builder) {
 	b.afterTOTPCodeReusedHook = b.wrapHook(v)
+	return b
+}
+
+func (b *Builder) ChangePasswordDialogContentFunc(v HTMLContentFunc) (r *Builder) {
+	b.changePasswordDialogContentFunc = v
 	return b
 }
 
@@ -822,7 +831,7 @@ func (b *Builder) setSecureCookiesByClaims(w http.ResponseWriter, user interface
 	return nil
 }
 
-func (b *Builder) validateTOTPCodeAndSetLastUsedVal(up UserPasser, passcode string) error {
+func (b *Builder) consumeTOTPCode(r *http.Request, up UserPasser, passcode string) error {
 	if !totp.Validate(passcode, up.GetTOTPSecret()) {
 		return errWrongTOTPCode
 	}
@@ -831,6 +840,11 @@ func (b *Builder) validateTOTPCodeAndSetLastUsedVal(up UserPasser, passcode stri
 		lastCode = ""
 	}
 	if passcode == lastCode {
+		if b.afterTOTPCodeReusedHook != nil {
+			if herr := b.afterTOTPCodeReusedHook(r, GetCurrentUser(r)); herr != nil {
+				return herr
+			}
+		}
 		return errTOTPCodeHasBeenUsed
 	}
 	if err := up.SetLastUsedTOTPCode(b.db, b.newUserObject(), passcode); err != nil {
@@ -839,18 +853,13 @@ func (b *Builder) validateTOTPCodeAndSetLastUsedVal(up UserPasser, passcode stri
 	return nil
 }
 
-func (b *Builder) handleTOTPCodeValidationFailedErrorAndGetFailCode(verr error, r *http.Request, user interface{}) FailCode {
+func (b *Builder) getFailCodeFromTOTPCodeConsumeError(verr error) FailCode {
 	fc := FailCodeSystemError
 	switch verr {
 	case errWrongTOTPCode:
 		fc = FailCodeIncorrectTOTPCode
 	case errTOTPCodeHasBeenUsed:
 		fc = FailCodeTOTPCodeHasBeenUsed
-		if b.afterTOTPCodeReusedHook != nil {
-			if herr := b.afterTOTPCodeReusedHook(r, user); herr != nil {
-				fc = FailCodeSystemError
-			}
-		}
 	}
 
 	return fc
@@ -953,8 +962,8 @@ func (b *Builder) sendResetPasswordLink(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		if err = b.validateTOTPCodeAndSetLastUsedVal(u.(UserPasser), passcode); err != nil {
-			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, u)
+		if err = b.consumeTOTPCode(r, u.(UserPasser), passcode); err != nil {
+			fc := b.getFailCodeFromTOTPCodeConsumeError(err)
 			setFailCodeFlash(b.cookieConfig, w, fc)
 			setWrongForgetPasswordInputFlash(b.cookieConfig, w, WrongForgetPasswordInputFlash{
 				Account: account,
@@ -1093,8 +1102,8 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err = b.validateTOTPCodeAndSetLastUsedVal(u.(UserPasser), passcode); err != nil {
-			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, u)
+		if err = b.consumeTOTPCode(r, u.(UserPasser), passcode); err != nil {
+			fc := b.getFailCodeFromTOTPCodeConsumeError(err)
 			setFailCodeFlash(b.cookieConfig, w, fc)
 			setWrongResetPasswordInputFlash(b.cookieConfig, w, WrongResetPasswordInputFlash{
 				Password:        password,
@@ -1133,103 +1142,150 @@ func (b *Builder) doResetPassword(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (b *Builder) doChangePassword(w http.ResponseWriter, r *http.Request) {
+type validationError struct {
+	msg string
+}
+
+func (e *validationError) Error() string {
+	return e.msg
+}
+
+// validationError
+// errWrongPassword
+// errEmptyPassword
+// errPasswordNotMatch
+// errWrongTOTPCode
+// errTOTPCodeHasBeenUsed
+func (b *Builder) doChangePassword(
+	r *http.Request,
+	oldPassword string,
+	password string,
+	confirmPassword string,
+	otp string,
+) error {
+	user := GetCurrentUser(r).(UserPasser)
+
+	if !user.IsPasswordCorrect(oldPassword) {
+		return errWrongPassword
+	}
+
+	if password == "" {
+		return errEmptyPassword
+	}
+	if confirmPassword != password {
+		return errPasswordNotMatch
+	}
+	if b.passwordValidationFunc != nil {
+		msg, ok := b.passwordValidationFunc(password)
+		if !ok {
+			return &validationError{msg: msg}
+		}
+	}
+
+	if b.totpEnabled {
+		if err := b.consumeTOTPCode(r, user, otp); err != nil {
+			return err
+		}
+	}
+
+	err := user.SetPassword(b.db, b.newUserObject(), password)
+	if err != nil {
+		return err
+	}
+
+	if b.afterChangePasswordHook != nil {
+		if herr := b.afterChangePasswordHook(r, user); herr != nil {
+			return herr
+		}
+	}
+
+	return nil
+}
+
+func (b *Builder) doFormChangePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	isSinglePage := r.FormValue("is_single_page") == "1"
 	oldPassword := r.FormValue("old_password")
 	password := r.FormValue("password")
 	confirmPassword := r.FormValue("confirm_password")
-	passcode := r.FormValue("otp")
+	otp := r.FormValue("otp")
 
-	redirectURL := b.ChangePasswordPresetsPageURL
-	if isSinglePage {
-		redirectURL = b.ChangePasswordPageURL
-	}
+	redirectURL := b.changePasswordPageURL
 
-	user := GetCurrentUser(r)
-	up := user.(UserPasser)
-	if !up.IsPasswordCorrect(oldPassword) {
-		setFailCodeFlash(b.cookieConfig, w, FailCodeIncorrectPassword)
-		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
-			OldPassword:     oldPassword,
-			NewPassword:     password,
-			ConfirmPassword: confirmPassword,
-		})
-		http.Redirect(w, r, redirectURL, http.StatusFound)
-		return
-	}
-
-	if password == "" {
-		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordCannotBeEmpty)
-		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
-			OldPassword:     oldPassword,
-			NewPassword:     password,
-			ConfirmPassword: confirmPassword,
-		})
-		http.Redirect(w, r, redirectURL, http.StatusFound)
-		return
-	}
-	if confirmPassword != password {
-		setFailCodeFlash(b.cookieConfig, w, FailCodePasswordNotMatch)
-		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
-			OldPassword:     oldPassword,
-			NewPassword:     password,
-			ConfirmPassword: confirmPassword,
-		})
-		http.Redirect(w, r, redirectURL, http.StatusFound)
-		return
-	}
-	if b.passwordValidationFunc != nil {
-		msg, ok := b.passwordValidationFunc(password)
-		if !ok {
-			setCustomErrorMessageFlash(b.cookieConfig, w, msg)
-			setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
-				OldPassword:     oldPassword,
-				NewPassword:     password,
-				ConfirmPassword: confirmPassword,
-			})
-			http.Redirect(w, r, redirectURL, http.StatusFound)
-			return
-		}
-	}
-
-	if b.totpEnabled {
-		if err := b.validateTOTPCodeAndSetLastUsedVal(up, passcode); err != nil {
-			fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, user)
-			setFailCodeFlash(b.cookieConfig, w, fc)
-			setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
-				OldPassword:     oldPassword,
-				NewPassword:     password,
-				ConfirmPassword: confirmPassword,
-				TOTP:            passcode,
-			})
-			http.Redirect(w, r, redirectURL, http.StatusFound)
-			return
-		}
-	}
-
-	err := up.SetPassword(b.db, b.newUserObject(), password)
+	err := b.doChangePassword(r, oldPassword, password, confirmPassword, otp)
 	if err != nil {
-		setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
+		if ve, ok := err.(*validationError); ok {
+			setCustomErrorMessageFlash(b.cookieConfig, w, ve.msg)
+		} else {
+			fc := FailCodeSystemError
+			switch err {
+			case errWrongPassword:
+				fc = FailCodeIncorrectPassword
+			case errEmptyPassword:
+				fc = FailCodePasswordCannotBeEmpty
+			case errPasswordNotMatch:
+				fc = FailCodePasswordNotMatch
+			case errWrongTOTPCode:
+				fc = FailCodeIncorrectTOTPCode
+			case errTOTPCodeHasBeenUsed:
+				fc = FailCodeTOTPCodeHasBeenUsed
+			}
+			setFailCodeFlash(b.cookieConfig, w, fc)
+		}
+
+		setWrongChangePasswordInputFlash(b.cookieConfig, w, WrongChangePasswordInputFlash{
+			OldPassword:     oldPassword,
+			NewPassword:     password,
+			ConfirmPassword: confirmPassword,
+			TOTP:            otp,
+		})
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 		return
-	}
-
-	if b.afterChangePasswordHook != nil {
-		if herr := b.afterChangePasswordHook(r, up); herr != nil {
-			setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
-			http.Redirect(w, r, redirectURL, http.StatusFound)
-			return
-		}
 	}
 
 	setInfoCodeFlash(b.cookieConfig, w, InfoCodePasswordSuccessfullyChanged)
 	http.Redirect(w, r, b.LoginPageURL, http.StatusFound)
-	return
+}
+
+func (b *Builder) eventChangePassword(showVar string) func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		oldPassword := ctx.R.FormValue("old_password")
+		password := ctx.R.FormValue("password")
+		confirmPassword := ctx.R.FormValue("confirm_password")
+		otp := ctx.R.FormValue("otp")
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+		err = b.doChangePassword(ctx.R, oldPassword, password, confirmPassword, otp)
+		if err != nil {
+			msg := msgr.ErrorSystemError
+			if ve, ok := err.(*validationError); ok {
+				msg = ve.msg
+			} else {
+				switch err {
+				case errWrongPassword:
+					msg = msgr.ErrorIncorrectPassword
+				case errEmptyPassword:
+					msg = msgr.ErrorPasswordCannotBeEmpty
+				case errPasswordNotMatch:
+					msg = msgr.ErrorPasswordNotMatch
+				case errWrongTOTPCode:
+					msg = msgr.ErrorIncorrectTOTPCode
+				case errTOTPCodeHasBeenUsed:
+					msg = msgr.ErrorTOTPCodeReused
+				}
+			}
+
+			presets.ShowMessage(&r, msg, "error")
+			return r, nil
+		}
+
+		presets.ShowMessage(&r, msgr.InfoPasswordSuccessfullyChanged, "info")
+		web.AppendVarsScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
+		return r, nil
+	}
 }
 
 func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
@@ -1270,8 +1326,8 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	otp := r.FormValue("otp")
 	isTOTPSetup := u.GetIsTOTPSetup()
 
-	if err := b.validateTOTPCodeAndSetLastUsedVal(u, otp); err != nil {
-		fc := b.handleTOTPCodeValidationFailedErrorAndGetFailCode(err, r, user)
+	if err := b.consumeTOTPCode(r, u, otp); err != nil {
+		fc := b.getFailCodeFromTOTPCodeConsumeError(err)
 		setFailCodeFlash(b.cookieConfig, w, fc)
 		redirectURL := b.totpValidatePageURL
 		if !isTOTPSetup {
@@ -1312,18 +1368,28 @@ func (b *Builder) totpDo(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
-type changePasswordPageModel struct{}
+func (b *Builder) registerChangePasswordEvents() {
+	showVar := "showChangePasswordDialog"
 
-const changePasswordPageURI = "change-password"
-
-func (b *Builder) configureChangePasswordPresetsPage() {
-	mb := b.pb.Model(&changePasswordPageModel{}).
-		InMenu(false).
-		URIName(changePasswordPageURI).
-		LayoutConfig(&presets.LayoutConfig{
-			SearchBoxInvisible: true,
+	b.pb.GetWebBuilder().RegisterEventFunc(b.OpenChangePasswordDialogEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: presets.DialogPortalName,
+			Body: changePasswordDialog(b, ctx, showVar, b.changePasswordDialogContentFunc(ctx)),
 		})
-	mb.Listing().PageFunc(b.changePasswordPresetsPageFunc)
+
+		web.AppendVarsScripts(&r, fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar))
+		web.AppendVarsScripts(&r, fmt.Sprintf(`
+(function(){
+var tag = document.createElement("script");
+tag.src = "%s";
+document.getElementsByTagName("head")[0].appendChild(tag);
+})()
+        `, zxcvbnJSURL))
+		return
+
+	})
+
+	b.pb.GetWebBuilder().RegisterEventFunc("login_changePassword", b.eventChangePassword(showVar))
 }
 
 func (b *Builder) Mount(mux *http.ServeMux) {
@@ -1344,10 +1410,10 @@ func (b *Builder) Mount(mux *http.ServeMux) {
 	if b.userPassEnabled {
 		mux.HandleFunc(b.PasswordLoginURL, b.userpassLogin)
 		mux.HandleFunc(b.ResetPasswordURL, b.doResetPassword)
-		mux.HandleFunc(b.ChangePasswordURL, b.doChangePassword)
+		mux.HandleFunc(b.ChangePasswordURL, b.doFormChangePassword)
 		mux.Handle(b.resetPasswordPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.resetPasswordPageFunc)))
-		mux.Handle(b.ChangePasswordPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.changePasswordPageFunc)))
-		b.configureChangePasswordPresetsPage()
+		mux.Handle(b.changePasswordPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.changePasswordPageFunc)))
+		b.registerChangePasswordEvents()
 		if !b.noForgetPasswordLink {
 			mux.HandleFunc(b.SendResetPasswordLinkURL, b.sendResetPasswordLink)
 			mux.Handle(b.ForgetPasswordPageURL, b.i18nBuilder.EnsureLanguage(wb.Page(b.forgetPasswordPageFunc)))
