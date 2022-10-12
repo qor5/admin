@@ -37,10 +37,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			if err != nil {
 				log.Println(err)
 				b.setContinueURL(w, r)
-				if path == b.loginPageURL {
+				if path == b.LoginPageURL {
 					next.ServeHTTP(w, r)
 				} else {
-					http.Redirect(w, r, b.loginPageURL, http.StatusFound)
+					http.Redirect(w, r, b.LoginPageURL, http.StatusFound)
 				}
 				return
 			}
@@ -74,10 +74,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					default:
 						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
 					}
-					if path == b.logoutURL {
+					if path == b.LogoutURL {
 						next.ServeHTTP(w, r)
 					} else {
-						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						http.Redirect(w, r, b.LogoutURL, http.StatusFound)
 					}
 					return
 				}
@@ -86,10 +86,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					secureSalt = user.(SessionSecurer).GetSecure()
 					_, err := parseBaseClaimsFromCookie(r, b.authSecureCookieName, b.secret+secureSalt)
 					if err != nil {
-						if path == b.logoutURL {
+						if path == b.LogoutURL {
 							next.ServeHTTP(w, r)
 						} else {
-							http.Redirect(w, r, b.logoutURL, http.StatusFound)
+							http.Redirect(w, r, b.LogoutURL, http.StatusFound)
 						}
 						return
 					}
@@ -104,10 +104,10 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				claims.RegisteredClaims = b.genBaseSessionClaim(claims.UserID)
 				if err := b.setAuthCookiesFromUserClaims(w, claims, secureSalt); err != nil {
 					setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
-					if path == b.logoutURL {
+					if path == b.LogoutURL {
 						next.ServeHTTP(w, r)
 					} else {
-						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						http.Redirect(w, r, b.LogoutURL, http.StatusFound)
 					}
 					return
 				}
@@ -116,7 +116,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 					setCookieForRequest(r, &http.Cookie{Name: b.authCookieName, Value: b.mustGetSessionToken(*claims)})
 					if herr := b.afterExtendSessionHook(r, user, oldSessionToken); herr != nil {
 						setFailCodeFlash(b.cookieConfig, w, FailCodeSystemError)
-						http.Redirect(w, r, b.logoutURL, http.StatusFound)
+						http.Redirect(w, r, b.LogoutURL, http.StatusFound)
 						return
 					}
 				}
@@ -124,14 +124,14 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 
 			r = r.WithContext(context.WithValue(r.Context(), UserKey, user))
 
-			if path == b.logoutURL {
+			if path == b.LogoutURL {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			if claims.Provider == "" && b.totpEnabled {
 				if !user.(UserPasser).GetIsTOTPSetup() {
-					if path == b.loginPageURL {
+					if path == b.LoginPageURL {
 						next.ServeHTTP(w, r)
 						return
 					}
@@ -145,7 +145,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 
 				if !claims.TOTPValidated {
-					if path == b.loginPageURL {
+					if path == b.LoginPageURL {
 						next.ServeHTTP(w, r)
 						return
 					}
@@ -159,7 +159,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 				}
 			}
 
-			if path == b.loginPageURL || path == b.totpSetupPageURL || path == b.totpValidatePageURL {
+			if path == b.LoginPageURL || path == b.totpSetupPageURL || path == b.totpValidatePageURL {
 				http.Redirect(w, r, b.homePageURL, http.StatusFound)
 				return
 			}

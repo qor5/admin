@@ -362,7 +362,7 @@ func NewConfig() Config {
 
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
 
-	initLoginBuilder(db, ab, b.I18n())
+	initLoginBuilder(db, b, ab)
 
 	configInputHarness(b, db)
 	configUser(b, db)

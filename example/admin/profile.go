@@ -56,7 +56,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 						VListItemTitle(h.Text(u.Account)),
 					),
 					VListItemIcon(
-						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL("/auth/logout").Go()),
+						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
 					),
 				).Class("pa-0 my-n4 ml-1").Dense(true),
 			).Class("pa-0 ma-n4"),
@@ -138,7 +138,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 
 		actionBtns = append(actionBtns,
-			VBtn("").Href("/auth/change-password").
+			VBtn("").Href(loginBuilder.ChangePasswordPresetsPageURL).
 				Outlined(true).Color("primary").
 				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
 				Class("mr-2"),
