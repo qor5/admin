@@ -109,4 +109,34 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			fmt.Println("#########################################end")
 			return nil
 		})
+
+	genInitialPasswordUser()
+}
+
+func genInitialPasswordUser() {
+	email := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
+	password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
+	if email == "" || password == "" {
+		return
+	}
+
+	var count int64
+	if err := db.Model(&models.User{}).Count(&count).Error; err != nil {
+		panic(err)
+	}
+	if count > 0 {
+		return
+	}
+
+	user := &models.User{
+		Name: email,
+		UserPass: login.UserPass{
+			Account:  email,
+			Password: password,
+		},
+	}
+	user.EncryptPassword()
+	if err := db.Create(user).Error; err != nil {
+		panic(err)
+	}
 }
