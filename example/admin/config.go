@@ -145,6 +145,7 @@ func NewConfig() Config {
 			"QorSEOSetting",
 		).Icon("settings"),
 		b.MenuGroup("EC").SubItems(
+			"ec-dashboard",
 			"Order",
 			"Product",
 			"Category",
@@ -366,7 +367,10 @@ func NewConfig() Config {
 	initLoginBuilder(db, b, ab)
 
 	configInputHarness(b, db)
+
 	configOrder(b, db)
+	configECDashboard(b, db)
+
 	configUser(b, db)
 	configProfile(b, db)
 
