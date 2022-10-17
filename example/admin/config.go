@@ -333,6 +333,9 @@ func NewConfig() Config {
 		}
 	})
 
+	tm := pageBuilder.ConfigTemplate(b, db)
+	cm := pageBuilder.ConfigCategory(b, db)
+
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
@@ -359,7 +362,7 @@ func NewConfig() Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm)
+	ab.RegisterModels(l, pm, tm, cm)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
