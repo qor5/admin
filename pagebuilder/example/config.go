@@ -51,6 +51,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
 		&containers.VideoBanner{},
 		&containers.Heading{},
 		&containers.BrandGrid{},
+		&containers.ListContent{},
 	)
 	if err != nil {
 		panic(err)
@@ -77,5 +78,6 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
 	containers.RegisterVideoBannerContainer(pb)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
+	containers.RegisterListContentContainer(pb, db)
 	return pb
 }
