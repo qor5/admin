@@ -9,6 +9,7 @@ import (
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/role"
 	"github.com/sunfmin/reflectutils"
 
@@ -343,7 +344,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 	var items []*models.Post
 	if id > 0 {
 		p := &models.Post{}
-		if err := db.Where("id = ?", id).First(p).Error; err == nil {
+		if err := db.Where("id = ?", id).Order("version desc").First(p).Error; err == nil {
 			items = append(items, p)
 		}
 	}
@@ -366,6 +367,7 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 	b := pb.Model(&models.Post{}).
 		URIName("dialog-select-favor-posts").
 		InMenu(false)
+	publish_view.Configure(pb, db, nil, nil, b)
 	lb := b.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10).
