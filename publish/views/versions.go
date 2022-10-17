@@ -18,85 +18,126 @@ import (
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
+		var (
+			msgr                = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			activeClass         = "deep-purple white--text"
+			selectVersionsEvent = web.Plaid().EventFunc(selectVersionsEvent).Query("id", ctx.R.FormValue("id")).Query("selected", web.Var("$event")).Go()
+			selectItems         = []map[string]string{
+				{"text": msgr.AllVersions, "value": "all-versions"},
+				{"text": msgr.NamedVersions, "value": "named-versions"},
+			}
+		)
 
-		if id == "" {
+		table, currentVersion, err := versionListTable(db, mb, msgr, ctx.R.FormValue("id"), ctx.R.FormValue("selected"))
+		if err != nil {
 			return nil
 		}
 
-		c := h.Div()
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-
-		ov := VCard(
-			VCardTitle(h.Text(msgr.OnlineVersion)),
+		return h.Div(
+			VCard(
+				VCardTitle(h.Text(msgr.OnlineVersion)),
+				VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass))),
+			),
+			h.Br(),
+			VCard(
+				VCardTitle(
+					h.Text(msgr.VersionsList),
+				).Attr("style", "padding-bottom: 0px;"),
+				VCardText(
+					VSelect().
+						Items(selectItems).
+						Value("all-versions").
+						On("change", selectVersionsEvent),
+				).Attr("style", "padding-bottom: 0px;"),
+				web.Portal(
+					table,
+				).Name("versions-list"),
+			),
 		)
-		c.AppendChildren(ov)
-
-		lv := map[string]interface{}{}
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
-			Where("id = ? AND status = ?", id, publish.StatusOnline).
-			First(&lv)
-		if len(lv) > 0 {
-			tr := trBuilder(ctx, lv, segs[1])
-			ov.AppendChildren(VSimpleTable(h.Tbody(tr)))
-		}
-
-		c.AppendChildren(h.Br())
-
-		versionsList := VCard(
-			VCardTitle(h.Text(msgr.VersionsList)),
-		)
-		c.AppendChildren(versionsList)
-
-		var results []map[string]interface{}
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
-			Where("id = ?", id).Order("version DESC").
-			Find(&results)
-
-		tbody := h.Tbody()
-
-		for _, r := range results {
-			tr := trBuilder(ctx, r, segs[1])
-			tbody.AppendChildren(tr)
-		}
-
-		versionsList.AppendChildren(VSimpleTable(tbody))
-
-		return c
 	}
 }
 
-func trBuilder(ctx *web.EventContext, r map[string]interface{}, versionName string) *h.HTMLTagBuilder {
-	msgr := presets.MustGetMessages(ctx.R)
+type versionListTableItem struct {
+	ID          string
+	Version     string
+	VersionName string
+	Status      string
+	ItemClass   string
+}
 
-	attr := web.Plaid().EventFunc(switchVersionEvent).Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go()
-	tr := h.Tr(
-		h.Td(h.Button(fmt.Sprint(r["version"]))).Attr("@click", attr),
-		h.Td(h.Button(fmt.Sprint(r["status"]))).Attr("@click", attr),
-		h.Td(VMenu(
-			web.Slot(
-				VBtn("").Children(
-					VIcon("more_vert"),
-				).Attr("v-on", "on").Text(true).Fab(true).Small(true),
-			).Name("activator").Scope("{ on }"),
-
-			VList(
-				VListItem(
-					VListItemIcon(VIcon("delete")),
-					VListItemTitle(h.Text(msgr.Delete)),
-				).Attr("@click", web.Plaid().
-					EventFunc(actions.DeleteConfirmation).
-					Query("id", fmt.Sprintf("%v_%v", r["id"], r["version"])).Go(),
-				),
-			).Dense(true),
-		)),
-	)
-	if r["version"] == versionName {
-		tr.Class("deep-purple white--text")
+func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, versionID string, selected string) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
+	segs := strings.Split(versionID, "_")
+	if len(segs) != 2 {
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", versionID)
 	}
-	return tr
+
+	id, currentVersionName := segs[0], segs[1]
+	if id == "" || currentVersionName == "" {
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", versionID)
+	}
+
+	var (
+		versions    []versionListTableItem
+		activeClass = "deep-purple white--text"
+	)
+
+	if selected == "named-versions" {
+		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ? and (version_name != version and version_name != '')", id).Order("created_at DESC").Find(&versions)
+	} else {
+		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ?", id).Order("created_at DESC").Find(&versions)
+	}
+
+	for index := range versions {
+		if versions[index].Version == currentVersionName {
+			versions[index].ItemClass = activeClass
+		}
+
+		if versions[index].VersionName == "" {
+			versions[index].VersionName = versions[index].Version
+		}
+
+		if versions[index].Status == publish.StatusOnline {
+			currentVersion = versions[index]
+		}
+	}
+
+	var (
+		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Go()
+		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`item.ID+"_"+item.Version`)).Go() + ";event.stopPropagation();"
+		renameVersionEvent = web.Plaid().EventFunc(renameVersionEvent).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).Query("name", web.Var("props.item.VersionName")).Go()
+	)
+
+	table = VDataTable(
+		web.Slot(
+			VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent),
+		).Name("item.actions").Scope("{ item }"),
+		web.Slot(
+			VEditDialog(
+				h.Text(" {{ props.item.VersionName }}"),
+				web.Slot(
+					VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
+				).Name("input"),
+			).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent),
+		).Name("item.VersionName").Scope("props"),
+	).
+		Items(versions).
+		Headers(
+			[]map[string]interface{}{
+				{"text": "VersionName", "value": "VersionName"},
+				{"text": "Status", "value": "Status"},
+				{"text": "Actions", "value": "actions"},
+			}).
+		HideDefaultHeader(true).
+		On("click:row", swithVersionEvent).
+		ItemClass("ItemClass").
+		FooterProps(
+			map[string]interface{}{
+				"items-per-page-text":    "",
+				"items-per-page-options": []int{5, 10, 20, -1},
+			},
+		)
+
+	return table, currentVersion, nil
 }
 
 func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
