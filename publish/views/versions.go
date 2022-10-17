@@ -43,7 +43,8 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		return h.Div(
 			VCard(
 				VCardTitle(h.Text(msgr.OnlineVersion)),
-				VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass))),
+				h.If(currentVersion.VersionName != "",
+					VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass)))),
 			),
 			h.Br(),
 			VCard(
@@ -84,11 +85,12 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 	}
 
 	var (
-		versions    []versionListTableItem
-		activeClass = "deep-purple white--text"
-		selected    = req.FormValue("selected")
-		page        = req.FormValue("page")
-		currentPage = 1
+		versions      []versionListTableItem
+		namedVersions []versionListTableItem
+		activeClass   = "deep-purple white--text"
+		selected      = req.FormValue("selected")
+		page          = req.FormValue("page")
+		currentPage   = 1
 	)
 
 	if page != "" {
@@ -97,11 +99,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 		}
 	}
 
-	if selected == "named-versions" {
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ? and (version_name != version and version_name != '')", id).Order("created_at DESC").Find(&versions)
-	} else {
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ?", id).Order("created_at DESC").Find(&versions)
-	}
+	db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ?", id).Order("created_at DESC").Find(&versions)
 
 	for index := range versions {
 		if versions[index].Version == currentVersionName {
@@ -115,6 +113,14 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 		if versions[index].Status == publish.StatusOnline {
 			currentVersion = versions[index]
 		}
+
+		if versions[index].VersionName != versions[index].Version {
+			namedVersions = append(namedVersions, versions[index])
+		}
+	}
+
+	if selected == "named-versions" {
+		versions = namedVersions
 	}
 
 	var (
