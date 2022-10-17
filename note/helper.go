@@ -6,6 +6,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
 	"github.com/goplaid/x/vuetify"
 	. "github.com/goplaid/x/vuetify"
 	h "github.com/theplant/htmlgo"
@@ -47,6 +48,8 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 						EventFunc(createNoteEvent).
 						Query("resource_id", resourceId).
 						Query("resource_type", resourceType).
+						Go()+";"+web.Plaid().
+						EventFunc(actions.ReloadList).
 						Go(),
 					),
 			)),
