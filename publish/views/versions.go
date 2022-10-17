@@ -2,7 +2,9 @@ package views
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -21,6 +23,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		var (
 			msgr                = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			activeClass         = "deep-purple white--text"
+			selected            = ctx.R.FormValue("selected")
 			selectVersionsEvent = web.Plaid().EventFunc(selectVersionsEvent).Query("id", ctx.R.FormValue("id")).Query("selected", web.Var("$event")).Go()
 			selectItems         = []map[string]string{
 				{"text": msgr.AllVersions, "value": "all-versions"},
@@ -28,9 +31,13 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			}
 		)
 
-		table, currentVersion, err := versionListTable(db, mb, msgr, ctx.R.FormValue("id"), ctx.R.FormValue("selected"))
+		table, currentVersion, err := versionListTable(db, mb, msgr, ctx.R)
 		if err != nil {
 			return nil
+		}
+
+		if selected == "" {
+			selected = "all-versions"
 		}
 
 		return h.Div(
@@ -46,7 +53,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 				VCardText(
 					VSelect().
 						Items(selectItems).
-						Value("all-versions").
+						Value(selected).
 						On("change", selectVersionsEvent),
 				).Attr("style", "padding-bottom: 0px;"),
 				web.Portal(
@@ -65,21 +72,30 @@ type versionListTableItem struct {
 	ItemClass   string
 }
 
-func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, versionID string, selected string) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
-	segs := strings.Split(versionID, "_")
+func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req *http.Request) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
+	segs := strings.Split(req.FormValue("id"), "_")
 	if len(segs) != 2 {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", versionID)
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", req.FormValue("id"))
 	}
 
 	id, currentVersionName := segs[0], segs[1]
 	if id == "" || currentVersionName == "" {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", versionID)
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", req.FormValue("id"))
 	}
 
 	var (
 		versions    []versionListTableItem
 		activeClass = "deep-purple white--text"
+		selected    = req.FormValue("selected")
+		page        = req.FormValue("page")
+		currentPage = 1
 	)
+
+	if page != "" {
+		if p, err := strconv.Atoi(page); err == nil {
+			currentPage = p
+		}
+	}
 
 	if selected == "named-versions" {
 		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ? and (version_name != version and version_name != '')", id).Order("created_at DESC").Find(&versions)
@@ -102,40 +118,45 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ver
 	}
 
 	var (
-		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Go()
+		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
 		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`item.ID+"_"+item.Version`)).Go() + ";event.stopPropagation();"
 		renameVersionEvent = web.Plaid().EventFunc(renameVersionEvent).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).Query("name", web.Var("props.item.VersionName")).Go()
 	)
 
-	table = VDataTable(
-		web.Slot(
-			VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent),
-		).Name("item.actions").Scope("{ item }"),
-		web.Slot(
-			VEditDialog(
-				h.Text(" {{ props.item.VersionName }}"),
-				web.Slot(
-					VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
-				).Name("input"),
-			).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent),
-		).Name("item.VersionName").Scope("props"),
-	).
-		Items(versions).
-		Headers(
-			[]map[string]interface{}{
-				{"text": "VersionName", "value": "VersionName"},
-				{"text": "Status", "value": "Status"},
-				{"text": "Actions", "value": "actions"},
-			}).
-		HideDefaultHeader(true).
-		On("click:row", swithVersionEvent).
-		ItemClass("ItemClass").
-		FooterProps(
-			map[string]interface{}{
-				"items-per-page-text":    "",
-				"items-per-page-options": []int{5, 10, 20, -1},
-			},
-		)
+	table = web.Scope(
+		VDataTable(
+			web.Slot(
+				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent),
+			).Name("item.actions").Scope("{ item }"),
+			web.Slot(
+				VEditDialog(
+					h.Text(" {{ props.item.VersionName }}"),
+					web.Slot(
+						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
+					).Name("input"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent),
+			).Name("item.VersionName").Scope("props"),
+		).
+			Items(versions).
+			Headers(
+				[]map[string]interface{}{
+					{"text": "VersionName", "value": "VersionName"},
+					{"text": "Status", "value": "Status"},
+					{"text": "Actions", "value": "actions"},
+				}).
+			HideDefaultHeader(true).
+			On("click:row", swithVersionEvent).
+			On("pagination", "locals.versionPage = $event.page").
+			ItemClass("ItemClass").
+			FooterProps(
+				map[string]interface{}{
+					"items-per-page-text":    "",
+					"items-per-page-options": []int{5, 10, 20, -1},
+				},
+			).
+			Page(currentPage),
+	).Init(fmt.Sprintf(`{versionPage: %d}`, currentPage)).
+		VSlot("{ locals }")
 
 	return table, currentVersion, nil
 }
