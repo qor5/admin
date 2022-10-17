@@ -365,7 +365,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 									Query(paramContainerID, web.Var("item.container_id")).
 									Go(),
 							).Class("my-2"),
-							VListItemIcon(VBtn("").Icon(true).Children(VIcon("reorder"))).Class("handle my-2"),
+							VListItemIcon(VBtn("").Icon(true).Children(VIcon("drag_handle"))).Class("handle my-2"),
 							VMenu(
 								web.Slot(
 									VBtn("").Children(

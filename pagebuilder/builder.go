@@ -238,7 +238,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			return h.Div(
-				VBtn("Edit Containers").
+				VBtn("Edit Page Content").
 					Target("_blank").
 					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
 					Color("secondary"),
@@ -704,7 +704,7 @@ func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 			return nil
 		}
 		return h.Div(
-			VBtn("Edit Containers").
+			VBtn("Edit Page Content").
 				Target("_blank").
 				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
 				Color("secondary"),
