@@ -1,8 +1,6 @@
 package note
 
 import (
-	"net/url"
-
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
@@ -51,11 +49,6 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		var pageURL *url.URL
-		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
-			mb.Listing().ReloadList(ctx, &r, pageURL)
-		}
-
 		return
 	}
 }
@@ -87,12 +80,8 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		var pageURL *url.URL
-		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
-			mb.Listing().ReloadList(ctx, &r, pageURL)
-			// notify notification center after note read. if notification center is not enabled, this one would just do nothing
-			r.ReloadPortals = append(r.ReloadPortals, presets.NotificationCenterPortalName)
-		}
+		// notify notification center after note read. if notification center is not enabled, this one would just do nothing
+		r.ReloadPortals = append(r.ReloadPortals, presets.NotificationCenterPortalName)
 
 		return
 	}

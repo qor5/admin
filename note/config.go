@@ -6,6 +6,7 @@ import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -66,6 +67,8 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 			EventFunc(updateUserNoteEvent).
 			Query("resource_id", id).
 			Query("resource_type", tn).
+			Go() + ";" + web.Plaid().
+			EventFunc(actions.ReloadList).
 			Go()
 		if count == 0 {
 			clickEvent = ""
