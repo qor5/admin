@@ -13,6 +13,7 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
+
 		content := ctx.R.FormValue("Content")
 
 		userID, creator := getUserData(ctx)
@@ -46,6 +47,10 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			Body: notesSection,
 		})
 
+		if err = AfterCreateFunc(db); err != nil {
+			return
+		}
+
 		var pageURL *url.URL
 		if pageURL, err = url.Parse(ctx.R.Referer()); err == nil {
 			mb.Listing().ReloadList(ctx, &r, pageURL)
@@ -75,6 +80,10 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		userNote.Number = total
 
 		if err = db.Save(&userNote).Error; err != nil {
+			return
+		}
+
+		if err = AfterCreateFunc(db); err != nil {
 			return
 		}
 

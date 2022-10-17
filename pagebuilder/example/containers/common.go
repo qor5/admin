@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/qor/qor5/media/media_library"
@@ -30,8 +31,8 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 	return v.VTextarea().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 }
 
-func ContainerWrapper(containerID, anchorID, classes, backgroundColor, fontColor, imagePosition string, addTopSpace, addBottomSpace bool, comp ...HTMLComponent) HTMLComponent {
-	return Div(comp...).
+func ContainerWrapper(containerID, anchorID, classes, backgroundColor, fontColor, imagePosition string, addTopSpace, addBottomSpace bool, isEditor bool, style string, comp ...HTMLComponent) HTMLComponent {
+	r := Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
 		AttrIf("data-background-color", backgroundColor, backgroundColor != "").
@@ -40,7 +41,12 @@ func ContainerWrapper(containerID, anchorID, classes, backgroundColor, fontColor
 		//AttrIf("data-transition-background-color", transitionBackgroundColor, transitionBackgroundColor != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
-		Attr("data-container-id", containerID)
+		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")
+
+	if isEditor {
+		r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
+	}
+	return r
 
 }
 

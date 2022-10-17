@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/goplaid/x/presets"
 	"gorm.io/gorm"
 )
 
@@ -60,6 +61,7 @@ func findOld(obj interface{}, db *gorm.DB) (interface{}, bool) {
 	if len(sqls) == 0 || len(vars) == 0 || len(sqls) != len(vars) {
 		return nil, false
 	}
+	fmt.Printf("3---------%#+v \n", obj)
 
 	if db.Where(strings.Join(sqls, " AND "), vars...).First(old).Error != nil {
 		return nil, false
@@ -97,4 +99,12 @@ func ContextWithCreator(ctx context.Context, name string) context.Context {
 
 func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
 	return context.WithValue(ctx, DBContextKey, db)
+}
+
+func getBasicModel(m interface{}) interface{} {
+	if preset, ok := m.(*presets.ModelBuilder); ok {
+		return preset.NewModel()
+	}
+
+	return m
 }

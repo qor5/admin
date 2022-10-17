@@ -4,14 +4,13 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
@@ -39,6 +38,7 @@ import (
 	"github.com/qor/qor5/worker"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 //go:embed assets
@@ -46,22 +46,18 @@ var assets embed.FS
 
 type Config struct {
 	pb          *presets.Builder
-	lb          *login.Builder
 	pageBuilder *pagebuilder.Builder
 }
 
 func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
-
 	sess := session.Must(session.NewSession())
-
 	oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
@@ -90,6 +86,7 @@ func NewConfig() Config {
 	b.URIPrefix("/admin").
 		BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
+		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
@@ -98,6 +95,10 @@ func NewConfig() Config {
 				h.P().Text("Change your home page here"),
 			)
 			return
+		}).
+		NotFoundPageLayoutConfig(&presets.LayoutConfig{
+			SearchBoxInvisible:          true,
+			NotificationCenterInvisible: true,
 		})
 	// perm.Verbose = true
 	b.Permission(
@@ -107,6 +108,7 @@ func NewConfig() Config {
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
 			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
+			activity.PermPolicy,
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
 			if u == nil {
@@ -120,10 +122,6 @@ func NewConfig() Config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
-			u := getCurrentUser(r)
-			if u.Name == "中文" {
-				return b.I18n().GetSupportLanguages()[1:]
-			}
 			return b.I18n().GetSupportLanguages()
 		})
 	utils.Configure(b)
@@ -134,18 +132,6 @@ func NewConfig() Config {
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(
-		"InputHarness",
-		"Post",
-		"User",
-		"Role",
-		b.MenuGroup("Site Management").SubItems(
-			"Setting",
-			"QorSEOSetting",
-		).Icon("settings"),
-		b.MenuGroup("Product Management").SubItems(
-			"Product",
-			"Category",
-		).Icon("shopping_cart"),
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -153,14 +139,106 @@ func NewConfig() Config {
 			"page_templates",
 			"page_categories",
 		).Icon("view_quilt"),
+		b.MenuGroup("Product Management").SubItems(
+			"Product",
+			"Category",
+		).Icon("shopping_cart"),
+		b.MenuGroup("Site Management").SubItems(
+			"Setting",
+			"QorSEOSetting",
+		).Icon("settings"),
+		b.MenuGroup("User Management").SubItems(
+			"profile",
+			"User",
+			"Role",
+		).Icon("group"),
+		b.MenuGroup("Featured Models Management").SubItems(
+			"InputHarness",
+			"Post",
+			"List Editor Example",
+			"Customers",
+			"ListModels",
+			"MicrositeModels",
+		).Icon("featured_play_list"),
+		"Worker",
+		"ActivityLogs",
 	)
 
 	m := b.Model(&models.Post{})
 	slug.Configure(b, m)
 
-	m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10)
+
+	mListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		u := getCurrentUser(ctx.R)
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
+			},
+			{
+				Key:          "created",
+				Label:        "Create Time",
+				ItemType:     vuetifyx.ItemTypeDate,
+				SQLCondition: `created_at %s ?`,
+			},
+			{
+				Key:          "title",
+				Label:        "Title",
+				ItemType:     vuetifyx.ItemTypeString,
+				SQLCondition: `title %s ?`,
+			},
+			{
+				Key:      "status",
+				Label:    "Status",
+				ItemType: vuetifyx.ItemTypeSelect,
+				Options: []*vuetifyx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+			},
+			{
+				Key:      "multi_statuses",
+				Label:    "Multiple Statuses",
+				ItemType: vuetifyx.ItemTypeMultipleSelect,
+				Options: []*vuetifyx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+				Folded:       true,
+			},
+			{
+				Key:          "id",
+				Label:        "ID",
+				ItemType:     vuetifyx.ItemTypeNumber,
+				SQLCondition: `id %s ?`,
+				Folded:       true,
+			},
+		}
+	})
+
+	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "All",
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
+			},
+		}
+	})
 
 	w := worker.New(db)
 	defer w.Listen()
@@ -193,8 +271,6 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	configInputHarness(b, db)
-	configUser(b, db)
 	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
@@ -209,8 +285,8 @@ func NewConfig() Config {
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
 	})
-	configProduct(b, db, w)
-	configCategory(b, db)
+	product := configProduct(b, db, w)
+	category := configCategory(b, db)
 
 	// Use m to customize the model, Or config more models here.
 
@@ -229,6 +305,34 @@ func NewConfig() Config {
 
 	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
 	pm := pageBuilder.Configure(b, db)
+	pmListing := pm.Listing()
+	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		u := getCurrentUser(ctx.R)
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
+			},
+		}
+	})
+
+	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "All",
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
+			},
+		}
+	})
+
 	tm := pageBuilder.ConfigTemplate(b, db)
 	cm := pageBuilder.ConfigCategory(b, db)
 
@@ -238,10 +342,17 @@ func NewConfig() Config {
 	l.Listing("ID", "Title", "Status")
 	l.Editing("Status", "Schedule", "Title")
 
+	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
+
 	note.Configure(db, b, m, pm)
 
+	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
+		panic(err)
+	}
+	note.AfterCreateFunc = NoteAfterCreateFunc
+
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(b, db).SetCreatorContextKey(_userKey).SetTabHeading(
+	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
@@ -250,72 +361,8 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
-	ab.RegisterModels(m, l, pm, tm, cm)
-	ab.GetPresetModelBuilder().Listing().FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		var (
-			logs         = ab.NewLogModelSlice()
-			activityMsgr = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
-			publishMsgr  = i18n.MustGetModuleMessages(ctx.R, publish_view.I18nPublishKey, publish_view.Messages_en_US).(*publish_view.Messages)
-			contextDB    = db
-		)
-
-		contextDB.Select("creator").Group("creator").Find(logs)
-		reflectValue := reflect.Indirect(reflect.ValueOf(logs))
-		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < reflectValue.Len(); i++ {
-			creator := reflect.Indirect(reflectValue.Index(i)).FieldByName("Creator").String()
-			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
-			})
-		}
-
-		var modelOptions []*vuetifyx.SelectItem
-		for _, m := range ab.GetModelBuilders() {
-			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
-				Text:  m.GetType().Name(),
-				Value: m.GetType().Name(),
-			})
-		}
-
-		return []*vuetifyx.FilterItem{
-			{
-				Key:          "action",
-				Label:        activityMsgr.FilterAction,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `action %s ?`,
-				Options: []*vuetifyx.SelectItem{
-					{Text: activityMsgr.ActionEdit, Value: activity.ActivityEdit},
-					{Text: activityMsgr.ActionCreate, Value: activity.ActivityCreate},
-					{Text: activityMsgr.ActionDelete, Value: activity.ActivityDelete},
-					{Text: publishMsgr.Publish, Value: publish_view.ActivityPublish},
-					{Text: publishMsgr.Republish, Value: publish_view.ActivityRepublish},
-					{Text: publishMsgr.Unpublish, Value: publish_view.ActivityUnPublish},
-				},
-			},
-			{
-				Key:          "created",
-				Label:        activityMsgr.FilterCreatedAt,
-				ItemType:     vuetifyx.ItemTypeDate,
-				SQLCondition: `created_at %s ?`,
-			},
-			{
-				Key:          "creator",
-				Label:        activityMsgr.FilterCreator,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator %s ?`,
-				Options:      creatorOptions,
-			},
-			{
-				Key:          "model",
-				Label:        activityMsgr.FilterModel,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `model_name %s ?`,
-				Options:      modelOptions,
-			},
-		}
-	})
-
+	ab.RegisterModel(m).UseDefaultTab()
+	ab.RegisterModels(l, pm, tm, cm)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -323,11 +370,67 @@ func NewConfig() Config {
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
 
-	publish_view.Configure(b, db, ab, publisher, m, l, pm)
+	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
+
+	initLoginBuilder(db, b, ab)
+
+	configInputHarness(b, db)
+	configUser(b, db)
+	configProfile(b, db)
 
 	return Config{
 		pb:          b,
-		lb:          newLoginBuilder(db),
 		pageBuilder: pageBuilder,
+	}
+}
+
+func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
+	return func(ctx *web.EventContext) int {
+		data, err := getUnreadNotesCount(ctx, db)
+		if err != nil {
+			return 0
+		}
+
+		a, b, c := data["Pages"], data["Posts"], data["Users"]
+		return a + b + c
+	}
+}
+
+func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
+	return func(ctx *web.EventContext) h.HTMLComponent {
+		data, err := getUnreadNotesCount(ctx, db)
+		if err != nil {
+			return nil
+		}
+
+		a, b, c := data["Pages"], data["Posts"], data["Users"]
+
+		return vuetify.VList(
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Pages")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
+				),
+			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Posts")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
+				),
+			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			vuetify.VListItem(
+				vuetify.VListItemContent(
+					vuetify.VListItemTitle(h.Text("Users")),
+					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
+				),
+			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			h.If(a+b+c > 0,
+				vuetify.VListItem(
+					vuetify.VListItemContent(
+						vuetify.VListItemSubtitle(h.Text("Mark all as read")),
+					),
+				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
+			),
+		).Class("mx-auto").Attr("max-width", "140")
 	}
 }

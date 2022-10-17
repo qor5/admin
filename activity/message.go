@@ -14,6 +14,7 @@ type Messages struct {
 	ModelCreator   string
 	ModelKeys      string
 	ModelName      string
+	ModelLabel     string
 	ModelLink      string
 	ModelDiffs     string
 
@@ -22,6 +23,7 @@ type Messages struct {
 	FilterCreator   string
 	FilterModel     string
 
+	DiffDetail  string
 	DiffNew     string
 	DiffDelete  string
 	DiffChanges string
@@ -29,9 +31,6 @@ type Messages struct {
 	DiffOld     string
 	DiffNow     string
 	DiffValue   string
-
-	TheRecordWasCreatedAt string
-	TheRecordWasDeletedAt string
 }
 
 var Messages_en_US = &Messages{
@@ -42,12 +41,13 @@ var Messages_en_US = &Messages{
 	ActionCreate: "Create",
 	ActionDelete: "Delete",
 
-	ModelUserID:    "User ID",
-	ModelCreatedAt: "Created At",
+	ModelUserID:    "Creator ID",
+	ModelCreatedAt: "Date Time",
 	ModelAction:    "Action",
 	ModelCreator:   "Creator",
 	ModelKeys:      "Keys",
-	ModelName:      "Model",
+	ModelName:      "Table Name",
+	ModelLabel:     "Menu Name",
 	ModelLink:      "Link",
 	ModelDiffs:     "Diffs",
 
@@ -56,6 +56,7 @@ var Messages_en_US = &Messages{
 	FilterCreator:   "Creator",
 	FilterModel:     "Model Name",
 
+	DiffDetail:  "Detail",
 	DiffNew:     "New",
 	DiffDelete:  "Delete",
 	DiffChanges: "Changes",
@@ -63,9 +64,6 @@ var Messages_en_US = &Messages{
 	DiffOld:     "Old",
 	DiffNow:     "Now",
 	DiffValue:   "Value",
-
-	TheRecordWasCreatedAt: "The record was created at %s",
-	TheRecordWasDeletedAt: "The record was deleted at %s",
 }
 
 var Messages_zh_CN = &Messages{
@@ -76,12 +74,13 @@ var Messages_zh_CN = &Messages{
 	ActionCreate: "创建",
 	ActionDelete: "删除",
 
-	ModelUserID:    "用户ID",
-	ModelCreatedAt: "创建时间",
+	ModelUserID:    "操作者ID",
+	ModelCreatedAt: "日期时间",
 	ModelAction:    "操作",
-	ModelCreator:   "创建者",
-	ModelKeys:      "对象的主键值",
-	ModelName:      "对象",
+	ModelCreator:   "操作者",
+	ModelKeys:      "表的主键值",
+	ModelName:      "表名",
+	ModelLabel:     "菜单名",
 	ModelLink:      "链接",
 	ModelDiffs:     "差异",
 
@@ -89,15 +88,12 @@ var Messages_zh_CN = &Messages{
 	FilterCreatedAt: "操作时间",
 	FilterCreator:   "操作人",
 	FilterModel:     "操作对象",
-
-	DiffNew:     "新加",
-	DiffDelete:  "删除",
-	DiffChanges: "修改",
-	DiffField:   "字段",
-	DiffOld:     "之前的值",
-	DiffNow:     "当前的值",
-	DiffValue:   "值",
-
-	TheRecordWasCreatedAt: "该记录于创建于 %s",
-	TheRecordWasDeletedAt: "该记录于 %s 被删除",
+	DiffDetail:      "详情",
+	DiffNew:         "新加",
+	DiffDelete:      "删除",
+	DiffChanges:     "修改",
+	DiffField:       "字段",
+	DiffOld:         "之前的值",
+	DiffNow:         "当前的值",
+	DiffValue:       "值",
 }

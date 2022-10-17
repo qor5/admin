@@ -89,8 +89,7 @@ func New(db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(r.prefix).
-		LayoutFunc(r.pageEditorLayout).
-		ExtraAsset("/vue-shadow-dom.js", "text/javascript", ShadowDomComponentsPack())
+		LayoutFunc(r.pageEditorLayout)
 
 	type Editor struct {
 	}
@@ -239,7 +238,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			return h.Div(
-				VBtn("Edit Containers").
+				VBtn("Edit Page Content").
 					Target("_blank").
 					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
 					Color("secondary"),
@@ -273,6 +272,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 					return
 				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, int(p.ID), p.GetVersion()); inerr != nil {
+					panic(inerr)
 					return
 				}
 			}
@@ -568,7 +568,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 	)
 	listing.Field("DisplayName").Label("Name")
-	listing.SearchFunc(sharedContainersearcher(db, pm))
+	listing.SearchFunc(sharedContainerSearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*Container)
@@ -697,7 +697,7 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 			return nil
 		}
 		return h.Div(
-			VBtn("Edit Containers").
+			VBtn("Edit Page Content").
 				Target("_blank").
 				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
 				Color("secondary"),
@@ -707,7 +707,7 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	return
 }
 
-func sharedContainersearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {

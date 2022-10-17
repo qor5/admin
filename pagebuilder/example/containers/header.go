@@ -3,11 +3,14 @@ package containers
 import (
 	"fmt"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
+
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/pagebuilder"
-	h "github.com/theplant/htmlgo"
+	. "github.com/theplant/htmlgo"
 )
 
 type WebHeader struct {
@@ -21,13 +24,13 @@ func (*WebHeader) TableName() string {
 
 func RegisterHeader(pb *pagebuilder.Builder) {
 	header := pb.RegisterContainer("Header").
-		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) h.HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			header := obj.(*WebHeader)
-			return HeaderTemplate(header.Color, input)
+			return HeaderTemplate(header, input)
 		})
 
 	ed := header.Model(&WebHeader{}).Editing("Color")
-	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"black", "white"}).
 			Value(field.Value(obj)).
@@ -36,13 +39,20 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 	})
 }
 
-func HeaderTemplate(color string, input *pagebuilder.RenderInput) h.HTMLComponent {
-	style := ""
-	if input.IsEditor && (input.Device == "phone" || input.Device == "tablet") {
-		style = "position:relative;background:black;"
+func HeaderTemplate(data *WebHeader, input *pagebuilder.RenderInput) (body HTMLComponent) {
+	//bc := data.Color
+	style := "color: #fff;background: #000;"
+	//if input.IsEditor && (input.Device == "phone" || input.Device == "tablet") {
+	//	bc = "black"
+	//}
+	if data.Color == "white" {
+		style = "color: #000;background: #fff;"
 	}
-	return h.RawHTML(fmt.Sprintf(`<header data-navigation-color="%s" class="container-instance container-header" style="%s">
-<div class="container-wrapper">
+
+	body = ContainerWrapper(
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("WebHeader"))+"_%v", data.ID), "", "container-header", "", "", "",
+		false, false, input.IsEditor, style,
+		Div(RawHTML(`
 <a href="/" class="container-header-logo"><svg viewBox="0 0 29 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.399 10.054V0L0 10.054V29.73h28.792V0L14.4 10.054z" fill="currentColor"><title>The Plant</title></path></svg></a>
 <ul data-list-unset="true" class="container-header-links">
 <li>
@@ -60,7 +70,7 @@ func HeaderTemplate(color string, input *pagebuilder.RenderInput) h.HTMLComponen
 </ul>
 <button class="container-header-menu">
 <span class="container-header-menu-icon"></span>
-</button>
-</div>
-</header>`, color, style))
+</button>`)).Class("container-wrapper"),
+	)
+	return
 }

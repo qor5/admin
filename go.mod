@@ -5,13 +5,15 @@ go 1.17
 require (
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/disintegration/imaging v1.6.2
+	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/golang-jwt/jwt/v4 v4.1.0
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/go-cmp v0.5.6
+	github.com/google/uuid v1.3.0
 	github.com/goplaid/multipartestutils v0.0.3
 	github.com/goplaid/web v1.2.1
-	github.com/goplaid/x v1.1.2-0.20220803084927-3c648058c6ef
+	github.com/goplaid/x v1.1.3-0.20221012025237-c89f8f532302
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -19,6 +21,7 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/markbates/goth v1.68.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
@@ -30,7 +33,9 @@ require (
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
+	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f
 	goji.io v2.0.2+incompatible
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/text v0.3.7
 	gorm.io/driver/postgres v1.2.1
 	gorm.io/gorm v1.22.2
@@ -40,11 +45,11 @@ require (
 	cloud.google.com/go v0.67.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
@@ -84,13 +89,13 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

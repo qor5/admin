@@ -19,9 +19,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
+func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets.ModelBuilder {
 	p := b.Model(&models.Product{})
-	eb := p.Editing("Code", "Name", "Price", "Image")
+	eb := p.Editing("Status", "Schedule", "Code", "Name", "Price", "Image")
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
 
@@ -174,6 +174,7 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) {
 				},
 			})
 
+	return p
 }
 
 type productItem struct {

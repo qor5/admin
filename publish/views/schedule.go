@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,13 +25,14 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
-		start, end := "", ""
+		var start, end int64
 		if s.GetScheduledStartAt() != nil {
-			start = s.GetScheduledStartAt().Format("2006-01-02 15:04")
+			start = s.GetScheduledStartAt().Unix()
 		}
 		if s.GetScheduledEndAt() != nil {
-			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
+			end = s.GetScheduledEndAt().Unix()
 		}
+
 		publishedAt, unpublishedAt := "", ""
 		if s.GetPublishedAt() != nil {
 			publishedAt = s.GetPublishedAt().Format("2006-01-02 15:04")
@@ -80,10 +82,18 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 										h.Span(msgr.WhenDoYouWantToPublish).Attr("v-if", "open"),
 										VRow(
 											VCol(
-												h.If(start == "", h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledStartAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledStartAt, start))),
+												h.If(start <= 0, h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledStartAt, msgr.NotSet))).
+													Else(
+														h.Text(fmt.Sprintf("%v: ", msgr.ScheduledStartAt)),
+														vx.VXDateTimeFormatter().Value(start),
+													),
 											).Cols(6),
 											VCol(
-												h.If(end == "", h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledEndAt, msgr.NotSet))).Else(h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledEndAt, end))),
+												h.If(end <= 0, h.Text(fmt.Sprintf("%v: %v ", msgr.ScheduledEndAt, msgr.NotSet))).
+													Else(
+														h.Text(fmt.Sprintf("%v: ", msgr.ScheduledEndAt)),
+														vx.VXDateTimeFormatter().Value(end),
+													),
 											).Cols(6),
 										).NoGutters(true).Attr("v-else").Attr(`style="width: 100%"`),
 									).LeaveAbsolute(true),
@@ -115,14 +125,23 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 }
 
 func ScheduleEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-	s := ctx.R.FormValue("ScheduledStartAt")
-	e := ctx.R.FormValue("ScheduledEndAt")
-	if err = setTime(obj, "ScheduledStartAt", s); err != nil {
-		return
+	_, exist := ctx.R.Form["ScheduledStartAt"]
+	if exist {
+		s := ctx.R.FormValue("ScheduledStartAt")
+		if err = setTime(obj, "ScheduledStartAt", s); err != nil {
+			return
+		}
 	}
-	if err = setTime(obj, "ScheduledEndAt", e); err != nil {
-		return
+
+	_, exist = ctx.R.Form["ScheduledEndAt"]
+	if exist {
+		e := ctx.R.FormValue("ScheduledEndAt")
+		if err = setTime(obj, "ScheduledEndAt", e); err != nil {
+			return
+		}
+
 	}
+
 	return
 }
 
@@ -132,10 +151,15 @@ func setTime(obj interface{}, fieldName string, val string) (err error) {
 	if val == "" {
 		err = reflectutils.Set(obj, fieldName, nil)
 	} else {
-		startAt, err1 := time.Parse(timeFormat, fmt.Sprintf("%v:00 +0900", val))
-		if err1 == nil && !startAt.IsZero() {
-			err = reflectutils.Set(obj, fieldName, startAt)
+		uts, err1 := strconv.ParseInt(val, 10, 64)
+		if err1 != nil {
+			return
 		}
+		startAt := time.Unix(uts, 0)
+		if startAt.IsZero() {
+			return
+		}
+		err = reflectutils.Set(obj, fieldName, startAt)
 	}
 	return
 }

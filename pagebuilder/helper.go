@@ -9,23 +9,24 @@ import (
 )
 
 var (
-	pathRe             = regexp.MustCompile(`^/[0-9a-zA-Z\/]*$`)
-	slugWithCategoryRe = regexp.MustCompile(`^/[0-9a-zA-Z]*$`)
+	pathRe             = regexp.MustCompile(`^/[0-9a-zA-Z-_().\/]*$`)
+	slugWithCategoryRe = regexp.MustCompile(`^/[0-9a-zA-Z-_().]*$`)
 )
 
 const (
 	queryPathWithSlugSQL = `
-SELECT pages.id, categories.path || pages.slug AS path_with_slug
+SELECT pages.id, pages.version, categories.path || pages.slug AS path_with_slug
 FROM page_builder_pages pages
          LEFT JOIN page_builder_categories categories ON category_id = categories.id
-WHERE pages.deleted_at IS NULL
+WHERE pages.deleted_at IS NULL AND categories.deleted_at IS NULL
 `
-	missingCategoryOrSlugMsg = "Category or Slug is required"
-	invalidSlugMsg           = "Invalid Slug format"
-	invalidPathMsg           = "Invalid Path format"
-	conflictSlugMsg          = "Conflicting Slug"
-	conflictPathMsg          = "Conflicting Path"
-	existingPathMsg          = "Existing Path"
+	missingCategoryOrSlugMsg   = "Category or Slug is required"
+	invalidSlugMsg             = "The slug must start with a '/' followed by one or more characters"
+	invalidSlugWithCategoryMsg = "The slug must start with a '/' followed by one or more characters excluding '/'"
+	invalidPathMsg             = "The path must start with a '/' followed by one or more characters"
+	conflictSlugMsg            = "Conflicting Slug"
+	conflictPathMsg            = "Conflicting Path"
+	existingPathMsg            = "Existing Path"
 
 	unableDeleteCategoryMsg = "this category cannot be deleted because it has used with pages"
 )
@@ -47,7 +48,7 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 		if p.Slug != "" {
 			s := path.Clean(p.Slug)
 			if !slugWithCategoryRe.MatchString(s) {
-				err.FieldError("Page.Slug", invalidSlugMsg)
+				err.FieldError("Page.Slug", invalidSlugWithCategoryMsg)
 				return
 			}
 		}
@@ -69,6 +70,7 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 
 	type result struct {
 		ID           uint
+		Version      string
 		PathWithSlug string
 	}
 
@@ -78,6 +80,9 @@ func pageValidator(p *Page, db *gorm.DB) (err web.ValidationErrors) {
 	}
 
 	for _, r := range results {
+		if r.ID == p.ID {
+			continue
+		}
 		if r.PathWithSlug == urlPath {
 			err.FieldError("Page.Slug", conflictSlugMsg)
 			return
@@ -128,6 +133,9 @@ func categoryValidator(category *Category, db *gorm.DB) (err web.ValidationError
 	}
 
 	for _, c := range categories {
+		if c.ID == category.ID {
+			continue
+		}
 		if c.Path == p {
 			err.FieldError("Category.Category", existingPathMsg)
 			return

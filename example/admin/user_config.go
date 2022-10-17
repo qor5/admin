@@ -2,11 +2,12 @@ package admin
 
 import (
 	"fmt"
-	"github.com/qor/qor5/role"
 	"net/url"
 	"strconv"
 
+	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
+	"github.com/qor/qor5/role"
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/goplaid/web"
@@ -21,24 +22,170 @@ import (
 
 func configUser(b *presets.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
+	//MenuIcon("people")
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
+		"Type",
+		"Actions",
 		"Name",
+		"OAuthProvider",
+		"Account",
 		"Company",
-		"Email",
 		"Roles",
 		"Status",
 	)
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
-		if u.Email == "" {
-			err.FieldError("Email", "Email is required")
+		if u.Account == "" {
+			err.FieldError("Account", "Email is required")
 		}
 		return
 	})
 	user.RegisterEventFunc("roles_selector", rolesSelector(db))
+	user.RegisterEventFunc("eventUnlockUser", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		uid := ctx.R.FormValue("id")
+		u := models.User{}
+		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
+			return r, err
+		}
+		if err = u.UnlockUser(db, &models.User{}); err != nil {
+			return r, err
+		}
+		presets.ShowMessage(&r, "success", "")
+		ed.UpdateOverlayContent(ctx, &r, &u, "", nil)
+		return r, nil
+	})
+
+	user.RegisterEventFunc("eventSendResetPasswordEmail", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		uid := ctx.R.FormValue("id")
+		u := models.User{}
+		if err = db.Where("id = ?", uid).First(&u).Error; err != nil {
+			return r, err
+		}
+		token, err := u.GenerateResetPasswordToken(db, &models.User{})
+		if err != nil {
+			return r, err
+		}
+		r.VarsScript = fmt.Sprintf(`alert("http://localhost:9500/auth/reset-password?id=%s&token=%s")`, uid, token)
+		return r, nil
+	})
+
+	user.RegisterEventFunc("eventRevokeTOTP", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		uid := ctx.R.FormValue("id")
+		u := &models.User{}
+		if err = db.Where("id = ?", uid).First(u).Error; err != nil {
+			return r, err
+		}
+		err = login.RevokeTOTP(u, db, &models.User{}, fmt.Sprint(u.ID))
+		if err != nil {
+			return r, err
+		}
+		err = expireAllSessionLogs(u.ID)
+		if err != nil {
+			return r, err
+		}
+		presets.ShowMessage(&r, "success", "")
+		ed.UpdateOverlayContent(ctx, &r, u, "", nil)
+		return r, nil
+	})
+
+	ed.Field("Type").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		if u.ID == 0 {
+			return nil
+		}
+
+		var accountType string
+		if u.OAuthProvider == "" && u.Account != "" {
+			accountType = "Main Account"
+		} else {
+			accountType = "OAuth Account"
+		}
+
+		return h.Div(
+			VRow(
+				VCol(
+					h.Text(accountType),
+				).Class("text-left deep-orange--text"),
+			),
+		).Class("mb-2")
+	})
+
+	ed.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var actionBtns h.HTMLComponents
+		u := obj.(*models.User)
+
+		if u.OAuthProvider == "" && u.Account != "" {
+			actionBtns = append(actionBtns,
+				VBtn("Send Reset Password Email").
+					Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventSendResetPasswordEmail").
+						Query("id", u.ID).Go()),
+			)
+		}
+
+		if u.GetLocked() {
+			actionBtns = append(actionBtns,
+				VBtn("Unlock").Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventUnlockUser").
+						Query("id", u.ID).Go(),
+					),
+			)
+		}
+
+		if u.GetIsTOTPSetup() {
+			actionBtns = append(actionBtns,
+				VBtn("Revoke TOTP").
+					Color("primary").
+					Attr("@click", web.Plaid().EventFunc("eventRevokeTOTP").
+						Query("id", u.ID).Go()),
+			)
+		}
+
+		if len(actionBtns) == 0 {
+			return nil
+		}
+		return h.Div(
+			actionBtns...,
+		).Class("mb-5 text-right")
+	})
+
+	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return VTextField().
+			FieldName(field.Name).
+			Label(field.Label).
+			Value(field.Value(obj)).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		u := obj.(*models.User)
+		email := ctx.R.FormValue(field.Name)
+		u.Account = email
+		u.OAuthIndentifier = email
+		return nil
+	})
+
+	ed.Field("OAuthProvider").Label("OAuthProvider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		if p := field.Value(obj); p == "" && u.ID != 0 {
+			return nil
+		} else {
+			return VSelect().FieldName(field.Name).
+				Label(field.Label).Value(p).
+				Items([]string{"google", "microsoftonline"})
+		}
+	})
+
+	var roles []role.Role
+	db.Find(&roles)
+	var allRoleItems = []DefaultOptionItem{}
+	for _, r := range roles {
+		allRoleItems = append(allRoleItems, DefaultOptionItem{
+			Text:  r.Name,
+			Value: fmt.Sprint(r.ID),
+		})
+	}
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -63,9 +210,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
 				Value(values).
 				SelectedItems(selectedItems).
-				// Items(items).
-				CacheItems(true).
-				ItemsEventFunc("roles_selector")
+				Items(allRoleItems).
+				CacheItems(true)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			u, ok := obj.(*models.User)
@@ -102,15 +248,18 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	cl := user.Listing("ID", "Name", "Email", "Status", "Notes").PerPage(10)
+	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
+	cl.Field("Account").Label("Email")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
+		u := getCurrentUser(ctx.R)
+
 		return []*v.FilterItem{
 			{
 				Key:          "created",
 				Label:        "Create Time",
 				ItemType:     v.ItemTypeDate,
-				SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
+				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "name",
@@ -128,6 +277,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 					{Text: "Inactive", Value: "inactive"},
 				},
 			},
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
+			},
 		}
 	})
 
@@ -144,6 +298,11 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Label: "All",
 				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
 		}
 	})

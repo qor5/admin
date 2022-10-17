@@ -32,7 +32,7 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
 		m.RegisterEventFunc(createNoteEvent, createNoteAction(db, m))
 		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db, m))
-		m.Listing().Field("Notes").ComponentFunc(noteFunc(db))
+		m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
 	}
 
 	pb.I18n().
@@ -47,7 +47,7 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 			return
 		}
 
-		tn := getTableName(db, mb.NewModel())
+		tn := mb.Info().Label()
 
 		notesSection := getNotesTab(ctx, db, tn, id)
 
@@ -61,15 +61,19 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 			Attr(":value", "locals.unreadNotesCount").
 			Color("red")
 
+		clickEvent := web.Plaid().
+			BeforeScript("locals.unreadNotesCount=0").
+			EventFunc(updateUserNoteEvent).
+			Query("resource_id", id).
+			Query("resource_type", tn).
+			Go()
+		if count == 0 {
+			clickEvent = ""
+		}
 		c = h.Components(
 			VTab(notesTab).
 				Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
-				Attr("@click", web.Plaid().
-					BeforeScript("locals.unreadNotesCount=0").
-					EventFunc(updateUserNoteEvent).
-					Query("resource_id", id).
-					Query("resource_type", tn).
-					Go()),
+				Attr("@click", clickEvent),
 			VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
 		)
 
@@ -77,9 +81,9 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 	}
 }
 
-func noteFunc(db *gorm.DB) presets.FieldComponentFunc {
+func noteFunc(db *gorm.DB, mb *presets.ModelBuilder) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (c h.HTMLComponent) {
-		tn := getTableName(db, obj)
+		tn := mb.Info().Label()
 
 		id := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 		if ps, ok := obj.(interface {

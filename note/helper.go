@@ -26,15 +26,8 @@ func getUserData(ctx *web.EventContext) (userID uint, creator string) {
 	if ctx.R.Context().Value(UserKey) != nil {
 		creator = ctx.R.Context().Value(UserKey).(string)
 	}
-	return
-}
 
-func getTableName(db *gorm.DB, obj interface{}) string {
-	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(obj); err != nil {
-		return ""
-	}
-	return stmt.Schema.Name
+	return
 }
 
 func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resourceId string) h.HTMLComponent {
@@ -73,4 +66,8 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 	}
 	c.AppendChildren(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
 	return c
+}
+
+var AfterCreateFunc = func(db *gorm.DB) (err error) {
+	return
 }

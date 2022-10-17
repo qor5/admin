@@ -3,9 +3,12 @@ package containers
 import (
 	"fmt"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
+
 	"github.com/goplaid/web"
 	"github.com/qor/qor5/pagebuilder"
-	h "github.com/theplant/htmlgo"
+	. "github.com/theplant/htmlgo"
 )
 
 type WebFooter struct {
@@ -20,18 +23,20 @@ func (*WebFooter) TableName() string {
 
 func RegisterFooter(pb *pagebuilder.Builder) {
 	footer := pb.RegisterContainer("Footer").
-		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) h.HTMLComponent {
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			footer := obj.(*WebFooter)
-			return FooterTemplate(footer.EnglishUrl, footer.JapaneseUrl)
+			return FooterTemplate(footer, input)
 		})
 
 	footer.Model(&WebFooter{}).Editing("EnglishUrl", "JapaneseUrl")
 
 }
 
-func FooterTemplate(enURL, jaURL string) h.HTMLComponent {
-	return h.RawHTML(fmt.Sprintf(`<footer class="container-instance container-footer">
-<div class="container-wrapper">
+func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {
+	body = ContainerWrapper(
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("WebFooter"))+"_%v", data.ID), "", "container-footer", "", "", "",
+		false, false, input.IsEditor, "",
+		Div(RawHTML(fmt.Sprintf(`
 <div class="container-footer-main">
 <div class="container-footer-links">
 <div class="container-footer-links-group">
@@ -130,6 +135,6 @@ func FooterTemplate(enURL, jaURL string) h.HTMLComponent {
 </li>
 </ul>
 <svg class="container-footer-logo" viewBox="0 0 151 29" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M137.448 9.664V0l-13.557 9.664v18.911H151V0l-13.552 9.664z" fill="#fff"></path><path d="M5.654 13.053H0V9.63h15.254v3.423H9.599v15.522H5.654V13.053zM17.413 9.63h3.682v6.846c.544-.743 1.175-1.292 1.894-1.645a5.059 5.059 0 012.262-.531c1.56 0 2.717.416 3.471 1.247.754.814 1.131 2.105 1.131 3.874v9.154h-3.682v-8.65c0-.973-.184-1.636-.552-1.99-.368-.354-.86-.53-1.473-.53-.473 0-.885.07-1.236.212a3.457 3.457 0 00-.947.61 3.436 3.436 0 00-.631.902 2.59 2.59 0 00-.237 1.115v8.331h-3.682V9.63zM45.549 24.25c-.246 1.557-.868 2.742-1.868 3.556-.981.796-2.42 1.194-4.313 1.194-2.28 0-3.997-.637-5.154-1.91-1.14-1.274-1.71-3.078-1.71-5.413 0-1.168.167-2.203.5-3.105.333-.92.797-1.698 1.394-2.335a5.882 5.882 0 012.182-1.433c.842-.336 1.771-.504 2.788-.504 2.104 0 3.682.61 4.734 1.83 1.07 1.221 1.604 2.867 1.604 4.936v1.486h-9.52c.035 1.115.316 1.99.842 2.627.526.62 1.315.929 2.367.929 1.455 0 2.314-.62 2.577-1.858h3.577zm-3.393-4.139c0-.955-.237-1.698-.71-2.229-.456-.53-1.175-.796-2.157-.796-.49 0-.92.08-1.288.239-.369.16-.684.38-.947.663a2.896 2.896 0 00-.579.956c-.14.353-.219.742-.236 1.167h5.917zM54.61 9.63h6.706c1.438 0 2.621.168 3.55.504.947.319 1.692.752 2.236 1.3.56.53.947 1.159 1.157 1.884.228.708.342 1.45.342 2.23 0 .83-.114 1.626-.342 2.387a4.668 4.668 0 01-1.157 2.017c-.544.566-1.28 1.017-2.21 1.353-.911.336-2.068.504-3.471.504h-2.946v6.766H54.61V9.63zm6.68 8.889c.683 0 1.244-.07 1.683-.212.456-.142.815-.336 1.078-.584.263-.248.438-.549.526-.902.105-.372.158-.77.158-1.194 0-.443-.053-.832-.158-1.168a1.834 1.834 0 00-.552-.849c-.263-.23-.623-.407-1.079-.53-.438-.124-.999-.186-1.683-.186h-2.788v5.625h2.814zM71.169 9.63h3.682v18.945h-3.682V9.63zM86.281 26.824a7.142 7.142 0 01-1.84 1.513c-.667.389-1.535.583-2.604.583-.614 0-1.201-.08-1.762-.238a4.17 4.17 0 01-1.447-.743 3.722 3.722 0 01-.973-1.274c-.245-.53-.368-1.159-.368-1.884 0-.955.21-1.733.631-2.335.42-.601.973-1.07 1.657-1.406a8.266 8.266 0 012.288-.717c.86-.141 1.727-.23 2.604-.265l1.762-.08v-.69c0-.849-.237-1.432-.71-1.75-.456-.32-1-.479-1.631-.479-1.455 0-2.288.558-2.498 1.672l-3.367-.318c.246-1.45.877-2.494 1.894-3.131 1.017-.655 2.384-.982 4.102-.982 1.052 0 1.947.133 2.683.398.737.248 1.324.61 1.762 1.088.456.478.78 1.061.973 1.751.21.672.316 1.433.316 2.282v8.756H86.28v-1.75zm-.079-4.431l-1.63.08c-.772.035-1.394.114-1.868.238-.473.124-.841.283-1.104.478a1.33 1.33 0 00-.5.637 2.45 2.45 0 00-.131.822c0 .46.158.823.473 1.088.316.266.754.398 1.315.398.947 0 1.718-.22 2.314-.663.334-.248.605-.557.816-.929.21-.389.315-.867.315-1.433v-.716zM92.87 14.725h3.577v1.91c.544-.814 1.184-1.406 1.92-1.778a5.235 5.235 0 012.341-.557c1.56 0 2.717.416 3.471 1.247.754.814 1.131 2.105 1.131 3.874v9.154h-3.682v-8.65c0-.973-.184-1.636-.552-1.99-.368-.354-.859-.53-1.473-.53-.473 0-.885.07-1.236.212a3.455 3.455 0 00-.947.61 3.431 3.431 0 00-.63.902 2.59 2.59 0 00-.238 1.115v8.331h-3.681v-13.85zM109.276 17.617h-2.156v-2.893h2.156v-3.688h3.682v3.689h3.156v2.892h-3.156v6.395c0 .725.149 1.22.447 1.485.298.248.684.372 1.157.372.246 0 .491-.009.737-.027.263-.035.517-.088.762-.159l.526 2.733a7.825 7.825 0 01-1.499.319c-.473.07-.929.106-1.367.106-1.508 0-2.63-.363-3.367-1.088-.718-.725-1.078-1.946-1.078-3.662v-6.474z" fill="#fff"></path></svg></div>
-</div>
-</footer>`, enURL, jaURL))
+`, data.EnglishUrl, data.JapaneseUrl))).Class("container-wrapper"))
+	return
 }

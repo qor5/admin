@@ -21,13 +21,13 @@ import (
 )
 
 type Builder struct {
-	db             *gorm.DB
-	q              Queue
-	jpb            *presets.Builder // for render job form
-	pb             *presets.Builder
-	jbs            []*JobBuilder
-	mb             *presets.ModelBuilder
-	operatorGetter func(r *http.Request) string
+	db                   *gorm.DB
+	q                    Queue
+	jpb                  *presets.Builder // for render job form
+	pb                   *presets.Builder
+	jbs                  []*JobBuilder
+	mb                   *presets.ModelBuilder
+	getCurrentUserIDFunc func(r *http.Request) string
 }
 
 func New(db *gorm.DB) *Builder {
@@ -55,8 +55,8 @@ func (b *Builder) Queue(q Queue) *Builder {
 	return b
 }
 
-func (b *Builder) OperatorGetter(f func(r *http.Request) string) *Builder {
-	b.operatorGetter = f
+func (b *Builder) GetCurrentUserIDFunc(f func(r *http.Request) string) *Builder {
+	b.getCurrentUserIDFunc = f
 	return b
 }
 
