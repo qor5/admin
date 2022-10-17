@@ -93,8 +93,9 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ListContentBody(data *ListContent, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContent"))+"_%v", data.ID), data.AnchorID, "container-list_content container-lottie", data.BackgroundColor, "", "",
-		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContent"))+"_%v", data.ID), data.AnchorID, "container-list_content container-lottie",
+		data.BackgroundColor, "", "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(
 			ListItemsBody(data.Items, input),
 			If(data.LinkText != "" && data.Link != "",
