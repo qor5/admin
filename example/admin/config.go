@@ -52,15 +52,12 @@ type Config struct {
 func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
-
 	sess := session.Must(session.NewSession())
-
 	oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
@@ -135,19 +132,6 @@ func NewConfig() Config {
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(
-		"InputHarness",
-		"Post",
-		"profile",
-		"User",
-		"Role",
-		b.MenuGroup("Site Management").SubItems(
-			"Setting",
-			"QorSEOSetting",
-		).Icon("settings"),
-		b.MenuGroup("Product Management").SubItems(
-			"Product",
-			"Category",
-		).Icon("shopping_cart"),
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -155,6 +139,29 @@ func NewConfig() Config {
 			"page_templates",
 			"page_categories",
 		).Icon("view_quilt"),
+		b.MenuGroup("Product Management").SubItems(
+			"Product",
+			"Category",
+		).Icon("shopping_cart"),
+		b.MenuGroup("Site Management").SubItems(
+			"Setting",
+			"QorSEOSetting",
+		).Icon("settings"),
+		b.MenuGroup("User Management").SubItems(
+			"profile",
+			"User",
+			"Role",
+		).Icon("group"),
+		b.MenuGroup("Featured Models Management").SubItems(
+			"InputHarness",
+			"Post",
+			"List Editor Example",
+			"Customers",
+			"ListModels",
+			"MicrositeModels",
+		).Icon("featured_play_list"),
+		"Worker",
+		"ActivityLogs",
 	)
 
 	m := b.Model(&models.Post{})

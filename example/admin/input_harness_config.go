@@ -17,7 +17,8 @@ import (
 )
 
 func configInputHarness(b *presets.Builder, db *gorm.DB) {
-	harness := b.Model(&models.InputHarness{}).MenuIcon("view_quilt")
+	harness := b.Model(&models.InputHarness{})
+	//MenuIcon("view_quilt")
 
 	harness.Listing().OrderableFields([]*presets.OrderableField{
 		{
