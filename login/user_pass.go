@@ -42,7 +42,7 @@ type SessionSecureUserPasser interface {
 }
 
 type UserPass struct {
-	Account  string `gorm:"index:uidx_users_account,unique,where:account!=''"`
+	Account  string `gorm:"index:uidx_users_account,unique,where:account!='' and deleted_at is null"`
 	Password string `gorm:"size:60"`
 	// UnixNano string
 	PassUpdatedAt               string
