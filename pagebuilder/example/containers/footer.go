@@ -35,7 +35,7 @@ func RegisterFooter(pb *pagebuilder.Builder) {
 func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("WebFooter"))+"_%v", data.ID), "", "container-footer", "", "", "",
-		false, false, input.IsEditor, "",
+		"", false, false, input.IsEditor, "",
 		Div(RawHTML(fmt.Sprintf(`
 <div class="container-footer-main">
 <div class="container-footer-links">
