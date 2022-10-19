@@ -14,6 +14,10 @@ type Messages struct {
 	SeoPost             string
 	SeoVariableTitle    string
 	SeoVariableSiteName string
+
+	International string
+	China         string
+	Japan         string
 }
 
 var Messages_zh_CN = &Messages{
@@ -30,4 +34,8 @@ var Messages_zh_CN = &Messages{
 	SeoPost:             "帖子",
 	SeoVariableTitle:    "标题",
 	SeoVariableSiteName: "站点名称",
+
+	International: "全球",
+	China:         "中国",
+	Japan:         "日本",
 }

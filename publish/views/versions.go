@@ -7,6 +7,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/l10n"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
@@ -180,6 +181,12 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		}
 
 		wh := db.Model(obj)
+		if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+			if l10n.IsLocalizable(obj) {
+				wh = wh.Where("locale_code = ?", localeCode)
+			}
+		}
+
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
@@ -208,11 +215,11 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		}
 		for _, f := range stmt.Schema.PrimaryFields {
 			if f.Name != "Version" {
-				pks = append(pks, stmt.Quote(strings.ToLower(f.Name)))
+				pks = append(pks, f.DBName)
 			}
 		}
 		pkc := strings.Join(pks, ",")
-		sql := fmt.Sprintf("(%v.id, %v.version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", tn, tn, pkc, tn, condition, pkc)
+		sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
 		if err = wh.Where(sql).Count(&c).Error; err != nil {
 			return
 		}

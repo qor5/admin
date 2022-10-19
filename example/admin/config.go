@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/biter777/countries"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -122,7 +123,27 @@ func NewConfig() Config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
+			//// Example:
+			//user := getCurrentUser(r)
+			//var supportedLanguages []language.Tag
+			//for _, role := range user.GetRoles() {
+			//	switch role {
+			//	case "English Group":
+			//		supportedLanguages = append(supportedLanguages, language.English)
+			//	case "Chinese Group":
+			//		supportedLanguages = append(supportedLanguages, language.SimplifiedChinese)
+			//	}
+			//}
+			//return supportedLanguages
 			return b.I18n().GetSupportLanguages()
+		})
+
+	b.L10n().
+		RegisterLocales(countries.International, "International", "International").
+		RegisterLocales(countries.China, "China", "China").
+		RegisterLocales(countries.Japan, "Japan", "Japan").
+		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
+			return b.L10n().GetSupportLocales()[:]
 		})
 	utils.Configure(b)
 
