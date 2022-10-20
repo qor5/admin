@@ -12,8 +12,8 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.3.0
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.2.1
-	github.com/goplaid/x v1.1.3-0.20221017035613-5be4eca2c886
+	github.com/goplaid/web v1.2.2-0.20221019094816-cf657453fe7a
+	github.com/goplaid/x v1.1.3-0.20221020081319-e9b9bc0fc0fb
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
