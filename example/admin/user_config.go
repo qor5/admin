@@ -349,7 +349,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 		}
 	}
 	return h.Div(
-		VSelect().
+		VAutocomplete().
 			Label("Favorite Post").
 			FieldName("FavorPostID").
 			Items(items).
@@ -461,6 +461,17 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 			},
 		}
 	})
+
+	// select many
+	// lb.BulkAction("Confirm").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+	// 	return VBtn("Confirm").
+	// 		Color("primary").
+	// 		Attr("@click", web.Plaid().
+	// 			EventFunc("selectFavorPost").
+	// 			Query("ids", ctx.R.URL.Query().Get(presets.ParamSelectedIds)).
+	// 			MergeQuery(true).
+	// 			Go())
+	// })
 }
 
 func registerSelectFavorPostEvent(b *presets.Builder) {

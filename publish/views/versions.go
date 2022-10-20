@@ -166,7 +166,19 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
-		r.Reload = true
+
+		if ctx.R.URL.Query().Get(presets.ParamInDialog) == "true" {
+			web.AppendVarsScripts(&r,
+				"vars.presetsDialog = false",
+				web.Plaid().
+					URL(ctx.R.RequestURI).
+					EventFunc(actions.UpdateListingDialog).
+					StringQuery(ctx.R.URL.Query().Get(presets.ParamListingQueries)).
+					Go(),
+			)
+		} else {
+			r.Reload = true
+		}
 
 		return
 	}
@@ -257,14 +269,18 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		updateBtn := VBtn(buttonLabel).
 			Color("primary").
 			Attr("@click", web.Plaid().
-				EventFunc(actions.Update).Query("id", ctx.R.FormValue("id")).
+				EventFunc(actions.Update).
+				Queries(ctx.Queries()).
+				Query("id", ctx.R.FormValue("id")).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
 		saveNewVersionBtn := VBtn(msgr.SaveAsNewVersion).
 			Color("secondary").
 			Attr("@click", web.Plaid().
-				EventFunc(SaveNewVersionEvent).Query("id", ctx.R.FormValue("id")).
+				EventFunc(SaveNewVersionEvent).
+				Queries(ctx.Queries()).
+				Query("id", ctx.R.FormValue("id")).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
