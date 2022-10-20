@@ -261,6 +261,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
+	cl.SearchColumns("Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -298,10 +299,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
-			{
-				Label: "Felix",
-				Query: url.Values{"name.ilike": []string{"felix"}},
-			},
 			{
 				Label: "Active",
 				Query: url.Values{"status": []string{"active"}},
