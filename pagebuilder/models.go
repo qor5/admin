@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goplaid/x/l10n"
+	"github.com/qor/qor5/l10n"
 	"github.com/qor/qor5/publish"
 	"gorm.io/gorm"
 )
