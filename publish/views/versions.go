@@ -7,7 +7,6 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/l10n"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
@@ -181,11 +180,6 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		}
 
 		wh := db.Model(obj)
-		if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
-			if l10n.IsLocalizable(obj) {
-				wh = wh.Where("locale_code = ?", localeCode)
-			}
-		}
 
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
