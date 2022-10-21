@@ -1,0 +1,147 @@
+package views
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
+	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/stripeui"
+	v "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/activity"
+	"github.com/qor/qor5/gorm2op"
+	"github.com/qor/qor5/l10n"
+	"github.com/qor/qor5/publish"
+	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+)
+
+func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.ActivityBuilder, models ...*presets.ModelBuilder) {
+	for _, m := range models {
+		m.Listing().SearchFunc(gorm2op.Searcher(db, m))
+		m.Editing().FetchFunc(gorm2op.Fetcher(db, m))
+		m.Editing().SaveFunc(gorm2op.Saver(db, m))
+		m.Editing().DeleteFunc(gorm2op.Deleter(db, m))
+
+		rmb := m.Listing().RowMenu()
+		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
+
+		registerEventFuncs(db, m, lb, ab)
+	}
+
+	b.FieldDefaults(presets.LIST).
+		FieldType(l10n.Locale{}).
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return nil
+		})
+	b.FieldDefaults(presets.WRITE).
+		FieldType(publish.Status{}).
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return nil
+		}).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
+
+	b.AddWrapHandler(lb.EnsureLocale)
+	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
+	b.I18n().
+		RegisterForModule(language.English, I10nLocalizeKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I10nLocalizeKey, Messages_zh_CN)
+}
+
+func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {
+	return func(ctx *web.EventContext) (r h.HTMLComponent) {
+		var supportLocales = lb.GetSupportLocalesFromRequest(ctx.R)
+
+		if len(lb.GetSupportLocales()) <= 1 || len(supportLocales) == 0 {
+			return nil
+		}
+
+		localeQueryName := lb.GetQueryName()
+		msgr := MustGetMessages(ctx.R)
+
+		if len(supportLocales) == 1 {
+			return h.Template().Children(
+				h.Div(
+					v.VList(
+						v.VListItem(
+							v.VListItemIcon(
+								v.VIcon("language").Small(true).Class("ml-1"),
+							).Attr("style", "margin-right: 16px"),
+							v.VListItemContent(
+								v.VListItemTitle(
+									h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Location, msgr.Colon, i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
+								),
+							),
+						).Class("pa-0").Dense(true),
+					).Class("pa-0 ma-n4 mt-n6"),
+				).Attr("@click", web.Plaid().Query(localeQueryName, lb.GetLocaleCode(supportLocales[0])).Go()),
+			)
+		}
+
+		locale := lb.GetCorrectLocale(ctx.R)
+
+		var locales []h.HTMLComponent
+		for _, contry := range supportLocales {
+			locales = append(locales,
+				h.Div(
+					v.VListItem(
+						v.VListItemContent(
+							v.VListItemTitle(
+								h.Div(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(contry)))),
+							),
+						),
+					).Attr("@click", web.Plaid().Query(localeQueryName, lb.GetLocaleCode(contry)).Go()),
+				),
+			)
+		}
+
+		return v.VMenu().OffsetY(true).Children(
+			h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+				h.Div(
+					v.VList(
+						v.VListItem(
+							v.VListItemIcon(
+								v.VIcon("language").Small(true).Class("ml-1"),
+							).Attr("style", "margin-right: 16px"),
+							v.VListItemContent(
+								v.VListItemTitle(
+									h.Text(fmt.Sprintf("%s%s %s", msgr.Location, msgr.Colon, i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)))),
+								),
+							),
+							v.VListItemIcon(
+								v.VIcon("arrow_drop_down").Small(false).Class("mr-1"),
+							),
+						).Class("pa-0").Dense(true),
+					).Class("pa-0 ma-n4 mt-n6"),
+				).Attr("v-bind", "attrs").Attr("v-on", "on"),
+			),
+
+			v.VList(
+				locales...,
+			).Dense(true),
+		)
+	}
+}
+
+func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) stripeui.RowMenuItemFunc {
+	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		msgr := MustGetMessages(ctx.R)
+		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+
+		return v.VListItem(
+			v.VListItemIcon(v.VIcon("language")),
+			v.VListItemTitle(h.Text(msgr.Localize)),
+		).Attr("@click", web.Plaid().
+			EventFunc(Localize).
+			Queries(editExtraParams).
+			Query(presets.ParamID, id).
+			URL(url).
+			Go())
+	}
+}
