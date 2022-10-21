@@ -3,7 +3,9 @@ package views
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 
+	"github.com/biter777/countries"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
@@ -12,7 +14,8 @@ import (
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/l10n"
-	"github.com/qor/qor5/publish"
+	"github.com/qor/qor5/utils"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -33,11 +36,9 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 
 	b.FieldDefaults(presets.LIST).
 		FieldType(l10n.Locale{}).
-		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return nil
-		})
+		ComponentFunc(localeListFunc(db, lb))
 	b.FieldDefaults(presets.WRITE).
-		FieldType(publish.Status{}).
+		FieldType(l10n.Locale{}).
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return nil
 		}).
@@ -50,6 +51,45 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.I18n().
 		RegisterForModule(language.English, I10nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I10nLocalizeKey, Messages_zh_CN)
+}
+
+func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		id, err := reflectutils.Get(obj, "ID")
+		if err != nil {
+			return nil
+		}
+		fromLocale := lb.GetCorrectLocale(ctx.R)
+
+		objs := reflect.New(reflect.SliceOf(reflect.TypeOf(obj).Elem())).Interface()
+		err = db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(objs).Error
+		if err != nil {
+			return nil
+		}
+		vo := reflect.ValueOf(objs).Elem()
+		var existLocales []string
+		for i := 0; i < vo.Len(); i++ {
+			existLocales = append(existLocales, vo.Index(i).FieldByName("LocaleCode").String())
+		}
+
+		allLocales := lb.GetSupportLocalesFromRequest(ctx.R)
+		var otherLocales []countries.CountryCode
+		for _, locale := range allLocales {
+			if utils.Contains(existLocales, lb.GetLocaleCode(locale)) {
+				otherLocales = append(otherLocales, locale)
+			}
+		}
+
+		var chips []h.HTMLComponent
+		chips = append(chips, v.VChip(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(fromLocale)))).Color("green").TextColor("white").Label(true).Small(true))
+
+		for _, locale := range otherLocales {
+			chips = append(chips, v.VChip(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)))).Label(true).Small(true))
+		}
+		return h.Td(
+			chips...,
+		)
+	}
 }
 
 func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {

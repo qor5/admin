@@ -137,7 +137,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Page{})
-	pm.Listing("ID", "Title", "Slug")
+	pm.Listing("ID", "Title", "Slug", "Locale")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 

@@ -47,7 +47,10 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 		//todo search distinct locale_code except current locale
 		var obj = mb.NewModelSlice()
-		db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj)
+		err = db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
+		if err != nil {
+			return
+		}
 		vo := reflect.ValueOf(obj).Elem()
 		var existLocales []string
 		for i := 0; i < vo.Len(); i++ {
