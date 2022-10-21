@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/goplaid/web"
@@ -10,6 +11,7 @@ import (
 	v "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/l10n"
+	"github.com/qor/qor5/utils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -21,25 +23,45 @@ const (
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
-	mb.RegisterEventFunc(Localize, localizeToConfirmation(lb))
+	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
 	mb.RegisterEventFunc(DoLocalize, odLocalizeTo(db, mb))
 }
 
-func localizeToConfirmation(lb *l10n.Builder) web.EventFunc {
+type SelectLocale struct {
+	Label string
+	Code  string
+}
+
+func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		l10nMsgr := MustGetMessages(ctx.R)
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
-		id := ctx.R.FormValue(presets.ParamID)
+		segs := strings.Split(ctx.R.FormValue("id"), "_")
+		id := segs[0]
+		//versionName := segs[1]
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		//todo get current locale
 		fromLocale := lb.GetCorrectLocale(ctx.R)
 
 		//todo search distinct locale_code except current locale
+		var obj = mb.NewModelSlice()
+		db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj)
+		vo := reflect.ValueOf(obj).Elem()
+		var existLocales []string
+		for i := 0; i < vo.Len(); i++ {
+			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
+		}
 		toLocales := lb.GetSupportLocalesFromRequest(ctx.R)
-		var toLocalesStrings []string
-		for _, v := range toLocales {
-			toLocalesStrings = append(toLocalesStrings, v.String())
+		var selectLocales []SelectLocale
+		for _, locale := range toLocales {
+			if locale == fromLocale {
+				continue
+			}
+			if !utils.Contains(existLocales, lb.GetLocaleCode(locale)) || vo.Len() == 0 {
+				selectLocales = append(selectLocales, SelectLocale{Label: i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
+			}
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -61,7 +83,9 @@ func localizeToConfirmation(lb *l10n.Builder) web.EventFunc {
 						v.VSelect().FieldName("localize_to").
 							Label(l10nMsgr.LocalizeTo).
 							Multiple(true).Chips(true).
-							Items(toLocalesStrings),
+							Items(selectLocales).
+							ItemText("Label").
+							ItemValue("Code"),
 					).Attr("style", "height: 200px;"),
 
 					v.VCardActions(
@@ -77,7 +101,7 @@ func localizeToConfirmation(lb *l10n.Builder) web.EventFunc {
 							Dark(true).
 							Attr("@click", web.Plaid().
 								EventFunc(DoLocalize).
-								Query(presets.ParamID, id).
+								Query(presets.ParamID, paramID).
 								Query("localize_from", lb.GetLocaleCode(fromLocale)).
 								URL(ctx.R.URL.Path).
 								Go()),
