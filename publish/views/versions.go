@@ -20,7 +20,6 @@ import (
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		//id := segs[0]
 
 		id := ctx.R.FormValue("id")
 		if id == "" {
@@ -38,7 +37,6 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 		lv := map[string]interface{}{}
 		gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}), mb.NewModel(), id, ctx, "version").
-			//db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
 			Where("status = ?", publish.StatusOnline).
 			First(&lv)
 		if len(lv) > 0 {
