@@ -62,7 +62,7 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 		fromLocale := lb.GetCorrectLocale(ctx.R)
 
 		objs := reflect.New(reflect.SliceOf(reflect.TypeOf(obj).Elem())).Interface()
-		err = db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(objs).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(objs).Error
 		if err != nil {
 			return nil
 		}

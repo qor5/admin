@@ -24,7 +24,7 @@ const (
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, odLocalizeTo(db, mb))
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb))
 }
 
 type SelectLocale struct {
@@ -47,7 +47,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 		//todo search distinct locale_code except current locale
 		var obj = mb.NewModelSlice()
-		err = db.Unscoped().Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
 		if err != nil {
 			return
 		}
@@ -120,7 +120,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func odLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
@@ -133,7 +133,7 @@ func odLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		from := ctx.R.FormValue("localize_from")
 
 		var obj = mb.NewModel()
-		db.Unscoped().Where("id = ? AND version = ? AND locale_code = ?", id, versionName, from).First(&obj)
+		db.Where("id = ? AND version = ? AND locale_code = ?", id, versionName, from).First(&obj)
 
 		me := mb.Editing()
 
@@ -145,9 +145,6 @@ func odLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 
 			version := db.NowFunc().Format("2006-01-02")
-			//var count int64
-			//newObj := mb.NewModel()
-			//db.Model(newObj).Unscoped().Where("id = ? AND version like ?", id, version+"%").Count(&count)
 
 			versionName := fmt.Sprintf("%s-v%02v", version, 1)
 			if err = reflectutils.Set(obj, "Version.Version", versionName); err != nil {
@@ -159,10 +156,6 @@ func odLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			if err = reflectutils.Set(obj, "LocaleCode", toLocale); err != nil {
 				return
 			}
-			fmt.Printf("%+v\n", obj)
-			//if err = reflectutils.Set(obj, "Version.ParentVersion", segs[1]); err != nil {
-			//	return
-			//}
 
 			if me.Validator != nil {
 				if vErr := me.Validator(obj, ctx); vErr.HaveErrors() {
@@ -182,8 +175,6 @@ func odLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		// refresh current page
 		r.Reload = true
-
-		//r.PushState = web.Location(nil)
 		return
 	}
 }
