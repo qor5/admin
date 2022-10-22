@@ -10,6 +10,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -19,8 +20,9 @@ import (
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
+		//id := segs[0]
 
+		id := ctx.R.FormValue("id")
 		if id == "" {
 			return nil
 		}
@@ -35,8 +37,9 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		c.AppendChildren(ov)
 
 		lv := map[string]interface{}{}
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
-			Where("id = ? AND status = ?", id, publish.StatusOnline).
+		gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}), mb.NewModel(), id, ctx, "version").
+			//db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
+			Where("status = ?", publish.StatusOnline).
 			First(&lv)
 		if len(lv) > 0 {
 			tr := trBuilder(ctx, lv, segs[1])
@@ -51,8 +54,8 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		c.AppendChildren(versionsList)
 
 		var results []map[string]interface{}
-		db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).
-			Where("id = ?", id).Order("version DESC").
+		gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}), mb.NewModel(), id, ctx, "version").
+			Order("version DESC").
 			Find(&results)
 
 		tbody := h.Tbody()

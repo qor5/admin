@@ -9,6 +9,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/qor/qor5/l10n"
 	"github.com/qor/qor5/publish"
+	"github.com/qor/qor5/utils"
 	"gorm.io/gorm"
 )
 
@@ -94,7 +95,7 @@ func Searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 	}
 }
 
-func primarySluggerWhere(db *gorm.DB, obj interface{}, id string, ctx *web.EventContext) *gorm.DB {
+func PrimarySluggerWhere(db *gorm.DB, obj interface{}, id string, ctx *web.EventContext, withoutKeys ...string) *gorm.DB {
 	wh := db.Model(obj)
 
 	if id == "" {
@@ -104,7 +105,9 @@ func primarySluggerWhere(db *gorm.DB, obj interface{}, id string, ctx *web.Event
 	if slugger, ok := obj.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(id)
 		for _, cond := range cs {
-			wh = wh.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+			if !utils.Contains(withoutKeys, cond[0]) {
+				wh = wh.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+			}
 		}
 	} else {
 		wh = wh.Where("id =  ?", id)
@@ -121,7 +124,7 @@ func primarySluggerWhere(db *gorm.DB, obj interface{}, id string, ctx *web.Event
 
 func Fetcher(db *gorm.DB, mb *presets.ModelBuilder) presets.FetchFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		err = primarySluggerWhere(db, obj, id, ctx).First(obj).Error
+		err = PrimarySluggerWhere(db, obj, id, ctx).First(obj).Error
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil, presets.ErrRecordNotFound
@@ -145,14 +148,14 @@ func Saver(db *gorm.DB, mb *presets.ModelBuilder) presets.SaveFunc {
 			err = db.Create(obj).Error
 			return
 		}
-		err = primarySluggerWhere(db, obj, id, ctx).Save(obj).Error
+		err = PrimarySluggerWhere(db, obj, id, ctx).Save(obj).Error
 		return
 	}
 }
 
 func Deleter(db *gorm.DB, mb *presets.ModelBuilder) presets.DeleteFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		err = primarySluggerWhere(db, obj, id, ctx).Delete(obj).Error
+		err = PrimarySluggerWhere(db, obj, id, ctx).Delete(obj).Error
 		return
 	}
 }
