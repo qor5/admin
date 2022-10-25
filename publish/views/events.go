@@ -2,18 +2,23 @@ package views
 
 import (
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/publish"
+	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
 const (
-	publishEvent        = "publish_PublishEvent"
-	republishEvent      = "publish_republishEvent"
-	unpublishEvent      = "publish_UnpublishEvent"
-	switchVersionEvent  = "publish_SwitchVersionEvent"
-	SaveNewVersionEvent = "publish_SaveNewVersionEvent"
+	publishEvent         = "publish_PublishEvent"
+	republishEvent       = "publish_republishEvent"
+	unpublishEvent       = "publish_UnpublishEvent"
+	switchVersionEvent   = "publish_SwitchVersionEvent"
+	SaveNewVersionEvent  = "publish_SaveNewVersionEvent"
+	saveNameVersionEvent = "publish_SaveNameVersionEvent"
+	renameVersionEvent   = "publish_RenameVersionEvent"
+	selectVersionsEvent  = "publish_SelectVersionsEvent"
 
 	ActivityPublish   = "Publish"
 	ActivityRepublish = "Republish"
@@ -26,6 +31,9 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(switchVersionEvent, switchVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(SaveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
+	mb.RegisterEventFunc(renameVersionEvent, renameVersionAction(db, mb, publisher, ab, ActivityUnPublish))
+	mb.RegisterEventFunc(selectVersionsEvent, selectVersionsAction(db, mb, publisher, ab, ActivityUnPublish))
+
 }
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
@@ -75,6 +83,51 @@ func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.B
 
 		presets.ShowMessage(&r, "success", "")
 		r.Reload = true
+		return
+	}
+}
+
+func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.R.FormValue("id")
+
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		if err != nil {
+			return
+		}
+
+		name := ctx.R.FormValue("name")
+
+		if err = reflectutils.Set(obj, "Version.VersionName", name); err != nil {
+			return
+		}
+
+		if err = mb.Editing().Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
+			return
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		presets.ShowMessage(&r, msgr.SuccessfullyRename, "")
+		return
+	}
+}
+
+func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		)
+
+		table, _, err := versionListTable(db, mb, msgr, ctx.R)
+		if err != nil {
+			return
+		}
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: "versions-list",
+			Body: table,
+		})
 		return
 	}
 }
