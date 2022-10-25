@@ -188,7 +188,7 @@ func SetPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 		if p.Name == "Version" {
 			continue
 		}
-		val, _ := p.ValueOf(reflect.ValueOf(record))
+		val, _ := p.ValueOf(db.Statement.Context, reflect.ValueOf(record))
 		querys = append(querys, fmt.Sprintf("%s = ?", strcase.ToSnake(p.Name)))
 		args = append(args, val)
 	}

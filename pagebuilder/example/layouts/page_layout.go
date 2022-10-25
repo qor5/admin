@@ -10,9 +10,6 @@ import (
 )
 
 func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
-	if input.IsEditor {
-		return body
-	}
 	var seoTags HTMLComponent
 	if len(input.SeoTags) > 0 {
 		seoTags = RawHTML(input.SeoTags)
@@ -33,8 +30,8 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 		freeStyleCss = Style(strings.Join(input.FreeStyleCss, "\n"))
 	}
 
-	js := "https://the-plant.com/assets/app/container.9506d40.js"
-	css := "https://the-plant.com/assets/app/container.9506d40.css"
+	js := "https://the-plant.com/assets/app/container.4f902c4.js"
+	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
 	return Components(
@@ -52,6 +49,7 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 				Meta().Name("viewport").Content("width=device-width, initial-scale=1"),
 
 				Link("").Rel("stylesheet").Type("text/css").Href(css),
+				If(len(input.EditorCss) > 0, input.EditorCss...),
 				freeStyleCss,
 				//RawHTML(dataLayer),
 				structureData,

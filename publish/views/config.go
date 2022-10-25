@@ -26,6 +26,9 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
 			m.Listing().SearchFunc(gorm2op.Searcher(db, m))
+			m.Editing().FetchFunc(gorm2op.Fetcher(db, m))
+			m.Editing().SaveFunc(gorm2op.Saver(db, m))
+			m.Editing().DeleteFunc(gorm2op.Deleter(db, m))
 
 			m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 				if ctx.R.FormValue("id") == "" {

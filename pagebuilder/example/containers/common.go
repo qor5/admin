@@ -31,14 +31,17 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 	return v.VTextarea().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 }
 
-func ContainerWrapper(containerID, anchorID, classes, backgroundColor, fontColor, imagePosition string, addTopSpace, addBottomSpace bool, isEditor bool, style string, comp ...HTMLComponent) HTMLComponent {
+func ContainerWrapper(containerID, anchorID, classes,
+	backgroundColor, transitionBackgroundColor, fontColor,
+	imagePosition string, addTopSpace, addBottomSpace bool,
+	isEditor bool, style string, comp ...HTMLComponent) HTMLComponent {
 	r := Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
 		AttrIf("data-background-color", backgroundColor, backgroundColor != "").
 		AttrIf("data-font-color", fontColor, fontColor != "").
 		AttrIf("data-image-position", imagePosition, imagePosition != "").
-		//AttrIf("data-transition-background-color", transitionBackgroundColor, transitionBackgroundColor != "").
+		AttrIf("data-transition-background-color", transitionBackgroundColor, transitionBackgroundColor != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
 		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")

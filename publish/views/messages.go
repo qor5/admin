@@ -26,8 +26,12 @@ type Messages struct {
 	SaveAsNewVersion        string
 	SwitchedToNewVersion    string
 	SuccessfullyCreated     string
+	SuccessfullyRename      string
 	OnlineVersion           string
 	VersionsList            string
+	AllVersions             string
+	NamedVersions           string
+	RenameVersion           string
 }
 
 var Messages_en_US = &Messages{
@@ -52,8 +56,12 @@ var Messages_en_US = &Messages{
 	SaveAsNewVersion:        "Save As New Version",
 	SwitchedToNewVersion:    "Switched To New Version",
 	SuccessfullyCreated:     "Successfully Created",
+	SuccessfullyRename:      "Successfully Rename",
 	OnlineVersion:           "Online Version",
 	VersionsList:            "Versions List",
+	AllVersions:             "All versions",
+	NamedVersions:           "Named versions",
+	RenameVersion:           "Rename Version",
 }
 
 var Messages_zh_CN = &Messages{
@@ -78,8 +86,12 @@ var Messages_zh_CN = &Messages{
 	SaveAsNewVersion:        "保存为一个新版本",
 	SwitchedToNewVersion:    "切换到新版本",
 	SuccessfullyCreated:     "成功创建",
+	SuccessfullyRename:      "成功命名",
 	OnlineVersion:           "在线版本",
 	VersionsList:            "版本列表",
+	AllVersions:             "所有版本",
+	NamedVersions:           "已命名版本",
+	RenameVersion:           "命名版本",
 }
 
 func GetStatusText(status string, msgr *Messages) string {

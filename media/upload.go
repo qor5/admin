@@ -15,11 +15,11 @@ var (
 
 func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 
-	if !field.ReflectValueOf(db.Statement.ReflectValue).CanAddr() {
+	if !field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).CanAddr() {
 		return
 	}
 
-	media, ok := field.ReflectValueOf(db.Statement.ReflectValue).Addr().Interface().(Media)
+	media, ok := field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).Addr().Interface().(Media)
 	if !ok {
 		return
 	}
@@ -97,7 +97,7 @@ func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
 
 	for _, field := range db.Statement.Schema.Fields {
 		if cropField(field, db) {
-			updateColumns[field.DBName] = field.ReflectValueOf(db.Statement.ReflectValue).Addr().Interface()
+			updateColumns[field.DBName] = field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).Addr().Interface()
 		}
 	}
 

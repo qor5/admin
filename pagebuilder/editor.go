@@ -186,44 +186,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 			IsPreview: !isEditor,
 			Page:      p,
 		}
-		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
-	}
-	return
-}
-
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, isEditor bool) (r []h.HTMLComponent, err error) {
-	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
-	if err != nil {
-		return
-	}
-
-	cbs := b.getContainerBuilders(cons)
-
-	device, width := b.getDevice(ctx)
-	for _, ec := range cbs {
-		if ec.container.Hidden {
-			continue
-		}
-		obj := ec.builder.NewModel()
-		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
-		if err != nil {
-			return
-		}
-
-		input := RenderInput{
-			IsEditor: isEditor,
-			Device:   device,
-		}
-		pure := ec.builder.renderFunc(obj, &input, ctx)
-		r = append(r, pure)
-	}
-	if isEditor {
-		containerContent := h.HTML(
-			h.Head(
-				b.pageStyle,
-				h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
-				h.Style(`
+		if isEditor {
+			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
+			input.EditorCss = append(input.EditorCss, h.Style(`
 	.wrapper-shadow {
 		position:absolute;
 		width: 100%; 
@@ -241,45 +206,74 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
     	line-height: 1;
 		font-size: 0;
 		border: 2px outset #767676;
+		cursor: pointer;
 	}
 	.wrapper-shadow:hover {
 		cursor: pointer;
 		opacity: 1;
-    }`),
-				h.Script(``),
-			),
-			h.Body(
-				h.Components(r...),
-			),
-		)
-		iframeHeightName := "_iframeHeight"
-		iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
-		iframeValue := "1000px"
-		if iframeHeightCookie != nil {
-			iframeValue = iframeHeightCookie.Value
+    }`))
 		}
-		iframe := VRow(
-			h.Div(
-				h.RawHTML(fmt.Sprintf(`
-				<iframe frameborder='0' scrolling='no' srcdoc="%s"
-					@load='
-						var height = $event.target.contentWindow.document.body.parentElement.offsetHeight+"px";
-						$event.target.style.height=height;
-						document.cookie="%s="+height;
-					'
-					style='width:100%%; display:block; border:none; padding:0; margin:0; height:%s;'></iframe>`,
-					strings.ReplaceAll(
-						h.MustString(containerContent, ctx.R.Context()),
-						"\"",
-						"&quot;"),
-					iframeHeightName,
-					iframeValue,
-				)),
-			).Class("page-builder-container mx-auto").Attr("style", width),
-		)
-
-		r = []h.HTMLComponent{iframe}
+		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+		if isEditor {
+			_, width := b.getDevice(ctx)
+			iframeHeightName := "_iframeHeight"
+			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+			iframeValue := "1000px"
+			if iframeHeightCookie != nil {
+				iframeValue = iframeHeightCookie.Value
+			}
+			r = VRow(
+				h.Div(
+					h.RawHTML(fmt.Sprintf(`
+						<iframe frameborder='0' scrolling='no' srcdoc="%s"
+							@load='
+								var height = $event.target.contentWindow.document.body.parentElement.offsetHeight+"px";
+								$event.target.style.height=height;
+								document.cookie="%s="+height;
+							'
+							style='width:100%%; display:block; border:none; padding:0; margin:0; height:%s;'></iframe>`,
+						strings.ReplaceAll(
+							h.MustString(r, ctx.R.Context()),
+							"\"",
+							"&quot;"),
+						iframeHeightName,
+						iframeValue,
+					)),
+				).Class("page-builder-container mx-auto").Attr("style", width),
+			)
+		}
 	}
+	return
+}
+
+func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion string, isEditor bool) (r []h.HTMLComponent, err error) {
+	var cons []*Container
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ?", pageID, pageVersion).Error
+	if err != nil {
+		return
+	}
+
+	cbs := b.getContainerBuilders(cons)
+
+	device, _ := b.getDevice(ctx)
+	for _, ec := range cbs {
+		if ec.container.Hidden {
+			continue
+		}
+		obj := ec.builder.NewModel()
+		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
+		if err != nil {
+			return
+		}
+
+		input := RenderInput{
+			IsEditor: isEditor,
+			Device:   device,
+		}
+		pure := ec.builder.renderFunc(obj, &input, ctx)
+		r = append(r, pure)
+	}
+
 	return
 }
 

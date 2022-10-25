@@ -44,6 +44,7 @@ type PageLayoutInput struct {
 	Header            h.HTMLComponent
 	Footer            h.HTMLComponent
 	IsEditor          bool
+	EditorCss         []h.HTMLComponent
 	IsPreview         bool
 	Locale            string
 }

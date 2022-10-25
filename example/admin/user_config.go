@@ -261,6 +261,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
+	cl.SearchColumns("Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -298,10 +299,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
-			{
-				Label: "Felix",
-				Query: url.Values{"name.ilike": []string{"felix"}},
-			},
 			{
 				Label: "Active",
 				Query: url.Values{"status": []string{"active"}},
@@ -349,7 +346,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 		}
 	}
 	return h.Div(
-		VSelect().
+		VAutocomplete().
 			Label("Favorite Post").
 			FieldName("FavorPostID").
 			Items(items).
@@ -461,6 +458,17 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 			},
 		}
 	})
+
+	// select many
+	// lb.BulkAction("Confirm").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+	// 	return VBtn("Confirm").
+	// 		Color("primary").
+	// 		Attr("@click", web.Plaid().
+	// 			EventFunc("selectFavorPost").
+	// 			Query("ids", ctx.R.URL.Query().Get(presets.ParamSelectedIds)).
+	// 			MergeQuery(true).
+	// 			Go())
+	// })
 }
 
 func registerSelectFavorPostEvent(b *presets.Builder) {

@@ -328,7 +328,7 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
+	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``)
 	pm := pageBuilder.Configure(b, db)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {

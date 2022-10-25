@@ -46,8 +46,9 @@ func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 
 func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner", "", "", "",
-		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner",
+		"", "", "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div().Class("container-video_banner-mask"), VideoBannerHeadBody(data), VideoBannerFootBody(data),
 		// If(data.PopupText != "", VideoBannerPopupBody(data)),
 	)
