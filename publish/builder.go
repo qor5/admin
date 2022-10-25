@@ -182,14 +182,16 @@ func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err er
 }
 
 func SetPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
-	conds := []string{}
+	querys := []string{}
+	args := []interface{}{}
 	for _, p := range s.PrimaryFields {
 		if p.Name == "Version" {
 			continue
 		}
 		val, _ := p.ValueOf(db.Statement.Context, reflect.ValueOf(record))
-		conds = append(conds, fmt.Sprintf("%s = %v", strcase.ToSnake(p.Name), val))
+		querys = append(querys, fmt.Sprintf("%s = ?", strcase.ToSnake(p.Name)))
+		args = append(args, val)
 	}
 
-	return db.Where(strings.Join(conds, " AND "))
+	return db.Where(strings.Join(querys, " AND "), args...)
 }

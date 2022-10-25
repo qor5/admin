@@ -1,5 +1,11 @@
 package publish
 
+import (
+	"reflect"
+
+	"github.com/qor/qor5/utils"
+)
+
 type Version struct {
 	Version       string `gorm:"primary_key;size:128"`
 	VersionName   string
@@ -21,4 +27,9 @@ func (version Version) GetVersionName() string {
 
 func (version *Version) SetVersionName(v string) {
 	version.VersionName = v
+}
+
+func IsVersion(obj interface{}) (IsVersion bool) {
+	_, IsVersion = utils.GetStruct(reflect.TypeOf(obj)).(VersionInterface)
+	return
 }

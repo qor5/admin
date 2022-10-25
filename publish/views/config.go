@@ -8,6 +8,7 @@ import (
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"github.com/qor/qor5/activity"
+	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	"golang.org/x/text/language"
@@ -24,7 +25,10 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			}
 
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
-			m.Listing().SearchFunc(searcher(db, m))
+			m.Listing().SearchFunc(gorm2op.Searcher(db, m))
+			m.Editing().FetchFunc(gorm2op.Fetcher(db, m))
+			m.Editing().SaveFunc(gorm2op.Saver(db, m))
+			m.Editing().DeleteFunc(gorm2op.Deleter(db, m))
 
 			m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 				if ctx.R.FormValue("id") == "" {

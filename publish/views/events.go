@@ -119,7 +119,7 @@ func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		)
 
-		table, _, err := versionListTable(db, mb, msgr, ctx.R)
+		table, _, err := versionListTable(db, mb, msgr, ctx)
 		if err != nil {
 			return
 		}

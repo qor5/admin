@@ -2,7 +2,6 @@ package views
 
 import (
 	"fmt"
-	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -31,7 +31,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			}
 		)
 
-		table, currentVersion, err := versionListTable(db, mb, msgr, ctx.R)
+		table, currentVersion, err := versionListTable(db, mb, msgr, ctx)
 		if err != nil {
 			return nil
 		}
@@ -73,23 +73,25 @@ type versionListTableItem struct {
 	ItemClass   string
 }
 
-func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req *http.Request) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
-	segs := strings.Split(req.FormValue("id"), "_")
+func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
+	segs := strings.Split(ctx.R.FormValue("id"), "_")
 	if len(segs) != 2 {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", req.FormValue("id"))
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue("id"))
 	}
 
 	id, currentVersionName := segs[0], segs[1]
 	if id == "" || currentVersionName == "" {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", req.FormValue("id"))
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue("id"))
 	}
+
+	paramID := ctx.R.FormValue("id")
 
 	var (
 		versions      []versionListTableItem
 		namedVersions []versionListTableItem
 		activeClass   = "deep-purple white--text"
-		selected      = req.FormValue("selected")
-		page          = req.FormValue("page")
+		selected      = ctx.R.FormValue("selected")
+		page          = ctx.R.FormValue("page")
 		currentPage   = 1
 	)
 
@@ -99,7 +101,9 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 		}
 	}
 
-	db.Session(&gorm.Session{NewDB: true}).Model(mb.NewModel()).Select("id,version,version_name,status").Where("id = ?", id).Order("created_at DESC").Find(&versions)
+	gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), mb.NewModel(), paramID, ctx, "version").
+		Order("version DESC").
+		Find(&versions)
 
 	for index := range versions {
 		if versions[index].Version == currentVersionName {
@@ -189,6 +193,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
+		paramID := ctx.R.FormValue("id")
 
 		var obj = mb.NewModel()
 
@@ -206,8 +211,10 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
-		newObj := mb.NewModel()
-		db.Model(newObj).Unscoped().Where("id = ? AND version like ?", id, version+"%").Count(&count)
+		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
+			Where("version like ?", version+"%").
+			Order("version DESC").
+			Count(&count)
 
 		versionName := fmt.Sprintf("%s-v%02v", version, count+1)
 		if err = reflectutils.Set(obj, "Version.Version", versionName); err != nil {
@@ -260,6 +267,7 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		}
 
 		wh := db.Model(obj)
+
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
@@ -288,11 +296,11 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 		}
 		for _, f := range stmt.Schema.PrimaryFields {
 			if f.Name != "Version" {
-				pks = append(pks, stmt.Quote(strings.ToLower(f.Name)))
+				pks = append(pks, f.DBName)
 			}
 		}
 		pkc := strings.Join(pks, ",")
-		sql := fmt.Sprintf("(%v.id, %v.version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", tn, tn, pkc, tn, condition, pkc)
+		sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
 		if err = wh.Where(sql).Count(&c).Error; err != nil {
 			return
 		}

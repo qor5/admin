@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/biter777/countries"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -20,6 +21,8 @@ import (
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
+	"github.com/qor/qor5/l10n"
+	l10n_view "github.com/qor/qor5/l10n/views"
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
@@ -122,8 +125,30 @@ func NewConfig() Config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
+			//// Example:
+			//user := getCurrentUser(r)
+			//var supportedLanguages []language.Tag
+			//for _, role := range user.GetRoles() {
+			//	switch role {
+			//	case "English Group":
+			//		supportedLanguages = append(supportedLanguages, language.English)
+			//	case "Chinese Group":
+			//		supportedLanguages = append(supportedLanguages, language.SimplifiedChinese)
+			//	}
+			//}
+			//return supportedLanguages
 			return b.I18n().GetSupportLanguages()
 		})
+
+	l10nBuilder := l10n.New()
+	l10nBuilder.
+		RegisterLocales(countries.International, "International", "International").
+		RegisterLocales(countries.China, "China", "China").
+		RegisterLocales(countries.Japan, "Japan", "Japan").
+		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
+			return l10nBuilder.GetSupportLocales()[:]
+		})
+
 	utils.Configure(b)
 
 	media_view.Configure(b, db)
@@ -377,6 +402,8 @@ func NewConfig() Config {
 	configInputHarness(b, db)
 	configUser(b, db)
 	configProfile(b, db)
+
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm)
 
 	return Config{
 		pb:          b,
