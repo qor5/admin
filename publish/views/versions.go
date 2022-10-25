@@ -132,23 +132,24 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 	table = web.Scope(
 		VDataTable(
 			web.Slot(
-				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "item.ItemClass"),
-			).Name("item.actions").Scope("{ item }"),
+				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "item.ItemClass").Attr("style", "margin-left: -25px;"),
+			).Name("item.Delete").Scope("{ item }"),
 			web.Slot(
 				VEditDialog(
-					h.Text(" {{ props.item.VersionName }}"),
+					VIcon("edit").Small(true).Class("mr-2").Attr(":class", "props.item.ItemClass"),
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
-				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent),
-			).Name("item.VersionName").Scope("props"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Large(true).Transition("slide-x-reverse-transition"),
+			).Name("item.Edit").Scope("props"),
 		).
 			Items(versions).
 			Headers(
 				[]map[string]interface{}{
 					{"text": "VersionName", "value": "VersionName"},
 					{"text": "Status", "value": "Status"},
-					{"text": "Actions", "value": "actions"},
+					{"text": "Edit", "value": "Edit"},
+					{"text": "Delete", "value": "Delete"},
 				}).
 			HideDefaultHeader(true).
 			On("click:row", swithVersionEvent).
