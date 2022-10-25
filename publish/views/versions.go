@@ -132,7 +132,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 	table = web.Scope(
 		VDataTable(
 			web.Slot(
-				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent),
+				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "item.ItemClass"),
 			).Name("item.actions").Scope("{ item }"),
 			web.Slot(
 				VEditDialog(
