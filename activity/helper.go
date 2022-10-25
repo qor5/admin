@@ -51,7 +51,7 @@ func findOld(obj interface{}, db *gorm.DB) (interface{}, bool) {
 
 	for _, dbName := range stmt.Schema.DBNames {
 		if field := stmt.Schema.LookUpField(dbName); field != nil && field.PrimaryKey {
-			if value, isZero := field.ValueOf(objValue); !isZero {
+			if value, isZero := field.ValueOf(db.Statement.Context, objValue); !isZero {
 				sqls = append(sqls, fmt.Sprintf("%v = ?", dbName))
 				vars = append(vars, value)
 			}
