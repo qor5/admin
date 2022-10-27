@@ -5,6 +5,7 @@ import (
 	l10n_view "github.com/qor/qor5/l10n/views"
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
+	"github.com/qor/qor5/pagebuilder"
 	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/utils"
 )
@@ -64,6 +65,90 @@ type Messages struct {
 	PagesCategoryID        string
 	PagesTemplateSelection string
 	PagesEditContainer     string
+
+	WebHeader       string
+	WebHeadersColor string
+	Header          string
+
+	WebFooter             string
+	WebFootersEnglishUrl  string
+	WebFootersJapaneseUrl string
+	Footer                string
+
+	VideoBanner                       string
+	VideoBannersAddTopSpace           string
+	VideoBannersAddBottomSpace        string
+	VideoBannersAnchorID              string
+	VideoBannersVideo                 string
+	VideoBannersBackgroundVideo       string
+	VideoBannersMobileBackgroundVideo string
+	VideoBannersVideoCover            string
+	VideoBannersMobileVideoCover      string
+	VideoBannersHeading               string
+	VideoBannersPopupText             string
+	VideoBannersText                  string
+	VideoBannersLinkText              string
+	VideoBannersLink                  string
+
+	Heading                   string
+	HeadingsAddTopSpace       string
+	HeadingsAddBottomSpace    string
+	HeadingsAnchorID          string
+	HeadingsHeading           string
+	HeadingsFontColor         string
+	HeadingsBackgroundColor   string
+	HeadingsLink              string
+	HeadingsLinkText          string
+	HeadingsLinkDisplayOption string
+	HeadingsText              string
+
+	BrandGrid                string
+	BrandGridsAddTopSpace    string
+	BrandGridsAddBottomSpace string
+	BrandGridsAnchorID       string
+	BrandGridsBrands         string
+
+	ListContent                   string
+	ListContentsAddTopSpace       string
+	ListContentsAddBottomSpace    string
+	ListContentsAnchorID          string
+	ListContentsBackgroundColor   string
+	ListContentsItems             string
+	ListContentsLink              string
+	ListContentsLinkText          string
+	ListContentsLinkDisplayOption string
+
+	ImageContainer                           string
+	ImageContainersAddTopSpace               string
+	ImageContainersAddBottomSpace            string
+	ImageContainersAnchorID                  string
+	ImageContainersBackgroundColor           string
+	ImageContainersTransitionBackgroundColor string
+	ImageContainersImage                     string
+	Image                                    string
+
+	InNumber                string
+	InNumbersAddTopSpace    string
+	InNumbersAddBottomSpace string
+	InNumbersAnchorID       string
+	InNumbersHeading        string
+	InNumbersItems          string
+	InNumbers               string
+
+	ContactForm                    string
+	ContactFormsAddTopSpace        string
+	ContactFormsAddBottomSpace     string
+	ContactFormsAnchorID           string
+	ContactFormsHeading            string
+	ContactFormsText               string
+	ContactFormsSendButtonText     string
+	ContactFormsFormButtonText     string
+	ContactFormsMessagePlaceholder string
+	ContactFormsNamePlaceholder    string
+	ContactFormsEmailPlaceholder   string
+	ContactFormsThankyouMessage    string
+	ContactFormsActionUrl          string
+	ContactFormsPrivacyPolicy      string
 }
 
 var Messages_zh_CN = &Messages{
@@ -125,6 +210,90 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages{
 	PagesCategoryID:        "Category ID JP",
 	PagesTemplateSelection: "Template Selection JP",
 	PagesEditContainer:     "Edit Container JP",
+
+	WebHeader:       "WebHeader JP",
+	WebHeadersColor: "Color JP",
+	Header:          "Header JP",
+
+	WebFooter:             "WebFooter JP",
+	WebFootersEnglishUrl:  "English Url JP",
+	WebFootersJapaneseUrl: "Japanese Url JP",
+	Footer:                "Footer JP",
+
+	VideoBanner:                       "VideoBanner JP",
+	VideoBannersAddTopSpace:           "Add Top Space JP",
+	VideoBannersAddBottomSpace:        "Add Bottom Space JP",
+	VideoBannersAnchorID:              "Anchor ID JP",
+	VideoBannersVideo:                 "Video JP",
+	VideoBannersBackgroundVideo:       "Background Video JP",
+	VideoBannersMobileBackgroundVideo: "Mobile Background Video JP",
+	VideoBannersVideoCover:            "Video Cover JP",
+	VideoBannersMobileVideoCover:      "Mobile Video Cover JP",
+	VideoBannersHeading:               "Heading JP",
+	VideoBannersPopupText:             "Popup Text JP",
+	VideoBannersText:                  "Text JP",
+	VideoBannersLinkText:              "Link Text JP",
+	VideoBannersLink:                  "Link JP",
+
+	Heading:                   "Heading JP",
+	HeadingsAddTopSpace:       "Add Top Space JP",
+	HeadingsAddBottomSpace:    "Add Bottom Space JP",
+	HeadingsAnchorID:          "Anchor ID JP",
+	HeadingsHeading:           "Heading JP",
+	HeadingsFontColor:         "Font Color JP",
+	HeadingsBackgroundColor:   "Background Color JP",
+	HeadingsLink:              "Link JP",
+	HeadingsLinkText:          "Link Text JP",
+	HeadingsLinkDisplayOption: "Link Display Option JP",
+	HeadingsText:              "Text JP",
+
+	BrandGrid:                "BrandGrid JP",
+	BrandGridsAddTopSpace:    "Add Top Space JP",
+	BrandGridsAddBottomSpace: "Add Bottom Space JP",
+	BrandGridsAnchorID:       "Anchor ID JP",
+	BrandGridsBrands:         "Brands JP",
+
+	ListContent:                   "ListContent JP",
+	ListContentsAddTopSpace:       "Add Top Space JP",
+	ListContentsAddBottomSpace:    "Add Bottom Space JP",
+	ListContentsAnchorID:          "Anchor ID JP",
+	ListContentsBackgroundColor:   "Background Color JP",
+	ListContentsItems:             "Items JP",
+	ListContentsLink:              "Link JP",
+	ListContentsLinkText:          "Link Text JP",
+	ListContentsLinkDisplayOption: "Link Display Option JP",
+
+	ImageContainer:                           "ImageContainer JP",
+	ImageContainersAddTopSpace:               "Add Top Space JP",
+	ImageContainersAddBottomSpace:            "Add Bottom Space JP",
+	ImageContainersAnchorID:                  "Anchor ID JP",
+	ImageContainersBackgroundColor:           "Background Color JP",
+	ImageContainersTransitionBackgroundColor: "Transition Background Color JP",
+	ImageContainersImage:                     "Image JP",
+	Image:                                    "Image JP",
+
+	InNumber:                "InNumber JP",
+	InNumbersAddTopSpace:    "Add Top Space JP",
+	InNumbersAddBottomSpace: "Add Bottom Space JP",
+	InNumbersAnchorID:       "Anchor ID JP",
+	InNumbersHeading:        "Heading JP",
+	InNumbersItems:          "Items JP",
+	InNumbers:               "InNumbers JP",
+
+	ContactForm:                    "ContactForm JP",
+	ContactFormsAddTopSpace:        "Add Top Space JP",
+	ContactFormsAddBottomSpace:     "Add Bottom Space JP",
+	ContactFormsAnchorID:           "Anchor ID JP",
+	ContactFormsHeading:            "Heading JP",
+	ContactFormsText:               "Text JP",
+	ContactFormsSendButtonText:     "Send Button Text JP",
+	ContactFormsFormButtonText:     "Form Button Text JP",
+	ContactFormsMessagePlaceholder: "Message Placeholder JP",
+	ContactFormsNamePlaceholder:    "Name Placeholder JP",
+	ContactFormsEmailPlaceholder:   "Email Placeholder JP",
+	ContactFormsThankyouMessage:    "Thankyou Message JP",
+	ContactFormsActionUrl:          "Action Url JP",
+	ContactFormsPrivacyPolicy:      "Privacy Policy JP",
 }
 
 var Messages_ja_JP_I18nLoginKey = &login.Messages{
@@ -287,4 +456,15 @@ var Messages_ja_JP_I10nLocalizeKey = &l10n_view.Messages{
 	International:         "International JP",
 	China:                 "China JP",
 	Japan:                 "Japan JP",
+}
+
+var Messages_ja_JP_I18nPageBuilderKey = &pagebuilder.Messages{
+	Category:        "Category JP",
+	EditPageContent: "Edit Page Content JP",
+	Preview:         "Preview JP",
+	Containers:      "Containers JP",
+	AddContainers:   "Add Containers JP",
+	New:             "New JP",
+	Shared:          "Shared JP",
+	Select:          "Select JP",
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/goplaid/x/i18n"
 	h "github.com/theplant/htmlgo"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,7 +37,7 @@ func ConnectDB() (db *gorm.DB) {
 //go:embed assets/images
 var containerImages embed.FS
 
-func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
+func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *pagebuilder.Builder {
 	sess := session.Must(session.NewSession())
 
 	oss.Storage = s3.New(&s3.Config{
@@ -59,7 +60,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string) *pagebuilder.Builder {
 	if err != nil {
 		panic(err)
 	}
-	pb := pagebuilder.New(db)
+	pb := pagebuilder.New(db, i18nB)
 	if prefix != "" {
 		pb.Prefix(prefix)
 	}

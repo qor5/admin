@@ -131,6 +131,7 @@ func NewConfig() Config {
 		RegisterForModule(language.Japanese, publish_view.I18nPublishKey, Messages_ja_JP_I18nPublishKey).
 		RegisterForModule(language.Japanese, note.I18nNoteKey, Messages_ja_JP_I18nNoteKey).
 		RegisterForModule(language.Japanese, l10n_view.I10nLocalizeKey, Messages_ja_JP_I10nLocalizeKey).
+		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
 			//// Example:
 			//user := getCurrentUser(r)
@@ -335,7 +336,7 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``)
+	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
