@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	l10n_view "github.com/qor/qor5/l10n/views"
 	"github.com/qor/qor5/login"
@@ -10,7 +11,27 @@ import (
 	"github.com/qor/qor5/utils"
 )
 
+const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
+
 type Messages struct {
+	FilterTabsAll            string
+	FilterTabsHasUnreadNotes string
+	FilterTabsActive         string
+}
+
+var Messages_en_US = &Messages{
+	FilterTabsAll:            "All",
+	FilterTabsHasUnreadNotes: "HasUnreadNotes",
+	FilterTabsActive:         "Active",
+}
+
+var Messages_ja_JP = &Messages{
+	FilterTabsAll:            "All JP",
+	FilterTabsHasUnreadNotes: "HasUnreadNotes JP",
+	FilterTabsActive:         "Active JP",
+}
+
+type Messages_ModelsI18nModuleKey struct {
 	QOR5Example string
 	Roles       string
 	Users       string
@@ -151,7 +172,7 @@ type Messages struct {
 	ContactFormsPrivacyPolicy      string
 }
 
-var Messages_zh_CN = &Messages{
+var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	Posts:          "帖子",
 	PostsID:        "ID",
 	PostsTitle:     "标题",
@@ -167,7 +188,7 @@ var Messages_zh_CN = &Messages{
 	SeoVariableSiteName: "站点名称",
 }
 
-var Messages_ja_JP_ModelsI18nModuleKey = &Messages{
+var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	QOR5Example: "QOR5 Example JP",
 	Roles:       "Roles JP",
 	Users:       "Users JP",
@@ -457,6 +478,32 @@ var Messages_ja_JP_I10nLocalizeKey = &l10n_view.Messages{
 	China:                 "China JP",
 	Japan:                 "Japan JP",
 }
+
+//type L10nMessages struct {
+//	Localize              string
+//	LocalizeFrom          string
+//	LocalizeTo            string
+//	SuccessfullyLocalized string
+//	Location              string
+//	Colon                 string
+//	International         string
+//	China                 string
+//	Japan                 string
+//	Russia                string
+//}
+//
+//var Messages_ja_JP_I10nLocalizeKey2 = &L10nMessages{
+//	Localize:              "Localize JP",
+//	LocalizeFrom:          "From JP",
+//	LocalizeTo:            "To JP",
+//	SuccessfullyLocalized: "Successfully Localized JP",
+//	Location:              "Location JP",
+//	Colon:                 ":",
+//	International:         "International JP",
+//	China:                 "China JP",
+//	Japan:                 "Japan JP",
+//	Russia:                "Russia JP",
+//}
 
 var Messages_ja_JP_I18nPageBuilderKey = &pagebuilder.Messages{
 	Category:        "Category JP",

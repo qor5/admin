@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/goplaid/x/i18n"
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/publish"
@@ -300,15 +301,15 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
 			{
-				Label: "Active",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsActive"),
 				Query: url.Values{"status": []string{"active"}},
 			},
 			{
-				Label: "All",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: "Has Unread Notes",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -447,12 +448,12 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
 			{
-				Label: "All",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: "Has Unread Notes",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
