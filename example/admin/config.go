@@ -122,8 +122,10 @@ func NewConfig() Config {
 	)
 
 	b.I18n().
-		SupportLanguages(language.English, language.SimplifiedChinese).
+		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP).
+		RegisterForModule(language.Japanese, login.I18nLoginKey, Messages_login_ja_JP).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
 			//// Example:
 			//user := getCurrentUser(r)
