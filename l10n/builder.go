@@ -95,7 +95,7 @@ func (b *Builder) GetCorrectLocale(r *http.Request) countries.CountryCode {
 
 	supportLocales := b.GetSupportLocalesFromRequest(r)
 	for _, v := range supportLocales {
-		if locale == v.String() {
+		if locale == b.GetLocaleCode(v) {
 			return v
 		}
 	}
