@@ -6,6 +6,8 @@ import (
 	"github.com/goplaid/x/i18n"
 )
 
+const I18nLocalizeKey i18n.ModuleKey = "I18nLocalizeKey"
+
 type Messages struct {
 	Localize              string
 	LocalizeFrom          string
@@ -42,8 +44,6 @@ var Messages_zh_CN = &Messages{
 	Japan:                 "日本",
 }
 
-const I10nLocalizeKey i18n.ModuleKey = "I10nLocalizeKey"
-
-func MustGetMessages(r *http.Request) *Messages {
-	return i18n.MustGetModuleMessages(r, I10nLocalizeKey, Messages_en_US).(*Messages)
+func MustGetTranslation(r *http.Request, key string) string {
+	return i18n.T(r, I18nLocalizeKey, key)
 }

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	v "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/activity"
@@ -34,7 +33,6 @@ type SelectLocale struct {
 
 func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		l10nMsgr := MustGetMessages(ctx.R)
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
@@ -63,7 +61,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 				continue
 			}
 			if !utils.Contains(existLocales, lb.GetLocaleCode(locale)) || vo.Len() == 0 {
-				selectLocales = append(selectLocales, SelectLocale{Label: i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
+				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
 			}
 		}
 
@@ -71,20 +69,20 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 			Name: presets.DialogPortalName,
 			Body: v.VDialog(
 				v.VCard(
-					v.VCardTitle(h.Text(l10nMsgr.Localize)),
+					v.VCardTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
 
 					v.VCardText(
 						h.Div(
 							h.Div(
 								h.Div(
-									h.Label(l10nMsgr.LocalizeFrom).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+									h.Label(MustGetTranslation(ctx.R, "LocalizeFrom")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 									//h.Br(),
-									h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(fromLocale))),
+									h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale))),
 								).Class("v-text-field__slot"),
 							).Class("v-input__slot"),
 						).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
 						v.VSelect().FieldName("localize_to").
-							Label(l10nMsgr.LocalizeTo).
+							Label(MustGetTranslation(ctx.R, "LocalizeTo")).
 							Multiple(true).Chips(true).
 							Items(selectLocales).
 							ItemText("Label").
@@ -170,8 +168,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		}
 
-		l10nMsgr := MustGetMessages(ctx.R)
-		presets.ShowMessage(&r, l10nMsgr.SuccessfullyLocalized, "")
+		presets.ShowMessage(&r, MustGetTranslation(ctx.R, "SuccessfullyLocalized"), "")
 
 		// refresh current page
 		r.Reload = true

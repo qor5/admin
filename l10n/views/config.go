@@ -7,7 +7,6 @@ import (
 
 	"github.com/biter777/countries"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/stripeui"
 	v "github.com/goplaid/x/vuetify"
@@ -49,8 +48,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.AddWrapHandler(lb.EnsureLocale)
 	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
 	b.I18n().
-		RegisterForModule(language.English, I10nLocalizeKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I10nLocalizeKey, Messages_zh_CN)
+		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN)
 }
 
 func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -81,10 +80,10 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 		}
 
 		var chips []h.HTMLComponent
-		chips = append(chips, v.VChip(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(fromLocale)))).Color("green").TextColor("white").Label(true).Small(true))
+		chips = append(chips, v.VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("green").TextColor("white").Label(true).Small(true))
 
 		for _, locale := range otherLocales {
-			chips = append(chips, v.VChip(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)))).Label(true).Small(true))
+			chips = append(chips, v.VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))).Label(true).Small(true))
 		}
 		return h.Td(
 			chips...,
@@ -101,7 +100,6 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 		}
 
 		localeQueryName := lb.GetQueryName()
-		msgr := MustGetMessages(ctx.R)
 
 		if len(supportLocales) == 1 {
 			return h.Template().Children(
@@ -113,7 +111,7 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 							).Attr("style", "margin-right: 16px"),
 							v.VListItemContent(
 								v.VListItemTitle(
-									h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Location, msgr.Colon, i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
+									h.Div(h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
 								),
 							),
 						).Class("pa-0").Dense(true),
@@ -131,7 +129,7 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 					v.VListItem(
 						v.VListItemContent(
 							v.VListItemTitle(
-								h.Div(h.Text(i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(contry)))),
+								h.Div(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(contry)))),
 							),
 						),
 					).Attr("@click", web.Plaid().Query(localeQueryName, lb.GetLocaleCode(contry)).Go()),
@@ -149,7 +147,7 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 							).Attr("style", "margin-right: 16px"),
 							v.VListItemContent(
 								v.VListItemTitle(
-									h.Text(fmt.Sprintf("%s%s %s", msgr.Location, msgr.Colon, i18n.T(ctx.R, I10nLocalizeKey, lb.GetLocaleLabel(locale)))),
+									h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))),
 								),
 							),
 							v.VListItemIcon(
@@ -169,14 +167,13 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 
 func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) stripeui.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		msgr := MustGetMessages(ctx.R)
 		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
 		}
 
 		return v.VListItem(
 			v.VListItemIcon(v.VIcon("language")),
-			v.VListItemTitle(h.Text(msgr.Localize)),
+			v.VListItemTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
 		).Attr("@click", web.Plaid().
 			EventFunc(Localize).
 			Queries(editExtraParams).
