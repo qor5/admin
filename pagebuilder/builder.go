@@ -217,24 +217,25 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		// Only displayed when create action
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if p.GetStatus() == "" {
 			return h.Div(
 				web.Portal().Name("TemplateDialog"),
 				VRow(
 					VCol(
 						web.Portal(
-							VTextField().Disabled(true).Label("Template ID"),
+							VTextField().Disabled(true).Label(msgr.TemplateID),
 						).Name("TemplateIDTextField"),
 					),
 					VCol(
 						web.Portal(
-							VTextField().Disabled(true).Label("Template Name"),
+							VTextField().Disabled(true).Label(msgr.TemplateName),
 						).Name("TemplateNameTextField"),
 					),
 				),
 				VRow(
 					VCol(
-						VBtn("Create From Template").Color("primary").
+						VBtn(msgr.CreateFromTemplate).Color("primary").
 							Attr("@click", web.Plaid().EventFunc(openTemplateDialogEvent).Go()),
 					),
 				),
@@ -418,14 +419,15 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			ID = strconv.Itoa(int(tpl.ID))
 			Name = tpl.Name
 		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateIDTextField",
-			Body: VTextField().Disabled(true).Label("Template ID").Value(ID),
+			Body: VTextField().Disabled(true).Label(msgr.TemplateID).Value(ID),
 		})
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateNameTextField",
-			Body: VTextField().Disabled(true).Label("Template Name").Value(Name),
+			Body: VTextField().Disabled(true).Label(msgr.TemplateName).Value(Name),
 		})
 
 		return
@@ -461,13 +463,14 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 				)
 			}
 		}
+		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateDialog",
 			Body: VDialog(
 				VCard(
 					VCardTitle(
-						h.Text("Create From Template"),
+						h.Text(msgrPb.CreateFromTemplate),
 						VSpacer(),
 						VBtn("").Icon(true).
 							Children(VIcon("close")).

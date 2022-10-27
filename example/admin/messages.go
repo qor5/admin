@@ -506,12 +506,15 @@ var Messages_ja_JP_I10nLocalizeKey = &l10n_view.Messages{
 //}
 
 var Messages_ja_JP_I18nPageBuilderKey = &pagebuilder.Messages{
-	Category:        "Category JP",
-	EditPageContent: "Edit Page Content JP",
-	Preview:         "Preview JP",
-	Containers:      "Containers JP",
-	AddContainers:   "Add Containers JP",
-	New:             "New JP",
-	Shared:          "Shared JP",
-	Select:          "Select JP",
+	Category:           "Category JP",
+	EditPageContent:    "Edit Page Content JP",
+	Preview:            "Preview JP",
+	Containers:         "Containers JP",
+	AddContainers:      "Add Containers JP",
+	New:                "New JP",
+	Shared:             "Shared JP",
+	Select:             "Select JP",
+	TemplateID:         "Template ID JP",
+	TemplateName:       "Template Name JP",
+	CreateFromTemplate: "Create From Template JP",
 }
