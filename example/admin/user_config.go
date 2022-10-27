@@ -270,7 +270,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
@@ -402,7 +402,7 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
