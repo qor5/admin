@@ -6,6 +6,10 @@ COPY . .
 RUN set -x && go get -d -v ./...
 RUN GOOS=linux GOARCH=amd64 go build -o /app/entry ./example/
 
-FROM alpine
+FROM alpine:3.16
+RUN apk --update upgrade && \
+    apk add ca-certificates && \
+    apk add tzdata && \
+    rm -rf /var/cache/apk/*
 COPY --from=builder /app/entry  /bin/example
 CMD /bin/example
