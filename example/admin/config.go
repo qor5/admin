@@ -438,19 +438,19 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 					vuetify.VListItemTitle(h.Text("Pages")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
 				),
-			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Posts")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
 				),
-			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Users")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
-			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
 				vuetify.VListItem(
 					vuetify.VListItemContent(
