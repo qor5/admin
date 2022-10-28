@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
@@ -259,6 +260,13 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return web.Portal(favorPostSelector(id)).Name("favorPostSelector")
 	})
 
+	oldSaver := ed.Saver
+	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		u := obj.(*models.User)
+		u.RegistrationDate = time.Now()
+		return oldSaver(obj, id, ctx)
+	})
+
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
 	cl.SearchColumns("Name", "Account")
@@ -270,7 +278,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
@@ -293,6 +301,13 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
 				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
+			},
+			{
+				Key:          "registration_date",
+				Label:        "Registration Date",
+				ItemType:     vx.ItemTypeDate,
+				SQLCondition: `registration_date %s ?`,
+				Folded:       true,
 			},
 		}
 	})
@@ -402,7 +417,7 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{

@@ -11,13 +11,14 @@ import (
 type User struct {
 	gorm.Model
 
-	Name        string
-	Company     string
-	Roles       []role.Role `gorm:"many2many:user_role_join;"`
-	Status      string
-	UpdatedAt   time.Time
-	CreatedAt   time.Time
-	FavorPostID uint
+	Name             string
+	Company          string
+	Roles            []role.Role `gorm:"many2many:user_role_join;"`
+	Status           string
+	UpdatedAt        time.Time
+	CreatedAt        time.Time
+	FavorPostID      uint
+	RegistrationDate time.Time `gorm:"type:date"`
 
 	// Username is email
 	login.UserPass

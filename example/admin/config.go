@@ -208,7 +208,7 @@ func NewConfig() Config {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vuetifyx.ItemTypeDate,
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
