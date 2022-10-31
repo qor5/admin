@@ -33,7 +33,7 @@ var Messages_en_US = &Messages{
 }
 
 var Messages_zh_CN = &Messages{
-	Category:           "类别",
+	Category:           "目录",
 	EditPageContent:    "编辑页面内容",
 	Preview:            "预览",
 	Containers:         "组件",

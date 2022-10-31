@@ -136,6 +136,7 @@ func NewConfig() Config {
 		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
+		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
 			//// Example:
 			//user := getCurrentUser(r)

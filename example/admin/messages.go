@@ -31,6 +31,12 @@ var Messages_ja_JP = &Messages{
 	FilterTabsActive:         "有効",
 }
 
+var Messages_zh_CN = &Messages{
+	FilterTabsAll:            "全部",
+	FilterTabsHasUnreadNotes: "未读备注",
+	FilterTabsActive:         "有效",
+}
+
 type Messages_ModelsI18nModuleKey struct {
 	QOR5Example string
 	Roles       string
@@ -173,13 +179,13 @@ type Messages_ModelsI18nModuleKey struct {
 }
 
 var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
-	Posts:          "帖子",
+	Posts:          "帖子 示例",
 	PostsID:        "ID",
 	PostsTitle:     "标题",
 	PostsHeroImage: "主图",
 	PostsBody:      "内容",
 	Example:        "QOR5演示",
-	Settings:       "设置",
+	Settings:       "SEO 设置",
 	Post:           "帖子",
 	PostsBodyImage: "内容图片",
 
@@ -188,27 +194,27 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	SeoVariableSiteName: "站点名称",
 
 	QOR5Example: "QOR5 示例",
-	Roles:       "权限",
-	Users:       "用户",
+	Roles:       "权限管理",
+	Users:       "用户管理",
 
-	PageBuilder:              "页面生成管理",
-	Pages:                    "页面",
-	SharedContainers:         "公用的 Containers",
-	DemoContainers:           "示例 Containers",
-	Templates:                "模板",
-	Categories:               "目录",
-	ProductManagement:        "产品管理",
-	Products:                 "产品",
-	SiteManagement:           "站点管理",
-	SEO:                      "SEO",
-	UserManagement:           "用户管理",
-	Profile:                  "个人页",
-	FeaturedModelsManagement: "特有功能模块管理",
-	InputHarnesses:           "InputHarnesses",
+	PageBuilder:              "页面管理菜单",
+	Pages:                    "页面管理",
+	SharedContainers:         "公用组件",
+	DemoContainers:           "示例组件",
+	Templates:                "模板页面",
+	Categories:               "目录管理",
+	ProductManagement:        "产品管理菜单",
+	Products:                 "产品管理",
+	SiteManagement:           "站点管理菜单",
+	SEO:                      "SEO 管理",
+	UserManagement:           "用户管理菜单",
+	Profile:                  "个人页面",
+	FeaturedModelsManagement: "特色模块管理菜单",
+	InputHarnesses:           "Input 示例",
 	ListEditorExample:        "ListEditor 示例",
-	Customers:                "Customers",
-	ListModels:               "List Models",
-	MicrositeModels:          "Microsite Models",
+	Customers:                "Customers 示例",
+	ListModels:               "发布带排序及分页模块 示例",
+	MicrositeModels:          "Microsite 示例",
 	Workers:                  "后台工作进程管理",
 	ActivityLogs:             "操作日志",
 	MediaLibrary:             "媒体库",
@@ -217,9 +223,9 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	PagesTitle:      "标题",
 	PagesSlug:       "Slug",
 	PagesLocale:     "地区",
-	PagesNotes:      "笔记",
-	PagesDraftCount: "DraftCount",
-	PagesOnline:     "Online",
+	PagesNotes:      "备注",
+	PagesDraftCount: "草稿数",
+	PagesOnline:     "在线",
 
 	Page:                   "Page",
 	PagesStatus:            "PagesStatus",
