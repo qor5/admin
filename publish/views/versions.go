@@ -209,7 +209,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
+		gorm2op.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), paramID, ctx, "version").
 			Where("version like ?", version+"%").
 			Order("version DESC").
 			Count(&count)
