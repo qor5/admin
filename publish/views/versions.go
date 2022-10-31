@@ -149,6 +149,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 					{"text": "Actions", "value": "Actions"},
 				}).
 			HideDefaultHeader(true).
+			HideDefaultFooter(len(versions) <= 10).
 			On("click:row", swithVersionEvent).
 			On("pagination", "locals.versionPage = $event.page").
 			ItemClass("ItemClass").
@@ -156,6 +157,8 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 				map[string]interface{}{
 					"items-per-page-text":    "",
 					"items-per-page-options": []int{5, 10, 20, -1},
+					"show-first-last-page":   true,
+					"page-text":              "{1} / {2}",
 				},
 			).
 			Page(currentPage),
