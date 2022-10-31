@@ -10,7 +10,9 @@ import (
 	"github.com/goplaid/x/presets"
 	v "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/activity"
+	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/l10n"
+	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -124,50 +126,78 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
-		versionName := segs[1]
-
+		paramID := ctx.R.FormValue("id")
+		from := ctx.R.FormValue("localize_from")
 		to, exist := ctx.R.Form["localize_to"]
 		if !exist {
 			return
 		}
-		from := ctx.R.FormValue("localize_from")
 
-		var obj = mb.NewModel()
-		db.Where("id = ? AND version = ? AND locale_code = ?", id, versionName, from).First(&obj)
+		var fromObj = mb.NewModel()
+		if err = reflectutils.Set(fromObj, "ID", id); err != nil {
+			return
+		}
+		if err = reflectutils.Set(fromObj, "LocaleCode", from); err != nil {
+			return
+		}
+		var isVersion bool
+
+		if publish.IsVersion(fromObj) {
+			isVersion = true
+			version := segs[1]
+			if err = reflectutils.Set(fromObj, "Version.Version", version); err != nil {
+				return
+			}
+		}
+
+		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(&fromObj)
 
 		me := mb.Editing()
 
 		for _, toLocale := range to {
-			obj := obj
+			var toObj = mb.NewModel()
 
-			if err = reflectutils.Set(obj, "ID", id); err != nil {
+			if err = reflectutils.Set(toObj, "ID", id); err != nil {
 				return
 			}
 
-			version := db.NowFunc().Format("2006-01-02")
-
-			versionName := fmt.Sprintf("%s-v%02v", version, 1)
-			if err = reflectutils.Set(obj, "Version.Version", versionName); err != nil {
-				return
-			}
-			if err = reflectutils.Set(obj, "Version.VersionName", versionName); err != nil {
-				return
-			}
-			if err = reflectutils.Set(obj, "LocaleCode", toLocale); err != nil {
-				return
-			}
-
-			if me.Validator != nil {
-				if vErr := me.Validator(obj, ctx); vErr.HaveErrors() {
-					me.UpdateOverlayContent(ctx, &r, obj, "", &vErr)
+			if isVersion {
+				date := db.NowFunc().Format("2006-01-02")
+				var count int64
+				gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
+					Where("version like ?", date+"%").
+					Order("version DESC").
+					Count(&count)
+				versionName := fmt.Sprintf("%s-v%02v", date, count+1)
+				if err = reflectutils.Set(toObj, "Version.Version", versionName); err != nil {
+					return
+				}
+				if err = reflectutils.Set(toObj, "Version.VersionName", versionName); err != nil {
+					return
+				}
+				if err = reflectutils.Set(toObj, "Version.ParentVersion", ""); err != nil {
 					return
 				}
 			}
 
-			if err = db.Save(obj).Error; err != nil {
+			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
 				return
 			}
 
+			me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
+				ModelInfo: mb.Info(),
+			}, false, presets.ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R), ctx)
+
+			if me.Validator != nil {
+				if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
+					me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
+					return
+				}
+			}
+
+			if err = db.Save(toObj).Error; err != nil {
+				return
+			}
 		}
 
 		l10nMsgr := MustGetMessages(ctx.R)
