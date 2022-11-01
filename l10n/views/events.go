@@ -150,7 +150,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 		}
 
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(&fromObj)
+		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(fromObj)
 
 		me := mb.Editing()
 
