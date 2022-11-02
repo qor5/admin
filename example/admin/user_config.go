@@ -27,7 +27,7 @@ import (
 
 func configUser(b *presets.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
-	//MenuIcon("people")
+	// MenuIcon("people")
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
@@ -306,6 +306,13 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "registration_date",
 				Label:        "Registration Date",
 				ItemType:     vx.ItemTypeDate,
+				SQLCondition: `registration_date %s ?`,
+				Folded:       true,
+			},
+			{
+				Key:          "registration_date_range",
+				Label:        "Registration Date Range",
+				ItemType:     vx.ItemTypeDateRange,
 				SQLCondition: `registration_date %s ?`,
 				Folded:       true,
 			},
