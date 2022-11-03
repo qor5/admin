@@ -21,7 +21,7 @@ type Messages struct {
 
 var Messages_en_US = &Messages{
 	FilterTabsAll:            "All",
-	FilterTabsHasUnreadNotes: "HasUnreadNotes",
+	FilterTabsHasUnreadNotes: "Has Unread Notes",
 	FilterTabsActive:         "Active",
 }
 
