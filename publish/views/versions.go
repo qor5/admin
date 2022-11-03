@@ -155,10 +155,10 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, req
 			ItemClass("ItemClass").
 			FooterProps(
 				map[string]interface{}{
-					"items-per-page-text":    "",
-					"items-per-page-options": []int{5, 10, 20, -1},
+					"items-per-page-options": []int{5, 10, 20},
 					"show-first-last-page":   true,
-					"page-text":              "{1} / {2}",
+					"items-per-page-text":    "",
+					"page-text":              "",
 				},
 			).
 			Page(currentPage),
