@@ -107,6 +107,7 @@ func NewConfig() Config {
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles:*", "*:users:*"),
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:orders:*"),
 			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
@@ -164,7 +165,9 @@ func NewConfig() Config {
 			"page_templates",
 			"page_categories",
 		).Icon("view_quilt"),
-		b.MenuGroup("Product Management").SubItems(
+		b.MenuGroup("EC Management").SubItems(
+			"ec-dashboard",
+			"Order",
 			"Product",
 			"Category",
 		).Icon("shopping_cart"),
@@ -400,6 +403,10 @@ func NewConfig() Config {
 	initLoginBuilder(db, b, ab)
 
 	configInputHarness(b, db)
+
+	configOrder(b, db)
+	configECDashboard(b, db)
+
 	configUser(b, db)
 	configProfile(b, db)
 

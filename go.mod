@@ -3,6 +3,7 @@ module github.com/qor/qor5
 go 1.17
 
 require (
+	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go v1.38.62
 	github.com/biter777/countries v1.5.6
 	github.com/disintegration/imaging v1.6.2
@@ -35,6 +36,7 @@ require (
 	github.com/theplant/testingutils v0.0.0-20190603093022-26d8b4d95c61
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f
+	github.com/wcharczuk/go-chart/v2 v2.1.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.1.0
 	golang.org/x/text v0.4.0
@@ -50,6 +52,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/go-playground/form v3.1.4+incompatible // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -90,7 +93,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
+	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
