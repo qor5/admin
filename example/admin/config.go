@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/gorm2op"
@@ -123,8 +124,20 @@ func NewConfig() Config {
 	)
 
 	b.I18n().
-		SupportLanguages(language.English, language.SimplifiedChinese).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
+		RegisterForModule(language.Japanese, presets.CoreI18nModuleKey, Messages_ja_JP_CoreI18nModuleKey).
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).
+		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).
+		RegisterForModule(language.Japanese, login.I18nLoginKey, Messages_ja_JP_I18nLoginKey).
+		RegisterForModule(language.Japanese, utils.I18nUtilsKey, Messages_ja_JP_I18nUtilsKey).
+		RegisterForModule(language.Japanese, publish_view.I18nPublishKey, Messages_ja_JP_I18nPublishKey).
+		RegisterForModule(language.Japanese, note.I18nNoteKey, Messages_ja_JP_I18nNoteKey).
+		RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey).
+		//RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey2).
+		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
+		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
+		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
+		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
 			//// Example:
 			//user := getCurrentUser(r)
@@ -146,6 +159,7 @@ func NewConfig() Config {
 		RegisterLocales(countries.International, "International", "International").
 		RegisterLocales(countries.China, "China", "China").
 		RegisterLocales(countries.Japan, "Japan", "Japan").
+		//RegisterLocales(countries.Russia, "Russia", "Russia").
 		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
 			return l10nBuilder.GetSupportLocales()[:]
 		})
@@ -256,12 +270,12 @@ func NewConfig() Config {
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
 			{
-				Label: "All",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: "Has Unread Notes",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -331,7 +345,7 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``)
+	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
@@ -349,12 +363,12 @@ func NewConfig() Config {
 	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
 			{
-				Label: "All",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: "Has Unread Notes",
+				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},

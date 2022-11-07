@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
@@ -21,6 +22,7 @@ import (
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/publish/views"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -67,7 +69,7 @@ const (
 	selectTemplateEvent     = "selectTemplateEvent"
 )
 
-func New(db *gorm.DB) *Builder {
+func New(db *gorm.DB, i18nB *i18n.Builder) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
 		&Template{},
@@ -90,7 +92,8 @@ func New(db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(r.prefix).
-		LayoutFunc(r.pageEditorLayout)
+		LayoutFunc(r.pageEditorLayout).
+		SetI18n(i18nB)
 
 	type Editor struct {
 	}
@@ -137,6 +140,9 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 }
 
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+	pb.I18n().
+		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
 	pm = pb.Model(&Page{})
 	pm.Listing("ID", "Title", "Slug", "Locale")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
@@ -198,9 +204,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			vErr = *ve
 		}
 
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 		return h.Div(
 			showURL,
-			VAutocomplete().Label("Category").FieldName(field.Name).
+			VAutocomplete().Label(msgr.Category).FieldName(field.Name).
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
 		).ClassIf("mb-4", p.GetStatus() != "")
@@ -209,24 +217,25 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		// Only displayed when create action
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if p.GetStatus() == "" {
 			return h.Div(
 				web.Portal().Name("TemplateDialog"),
 				VRow(
 					VCol(
 						web.Portal(
-							VTextField().Disabled(true).Label("Template ID"),
+							VTextField().Disabled(true).Label(msgr.TemplateID),
 						).Name("TemplateIDTextField"),
 					),
 					VCol(
 						web.Portal(
-							VTextField().Disabled(true).Label("Template Name"),
+							VTextField().Disabled(true).Label(msgr.TemplateName),
 						).Name("TemplateNameTextField"),
 					),
 				),
 				VRow(
 					VCol(
-						VBtn("Create From Template").Color("primary").
+						VBtn(msgr.CreateFromTemplate).Color("primary").
 							Attr("@click", web.Plaid().EventFunc(openTemplateDialogEvent).Go()),
 					),
 				),
@@ -236,10 +245,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			return h.Div(
-				VBtn("Edit Page Content").
+				VBtn(msgr.EditPageContent).
 					Target("_blank").
 					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
 					Color("secondary"),
@@ -409,14 +419,15 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			ID = strconv.Itoa(int(tpl.ID))
 			Name = tpl.Name
 		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateIDTextField",
-			Body: VTextField().Disabled(true).Label("Template ID").Value(ID),
+			Body: VTextField().Disabled(true).Label(msgr.TemplateID).Value(ID),
 		})
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateNameTextField",
-			Body: VTextField().Disabled(true).Label("Template Name").Value(Name),
+			Body: VTextField().Disabled(true).Label(msgr.TemplateName).Value(Name),
 		})
 
 		return
@@ -452,13 +463,14 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 				)
 			}
 		}
+		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "TemplateDialog",
 			Body: VDialog(
 				VCard(
 					VCardTitle(
-						h.Text("Create From Template"),
+						h.Text(msgrPb.CreateFromTemplate),
 						VSpacer(),
 						VBtn("").Icon(true).
 							Children(VIcon("close")).
@@ -693,12 +705,13 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb := pm.Editing("Name", "Description", "EditContainer")
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		m := obj.(*Template)
 		if m.ID == 0 {
 			return nil
 		}
 		return h.Div(
-			VBtn("Edit Page Content").
+			VBtn(msgr.EditPageContent).
 				Target("_blank").
 				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
 				Color("secondary"),

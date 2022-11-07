@@ -106,16 +106,18 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		Find(&versions)
 
 	for index := range versions {
+		if versions[index].Status == publish.StatusOnline {
+			currentVersion = versions[index]
+		}
+
+		versions[index].Status = GetStatusText(versions[index].Status, msgr)
+
 		if versions[index].Version == currentVersionName {
 			versions[index].ItemClass = activeClass
 		}
 
 		if versions[index].VersionName == "" {
 			versions[index].VersionName = versions[index].Version
-		}
-
-		if versions[index].Status == publish.StatusOnline {
-			currentVersion = versions[index]
 		}
 
 		if versions[index].VersionName != versions[index].Version {

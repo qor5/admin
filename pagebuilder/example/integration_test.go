@@ -22,7 +22,7 @@ import (
 
 func TestEditor(t *testing.T) {
 	db := example.ConnectDB()
-	pb := example.ConfigPageBuilder(db, "/page_builder", "")
+	pb := example.ConfigPageBuilder(db, "/page_builder", "", nil)
 
 	sdb, _ := db.DB()
 	gofixtures.Data(
@@ -109,7 +109,7 @@ var orderCases = []struct {
 func TestUpdatePage(t *testing.T) {
 	db := example.ConnectDB()
 	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
-	pageBuilder := example.ConfigPageBuilder(db, "", "")
+	pageBuilder := example.ConfigPageBuilder(db, "", "", nil)
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 	mb := pageBuilder.Configure(pb, db)
 	publish_view.Configure(pb, db, nil, publisher, mb)

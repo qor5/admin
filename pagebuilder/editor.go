@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
+	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
 	"github.com/goplaid/x/presets/actions"
@@ -89,6 +90,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	if err != nil {
 		return
 	}
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r.Body = h.Components(
 		VAppBar(
@@ -111,7 +113,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VSpacer(),
 
-			VBtn("Preview").Text(true).Href(b.prefix+previewHref).Target("_blank"),
+			VBtn(msgr.Preview).Text(true).Href(b.prefix+previewHref).Target("_blank"),
 			VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 		).Dark(true).
 			Color("primary").
@@ -306,13 +308,15 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 		if c.Hidden {
 			vicon = "visibility_off"
 		}
+		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
+
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
 				Index:          i,
-				Label:          c.DisplayName,
+				Label:          displayName,
 				ModelName:      c.ModelName,
 				ModelID:        strconv.Itoa(int(c.ModelID)),
-				DisplayName:    c.DisplayName,
+				DisplayName:    displayName,
 				ContainerID:    strconv.Itoa(int(c.ID)),
 				URL:            b.ContainerByName(c.ModelName).mb.Info().ListingHref(),
 				Shared:         c.Shared,
@@ -320,11 +324,12 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 			},
 		)
 	}
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r = web.Scope(
 		VAppBar(
 			VToolbarTitle("").Class("pl-2").
-				Children(h.Text("Containers")),
+				Children(h.Text(msgr.Containers)),
 			VSpacer(),
 			// VBtn("").Icon(true).Children(
 			//	VIcon("close"),
@@ -404,7 +409,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					).Attr("v-for", "(item, index) in locals.items", ":key", "item.index"),
 					VListItem(
 						VListItemIcon(VIcon("add").Color("primary")).Class("ma-4"),
-						VListItemTitle(VBtn("Add Containers").Color("primary").Text(true)),
+						VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Text(true)),
 					).Attr("@click",
 						web.Plaid().
 							EventFunc(AddContainerDialogEvent).
@@ -694,6 +699,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
 	// okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	var containers []h.HTMLComponent
 	for _, builder := range b.containerBuilders {
@@ -706,9 +712,9 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 				VCard(
 					VImg().Src(cover).Height(200),
 					VCardActions(
-						VCardTitle(h.Text(builder.name)),
+						VCardTitle(h.Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name))),
 						VSpacer(),
-						VBtn("Select").
+						VBtn(msgr.Select).
 							Text(true).
 							Color("primary").Attr("@click",
 							"locals.addContainerDialog = false;"+web.Plaid().
@@ -742,9 +748,9 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 				VCard(
 					VImg().Src(cover).Height(200),
 					VCardActions(
-						VCardTitle(h.Text(sharedC.DisplayName)),
+						VCardTitle(h.Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, sharedC.DisplayName))),
 						VSpacer(),
-						VBtn("Select").
+						VBtn(msgr.Select).
 							Text(true).
 							Color("primary").Attr("@click",
 							"locals.addContainerDialog = false;"+web.Plaid().
@@ -767,7 +773,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 		Body: web.Scope(
 			VDialog(
 				VTabs(
-					VTab(h.Text("New")),
+					VTab(h.Text(msgr.New)),
 					VTabItem(
 						VSheet(
 							VContainer(
@@ -777,7 +783,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							),
 						),
 					).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-					VTab(h.Text("Shared")),
+					VTab(h.Text(msgr.Shared)),
 					VTabItem(
 						VSheet(
 							VContainer(
