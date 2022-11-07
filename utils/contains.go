@@ -1,6 +1,11 @@
 package utils
 
+import "reflect"
+
 func Contains(a interface{}, b interface{}) bool {
+	if reflect.ValueOf(a).Len() == 0 {
+		return false
+	}
 	if _, ok := b.(int); ok {
 		if tempB, ok := a.([]int); ok {
 			for _, v := range tempB {

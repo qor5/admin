@@ -56,6 +56,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN)
+
+	configList(b, db)
 }
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
@@ -227,7 +229,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 								EventFunc(doDeleteEvent).
 								Query("field", field).
 								Query("id", id).
-								FieldValue("cfg", h.JSONString(cfg)).
+								FieldValue("cfg", cfg).
 								Go()),
 					),
 				),

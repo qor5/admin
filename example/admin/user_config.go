@@ -4,16 +4,21 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"
+	"github.com/qor/qor5/publish"
+	publish_view "github.com/qor/qor5/publish/views"
 	"github.com/qor/qor5/role"
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/presets"
+	"github.com/goplaid/x/presets/actions"
 	. "github.com/goplaid/x/vuetify"
-	v "github.com/goplaid/x/vuetifyx"
+	vx "github.com/goplaid/x/vuetifyx"
 
 	"github.com/qor/qor5/example/models"
 	h "github.com/theplant/htmlgo"
@@ -21,7 +26,8 @@ import (
 )
 
 func configUser(b *presets.Builder, db *gorm.DB) {
-	user := b.Model(&models.User{}).MenuIcon("people")
+	user := b.Model(&models.User{})
+	// MenuIcon("people")
 	note.Configure(db, b, user)
 
 	ed := user.Editing(
@@ -33,6 +39,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Company",
 		"Roles",
 		"Status",
+		"FavorPostID",
 	)
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -203,7 +210,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				}
 			}
 
-			return v.VXAutocomplete().Label(field.Label).
+			return vx.VXAutocomplete().Label(field.Label).
 				// ItemText("text").ItemValue("value").
 				FieldName(field.Name).
 				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
@@ -247,31 +254,45 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
+	configureFavorPostSelectDialog(b)
+	ed.Field("FavorPostID").Label("Favorite Post").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		id := field.Value(obj).(uint)
+		return web.Portal(favorPostSelector(id)).Name("favorPostSelector")
+	})
+
+	oldSaver := ed.Saver
+	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		u := obj.(*models.User)
+		u.RegistrationDate = time.Now()
+		return oldSaver(obj, id, ctx)
+	})
+
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
+	cl.SearchColumns("Name", "Account")
 
-	cl.FilterDataFunc(func(ctx *web.EventContext) v.FilterData {
+	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
 
-		return []*v.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     v.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "name",
 				Label:        "Name",
-				ItemType:     v.ItemTypeString,
+				ItemType:     vx.ItemTypeString,
 				SQLCondition: `name %s ?`,
 			},
 			{
 				Key:          "status",
 				Label:        "Status",
-				ItemType:     v.ItemTypeSelect,
+				ItemType:     vx.ItemTypeSelect,
 				SQLCondition: `status %s ?`,
-				Options: []*v.SelectItem{
+				Options: []*vx.SelectItem{
 					{Text: "Active", Value: "active"},
 					{Text: "Inactive", Value: "inactive"},
 				},
@@ -281,15 +302,25 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Invisible:    true,
 				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
 			},
+			{
+				Key:          "registration_date",
+				Label:        "Registration Date",
+				ItemType:     vx.ItemTypeDate,
+				SQLCondition: `registration_date %s ?`,
+				Folded:       true,
+			},
+			{
+				Key:          "registration_date_range",
+				Label:        "Registration Date Range",
+				ItemType:     vx.ItemTypeDateRange,
+				SQLCondition: `registration_date %s ?`,
+				Folded:       true,
+			},
 		}
 	})
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		return []*presets.FilterTab{
-			{
-				Label: "Felix",
-				Query: url.Values{"name.ilike": []string{"felix"}},
-			},
 			{
 				Label: "Active",
 				Query: url.Values{"status": []string{"active"}},
@@ -326,4 +357,154 @@ func rolesSelector(db *gorm.DB) web.EventFunc {
 		r.Data = items
 		return
 	}
+}
+
+func favorPostSelector(id uint) h.HTMLComponent {
+	var items []*models.Post
+	if id > 0 {
+		p := &models.Post{}
+		if err := db.Where("id = ?", id).Order("version desc").First(p).Error; err == nil {
+			items = append(items, p)
+		}
+	}
+	return h.Div(
+		VAutocomplete().
+			Label("Favorite Post").
+			FieldName("FavorPostID").
+			Items(items).
+			ItemText("Title").
+			ItemValue("ID").
+			Value(id).
+			Readonly(true).
+			Clearable(true),
+	).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
+		URL("/admin/dialog-select-favor-posts").
+		Go())
+}
+
+func configureFavorPostSelectDialog(pb *presets.Builder) {
+	b := pb.Model(&models.Post{}).
+		URIName("dialog-select-favor-posts").
+		InMenu(false)
+	publish_view.Configure(pb, db, nil, nil, b)
+	lb := b.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+		SearchColumns("title", "body").
+		PerPage(10).
+		OrderableFields([]*presets.OrderableField{
+			{
+				FieldName: "ID",
+				DBColumn:  "id",
+			},
+			{
+				FieldName: "Title",
+				DBColumn:  "title",
+			},
+		}).
+		SelectableColumns(true)
+	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
+	lb.RowMenu().Empty()
+	registerSelectFavorPostEvent(pb)
+	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		cell.SetAttr("@click.self", web.Plaid().
+			Query("id", strings.Split(id, "_")[0]).
+			EventFunc("selectFavorPost").
+			Go(),
+		)
+		return cell
+	})
+	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		u := getCurrentUser(ctx.R)
+
+		return []*vx.FilterItem{
+			{
+				Key:          "hasUnreadNotes",
+				Invisible:    true,
+				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
+			},
+			{
+				Key:          "created",
+				Label:        "Create Time",
+				ItemType:     vx.ItemTypeDatetimeRange,
+				SQLCondition: `created_at %s ?`,
+			},
+			{
+				Key:          "title",
+				Label:        "Title",
+				ItemType:     vx.ItemTypeString,
+				SQLCondition: `title %s ?`,
+			},
+			{
+				Key:      "status",
+				Label:    "Status",
+				ItemType: vx.ItemTypeSelect,
+				Options: []*vx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+			},
+			{
+				Key:      "multi_statuses",
+				Label:    "Multiple Statuses",
+				ItemType: vx.ItemTypeMultipleSelect,
+				Options: []*vx.SelectItem{
+					{Text: publish.StatusDraft, Value: publish.StatusDraft},
+					{Text: publish.StatusOnline, Value: publish.StatusOnline},
+					{Text: publish.StatusOffline, Value: publish.StatusOffline},
+				},
+				SQLCondition: `status %s ?`,
+				Folded:       true,
+			},
+			{
+				Key:          "id",
+				Label:        "ID",
+				ItemType:     vx.ItemTypeNumber,
+				SQLCondition: `id %s ?`,
+				Folded:       true,
+			},
+		}
+	})
+
+	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "All",
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: "Has Unread Notes",
+				ID:    "hasUnreadNotes",
+				Query: url.Values{"hasUnreadNotes": []string{"1"}},
+			},
+		}
+	})
+
+	// select many
+	// lb.BulkAction("Confirm").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+	// 	return VBtn("Confirm").
+	// 		Color("primary").
+	// 		Attr("@click", web.Plaid().
+	// 			EventFunc("selectFavorPost").
+	// 			Query("ids", ctx.R.URL.Query().Get(presets.ParamSelectedIds)).
+	// 			MergeQuery(true).
+	// 			Go())
+	// })
+}
+
+func registerSelectFavorPostEvent(b *presets.Builder) {
+	b.GetWebBuilder().RegisterEventFunc("selectFavorPost", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var id uint
+		if v := ctx.R.FormValue("id"); v != "" {
+			iv, _ := strconv.Atoi(v)
+			id = uint(iv)
+		}
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: "favorPostSelector",
+			Body: favorPostSelector(id),
+		})
+		web.AppendVarsScripts(&r, presets.CloseListingDialogVarScript)
+		return
+	})
 }

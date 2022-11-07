@@ -11,12 +11,12 @@ type OAuthUser interface {
 }
 
 type OAuthInfo struct {
-	OAuthProvider string `gorm:"index:uidx_users_oauth_provider_user_id,unique,where:o_auth_provider!='' and o_auth_user_id!='';index:uidx_users_oauth_provider_indentifier,unique,where:o_auth_provider!='' and o_auth_indentifier!=''"`
-	OAuthUserID   string `gorm:"index:uidx_users_oauth_provider_user_id,unique,where:o_auth_provider!='' and o_auth_user_id!=''"`
+	OAuthProvider string `gorm:"index:uidx_users_oauth_provider_user_id,unique,where:o_auth_provider!='' and o_auth_user_id!='' and deleted_at is null;index:uidx_users_oauth_provider_indentifier,unique,where:o_auth_provider!='' and o_auth_indentifier!='' and deleted_at is null"`
+	OAuthUserID   string `gorm:"index:uidx_users_oauth_provider_user_id,unique,where:o_auth_provider!='' and o_auth_user_id!='' and deleted_at is null"`
 	// users use this value to log into their account
 	// in most cases is email or account name
 	// it is used to find the user record on the first login
-	OAuthIndentifier string `gorm:"index:uidx_users_oauth_provider_indentifier,unique,where:o_auth_provider!='' and o_auth_indentifier!=''"`
+	OAuthIndentifier string `gorm:"index:uidx_users_oauth_provider_indentifier,unique,where:o_auth_provider!='' and o_auth_indentifier!='' and deleted_at is null"`
 	OAuthAvatar      string `gorm:"-"`
 }
 

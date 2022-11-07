@@ -94,7 +94,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 			Tag("vx-draggable").Attr("v-model", "locals.items", "draggable", ".item", "animation", "300").Children(
 				Div(
 					VListItem(
-						VListItemIcon(VIcon("reorder")),
+						VListItemIcon(VIcon("drag_handle")),
 						VListItemContent(
 							VListItemTitle(Text("{{item.label}}")),
 						),

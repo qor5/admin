@@ -188,14 +188,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						).Else(
 							fileThumb(f.File.FileName),
 						),
-					).Attr("role", "button").
-						Attr("@click", web.Plaid().
+					).AttrIf("role", "button", field != mediaLibraryListField).
+						AttrIf("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
 							EventFunc(chooseFileEvent).
 							Query("field", field).
 							Query("id", fmt.Sprint(f.ID)).
 							FieldValue("cfg", h.JSONString(cfg)).
-							Go()),
+							Go(), field != mediaLibraryListField),
 					VCardText(
 						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
 						h.Input("").

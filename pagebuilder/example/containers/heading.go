@@ -98,7 +98,7 @@ func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLCompon
 
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, data.FontColor, "",
-		data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
 	return

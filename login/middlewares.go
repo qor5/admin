@@ -160,7 +160,7 @@ func Authenticate(b *Builder) func(next http.Handler) http.Handler {
 			}
 
 			if path == b.LoginPageURL || path == b.totpSetupPageURL || path == b.totpValidatePageURL {
-				http.Redirect(w, r, b.homePageURL, http.StatusFound)
+				http.Redirect(w, r, b.homePageURLFunc(r, user), http.StatusFound)
 				return
 			}
 

@@ -174,7 +174,7 @@ func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.Func
 		"primary_key": func() string {
 			ppf := db.Statement.Schema.PrioritizedPrimaryField
 			if ppf != nil {
-				return fmt.Sprintf("%v", ppf.ReflectValueOf(db.Statement.ReflectValue))
+				return fmt.Sprintf("%v", ppf.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue))
 			}
 
 			return "0"

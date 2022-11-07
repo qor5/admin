@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/qor/qor5/l10n"
 	"github.com/qor/qor5/publish"
 	"gorm.io/gorm"
 )
@@ -17,6 +18,7 @@ type Page struct {
 	publish.Status
 	publish.Schedule
 	publish.Version
+	l10n.Locale
 }
 
 func (*Page) TableName() string {

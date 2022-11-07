@@ -2,6 +2,8 @@ package views
 
 import (
 	"fmt"
+	"reflect"
+	"sync"
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
@@ -12,12 +14,19 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var count int64
-		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusDraft).Count(&count)
+		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
+		if err != nil {
+			return h.Td(h.Text("0"))
+		}
+		publish.SetPrimaryKeysConditionWithoutVersion(db.Model((reflect.New(modelSchema.ModelType).Interface())), obj, modelSchema).
+			Where("status = ?", publish.StatusDraft).Count(&count)
+
 		return h.Td(h.Text(fmt.Sprint(count)))
 	}
 }
@@ -25,7 +34,12 @@ func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
 func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var count int64
-		db.Model(obj).Where("id = ? AND status = ?", reflectutils.MustGet(obj, "ID"), publish.StatusOnline).Count(&count)
+		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
+		if err != nil {
+			return h.Td(h.Text("0"))
+		}
+		publish.SetPrimaryKeysConditionWithoutVersion(db.Model((reflect.New(modelSchema.ModelType).Interface())), obj, modelSchema).
+			Where("status = ?", publish.StatusOnline).Count(&count)
 
 		c := h.Text("-")
 		if count > 0 {
@@ -40,7 +54,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(publish.StatusInterface); ok {
-			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(getStatusColor(s.GetStatus())))
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(getStatusColor(s.GetStatus())).Dark(true))
 		}
 		return nil
 	}

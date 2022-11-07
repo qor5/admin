@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go v1.38.62
+	github.com/biter777/countries v1.5.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
@@ -13,8 +14,8 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.3.0
 	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/web v1.2.1
-	github.com/goplaid/x v1.1.3-0.20221012025237-c89f8f532302
+	github.com/goplaid/web v1.2.2-0.20221019094816-cf657453fe7a
+	github.com/goplaid/x v1.1.5-0.20221102022057-dd5d2186c558
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -25,7 +26,7 @@ require (
 	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/spf13/cast v1.4.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.12
@@ -37,10 +38,10 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f
 	github.com/wcharczuk/go-chart/v2 v2.1.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/text v0.3.7
-	gorm.io/driver/postgres v1.2.1
-	gorm.io/gorm v1.22.2
+	golang.org/x/crypto v0.1.0
+	golang.org/x/text v0.4.0
+	gorm.io/driver/postgres v1.4.5
+	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 )
 
 require (
@@ -60,15 +61,15 @@ require (
 	github.com/gorilla/sessions v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.0 // indirect
+	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.8.1 // indirect
-	github.com/jackc/pgx/v4 v4.13.0 // indirect
+	github.com/jackc/pgtype v1.12.0 // indirect
+	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jinzhu/configor v1.2.1 // indirect
-	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
 	github.com/mrjones/oauth v0.0.0-20180629183705-f4e24b6d100c // indirect
@@ -92,14 +93,14 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69 // indirect
-	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
+	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
+	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 //replace github.com/goplaid/web => ../../goplaid/web

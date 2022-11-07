@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/biter777/countries"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
 	"github.com/goplaid/x/presets"
@@ -20,6 +21,8 @@ import (
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/example/pages"
+	"github.com/qor/qor5/l10n"
+	l10n_view "github.com/qor/qor5/l10n/views"
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
@@ -52,15 +55,12 @@ type Config struct {
 func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
-
 	sess := session.Must(session.NewSession())
-
 	oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
@@ -125,8 +125,30 @@ func NewConfig() Config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
+			//// Example:
+			//user := getCurrentUser(r)
+			//var supportedLanguages []language.Tag
+			//for _, role := range user.GetRoles() {
+			//	switch role {
+			//	case "English Group":
+			//		supportedLanguages = append(supportedLanguages, language.English)
+			//	case "Chinese Group":
+			//		supportedLanguages = append(supportedLanguages, language.SimplifiedChinese)
+			//	}
+			//}
+			//return supportedLanguages
 			return b.I18n().GetSupportLanguages()
 		})
+
+	l10nBuilder := l10n.New()
+	l10nBuilder.
+		RegisterLocales(countries.International, "International", "International").
+		RegisterLocales(countries.China, "China", "China").
+		RegisterLocales(countries.Japan, "Japan", "Japan").
+		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
+			return l10nBuilder.GetSupportLocales()[:]
+		})
+
 	utils.Configure(b)
 
 	media_view.Configure(b, db)
@@ -135,21 +157,6 @@ func NewConfig() Config {
 	ConfigureSeo(b, db)
 
 	b.MenuOrder(
-		"InputHarness",
-		"Post",
-		"profile",
-		"User",
-		"Role",
-		b.MenuGroup("Site Management").SubItems(
-			"Setting",
-			"QorSEOSetting",
-		).Icon("settings"),
-		b.MenuGroup("EC").SubItems(
-			"ec-dashboard",
-			"Order",
-			"Product",
-			"Category",
-		).Icon("shopping_cart"),
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -157,6 +164,31 @@ func NewConfig() Config {
 			"page_templates",
 			"page_categories",
 		).Icon("view_quilt"),
+		b.MenuGroup("EC Management").SubItems(
+			"ec-dashboard",
+			"Order",
+			"Product",
+			"Category",
+		).Icon("shopping_cart"),
+		b.MenuGroup("Site Management").SubItems(
+			"Setting",
+			"QorSEOSetting",
+		).Icon("settings"),
+		b.MenuGroup("User Management").SubItems(
+			"profile",
+			"User",
+			"Role",
+		).Icon("group"),
+		b.MenuGroup("Featured Models Management").SubItems(
+			"InputHarness",
+			"Post",
+			"List Editor Example",
+			"Customers",
+			"ListModels",
+			"MicrositeModels",
+		).Icon("featured_play_list"),
+		"Worker",
+		"ActivityLogs",
 	)
 
 	m := b.Model(&models.Post{})
@@ -178,7 +210,7 @@ func NewConfig() Config {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vuetifyx.ItemTypeDate,
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
@@ -298,7 +330,7 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", `<link rel="stylesheet" href="https://the-plant.com/assets/app/container.9506d40.css">`)
+	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``)
 	pm := pageBuilder.Configure(b, db)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
@@ -328,6 +360,9 @@ func NewConfig() Config {
 		}
 	})
 
+	tm := pageBuilder.ConfigTemplate(b, db)
+	cm := pageBuilder.ConfigCategory(b, db)
+
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
@@ -354,7 +389,7 @@ func NewConfig() Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm)
+	ab.RegisterModels(l, pm, tm, cm)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -373,6 +408,8 @@ func NewConfig() Config {
 
 	configUser(b, db)
 	configProfile(b, db)
+
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm)
 
 	return Config{
 		pb:          b,
@@ -407,19 +444,19 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 					vuetify.VListItemTitle(h.Text("Pages")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
 				),
-			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Posts")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
 				),
-			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Users")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
-			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&hasUnreadNotes=1"),
+			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
 				vuetify.VListItem(
 					vuetify.VListItemContent(
