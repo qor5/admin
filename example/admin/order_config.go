@@ -19,9 +19,8 @@ const (
 	StatusAttr         = "Status"
 	PaymentMethodAttr  = "PaymentMethod"
 	DeliveryMethodAttr = "DeliveryMethod"
-	OrderItemsAttr     = "OrderItems"
 	SourceAttr         = "Source"
-	NotesAttr          = "Notes"
+	OrderItemsAttr     = "OrderItems"
 	ActionsAttr        = "Actions"
 )
 
@@ -92,10 +91,9 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 				{OrderCodeAttr, CreatedDateAttr},
 				{StatusAttr, CheckInDateAttr},
 				{PaymentMethodAttr, DeliveryMethodAttr},
-				{PaymentMethodAttr, SourceAttr},
+				{SourceAttr},
 			},
 		},
-		// OrderItemsAttr,
 	).Drawer(true)
 
 	orderDetailing.Field(OrderCodeAttr).Label("Order ID")
