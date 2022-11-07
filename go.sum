@@ -165,10 +165,8 @@ github.com/goplaid/multipartestutils v0.0.3/go.mod h1:jic2wg6tSAdLgLMTs1N+9+KzRu
 github.com/goplaid/web v1.1.26/go.mod h1:wuOBZR8zr6OFD0V/CXtg8UCQXm6KvGEzn5euXs17gI0=
 github.com/goplaid/web v1.2.2-0.20221019094816-cf657453fe7a h1:xkwR6y6tLZrWRWYoeLggrC7dDpcqS+kmQ9WlZ45cO60=
 github.com/goplaid/web v1.2.2-0.20221019094816-cf657453fe7a/go.mod h1:5F3fHRmCH9oxh9lGxeGRtyslOQ4542FreIragR6dk7E=
-github.com/goplaid/x v1.1.4-0.20221027021609-1642e79c2daf h1:MfgfoHaup47NaFdXKpzCCAZ9aXcTId3rZXfKC/hA2yQ=
-github.com/goplaid/x v1.1.4-0.20221027021609-1642e79c2daf/go.mod h1:VJlJi3t1a6wr8pEcVlzBiwj+lfg3yo+UeS7xKY+H1EY=
-github.com/goplaid/x v1.1.4-0.20221027065520-76463c721d9d h1:3YvQTc/ED4hrodCF95++yH95G1Qjsg4OY+nXjcAvjAw=
-github.com/goplaid/x v1.1.4-0.20221027065520-76463c721d9d/go.mod h1:VJlJi3t1a6wr8pEcVlzBiwj+lfg3yo+UeS7xKY+H1EY=
+github.com/goplaid/x v1.1.5-0.20221102022057-dd5d2186c558 h1:CWP8Tr3WLMSWV8xByy+UCoQn3RduGOlqwSVHGUB7d30=
+github.com/goplaid/x v1.1.5-0.20221102022057-dd5d2186c558/go.mod h1:VJlJi3t1a6wr8pEcVlzBiwj+lfg3yo+UeS7xKY+H1EY=
 github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=

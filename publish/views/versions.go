@@ -131,39 +131,40 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 
 	var (
 		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
-		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`item.ID+"_"+item.Version`)).Go() + ";event.stopPropagation();"
+		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).Go() + ";event.stopPropagation();"
 		renameVersionEvent = web.Plaid().EventFunc(renameVersionEvent).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).Query("name", web.Var("props.item.VersionName")).Go()
 	)
 
 	table = web.Scope(
 		VDataTable(
 			web.Slot(
-				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent),
-			).Name("item.actions").Scope("{ item }"),
-			web.Slot(
 				VEditDialog(
-					h.Text(" {{ props.item.VersionName }}"),
+					VIcon("edit").Small(true).Class("mr-2").Attr(":class", "props.item.ItemClass"),
+					VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
-				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent),
-			).Name("item.VersionName").Scope("props"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Large(true).Transition("slide-x-reverse-transition"),
+			).Name("item.Actions").Scope("props"),
 		).
 			Items(versions).
 			Headers(
 				[]map[string]interface{}{
 					{"text": "VersionName", "value": "VersionName"},
 					{"text": "Status", "value": "Status"},
-					{"text": "Actions", "value": "actions"},
+					{"text": "Actions", "value": "Actions"},
 				}).
 			HideDefaultHeader(true).
+			HideDefaultFooter(len(versions) <= 10).
 			On("click:row", swithVersionEvent).
 			On("pagination", "locals.versionPage = $event.page").
 			ItemClass("ItemClass").
 			FooterProps(
 				map[string]interface{}{
+					"items-per-page-options": []int{5, 10, 20},
+					"show-first-last-page":   true,
 					"items-per-page-text":    "",
-					"items-per-page-options": []int{5, 10, 20, -1},
+					"page-text":              "",
 				},
 			).
 			Page(currentPage),
@@ -213,7 +214,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
+		gorm2op.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), paramID, ctx, "version").
 			Where("version like ?", version+"%").
 			Order("version DESC").
 			Count(&count)
