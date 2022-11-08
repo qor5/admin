@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
-	"github.com/qor/qor5/sitemap"
+	"github.com/goplaid/x/sitemap"
 )
 
 func Router() http.Handler {

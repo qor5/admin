@@ -1,2 +1,0 @@
-export TZ="Asia/Tokyo"
-export DB_PARAMS="user=example password=123 dbname=example_dev sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo"

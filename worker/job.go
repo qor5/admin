@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
+	vx "github.com/goplaid/ui/vuetifyx"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
-	vx "github.com/goplaid/x/vuetifyx"
+	"github.com/qor/qor5/presets"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

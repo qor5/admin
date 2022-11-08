@@ -1,15 +1,16 @@
 package role
 
 import (
+	"time"
+
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/perm"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/gorm2op"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/gorm2op"
 	"github.com/qor/qor5/listeditor"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-	"time"
 )
 
 var DefaultActions = []DefaultOptionItem{

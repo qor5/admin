@@ -2,7 +2,7 @@ package activity
 
 import (
 	"github.com/goplaid/x/perm"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 )
 
 var PermPolicy = perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).

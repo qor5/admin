@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 
+	"github.com/goplaid/ui/redactor"
 	"github.com/goplaid/web"
 )
 
@@ -13,11 +14,7 @@ var box embed.FS
 
 func JSComponentsPack() web.ComponentsPack {
 	var js [][]byte
-	j1, err := box.ReadFile("redactor/redactor.min.js")
-	if err != nil {
-		panic(err)
-	}
-	js = append(js, j1)
+	js = append(js, []byte(redactor.JSComponentsPack()))
 	for _, p := range Plugins {
 		pj, err := box.ReadFile(fmt.Sprintf("redactor/%s.min.js", p))
 		if err != nil {
@@ -29,22 +26,12 @@ func JSComponentsPack() web.ComponentsPack {
 		js = append(js, PluginsJS...)
 	}
 
-	v3, err := box.ReadFile("redactor/vue-redactor.js")
-	if err != nil {
-		panic(err)
-	}
-	js = append(js, v3)
 	return web.ComponentsPack(bytes.Join(js, []byte("\n\n")))
 }
 
 func CSSComponentsPack() web.ComponentsPack {
 	var css [][]byte
-	c, err := box.ReadFile("redactor/redactor.min.css")
-	if err != nil {
-		panic(err)
-	}
-	css = append(css, c)
-
+	css = append(css, []byte(redactor.CSSComponentsPack()))
 	custom, err := box.ReadFile("redactor/redactor.custom.css")
 	if err != nil {
 		panic(err)

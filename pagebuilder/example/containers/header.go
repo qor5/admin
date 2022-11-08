@@ -6,9 +6,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
+	"github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/pagebuilder"
 	. "github.com/theplant/htmlgo"
 )

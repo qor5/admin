@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 )

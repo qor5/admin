@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"strings"
 
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
 	"github.com/goplaid/x/perm"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	"github.com/qor/qor5/media/views"

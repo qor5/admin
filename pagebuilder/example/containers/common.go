@@ -6,9 +6,9 @@ import (
 
 	"github.com/qor/qor5/media/media_library"
 
+	v "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	v "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	. "github.com/theplant/htmlgo"
 )
 

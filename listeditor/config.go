@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/sunfmin/reflectutils"
 )
 

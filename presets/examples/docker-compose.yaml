@@ -1,0 +1,18 @@
+version: '2'
+services:
+  db:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=db"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=db_dev"
+    ports:
+      - 5433:5432
+  dbtest:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=db"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=db_test"
+    ports:
+      - 5434:5432

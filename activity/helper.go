@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"gorm.io/gorm"
 )
 

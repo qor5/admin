@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	. "github.com/goplaid/ui/vuetify"
+	vx "github.com/goplaid/ui/vuetifyx"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
-	vx "github.com/goplaid/x/vuetifyx"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/login"
 	h "github.com/theplant/htmlgo"

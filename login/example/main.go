@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/markbates/goth/providers/google"
 	"github.com/markbates/goth/providers/twitter"
 	"github.com/qor/qor5/login"

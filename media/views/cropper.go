@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/goplaid/ui/cropper"
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	. "github.com/goplaid/x/vuetify"
-	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	h "github.com/theplant/htmlgo"

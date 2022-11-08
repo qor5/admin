@@ -12,8 +12,8 @@ import (
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"
 
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/gorm2op"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/gorm2op"
 	"github.com/qor/qor5/pagebuilder"
 	"github.com/qor/qor5/pagebuilder/example"
 	"github.com/theplant/gofixtures"

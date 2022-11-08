@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	. "github.com/goplaid/ui/vuetify"
+	vx "github.com/goplaid/ui/vuetifyx"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
-	"github.com/qor/qor5/picker"
+	"github.com/qor/qor5/presets"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -201,17 +201,17 @@ func configInputHarness(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("DatePicker1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return picker.Picker(VDatePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return vx.Picker(VDatePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
 
 	ed.Field("DatePickerMonth1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return picker.Picker(VDatePicker().Type("month")).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return vx.Picker(VDatePicker().Type("month")).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
 
 	ed.Field("TimePicker1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return picker.Picker(VTimePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return vx.Picker(VTimePicker()).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
 
 	ed.Field("MediaLibrary1").

@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/seo"
 	"gorm.io/gorm"

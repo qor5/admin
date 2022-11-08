@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 )
 
 const I18nWorkerKey i18n.ModuleKey = "I18nWorkerKey"

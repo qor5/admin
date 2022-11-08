@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"net/url"
 
+	v "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
-	v "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/pquerna/otp"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"

@@ -2,7 +2,7 @@ package admin
 
 import (
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	l10n_view "github.com/qor/qor5/l10n/views"
 	"github.com/qor/qor5/login"
 	"github.com/qor/qor5/note"

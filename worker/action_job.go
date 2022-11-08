@@ -3,9 +3,9 @@ package worker
 import (
 	"fmt"
 
+	"github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	h "github.com/theplant/htmlgo"
 )
 

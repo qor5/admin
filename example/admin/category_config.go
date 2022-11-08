@@ -3,9 +3,9 @@ package admin
 import (
 	"strconv"
 
+	v "github.com/goplaid/ui/vuetifyx"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	v "github.com/goplaid/x/vuetifyx"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/example/models"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/l10n"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"

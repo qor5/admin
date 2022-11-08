@@ -3,7 +3,7 @@ package note
 import (
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"gorm.io/gorm"
 )
 

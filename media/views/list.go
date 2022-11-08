@@ -2,7 +2,7 @@ package views
 
 import (
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 
 	"github.com/qor/qor5/media/media_library"
 	h "github.com/theplant/htmlgo"

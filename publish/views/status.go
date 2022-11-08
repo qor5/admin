@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"sync"
 
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/publish"
 	"github.com/qor/qor5/utils"
 	"github.com/sunfmin/reflectutils"

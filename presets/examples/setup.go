@@ -1,0 +1,577 @@
+package examples
+
+import (
+	"fmt"
+	"net/url"
+	"reflect"
+	"time"
+
+	"github.com/goplaid/web"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/actions"
+	"github.com/qor/qor5/presets/gorm2op"
+	s "github.com/goplaid/ui/stripeui"
+	. "github.com/goplaid/ui/vuetify"
+	"github.com/goplaid/ui/vuetifyx"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+)
+
+type Thumb struct {
+	Name string
+}
+
+type Customer struct {
+	ID              int
+	Name            string
+	Email           string
+	Description     string
+	Thumb1          *Thumb `gorm:"-"`
+	CompanyID       int
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	ApprovedAt      *time.Time
+	TermAgreedAt    *time.Time
+	ApprovalComment string
+	LanguageCode    string
+	Events          []*Event `gorm:"-"`
+}
+
+func (c *Customer) PageTitle() string {
+	return c.Name
+}
+
+type Note struct {
+	ID         int
+	SourceType string
+	SourceID   int
+	Content    string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+type CreditCard struct {
+	ID              int
+	CustomerID      int
+	Number          string
+	ExpireYearMonth string
+	Name            string
+	Type            string
+	Phone           string
+	Email           string
+}
+
+type Payment struct {
+	ID                   int
+	CustomerID           int
+	CurrencyCode         string
+	Amount               int
+	PaymentMethodID      int
+	StatementDescription string
+	Description          string
+	AuthorizeOnly        bool
+	CreatedAt            time.Time
+}
+
+type Event struct {
+	ID          int
+	SourceType  string // Payment, Customer
+	SourceID    int
+	CreatedAt   time.Time
+	Type        string
+	Description string
+}
+
+type Language struct {
+	Code string `gorm:"unique;not null"`
+	Name string
+}
+
+func (l *Language) PrimarySlug() string {
+	return l.Code
+}
+
+func (l *Language) PrimaryColumnValuesBySlug(slug string) [][]string {
+	return [][]string{
+		{"code", slug},
+	}
+}
+
+type Company struct {
+	ID   int
+	Name string
+}
+
+type Product struct {
+	ID        int
+	Name      string
+	OwnerName string
+}
+
+func Preset1(db *gorm.DB) (r *presets.Builder) {
+	err := db.AutoMigrate(
+		&Customer{},
+		&Note{},
+		&CreditCard{},
+		&Payment{},
+		&Event{},
+		&Company{},
+		&Product{},
+		&Language{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	p := presets.New().URIPrefix("/admin")
+
+	p.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return h.Components(
+			VIcon("directions_boat").Class("pr-2"),
+			VToolbarTitle("My Admin"),
+		)
+	}).BrandTitle("My Admin")
+
+	writeFieldDefaults := p.FieldDefaults(presets.WRITE)
+	writeFieldDefaults.FieldType(&Thumb{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		i, err := reflectutils.Get(obj, field.Name)
+		if err != nil {
+			panic(err)
+		}
+		return h.Text(i.(*Thumb).Name)
+	})
+
+	p.FieldDefaults(presets.LIST).FieldType(&Thumb{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		i, err := reflectutils.Get(obj, field.Name)
+		if err != nil {
+			panic(err)
+		}
+		return h.Text(i.(*Thumb).Name)
+	})
+
+	p.FieldDefaults(presets.DETAIL).FieldType([]*Event{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		events := reflectutils.MustGet(obj, field.Name).([]*Event)
+		typeName := reflect.ValueOf(obj).Elem().Type().Name()
+		objId := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+
+		dt := s.DataTable(events).WithoutHeader(true).LoadMoreAt(20, "Show More").LoadMoreURL(fmt.Sprintf("/admin/events?sourceType=%s&sourceId=%s", typeName, objId))
+
+		dt.Column("Type")
+		dt.Column("Description")
+
+		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(field.ModelInfo, "/admin/events",
+			url.Values{"model": []string{typeName}, "model_id": []string{objId}})...)
+
+		return s.Card(
+			dt,
+		).HeaderTitle(field.Label).
+			Actions(
+				VBtn("Add Event").
+					Depressed(true).Attr("@click",
+					web.Plaid().EventFunc(actions.New).
+						Query("model", typeName).
+						Query("model_id", objId).
+						URL("/admin/events").
+						Go(),
+				),
+			).Class("mb-4")
+	})
+
+	p.DataOperator(gorm2op.DataOperator(db))
+
+	p.MenuGroup("Customer Management").Icon("group").SubItems("my_customers", "company")
+	mp := p.Model(&Product{}).MenuIcon("laptop")
+	mp.Listing().PerPage(3)
+
+	m := p.Model(&Customer{}).URIName("my_customers")
+	p.Model(&Company{})
+	m.Labels(
+		"Name", "名字",
+		"Bool1", "性别",
+		"Float1", "体重",
+		"CompanyID", "公司",
+	).Placeholders(
+		"Name", "请输入你的名字",
+	)
+
+	l := m.Listing("Name", "CompanyID", "ApprovalComment").SearchColumns("name", "email", "description").PerPage(5).SelectableColumns(true)
+	l.Field("Name").Label("列表的名字")
+	l.Field("CompanyID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*Customer)
+		var comp Company
+		err := db.Find(&comp, u.CompanyID).Error
+		if err != nil && err != gorm.ErrRecordNotFound {
+			panic(err)
+		}
+		return h.Td(
+			h.A().Text(comp.Name).
+				Attr("@click",
+					web.Plaid().URL("/admin/companies").
+						EventFunc(actions.Edit).
+						Query(presets.ParamID, fmt.Sprint(comp.ID)).
+						Go()),
+		)
+	})
+
+	l.BulkAction("Approve").Label("Approve").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		comment := ctx.R.FormValue("ApprovalComment")
+		if len(comment) < 10 {
+			ctx.Flash = "comment should larger than 10"
+			return
+		}
+		err = db.Model(&Customer{}).
+			Where("id IN (?)", selectedIds).
+			Updates(map[string]interface{}{"approved_at": time.Now(), "approval_comment": comment}).Error
+		if err != nil {
+			ctx.Flash = err.Error()
+		}
+		return
+	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+		comment := ctx.R.FormValue("ApprovalComment")
+		errorMessage := ""
+		if ctx.Flash != nil {
+			errorMessage = ctx.Flash.(string)
+		}
+		return VTextField().
+			FieldName("ApprovalComment").
+			Value(comment).
+			Label("Comment").
+			ErrorMessages(errorMessage)
+	})
+
+	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+		return
+	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
+	})
+
+	l.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		var companyOptions []*vuetifyx.SelectItem
+		err := db.Model(&Company{}).Select("name as text, id as value").Scan(&companyOptions).Error
+		if err != nil {
+			panic(err)
+		}
+
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "created",
+				Label:        "Created",
+				Folded:       true,
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				SQLCondition: `extract(epoch from created_at) %s ?`,
+			},
+			{
+				Key:          "approved",
+				Label:        "Approved",
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				SQLCondition: `extract(epoch from approved_at) %s ?`,
+			},
+			{
+				Key:          "name",
+				Label:        "Name",
+				Folded:       true,
+				ItemType:     vuetifyx.ItemTypeString,
+				SQLCondition: `name %s ?`,
+			},
+			{
+				Key:          "company",
+				Label:        "Company",
+				ItemType:     vuetifyx.ItemTypeSelect,
+				SQLCondition: `company_id %s ?`,
+				Options:      companyOptions,
+			},
+		}
+	})
+
+	l.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		var c Company
+		db.First(&c)
+		return []*presets.FilterTab{
+			{
+				Label: "Felix",
+				Query: url.Values{"name.ilike": []string{"felix"}},
+			},
+			{
+				Label: "The Plant",
+				Query: url.Values{"company": []string{fmt.Sprint(c.ID)}},
+			},
+			{
+				Label: "Approved",
+				Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
+			},
+			{
+				Label: "All",
+				Query: url.Values{"all": []string{"1"}},
+			},
+		}
+	})
+
+	ef := m.Editing("Name", "CompanyID", "LanguageCode").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			cu := obj.(*Customer)
+			if len(cu.Name) < 5 {
+				err.FieldError("Name", "input more than 5 chars")
+				err.GlobalError("there are some errors")
+			}
+			return
+		})
+	ef.Field("LanguageCode").Label("语言").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*Customer)
+		var langs []Language
+		err := db.Find(&langs).Error
+		if err != nil {
+			panic(err)
+		}
+		return VAutocomplete().
+			FieldName(field.Name).
+			Label(field.Label).
+			Items(langs).
+			ItemText("Name").
+			ItemValue("Code").
+			Multiple(false).
+			Value(u.LanguageCode)
+	})
+
+	ef.Field("CompanyID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*Customer)
+		var companies []*Company
+		err := db.Find(&companies).Error
+		if err != nil {
+			panic(err)
+		}
+		return VSelect().
+			FieldName("CompanyID").
+			Label(field.Label).
+			Items(companies).
+			ItemText("Name").
+			ItemValue("ID").
+			Multiple(false).
+			Value(u.CompanyID)
+	})
+
+	dp := m.Detailing("MainInfo", "Details", "Cards", "Payments", "Events")
+
+	dp.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+		var cus = &Customer{}
+		err = db.Find(cus, id).Error
+		if err != nil {
+			return
+		}
+
+		var events []*Event
+		err = db.Where("source_type = ? AND source_id = ?", "Customer", id).Find(&events).Error
+		if err != nil {
+			return
+		}
+		cus.Events = events
+		r = cus
+		return
+	})
+
+	dp.Field("MainInfo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+
+		cu := obj.(*Customer)
+
+		title := cu.Name
+		if len(title) == 0 {
+			title = cu.Description
+		}
+
+		var notes []*Note
+		err := db.Where("source_type = 'Customer' AND source_id = ?", cu.ID).
+			Order("id DESC").
+			Find(&notes).Error
+		if err != nil {
+			panic(err)
+		}
+
+		dt := s.DataTable(notes).WithoutHeader(true).LoadMoreAt(2, "Show More")
+
+		dt.Column("Content").CellComponentFunc(func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
+			n := obj.(*Note)
+			return h.Td(h.Div(
+				h.Div(
+					VIcon("comment").Color("blue").Small(true).Class("pr-2"),
+					h.Text(n.Content),
+				).Class("body-1"),
+				h.Div(
+					h.Text(n.CreatedAt.Format("Jan 02,15:04 PM")),
+					h.Text(" by Felix Sun"),
+				).Class("grey--text pl-7 body-2"),
+			).Class("my-3"))
+		})
+
+		cusID := fmt.Sprint(cu.ID)
+		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(field.ModelInfo, "/admin/notes",
+			url.Values{"model": []string{"Customer"}, "model_id": []string{cusID}})...)
+
+		return s.Card(
+			dt,
+		).HeaderTitle(title).
+			Actions(
+				VBtn("Add Note").
+					Depressed(true).
+					Attr("@click",
+						web.Plaid().EventFunc(actions.New).
+							Query("model", "Customer").
+							Query("model_id", cusID).
+							URL("/admin/notes").
+							Go(),
+					),
+			).Class("mb-4")
+	})
+
+	dp.Field("Details").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		cu := obj.(*Customer)
+		cusID := fmt.Sprint(cu.ID)
+
+		var lang Language
+		db.Where("code = ?", cu.LanguageCode).First(&lang)
+
+		var termAgreed string
+		if cu.TermAgreedAt != nil {
+			termAgreed = cu.TermAgreedAt.Format("Jan 02,15:04 PM")
+		}
+
+		detail := s.DetailInfo(
+			s.DetailColumn(
+				s.DetailField(s.OptionalText(cu.Name).ZeroLabel("No Name")).Label("Name"),
+				s.DetailField(s.OptionalText(cu.Email).ZeroLabel("No Email")).Label("Email"),
+				s.DetailField(s.OptionalText(cu.Description).ZeroLabel("No Description")).Label("Description"),
+				s.DetailField(s.OptionalText(cusID).ZeroLabel("No ID")).Label("ID"),
+				s.DetailField(s.OptionalText(cu.CreatedAt.Format("Jan 02,15:04 PM")).ZeroLabel("")).Label("Created"),
+				s.DetailField(s.OptionalText(termAgreed).ZeroLabel("Not Agreed Yet")).Label("Terms Agreed"),
+				s.DetailField(s.OptionalText(lang.Name).ZeroLabel("No Language")).Label("Language"),
+			).Header("ACCOUNT INFORMATION"),
+			s.DetailColumn().Header("BILLING INFORMATION"),
+		)
+
+		return s.Card(detail).HeaderTitle("Details").
+			Actions(
+				VBtn("Agree Terms").
+					Depressed(true).Class("mr-2").
+					Attr("@click", web.Plaid().
+						EventFunc(actions.Action).
+						Query(presets.ParamAction, "AgreeTerms").
+						Query("customerID", cusID).
+						Go()),
+
+				VBtn("Update details").
+					Depressed(true).
+					Attr("@click", web.Plaid().
+						EventFunc(actions.Edit).
+						Query("customerID", cusID).
+						URL("/admin/customers").Go()),
+			).Class("mb-4")
+	})
+
+	dp.Field("Cards").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		cu := obj.(*Customer)
+		cusID := fmt.Sprint(cu.ID)
+
+		var cards []*CreditCard
+		err := db.Where("customer_id = ?", cu.ID).Order("id ASC").Find(&cards).Error
+		if err != nil {
+			panic(err)
+		}
+
+		dt := s.DataTable(cards).
+			WithoutHeader(true).
+			RowExpandFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+				card := obj.(*CreditCard)
+				return s.DetailInfo(
+					s.DetailColumn(
+						s.DetailField(s.OptionalText(card.Name).ZeroLabel("No Name")).Label("Name"),
+						s.DetailField(s.OptionalText(card.Number).ZeroLabel("No Number")).Label("Number"),
+						s.DetailField(s.OptionalText(card.ExpireYearMonth).ZeroLabel("No Expires")).Label("Expires"),
+						s.DetailField(s.OptionalText(card.Type).ZeroLabel("No Type")).Label("Type"),
+						s.DetailField(s.OptionalText(card.Phone).ZeroLabel("No phone provided")).Label("Phone"),
+						s.DetailField(s.OptionalText(card.Email).ZeroLabel("No email provided")).Label("Email"),
+					),
+				)
+			}).RowMenuItemFuncs(
+			presets.EditDeleteRowMenuItemFuncs(
+				field.ModelInfo, "/admin/credit-cards",
+				url.Values{"customerID": []string{cusID}},
+			)...)
+
+		dt.Column("Type")
+		dt.Column("Number")
+		dt.Column("ExpireYearMonth")
+
+		return s.Card(dt).HeaderTitle("Cards").
+			Actions(
+				VBtn("Add Card").
+					Depressed(true).
+					Attr("@click",
+						web.Plaid().EventFunc(
+							actions.New).Query("customerID", cusID).
+							URL("/admin/credit-cards").
+							Go()),
+			).Class("mb-4")
+	})
+
+	dp.Action("AgreeTerms").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		if ctx.R.FormValue("Agree") != "true" {
+			ve := &web.ValidationErrors{}
+			ve.GlobalError("You must agree the terms")
+			err = ve
+			return
+		}
+
+		err = db.Model(&Customer{}).Where("id = ?", selectedIds[0]).
+			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
+
+		return
+	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+		var alert h.HTMLComponent
+
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			alert = VAlert(h.Text(ve.GetGlobalError())).Border("left").
+				Type("error").
+				Elevation(2).
+				ColoredBorder(true)
+		}
+
+		return h.Components(
+			alert,
+			VCheckbox().FieldName("Agree").Value(ctx.R.FormValue("Agree")).Label("Agree the terms"),
+		)
+	})
+
+	p.Model(&Note{}).
+		InMenu(false).
+		Editing("Content").
+		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			note := obj.(*Note)
+			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceType = ctx.R.FormValue("model")
+		})
+
+	p.Model(&Event{}).
+		InMenu(false).
+		Editing("Type", "Description").
+		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			note := obj.(*Event)
+			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceType = ctx.R.FormValue("model")
+		})
+
+	cc := p.Model(&CreditCard{}).
+		InMenu(false)
+
+	ccedit := cc.Editing("ExpireYearMonth", "Phone", "Email").
+		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			card := obj.(*CreditCard)
+			card.CustomerID = ctx.QueryAsInt("customerID")
+		})
+
+	ccedit.Creating("Number")
+
+	p.Model(&Language{}).PrimaryField("Code")
+
+	return p
+}

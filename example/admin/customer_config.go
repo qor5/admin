@@ -2,8 +2,8 @@ package admin
 
 import (
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/gorm2op"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/gorm2op"
 	"github.com/qor/qor5/example/models"
 	"github.com/qor/qor5/listeditor"
 	"github.com/qor/qor5/media"

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/ahmetb/go-linq/v3"
+	"github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/example/models"
 	h "github.com/theplant/htmlgo"
 	"github.com/wcharczuk/go-chart/v2"

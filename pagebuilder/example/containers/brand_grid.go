@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor/qor5/listeditor"

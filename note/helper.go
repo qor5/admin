@@ -3,12 +3,12 @@ package note
 import (
 	"fmt"
 
+	"github.com/goplaid/ui/vuetify"
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/actions"
-	"github.com/goplaid/x/vuetify"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/actions"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

@@ -7,10 +7,10 @@ import (
 	"strings"
 	syncp "sync"
 
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
-	. "github.com/goplaid/x/vuetify"
+	"github.com/qor/qor5/presets"
 	"github.com/gosimple/unidecode"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"

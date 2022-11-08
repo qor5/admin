@@ -6,7 +6,7 @@ import (
 
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/presets"
+	"github.com/qor/qor5/presets"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/gorm2op"
 	"github.com/qor/qor5/publish"

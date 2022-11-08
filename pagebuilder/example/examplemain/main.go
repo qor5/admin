@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/goplaid/web"
-	"github.com/goplaid/x/presets"
-	"github.com/goplaid/x/presets/gorm2op"
+	"github.com/qor/qor5/presets"
+	"github.com/qor/qor5/presets/gorm2op"
 	"github.com/qor/qor5/pagebuilder/example"
 )
 

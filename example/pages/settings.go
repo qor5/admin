@@ -3,9 +3,9 @@ package pages
 import (
 	"log"
 
+	"github.com/goplaid/ui/cropper"
+	. "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	. "github.com/goplaid/x/vuetify"
-	"github.com/qor/qor5/cropper"
 	"github.com/qor/qor5/media"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"

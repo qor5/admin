@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/goplaid/ui/redactor"
+	v "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
-	v "github.com/goplaid/x/vuetify"
 	"github.com/qor/qor5/media/media_library"
 	media_view "github.com/qor/qor5/media/views"
 	h "github.com/theplant/htmlgo"
@@ -67,7 +68,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	r := h.Components(
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
-			Redactor().Value(b.value).Placeholder(b.placeholder).Config(RedactorConfig{Plugins: p}).Attr(web.VFieldName(b.name)...),
+			redactor.New().Value(b.value).Placeholder(b.placeholder).Config(redactor.Config{Plugins: p}).Attr(web.VFieldName(b.name)...),
 			h.Div(
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
