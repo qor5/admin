@@ -1,14 +1,14 @@
 package admin
 
 import (
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/presets"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/utils"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
 )
 
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
@@ -62,7 +62,9 @@ type Messages_ModelsI18nModuleKey struct {
 	DemoContainers           string
 	Templates                string
 	Categories               string
-	ProductManagement        string
+	ECManagement             string
+	ECDashboard              string
+	Orders                   string
 	Products                 string
 	SiteManagement           string
 	SEO                      string
@@ -203,7 +205,9 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	DemoContainers:           "示例组件",
 	Templates:                "模板页面",
 	Categories:               "目录管理",
-	ProductManagement:        "产品管理菜单",
+	ECManagement:             "电子商务管理",
+	ECDashboard:              "电子商务仪表盘",
+	Orders:                   "订单管理",
 	Products:                 "产品管理",
 	SiteManagement:           "站点管理菜单",
 	SEO:                      "SEO 管理",
@@ -344,7 +348,9 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	DemoContainers:           "デモ用コン店た",
 	Templates:                "テンプレート",
 	Categories:               "カテゴリー",
-	ProductManagement:        "製品管理",
+	ECManagement:             "ECマネジメント",
+	ECDashboard:              "ECダッシュボード",
+	Orders:                   "注文",
 	Products:                 "製品",
 	SiteManagement:           "サイト管理",
 	SEO:                      "SEO",
