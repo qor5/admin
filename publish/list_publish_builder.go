@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/qor/oss"
-	"github.com/qor/qor5/utils"
+	"github.com/qor5/admin/utils"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
 )

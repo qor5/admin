@@ -3,10 +3,10 @@ package presets
 import (
 	"net/url"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/presets/actions"
-	. "github.com/goplaid/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/presets/actions"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/jinzhu/inflection"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"

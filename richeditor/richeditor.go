@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/goplaid/ui/redactor"
-	v "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/media/media_library"
-	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor5/ui/redactor"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/media/media_library"
+	media_view "github.com/qor5/admin/media/views"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

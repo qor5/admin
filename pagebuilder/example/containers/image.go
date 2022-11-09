@@ -3,13 +3,13 @@ package containers
 import (
 	"fmt"
 
-	"github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor/qor5/media/media_library"
-	"github.com/qor/qor5/pagebuilder"
+	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/pagebuilder"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

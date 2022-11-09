@@ -3,13 +3,13 @@ package pages
 import (
 	"log"
 
-	"github.com/goplaid/ui/cropper"
-	. "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/media"
-	"github.com/qor/qor5/media/media_library"
-	media_view "github.com/qor/qor5/media/views"
-	"github.com/qor/qor5/richeditor"
+	"github.com/qor5/ui/cropper"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
+	media_view "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/richeditor"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

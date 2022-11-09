@@ -1,14 +1,14 @@
 package admin
 
 import (
-	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/login"
-	l10n_view "github.com/qor/qor5/l10n/views"
-	"github.com/qor/qor5/note"
-	"github.com/qor/qor5/pagebuilder"
-	"github.com/qor/qor5/presets"
-	publish_view "github.com/qor/qor5/publish/views"
-	"github.com/qor/qor5/utils"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	l10n_view "github.com/qor5/admin/l10n/views"
+	"github.com/qor5/admin/note"
+	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/presets"
+	publish_view "github.com/qor5/admin/publish/views"
+	"github.com/qor5/admin/utils"
 )
 
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"

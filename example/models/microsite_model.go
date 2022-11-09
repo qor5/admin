@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/qor/qor5/microsite"
+	"github.com/qor5/admin/microsite"
 )
 
 type MicrositeModel struct {

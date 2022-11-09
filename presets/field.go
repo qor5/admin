@@ -11,9 +11,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	v "github.com/goplaid/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	v "github.com/qor5/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/thoas/go-funk"

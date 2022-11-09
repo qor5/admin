@@ -3,12 +3,12 @@ package role
 import (
 	"time"
 
-	. "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/presets/gorm2op"
-	"github.com/qor/qor5/listeditor"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/admin/listeditor"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

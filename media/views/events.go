@@ -1,7 +1,7 @@
 package views
 
 import (
-	"github.com/goplaid/web"
+	"github.com/qor5/web"
 	"gorm.io/gorm"
 )
 

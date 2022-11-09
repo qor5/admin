@@ -1,7 +1,7 @@
 package role
 
 import (
-	"github.com/goplaid/x/perm"
+	"github.com/qor5/x/perm"
 	"gorm.io/gorm"
 )
 

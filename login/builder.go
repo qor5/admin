@@ -3,10 +3,10 @@ package login
 import (
 	"fmt"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/login"
-	"github.com/qor/qor5/presets"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/admin/presets"
 )
 
 const (

@@ -1,11 +1,11 @@
 package views
 
 import (
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/activity"
-	"github.com/qor/qor5/publish"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/activity"
+	"github.com/qor5/admin/publish"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )

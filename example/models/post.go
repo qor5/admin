@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/qor/oss"
-	"github.com/qor/qor5/media/media_library"
-	"github.com/qor/qor5/publish"
-	"github.com/qor/qor5/seo"
-	"github.com/qor/qor5/slug"
+	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/seo"
+	"github.com/qor5/admin/slug"
 	"gorm.io/gorm"
 )
 

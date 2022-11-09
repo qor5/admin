@@ -3,8 +3,8 @@ package worker
 import (
 	"net/http"
 
-	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/presets"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/presets"
 )
 
 const I18nWorkerKey i18n.ModuleKey = "I18nWorkerKey"

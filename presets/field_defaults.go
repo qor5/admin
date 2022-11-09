@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/goplaid/web"
-	. "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/ui/vuetifyx"
+	"github.com/qor5/web"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
 	"github.com/iancoleman/strcase"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"

@@ -8,7 +8,7 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
-	"github.com/qor/qor5/media"
+	"github.com/qor5/admin/media"
 )
 
 var (

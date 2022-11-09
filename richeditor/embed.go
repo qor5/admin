@@ -5,8 +5,8 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/goplaid/ui/redactor"
-	"github.com/goplaid/web"
+	"github.com/qor5/ui/redactor"
+	"github.com/qor5/web"
 )
 
 //go:embed redactor

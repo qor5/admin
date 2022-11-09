@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/presets/actions"
+	"github.com/qor5/web"
+	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/presets/actions"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 )

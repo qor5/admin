@@ -3,8 +3,8 @@ package models
 import (
 	"time"
 
-	"github.com/goplaid/x/login"
-	"github.com/qor/qor5/role"
+	"github.com/qor5/x/login"
+	"github.com/qor5/admin/role"
 	"gorm.io/gorm"
 )
 

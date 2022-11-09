@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/goplaid/x/login"
-	"github.com/goplaid/x/sitemap"
-	"github.com/qor/qor5/example/models"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/sitemap"
+	"github.com/qor5/admin/example/models"
 )
 
 func Router() http.Handler {

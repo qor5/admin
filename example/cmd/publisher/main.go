@@ -8,8 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss/s3"
-	"github.com/qor/qor5/example/admin"
-	"github.com/qor/qor5/publish"
+	"github.com/qor5/admin/example/admin"
+	"github.com/qor5/admin/publish"
 )
 
 func main() {

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/presets/actions"
-	"github.com/goplaid/ui/stripeui"
-	. "github.com/goplaid/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/ui/stripeui"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/jinzhu/inflection"
 	h "github.com/theplant/htmlgo"
 )

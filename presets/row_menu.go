@@ -3,11 +3,11 @@ package presets
 import (
 	"fmt"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	"github.com/goplaid/ui/stripeui"
-	s "github.com/goplaid/ui/stripeui"
-	. "github.com/goplaid/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/ui/stripeui"
+	s "github.com/qor5/ui/stripeui"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/iancoleman/strcase"
 	h "github.com/theplant/htmlgo"
 )

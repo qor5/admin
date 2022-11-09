@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	vuetify "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/presets"
+	vuetify "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

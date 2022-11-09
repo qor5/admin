@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/media"
-	"github.com/qor/qor5/media/media_library"
-	media_view "github.com/qor/qor5/media/views"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
+	media_view "github.com/qor5/admin/media/views"
 
-	"github.com/qor/qor5/worker"
+	"github.com/qor5/admin/worker"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

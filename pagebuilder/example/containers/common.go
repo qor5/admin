@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor/qor5/media/media_library"
+	"github.com/qor5/admin/media/media_library"
 
-	v "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 )
 

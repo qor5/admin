@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor/qor5/example/admin"
+	"github.com/qor5/admin/example/admin"
 	"github.com/stretchr/testify/assert"
 )
 

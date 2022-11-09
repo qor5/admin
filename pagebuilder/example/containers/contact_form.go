@@ -3,10 +3,10 @@ package containers
 import (
 	"fmt"
 
-	"github.com/goplaid/web"
+	"github.com/qor5/web"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor/qor5/pagebuilder"
+	"github.com/qor5/admin/pagebuilder"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

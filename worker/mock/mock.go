@@ -4,7 +4,7 @@
 package mock
 
 import (
-	"github.com/qor/qor5/worker"
+	"github.com/qor5/admin/worker"
 	"sync"
 )
 

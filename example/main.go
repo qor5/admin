@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/qor/qor5/example/admin"
+	"github.com/qor5/admin/example/admin"
 )
 
 func main() {

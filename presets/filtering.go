@@ -3,8 +3,8 @@ package presets
 import (
 	"net/url"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/ui/vuetifyx"
 )
 
 func (b *ListingBuilder) FilterDataFunc(v FilterDataFunc) {

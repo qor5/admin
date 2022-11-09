@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/goplaid/x/login"
-	"github.com/qor/qor5/example/models"
+	"github.com/qor5/x/login"
+	"github.com/qor5/admin/example/models"
 	"github.com/ua-parser/uap-go/uaparser"
 	"gorm.io/gorm"
 )

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor/qor5/l10n"
-	"github.com/qor/qor5/publish"
+	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/publish"
 	"gorm.io/gorm"
 )
 

@@ -15,8 +15,8 @@ import (
 
 	"github.com/gen2brain/go-unarr"
 	"github.com/qor/oss"
-	"github.com/qor/qor5/microsite/utils"
-	"github.com/qor/qor5/publish"
+	"github.com/qor5/admin/microsite/utils"
+	"github.com/qor5/admin/publish"
 	"gorm.io/gorm"
 )
 

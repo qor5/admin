@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets/actions"
-	"github.com/goplaid/ui/stripeui"
-	. "github.com/goplaid/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/ui/stripeui"
+	. "github.com/qor5/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )
 

@@ -1,11 +1,11 @@
 package admin
 
 import (
-	"github.com/goplaid/x/perm"
-	"github.com/qor/qor5/role"
+	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/role"
 	"os"
 
-	"github.com/qor/qor5/example/models"
+	"github.com/qor5/admin/example/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

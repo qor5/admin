@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/l10n"
-	"github.com/qor/qor5/publish"
-	"github.com/qor/qor5/utils"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/utils"
 	"gorm.io/gorm"
 )
 

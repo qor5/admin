@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/presets/gorm2op"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/theplant/gofixtures"
 )
 

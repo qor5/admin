@@ -3,7 +3,7 @@ package l10n
 import (
 	"reflect"
 
-	"github.com/qor/qor5/utils"
+	"github.com/qor5/admin/utils"
 )
 
 type L10nInterface interface {

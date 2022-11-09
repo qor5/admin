@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/goplaid/x/login"
+	"github.com/qor5/x/login"
 	"github.com/markbates/goth/providers/google"
-	"github.com/qor/qor5/activity"
-	"github.com/qor/qor5/example/models"
-	plogin "github.com/qor/qor5/login"
-	"github.com/qor/qor5/presets"
+	"github.com/qor5/admin/activity"
+	"github.com/qor5/admin/example/models"
+	plogin "github.com/qor5/admin/login"
+	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

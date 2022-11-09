@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/qor/qor5/media/media_library"
+	"github.com/qor5/admin/media/media_library"
 )
 
 var (

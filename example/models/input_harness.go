@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/qor/qor5/media/media_library"
+	"github.com/qor5/admin/media/media_library"
 )
 
 type InputHarness struct {

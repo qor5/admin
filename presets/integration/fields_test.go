@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goplaid/multipartestutils"
-	"github.com/goplaid/web"
-	. "github.com/qor/qor5/presets"
+	. "github.com/qor5/admin/presets"
+	"github.com/qor5/web"
+	"github.com/qor5/web/multipartestutils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/goplaid/web"
-	"github.com/goplaid/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 )
 

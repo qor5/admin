@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/middleware"
-	"github.com/qor/qor5/presets/examples"
+	"github.com/qor5/admin/presets/examples"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

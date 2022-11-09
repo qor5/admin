@@ -3,7 +3,7 @@ package seo
 import (
 	"embed"
 
-	"github.com/goplaid/web"
+	"github.com/qor5/web"
 )
 
 //go:embed v_seo

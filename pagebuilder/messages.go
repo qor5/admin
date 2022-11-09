@@ -1,6 +1,6 @@
 package pagebuilder
 
-import "github.com/goplaid/x/i18n"
+import "github.com/qor5/x/i18n"
 
 const I18nPageBuilderKey i18n.ModuleKey = "I18nPageBuilderKey"
 

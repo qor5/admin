@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/goplaid/multipartestutils"
 	"github.com/qor/oss/s3"
-	"github.com/qor/qor5/media"
-	"github.com/qor/qor5/media/media_library"
-	"github.com/qor/qor5/media/oss"
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/media/oss"
+	"github.com/qor5/web/multipartestutils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

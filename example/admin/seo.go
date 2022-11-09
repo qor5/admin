@@ -3,9 +3,9 @@ package admin
 import (
 	"net/http"
 
-	"github.com/qor/qor5/presets"
-	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/seo"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/seo"
 	"gorm.io/gorm"
 )
 

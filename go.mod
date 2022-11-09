@@ -1,6 +1,6 @@
-module github.com/qor/qor5
+module github.com/qor5/admin
 
-go 1.17
+go 1.19
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -12,10 +12,6 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/google/go-cmp v0.5.9
-	github.com/goplaid/multipartestutils v0.0.3
-	github.com/goplaid/ui v0.0.0-20221108033028-3e91c08ccdd7
-	github.com/goplaid/web v1.2.2
-	github.com/goplaid/x v1.1.5-0.20221109031030-c68f55210312
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
 	github.com/iancoleman/strcase v0.2.0
@@ -25,6 +21,9 @@ require (
 	github.com/markbates/goth v1.75.1
 	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
+	github.com/qor5/ui v1.0.0
+	github.com/qor5/web v1.2.3
+	github.com/qor5/x v1.2.0
 	github.com/stretchr/testify v1.8.0
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1

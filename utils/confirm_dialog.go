@@ -1,9 +1,9 @@
 package utils
 
 import (
-	. "github.com/goplaid/ui/vuetify"
-	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/presets"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )

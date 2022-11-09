@@ -1,10 +1,10 @@
 package views
 
 import (
-	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
+	"github.com/qor5/web"
+	"github.com/qor5/admin/presets"
 
-	"github.com/qor/qor5/media/media_library"
+	"github.com/qor5/admin/media/media_library"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
