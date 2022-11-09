@@ -11,69 +11,20 @@ import (
 	v "github.com/goplaid/ui/vuetify"
 	"github.com/goplaid/web"
 	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/presets"
+	"github.com/goplaid/x/login"
 	"github.com/pquerna/otp"
+	"github.com/qor/qor5/presets"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
 
-func getFailCodeText(msgr *Messages, code FailCode) string {
-	switch code {
-	case FailCodeSystemError:
-		return msgr.ErrorSystemError
-	case FailCodeCompleteUserAuthFailed:
-		return msgr.ErrorCompleteUserAuthFailed
-	case FailCodeUserNotFound:
-		return msgr.ErrorUserNotFound
-	case FailCodeIncorrectAccountNameOrPassword:
-		return msgr.ErrorIncorrectAccountNameOrPassword
-	case FailCodeUserLocked:
-		return msgr.ErrorUserLocked
-	case FailCodeAccountIsRequired:
-		return msgr.ErrorAccountIsRequired
-	case FailCodePasswordCannotBeEmpty:
-		return msgr.ErrorPasswordCannotBeEmpty
-	case FailCodePasswordNotMatch:
-		return msgr.ErrorPasswordNotMatch
-	case FailCodeIncorrectPassword:
-		return msgr.ErrorIncorrectPassword
-	case FailCodeInvalidToken:
-		return msgr.ErrorInvalidToken
-	case FailCodeTokenExpired:
-		return msgr.ErrorTokenExpired
-	case FailCodeIncorrectTOTPCode:
-		return msgr.ErrorIncorrectTOTPCode
-	case FailCodeTOTPCodeHasBeenUsed:
-		return msgr.ErrorTOTPCodeReused
-	case FailCodeIncorrectRecaptchaToken:
-		return msgr.ErrorIncorrectRecaptchaToken
-	}
-
-	return ""
-}
-
-func getWarnCodeText(msgr *Messages, code WarnCode) string {
-	switch code {
-	case WarnCodePasswordHasBeenChanged:
-		return msgr.WarnPasswordHasBeenChanged
-	}
-	return ""
-}
-
-func getInfoCodeText(msgr *Messages, code InfoCode) string {
-	switch code {
-	case InfoCodePasswordSuccessfullyReset:
-		return msgr.InfoPasswordSuccessfullyReset
-	case InfoCodePasswordSuccessfullyChanged:
-		return msgr.InfoPasswordSuccessfullyChanged
-	}
-	return ""
-}
-
 const (
-	otpKeyFormat = "otpauth://totp/%s:%s?issuer=%s&secret=%s"
+	wrapperClass = "d-flex pt-16 flex-column mx-auto"
+	wrapperStyle = "max-width: 28rem;"
+	titleClass   = "text-h5 mb-6 font-weight-bold"
+	labelClass   = "d-block mb-1 grey--text text--darken-2 text-sm-body-2"
 )
 
 func errNotice(msg string) HTMLComponent {
@@ -200,12 +151,6 @@ func formSubmitBtn(
 		Class("mt-6")
 }
 
-func injectLoginAssets(ctx *web.EventContext) {
-	ctx.Injector.HeadHTML(fmt.Sprintf(`
-<link rel="stylesheet" href="%s">
-    `, styleCSSURL))
-}
-
 // requirements:
 // - submit button
 //   - add class `g-recaptcha`
@@ -235,7 +180,7 @@ function onSubmit(token) {
 func injectZxcvbn(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(fmt.Sprintf(`
 <script src="%s"></script>
-    `, zxcvbnJSURL))
+    `, login.ZxcvbnJSURL))
 }
 
 type languageItem struct {
@@ -243,17 +188,18 @@ type languageItem struct {
 	Value string
 }
 
-func defaultLoginPage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		i18nBuilder := vh.I18n()
 		var langs []languageItem
 		var currLangVal string
-		if ls := b.i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
-			qn := b.i18nBuilder.GetQueryName()
+		if ls := i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
+			qn := i18nBuilder.GetQueryName()
 			lang := ctx.R.FormValue(qn)
 			if lang == "" {
-				lang = b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+				lang = i18nBuilder.GetCurrentLangFromCookie(ctx.R)
 			}
 			accept := ctx.R.Header.Get("Accept-Language")
 			_, mi := language.MatchStrings(language.NewMatcher(ls), lang, accept)
@@ -273,33 +219,26 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 		}
 		// i18n end
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		fcText := getFailCodeText(msgr, fcFlash)
-		wcFlash := GetWarnCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		wcText := getWarnCodeText(msgr, wcFlash)
-		icFlash := GetInfoCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		icText := getInfoCodeText(msgr, icFlash)
-		wlFlash := GetWrongLoginInputFlash(b.cookieConfig, ctx.W, ctx.R)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		wMsg := vh.GetWarnFlashMessage(msgr, ctx.W, ctx.R)
+		iMsg := vh.GetInfoFlashMessage(msgr, ctx.W, ctx.R)
+		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
 
-		if icFlash == InfoCodePasswordSuccessfullyChanged {
-			wcText = ""
+		if iMsg != "" && vh.GetInfoCodeFlash(ctx.W, ctx.R) == login.InfoCodePasswordSuccessfullyChanged {
+			wMsg = ""
 		}
 
-		injectLoginAssets(ctx)
-
-		wrapperClass := "tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto"
-
 		var oauthHTML HTMLComponent
-		if b.oauthEnabled {
-			ul := Div().Class("tw-flex tw-flex-col tw-justify-center tw-mt-8 tw-text-center")
-			for _, provider := range b.providers {
+		if vh.OAuthEnabled() {
+			ul := Div().Class("d-flex flex-column justify-center mt-8 text-center")
+			for _, provider := range vh.OAuthProviders() {
 				ul.AppendChildren(
 					v.VBtn("").
 						Block(true).
 						Large(true).
 						Class("mt-4").
 						Outlined(true).
-						Href(fmt.Sprintf("%s?provider=%s", b.OAuthBeginURL, provider.Key)).
+						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
 						Children(
 							Div(
 								provider.Logo,
@@ -314,38 +253,37 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 			)
 		}
 
-		isRecaptchaEnabled := b.recaptchaEnabled
+		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
 			injectRecaptchaAssets(ctx, "login-form", "token")
 		}
 
 		var userPassHTML HTMLComponent
-		if b.userPassEnabled {
-			wrapperClass += " tw-pt-16"
+		if vh.UserPassEnabled() {
 			userPassHTML = Div(
 				Form(
 					Div(
-						Label(msgr.AccountLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("account"),
-						input("account", msgr.AccountPlaceholder, wlFlash.Account),
+						Label(msgr.AccountLabel).Class(labelClass).For("account"),
+						input("account", msgr.AccountPlaceholder, wIn.Account),
 					),
 					Div(
-						Label(msgr.PasswordLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("password"),
-						passwordInput("password", msgr.PasswordPlaceholder, wlFlash.Password, true),
-					).Class("tw-mt-6"),
+						Label(msgr.PasswordLabel).Class(labelClass).For("password"),
+						passwordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
+					).Class("mt-6"),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
 						Input("token").Id("token").Type("hidden"),
 					),
 					formSubmitBtn(msgr.SignInBtn).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
-						AttrIf("data-sitekey", b.recaptchaConfig.SiteKey, isRecaptchaEnabled).
+						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
-				).Id("login-form").Method(http.MethodPost).Action(b.PasswordLoginURL),
-				If(!b.noForgetPasswordLink,
+				).Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL()),
+				If(!vh.NoForgetPasswordLink(),
 					Div(
-						A(Text(msgr.ForgetPasswordLink)).Href(b.ForgetPasswordPageURL).
+						A(Text(msgr.ForgetPasswordLink)).Href(vh.ForgetPasswordPageURL()).
 							Class("grey--text text--darken-1"),
-					).Class("tw-text-right tw-mt-2"),
+					).Class("text-right mt-2"),
 				),
 			)
 		}
@@ -368,16 +306,12 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 					Class("mt-12").
 					HideDetails(true),
 			),
-		).Class(wrapperClass)
-
-		if b.defaultLoginPageFormWrapFunc != nil {
-			bodyForm = b.defaultLoginPageFormWrapFunc(bodyForm)
-		}
+		).Class(wrapperClass).Style(wrapperStyle)
 
 		r.Body = Div(
-			errNotice(fcText),
-			warnNotice(wcText),
-			infoNotice(icText),
+			errNotice(fMsg),
+			warnNotice(wMsg),
+			infoNotice(iMsg),
 			bodyForm,
 		)
 
@@ -385,49 +319,46 @@ func defaultLoginPage(b *Builder) web.PageFunc {
 	})
 }
 
-func defaultForgetPasswordPage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultForgetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		fcText := getFailCodeText(msgr, fcFlash)
-		inputFlash := GetWrongForgetPasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
-		secondsToResend := GetSecondsToRedoFlash(b.cookieConfig, ctx.W, ctx.R)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		wIn := vh.GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
+		secondsToResend := vh.GetSecondsToRedoFlash(ctx.W, ctx.R)
 		activeBtnText := msgr.SendResetPasswordEmailBtn
 		inactiveBtnText := msgr.ResendResetPasswordEmailBtn
 		inactiveBtnTextWithInitSeconds := fmt.Sprintf("%s (%d)", inactiveBtnText, secondsToResend)
 
 		doTOTP := ctx.R.URL.Query().Get("totp") == "1"
-		actionURL := b.SendResetPasswordLinkURL
+		actionURL := vh.SendResetPasswordLinkURL()
 		if doTOTP {
-			actionURL = mustSetQuery(actionURL, "totp", "1")
+			actionURL = login.MustSetQuery(actionURL, "totp", "1")
 		}
 
-		injectLoginAssets(ctx)
-
-		isRecaptchaEnabled := b.recaptchaEnabled
+		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
 			injectRecaptchaAssets(ctx, "forget-form", "token")
 		}
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
-			errNotice(fcText),
+			errNotice(fMsg),
 			If(secondsToResend > 0,
 				warnNotice(msgr.SendEmailTooFrequentlyNotice),
 			),
 			Div(
-				H1(msgr.ForgotMyPasswordTitle).Class("tw-leading-tight tw-text-3xl tw-mt-0 tw-mb-6"),
+				H1(msgr.ForgotMyPasswordTitle).Class(titleClass),
 				Form(
 					Div(
-						Label(msgr.ForgetPasswordEmailLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("account"),
-						input("account", msgr.ForgetPasswordEmailPlaceholder, inputFlash.Account),
+						Label(msgr.ForgetPasswordEmailLabel).Class(labelClass).For("account"),
+						input("account", msgr.ForgetPasswordEmailPlaceholder, wIn.Account),
 					),
 					If(doTOTP,
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, inputFlash.TOTP),
-						).Class("tw-mt-6"),
+							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
+							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+						).Class("mt-6"),
 					),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
@@ -438,12 +369,12 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 						ClassIf("d-none", secondsToResend <= 0),
 					formSubmitBtn(activeBtnText).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
-						AttrIf("data-sitekey", b.recaptchaConfig.SiteKey, isRecaptchaEnabled).
+						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled).
 						Attr("id", "submitBtn").
 						ClassIf("d-none", secondsToResend > 0),
 				).Id("forget-form").Method(http.MethodPost).Action(actionURL),
-			).Class("tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-pt-16"),
+			).Class(wrapperClass).Style(wrapperStyle),
 		)
 
 		if secondsToResend > 0 {
@@ -473,40 +404,37 @@ func defaultForgetPasswordPage(b *Builder) web.PageFunc {
 	})
 }
 
-func defaultResetPasswordLinkSentPage(b *Builder) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultResetPasswordLinkSentPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
 		a := ctx.R.URL.Query().Get("a")
-
-		injectLoginAssets(ctx)
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
 			Div(
-				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("tw-leading-tight tw-text-2xl tw-mt-0 tw-mb-4"),
-				H2(msgr.ResetPasswordLinkSentPrompt).Class("tw-leading-tight tw-text-1xl tw-mt-0"),
-			).Class("tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-pt-16"),
+				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("text-h5"),
+				H2(msgr.ResetPasswordLinkSentPrompt).Class("text-body-1 mt-2"),
+			).Class(wrapperClass).Style(wrapperStyle),
 		)
 		return
-	}
+	})
 }
 
-func defaultResetPasswordPage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		errMsg := getFailCodeText(msgr, fcFlash)
-		if errMsg == "" {
-			errMsg = GetCustomErrorMessageFlash(b.cookieConfig, ctx.W, ctx.R)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		if fMsg == "" {
+			fMsg = vh.GetCustomErrorMessageFlash(ctx.W, ctx.R)
 		}
-		wrpiFlash := GetWrongResetPasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
+		wIn := vh.GetWrongResetPasswordInputFlash(ctx.W, ctx.R)
 
 		doTOTP := ctx.R.URL.Query().Get("totp") == "1"
-		actionURL := b.ResetPasswordURL
+		actionURL := vh.ResetPasswordURL()
 		if doTOTP {
-			actionURL = mustSetQuery(actionURL, "totp", "1")
+			actionURL = login.MustSetQuery(actionURL, "totp", "1")
 		}
 
 		var user interface{}
@@ -519,7 +447,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 			r.Body = Div(Text("user not found"))
 			return r, nil
 		} else {
-			user, err = b.findUserByID(id)
+			user, err = vh.FindUserByID(id)
 			if err != nil {
 				if err == gorm.ErrRecordNotFound {
 					r.Body = Div(Text("user not found"))
@@ -534,7 +462,7 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 			r.Body = Div(Text("invalid token"))
 			return r, nil
 		} else {
-			storedToken, _, expired := user.(UserPasser).GetResetPasswordToken()
+			storedToken, _, expired := user.(login.UserPasser).GetResetPasswordToken()
 			if expired {
 				r.Body = Div(Text("token expired"))
 				return r, nil
@@ -545,87 +473,83 @@ func defaultResetPasswordPage(b *Builder) web.PageFunc {
 			}
 		}
 
-		injectLoginAssets(ctx)
 		injectZxcvbn(ctx)
 
 		r.Body = Div(
-			errNotice(errMsg),
+			errNotice(fMsg),
 			Div(
-				H1(msgr.ResetYourPasswordTitle).Class("tw-leading-tight tw-text-3xl tw-mt-0 tw-mb-6"),
+				H1(msgr.ResetYourPasswordTitle).Class(titleClass),
 				Form(
 					Input("user_id").Type("hidden").Value(id),
 					Input("token").Type("hidden").Value(token),
 					Div(
-						Label(msgr.ResetPasswordLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("password"),
-						passwordInput("password", msgr.ResetPasswordLabel, wrpiFlash.Password, true),
-						passwordInputWithStrengthMeter(passwordInput("password", msgr.ResetPasswordLabel, wrpiFlash.Password, true), "password", wrpiFlash.Password),
+						Label(msgr.ResetPasswordLabel).Class(labelClass).For("password"),
+						passwordInputWithStrengthMeter(passwordInput("password", msgr.ResetPasswordLabel, wIn.Password, true), "password", wIn.Password),
 					),
 					Div(
-						Label(msgr.ResetPasswordConfirmLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("confirm_password"),
-						passwordInput("confirm_password", msgr.ResetPasswordConfirmPlaceholder, wrpiFlash.ConfirmPassword, true),
-					).Class("tw-mt-6"),
+						Label(msgr.ResetPasswordConfirmLabel).Class(labelClass).For("confirm_password"),
+						passwordInput("confirm_password", msgr.ResetPasswordConfirmPlaceholder, wIn.ConfirmPassword, true),
+					).Class("mt-6"),
 					If(doTOTP,
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, wrpiFlash.TOTP),
-						).Class("tw-mt-6"),
+							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
+							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+						).Class("mt-6"),
 					),
 					formSubmitBtn(msgr.Confirm),
 				).Method(http.MethodPost).Action(actionURL),
-			).Class("tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-pt-16"),
+			).Class(wrapperClass).Style(wrapperStyle),
 		)
 		return
 	})
 }
 
-func defaultChangePasswordPage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		errMsg := getFailCodeText(msgr, fcFlash)
-		if errMsg == "" {
-			errMsg = GetCustomErrorMessageFlash(b.cookieConfig, ctx.W, ctx.R)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		if fMsg == "" {
+			fMsg = vh.GetCustomErrorMessageFlash(ctx.W, ctx.R)
 		}
-		inputFlash := GetWrongChangePasswordInputFlash(b.cookieConfig, ctx.W, ctx.R)
+		wIn := vh.GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
 
-		injectLoginAssets(ctx)
 		injectZxcvbn(ctx)
 
 		r.PageTitle = "Change Password"
 
 		r.Body = Div(
-			errNotice(errMsg),
+			errNotice(fMsg),
 			Div(
-				H1(msgr.ChangePasswordTitle).Class("tw-leading-tight tw-text-3xl tw-mt-0 tw-mb-6"),
+				H1(msgr.ChangePasswordTitle).Class(titleClass),
 				Form(
 					Div(
-						Label(msgr.ChangePasswordOldLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("old_password"),
-						passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, inputFlash.OldPassword, true),
+						Label(msgr.ChangePasswordOldLabel).Class(labelClass).For("old_password"),
+						passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, wIn.OldPassword, true),
 					),
 					Div(
-						Label(msgr.ChangePasswordNewLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("password"),
-						passwordInputWithStrengthMeter(passwordInput("password", msgr.ChangePasswordNewPlaceholder, inputFlash.NewPassword, true), "password", inputFlash.NewPassword),
-					).Class("tw-mt-6"),
+						Label(msgr.ChangePasswordNewLabel).Class(labelClass).For("password"),
+						passwordInputWithStrengthMeter(passwordInput("password", msgr.ChangePasswordNewPlaceholder, wIn.NewPassword, true), "password", wIn.NewPassword),
+					).Class("mt-6"),
 					Div(
-						Label(msgr.ChangePasswordNewConfirmLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("confirm_password"),
-						passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, inputFlash.ConfirmPassword, true),
-					).Class("tw-mt-6"),
-					If(b.totpEnabled,
+						Label(msgr.ChangePasswordNewConfirmLabel).Class(labelClass).For("confirm_password"),
+						passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, wIn.ConfirmPassword, true),
+					).Class("mt-6"),
+					If(vh.TOTPEnabled(),
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class("tw-block tw-mb-2 tw-text-sm tw-text-gray-600 dark:tw-text-gray-200").For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, inputFlash.TOTP),
-						).Class("tw-mt-6"),
+							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
+							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+						).Class("mt-6"),
 					),
 					formSubmitBtn(msgr.Confirm),
-				).Method(http.MethodPost).Action(b.ChangePasswordURL),
-			).Class("tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-pt-16"),
+				).Method(http.MethodPost).Action(vh.ChangePasswordURL()),
+			).Class(wrapperClass).Style(wrapperStyle),
 		)
 		return
 	})
 }
 
-func changePasswordDialog(b *Builder, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
+func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
 	return v.VDialog(
 		v.VCard(
@@ -649,9 +573,9 @@ func changePasswordDialog(b *Builder, ctx *web.EventContext, showVar string, con
 		Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar))
 }
 
-func defaultChangePasswordDialogContent(b *Builder) HTMLContentFunc {
+func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builder) func(ctx *web.EventContext) HTMLComponent {
 	return func(ctx *web.EventContext) HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(
 			v.VCardTitle(Text(msgr.ChangePasswordTitle)),
 			v.VCardText(
@@ -675,7 +599,7 @@ func defaultChangePasswordDialogContent(b *Builder) HTMLContentFunc {
 						Label(msgr.ChangePasswordNewConfirmLabel).
 						FieldName("confirm_password"),
 				).Class("mt-12"),
-				If(b.totpEnabled,
+				If(vh.TOTPEnabled(),
 					Div(
 						input("otp", msgr.TOTPValidateCodePlaceholder, "").
 							Outlined(false).
@@ -688,15 +612,14 @@ func defaultChangePasswordDialogContent(b *Builder) HTMLContentFunc {
 	}
 }
 
-func defaultTOTPSetupPage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		fcText := getFailCodeText(msgr, fcFlash)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
 
-		user := GetCurrentUser(ctx.R)
-		u := user.(UserPasser)
+		user := login.GetCurrentUser(ctx.R)
+		u := user.(login.UserPasser)
 
 		var QRCode bytes.Buffer
 
@@ -708,10 +631,10 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 			return
 		}
 		key, err = otp.NewKeyFromURL(
-			fmt.Sprintf(otpKeyFormat,
-				url.PathEscape(b.totpIssuer),
+			fmt.Sprintf("otpauth://totp/%s:%s?issuer=%s&secret=%s",
+				url.PathEscape(vh.TOTPIssuer()),
 				url.PathEscape(u.GetAccountName()),
-				url.QueryEscape(b.totpIssuer),
+				url.QueryEscape(vh.TOTPIssuer()),
 				url.QueryEscape(totpSecret),
 			),
 		)
@@ -728,68 +651,54 @@ func defaultTOTPSetupPage(b *Builder) web.PageFunc {
 			return
 		}
 
-		injectLoginAssets(ctx)
-
-		wrapperClass := "tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-relative tw-text-center"
-		labelClass := "tw-w-80 tw-text-sm tw-mb-8 tw-font-semibold tw-text-gray-700 tw-tracking-wide"
-
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
-			errNotice(fcText),
+			errNotice(fMsg),
 			Div(
 				Div(
 					H1(msgr.TOTPSetupTitle).
-						Class("tw-text-3xl tw-font-bold tw-mb-4"),
-					Label(msgr.TOTPSetupScanPrompt).
-						Class(labelClass),
+						Class(titleClass),
+					Label(msgr.TOTPSetupScanPrompt),
 				),
 				Div(
 					Img(fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(QRCode.Bytes()))),
-				).Class("tw-my-2 tw-flex tw-items-center tw-justify-center"),
+				).Class("d-flex justify-center my-2"),
 				Div(
-					Label(msgr.TOTPSetupSecretPrompt).
-						Class(labelClass),
+					Label(msgr.TOTPSetupSecretPrompt),
 				),
-				Div(Label(u.GetTOTPSecret()).Class("tw-text-sm tw-font-bold")).Class("tw-my-4"),
+				Div(Label(u.GetTOTPSecret())).Class("font-weight-bold my-4"),
 				Form(
-					Label(msgr.TOTPSetupEnterCodePrompt).Class(labelClass),
+					Label(msgr.TOTPSetupEnterCodePrompt),
 					input("otp", msgr.TOTPSetupCodePlaceholder, "").Class("mt-6"),
 					formSubmitBtn(msgr.Verify),
-				).Method(http.MethodPost).Action(b.ValidateTOTPURL),
-			).Class(wrapperClass),
+				).Method(http.MethodPost).Action(vh.ValidateTOTPURL()),
+			).Class(wrapperClass).Style(wrapperStyle).Class("text-center"),
 		)
 
 		return
 	})
 }
 
-func defaultTOTPValidatePage(b *Builder) web.PageFunc {
-	return b.pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginKey, Messages_en_US).(*Messages)
+func defaultTOTPValidatePage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fcFlash := GetFailCodeFlash(b.cookieConfig, ctx.W, ctx.R)
-		fcText := getFailCodeText(msgr, fcFlash)
-
-		injectLoginAssets(ctx)
-
-		wrapperClass := "tw-flex tw-pt-8 tw-flex-col tw-max-w-md tw-mx-auto tw-relative tw-text-center"
-		labelClass := "tw-w-80 tw-text-sm tw-mb-8 tw-font-semibold tw-text-gray-700 tw-tracking-wide"
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
 
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
-			errNotice(fcText),
+			errNotice(fMsg),
 			Div(
 				Div(
 					H1(msgr.TOTPValidateTitle).
-						Class("tw-text-3xl tw-font-bold tw-mb-4"),
-					Label(msgr.TOTPValidateEnterCodePrompt).
-						Class(labelClass),
+						Class(titleClass),
+					Label(msgr.TOTPValidateEnterCodePrompt),
 				),
 				Form(
 					input("otp", msgr.TOTPValidateCodePlaceholder, "").Autofocus(true).Class("mt-6"),
 					formSubmitBtn(msgr.Verify),
-				).Method(http.MethodPost).Action(b.ValidateTOTPURL),
-			).Class(wrapperClass),
+				).Method(http.MethodPost).Action(vh.ValidateTOTPURL()),
+			).Class(wrapperClass).Style(wrapperStyle).Class("text-center"),
 		)
 
 		return

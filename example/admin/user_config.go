@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/goplaid/x/i18n"
-	"github.com/qor/qor5/login"
+	"github.com/goplaid/x/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/publish"
 	publish_view "github.com/qor/qor5/publish/views"

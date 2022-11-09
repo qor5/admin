@@ -10,9 +10,10 @@ import (
 	. "github.com/goplaid/ui/vuetify"
 	vx "github.com/goplaid/ui/vuetifyx"
 	"github.com/goplaid/web"
-	"github.com/qor/qor5/presets"
+	"github.com/goplaid/x/login"
 	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/login"
+	plogin "github.com/qor/qor5/login"
+	"github.com/qor/qor5/presets"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -143,7 +144,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 				Outlined(true).Color("primary").
 				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
 				Class("mr-2").
-				OnClick(loginBuilder.OpenChangePasswordDialogEvent),
+				OnClick(plogin.OpenChangePasswordDialogEvent),
 		)
 
 		return h.Div(

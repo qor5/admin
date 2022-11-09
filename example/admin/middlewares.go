@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor/qor5/login"
+	"github.com/goplaid/x/login"
 	"github.com/qor/qor5/note"
 	"github.com/qor/qor5/role"
 	"gorm.io/gorm"

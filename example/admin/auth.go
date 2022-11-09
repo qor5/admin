@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/qor/qor5/presets"
+	"github.com/goplaid/x/login"
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor/qor5/activity"
 	"github.com/qor/qor5/example/models"
-	"github.com/qor/qor5/login"
+	plogin "github.com/qor/qor5/login"
+	"github.com/qor/qor5/presets"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -29,7 +30,7 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 
 func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBuilder) {
 	ab.RegisterModel(&models.User{})
-	loginBuilder = login.New(pb).
+	loginBuilder = plogin.New(pb).
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(os.Getenv("LOGIN_SECRET")).
