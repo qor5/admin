@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/gorm2op"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/publish"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/gorm2op"
-	"github.com/qor5/admin/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -22,7 +22,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
 		var (
 			msgr                = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-			activeClass         = "deep-purple white--text"
+			activeClass         = "primary white--text"
 			selected            = ctx.R.FormValue("selected")
 			selectVersionsEvent = web.Plaid().EventFunc(selectVersionsEvent).Query("id", ctx.R.FormValue("id")).Query("selected", web.Var("$event")).Go()
 			selectItems         = []map[string]string{
@@ -89,7 +89,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	var (
 		versions      []versionListTableItem
 		namedVersions []versionListTableItem
-		activeClass   = "deep-purple white--text"
+		activeClass   = "vx-list-item--active primary--text"
 		selected      = ctx.R.FormValue("selected")
 		page          = ctx.R.FormValue("page")
 		currentPage   = 1
