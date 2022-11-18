@@ -8,14 +8,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	goji "goji.io"
@@ -1014,6 +1014,25 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 			<style>
 				[v-cloak] {
 					display: none;
+				}
+				.vx-list-item--active {
+					position: relative;
+				}
+				.vx-list-item--active:after {
+					opacity: .12;
+					background-color: currentColor;
+					bottom: 0;
+					content: "";
+					left: 0;
+					pointer-events: none;
+					position: absolute;
+					right: 0;
+					top: 0;
+					transition: .3s cubic-bezier(.25,.8,.5,1);
+					line-height: 0;
+				}
+				.vx-list-item--active:hover {
+					background-color: inherit!important;
 				}
 			</style>
 		`, "{{prefix}}", b.prefix, -1))

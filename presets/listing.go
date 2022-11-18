@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/ui/stripeui"
 	s "github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -1234,7 +1234,7 @@ func (b *ListingBuilder) getTableComponents(
 			return cell
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-			row.SetAttr(":class", fmt.Sprintf(`{"blue lighten-5": vars.presetsRightDrawer && vars.currEditingListItemID==="%s-%s"}`, dataTableID, id))
+			row.SetAttr(":class", fmt.Sprintf(`{"vx-list-item--active primary--text": vars.presetsRightDrawer && vars.currEditingListItemID==="%s-%s"}`, dataTableID, id))
 			return row
 		}).
 		RowMenuItemFuncs(b.RowMenu().listingItemFuncs(ctx)...).
