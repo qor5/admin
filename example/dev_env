@@ -1,0 +1,23 @@
+export TZ="Asia/Tokyo"
+export DB_PARAMS="user=example password=123 dbname=example_dev sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo"
+export PORT="9000"
+export AWS_SDK_LOAD_CONFIG=1
+export S3_Bucket=""
+export S3_Region=""
+
+export BASE_URL="http://localhost:9500"
+export LOGIN_SECRET=""
+export LOGIN_GOOGLE_KEY=""
+export LOGIN_GOOGLE_SECRET=""
+export PORT="9500"
+export LOGIN_GOOGLE_KEY=""
+export LOGIN_GOOGLE_SECRET=""
+export LOGIN_INITIAL_USER_EMAIL="qor@theplant.jp"
+export LOGIN_INITIAL_USER_PASSWORD=""
+
+export CGO_CFLAGS_ALLOW="-Xpreprocessor"
+
+export Site_Domain=""
+
+export RECAPTCHA_SITE_KEY=""
+export RECAPTCHA_SECRET_KEY=""
