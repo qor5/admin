@@ -9,11 +9,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
+	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	v "github.com/qor5/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/thoas/go-funk"
@@ -37,6 +38,13 @@ func (fc *FieldContext) StringValue(obj interface{}) (r string) {
 		return string(vt)
 	case []byte:
 		return string(vt)
+	case time.Time:
+		return vt.Format("2006-01-02 15:04:05")
+	case *time.Time:
+		if vt == nil {
+			return ""
+		}
+		return vt.Format("2006-01-02 15:04:05")
 	}
 	return fmt.Sprint(val)
 }
