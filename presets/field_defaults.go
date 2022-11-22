@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"time"
 
-	"github.com/qor5/web"
+	"github.com/iancoleman/strcase"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
-	"github.com/iancoleman/strcase"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
@@ -52,6 +54,11 @@ var stringVals = []interface{}{
 	string(""),
 	[]rune(""),
 	[]byte(""),
+}
+
+var timeVals = []interface{}{
+	time.Now(),
+	ptrTime(time.Now()),
 }
 
 type FieldDefaults struct {
@@ -186,6 +193,31 @@ func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 		Disabled(field.Disabled)
 }
 
+func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+	val := ""
+	if v := field.Value(obj); v != nil {
+		switch vt := v.(type) {
+		case time.Time:
+			val = vt.Format("2006-01-02 15:04")
+		case *time.Time:
+			val = vt.Format("2006-01-02 15:04")
+		default:
+			panic(fmt.Sprintf("unknown time type: %T\n", v))
+		}
+	}
+	return vuetifyx.VXDateTimePicker().
+		Label(field.Label).
+		FieldName(field.Name).
+		Value(val).
+		TimePickerProps(vuetifyx.TimePickerProps{
+			Format:     "24hr",
+			Scrollable: true,
+		}).
+		ClearText(msgr.Clear).
+		OkText(msgr.OK)
+}
+
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("text").
@@ -199,7 +231,7 @@ func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.
 func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
-		Value(fmt.Sprint(reflectutils.MustGet(obj, field.Name)))
+		Value(field.StringValue(obj))
 }
 
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -210,7 +242,6 @@ func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventCont
 }
 
 func (b *FieldDefaults) builtInFieldTypes() {
-
 	if b.mode == LIST {
 		b.FieldType(true).
 			ComponentFunc(cfTextTd)
@@ -254,6 +285,11 @@ func (b *FieldDefaults) builtInFieldTypes() {
 	for _, v := range stringVals {
 		b.FieldType(v).
 			ComponentFunc(cfTextField)
+	}
+
+	for _, v := range timeVals {
+		b.FieldType(v).
+			ComponentFunc(cfTime)
 	}
 
 	b.Exclude("ID")

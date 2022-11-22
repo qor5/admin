@@ -14,6 +14,7 @@ type Messages struct {
 	FormTitle                                  string
 	OK                                         string
 	Cancel                                     string
+	Clear                                      string
 	Create                                     string
 	DeleteConfirmationTextTemplate             string
 	CreatingObjectTitleTemplate                string
@@ -98,6 +99,7 @@ var Messages_en_US = &Messages{
 	FormTitle:                      "Form",
 	OK:                             "OK",
 	Cancel:                         "Cancel",
+	Clear:                          "Clear",
 	Create:                         "Create",
 	DeleteConfirmationTextTemplate: "Are you sure you want to delete object with id: {id}?",
 	CreatingObjectTitleTemplate:    "New {modelName}",
@@ -149,6 +151,7 @@ var Messages_zh_CN = &Messages{
 	FormTitle:                      "表单",
 	OK:                             "确定",
 	Cancel:                         "取消",
+	Clear:                          "清空",
 	Create:                         "创建",
 	DeleteConfirmationTextTemplate: "你确定你要删除这个对象吗，对象ID: {id}?",
 	CreatingObjectTitleTemplate:    "新建{modelName}",

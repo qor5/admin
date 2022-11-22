@@ -3,11 +3,12 @@ package presets
 import (
 	"fmt"
 	"net/url"
+	"time"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -94,4 +95,8 @@ func copyURLWithQueriesRemoved(u *url.URL, qs ...string) *url.URL {
 
 func isInDialogFromQuery(ctx *web.EventContext) bool {
 	return ctx.R.URL.Query().Get(ParamInDialog) == "true"
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
 }
