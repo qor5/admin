@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
-	"github.com/jinzhu/inflection"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -336,32 +336,42 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		}
 	}
 
-	removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
-	if isInDialogFromQuery(ctx) {
-		u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
+	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
 		web.AppendVarsScripts(&r,
 			"vars.deleteConfirmation = false",
 			web.Plaid().
-				URL(u).
-				EventFunc(actions.UpdateListingDialog).
-				MergeQuery(true).
-				Query(ParamSelectedIds, removeSelectQuery).
+				EventFunc(event).
+				Queries(ctx.Queries()).
 				Go(),
 		)
 	} else {
-		// refresh current page
+		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
+		if isInDialogFromQuery(ctx) {
+			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
+			web.AppendVarsScripts(&r,
+				"vars.deleteConfirmation = false",
+				web.Plaid().
+					URL(u).
+					EventFunc(actions.UpdateListingDialog).
+					MergeQuery(true).
+					Query(ParamSelectedIds, removeSelectQuery).
+					Go(),
+			)
+		} else {
+			// refresh current page
 
-		// TODO: response location does not support `valueOp`
-		// r.PushState = web.Location(nil).
-		// 	MergeQuery(true).
-		//  Query(ParamSelectedIds, removeSelectQuery)
-		web.AppendVarsScripts(&r,
-			web.Plaid().
-				PushState(true).
-				MergeQuery(true).
-				Query(ParamSelectedIds, removeSelectQuery).
-				Go(),
-		)
+			// TODO: response location does not support `valueOp`
+			// r.PushState = web.Location(nil).
+			// 	MergeQuery(true).
+			//  Query(ParamSelectedIds, removeSelectQuery)
+			web.AppendVarsScripts(&r,
+				web.Plaid().
+					PushState(true).
+					MergeQuery(true).
+					Query(ParamSelectedIds, removeSelectQuery).
+					Go(),
+			)
+		}
 	}
 	return
 }

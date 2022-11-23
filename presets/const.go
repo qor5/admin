@@ -29,6 +29,7 @@ const (
 	ParamSelectedIds              = "selected_ids"
 	ParamInDialog                 = "presets_in_dialog"
 	ParamListingQueries           = "presets_listing_queries"
+	ParamAfterDeleteEvent         = "presets_after_delete_event"
 )
 
 const (
