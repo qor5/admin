@@ -3,6 +3,7 @@ package views
 import (
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
@@ -138,6 +139,7 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		qs := ctx.Queries()
 		currentSelectedID := qs.Get("current_selected_id")
+
 		web.AppendVarsScripts(&r,
 			web.Plaid().
 				EventFunc(switchVersionEvent).
@@ -145,6 +147,9 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 				Query("selected", qs.Get("selected")).
 				Query("page", qs.Get("page")).
 				Query("no_msg", true).
+				Go(),
+			web.Plaid().
+				EventFunc(actions.ReloadList).
 				Go(),
 		)
 
