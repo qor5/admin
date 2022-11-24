@@ -65,6 +65,19 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	}
 }
 
+type versionItem struct {
+	ID      string
+	Version string
+}
+
+func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, id string) (list []*versionItem, err error) {
+	err = gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version"), mb.NewModel(), fmt.Sprintf("%s_fake", id), ctx, "version").
+		Order("version DESC").
+		Find(&list).
+		Error
+	return list, err
+}
+
 type versionListTableItem struct {
 	ID          string
 	Version     string
@@ -132,7 +145,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	var (
 		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
 		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).
-					Query(presets.ParamAfterDeleteEvent, web.Var(fmt.Sprintf(`props.item.Version === %q ? "" : %q`, currentVersionName, afterDeleteVersionEvent))).
+					Query(presets.ParamAfterDeleteEvent, afterDeleteVersionEvent).
 					Query("current_selected_id", ctx.R.FormValue("id")).
 					Query("selected", selected).
 					Query("page", web.Var("locals.versionPage")).

@@ -1,6 +1,9 @@
 package views
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
@@ -138,12 +141,43 @@ func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		qs := ctx.Queries()
+		deletedID := qs.Get("id")
+		segs := strings.Split(deletedID, "_")
+		id, deletedVersion := segs[0], segs[1]
 		currentSelectedID := qs.Get("current_selected_id")
+		// switching version is one of the following in order that exists:
+		// 1. current selected version
+		// 2. next(older) version
+		// 3. prev(newer) version
+		switchingVersion := currentSelectedID
+		if deletedID == currentSelectedID {
+			versions, _ := findVersionItems(db, mb, ctx, id)
+			if len(versions) == 0 {
+				r.Reload = true
+				return
+			}
+
+			version := versions[0]
+			if len(versions) > 1 {
+				hasOlderVersion := false
+				for _, v := range versions {
+					if v.Version < deletedVersion {
+						hasOlderVersion = true
+						version = v
+						break
+					}
+				}
+				if !hasOlderVersion {
+					version = versions[len(versions)-1]
+				}
+			}
+			switchingVersion = fmt.Sprintf("%s_%s", version.ID, version.Version)
+		}
 
 		web.AppendVarsScripts(&r,
 			web.Plaid().
 				EventFunc(switchVersionEvent).
-				Query("id", currentSelectedID).
+				Query("id", switchingVersion).
 				Query("selected", qs.Get("selected")).
 				Query("page", qs.Get("page")).
 				Query("no_msg", true).
