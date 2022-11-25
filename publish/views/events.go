@@ -1,24 +1,29 @@
 package views
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/qor5/admin/activity"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/publish"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/publish"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
 const (
-	publishEvent         = "publish_PublishEvent"
-	republishEvent       = "publish_republishEvent"
-	unpublishEvent       = "publish_UnpublishEvent"
-	switchVersionEvent   = "publish_SwitchVersionEvent"
-	SaveNewVersionEvent  = "publish_SaveNewVersionEvent"
-	saveNameVersionEvent = "publish_SaveNameVersionEvent"
-	renameVersionEvent   = "publish_RenameVersionEvent"
-	selectVersionsEvent  = "publish_SelectVersionsEvent"
+	publishEvent            = "publish_PublishEvent"
+	republishEvent          = "publish_republishEvent"
+	unpublishEvent          = "publish_UnpublishEvent"
+	switchVersionEvent      = "publish_SwitchVersionEvent"
+	SaveNewVersionEvent     = "publish_SaveNewVersionEvent"
+	saveNameVersionEvent    = "publish_SaveNameVersionEvent"
+	renameVersionEvent      = "publish_RenameVersionEvent"
+	selectVersionsEvent     = "publish_SelectVersionsEvent"
+	afterDeleteVersionEvent = "publish_AfterDeleteVersionEvent"
 
 	ActivityPublish   = "Publish"
 	ActivityRepublish = "Republish"
@@ -33,6 +38,7 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 	mb.RegisterEventFunc(SaveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(renameVersionEvent, renameVersionAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(selectVersionsEvent, selectVersionsAction(db, mb, publisher, ab, ActivityUnPublish))
+	mb.RegisterEventFunc(afterDeleteVersionEvent, afterDeleteVersionAction(db, mb, publisher))
 
 }
 
@@ -128,6 +134,59 @@ func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 			Name: "versions-list",
 			Body: table,
 		})
+		return
+	}
+}
+
+func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		qs := ctx.Queries()
+		deletedID := qs.Get("id")
+		segs := strings.Split(deletedID, "_")
+		id, deletedVersion := segs[0], segs[1]
+		currentSelectedID := qs.Get("current_selected_id")
+		// switching version is one of the following in order that exists:
+		// 1. current selected version
+		// 2. next(older) version
+		// 3. prev(newer) version
+		switchingVersion := currentSelectedID
+		if deletedID == currentSelectedID {
+			versions, _ := findVersionItems(db, mb, ctx, id)
+			if len(versions) == 0 {
+				r.Reload = true
+				return
+			}
+
+			version := versions[0]
+			if len(versions) > 1 {
+				hasOlderVersion := false
+				for _, v := range versions {
+					if v.Version < deletedVersion {
+						hasOlderVersion = true
+						version = v
+						break
+					}
+				}
+				if !hasOlderVersion {
+					version = versions[len(versions)-1]
+				}
+			}
+			switchingVersion = fmt.Sprintf("%s_%s", version.ID, version.Version)
+		}
+
+		web.AppendVarsScripts(&r,
+			web.Plaid().
+				EventFunc(switchVersionEvent).
+				Query("id", switchingVersion).
+				Query("selected", qs.Get("selected")).
+				Query("page", qs.Get("page")).
+				Query("no_msg", true).
+				Go(),
+			web.Plaid().
+				EventFunc(actions.ReloadList).
+				Go(),
+		)
+
 		return
 	}
 }
