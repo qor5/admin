@@ -208,7 +208,7 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 	}
 	return vuetifyx.VXDateTimePicker().
 		Label(field.Label).
-		FieldName(field.Name).
+		FieldName(field.FormKey).
 		Value(val).
 		TimePickerProps(vuetifyx.TimePickerProps{
 			Format:     "24hr",
@@ -216,6 +216,18 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 		}).
 		ClearText(msgr.Clear).
 		OkText(msgr.OK)
+}
+
+func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+	v := ctx.R.Form.Get(field.FormKey)
+	if v == "" {
+		return reflectutils.Set(obj, field.Name, nil)
+	}
+	t, err := time.ParseInLocation("2006-01-02 15:04", v, time.Local)
+	if err != nil {
+		return err
+	}
+	return reflectutils.Set(obj, field.Name, t)
 }
 
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -289,7 +301,8 @@ func (b *FieldDefaults) builtInFieldTypes() {
 
 	for _, v := range timeVals {
 		b.FieldType(v).
-			ComponentFunc(cfTime)
+			ComponentFunc(cfTime).
+			SetterFunc(cfTimeSetter)
 	}
 
 	b.Exclude("ID")
