@@ -63,10 +63,11 @@ func (fc *FieldContext) ContextValue(key interface{}) (r interface{}) {
 
 type FieldBuilder struct {
 	NameLabel
-	compFunc        FieldComponentFunc
-	setterFunc      FieldSetterFunc
-	context         context.Context
-	listItemBuilder *FieldsBuilder
+	compFunc          FieldComponentFunc
+	setterFunc        FieldSetterFunc
+	context           context.Context
+	listItemBuilder   *FieldsBuilder
+	objectItemBuilder *FieldsBuilder
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
@@ -130,6 +131,24 @@ func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *Fi
 		b.context = context.Background()
 	}
 	b.context = context.WithValue(b.context, key, val)
+	return b
+}
+
+func (b *FieldBuilder) ObjectFieldsBuilder(fb *FieldsBuilder) (r *FieldBuilder) {
+	b.objectItemBuilder = fb
+	b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		val := field.Value(obj)
+		if val == nil {
+			t := reflectutils.GetType(obj, field.Name).Elem()
+			val = reflect.New(t).Interface()
+		}
+		modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
+		body := b.objectItemBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
+		return h.Div(
+			h.Label(field.Label).Class("v-label theme--light text-caption"),
+			v.VCard(body).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+		)
+	})
 	return b
 }
 
@@ -199,6 +218,33 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 
 			b.setToObjNilOrDelete(toObj, formKey, f, modifiedIndexes, removeDeletedAndSort)
 
+			continue
+		}
+
+		if f.objectItemBuilder != nil {
+			formKey := f.name
+			if parent != nil && parent.FormKey != "" {
+				formKey = fmt.Sprintf("%s.%s", parent.FormKey, f.name)
+			}
+			pf := &FieldContext{
+				ModelInfo: info,
+				FormKey:   formKey,
+			}
+			childFromObj := reflectutils.MustGet(fromObj, f.name)
+			childToObj := reflectutils.MustGet(toObj, f.name)
+			rt := reflectutils.GetType(toObj, f.name)
+			if childToObj == nil {
+				childToObj = reflect.New(rt.Elem()).Interface()
+			}
+			if rt.Kind() == reflect.Struct {
+				prv := reflect.New(rt)
+				prv.Elem().Set(reflect.ValueOf(childToObj))
+				childToObj = prv.Interface()
+			}
+			f.objectItemBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
+			if err := reflectutils.Set(toObj, f.name, childToObj); err != nil {
+				panic(err)
+			}
 			continue
 		}
 
@@ -553,7 +599,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				}
 				comp = h.Div(
 					titleComp,
-					v.VCard(rowsComp...).Elevation(1).Class("mx-1 mt-1 mb-4 px-4 pb-0 pt-4"),
+					v.VCard(rowsComp...).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 				)
 			}
 		default:
