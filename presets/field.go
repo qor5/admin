@@ -230,9 +230,12 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 				ModelInfo: info,
 				FormKey:   formKey,
 			}
-			childFromObj := reflectutils.MustGet(fromObj, f.name)
-			childToObj := reflectutils.MustGet(toObj, f.name)
 			rt := reflectutils.GetType(toObj, f.name)
+			childFromObj := reflectutils.MustGet(fromObj, f.name)
+			if childFromObj == nil {
+				childFromObj = reflect.New(rt.Elem()).Interface()
+			}
+			childToObj := reflectutils.MustGet(toObj, f.name)
 			if childToObj == nil {
 				childToObj = reflect.New(rt.Elem()).Interface()
 			}
