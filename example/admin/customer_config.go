@@ -1,14 +1,14 @@
 package admin
 
 import (
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	media_view "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -38,13 +38,16 @@ func configCustomer(b *presets.Builder, db *gorm.DB) {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Number")
 	})
 
-	ed := cust.Editing("Name", "Addresses")
+	ed := cust.Editing("Name", "Addresses", "MembershipCard")
 	ed.ListField("Addresses", addFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Street")
 	})
 
+	cardFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.MembershipCard{}).Only("Number", "ValidBefore")
+	ed.Field("MembershipCard").ObjectFieldsBuilder(cardFb)
+
 	ed.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		return gorm2op.DataOperator(db.Preload("Addresses.Phones")).Fetch(obj, id, ctx)
+		return gorm2op.DataOperator(db.Preload("Addresses.Phones").Preload("MembershipCard")).Fetch(obj, id, ctx)
 	})
 
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {

@@ -8,9 +8,10 @@ import (
 )
 
 type Customer struct {
-	ID        uint `gorm:"primarykey"`
-	Name      string
-	Addresses []*Address
+	ID             uint `gorm:"primarykey"`
+	Name           string
+	Addresses      []*Address
+	MembershipCard *MembershipCard
 }
 
 type Address struct {
@@ -30,4 +31,11 @@ type Phone struct {
 	ID        uint `gorm:"primarykey"`
 	AddressID uint
 	Number    int
+}
+
+type MembershipCard struct {
+	ID          uint `gorm:"primarykey"`
+	CustomerID  uint
+	Number      int
+	ValidBefore *time.Time
 }

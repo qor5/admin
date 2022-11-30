@@ -1,11 +1,11 @@
 package admin
 
 import (
-	"github.com/qor5/x/perm"
-	"github.com/qor5/admin/role"
 	"os"
 
 	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/role"
+	"github.com/qor5/x/perm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -33,6 +33,7 @@ func ConnectDB() *gorm.DB {
 		&models.Customer{},
 		&models.Address{},
 		&models.Phone{},
+		&models.MembershipCard{},
 		&models.Product{},
 		&models.Order{},
 		&models.Category{},
