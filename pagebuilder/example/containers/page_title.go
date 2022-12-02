@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	
+
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/listeditor"
@@ -28,7 +28,7 @@ type PageTitle struct {
 	HeadingIcon        string
 	Heading            string
 	Text               string
-	Tags               Tags `sql:"type:text;"`
+	Tags               Tags
 }
 
 type Tags []*tag

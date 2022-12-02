@@ -57,6 +57,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 		&containers.InNumbers{},
 		&containers.ContactForm{},
 		&containers.PageTitle{},
+		&containers.ListContentLite{},
 	)
 	if err != nil {
 		panic(err)
@@ -88,5 +89,6 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	containers.RegisterInNumbersContainer(pb, db)
 	containers.RegisterContactFormContainer(pb, db)
 	containers.RegisterPageTitleContainer(pb, db)
+	containers.RegisterListContentLiteContainer(pb, db)
 	return pb
 }
