@@ -4,6 +4,6 @@ local dc = c {
 };
 
 dc.build_apps_image('theplant/qor5', [
-  { name: 'example', dockerfile: './Dockerfile', context: '../' },
-  { name: 'publisher', dockerfile: './cmd/publisher/Dockerfile', context: '../' },
+  { name: 'example', dockerfile: './Dockerfile', context: './example/' },
+  { name: 'publisher', dockerfile: './cmd/publisher/Dockerfile', context: './example/' },
 ])
