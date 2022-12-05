@@ -12,15 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/publish/views"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -193,7 +193,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				}
 			}
 
-			u := os.Getenv("BASE_URL") + c.Path + p.Slug
+			u := os.Getenv("PUBLISH_URL") + c.Path + p.Slug
 			showURL = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
 			).Class("mb-4")
@@ -370,7 +370,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
-		u := os.Getenv("BASE_URL") + category.Path
+		u := os.Getenv("PUBLISH_URL") + category.Path
 
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
