@@ -1,7 +1,6 @@
 package containers
 
 import (
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/presets"
 	v "github.com/qor5/ui/vuetify"
@@ -56,9 +55,7 @@ func SetTagComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 			Items(TagIcons)
 	})
 
-	eb.ListField("Tags", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
-	})
+	eb.Field("Tags").Nested(fb)
 }
 
 func getTagIconSVG(icon string) HTMLComponent {
