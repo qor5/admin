@@ -8,7 +8,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/web"
@@ -59,7 +58,6 @@ func RegisterPageTitleContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return PageTitleBody(v, input)
 		})
 	mb := vb.Model(&PageTitle{})
-	listeditor.Configure(mb.GetModelBuilder())
 
 	eb := mb.Editing(
 		"AddTopSpace", "AddBottomSpace", "AnchorID",

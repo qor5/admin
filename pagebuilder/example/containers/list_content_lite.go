@@ -8,7 +8,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/richeditor"
@@ -61,7 +60,6 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return ListContentLiteBody(v, input)
 		})
 	mb := vb.Model(&ListContentLite{})
-	listeditor.Configure(mb.GetModelBuilder())
 
 	eb := mb.Editing(
 		"AddTopSpace", "AddBottomSpace", "AnchorID",
@@ -80,9 +78,7 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).
 			Value(obj.(*ListItemLite).Text).Label(field.Label)
 	})
-	eb.ListField("Items", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Heading")
-	})
+	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
 }
 
 func ListContentLiteBody(data *ListContentLite, input *pagebuilder.RenderInput) (body HTMLComponent) {
