@@ -8,7 +8,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/presets"
@@ -62,15 +61,12 @@ func RegisterListContentWithImageContainer(pb *pagebuilder.Builder, db *gorm.DB)
 			return ListContentWithImageBody(v, input)
 		})
 	mb := vb.Model(&ListContentWithImage{})
-	listeditor.Configure(mb.GetModelBuilder())
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Items")
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ImageListItem{}).
 		Only("Image", "Link", "Heading", "Subheading", "Text")
 
-	eb.ListField("Items", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
-	})
+	eb.Field("Items").Nested(fb)
 }
 
 func ListContentWithImageBody(data *ListContentWithImage, input *pagebuilder.RenderInput) (body HTMLComponent) {
