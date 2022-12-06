@@ -135,10 +135,32 @@ func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *Fi
 	return b
 }
 
-func (b *FieldBuilder) Nested(fb *FieldsBuilder) (r *FieldBuilder) {
+type NestedConfig interface {
+	nested()
+}
+
+type DisplayFieldInSorter struct {
+	Field string
+}
+
+func (i *DisplayFieldInSorter) nested() {}
+
+func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
 	b.nestedFieldsBuilder = fb
 	switch b.rt.Kind() {
 	case reflect.Slice:
+		displayFieldInSorter := ""
+		for _, cfg := range cfgs {
+			switch t := cfg.(type) {
+			case *DisplayFieldInSorter:
+				displayFieldInSorter = t.Field
+			default:
+				panic("unknown nested config")
+			}
+		}
+		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return NewListEditor(field).Value(field.Value(obj)).DisplayFieldInSorter(displayFieldInSorter)
+		})
 	default:
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			val := field.Value(obj)

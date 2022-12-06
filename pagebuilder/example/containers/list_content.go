@@ -10,7 +10,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/web"
@@ -67,7 +66,6 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return ListContentBody(v, input)
 		})
 	mb := vb.Model(&ListContent{})
-	listeditor.Configure(mb.GetModelBuilder())
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "Items", "Link", "LinkText", "LinkDisplayOption")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
@@ -86,9 +84,7 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItem{}).Only("HeadingIcon", "Heading", "Text", "Link", "LinkText")
 
-	eb.Field("Items").Nested(fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Heading")
-	})
+	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
 }
 
 func ListContentBody(data *ListContent, input *pagebuilder.RenderInput) (body HTMLComponent) {

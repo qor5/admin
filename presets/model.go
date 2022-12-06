@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
-	"github.com/qor5/admin/presets/actions"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/web"
+	"github.com/qor5/x/perm"
 )
 
 type ModelBuilder struct {
@@ -86,6 +86,11 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
 	mb.RegisterEventFunc(actions.UpdateListingDialog, mb.listing.updateListingDialog)
+
+	// list editor
+	mb.RegisterEventFunc(actions.AddRowEvent, addListItemRow(mb))
+	mb.RegisterEventFunc(actions.RemoveRowEvent, removeListItemRow(mb))
+	mb.RegisterEventFunc(actions.SortEvent, sortListItems(mb))
 }
 
 func (mb *ModelBuilder) NewModel() (r interface{}) {

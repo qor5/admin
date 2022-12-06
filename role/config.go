@@ -3,7 +3,6 @@ package role
 import (
 	"time"
 
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
 	. "github.com/qor5/ui/vuetify"
@@ -24,7 +23,6 @@ var DefaultActions = []DefaultOptionItem{
 
 func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, resources []DefaultOptionItem) {
 	role := b.Model(&Role{})
-	listeditor.Configure(role)
 
 	ed := role.Editing(
 		"Name",
@@ -32,9 +30,7 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 	)
 
 	permFb := b.NewFieldsBuilder(presets.WRITE).Model(&perm.DefaultDBPolicy{}).Only("Effect", "Actions", "Resources")
-	ed.Field("Permissions").Nested(permFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
-	})
+	ed.Field("Permissions").Nested(permFb)
 
 	permFb.Field("Effect").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VSelect().

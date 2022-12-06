@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	media_view "github.com/qor5/admin/media/views"
@@ -65,9 +64,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 		return
 	})
 
-	addressFb.Field("Phones").Nested(phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
-	})
+	addressFb.Field("Phones").Nested(phoneFb)
 
 	addressFb.Field("HomeImage").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		val := field.Value(obj).(media_library.MediaBox)
@@ -90,9 +87,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 	})
 
 	holderFb := p.NewFieldsBuilder(presets.WRITE).Model(&Holder{})
-	holderFb.Field("Addresses").Nested(addressFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj))
-	})
+	holderFb.Field("Addresses").Nested(addressFb)
 
 	pf = func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		r.PageTitle = "List Editor Example"

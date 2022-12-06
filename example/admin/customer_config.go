@@ -2,20 +2,17 @@ package admin
 
 import (
 	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	media_view "github.com/qor5/admin/media/views"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/web"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 func configCustomer(b *presets.Builder, db *gorm.DB) {
 	cust := b.Model(&models.Customer{}).RightDrawerWidth("50%")
-	listeditor.Configure(cust)
 
 	addFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.Address{}).Only("Street", "HomeImage", "Phones")
 
@@ -34,14 +31,9 @@ func configCustomer(b *presets.Builder, db *gorm.DB) {
 	})
 
 	var phoneFb = b.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{}).Only("Number")
-	addFb.Field("Phones").Nested(phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Number")
-	})
-
+	addFb.Field("Phones").Nested(phoneFb, &presets.DisplayFieldInSorter{Field: "Number"})
 	ed := cust.Editing("Name", "Addresses", "MembershipCard")
-	ed.Field("Addresses").Nested(addFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Street")
-	})
+	ed.Field("Addresses").Nested(addFb, &presets.DisplayFieldInSorter{Field: "Street"})
 
 	cardFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.MembershipCard{}).Only("Number", "ValidBefore")
 	ed.Field("MembershipCard").Nested(cardFb)
