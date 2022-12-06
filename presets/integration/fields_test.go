@@ -148,7 +148,7 @@ func TestFields(t *testing.T) {
 					Only("Time1", "Int1").ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<td>2019-08-29 11:09:29 +0800 CST</td>
+<td>2019-08-29 11:09:29</td>
 
 <td>2</td>
 `,
@@ -241,14 +241,14 @@ func TestFieldsBuilder(t *testing.T) {
 
 	addressFb := NewFieldsBuilder().Model(&Address{}).Defaults(defaults).Only("City", "Detail")
 	addressDetailFb := NewFieldsBuilder().Model(&AddressDetail{}).Defaults(defaults).Only("Address1", "Address2")
-	addressFb.Field("Detail").ObjectFieldsBuilder(addressDetailFb)
+	addressFb.Field("Detail").Nested(addressDetailFb)
 
 	employeeFbs := NewFieldsBuilder().Model(&Employee{}).Defaults(defaults)
 	employeeFbs.Field("Number").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input(field.FormKey).Type("text").Value(field.StringValue(obj))
 	})
 
-	employeeFbs.Field("Address").ObjectFieldsBuilder(addressFb)
+	employeeFbs.Field("Address").Nested(addressFb)
 
 	employeeFbs.Field("FakeNumber").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input(field.FormKey).Type("text").Value(fmt.Sprintf("900%v", reflectutils.MustGet(obj, "Number")))
@@ -272,9 +272,9 @@ func TestFieldsBuilder(t *testing.T) {
 		return
 	})
 
-	deptFbs.ListField("Employees", employeeFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	deptFbs.Field("Employees").Nested(employeeFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(
-			field.ListItemBuilder.ToComponentForEach(field, obj.(*Department).Employees, ctx, nil),
+			field.NestedFieldsBuilder.ToComponentForEach(field, obj.(*Department).Employees, ctx, nil),
 			h.Button("Add Employee"),
 		).Class("employees")
 	})
@@ -288,15 +288,15 @@ func TestFieldsBuilder(t *testing.T) {
 	// 	return
 	// })
 
-	fbs.ListField("Departments", deptFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	fbs.Field("Departments").Nested(deptFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// [0].Departments
 		return h.Div(
-			field.ListItemBuilder.ToComponentForEach(field, obj.(*Org).Departments, ctx, nil),
+			field.NestedFieldsBuilder.ToComponentForEach(field, obj.(*Org).Departments, ctx, nil),
 			h.Button("Add Department"),
 		).Class("departments")
 	})
 
-	fbs.Field("Address").ObjectFieldsBuilder(addressFb)
+	fbs.Field("Address").Nested(addressFb)
 
 	fbs.Field("PeopleCount").SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 		reflectutils.Set(obj, field.Name, ctx.R.FormValue(field.FormKey))

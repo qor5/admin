@@ -34,17 +34,17 @@ func configCustomer(b *presets.Builder, db *gorm.DB) {
 	})
 
 	var phoneFb = b.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{}).Only("Number")
-	addFb.ListField("Phones", phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	addFb.Field("Phones").Nested(phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Number")
 	})
 
 	ed := cust.Editing("Name", "Addresses", "MembershipCard")
-	ed.ListField("Addresses", addFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("Addresses").Nested(addFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Street")
 	})
 
 	cardFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.MembershipCard{}).Only("Number", "ValidBefore")
-	ed.Field("MembershipCard").ObjectFieldsBuilder(cardFb)
+	ed.Field("MembershipCard").Nested(cardFb)
 
 	ed.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
 		return gorm2op.DataOperator(db.Preload("Addresses.Phones").Preload("MembershipCard")).Fetch(obj, id, ctx)

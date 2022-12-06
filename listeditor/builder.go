@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 )
@@ -47,7 +47,7 @@ func (b *Builder) MarshalHTML(c context.Context) (r []byte, err error) {
 	formKey := b.fieldContext.FormKey
 	var form HTMLComponent
 	if b.value != nil {
-		form = b.fieldContext.ListItemBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
+		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content HTMLComponent, ctx *web.EventContext) HTMLComponent {
 			return VCard(
 				VBtn("Delete").Icon(true).Class("float-right ma-2").
 					Children(

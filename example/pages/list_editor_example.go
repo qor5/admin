@@ -3,15 +3,15 @@ package pages
 import (
 	"fmt"
 
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	media_view "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/publish"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
@@ -65,7 +65,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 		return
 	})
 
-	addressFb.ListField("Phones", phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	addressFb.Field("Phones").Nested(phoneFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj))
 	})
 
@@ -90,7 +90,7 @@ func ListEditorExample(db *gorm.DB, p *presets.Builder) (pf web.PageFunc, sf web
 	})
 
 	holderFb := p.NewFieldsBuilder(presets.WRITE).Model(&Holder{})
-	holderFb.ListField("Addresses", addressFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	holderFb.Field("Addresses").Nested(addressFb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj))
 	})
 

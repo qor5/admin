@@ -8,12 +8,12 @@ import (
 
 	"github.com/qor5/ui/vuetify"
 
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/listeditor"
 	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -86,7 +86,7 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItem{}).Only("HeadingIcon", "Heading", "Text", "Link", "LinkText")
 
-	eb.ListField("Items", fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	eb.Field("Items").Nested(fb).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return listeditor.New(field).Value(field.Value(obj)).DisplayFieldInSorter("Heading")
 	})
 }
