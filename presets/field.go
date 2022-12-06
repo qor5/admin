@@ -172,7 +172,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
 				h.Label(field.Label).Class("v-label theme--light text-caption"),
-				v.VCard(body).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+				v.VCard(body).Outlined(true).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 			)
 		})
 	}
@@ -614,7 +614,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				}
 				comp = h.Div(
 					titleComp,
-					v.VCard(rowsComp...).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+					v.VCard(rowsComp...).Outlined(true).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 				)
 			}
 		default:

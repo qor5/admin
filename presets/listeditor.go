@@ -67,10 +67,8 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 					Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 					Query(ParamRemoveRowFormKey, formKey).
 					Go()),
-				VCardText(
-					content,
-				),
-			).Class("mb-2").Outlined(true)
+				content,
+			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Outlined(true)
 		})
 	}
 
@@ -110,13 +108,13 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 					VDivider().Attr("v-if", "index < locals.items.length - 1", ":key", "index"),
 				).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),
 			),
-		))
+		).Class("pa-0")).Outlined(true).Class("mx-0 mt-1 mb-4")
 	}
 
 	return h.Div(
 		web.Scope(
-			VToolbar(
-				h.Label(b.fieldContext.Label).Class("v-label v-label--active").Style("font-size: 12px"),
+			h.Div(
+				h.Label(b.fieldContext.Label).Class("v-label theme--light text-caption"),
 				VSpacer(),
 				h.If(haveSorterIcon,
 					h.If(!isSortStart,
@@ -148,7 +146,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						),
 					),
 				),
-			).Flat(true).Dense(true),
+			).Class("d-flex align-end"),
 			sorter,
 			h.Div(
 				form,
@@ -162,7 +160,8 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 						Query(ParamAddRowFormKey, b.fieldContext.FormKey).
 						Go()),
-			).Attr("v-show", h.JSONString(!isSortStart)),
+			).Attr("v-show", h.JSONString(!isSortStart)).
+				Class("mt-1 mb-4"),
 		).Init(h.JSONString(sorterData)).VSlot("{ locals }"),
 	).MarshalHTML(c)
 }
