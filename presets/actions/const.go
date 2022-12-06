@@ -17,6 +17,11 @@ const (
 	ReloadList           = "presets_ReloadList"
 	OpenListingDialog    = "presets_OpenListingDialog"
 	UpdateListingDialog  = "presets_UpdateListingDialog"
+
+	// list editor
+	AddRowEvent    = "listEditor_addRowEvent"
+	RemoveRowEvent = "listEditor_removeRowEvent"
+	SortEvent      = "listEditor_sortEvent"
 )
 
 const (

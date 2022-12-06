@@ -21,14 +21,14 @@ import (
 )
 
 type FieldContext struct {
-	Name            string
-	FormKey         string
-	Label           string
-	Errors          []string
-	ModelInfo       *ModelInfo
-	ListItemBuilder *FieldsBuilder
-	Context         context.Context
-	Disabled        bool
+	Name                string
+	FormKey             string
+	Label               string
+	Errors              []string
+	ModelInfo           *ModelInfo
+	NestedFieldsBuilder *FieldsBuilder
+	Context             context.Context
+	Disabled            bool
 }
 
 func (fc *FieldContext) StringValue(obj interface{}) (r string) {
@@ -63,10 +63,11 @@ func (fc *FieldContext) ContextValue(key interface{}) (r interface{}) {
 
 type FieldBuilder struct {
 	NameLabel
-	compFunc        FieldComponentFunc
-	setterFunc      FieldSetterFunc
-	context         context.Context
-	listItemBuilder *FieldsBuilder
+	compFunc            FieldComponentFunc
+	setterFunc          FieldSetterFunc
+	context             context.Context
+	rt                  reflect.Type
+	nestedFieldsBuilder *FieldsBuilder
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
@@ -80,6 +81,7 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	if fType == nil {
 		fType = reflect.TypeOf("")
 	}
+	r.rt = fType
 
 	// if b.defaults == nil {
 	// 	panic("field defaults must be provided")
@@ -130,6 +132,50 @@ func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *Fi
 		b.context = context.Background()
 	}
 	b.context = context.WithValue(b.context, key, val)
+	return b
+}
+
+type NestedConfig interface {
+	nested()
+}
+
+type DisplayFieldInSorter struct {
+	Field string
+}
+
+func (i *DisplayFieldInSorter) nested() {}
+
+func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
+	b.nestedFieldsBuilder = fb
+	switch b.rt.Kind() {
+	case reflect.Slice:
+		displayFieldInSorter := ""
+		for _, cfg := range cfgs {
+			switch t := cfg.(type) {
+			case *DisplayFieldInSorter:
+				displayFieldInSorter = t.Field
+			default:
+				panic("unknown nested config")
+			}
+		}
+		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return NewListEditor(field).Value(field.Value(obj)).DisplayFieldInSorter(displayFieldInSorter)
+		})
+	default:
+		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			val := field.Value(obj)
+			if val == nil {
+				t := reflectutils.GetType(obj, field.Name).Elem()
+				val = reflect.New(t).Interface()
+			}
+			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
+			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
+			return h.Div(
+				h.Label(field.Label).Class("v-label theme--light text-caption"),
+				v.VCard(body).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+			)
+		})
+	}
 	return b
 }
 
@@ -189,17 +235,41 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 			}
 		}
 
-		if f.listItemBuilder != nil {
+		if f.nestedFieldsBuilder != nil {
 			formKey := f.name
 			if parent != nil && parent.FormKey != "" {
 				formKey = fmt.Sprintf("%s.%s", parent.FormKey, f.name)
 			}
-
-			b.setWithChildFromObjs(fromObj, formKey, f, info, modifiedIndexes, toObj, removeDeletedAndSort, ctx)
-
-			b.setToObjNilOrDelete(toObj, formKey, f, modifiedIndexes, removeDeletedAndSort)
-
-			continue
+			switch f.rt.Kind() {
+			case reflect.Slice:
+				b.setWithChildFromObjs(fromObj, formKey, f, info, modifiedIndexes, toObj, removeDeletedAndSort, ctx)
+				b.setToObjNilOrDelete(toObj, formKey, f, modifiedIndexes, removeDeletedAndSort)
+				continue
+			default:
+				pf := &FieldContext{
+					ModelInfo: info,
+					FormKey:   formKey,
+				}
+				rt := reflectutils.GetType(toObj, f.name)
+				childFromObj := reflectutils.MustGet(fromObj, f.name)
+				if childFromObj == nil {
+					childFromObj = reflect.New(rt.Elem()).Interface()
+				}
+				childToObj := reflectutils.MustGet(toObj, f.name)
+				if childToObj == nil {
+					childToObj = reflect.New(rt.Elem()).Interface()
+				}
+				if rt.Kind() == reflect.Struct {
+					prv := reflect.New(rt)
+					prv.Elem().Set(reflect.ValueOf(childToObj))
+					childToObj = prv.Interface()
+				}
+				f.nestedFieldsBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
+				if err := reflectutils.Set(toObj, f.name, childToObj); err != nil {
+					panic(err)
+				}
+				continue
+			}
 		}
 
 		if f.setterFunc == nil {
@@ -321,7 +391,7 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 		// fmt.Printf("childFromObj %#+v\n", childFromObj)
 		// fmt.Printf("childToObj %#+v\n", childToObj)
 		// fmt.Printf("fieldContext %#+v\n", pf)
-		f.listItemBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
+		f.nestedFieldsBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
 	})
 
 }
@@ -347,15 +417,6 @@ func (b *FieldsBuilder) Field(name string) (r *FieldBuilder) {
 	}
 
 	r = b.appendNewFieldWithName(name)
-	return
-}
-
-func (b *FieldsBuilder) ListField(name string, listItemBuilder *FieldsBuilder) (r *FieldBuilder) {
-	r = b.Field(name)
-	if listItemBuilder.defaults == nil {
-		listItemBuilder.Defaults(b.defaults)
-	}
-	r.listItemBuilder = listItemBuilder
 	return
 }
 
@@ -553,7 +614,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				}
 				comp = h.Div(
 					titleComp,
-					v.VCard(rowsComp...).Elevation(1).Class("mx-1 mt-1 mb-4 px-4 pb-0 pt-4"),
+					v.VCard(rowsComp...).Elevation(1).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 				)
 			}
 		default:
@@ -596,14 +657,14 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 		}
 	}
 	return f.compFunc(obj, &FieldContext{
-		ModelInfo:       info,
-		Name:            f.name,
-		FormKey:         contextKeyPath,
-		Label:           label,
-		Errors:          vErr.GetFieldErrors(f.name),
-		ListItemBuilder: f.listItemBuilder,
-		Context:         f.context,
-		Disabled:        disabled,
+		ModelInfo:           info,
+		Name:                f.name,
+		FormKey:             contextKeyPath,
+		Label:               label,
+		Errors:              vErr.GetFieldErrors(f.name),
+		NestedFieldsBuilder: f.nestedFieldsBuilder,
+		Context:             f.context,
+		Disabled:            disabled,
 	}, ctx)
 }
 

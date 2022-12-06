@@ -30,6 +30,13 @@ const (
 	ParamInDialog                 = "presets_in_dialog"
 	ParamListingQueries           = "presets_listing_queries"
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
+
+	// list editor
+	ParamAddRowFormKey      = "listEditor_AddRowFormKey"
+	ParamRemoveRowFormKey   = "listEditor_RemoveRowFormKey"
+	ParamIsStartSort        = "listEditor_IsStartSort"
+	ParamSortSectionFormKey = "listEditor_SortSectionFormKey"
+	ParamSortResultFormKey  = "listEditor_SortResultFormKey"
 )
 
 const (

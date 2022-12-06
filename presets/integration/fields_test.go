@@ -148,7 +148,7 @@ func TestFields(t *testing.T) {
 					Only("Time1", "Int1").ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<td>2019-08-29 11:09:29 +0800 CST</td>
+<td>2019-08-29 11:09:29</td>
 
 <td>2</td>
 `,
@@ -186,6 +186,7 @@ type Person struct {
 
 type Org struct {
 	Name        string
+	Address     Address
 	PeopleCount int
 	Departments []*Department
 }
@@ -197,17 +198,57 @@ type Department struct {
 }
 
 type Employee struct {
-	Number int
+	Number  int
+	Address *Address
+}
+
+type Address struct {
+	City   string
+	Detail AddressDetail
+}
+
+type AddressDetail struct {
+	Address1 string
+	Address2 string
+}
+
+func addressHTML(v Address, formKeyPrefix string) string {
+	return fmt.Sprintf(`<div>
+<label class='v-label theme--light text-caption'>Address</label>
+
+<v-card :elevation='1' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.City"]' label='City' :value='"%s"' :disabled='false'></v-text-field>
+
+<div>
+<label class='v-label theme--light text-caption'>Detail</label>
+
+<v-card :elevation='1' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address1"]' label='Address1' :value='"%s"' :disabled='false'></v-text-field>
+
+<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address2"]' label='Address2' :value='"%s"' :disabled='false'></v-text-field>
+</v-card>
+</div>
+</v-card>
+</div>`,
+		formKeyPrefix, v.City,
+		formKeyPrefix, v.Detail.Address1,
+		formKeyPrefix, v.Detail.Address2,
+	)
 }
 
 func TestFieldsBuilder(t *testing.T) {
-
 	defaults := NewFieldDefaults(WRITE)
+
+	addressFb := NewFieldsBuilder().Model(&Address{}).Defaults(defaults).Only("City", "Detail")
+	addressDetailFb := NewFieldsBuilder().Model(&AddressDetail{}).Defaults(defaults).Only("Address1", "Address2")
+	addressFb.Field("Detail").Nested(addressDetailFb)
 
 	employeeFbs := NewFieldsBuilder().Model(&Employee{}).Defaults(defaults)
 	employeeFbs.Field("Number").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input(field.FormKey).Type("text").Value(field.StringValue(obj))
 	})
+
+	employeeFbs.Field("Address").Nested(addressFb)
 
 	employeeFbs.Field("FakeNumber").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input(field.FormKey).Type("text").Value(fmt.Sprintf("900%v", reflectutils.MustGet(obj, "Number")))
@@ -231,9 +272,9 @@ func TestFieldsBuilder(t *testing.T) {
 		return
 	})
 
-	deptFbs.ListField("Employees", employeeFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	deptFbs.Field("Employees").Nested(employeeFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(
-			field.ListItemBuilder.ToComponentForEach(field, obj.(*Department).Employees, ctx, nil),
+			field.NestedFieldsBuilder.ToComponentForEach(field, obj.(*Department).Employees, ctx, nil),
 			h.Button("Add Employee"),
 		).Class("employees")
 	})
@@ -247,13 +288,15 @@ func TestFieldsBuilder(t *testing.T) {
 	// 	return
 	// })
 
-	fbs.ListField("Departments", deptFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	fbs.Field("Departments").Nested(deptFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// [0].Departments
 		return h.Div(
-			field.ListItemBuilder.ToComponentForEach(field, obj.(*Org).Departments, ctx, nil),
+			field.NestedFieldsBuilder.ToComponentForEach(field, obj.(*Org).Departments, ctx, nil),
 			h.Button("Add Department"),
 		).Class("departments")
 	})
+
+	fbs.Field("Address").Nested(addressFb)
 
 	fbs.Field("PeopleCount").SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 		reflectutils.Set(obj, field.Name, ctx.R.FormValue(field.FormKey))
@@ -271,6 +314,13 @@ func TestFieldsBuilder(t *testing.T) {
 			name: "Only deleted",
 			obj: &Org{
 				Name: "Name 1",
+				Address: Address{
+					City: "c1",
+					Detail: AddressDetail{
+						Address1: "addr1",
+						Address2: "addr2",
+					},
+				},
 				Departments: []*Department{
 					{
 						Name: "11111",
@@ -295,7 +345,7 @@ func TestFieldsBuilder(t *testing.T) {
 					AppendDeleted("Departments[0].Employees", 5)
 			},
 
-			expectedHTML: `
+			expectedHTML: fmt.Sprintf(`
 <input type='hidden' v-field-name='[plaidForm, "__Deleted.Departments[0].Employees"]' value='1,5'>
 
 <input name='Name' type='text' value='Name 1'>
@@ -306,9 +356,13 @@ func TestFieldsBuilder(t *testing.T) {
 <div class='employees'>
 <input name='Departments[0].Employees[0].Number' type='text' value='111'>
 
+%s
+
 <input name='Departments[0].Employees[0].FakeNumber' type='text' value='900111'>
 
 <input name='Departments[0].Employees[2].Number' type='text' value='333'>
+
+%s
 
 <input name='Departments[0].Employees[2].FakeNumber' type='text' value='900333'>
 
@@ -320,9 +374,13 @@ func TestFieldsBuilder(t *testing.T) {
 <div class='employees'>
 <input name='Departments[1].Employees[0].Number' type='text' value='333'>
 
+%s
+
 <input name='Departments[1].Employees[0].FakeNumber' type='text' value='900333'>
 
 <input name='Departments[1].Employees[1].Number' type='text' value='444'>
+
+%s
 
 <input name='Departments[1].Employees[1].FakeNumber' type='text' value='900444'>
 
@@ -332,8 +390,21 @@ func TestFieldsBuilder(t *testing.T) {
 <button>Add Department</button>
 </div>
 
+%s
+
 <v-text-field type='number' v-field-name='[plaidForm, "PeopleCount"]' label='People Count' :value='"0"' :disabled='false'></v-text-field>
 `,
+				addressHTML(Address{}, "Departments[0].Employees[0]."),
+				addressHTML(Address{}, "Departments[0].Employees[2]."),
+				addressHTML(Address{}, "Departments[1].Employees[0]."),
+				addressHTML(Address{}, "Departments[1].Employees[1]."),
+				addressHTML(Address{
+					City: "c1",
+					Detail: AddressDetail{
+						Address1: "addr1",
+						Address2: "addr2",
+					},
+				}, "")),
 		},
 
 		{
@@ -366,7 +437,7 @@ func TestFieldsBuilder(t *testing.T) {
 					SetSorted("Departments[0].Employees", []string{"2", "0", "3", "6"})
 			},
 
-			expectedHTML: `
+			expectedHTML: fmt.Sprintf(`
 <input type='hidden' v-field-name='[plaidForm, "__Deleted.Departments[0].Employees"]' value='1'>
 
 <input type='hidden' v-field-name='[plaidForm, "__Sorted.Departments[0].Employees"]' value='2,0,3,6'>
@@ -379,17 +450,25 @@ func TestFieldsBuilder(t *testing.T) {
 <div class='employees'>
 <input name='Departments[0].Employees[2].Number' type='text' value='333'>
 
+%s
+
 <input name='Departments[0].Employees[2].FakeNumber' type='text' value='900333'>
 
 <input name='Departments[0].Employees[0].Number' type='text' value='111'>
+
+%s
 
 <input name='Departments[0].Employees[0].FakeNumber' type='text' value='900111'>
 
 <input name='Departments[0].Employees[3].Number' type='text' value='444'>
 
+%s
+
 <input name='Departments[0].Employees[3].FakeNumber' type='text' value='900444'>
 
 <input name='Departments[0].Employees[4].Number' type='text' value='555'>
+
+%s
 
 <input name='Departments[0].Employees[4].FakeNumber' type='text' value='900555'>
 
@@ -401,9 +480,13 @@ func TestFieldsBuilder(t *testing.T) {
 <div class='employees'>
 <input name='Departments[1].Employees[0].Number' type='text' value='333'>
 
+%s
+
 <input name='Departments[1].Employees[0].FakeNumber' type='text' value='900333'>
 
 <input name='Departments[1].Employees[1].Number' type='text' value='444'>
+
+%s
 
 <input name='Departments[1].Employees[1].FakeNumber' type='text' value='900444'>
 
@@ -413,8 +496,18 @@ func TestFieldsBuilder(t *testing.T) {
 <button>Add Department</button>
 </div>
 
+%s
+
 <v-text-field type='number' v-field-name='[plaidForm, "PeopleCount"]' label='People Count' :value='"0"' :disabled='false'></v-text-field>
 `,
+				addressHTML(Address{}, "Departments[0].Employees[2]."),
+				addressHTML(Address{}, "Departments[0].Employees[0]."),
+				addressHTML(Address{}, "Departments[0].Employees[3]."),
+				addressHTML(Address{}, "Departments[0].Employees[4]."),
+				addressHTML(Address{}, "Departments[1].Employees[0]."),
+				addressHTML(Address{}, "Departments[1].Employees[1]."),
+				addressHTML(Address{}, ""),
+			),
 		},
 	}
 
@@ -500,10 +593,12 @@ func TestFieldsBuilder(t *testing.T) {
 						Employees: []*Employee{
 							nil,
 							{
-								Number: 900666,
+								Number:  900666,
+								Address: &Address{},
 							},
 							{
-								Number: 999,
+								Number:  999,
+								Address: &Address{},
 							},
 						},
 					},
@@ -570,10 +665,12 @@ func TestFieldsBuilder(t *testing.T) {
 						Name: "Department 1!!!",
 						Employees: []*Employee{
 							{
-								Number: 900666,
+								Number:  900666,
+								Address: &Address{},
 							},
 							{
-								Number: 999,
+								Number:  999,
+								Address: &Address{},
 							},
 						},
 					},
@@ -648,16 +745,20 @@ func TestFieldsBuilder(t *testing.T) {
 						Name: "Department 1!!!",
 						Employees: []*Employee{
 							{
-								Number: 333,
+								Number:  333,
+								Address: &Address{},
 							},
 							{
-								Number: 444,
+								Number:  444,
+								Address: &Address{},
 							},
 							{
-								Number: 222,
+								Number:  222,
+								Address: &Address{},
 							},
 							{
-								Number: 900666,
+								Number:  900666,
+								Address: &Address{},
 							},
 						},
 					},
@@ -735,21 +836,112 @@ func TestFieldsBuilder(t *testing.T) {
 						Employees: []*Employee{
 							nil,
 							{
-								Number: 900666,
+								Number:  900666,
+								Address: &Address{},
 							},
 							{
-								Number: 222,
+								Number:  222,
+								Address: &Address{},
 							},
 							{
-								Number: 333,
+								Number:  333,
+								Address: &Address{},
 							},
 							{
-								Number: 444,
+								Number:  444,
+								Address: &Address{},
 							},
 						},
 					},
 					{
 						Name: "Department C",
+					},
+				},
+			},
+		},
+
+		{
+			name: "object item",
+			initial: &Org{
+				Name: "Org 1",
+				Address: Address{
+					City: "org city",
+					Detail: AddressDetail{
+						Address1: "org addr1",
+						Address2: "org addr2",
+					},
+				},
+				Departments: []*Department{
+					{
+						Name: "Department A",
+						Employees: []*Employee{
+							{
+								Number: 1,
+								Address: &Address{
+									City: "1 city",
+									Detail: AddressDetail{
+										Address1: "1 addr1",
+										Address2: "1 addr2",
+									},
+								},
+							},
+							{
+								Number: 2,
+							},
+						},
+					},
+				},
+			},
+			req: multipartestutils.NewMultipartBuilder().
+				AddField("Name", "Org 1").
+				AddField("Address.City", "org city e").
+				AddField("Address.Detail.Address1", "org addr1 e").
+				AddField("Address.Detail.Address2", "org addr2 e").
+				AddField("Departments[0].Name", "Department A").
+				AddField("Departments[0].Employees[0].Number", "1").
+				AddField("Departments[0].Employees[0].Address.City", "1 city e").
+				AddField("Departments[0].Employees[0].Address.Detail.Address1", "1 addr1 e").
+				AddField("Departments[0].Employees[0].Address.Detail.Address2", "1 addr2 e").
+				AddField("Departments[0].Employees[1].Number", "2").
+				AddField("Departments[0].Employees[1].Address.City", "2 city").
+				AddField("Departments[0].Employees[1].Address.Detail.Address1", "2 addr1").
+				AddField("Departments[0].Employees[1].Address.Detail.Address2", "2 addr2").
+				BuildEventFuncRequest(),
+			removeDeletedAndSort: false,
+			expected: &Org{
+				Name: "Org 1",
+				Address: Address{
+					City: "org city e",
+					Detail: AddressDetail{
+						Address1: "org addr1 e",
+						Address2: "org addr2 e",
+					},
+				},
+				Departments: []*Department{
+					{
+						Name: "Department A!!!",
+						Employees: []*Employee{
+							{
+								Number: 1,
+								Address: &Address{
+									City: "1 city e",
+									Detail: AddressDetail{
+										Address1: "1 addr1 e",
+										Address2: "1 addr2 e",
+									},
+								},
+							},
+							{
+								Number: 2,
+								Address: &Address{
+									City: "2 city",
+									Detail: AddressDetail{
+										Address1: "2 addr1",
+										Address2: "2 addr2",
+									},
+								},
+							},
+						},
 					},
 				},
 			},
