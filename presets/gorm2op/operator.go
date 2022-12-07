@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/web"
 	"gorm.io/gorm"
 )
 
