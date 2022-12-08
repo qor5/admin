@@ -34,6 +34,7 @@ const (
 	// list editor
 	ParamAddRowFormKey      = "listEditor_AddRowFormKey"
 	ParamRemoveRowFormKey   = "listEditor_RemoveRowFormKey"
+	ParamRawItemsNum        = "listEditor_ParamRawItemsNum"
 	ParamIsStartSort        = "listEditor_IsStartSort"
 	ParamSortSectionFormKey = "listEditor_SortSectionFormKey"
 	ParamSortResultFormKey  = "listEditor_SortResultFormKey"

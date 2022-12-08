@@ -3,6 +3,8 @@ package presets
 import (
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/qor5/admin/presets/actions"
@@ -99,4 +101,15 @@ func isInDialogFromQuery(ctx *web.EventContext) bool {
 
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+func parseFormKey(s string) (string, int) {
+	lb := strings.LastIndex(s, "[")
+	sliceField := s[0:lb]
+	strIndex := s[lb+1 : strings.LastIndex(s, "]")]
+	index, err := strconv.Atoi(strIndex)
+	if err != nil {
+		panic(err)
+	}
+	return sliceField, index
 }

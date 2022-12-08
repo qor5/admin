@@ -825,6 +825,25 @@ func (b *ModifiedIndexesBuilder) ReversedmodifiedIndexes(sliceFormKey string) (r
 	return
 }
 
+func (b *ModifiedIndexesBuilder) DelDeletedValue(sliceFormKey string, val string) {
+	if b.deletedValues == nil {
+		return
+	}
+	index := -1
+	for i, v := range b.deletedValues[sliceFormKey] {
+		if v == val {
+			index = i
+			break
+		}
+	}
+	if index != -1 {
+		b.deletedValues[sliceFormKey] = append(
+			b.deletedValues[sliceFormKey][:index],
+			b.deletedValues[sliceFormKey][index+1:]...,
+		)
+	}
+}
+
 func (b *ModifiedIndexesBuilder) ToFormHidden() h.HTMLComponent {
 	var hidden []h.HTMLComponent
 	for sliceFormKey, values := range b.deletedValues {

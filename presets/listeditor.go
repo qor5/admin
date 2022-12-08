@@ -111,6 +111,19 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		).Class("pa-0")).Outlined(true).Class("mx-0 mt-1 mb-4")
 	}
 
+	rawItemsNum := 0
+	items := reflect.ValueOf(b.value)
+	for i := 0; i < items.Len(); i++ {
+		r := reflect.Indirect(items.Index(i))
+		if r.Kind() == reflect.Invalid {
+			break
+		}
+		id := r.FieldByName("ID")
+		if fmt.Sprint(id) != "0" {
+			rawItemsNum++
+		}
+	}
+
 	return h.Div(
 		web.Scope(
 			h.Div(
@@ -159,6 +172,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Query(ParamID, ctx.R.FormValue(ParamID)).
 						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 						Query(ParamAddRowFormKey, b.fieldContext.FormKey).
+						Query(ParamRawItemsNum, rawItemsNum).
 						Go()),
 			).Attr("v-show", h.JSONString(!isSortStart)).
 				Class("mt-1 mb-4"),
@@ -171,12 +185,44 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 		me := mb.Editing()
 		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
 		formKey := ctx.R.FormValue(ParamAddRowFormKey)
-		t := reflectutils.GetType(obj, formKey+"[0]")
-		newVal := reflect.New(t.Elem()).Interface()
-		err = reflectutils.Set(obj, formKey+"[]", newVal)
+		rawItemsNum, err := strconv.Atoi(ctx.R.FormValue(ParamRawItemsNum))
 		if err != nil {
 			panic(err)
 		}
+		t := reflectutils.GetType(obj, formKey+"[0]")
+
+		itemsNo := map[int]struct{}{}
+		for k, _ := range ctx.R.Form {
+			if strings.HasPrefix(k, formKey) {
+				_, index := parseFormKey(k)
+				itemsNo[index] = struct{}{}
+			}
+		}
+
+		nextNo := -1
+		for v, _ := range itemsNo {
+			if v > nextNo {
+				nextNo = v
+			}
+		}
+		nextNo++
+
+		modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
+		isDeleted := false
+		for _, v := range modifiedIndexes.deletedValues[formKey] {
+			if v == fmt.Sprint(nextNo) {
+				isDeleted = true
+				modifiedIndexes.DelDeletedValue(formKey, fmt.Sprint(nextNo))
+			}
+		}
+
+		if !isDeleted || len(itemsNo) >= rawItemsNum {
+			newVal := reflect.New(t.Elem()).Interface()
+			if err = reflectutils.Set(obj, formKey+"[]", newVal); err != nil {
+				panic(err)
+			}
+		}
+
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
 		return
 	}
@@ -188,15 +234,7 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
 
 		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
-		lb := strings.LastIndex(formKey, "[")
-		sliceField := formKey[0:lb]
-		strIndex := formKey[lb+1 : strings.LastIndex(formKey, "]")]
-
-		var index int
-		index, err = strconv.Atoi(strIndex)
-		if err != nil {
-			return
-		}
+		sliceField, index := parseFormKey(formKey)
 		ContextModifiedIndexesBuilder(ctx).AppendDeleted(sliceField, index)
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
 		return
