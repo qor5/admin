@@ -65,6 +65,7 @@ func (fc *FieldContext) ContextValue(key interface{}) (r interface{}) {
 type FieldBuilder struct {
 	NameLabel
 	compFunc            FieldComponentFunc
+	wrapCompFunc        HTMLWrapFunc
 	setterFunc          FieldSetterFunc
 	context             context.Context
 	rt                  reflect.Type
@@ -120,6 +121,11 @@ func (b *FieldBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
 		panic("value required")
 	}
 	b.compFunc = v
+	return b
+}
+
+func (b *FieldBuilder) WrapCompFunc(v HTMLWrapFunc) (r *FieldBuilder) {
+	b.wrapCompFunc = v
 	return b
 }
 
@@ -226,7 +232,11 @@ func (b *FieldsBuilder) Unmarshal(toObj interface{}, info *ModelInfo, removeDele
 	}, removeDeletedAndSort, modifiedIndexes, ctx)
 }
 
-func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, parent *FieldContext, removeDeletedAndSort bool, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) (vErr web.ValidationErrors) {
+func (b *FieldsBuilder) SetObjectFields(
+	fromObj interface{}, toObj interface{},
+	parent *FieldContext, removeDeletedAndSort bool,
+	modifiedIndexes *ModifiedIndexesBuilder,
+	ctx *web.EventContext) (vErr web.ValidationErrors) {
 
 	for _, f := range b.fields {
 		info := parent.ModelInfo
@@ -301,7 +311,11 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 	return
 }
 
-func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
+func (b *FieldsBuilder) setToObjNilOrDelete(
+	toObj interface{}, formKey string,
+	f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder,
+	removeDeletedAndSort bool) {
+
 	childToObjs := reflectutils.MustGet(toObj, f.name)
 	if childToObjs == nil {
 		return
@@ -666,7 +680,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(
 		}
 	}
 
-	comp := f.compFunc(obj, &FieldContext{
+	fieldContext := FieldContext{
 		ModelInfo:           info,
 		Name:                f.name,
 		FormKey:             contextKeyPath,
@@ -675,16 +689,28 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(
 		NestedFieldsBuilder: f.nestedFieldsBuilder,
 		Context:             f.context,
 		Disabled:            disabled,
-	}, ctx)
+	}
 
-	autoFillComponents := map[reflect.Type]struct{}{
+	comp := f.compFunc(obj, &fieldContext, ctx)
+	comp = autofillCompFields(comp, contextKeyPath, label)
+
+	if f.wrapCompFunc != nil {
+		comp = f.wrapCompFunc(comp)
+	}
+
+	return comp
+}
+
+func autofillCompFields(comp h.HTMLComponent, formKey string, label string) h.HTMLComponent {
+	autofillComps := map[reflect.Type]struct{}{
 		reflect.TypeOf(v.VAutocompleteBuilder{}): {},
 		reflect.TypeOf(v.VTextFieldBuilder{}):    {},
+		reflect.TypeOf(v.VSelectBuilder{}):       {},
 	}
 
 	r := reflect.Indirect(reflect.ValueOf(comp))
 	if r.Kind() != reflect.Invalid {
-		if _, ok := autoFillComponents[r.Type()]; ok {
+		if _, ok := autofillComps[r.Type()]; ok {
 			if r.Type() == reflect.TypeOf(h.HTMLTagBuilder{}) {
 				// htmlgo component
 				// attrs := r.FieldByName("attrs")
@@ -693,22 +719,35 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(
 				tag := reflect.Indirect(r.FieldByName("tag"))
 				attrs := tag.FieldByName("attrs")
 				hasFieldName := false
+				hasLabel := false
 				var newType reflect.Type
 				for i := 0; i < attrs.Len(); i++ {
 					r := reflect.Indirect(attrs.Index(i))
 					newType = r.Type()
-					if fmt.Sprint(r.FieldByName("key")) == web.VFieldName("")[0] {
+					key := fmt.Sprint(r.FieldByName("key"))
+					switch key {
+					case web.VFieldName("")[0]:
 						hasFieldName = true
+					case "label":
+						hasLabel = true
 					}
 				}
+				var newAttrs []reflect.Value
 				if !hasFieldName {
 					newAttr := reflect.New(newType).Elem()
-					vs := web.VFieldName(contextKeyPath)
+					vs := web.VFieldName(formKey)
 					reflect.NewAt(newAttr.FieldByName("key").Type(), unsafe.Pointer(newAttr.FieldByName("key").UnsafeAddr())).Elem().Set(reflect.ValueOf(vs[0]))
 					reflect.NewAt(newAttr.FieldByName("value").Type(), unsafe.Pointer(newAttr.FieldByName("value").UnsafeAddr())).Elem().Set(reflect.ValueOf(vs[1]))
-					attrs = reflect.NewAt(attrs.Type(), unsafe.Pointer(attrs.UnsafeAddr())).Elem()
-					attrs.Set(reflect.Append(attrs, newAttr.Addr()))
+					newAttrs = append(newAttrs, newAttr.Addr())
 				}
+				if !hasLabel {
+					newAttr := reflect.New(newType).Elem()
+					reflect.NewAt(newAttr.FieldByName("key").Type(), unsafe.Pointer(newAttr.FieldByName("key").UnsafeAddr())).Elem().Set(reflect.ValueOf("label"))
+					reflect.NewAt(newAttr.FieldByName("value").Type(), unsafe.Pointer(newAttr.FieldByName("value").UnsafeAddr())).Elem().Set(reflect.ValueOf(label))
+					newAttrs = append(newAttrs, newAttr.Addr())
+				}
+				attrs = reflect.NewAt(attrs.Type(), unsafe.Pointer(attrs.UnsafeAddr())).Elem()
+				attrs.Set(reflect.Append(attrs, newAttrs...))
 			}
 		}
 	}

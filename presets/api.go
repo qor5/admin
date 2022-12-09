@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/web"
 	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -14,6 +14,7 @@ type ObjectComponentFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComp
 type EditingTitleComponentFunc func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent
 
 type FieldComponentFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent
+type HTMLWrapFunc func(in h.HTMLComponent) h.HTMLComponent
 
 type ActionComponentFunc func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
 type ActionUpdateFunc func(selectedIds []string, ctx *web.EventContext) (err error)
