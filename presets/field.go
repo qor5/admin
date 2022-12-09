@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unsafe"
 
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -550,7 +551,10 @@ func (b *FieldsBuilder) ToComponent(info *ModelInfo, obj interface{}, ctx *web.E
 	return b.toComponentWithFormValueKey(info, obj, "", modifiedIndexes, ctx)
 }
 
-func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
+func (b *FieldsBuilder) toComponentWithFormValueKey(
+	info *ModelInfo, obj interface{},
+	parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder,
+	ctx *web.EventContext) h.HTMLComponent {
 
 	var comps []h.HTMLComponent
 	if parentFormValueKey == "" {
@@ -629,7 +633,12 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 	return h.Components(comps...)
 }
 
-func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, id interface{}, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
+func (b *FieldsBuilder) fieldToComponentWithFormValueKey(
+	info *ModelInfo, obj interface{},
+	parentFormValueKey string, ctx *web.EventContext,
+	name string, id interface{}, edit bool,
+	vErr *web.ValidationErrors) h.HTMLComponent {
+
 	f := b.getFieldOrDefault(name)
 	// if f.compFunc == nil {
 	// 	return nil
@@ -656,7 +665,8 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
-	return f.compFunc(obj, &FieldContext{
+
+	comp := f.compFunc(obj, &FieldContext{
 		ModelInfo:           info,
 		Name:                f.name,
 		FormKey:             contextKeyPath,
@@ -666,6 +676,44 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 		Context:             f.context,
 		Disabled:            disabled,
 	}, ctx)
+
+	autoFillComponents := map[reflect.Type]struct{}{
+		reflect.TypeOf(v.VAutocompleteBuilder{}): {},
+		reflect.TypeOf(v.VTextFieldBuilder{}):    {},
+	}
+
+	r := reflect.Indirect(reflect.ValueOf(comp))
+	if r.Kind() != reflect.Invalid {
+		if _, ok := autoFillComponents[r.Type()]; ok {
+			if r.Type() == reflect.TypeOf(h.HTMLTagBuilder{}) {
+				// htmlgo component
+				// attrs := r.FieldByName("attrs")
+			} else {
+				// vuetify component
+				tag := reflect.Indirect(r.FieldByName("tag"))
+				attrs := tag.FieldByName("attrs")
+				hasFieldName := false
+				var newType reflect.Type
+				for i := 0; i < attrs.Len(); i++ {
+					r := reflect.Indirect(attrs.Index(i))
+					newType = r.Type()
+					if fmt.Sprint(r.FieldByName("key")) == web.VFieldName("")[0] {
+						hasFieldName = true
+					}
+				}
+				if !hasFieldName {
+					newAttr := reflect.New(newType).Elem()
+					vs := web.VFieldName(contextKeyPath)
+					reflect.NewAt(newAttr.FieldByName("key").Type(), unsafe.Pointer(newAttr.FieldByName("key").UnsafeAddr())).Elem().Set(reflect.ValueOf(vs[0]))
+					reflect.NewAt(newAttr.FieldByName("value").Type(), unsafe.Pointer(newAttr.FieldByName("value").UnsafeAddr())).Elem().Set(reflect.ValueOf(vs[1]))
+					attrs = reflect.NewAt(attrs.Type(), unsafe.Pointer(attrs.UnsafeAddr())).Elem()
+					attrs.Set(reflect.Append(attrs, newAttr.Addr()))
+				}
+			}
+		}
+	}
+
+	return comp
 }
 
 type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent
