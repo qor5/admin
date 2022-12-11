@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/utils"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
@@ -71,7 +71,7 @@ type versionItem struct {
 }
 
 func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, id string) (list []*versionItem, err error) {
-	err = gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version"), mb.NewModel(), fmt.Sprintf("%s_fake", id), ctx, "version").
+	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version"), mb.NewModel(), fmt.Sprintf("%s_fake", id), "version").
 		Order("version DESC").
 		Find(&list).
 		Error
@@ -112,7 +112,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		}
 	}
 
-	gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), obj, paramID, ctx, "version").
+	utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), obj, paramID, "version").
 		Order("version DESC").
 		Find(&versions)
 
@@ -234,7 +234,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		version := db.NowFunc().Format("2006-01-02")
 		var count int64
-		gorm2op.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), paramID, ctx, "version").
+		utils.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), paramID, "version").
 			Where("version like ?", version+"%").
 			Order("version DESC").
 			Count(&count)

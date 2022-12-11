@@ -5,14 +5,13 @@ import (
 	"reflect"
 	"strings"
 
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
 	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -148,7 +147,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 		}
 
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(fromObj)
+		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
 
 		me := mb.Editing()
 
@@ -162,7 +161,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			if isVersion {
 				date := db.NowFunc().Format("2006-01-02")
 				var count int64
-				gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
+				utils.PrimarySluggerWhere(db, mb.NewModel(), paramID, "version").
 					Where("version like ?", date+"%").
 					Order("version DESC").
 					Count(&count)
