@@ -65,12 +65,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	}
 }
 
-type versionItem struct {
-	ID      string
-	Version string
-}
-
-func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, id string) (list []*versionItem, err error) {
+func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, id string) (list []interface{}, err error) {
 	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version"), mb.NewModel(), fmt.Sprintf("%s_fake", id), "version").
 		Order("version DESC").
 		Find(&list).
