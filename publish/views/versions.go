@@ -87,12 +87,10 @@ type versionListTableItem struct {
 }
 
 func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
-	segs := strings.Split(ctx.R.FormValue("id"), "_")
-	if len(segs) != 2 {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue("id"))
-	}
-
-	id, currentVersionName := segs[0], segs[1]
+	var obj = mb.NewModel()
+	slugger := obj.(presets.SlugDecoder)
+	cs := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue("id"))
+	id, currentVersionName := cs["id"], cs["version"]
 	if id == "" || currentVersionName == "" {
 		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue("id"))
 	}
@@ -114,7 +112,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		}
 	}
 
-	gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), mb.NewModel(), paramID, ctx, "version").
+	gorm2op.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), obj, paramID, ctx, "version").
 		Order("version DESC").
 		Find(&versions)
 

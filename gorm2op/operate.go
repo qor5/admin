@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
+	"github.com/qor5/web"
 	"gorm.io/gorm"
 )
 
@@ -104,9 +104,9 @@ func PrimarySluggerWhere(db *gorm.DB, obj interface{}, id string, ctx *web.Event
 
 	if slugger, ok := obj.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(id)
-		for _, cond := range cs {
-			if !utils.Contains(withoutKeys, cond[0]) {
-				wh = wh.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+		for key, value := range cs {
+			if !utils.Contains(withoutKeys, key) {
+				wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
 			}
 		}
 	} else {
