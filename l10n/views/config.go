@@ -6,14 +6,13 @@ import (
 	"reflect"
 
 	"github.com/biter777/countries"
-	"github.com/qor5/ui/stripeui"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
 	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/utils"
+	"github.com/qor5/ui/stripeui"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -22,10 +21,18 @@ import (
 
 func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.ActivityBuilder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
-		m.Listing().SearchFunc(gorm2op.Searcher(db, m))
-		m.Editing().FetchFunc(gorm2op.Fetcher(db, m))
-		m.Editing().SaveFunc(gorm2op.Saver(db, m))
-		m.Editing().DeleteFunc(gorm2op.Deleter(db, m))
+		searcher := m.Listing().Searcher
+		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+				con := presets.SQLCondition{
+					Query: "locale_code = ?",
+					Args:  []interface{}{localeCode},
+				}
+				params.SQLConditions = append(params.SQLConditions, &con)
+			}
+
+			return searcher(model, params, ctx)
+		})
 
 		rmb := m.Listing().RowMenu()
 		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
