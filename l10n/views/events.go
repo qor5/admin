@@ -36,10 +36,9 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		//versionName := segs[1]
 		paramID := ctx.R.FormValue(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
+		id := cs["id"]
 
 		//todo get current locale
 		fromLocale := lb.GetCorrectLocale(ctx.R)
@@ -123,7 +122,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		segs := strings.Split(ctx.R.FormValue("id"), "_")
 		id := segs[0]
-		paramID := ctx.R.FormValue("id")
+		fromParamID := ctx.R.FormValue("id")
 		from := ctx.R.FormValue("localize_from")
 		to, exist := ctx.R.Form["localize_to"]
 		if !exist {
@@ -147,7 +146,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 		}
 
-		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
+		utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj)
 
 		me := mb.Editing()
 
@@ -157,11 +156,15 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			if err = reflectutils.Set(toObj, "ID", id); err != nil {
 				return
 			}
+			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
+				return
+			}
 
 			if isVersion {
 				date := db.NowFunc().Format("2006-01-02")
 				var count int64
-				utils.PrimarySluggerWhere(db, mb.NewModel(), paramID, "version").
+				toParamID := toObj.(presets.SlugEncoder).PrimarySlug()
+				utils.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), toParamID, "version").
 					Where("version like ?", date+"%").
 					Order("version DESC").
 					Count(&count)
@@ -175,10 +178,6 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 				if err = reflectutils.Set(toObj, "Version.ParentVersion", ""); err != nil {
 					return
 				}
-			}
-
-			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
-				return
 			}
 
 			me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
