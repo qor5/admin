@@ -59,6 +59,10 @@ type SlugDecoder interface {
 	PrimaryColumnValuesBySlug(slug string) map[string]string
 }
 
+type SlugEncoder interface {
+	PrimarySlug() string
+}
+
 type FilterDataFunc func(ctx *web.EventContext) vuetifyx.FilterData
 
 type FilterTab struct {
