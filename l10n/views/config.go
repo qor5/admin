@@ -10,8 +10,8 @@ import (
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/utils"
-	"github.com/qor5/ui/stripeui"
 	v "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -172,7 +172,7 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 	}
 }
 
-func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) stripeui.RowMenuItemFunc {
+func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			return nil

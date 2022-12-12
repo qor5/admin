@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 )
@@ -26,14 +26,14 @@ func ShowMessage(r *web.EventResponse, msg string, color string) {
 		h.JSONString(msg), h.JSONString(color)))
 }
 
-func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []stripeui.RowMenuItemFunc {
-	return []stripeui.RowMenuItemFunc{
+func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
+	return []vx.RowMenuItemFunc{
 		editRowMenuItemFunc(mi, url, editExtraParams),
 		deleteRowMenuItemFunc(mi, url, editExtraParams),
 	}
 }
 
-func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) stripeui.RowMenuItemFunc {
+func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		msgr := MustGetMessages(ctx.R)
 		if mi.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -58,7 +58,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 	}
 }
 
-func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) stripeui.RowMenuItemFunc {
+func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		msgr := MustGetMessages(ctx.R)
 		if mi.mb.Info().Verifier().Do(PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {

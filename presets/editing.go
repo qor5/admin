@@ -6,8 +6,8 @@ import (
 
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
@@ -167,7 +167,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 
 	id := ctx.R.FormValue(ParamID)
 	if b.mb.singleton {
-		id = stripeui.ObjectID(obj)
+		id = vx.ObjectID(obj)
 	}
 
 	var buttonLabel = msgr.Create
@@ -449,7 +449,7 @@ func (b *EditingBuilder) doUpdate(
 		web.AppendVarsScripts(r, script, strings.NewReplacer(".go()",
 			fmt.Sprintf(".query(%s, %s).go()",
 				h.JSONString(ParamOverlayUpdateID),
-				h.JSONString(stripeui.ObjectID(obj)),
+				h.JSONString(vx.ObjectID(obj)),
 			)).Replace(afterUpdateScript),
 		)
 
