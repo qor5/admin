@@ -34,6 +34,20 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			return searcher(model, params, ctx)
 		})
 
+		setter := m.Editing().Setter
+		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			if ctx.R.FormValue("id") == "" {
+				if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
+						return
+					}
+				}
+			}
+			if setter != nil {
+				setter(obj, ctx)
+			}
+		})
+
 		rmb := m.Listing().RowMenu()
 		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
 
