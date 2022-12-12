@@ -3,12 +3,11 @@ package presets
 import (
 	"fmt"
 
+	"github.com/iancoleman/strcase"
+	. "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/ui/stripeui"
-	s "github.com/qor5/ui/stripeui"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/iancoleman/strcase"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -45,7 +44,7 @@ func (b *RowMenuBuilder) Empty() {
 	b.items = nil
 }
 
-func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []s.RowMenuItemFunc) {
+func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []vx.RowMenuItemFunc) {
 	listings := b.defaultListings
 	if len(b.listings) > 0 {
 		listings = b.listings
@@ -63,7 +62,7 @@ type RowMenuItemBuilder struct {
 	name       string
 	icon       string
 	clickF     RowMenuItemClickFunc
-	compF      stripeui.RowMenuItemFunc
+	compF      vx.RowMenuItemFunc
 	permAction string
 	eventID    string
 }
@@ -115,7 +114,7 @@ func (b *RowMenuItemBuilder) OnClick(v RowMenuItemClickFunc) *RowMenuItemBuilder
 	return b
 }
 
-func (b *RowMenuItemBuilder) ComponentFunc(v stripeui.RowMenuItemFunc) *RowMenuItemBuilder {
+func (b *RowMenuItemBuilder) ComponentFunc(v vx.RowMenuItemFunc) *RowMenuItemBuilder {
 	b.compF = v
 	return b
 }
@@ -125,7 +124,7 @@ func (b *RowMenuItemBuilder) PermAction(v string) *RowMenuItemBuilder {
 	return b
 }
 
-func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) stripeui.RowMenuItemFunc {
+func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuItemFunc {
 	if b.compF != nil {
 		return b.compF
 	}
