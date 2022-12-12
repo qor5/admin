@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
+	s "github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
