@@ -1,14 +1,11 @@
 package views
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -120,31 +117,13 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		fromParamID := ctx.R.FormValue("id")
-		from := ctx.R.FormValue("localize_from")
+		fromParamID := ctx.R.FormValue(presets.ParamID)
 		to, exist := ctx.R.Form["localize_to"]
 		if !exist {
 			return
 		}
 
 		var fromObj = mb.NewModel()
-		if err = reflectutils.Set(fromObj, "ID", id); err != nil {
-			return
-		}
-		if err = reflectutils.Set(fromObj, "LocaleCode", from); err != nil {
-			return
-		}
-		var isVersion bool
-
-		if publish.IsVersion(fromObj) {
-			isVersion = true
-			version := segs[1]
-			if err = reflectutils.Set(fromObj, "Version.Version", version); err != nil {
-				return
-			}
-		}
 
 		utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj)
 
@@ -152,33 +131,13 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		for _, toLocale := range to {
 			var toObj = mb.NewModel()
-
-			if err = reflectutils.Set(toObj, "ID", id); err != nil {
-				return
-			}
-			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
+			var fakeToObj = fromObj
+			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {
 				return
 			}
 
-			if isVersion {
-				date := db.NowFunc().Format("2006-01-02")
-				var count int64
-				toParamID := toObj.(presets.SlugEncoder).PrimarySlug()
-				utils.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), toParamID, "version").
-					Where("version like ?", date+"%").
-					Order("version DESC").
-					Count(&count)
-				versionName := fmt.Sprintf("%s-v%02v", date, count+1)
-				if err = reflectutils.Set(toObj, "Version.Version", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.VersionName", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.ParentVersion", ""); err != nil {
-					return
-				}
-			}
+			toParamID := fakeToObj.(presets.SlugEncoder).PrimarySlug()
+			utils.SetPrimaryKeys(fromObj, toObj, db, toParamID)
 
 			me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
 				ModelInfo: mb.Info(),
