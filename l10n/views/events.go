@@ -125,7 +125,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		var fromObj = mb.NewModel()
 
-		utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj)
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj).Error; err != nil {
+			return
+		}
 
 		me := mb.Editing()
 
@@ -137,7 +139,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 
 			toParamID := fakeToObj.(presets.SlugEncoder).PrimarySlug()
-			utils.SetPrimaryKeys(fromObj, toObj, db, toParamID)
+			if err = utils.SetPrimaryKeys(fromObj, toObj, db, toParamID); err != nil {
+				return
+			}
 
 			me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
 				ModelInfo: mb.Info(),

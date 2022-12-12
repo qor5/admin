@@ -32,7 +32,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 		)
 
 		table, currentVersion, err := versionListTable(db, mb, msgr, ctx)
-		if err != nil {
+		if err != nil || table == nil {
 			return nil
 		}
 
@@ -67,7 +67,11 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, paramId string) (list interface{}, err error) {
 	list = mb.NewModelSlice()
-	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(utils.GetPrimaryKeys(mb.NewModel(), db), ",")), mb.NewModel(), paramId, "version").
+	primaryKeys, err := utils.GetPrimaryKeys(mb.NewModel(), db)
+	if err != nil {
+		return
+	}
+	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(primaryKeys, ",")), mb.NewModel(), paramId, "version").
 		Order("version DESC").
 		Find(list).
 		Error
@@ -86,13 +90,15 @@ type versionListTableItem struct {
 func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
 	var obj = mb.NewModel()
 	slugger := obj.(presets.SlugDecoder)
-	cs := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))
+	paramID := ctx.R.FormValue(presets.ParamID)
+	if paramID == "" {
+		return nil, currentVersion, nil
+	}
+	cs := slugger.PrimaryColumnValuesBySlug(paramID)
 	id, currentVersionName := cs["id"], cs["version"]
 	if id == "" || currentVersionName == "" {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue(presets.ParamID))
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", paramID)
 	}
-
-	paramID := ctx.R.FormValue(presets.ParamID)
 
 	var (
 		versions      []versionListTableItem
@@ -110,7 +116,11 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	}
 
 	var results = mb.NewModelSlice()
-	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(append(utils.GetPrimaryKeys(mb.NewModel(), db), "version_name", "status"), ",")), mb.NewModel(), paramID, "version").
+	primaryKeys, err := utils.GetPrimaryKeys(mb.NewModel(), db)
+	if err != nil {
+		return
+	}
+	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(append(primaryKeys, "version_name", "status"), ",")), mb.NewModel(), paramID, "version").
 		Order("version DESC").
 		Find(results).Error
 	if err != nil {
@@ -243,7 +253,9 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 
 		var fromObj = mb.NewModel()
 		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
-		utils.SetPrimaryKeys(fromObj, toObj, db, paramID)
+		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
+			return
+		}
 
 		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
 			return
