@@ -24,7 +24,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			msgr                = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			activeClass         = "primary white--text"
 			selected            = ctx.R.FormValue("selected")
-			selectVersionsEvent = web.Plaid().EventFunc(selectVersionsEvent).Query("id", ctx.R.FormValue("id")).Query("selected", web.Var("$event")).Go()
+			selectVersionsEvent = web.Plaid().EventFunc(selectVersionsEvent).Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).Query("selected", web.Var("$event")).Go()
 			selectItems         = []map[string]string{
 				{"text": msgr.AllVersions, "value": "all-versions"},
 				{"text": msgr.NamedVersions, "value": "named-versions"},
@@ -65,10 +65,11 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	}
 }
 
-func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, id string) (list []interface{}, err error) {
-	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version"), mb.NewModel(), fmt.Sprintf("%s_fake", id), "version").
+func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, ctx *web.EventContext, paramId string) (list interface{}, err error) {
+	list = mb.NewModelSlice()
+	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(utils.GetPrimaryKeys(mb.NewModel(), db), ",")), mb.NewModel(), paramId, "version").
 		Order("version DESC").
-		Find(&list).
+		Find(list).
 		Error
 	return list, err
 }
@@ -79,18 +80,19 @@ type versionListTableItem struct {
 	VersionName string
 	Status      string
 	ItemClass   string
+	ParamID     string
 }
 
 func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
 	var obj = mb.NewModel()
 	slugger := obj.(presets.SlugDecoder)
-	cs := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue("id"))
+	cs := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))
 	id, currentVersionName := cs["id"], cs["version"]
 	if id == "" || currentVersionName == "" {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue("id"))
+		return nil, currentVersion, fmt.Errorf("invalid version id: %s", ctx.R.FormValue(presets.ParamID))
 	}
 
-	paramID := ctx.R.FormValue("id")
+	paramID := ctx.R.FormValue(presets.ParamID)
 
 	var (
 		versions      []versionListTableItem
@@ -107,28 +109,45 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		}
 	}
 
-	utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select("id,version,version_name,status"), obj, paramID, "version").
+	var results = mb.NewModelSlice()
+	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(append(utils.GetPrimaryKeys(mb.NewModel(), db), "version_name", "status"), ",")), mb.NewModel(), paramID, "version").
 		Order("version DESC").
-		Find(&versions)
+		Find(results).Error
+	if err != nil {
+		panic(err)
+	}
 
-	for index := range versions {
-		if versions[index].Status == publish.StatusOnline {
-			currentVersion = versions[index]
+	vO := reflect.ValueOf(results).Elem()
+
+	for i := 0; i < vO.Len(); i++ {
+		v := vO.Index(i).Interface()
+
+		var version versionListTableItem
+		ID, _ := reflectutils.Get(v, "ID")
+		version.ID = fmt.Sprintf("%v", ID)
+		version.Version = v.(publish.VersionInterface).GetVersion()
+		version.VersionName = v.(publish.VersionInterface).GetVersionName()
+		version.Status = v.(publish.StatusInterface).GetStatus()
+
+		if version.Status == publish.StatusOnline {
+			currentVersion = version
 		}
 
-		versions[index].Status = GetStatusText(versions[index].Status, msgr)
+		version.Status = GetStatusText(version.Status, msgr)
 
-		if versions[index].Version == currentVersionName {
-			versions[index].ItemClass = activeClass
+		if version.Version == currentVersionName {
+			version.ItemClass = activeClass
 		}
 
-		if versions[index].VersionName == "" {
-			versions[index].VersionName = versions[index].Version
+		if version.VersionName == "" {
+			version.VersionName = version.Version
 		}
 
-		if versions[index].VersionName != versions[index].Version {
-			namedVersions = append(namedVersions, versions[index])
+		if version.VersionName != version.Version {
+			namedVersions = append(namedVersions, version)
 		}
+		version.ParamID = v.(presets.SlugEncoder).PrimarySlug()
+		versions = append(versions, version)
 	}
 
 	if selected == "named-versions" {
@@ -136,14 +155,14 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	}
 
 	var (
-		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query("id", web.Var(`$event.ID+"_"+$event.Version`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
-		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).
+		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query(presets.ParamID, web.Var(`$event.ParamID`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
+		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query(presets.ParamID, web.Var(`props.item.ParamID`)).
 					Query(presets.ParamAfterDeleteEvent, afterDeleteVersionEvent).
-					Query("current_selected_id", ctx.R.FormValue("id")).
+					Query("current_selected_id", ctx.R.FormValue(presets.ParamID)).
 					Query("selected", selected).
 					Query("page", web.Var("locals.versionPage")).
 					Go() + ";event.stopPropagation();"
-		renameVersionEvent = web.Plaid().EventFunc(renameVersionEvent).Query("id", web.Var(`props.item.ID+"_"+props.item.Version`)).Query("name", web.Var("props.item.VersionName")).Go()
+		renameVersionEvent = web.Plaid().EventFunc(renameVersionEvent).Query(presets.ParamID, web.Var(`props.item.ParamID`)).Query("name", web.Var("props.item.VersionName")).Go()
 	)
 
 	table = web.Scope(
@@ -187,12 +206,12 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 
 func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramId := ctx.R.FormValue(presets.ParamID)
 
 		eb := mb.Editing()
 
 		obj := mb.NewModel()
-		obj, err = eb.Fetcher(obj, id, ctx)
+		obj, err = eb.Fetcher(obj, paramId, ctx)
 
 		eb.UpdateOverlayContent(ctx, &r, obj, "", err)
 
@@ -209,51 +228,36 @@ func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 
 func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		paramID := ctx.R.FormValue("id")
-
-		var obj = mb.NewModel()
+		var toObj = mb.NewModel()
+		slugger := toObj.(presets.SlugDecoder)
+		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		me := mb.Editing()
-		vErr := me.RunSetterFunc(ctx, false, obj)
+		vErr := me.RunSetterFunc(ctx, false, toObj)
 
 		if vErr.HaveErrors() {
-			me.UpdateOverlayContent(ctx, &r, obj, "", &vErr)
+			me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
 			return
 		}
 
-		if err = reflectutils.Set(obj, "ID", id); err != nil {
-			return
-		}
+		var fromObj = mb.NewModel()
+		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
+		utils.SetPrimaryKeys(fromObj, toObj, db, paramID)
 
-		version := db.NowFunc().Format("2006-01-02")
-		var count int64
-		utils.PrimarySluggerWhere(db.Unscoped(), mb.NewModel(), paramID, "version").
-			Where("version like ?", version+"%").
-			Order("version DESC").
-			Count(&count)
-
-		versionName := fmt.Sprintf("%s-v%02v", version, count+1)
-		if err = reflectutils.Set(obj, "Version.Version", versionName); err != nil {
-			return
-		}
-		if err = reflectutils.Set(obj, "Version.VersionName", versionName); err != nil {
-			return
-		}
-		if err = reflectutils.Set(obj, "Version.ParentVersion", segs[1]); err != nil {
+		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
 			return
 		}
 
 		if me.Validator != nil {
-			if vErr := me.Validator(obj, ctx); vErr.HaveErrors() {
-				me.UpdateOverlayContent(ctx, &r, obj, "", &vErr)
+			if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
+				me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
 				return
 			}
 		}
 
-		if err = me.Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
-			me.UpdateOverlayContent(ctx, &r, obj, "", err)
+		if err = me.Saver(toObj, paramID, ctx); err != nil {
+			me.UpdateOverlayContent(ctx, &r, toObj, "", err)
 			return
 		}
 
@@ -353,7 +357,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		var buttonLabel = gmsgr.Create
 		m.RightDrawerWidth("800")
 		var disableUpdateBtn bool
-		if ctx.R.FormValue("id") != "" {
+		if ctx.R.FormValue(presets.ParamID) != "" {
 			buttonLabel = gmsgr.Update
 			m.RightDrawerWidth("1200")
 			disableUpdateBtn = m.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
@@ -365,7 +369,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 			Attr("@click", web.Plaid().
 				EventFunc(actions.Update).
 				Queries(ctx.Queries()).
-				Query("id", ctx.R.FormValue("id")).
+				Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
@@ -374,7 +378,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 			Attr("@click", web.Plaid().
 				EventFunc(SaveNewVersionEvent).
 				Queries(ctx.Queries()).
-				Query("id", ctx.R.FormValue("id")).
+				Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)

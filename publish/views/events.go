@@ -1,6 +1,8 @@
 package views
 
 import (
+	"reflect"
+
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
@@ -139,7 +141,7 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		qs := ctx.Queries()
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(ctx.R.FormValue("id"))
-		id, deletedVersion := cs["id"], cs["version"]
+		deletedVersion := cs["version"]
 		deletedID := qs.Get("id")
 		currentSelectedID := qs.Get("current_selected_id")
 		// switching version is one of the following in order that exists:
@@ -148,25 +150,26 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 		// 3. prev(newer) version
 		switchingVersion := currentSelectedID
 		if deletedID == currentSelectedID {
-			versions, _ := findVersionItems(db, mb, ctx, id)
-			if len(versions) == 0 {
+			versions, _ := findVersionItems(db, mb, ctx, deletedID)
+			vO := reflect.ValueOf(versions).Elem()
+			if vO.Len() == 0 {
 				r.Reload = true
 				return
 			}
 
-			version := versions[0]
-			if len(versions) > 1 {
+			version := vO.Index(0).Interface()
+			if vO.Len() > 1 {
 				hasOlderVersion := false
-				for _, v := range versions {
-					v := v.(publish.VersionInterface)
-					if v.GetVersion() < deletedVersion {
+				for i := 0; i < vO.Len(); i++ {
+					v := vO.Index(i).Interface()
+					if v.(publish.VersionInterface).GetVersion() < deletedVersion {
 						hasOlderVersion = true
 						version = v
 						break
 					}
 				}
 				if !hasOlderVersion {
-					version = versions[len(versions)-1]
+					version = vO.Index(vO.Len() - 1)
 				}
 			}
 
