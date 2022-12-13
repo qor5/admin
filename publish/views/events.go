@@ -43,10 +43,10 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -68,10 +68,10 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 
 func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -94,10 +94,10 @@ func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.B
 
 func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -108,7 +108,7 @@ func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 			return
 		}
 
-		if err = mb.Editing().Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
+		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
 			return
 		}
 

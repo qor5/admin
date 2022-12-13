@@ -36,7 +36,7 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 
 		setter := m.Editing().Setter
 		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			if ctx.R.FormValue("id") == "" {
+			if ctx.R.FormValue(presets.ParamID) == "" {
 				if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
 					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
 						return

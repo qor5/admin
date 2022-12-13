@@ -57,7 +57,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 
 			setter := m.Editing().Setter
 			m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-				if ctx.R.FormValue("id") == "" {
+				if ctx.R.FormValue(presets.ParamID) == "" {
 					version := db.NowFunc().Format("2006-01-02")
 					if err := reflectutils.Set(obj, "Version.Version", fmt.Sprintf("%s-v01", version)); err != nil {
 						return
