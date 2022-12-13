@@ -9,9 +9,8 @@ import (
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
-	s "github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -92,9 +91,9 @@ func (l *Language) PrimarySlug() string {
 	return l.Code
 }
 
-func (l *Language) PrimaryColumnValuesBySlug(slug string) [][]string {
-	return [][]string{
-		{"code", slug},
+func (l *Language) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	return map[string]string{
+		"code": slug,
 	}
 }
 
@@ -155,7 +154,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		typeName := reflect.ValueOf(obj).Elem().Type().Name()
 		objId := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 
-		dt := s.DataTable(events).WithoutHeader(true).LoadMoreAt(20, "Show More").LoadMoreURL(fmt.Sprintf("/admin/events?sourceType=%s&sourceId=%s", typeName, objId))
+		dt := vx.DataTable(events).WithoutHeader(true).LoadMoreAt(20, "Show More").LoadMoreURL(fmt.Sprintf("/admin/events?sourceType=%s&sourceId=%s", typeName, objId))
 
 		dt.Column("Type")
 		dt.Column("Description")
@@ -163,7 +162,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(field.ModelInfo, "/admin/events",
 			url.Values{"model": []string{typeName}, "model_id": []string{objId}})...)
 
-		return s.Card(
+		return vx.Card(
 			dt,
 		).HeaderTitle(field.Label).
 			Actions(
@@ -247,38 +246,38 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
 	})
 
-	l.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		var companyOptions []*vuetifyx.SelectItem
+	l.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		var companyOptions []*vx.SelectItem
 		err := db.Model(&Company{}).Select("name as text, id as value").Scan(&companyOptions).Error
 		if err != nil {
 			panic(err)
 		}
 
-		return []*vuetifyx.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "created",
 				Label:        "Created",
 				Folded:       true,
-				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `extract(epoch from created_at) %s ?`,
 			},
 			{
 				Key:          "approved",
 				Label:        "Approved",
-				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `extract(epoch from approved_at) %s ?`,
 			},
 			{
 				Key:          "name",
 				Label:        "Name",
 				Folded:       true,
-				ItemType:     vuetifyx.ItemTypeString,
+				ItemType:     vx.ItemTypeString,
 				SQLCondition: `name %s ?`,
 			},
 			{
 				Key:          "company",
 				Label:        "Company",
-				ItemType:     vuetifyx.ItemTypeSelect,
+				ItemType:     vx.ItemTypeSelect,
 				SQLCondition: `company_id %s ?`,
 				Options:      companyOptions,
 			},
@@ -387,7 +386,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 
-		dt := s.DataTable(notes).WithoutHeader(true).LoadMoreAt(2, "Show More")
+		dt := vx.DataTable(notes).WithoutHeader(true).LoadMoreAt(2, "Show More")
 
 		dt.Column("Content").CellComponentFunc(func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
 			n := obj.(*Note)
@@ -407,7 +406,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(field.ModelInfo, "/admin/notes",
 			url.Values{"model": []string{"Customer"}, "model_id": []string{cusID}})...)
 
-		return s.Card(
+		return vx.Card(
 			dt,
 		).HeaderTitle(title).
 			Actions(
@@ -435,20 +434,20 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			termAgreed = cu.TermAgreedAt.Format("Jan 02,15:04 PM")
 		}
 
-		detail := s.DetailInfo(
-			s.DetailColumn(
-				s.DetailField(s.OptionalText(cu.Name).ZeroLabel("No Name")).Label("Name"),
-				s.DetailField(s.OptionalText(cu.Email).ZeroLabel("No Email")).Label("Email"),
-				s.DetailField(s.OptionalText(cu.Description).ZeroLabel("No Description")).Label("Description"),
-				s.DetailField(s.OptionalText(cusID).ZeroLabel("No ID")).Label("ID"),
-				s.DetailField(s.OptionalText(cu.CreatedAt.Format("Jan 02,15:04 PM")).ZeroLabel("")).Label("Created"),
-				s.DetailField(s.OptionalText(termAgreed).ZeroLabel("Not Agreed Yet")).Label("Terms Agreed"),
-				s.DetailField(s.OptionalText(lang.Name).ZeroLabel("No Language")).Label("Language"),
+		detail := vx.DetailInfo(
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(cu.Name).ZeroLabel("No Name")).Label("Name"),
+				vx.DetailField(vx.OptionalText(cu.Email).ZeroLabel("No Email")).Label("Email"),
+				vx.DetailField(vx.OptionalText(cu.Description).ZeroLabel("No Description")).Label("Description"),
+				vx.DetailField(vx.OptionalText(cusID).ZeroLabel("No ID")).Label("ID"),
+				vx.DetailField(vx.OptionalText(cu.CreatedAt.Format("Jan 02,15:04 PM")).ZeroLabel("")).Label("Created"),
+				vx.DetailField(vx.OptionalText(termAgreed).ZeroLabel("Not Agreed Yet")).Label("Terms Agreed"),
+				vx.DetailField(vx.OptionalText(lang.Name).ZeroLabel("No Language")).Label("Language"),
 			).Header("ACCOUNT INFORMATION"),
-			s.DetailColumn().Header("BILLING INFORMATION"),
+			vx.DetailColumn().Header("BILLING INFORMATION"),
 		)
 
-		return s.Card(detail).HeaderTitle("Details").
+		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
 				VBtn("Agree Terms").
 					Depressed(true).Class("mr-2").
@@ -477,18 +476,18 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 
-		dt := s.DataTable(cards).
+		dt := vx.DataTable(cards).
 			WithoutHeader(true).
 			RowExpandFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 				card := obj.(*CreditCard)
-				return s.DetailInfo(
-					s.DetailColumn(
-						s.DetailField(s.OptionalText(card.Name).ZeroLabel("No Name")).Label("Name"),
-						s.DetailField(s.OptionalText(card.Number).ZeroLabel("No Number")).Label("Number"),
-						s.DetailField(s.OptionalText(card.ExpireYearMonth).ZeroLabel("No Expires")).Label("Expires"),
-						s.DetailField(s.OptionalText(card.Type).ZeroLabel("No Type")).Label("Type"),
-						s.DetailField(s.OptionalText(card.Phone).ZeroLabel("No phone provided")).Label("Phone"),
-						s.DetailField(s.OptionalText(card.Email).ZeroLabel("No email provided")).Label("Email"),
+				return vx.DetailInfo(
+					vx.DetailColumn(
+						vx.DetailField(vx.OptionalText(card.Name).ZeroLabel("No Name")).Label("Name"),
+						vx.DetailField(vx.OptionalText(card.Number).ZeroLabel("No Number")).Label("Number"),
+						vx.DetailField(vx.OptionalText(card.ExpireYearMonth).ZeroLabel("No Expires")).Label("Expires"),
+						vx.DetailField(vx.OptionalText(card.Type).ZeroLabel("No Type")).Label("Type"),
+						vx.DetailField(vx.OptionalText(card.Phone).ZeroLabel("No phone provided")).Label("Phone"),
+						vx.DetailField(vx.OptionalText(card.Email).ZeroLabel("No email provided")).Label("Email"),
 					),
 				)
 			}).RowMenuItemFuncs(
@@ -501,7 +500,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		dt.Column("Number")
 		dt.Column("ExpireYearMonth")
 
-		return s.Card(dt).HeaderTitle("Cards").
+		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
 				VBtn("Add Card").
 					Depressed(true).

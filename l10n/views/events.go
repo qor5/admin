@@ -1,18 +1,14 @@
 package views
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
 	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -37,10 +33,9 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		//versionName := segs[1]
 		paramID := ctx.R.FormValue(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
+		id := cs["id"]
 
 		//todo get current locale
 		fromLocale := lb.GetCorrectLocale(ctx.R)
@@ -122,63 +117,29 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		paramID := ctx.R.FormValue("id")
-		from := ctx.R.FormValue("localize_from")
+		fromParamID := ctx.R.FormValue(presets.ParamID)
 		to, exist := ctx.R.Form["localize_to"]
 		if !exist {
 			return
 		}
 
 		var fromObj = mb.NewModel()
-		if err = reflectutils.Set(fromObj, "ID", id); err != nil {
+
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj).Error; err != nil {
 			return
 		}
-		if err = reflectutils.Set(fromObj, "LocaleCode", from); err != nil {
-			return
-		}
-		var isVersion bool
-
-		if publish.IsVersion(fromObj) {
-			isVersion = true
-			version := segs[1]
-			if err = reflectutils.Set(fromObj, "Version.Version", version); err != nil {
-				return
-			}
-		}
-
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(fromObj)
 
 		me := mb.Editing()
 
 		for _, toLocale := range to {
 			var toObj = mb.NewModel()
-
-			if err = reflectutils.Set(toObj, "ID", id); err != nil {
+			var fakeToObj = fromObj
+			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {
 				return
 			}
 
-			if isVersion {
-				date := db.NowFunc().Format("2006-01-02")
-				var count int64
-				gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
-					Where("version like ?", date+"%").
-					Order("version DESC").
-					Count(&count)
-				versionName := fmt.Sprintf("%s-v%02v", date, count+1)
-				if err = reflectutils.Set(toObj, "Version.Version", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.VersionName", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.ParentVersion", ""); err != nil {
-					return
-				}
-			}
-
-			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
+			toParamID := fakeToObj.(presets.SlugEncoder).PrimarySlug()
+			if err = utils.SetPrimaryKeys(fromObj, toObj, db, toParamID); err != nil {
 				return
 			}
 

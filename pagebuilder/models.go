@@ -26,18 +26,19 @@ func (*Page) TableName() string {
 }
 
 func (p *Page) PrimarySlug() string {
-	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
+	return fmt.Sprintf("%v_%v_%v", p.ID, p.Version.Version, p.LocaleCode)
 }
 
-func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) != 2 {
+	if len(segs) != 3 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":          segs[0],
+		"version":     segs[1],
+		"locale_code": segs[2],
 	}
 }
 

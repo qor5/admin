@@ -11,10 +11,8 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/ui/stripeui"
-	s "github.com/qor5/ui/stripeui"
 	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
@@ -31,7 +29,7 @@ type ListingBuilder struct {
 	filterTabsFunc    FilterTabsFunc
 	newBtnFunc        ComponentFunc
 	pageFunc          web.PageFunc
-	cellWrapperFunc   stripeui.CellWrapperFunc
+	cellWrapperFunc   vx.CellWrapperFunc
 	Searcher          SearchFunc
 	searchColumns     []string
 	perPage           int64
@@ -70,7 +68,7 @@ func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) CellWrapperFunc(cwf stripeui.CellWrapperFunc) (r *ListingBuilder) {
+func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilder) {
 	b.cellWrapperFunc = cwf
 	return b
 }
@@ -280,7 +278,7 @@ func (b *ListingBuilder) listingComponent(
 		Attr(web.InitContextVars, `{currEditingListItemID: ''}`)
 }
 
-func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) s.CellComponentFunc {
+func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
 	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
 		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
 	}
@@ -881,7 +879,7 @@ func (b *ListingBuilder) selectColumnsBtn(
 func (b *ListingBuilder) filterBar(
 	ctx *web.EventContext,
 	msgr *Messages,
-	fd vuetifyx.FilterData,
+	fd vx.FilterData,
 	inDialog bool,
 ) (filterBar h.HTMLComponent) {
 	if fd == nil {
@@ -898,12 +896,12 @@ func (b *ListingBuilder) filterBar(
 		return nil
 	}
 
-	ft := vuetifyx.FilterTranslations{}
+	ft := vx.FilterTranslations{}
 	ft.Clear = msgr.FiltersClear
 	ft.Add = msgr.FiltersAdd
 	ft.Apply = msgr.FilterApply
 	for _, d := range fd {
-		d.Translations = vuetifyx.FilterIndependentTranslations{
+		d.Translations = vx.FilterIndependentTranslations{
 			FilterBy: msgr.FilterBy(d.Label),
 		}
 	}
@@ -922,7 +920,7 @@ func (b *ListingBuilder) filterBar(
 	ft.MultipleSelect.In = msgr.FiltersMultipleSelectIn
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
-	filter := vuetifyx.VXFilter(fd).Translations(ft)
+	filter := vx.VXFilter(fd).Translations(ft)
 	if inDialog {
 		filter.OnChange(web.Plaid().
 			URL(ctx.R.RequestURI).
@@ -1116,7 +1114,7 @@ func (b *ListingBuilder) getTableComponents(
 		searchParams.Page = 1
 	}
 
-	var fd vuetifyx.FilterData
+	var fd vx.FilterData
 	if b.filterDataFunc != nil {
 		fd = b.filterDataFunc(ctx)
 		cond, args := fd.SetByQueryString(ctx.R.URL.RawQuery)
@@ -1185,7 +1183,7 @@ func (b *ListingBuilder) getTableComponents(
 		selectColumnsBtn, displayFields = b.selectColumnsBtn(ctx.R.URL, ctx, inDialog)
 	}
 
-	sDataTable := s.DataTable(objs).
+	sDataTable := vx.DataTable(objs).
 		CellWrapperFunc(cellWraperFunc).
 		HeadCellWrapperFunc(func(cell h.MutableAttrHTMLComponent, field string, title string) h.HTMLComponent {
 			if _, ok := orderableFieldMap[field]; ok {
@@ -1280,13 +1278,13 @@ func (b *ListingBuilder) getTableComponents(
 			continue
 		}
 		f = b.getFieldOrDefault(f.name) // fill in empty compFunc and setter func with default
-		dataTable.(*stripeui.DataTableBuilder).Column(f.name).
+		dataTable.(*vx.DataTableBuilder).Column(f.name).
 			Title(i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.mb.getLabel(f.NameLabel))).
 			CellComponentFunc(b.cellComponentFunc(f))
 	}
 
 	if totalCount > 0 {
-		tpb := vuetifyx.VXTablePagination().
+		tpb := vx.VXTablePagination().
 			Total(int64(totalCount)).
 			CurrPage(searchParams.Page).
 			PerPage(searchParams.PerPage).

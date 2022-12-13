@@ -11,12 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -40,6 +34,12 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -201,6 +201,8 @@ func NewConfig() Config {
 			"Customers",
 			"ListModels",
 			"MicrositeModels",
+			"L10nModel",
+			"L10nModelWithVersion",
 		).Icon("featured_play_list"),
 		"Worker",
 		"ActivityLogs",
@@ -411,8 +413,9 @@ func NewConfig() Config {
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
+	l10nM, l10nVM := configL10nModel(b)
 
-	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
+	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)
 
@@ -424,7 +427,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm)
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,
