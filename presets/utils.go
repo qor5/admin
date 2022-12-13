@@ -3,6 +3,7 @@ package presets
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/qor5/admin/presets/actions"
@@ -99,4 +100,34 @@ func isInDialogFromQuery(ctx *web.EventContext) bool {
 
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+type inputElem interface {
+	*h.HTMLTagBuilder | *VSelectBuilder | *VTextFieldBuilder
+}
+
+var (
+	htmlTagBuilderType = reflect.TypeOf(&h.HTMLTagBuilder{})
+)
+
+// InputWithDefaults fills input element with name, value, label
+func InputWithDefaults[T inputElem](input T, obj any, field *FieldContext) T {
+	rv := reflect.ValueOf(input)
+	rt := rv.Type()
+	if rt == htmlTagBuilderType {
+		kvs := web.VFieldName(field.FormKey)
+		in := make([]reflect.Value, 0, len(kvs))
+		for i, _ := range kvs {
+			v := kvs[i]
+			in = append(in, reflect.ValueOf(v))
+		}
+		rv.MethodByName("Attr").Call(in)
+		rv.MethodByName("Value").Call([]reflect.Value{reflect.ValueOf(field.StringValue(obj))})
+	} else {
+		rv.MethodByName("FieldName").Call([]reflect.Value{reflect.ValueOf(field.FormKey)})
+		rv.MethodByName("Value").Call([]reflect.Value{reflect.ValueOf(field.Value(obj))})
+		rv.MethodByName("Label").Call([]reflect.Value{reflect.ValueOf(field.Label)})
+	}
+
+	return input
 }
