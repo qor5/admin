@@ -7,21 +7,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/note"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/role"
-	"github.com/sunfmin/reflectutils"
-
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
 
-	"github.com/qor5/admin/example/models"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -160,11 +159,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VTextField().
-			FieldName(field.Name).
-			Label(field.Label).
-			Value(field.Value(obj)).
-			ErrorMessages(field.Errors...)
+		return presets.WithDefaults(VTextField(), obj, field).ErrorMessages(field.Errors...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)

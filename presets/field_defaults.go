@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"time"
+	"unsafe"
 
 	"github.com/iancoleman/strcase"
 	. "github.com/qor5/ui/vuetify"
@@ -307,4 +308,63 @@ func (b *FieldDefaults) builtInFieldTypes() {
 
 	b.Exclude("ID")
 	return
+}
+
+type autoFillComps interface {
+	h.HTMLTagBuilder |
+		VSelectBuilder | VAutocompleteBuilder | VTextFieldBuilder
+}
+
+// WithDefaults will automatic filling of
+// FieldName, Label, and Value attrs for autoFillComps.
+func WithDefaults[T autoFillComps](comp *T, obj any, field *FieldContext) *T {
+	r := reflect.Indirect(reflect.ValueOf(comp))
+	if r.Kind() != reflect.Invalid {
+		if r.Type() == reflect.TypeOf(h.HTMLTagBuilder{}) {
+			// HTML component
+			if fmt.Sprint(r.FieldByName("tag")) != "input" {
+				return comp
+			}
+			attrs := r.FieldByName("attrs")
+			newType := attrs.Type().Elem().Elem()
+			var newAttrs []reflect.Value
+			{
+				// FieldName
+				vs := web.VFieldName(field.FormKey)
+				newAttrs = append(newAttrs, setAttr(newType, fmt.Sprint(vs[0]), fmt.Sprint(vs[1])).Addr())
+				// Value
+				newAttrs = append(newAttrs, setAttr(newType, "value", fmt.Sprint(field.Value(obj))).Addr())
+			}
+			attrs = reflect.NewAt(attrs.Type(), unsafe.Pointer(attrs.UnsafeAddr())).Elem()
+			attrs.Set(reflect.Append(attrs, newAttrs...))
+		} else {
+			// Vuetify component
+			tag := reflect.Indirect(r.FieldByName("tag"))
+			attrs := tag.FieldByName("attrs")
+			newType := attrs.Type().Elem().Elem()
+			var newAttrs []reflect.Value
+			{
+				// FieldName
+				vs := web.VFieldName(field.FormKey)
+				newAttrs = append(newAttrs, setAttr(newType, fmt.Sprint(vs[0]), fmt.Sprint(vs[1])).Addr())
+				// Label
+				newAttrs = append(newAttrs, setAttr(newType, "label", field.Label).Addr())
+				// Value
+				newAttrs = append(newAttrs, setAttr(newType, ":value", h.JSONString(field.Value(obj))).Addr())
+			}
+			attrs = reflect.NewAt(attrs.Type(), unsafe.Pointer(attrs.UnsafeAddr())).Elem()
+			attrs.Set(reflect.Append(attrs, newAttrs...))
+		}
+	}
+
+	return comp
+}
+
+func setAttr(t reflect.Type, key string, value string) reflect.Value {
+	newAttr := reflect.New(t).Elem()
+	reflect.NewAt(newAttr.FieldByName("key").Type(), unsafe.Pointer(newAttr.FieldByName("key").UnsafeAddr())).Elem().
+		Set(reflect.ValueOf(key))
+	reflect.NewAt(newAttr.FieldByName("value").Type(), unsafe.Pointer(newAttr.FieldByName("value").UnsafeAddr())).Elem().
+		Set(reflect.ValueOf(value))
+	return newAttr
 }
