@@ -19,7 +19,10 @@ const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
 func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
-		if model, ok := m.NewModel().(publish.VersionInterface); ok {
+		obj := m.NewModel()
+		_ = obj.(presets.SlugEncoder)
+		_ = obj.(presets.SlugDecoder)
+		if model, ok := obj.(publish.VersionInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
 				publish.VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
@@ -71,12 +74,12 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
 			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
 		} else {
-			if schedulePublishModel, ok := m.NewModel().(publish.ScheduleInterface); ok {
+			if schedulePublishModel, ok := obj.(publish.ScheduleInterface); ok {
 				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
-		if model, ok := m.NewModel().(publish.ListInterface); ok {
+		if model, ok := obj.(publish.ListInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
 				publish.ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
