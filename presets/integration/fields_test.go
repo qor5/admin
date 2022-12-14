@@ -571,7 +571,7 @@ func TestFieldsBuilder(t *testing.T) {
 				AddField("Departments[1].Employees[2].Number", "999").
 				AddField("Departments[1].Employees[1].FakeNumber", "666").
 				AddField("Departments[1].DBStatus", "Verified").
-				AddField("__Deleted.Departments[0].Employees", "1,5").
+				AddField("__Deleted.Departments[0].Employees", "1,2").
 				AddField("__Deleted.Departments[1].Employees", "0").
 				BuildEventFuncRequest(),
 			removeDeletedAndSort: false,
@@ -585,6 +585,7 @@ func TestFieldsBuilder(t *testing.T) {
 							{
 								Number: 0,
 							},
+							nil,
 							nil,
 						},
 					},
@@ -810,7 +811,7 @@ func TestFieldsBuilder(t *testing.T) {
 				AddField("Departments[1].Employees[4].Number", "444").
 				AddField("Departments[1].Employees[1].FakeNumber", "666"). // this will set Number[1] to 900666
 				AddField("Departments[1].DBStatus", "Verified").
-				AddField("__Deleted.Departments[0].Employees", "1,5").
+				AddField("__Deleted.Departments[0].Employees", "1,3").
 				AddField("__Sorted.Departments[1].Employees", "3,4,0,2").
 				AddField("__Deleted.Departments[1].Employees", "0").
 				BuildEventFuncRequest(),
@@ -829,6 +830,7 @@ func TestFieldsBuilder(t *testing.T) {
 							{
 								Number: 2,
 							},
+							nil,
 						},
 					},
 					{
