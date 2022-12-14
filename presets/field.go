@@ -305,18 +305,16 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 	if childToObjs == nil {
 		return
 	}
-	j := 0
 	if !removeDeletedAndSort {
-		funk.ForEach(childToObjs, func(childToObj interface{}) {
-			defer func() { j++ }()
-			sliceFieldName := fmt.Sprintf("%s[%d]", f.name, j)
-			if modifiedIndexes.DeletedContains(formKey, j) {
+		if modifiedIndexes.deletedValues != nil && modifiedIndexes.deletedValues[formKey] != nil {
+			for _, idx := range modifiedIndexes.deletedValues[formKey] {
+				sliceFieldName := fmt.Sprintf("%s[%s]", f.name, idx)
 				err := reflectutils.Set(toObj, sliceFieldName, nil)
 				if err != nil {
 					panic(err)
 				}
 			}
-		})
+		}
 		return
 	}
 
