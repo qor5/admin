@@ -216,13 +216,13 @@ func addressHTML(v Address, formKeyPrefix string) string {
 	return fmt.Sprintf(`<div>
 <label class='v-label theme--light text-caption'>Address</label>
 
-<v-card :elevation='1' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-card :outlined='true' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
 <v-text-field type='text' v-field-name='[plaidForm, "%sAddress.City"]' label='City' :value='"%s"' :disabled='false'></v-text-field>
 
 <div>
 <label class='v-label theme--light text-caption'>Detail</label>
 
-<v-card :elevation='1' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-card :outlined='true' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
 <v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address1"]' label='Address1' :value='"%s"' :disabled='false'></v-text-field>
 
 <v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address2"]' label='Address2' :value='"%s"' :disabled='false'></v-text-field>
