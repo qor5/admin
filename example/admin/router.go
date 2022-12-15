@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/x/login"
 	"github.com/qor5/x/sitemap"
-	"github.com/qor5/admin/example/models"
 )
 
 func Router() http.Handler {
-	db := ConnectDB()
+	db := ConnectRDS()
 	c := NewConfig()
 
 	mux := http.NewServeMux()

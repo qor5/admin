@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	db := admin.ConnectDB()
+	db := admin.ConnectRDS()
 	storage := s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),

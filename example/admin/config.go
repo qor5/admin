@@ -11,12 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -40,6 +34,12 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -54,7 +54,7 @@ type Config struct {
 }
 
 func NewConfig() Config {
-	db := ConnectDB()
+	db := ConnectRDS()
 	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
 	oss.Storage = s3.New(&s3.Config{
