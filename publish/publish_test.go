@@ -5,22 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/qor/oss"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/publish"
 	"github.com/theplant/sliceutils"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"gorm.io/gorm/logger"
 )
 
 type Product struct {
@@ -174,13 +170,28 @@ type MockStorage struct {
 	Objects map[string]string
 }
 
-func (m *MockStorage) Get(path string) (*os.File, error) {
-	return nil, errors.New("no file")
+func (m *MockStorage) Get(path string) (f *os.File, err error) {
+	var content, exist = m.Objects[path]
+	if !exist {
+		err = errors.New("NoSuchKey: The specified key does not exist")
+		return
+	}
+
+	pattern := fmt.Sprintf("s3*%d", time.Now().Unix())
+
+	if err == nil {
+		if f, err = os.CreateTemp("/tmp", pattern); err == nil {
+			f.WriteString(content)
+			f.Seek(0, 0)
+		}
+	}
+
+	return
 }
 
 func (m *MockStorage) Put(path string, r io.Reader) (*oss.Object, error) {
 	fmt.Println("Calling mock s3 client - Put: ", path)
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		panic(err)
 	}
@@ -198,25 +209,18 @@ func (m *MockStorage) Delete(path string) error {
 	return nil
 }
 
-func ConnectDB() (db *gorm.DB) {
-	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
+func ConnectDB() *gorm.DB {
+	db, err := gorm.Open(sqlite.Open("/tmp/test_publish.db"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-
-	db.Logger = db.Logger.LogMode(logger.Info)
-	return
+	return db.Debug()
 }
 
 func TestPublishVersionContentToS3(t *testing.T) {
 	db := ConnectDB()
 	db.AutoMigrate(&Product{})
-	storage := s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		Session: session.Must(session.NewSession()),
-	})
+	storage := &MockStorage{}
 
 	productV1 := Product{
 		Model:   gorm.Model{ID: 1},
@@ -445,11 +449,7 @@ func TestSchedulePublish(t *testing.T) {
 func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	db := ConnectDB()
 	db.AutoMigrate(&ProductWithoutVersion{})
-	storage := s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		Session: session.Must(session.NewSession()),
-	})
+	storage := &MockStorage{}
 
 	product1 := ProductWithoutVersion{
 		Model:  gorm.Model{ID: 1},
@@ -534,7 +534,7 @@ func assertUploadFile(p *Product, storage oss.StorageInterface) error {
 	if err != nil {
 		return err
 	}
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	if string(c) != p.getContent() {
 		return errors.New("wrong content")
 	}
@@ -546,7 +546,7 @@ func assertUploadListFile(p *Product, storage oss.StorageInterface) error {
 	if err != nil {
 		return err
 	}
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	if string(c) != p.getListContent() {
 		return errors.New("wrong content")
 	}
@@ -558,7 +558,7 @@ func assertNoVersionUploadFile(p *ProductWithoutVersion, storage oss.StorageInte
 	if err != nil {
 		return err
 	}
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	if string(c) != p.getContent() {
 		return errors.New("wrong content")
 	}
