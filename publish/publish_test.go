@@ -223,14 +223,14 @@ func TestPublishVersionContentToS3(t *testing.T) {
 		Code:    "0001",
 		Name:    "coffee",
 		Status:  publish.Status{Status: publish.StatusDraft},
-		Version: publish.Version{VersionName: "v1"},
+		Version: publish.Version{Version: "v1"},
 	}
 	productV2 := Product{
 		Model:   gorm.Model{ID: 1},
 		Code:    "0002",
 		Name:    "coffee",
 		Status:  publish.Status{Status: publish.StatusDraft},
-		Version: publish.Version{VersionName: "v2"},
+		Version: publish.Version{Version: "v2"},
 	}
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV1)
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV2)
@@ -507,7 +507,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 
 func assertUpdateStatus(db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) (err error) {
 	var pindb Product
-	err = db.Model(&Product{}).Where("id = ? AND version_name = ?", p.ID, p.VersionName).First(&pindb).Error
+	err = db.Model(&Product{}).Where("id = ? AND version = ?", p.ID, p.GetVersion()).First(&pindb).Error
 	if err != nil {
 		return err
 	}
