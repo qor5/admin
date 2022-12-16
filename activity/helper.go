@@ -61,7 +61,6 @@ func findOld(obj interface{}, db *gorm.DB) (interface{}, bool) {
 	if len(sqls) == 0 || len(vars) == 0 || len(sqls) != len(vars) {
 		return nil, false
 	}
-	fmt.Printf("3---------%#+v \n", obj)
 
 	if db.Where(strings.Join(sqls, " AND "), vars...).First(old).Error != nil {
 		return nil, false

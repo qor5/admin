@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/web"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
