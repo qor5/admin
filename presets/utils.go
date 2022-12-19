@@ -110,7 +110,10 @@ var (
 	htmlTagBuilderType = reflect.TypeOf(&h.HTMLTagBuilder{})
 )
 
-// InputWithDefaults fills input element with name, value, label
+// InputWithDefaults fills input element with name, value and label.
+// For now, input must be h.Input, v.VSelect or v.VTextField.
+// This function will be implemented using the FieldContext method
+// when golang supports generic method and the current function will be deprecated.
 func InputWithDefaults[T inputElem](input T, obj any, field *FieldContext) T {
 	rv := reflect.ValueOf(input)
 	rt := rv.Type()
