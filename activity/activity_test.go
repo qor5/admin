@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/web"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +49,8 @@ type (
 
 func init() {
 	var err error
-	if db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{}); err != nil {
+	db, err = gorm.Open(sqlite.Open("/tmp/activity.db"), &gorm.Config{})
+	if err != nil {
 		panic(err)
 	}
 
@@ -60,8 +60,8 @@ func init() {
 }
 
 func resetDB() {
-	db.Exec("truncate test_activity_logs;")
-	db.Exec("truncate test_activity_models;")
+	db.Exec("delete from test_activity_logs;")
+	db.Exec("delete from test_activity_models;")
 }
 
 func TestModelKeys(t *testing.T) {
