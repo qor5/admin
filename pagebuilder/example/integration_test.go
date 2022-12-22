@@ -9,19 +9,23 @@ import (
 	"testing"
 
 	"github.com/qor5/admin/media/oss"
-	"github.com/qor5/admin/publish"
-	publish_view "github.com/qor5/admin/publish/views"
-
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/pagebuilder/example"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/admin/publish"
+	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testingutils"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestEditor(t *testing.T) {
-	db := example.ConnectDB()
+	db, err := gorm.Open(sqlite.Open("/tmp/page_builder_integration.db"), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", nil)
 
 	sdb, _ := db.DB()
@@ -61,7 +65,7 @@ INSERT INTO public.text_and_images (text, image, id) VALUES ('Hello Text and Ima
 		t.Error(w.Body.String())
 	}
 
-	_, err := pb.AddContainerToPage(1, "", "text_and_image")
+	_, err = pb.AddContainerToPage(1, "", "text_and_image")
 	if err != nil {
 		t.Error(err)
 	}
