@@ -6,8 +6,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -83,7 +83,7 @@ func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLC
 </li>
 
 <li class='container-footer-links-item'>
-<a href='/projects/?filter=Mobile%20Apps'>Mobile Apps</a>
+<a href='/projects/?filter=Mobile%%20Apps'>Mobile Apps</a>
 </li>
 
 <li class='container-footer-links-item'>
