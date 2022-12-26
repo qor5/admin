@@ -1181,7 +1181,7 @@ func (b *Builder) initMux() {
 	// Handle 404
 	mux.Use(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if middleware.Handler(r.Context()) != nil {
+			if !strings.HasPrefix(r.RequestURI, b.prefix) || middleware.Handler(r.Context()) != nil {
 				handler.ServeHTTP(w, r)
 				return
 			}
