@@ -21,3 +21,6 @@ export Site_Domain=""
 
 export RECAPTCHA_SITE_KEY=""
 export RECAPTCHA_SECRET_KEY=""
+
+export DEMO_USERNAME=""
+export DEMO_PASSWORD=""

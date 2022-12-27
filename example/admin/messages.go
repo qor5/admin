@@ -17,24 +17,37 @@ type Messages struct {
 	FilterTabsAll            string
 	FilterTabsHasUnreadNotes string
 	FilterTabsActive         string
+	// Demo Account
+	DemoUsernameLabel string
+	DemoPasswordLabel string
+	DemoTips          string
 }
 
 var Messages_en_US = &Messages{
 	FilterTabsAll:            "All",
 	FilterTabsHasUnreadNotes: "Has Unread Notes",
 	FilterTabsActive:         "Active",
+	DemoUsernameLabel:        "Demo Username: ",
+	DemoPasswordLabel:        "Demo Password: ",
+	DemoTips:                 "Please note that the database would be reset on every even hours.",
 }
 
 var Messages_ja_JP = &Messages{
 	FilterTabsAll:            "すべて",
 	FilterTabsHasUnreadNotes: "未読のノートがあります",
 	FilterTabsActive:         "有効",
+	DemoUsernameLabel:        "デモのユーザー名: ",
+	DemoPasswordLabel:        "デモパスワード: ",
+	DemoTips:                 "データベースは偶数時間ごとにリセットされることに注意してください。",
 }
 
 var Messages_zh_CN = &Messages{
 	FilterTabsAll:            "全部",
 	FilterTabsHasUnreadNotes: "未读备注",
 	FilterTabsActive:         "有效",
+	DemoUsernameLabel:        "演示账户：",
+	DemoPasswordLabel:        "演示密码：",
+	DemoTips:                 "请注意，数据库将每隔偶数小时重置一次。",
 }
 
 type Messages_ModelsI18nModuleKey struct {
