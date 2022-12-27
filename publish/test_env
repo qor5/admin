@@ -1,5 +1,0 @@
-export DB_PARAMS="user=example password=123 dbname=example_dev sslmode=disable host=localhost port=6432"
-export PORT="9000"
-export AWS_SDK_LOAD_CONFIG=1
-export S3_Bucket="test-juice"
-export S3_Region="ap-northeast-1"

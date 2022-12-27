@@ -11,7 +11,7 @@ import (
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/media/oss"
 	"github.com/qor5/web/multipartestutils"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +20,7 @@ var box embed.FS
 
 func setup() (db *gorm.DB) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open("/tmp/media_integration.db"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
