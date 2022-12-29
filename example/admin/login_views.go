@@ -246,13 +246,13 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			),
 		).Class(wrapperClass).Style(wrapperStyle)
 
-		demoUser := os.Getenv("DEMO_USERNAME")
-		demoPass := os.Getenv("DEMO_PASSWORD")
-		isDemo := demoUser != "" && demoPass != ""
+		username := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
+		password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
+		isDemo := username != "" && password != ""
 		demoTips := Div(
 			Div(
-				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoUsernameLabel")), B(demoUser)),
-				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoPasswordLabel")), B(demoPass)),
+				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoUsernameLabel")), B(username)),
+				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoPasswordLabel")), B(password)),
 				P(B(i18n.T(ctx.R, I18nExampleKey, "DemoTips"))),
 			).Class(wrapperClass).Style(wrapperStyle).
 				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),

@@ -116,10 +116,10 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 	vh := loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))
 
-	genInitialPasswordUser()
+	GenInitialPasswordUser()
 }
 
-func genInitialPasswordUser() {
+func GenInitialPasswordUser() {
 	email := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
 	password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
 	if email == "" || password == "" {
