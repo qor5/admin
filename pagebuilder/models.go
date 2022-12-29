@@ -59,6 +59,7 @@ type Container struct {
 	gorm.Model
 	PageID       uint
 	PageVersion  string
+	PageLocale   string
 	ModelName    string
 	ModelID      uint
 	DisplayOrder float64
