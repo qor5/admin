@@ -11,12 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -40,6 +34,12 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -337,11 +337,12 @@ func NewConfig() Config {
 	sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
 	sm.Listing().PageFunc(pages.Settings(db))
 
-	type ListEditorExample struct{}
-	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
-	pf, sf := pages.ListEditorExample(db, b)
-	leem.Listing().PageFunc(pf)
-	leem.RegisterEventFunc("save", sf)
+	// FIXME: list editor does not support use in page func
+	// type ListEditorExample struct{}
+	// leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
+	// pf, sf := pages.ListEditorExample(db, b)
+	// leem.Listing().PageFunc(pf)
+	// leem.RegisterEventFunc("save", sf)
 
 	configCustomer(b, db)
 
