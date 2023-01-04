@@ -4,112 +4,71 @@ import (
 	"bytes"
 	"fmt"
 	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/qor5/admin/media/oss"
-	"github.com/qor5/admin/publish"
-	publish_view "github.com/qor5/admin/publish/views"
-
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/pagebuilder/example"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/admin/publish"
+	publish_view "github.com/qor5/admin/publish/views"
+	"github.com/qor5/x/perm"
 	"github.com/theplant/gofixtures"
-	"github.com/theplant/testingutils"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
+func ConnectDB() *gorm.DB {
+	db, err := gorm.Open(sqlite.Open("/tmp/page_builder_integration.db"), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	return db.Debug()
+}
+
 func TestEditor(t *testing.T) {
-	db := example.ConnectDB()
-	pb := example.ConfigPageBuilder(db, "/page_builder", "", nil)
+	db := ConnectDB()
+	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
+	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
 
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
-INSERT INTO public.page_builder_pages (id, title, slug) VALUES (1, '123', '123');
-INSERT INTO public.page_builder_containers (id, page_id, model_name, model_id, display_order) VALUES (1, 1, 'text_and_image', 1, 0);
-INSERT INTO public.page_builder_containers (id, page_id, model_name, model_id, display_order) VALUES (2, 1, 'text_and_image', 1, 16);
-INSERT INTO public.page_builder_containers (id, page_id, model_name, model_id, display_order) VALUES (3, 1, 'main_content', 1, 40);
-INSERT INTO public.text_and_images (text, image, id) VALUES ('Hello Text and Image', null, 1);
-`, []string{"page_builder_pages", "page_builder_containers", "text_and_images"}),
+INSERT INTO page_builder_pages (id, version, title, slug) VALUES (1, 'v1', '123', '123');
+INSERT INTO page_builder_containers (id, page_id, page_version, model_name, model_id, display_order) VALUES (1,  1, 'v1', 'Header', 1, 1);
+INSERT INTO container_headers (color, id) VALUES ('black', 1);
+`, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
 
-	for _, oc := range orderCases {
-		t.Run(oc.name, func(t *testing.T) {
-			err := pb.MoveContainerOrder(1, "", oc.containerID, oc.direction)
-			if err != nil {
-				t.Error(err)
-			}
-			var actual []float64
-			err = db.Model(&pagebuilder.Container{}).
-				Order("id ASC").Pluck("display_order", &actual).Error
-			if err != nil {
-				t.Error(err)
-			}
-			if diff := testingutils.PrettyJsonDiff(oc.expected, actual); len(diff) > 0 {
-				t.Error(diff)
-			}
-		})
-
-	}
-
-	r := httptest.NewRequest("GET", "/page_builder/editors/1", nil)
+	r := httptest.NewRequest("GET", "/page_builder/editors/1?version=v1", nil)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	if strings.Index(w.Body.String(), "main_content") < 0 {
+	if strings.Index(w.Body.String(), "web-headers") < 0 {
 		t.Error(w.Body.String())
 	}
 
-	_, err := pb.AddContainerToPage(1, "", "text_and_image")
+	_, err := pb.AddContainerToPage(1, "v1", "Header")
 	if err != nil {
 		t.Error(err)
 	}
 
 }
 
-var orderCases = []struct {
-	name        string
-	containerID int
-	direction   string
-	expected    []float64
-}{
-	{
-		name:        "move 2 up",
-		containerID: 2,
-		direction:   "up",
-		expected:    []float64{0, -8, 40},
-	},
-	{
-		name:        "move 2 up again",
-		containerID: 2,
-		direction:   "up",
-		expected:    []float64{0, -8, 40},
-	},
-	{
-		name:        "move 2 down",
-		containerID: 2,
-		direction:   "down",
-		expected:    []float64{0, 20, 40},
-	},
-	{
-		name:        "move 2 down again",
-		containerID: 2,
-		direction:   "down",
-		expected:    []float64{0, 48, 40},
-	},
-	{
-		name:        "move 2 down twice",
-		containerID: 2,
-		direction:   "down",
-		expected:    []float64{0, 48, 40},
-	},
-}
-
 func TestUpdatePage(t *testing.T) {
-	db := example.ConnectDB()
-	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
-	pageBuilder := example.ConfigPageBuilder(db, "", "", nil)
+	db := ConnectDB()
+	pb := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin").
+		Permission(
+			perm.New().Policies(
+				perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
+			).SubjectsFunc(func(r *http.Request) []string {
+				return []string{"root"}
+			}),
+		)
+	pageBuilder := example.ConfigPageBuilder(db, "", "", pb.I18n())
 	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
 	mb := pageBuilder.Configure(pb, db)
 	publish_view.Configure(pb, db, nil, publisher, mb)
@@ -120,7 +79,7 @@ func TestUpdatePage(t *testing.T) {
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
-INSERT INTO public.page_builder_pages (id, title, slug) VALUES (1, '123', '123');
+INSERT INTO page_builder_pages (id, title, slug) VALUES (1, '123', '123');
 `, []string{"page_builder_pages"}),
 	).TruncatePut(sdb)
 

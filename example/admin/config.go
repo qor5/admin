@@ -339,11 +339,12 @@ func NewConfig() Config {
 	sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
 	sm.Listing().PageFunc(pages.Settings(db))
 
-	type ListEditorExample struct{}
-	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
-	pf, sf := pages.ListEditorExample(db, b)
-	leem.Listing().PageFunc(pf)
-	leem.RegisterEventFunc("save", sf)
+	// FIXME: list editor does not support use in page func
+	// type ListEditorExample struct{}
+	// leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
+	// pf, sf := pages.ListEditorExample(db, b)
+	// leem.Listing().PageFunc(pf)
+	// leem.RegisterEventFunc("save", sf)
 
 	configCustomer(b, db)
 

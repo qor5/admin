@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/presets"
 	vuetify "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -41,7 +41,18 @@ func (mb *ModelBuilder) GetType() reflect.Type {
 
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
-	mb.keys = append(mb.keys, keys...)
+	for _, key := range keys {
+		var find bool
+		for _, mkey := range mb.keys {
+			if mkey == key {
+				find = true
+				break
+			}
+		}
+		if !find {
+			mb.keys = append(mb.keys, key)
+		}
+	}
 	return mb
 }
 

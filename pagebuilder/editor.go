@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/publish"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
@@ -469,6 +469,7 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 	r.PushState = web.Location(url.Values{})
 	return
 }
+
 func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
 	containerID := ctx.R.FormValue(paramContainerID)
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(COALESCE(hidden,FALSE)) WHERE id = ?", containerID).Error
