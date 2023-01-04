@@ -369,7 +369,9 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		var buttonLabel = gmsgr.Create
 		m.RightDrawerWidth("800")
 		var disableUpdateBtn bool
+		var isCreateBtn = true
 		if ctx.R.FormValue(presets.ParamID) != "" {
+			isCreateBtn = false
 			buttonLabel = gmsgr.Update
 			m.RightDrawerWidth("1200")
 			disableUpdateBtn = m.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
@@ -385,6 +387,18 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
+		if disableUpdateBtn {
+			updateBtn = updateBtn.Disabled(disableUpdateBtn)
+		} else {
+			updateBtn = updateBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
+		}
+		if isCreateBtn {
+			return h.Components(
+				VSpacer(),
+				updateBtn,
+			)
+		}
+
 		saveNewVersionBtn := VBtn(msgr.SaveAsNewVersion).
 			Color("secondary").
 			Attr("@click", web.Plaid().
@@ -395,12 +409,11 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 				Go(),
 			)
 		if disableUpdateBtn {
-			updateBtn = updateBtn.Disabled(disableUpdateBtn)
 			saveNewVersionBtn = saveNewVersionBtn.Disabled(disableUpdateBtn)
 		} else {
-			updateBtn = updateBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
 			saveNewVersionBtn = saveNewVersionBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
 		}
+
 		return h.Components(
 			VSpacer(),
 			saveNewVersionBtn,
