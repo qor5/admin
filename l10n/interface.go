@@ -24,3 +24,7 @@ func IsLocalizableFromCtx(ctx *web.EventContext) (localeCode string, isLocalizab
 	}
 	return
 }
+
+type L10nONInterface interface {
+	L10nON()
+}

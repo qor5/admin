@@ -25,6 +25,10 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 		_ = obj.(presets.SlugEncoder)
 		_ = obj.(presets.SlugDecoder)
 		_ = obj.(l10n.L10nInterface)
+		if l10nONModel, exist := obj.(l10n.L10nONInterface); exist {
+			l10nONModel.L10nON()
+		}
+		m.Listing().Field("Locale")
 		searcher := m.Listing().Searcher
 		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
