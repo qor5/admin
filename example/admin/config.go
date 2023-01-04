@@ -415,7 +415,7 @@ func NewConfig() Config {
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
-
+	_ = l10nM
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)

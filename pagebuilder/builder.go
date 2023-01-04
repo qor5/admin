@@ -146,7 +146,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
 	pm = pb.Model(&Page{})
-	pm.Listing("ID", "Title", "Slug", "Locale")
+	pm.Listing("ID", "Title", "Slug")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 
@@ -251,7 +251,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable {
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
 				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
 			}
 			return h.Div(
@@ -289,12 +289,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				if inerr != nil {
 					return
 				}
+				if !l10nON {
+					localeCode = ""
+				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, "", int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 					return
 				}
 			}
-			if strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
 				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
 				fromVersion := ctx.R.Context().Value(l10n_view.FromVersion).(string)
 				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
