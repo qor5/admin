@@ -11,16 +11,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/example/pages"
 	"github.com/qor5/admin/l10n"
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/media"
@@ -40,6 +33,12 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -133,24 +132,24 @@ func NewConfig() Config {
 		RegisterForModule(language.Japanese, publish_view.I18nPublishKey, Messages_ja_JP_I18nPublishKey).
 		RegisterForModule(language.Japanese, note.I18nNoteKey, Messages_ja_JP_I18nNoteKey).
 		RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey).
-		//RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey2).
+		// RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey2).
 		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
-			//// Example:
-			//user := getCurrentUser(r)
-			//var supportedLanguages []language.Tag
-			//for _, role := range user.GetRoles() {
+			// // Example:
+			// user := getCurrentUser(r)
+			// var supportedLanguages []language.Tag
+			// for _, role := range user.GetRoles() {
 			//	switch role {
 			//	case "English Group":
 			//		supportedLanguages = append(supportedLanguages, language.English)
 			//	case "Chinese Group":
 			//		supportedLanguages = append(supportedLanguages, language.SimplifiedChinese)
 			//	}
-			//}
-			//return supportedLanguages
+			// }
+			// return supportedLanguages
 			return b.I18n().GetSupportLanguages()
 		})
 
@@ -169,7 +168,7 @@ func NewConfig() Config {
 	media_view.Configure(b, db)
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
-	ConfigureSeo(b, db)
+	// ConfigureSeo(b, db)
 
 	b.MenuOrder(
 		b.MenuGroup("Page Builder").SubItems(
@@ -185,20 +184,20 @@ func NewConfig() Config {
 			"Product",
 			"Category",
 		).Icon("shopping_cart"),
-		b.MenuGroup("Site Management").SubItems(
-			"Setting",
-			"QorSEOSetting",
-		).Icon("settings"),
+		// b.MenuGroup("Site Management").SubItems(
+		// 	"Setting",
+		// 	"QorSEOSetting",
+		// ).Icon("settings"),
 		b.MenuGroup("User Management").SubItems(
 			"profile",
 			"User",
 			"Role",
 		).Icon("group"),
 		b.MenuGroup("Featured Models Management").SubItems(
-			"InputHarness",
+			"InputDemo",
 			"Post",
 			"List Editor Example",
-			"Customers",
+			"nested-field-demos",
 			"ListModels",
 			"MicrositeModels",
 		).Icon("featured_play_list"),
@@ -332,18 +331,12 @@ func NewConfig() Config {
 
 	// Use m to customize the model, Or config more models here.
 
-	type Setting struct{}
-	sm := b.Model(&Setting{})
-	sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
-	sm.Listing().PageFunc(pages.Settings(db))
+	// type Setting struct{}
+	// sm := b.Model(&Setting{})
+	// sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
+	// sm.Listing().PageFunc(pages.Settings(db))
 
-	type ListEditorExample struct{}
-	leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
-	pf, sf := pages.ListEditorExample(db, b)
-	leem.Listing().PageFunc(pf)
-	leem.RegisterEventFunc("save", sf)
-
-	configCustomer(b, db)
+	configNestedFieldDemo(b, db)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db)
@@ -416,7 +409,7 @@ func NewConfig() Config {
 
 	initLoginBuilder(db, b, ab)
 
-	configInputHarness(b, db)
+	configInputDemo(b, db)
 
 	configOrder(b, db)
 	configECDashboard(b, db)

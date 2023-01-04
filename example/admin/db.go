@@ -24,7 +24,7 @@ func ConnectDB() *gorm.DB {
 
 	if err = db.AutoMigrate(
 		&models.Post{},
-		&models.InputHarness{},
+		&models.InputDemo{},
 		&models.User{},
 		&models.LoginSession{},
 		&models.ListModel{},

@@ -29,7 +29,7 @@ var Messages_en_US = &Messages{
 	FilterTabsActive:         "Active",
 	DemoUsernameLabel:        "Demo Username: ",
 	DemoPasswordLabel:        "Demo Password: ",
-	DemoTips:                 "Please note that the database would be reset on every even hours.",
+	DemoTips:                 "Please note that the database would be reset every even hour.",
 }
 
 var Messages_ja_JP = &Messages{
