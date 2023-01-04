@@ -57,7 +57,7 @@ func (p Page) getPublishUrl() string {
 
 func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s", p.ID, p.GetVersion()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)
 
 	r = w.Body.String()
