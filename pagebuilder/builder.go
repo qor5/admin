@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/l10n"
+	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
@@ -292,6 +293,23 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 					panic(inerr)
 					return
 				}
+			}
+			if strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n_view.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.copyContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
 			}
 			return
 		})

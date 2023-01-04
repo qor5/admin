@@ -1,6 +1,7 @@
 package views
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/qor5/admin/activity"
@@ -15,8 +16,12 @@ import (
 )
 
 const (
-	Localize   = "l10n_Localize"
-	DoLocalize = "l10n_DoLocalize"
+	Localize   = "l10n_LocalizeEvent"
+	DoLocalize = "l10n_DoLocalizeEvent"
+
+	FromID      = "l10n_DoLocalize_FromID"
+	FromVersion = "l10n_DoLocalize_FromVersion"
+	FromLocale  = "l10n_DoLocalize_FromLocale"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
@@ -37,10 +42,8 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
 		id := cs["id"]
 
-		//todo get current locale
 		fromLocale := lb.GetCorrectLocale(ctx.R)
 
-		//todo search distinct locale_code except current locale
 		var obj = mb.NewModelSlice()
 		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
 		if err != nil {
@@ -118,6 +121,10 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		fromParamID := ctx.R.FormValue(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)
+		fromID := cs["id"]
+		fromVersion := cs["version"]
+		fromLocale := cs["locale_code"]
 		to, exist := ctx.R.Form["localize_to"]
 		if !exist {
 			return
@@ -154,7 +161,12 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 				}
 			}
 
-			if err = db.Save(toObj).Error; err != nil {
+			newContext := context.WithValue(ctx.R.Context(), FromID, fromID)
+			newContext = context.WithValue(newContext, FromVersion, fromVersion)
+			newContext = context.WithValue(newContext, FromLocale, fromLocale)
+			ctx.R = ctx.R.WithContext(newContext)
+
+			if err = me.Saver(toObj, toParamID, ctx); err != nil {
 				return
 			}
 		}
