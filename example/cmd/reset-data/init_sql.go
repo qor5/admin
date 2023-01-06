@@ -173,4 +173,49 @@ INSERT INTO public.roles VALUES (2, '2023-01-05 09:04:06.487444+00', '2023-01-05
 INSERT INTO public.default_db_policies VALUES (1, '2023-01-05 09:03:40.851701+00', '2023-01-05 09:03:40.851701+00', NULL, 1, 'Admin', 'allow', '{*}', '{*}');
 INSERT INTO public.default_db_policies VALUES (2, '2023-01-05 09:04:06.500409+00', '2023-01-05 09:04:06.500409+00', NULL, 2, 'Guest', 'deny', '{presets:create,presets:update,presets:delete}', '{*}');
 `
+
+	initSeqSQL = `
+ALTER SEQUENCE activity_logs_id_seq RESTART WITH 1;
+ALTER SEQUENCE addresses_id_seq RESTART WITH 4;
+ALTER SEQUENCE categories_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_brand_grids_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_contact_form_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_footers_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_headers_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_headings_id_seq RESTART WITH 4;
+ALTER SEQUENCE container_images_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_in_numbers_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_list_content_id_seq RESTART WITH 3;
+ALTER SEQUENCE container_list_content_lite_id_seq RESTART WITH 1;
+ALTER SEQUENCE container_list_content_with_image_id_seq RESTART WITH 1;
+ALTER SEQUENCE container_page_title_id_seq RESTART WITH 2;
+ALTER SEQUENCE container_video_banners_id_seq RESTART WITH 2;
+ALTER SEQUENCE customers_id_seq RESTART WITH 2;
+ALTER SEQUENCE default_db_policies_id_seq RESTART WITH 3;
+ALTER SEQUENCE go_que_errors_id_seq RESTART WITH 1;
+ALTER SEQUENCE goque_jobs_id_seq RESTART WITH 1;
+ALTER SEQUENCE input_demos_id_seq RESTART WITH 2;
+ALTER SEQUENCE list_models_id_seq RESTART WITH 2;
+ALTER SEQUENCE login_sessions_id_seq RESTART WITH 1;
+ALTER SEQUENCE media_libraries_id_seq RESTART WITH 11;
+ALTER SEQUENCE membership_cards_id_seq RESTART WITH 2;
+ALTER SEQUENCE microsite_models_id_seq RESTART WITH 2;
+ALTER SEQUENCE orders_id_seq RESTART WITH 12;
+ALTER SEQUENCE page_builder_categories_id_seq RESTART WITH 2;
+ALTER SEQUENCE page_builder_containers_id_seq RESTART WITH 14;
+ALTER SEQUENCE page_builder_demo_containers_id_seq RESTART WITH 1;
+ALTER SEQUENCE page_builder_pages_id_seq RESTART WITH 2;
+ALTER SEQUENCE page_builder_templates_id_seq RESTART WITH 2;
+ALTER SEQUENCE phones_id_seq RESTART WITH 1;
+ALTER SEQUENCE posts_id_seq RESTART WITH 2;
+ALTER SEQUENCE products_id_seq RESTART WITH 2;
+ALTER SEQUENCE qor_job_instances_id_seq RESTART WITH 70;
+ALTER SEQUENCE qor_job_logs_id_seq RESTART WITH 1;
+ALTER SEQUENCE qor_jobs_id_seq RESTART WITH 70;
+ALTER SEQUENCE qor_notes_id_seq RESTART WITH 1;
+ALTER SEQUENCE roles_id_seq RESTART WITH 3;
+ALTER SEQUENCE user_notes_id_seq RESTART WITH 1;
+ALTER SEQUENCE user_unread_notes_id_seq RESTART WITH 1;
+ALTER SEQUENCE users_id_seq RESTART WITH 2;
+`
 )

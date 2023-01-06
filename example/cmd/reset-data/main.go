@@ -94,4 +94,8 @@ func initDB(db *gorm.DB) {
 	}).Error; err != nil {
 		panic(err)
 	}
+	// Seq
+	if err = db.Exec(initSeqSQL).Error; err != nil {
+		panic(err)
+	}
 }
