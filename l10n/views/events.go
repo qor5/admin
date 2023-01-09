@@ -22,11 +22,14 @@ const (
 	FromID      = "l10n_DoLocalize_FromID"
 	FromVersion = "l10n_DoLocalize_FromVersion"
 	FromLocale  = "l10n_DoLocalize_FromLocale"
+
+	LocalizeFrom = "Localize From"
+	LocalizeTo   = "Localize To"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb))
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, ab))
 }
 
 type SelectLocale struct {
@@ -118,8 +121,9 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+
 		fromParamID := ctx.R.FormValue(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)
 		fromID := cs["id"]
@@ -136,6 +140,19 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
+		var toObjs []interface{}
+		defer func(fromObj interface{}) {
+			if len(toObjs) > 0 {
+				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
+					return
+				}
+				for _, toObj := range toObjs {
+					if err = ab.AddCustomizedRecord(LocalizeTo, false, ctx.R.Context(), toObj); err != nil {
+						return
+					}
+				}
+			}
+		}(reflect.Indirect(reflect.ValueOf(fromObj)).Interface())
 		me := mb.Editing()
 
 		for _, toLocale := range to {
@@ -169,6 +186,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			if err = me.Saver(toObj, toParamID, ctx); err != nil {
 				return
 			}
+			toObjs = append(toObjs, toObj)
 		}
 
 		presets.ShowMessage(&r, MustGetTranslation(ctx.R, "SuccessfullyLocalized"), "")
