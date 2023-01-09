@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/qor/oss/s3"
+	"github.com/qor5/admin/media/oss"
+	"os"
 	"path"
 	"sort"
 	"time"
@@ -37,6 +41,16 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
+	sess := session.Must(session.NewSession())
+
+	oss.Storage = s3.New(&s3.Config{
+		Bucket:   os.Getenv("S3_Bucket"),
+		Region:   os.Getenv("S3_Region"),
+		Endpoint: os.Getenv("S3_Endpoint"),
+		Session:  sess,
+		ACL:      "bucket-owner-full-control",
+	})
+
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 

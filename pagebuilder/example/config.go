@@ -10,9 +10,6 @@ import (
 	"github.com/qor5/x/i18n"
 	h "github.com/theplant/htmlgo"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/qor/oss/s3"
-	"github.com/qor5/admin/media/oss"
 	media_view "github.com/qor5/admin/media/views"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/pagebuilder/example/containers"
@@ -38,14 +35,6 @@ func ConnectDB() (db *gorm.DB) {
 var containerImages embed.FS
 
 func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *pagebuilder.Builder {
-	sess := session.Must(session.NewSession())
-
-	oss.Storage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		Session: sess,
-	})
-
 	err := db.AutoMigrate(
 		&containers.WebHeader{},
 		&containers.WebFooter{},
