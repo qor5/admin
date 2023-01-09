@@ -1146,8 +1146,12 @@ func (b *Builder) initMux() {
 		log.Println("mounted url", fullPath)
 	}
 
+	homeURL := b.prefix
+	if homeURL == "" {
+		homeURL = "/"
+	}
 	mux.Handle(
-		pat.New(b.prefix),
+		pat.New(homeURL),
 		b.wrap(nil, b.layoutFunc(b.getHomePageFunc(), b.homePageLayoutConfig)),
 	)
 
