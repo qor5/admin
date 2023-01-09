@@ -9,9 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/example/pages"
@@ -56,12 +54,6 @@ type Config struct {
 func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
-	sess := session.Must(session.NewSession())
-	oss.Storage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		Session: sess,
-	})
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
