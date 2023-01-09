@@ -57,13 +57,15 @@ func TestFields(t *testing.T) {
 
 	ctx := &web.EventContext{R: r, Flash: vd}
 
+	time1 := time.Unix(1567048169, 0)
+	time1LocalFormat := time1.Local().Format("2006-01-02 15:04:05")
 	user := &User{
 		ID:      1,
 		Int1:    2,
 		Float1:  23.1,
 		String1: "hello",
 		Bool1:   true,
-		Time1:   time.Unix(1567048169, 0),
+		Time1:   time1,
 		Company: &Company{
 			Name:      "Company1",
 			FoundedAt: time.Unix(1567048169, 0),
@@ -147,11 +149,11 @@ func TestFields(t *testing.T) {
 				return ftRead.InspectFields(&User{}).
 					Only("Time1", "Int1").ToComponent(mb.Info(), user, ctx)
 			},
-			expect: `
-<td>2019-08-29 11:09:29</td>
+			expect: fmt.Sprintf(`
+<td>%s</td>
 
 <td>2</td>
-`,
+`, time1LocalFormat),
 		},
 
 		{
