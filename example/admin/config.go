@@ -87,8 +87,7 @@ func NewConfig() Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	b.URIPrefix("/admin").
-		BrandTitle("QOR5 Example").
+	b.BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
 		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
