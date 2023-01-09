@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/x/login"
 	"github.com/qor5/x/sitemap"
-	"github.com/qor5/admin/example/models"
 )
 
 func Router() http.Handler {
@@ -25,7 +25,7 @@ func Router() http.Handler {
 	//}
 	//`)))
 
-	mux.Handle("/admin/page_builder/", c.pageBuilder)
+	mux.Handle("/page_builder/", c.pageBuilder)
 	// example of seo
 	mux.Handle("/posts/first", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var post models.Post
