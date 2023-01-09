@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/qor5/x/login"
 	"github.com/markbates/goth/providers/google"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
 	plogin "github.com/qor5/admin/login"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/x/login"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -43,7 +43,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			},
 		).
 		HomeURLFunc(func(r *http.Request, user interface{}) string {
-			return "/admin"
+			return "/"
 		}).
 		MaxRetryCount(5).
 		NotifyUserOfResetPasswordLinkFunc(func(user interface{}, resetLink string) error {
