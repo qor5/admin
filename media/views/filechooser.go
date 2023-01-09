@@ -3,15 +3,16 @@ package views
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/presets"
 	"mime/multipart"
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -313,14 +314,15 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 			} else {
 				m.SelectedType = media_library.ALLOW_TYPE_FILE
 			}
-			err1 := m.File.Scan(fh)
-			if err1 != nil {
+			err = m.File.Scan(fh)
+			if err != nil {
 				panic(err)
 			}
 
-			err1 = media.SaveUploadAndCropImage(db, &m)
-			if err1 != nil {
-				return
+			err = media.SaveUploadAndCropImage(db, &m)
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 		}
 
@@ -370,7 +372,8 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
-				return
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 		}
 

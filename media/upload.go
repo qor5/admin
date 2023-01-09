@@ -13,7 +13,7 @@ var (
 	MediaLibraryURL = ""
 )
 
-func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
+func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 
 	if !field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).CanAddr() {
 		return
@@ -38,7 +38,6 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 	}
 
 	var mediaFile FileInterface
-	var err error
 	if fileHeader := media.GetFileHeader(); fileHeader != nil {
 		mediaFile, err = media.GetFileHeader().Open()
 	} else {
@@ -46,24 +45,22 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 	}
 
 	if err != nil {
-		db.AddError(err)
-		return false
+		return false, err
 	}
-
+	// TODO: this is a defensive condition. probably not needed anymore
+	if mediaFile == nil {
+		return false, errors.New("can't find mediaFile")
+	}
+	defer mediaFile.Close()
 	media.Cropped(true)
 
 	if url := media.GetURL(option, db, field, media); url == "" {
-		db.AddError(errors.New("invalid URL"))
+		return false, errors.New("invalid URL")
 	} else {
 		result, _ := json.Marshal(map[string]string{"Url": url})
 		media.Scan(string(result))
 	}
 
-	if mediaFile == nil {
-		return
-	}
-
-	defer mediaFile.Close()
 	var handled = false
 
 	for _, handler := range mediaHandlers {
@@ -72,18 +69,18 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool) {
 		}
 
 		mediaFile.Seek(0, 0)
-		if db.AddError(handler.Handle(media, mediaFile, option)) == nil {
+		if handler.Handle(media, mediaFile, option) == nil {
 			handled = true
 		}
 	}
 
 	// Save File
 	if !handled {
-		db.AddError(media.Store(media.URL(), option, mediaFile))
-		return false
+		err = media.Store(media.URL(), option, mediaFile)
+		return false, err
 	}
 
-	return true
+	return true, nil
 }
 
 func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
@@ -96,7 +93,11 @@ func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
 	var updateColumns = map[string]interface{}{}
 
 	for _, field := range db.Statement.Schema.Fields {
-		if cropField(field, db) {
+		ok, err := cropField(field, db)
+		if err != nil {
+			return err
+		}
+		if ok {
 			updateColumns[field.DBName] = field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).Addr().Interface()
 		}
 	}
