@@ -80,10 +80,12 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		deviceQueries.Add("tpl", "1")
 	} else {
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
+		deviceQueries.Add("version", version)
+
 		if isLocalizable && l10nON {
 			previewHref = fmt.Sprintf("/preview?id=%s&version=%s&locale=%s", id, version, locale)
+			deviceQueries.Add("locale", locale)
 		}
-		deviceQueries.Add("version", version)
 	}
 
 	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
