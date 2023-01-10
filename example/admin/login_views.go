@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	plogin "github.com/qor5/admin/login"
 	"github.com/qor5/admin/presets"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -15,111 +16,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
-
-const (
-	wrapperClass = "d-flex pt-16 flex-column mx-auto"
-	wrapperStyle = "max-width: 28rem;"
-	labelClass   = "d-block mb-1 grey--text text--darken-2 text-sm-body-2"
-)
-
-func errNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("error")
-}
-
-func warnNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("warning")
-}
-
-func infoNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("info")
-}
-
-func input(
-	id string,
-	placeholder string,
-	val string,
-) *v.VTextFieldBuilder {
-	return v.VTextField().
-		Attr("name", id).
-		Id(id).
-		Placeholder(placeholder).
-		Value(val).
-		Outlined(true).
-		HideDetails(true).
-		Dense(true)
-}
-
-func passwordInput(
-	id string,
-	placeholder string,
-	val string,
-	canReveal bool,
-) *v.VTextFieldBuilder {
-	in := input(id, placeholder, val)
-	if canReveal {
-		varName := fmt.Sprintf(`show_%s`, id)
-		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "visibility_off" : "visibility"`, varName)).
-			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
-			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, varName))
-	}
-
-	return in
-}
-
-func formSubmitBtn(
-	label string,
-) *v.VBtnBuilder {
-	return v.VBtn(label).
-		Color("primary").
-		Block(true).
-		Large(true).
-		Type("submit").
-		Class("mt-6")
-}
-
-func injectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
-	ctx.Injector.HeadHTML(`
-<style>
-.grecaptcha-badge { visibility: hidden; }
-</style>
-    `)
-	ctx.Injector.HeadHTML(fmt.Sprintf(`
-<script>
-function onSubmit(token) {
-	document.getElementById("%s").value = token;
-	document.getElementById("%s").submit();
-}
-</script>
-    `, tokenFieldID, formID))
-	ctx.Injector.TailHTML(`
-<script src="https://www.google.com/recaptcha/api.js"></script>
-    `)
-}
 
 type languageItem struct {
 	Label string
@@ -193,7 +89,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 
 		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
-			injectRecaptchaAssets(ctx, "login-form", "token")
+			plogin.DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
 		}
 
 		var userPassHTML HTMLComponent
@@ -201,18 +97,18 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML = Div(
 				Form(
 					Div(
-						Label(msgr.AccountLabel).Class(labelClass).For("account"),
-						input("account", msgr.AccountPlaceholder, wIn.Account),
+						Label(msgr.AccountLabel).Class(plogin.DefaultViewCommon.LabelClass).For("account"),
+						plogin.DefaultViewCommon.Input("account", msgr.AccountPlaceholder, wIn.Account),
 					),
 					Div(
-						Label(msgr.PasswordLabel).Class(labelClass).For("password"),
-						passwordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
+						Label(msgr.PasswordLabel).Class(plogin.DefaultViewCommon.LabelClass).For("password"),
+						plogin.DefaultViewCommon.PasswordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
 					).Class("mt-6"),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
 						Input("token").Id("token").Type("hidden"),
 					),
-					formSubmitBtn(msgr.SignInBtn).
+					plogin.DefaultViewCommon.FormSubmitBtn(msgr.SignInBtn).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
 						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
@@ -244,7 +140,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 					Class("mt-12").
 					HideDetails(true),
 			),
-		).Class(wrapperClass).Style(wrapperStyle)
+		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 
 		username := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
 		password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
@@ -254,14 +150,14 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoUsernameLabel")), B(username)),
 				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoPasswordLabel")), B(password)),
 				P(B(i18n.T(ctx.R, I18nExampleKey, "DemoTips"))),
-			).Class(wrapperClass).Style(wrapperStyle).
+			).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
 				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
 		).Class("pt-12")
 
 		r.Body = Div(
-			errNotice(fMsg),
-			warnNotice(wMsg),
-			infoNotice(iMsg),
+			plogin.DefaultViewCommon.ErrNotice(fMsg),
+			plogin.DefaultViewCommon.WarnNotice(wMsg),
+			plogin.DefaultViewCommon.InfoNotice(iMsg),
 			bodyForm,
 			If(isDemo, demoTips),
 		)
