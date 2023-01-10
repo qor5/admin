@@ -4,6 +4,8 @@ export PORT="9000"
 export AWS_SDK_LOAD_CONFIG=1
 export S3_Bucket=""
 export S3_Region=""
+export S3_Endpoint=""
+export AWS_REGION=""
 
 export BASE_URL="http://localhost:9500"
 export LOGIN_SECRET=""

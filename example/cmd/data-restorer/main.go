@@ -99,13 +99,9 @@ func initDB(db *gorm.DB) {
 	}
 }
 
-// composeS3Path to generate file path as qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/101/file.jpg
+// composeS3Path to generate file path as https://cdn.qor5.theplant-dev.com/system/media_libraries/236/file.jpeg
 func composeS3Path(filePath string) string {
-	// qor5-test-example
-	bucketName := os.Getenv("S3_Bucket")
+	endPoint := os.Getenv("S3_Endpoint")
 
-	// ap-northeast-1
-	bucketRegion := os.Getenv("AWS_Region")
-
-	return fmt.Sprintf("//%s.s3.%s.amazonaws.com/system/media_libraries%s", bucketName, bucketRegion, filePath)
+	return fmt.Sprintf("%s/system/media_libraries%s", endPoint, filePath)
 }
