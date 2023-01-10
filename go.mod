@@ -23,7 +23,7 @@ require (
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
 	github.com/qor5/web v1.2.3
-	github.com/qor5/x v1.2.0
+	github.com/qor5/x v1.2.1-0.20230110024146-8d81598098f8
 	github.com/stretchr/testify v1.8.0
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1

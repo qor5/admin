@@ -1,0 +1,180 @@
+package login
+
+import (
+	"fmt"
+
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/login"
+	. "github.com/theplant/htmlgo"
+)
+
+var DefaultViewCommon = &ViewCommon{
+	WrapperClass: "d-flex pt-16 flex-column mx-auto",
+	WrapperStyle: "max-width: 28rem;",
+	TitleClass:   "text-h5 mb-6 font-weight-bold",
+	LabelClass:   "d-block mb-1 grey--text text--darken-2 text-sm-body-2",
+}
+
+type ViewCommon struct {
+	WrapperClass string
+	WrapperStyle string
+	TitleClass   string
+	LabelClass   string
+}
+
+func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return v.VAlert(Text(msg)).
+		Dense(true).
+		Class("text-center").
+		Icon(false).
+		Type("error")
+}
+
+func (vc *ViewCommon) WarnNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return v.VAlert(Text(msg)).
+		Dense(true).
+		Class("text-center").
+		Icon(false).
+		Type("warning")
+}
+
+func (vc *ViewCommon) InfoNotice(msg string) HTMLComponent {
+	if msg == "" {
+		return nil
+	}
+
+	return v.VAlert(Text(msg)).
+		Dense(true).
+		Class("text-center").
+		Icon(false).
+		Type("info")
+}
+
+func (vc *ViewCommon) ErrorBody(msg string) HTMLComponent {
+	return Div(
+		Text(msg),
+	)
+}
+
+func (vc *ViewCommon) Input(
+	id string,
+	placeholder string,
+	val string,
+) *v.VTextFieldBuilder {
+	return v.VTextField().
+		Attr("name", id).
+		Id(id).
+		Placeholder(placeholder).
+		Value(val).
+		Outlined(true).
+		HideDetails(true).
+		Dense(true)
+}
+
+func (vc *ViewCommon) PasswordInput(
+	id string,
+	placeholder string,
+	val string,
+	canReveal bool,
+) *v.VTextFieldBuilder {
+	in := vc.Input(id, placeholder, val)
+	if canReveal {
+		varName := fmt.Sprintf(`show_%s`, id)
+		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "visibility_off" : "visibility"`, varName)).
+			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
+			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
+			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, varName))
+	}
+
+	return in
+}
+
+// need to import zxcvbn js
+// func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
+// 	passVar := fmt.Sprintf(`password_%s`, id)
+// 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
+// 	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
+// 		Attr(":loading", fmt.Sprintf(`!!vars.%s`, passVar)).
+// 		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
+// 	return Div(
+// 		in.Children(
+// 			RawHTML(fmt.Sprintf(`
+//         <template v-slot:progress>
+//           <v-progress-linear
+//             :value="vars.%s * 20"
+//             :color="['grey', 'red', 'deep-orange', 'amber', 'yellow', 'light-green'][vars.%s]"
+//             absolute
+//           ></v-progress-linear>
+//         </template>
+//             `, meterScoreVar, meterScoreVar)),
+// 		),
+// 	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
+// }
+
+// need to import zxcvbn.js
+func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
+	passVar := fmt.Sprintf(`password_%s`, id)
+	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
+	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
+		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
+	return Div(
+		in,
+		v.VProgressLinear().
+			Class("mt-2").
+			Attr(":value", fmt.Sprintf(`vars.%s * 20`, meterScoreVar)).
+			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][vars.%s]`, meterScoreVar)).
+			Attr("v-show", fmt.Sprintf(`!!vars.%s`, passVar)),
+	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
+}
+
+func (vc *ViewCommon) FormSubmitBtn(
+	label string,
+) *v.VBtnBuilder {
+	return v.VBtn(label).
+		Color("primary").
+		Block(true).
+		Large(true).
+		Type("submit").
+		Class("mt-6")
+}
+
+// requirements:
+// - submit button
+//   - add class `g-recaptcha`
+//   - add attr `data-sitekey=<key>`
+//   - add attr `data-callback=onSubmit`
+//
+// - add token field like `Input("token").Id("token").Type("hidden")`
+func (vc *ViewCommon) InjectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
+	ctx.Injector.HeadHTML(`
+<style>
+.grecaptcha-badge { visibility: hidden; }
+</style>
+    `)
+	ctx.Injector.HeadHTML(fmt.Sprintf(`
+<script>
+function onSubmit(token) {
+	document.getElementById("%s").value = token;
+	document.getElementById("%s").submit();
+}
+</script>
+    `, tokenFieldID, formID))
+	ctx.Injector.TailHTML(`
+<script src="https://www.google.com/recaptcha/api.js"></script>
+    `)
+}
+
+func (vc *ViewCommon) InjectZxcvbn(ctx *web.EventContext) {
+	ctx.Injector.HeadHTML(fmt.Sprintf(`
+<script src="%s"></script>
+    `, login.ZxcvbnJSURL))
+}

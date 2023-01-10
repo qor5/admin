@@ -8,180 +8,17 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pquerna/otp"
+	"github.com/qor5/admin/presets"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
-	"github.com/pquerna/otp"
-	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 	"gorm.io/gorm"
 )
-
-const (
-	wrapperClass = "d-flex pt-16 flex-column mx-auto"
-	wrapperStyle = "max-width: 28rem;"
-	titleClass   = "text-h5 mb-6 font-weight-bold"
-	labelClass   = "d-block mb-1 grey--text text--darken-2 text-sm-body-2"
-)
-
-func errNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("error")
-}
-
-func warnNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("warning")
-}
-
-func infoNotice(msg string) HTMLComponent {
-	if msg == "" {
-		return nil
-	}
-
-	return v.VAlert(Text(msg)).
-		Dense(true).
-		Class("text-center").
-		Icon(false).
-		Type("info")
-}
-
-func errorBody(msg string) HTMLComponent {
-	return Div(
-		Text(msg),
-	)
-}
-
-func input(
-	id string,
-	placeholder string,
-	val string,
-) *v.VTextFieldBuilder {
-	return v.VTextField().
-		Attr("name", id).
-		Id(id).
-		Placeholder(placeholder).
-		Value(val).
-		Outlined(true).
-		HideDetails(true).
-		Dense(true)
-}
-
-func passwordInput(
-	id string,
-	placeholder string,
-	val string,
-	canReveal bool,
-) *v.VTextFieldBuilder {
-	in := input(id, placeholder, val)
-	if canReveal {
-		varName := fmt.Sprintf(`show_%s`, id)
-		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "visibility_off" : "visibility"`, varName)).
-			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
-			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, varName))
-	}
-
-	return in
-}
-
-// need to import zxcvbn js
-// func PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
-// 	passVar := fmt.Sprintf(`password_%s`, id)
-// 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-// 	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-// 		Attr(":loading", fmt.Sprintf(`!!vars.%s`, passVar)).
-// 		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-// 	return Div(
-// 		in.Children(
-// 			RawHTML(fmt.Sprintf(`
-//         <template v-slot:progress>
-//           <v-progress-linear
-//             :value="vars.%s * 20"
-//             :color="['grey', 'red', 'deep-orange', 'amber', 'yellow', 'light-green'][vars.%s]"
-//             absolute
-//           ></v-progress-linear>
-//         </template>
-//             `, meterScoreVar, meterScoreVar)),
-// 		),
-// 	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
-// }
-
-// need to import zxcvbn.js
-func passwordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
-	passVar := fmt.Sprintf(`password_%s`, id)
-	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-	return Div(
-		in,
-		v.VProgressLinear().
-			Class("mt-2").
-			Attr(":value", fmt.Sprintf(`vars.%s * 20`, meterScoreVar)).
-			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][vars.%s]`, meterScoreVar)).
-			Attr("v-show", fmt.Sprintf(`!!vars.%s`, passVar)),
-	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
-}
-
-func formSubmitBtn(
-	label string,
-) *v.VBtnBuilder {
-	return v.VBtn(label).
-		Color("primary").
-		Block(true).
-		Large(true).
-		Type("submit").
-		Class("mt-6")
-}
-
-// requirements:
-// - submit button
-//   - add class `g-recaptcha`
-//   - add attr `data-sitekey=<key>`
-//   - add attr `data-callback=onSubmit`
-//
-// - add token field like `Input("token").Id("token").Type("hidden")`
-func injectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
-	ctx.Injector.HeadHTML(`
-<style>
-.grecaptcha-badge { visibility: hidden; }
-</style>
-    `)
-	ctx.Injector.HeadHTML(fmt.Sprintf(`
-<script>
-function onSubmit(token) {
-	document.getElementById("%s").value = token;
-	document.getElementById("%s").submit();
-}
-</script>
-    `, tokenFieldID, formID))
-	ctx.Injector.TailHTML(`
-<script src="https://www.google.com/recaptcha/api.js"></script>
-    `)
-}
-
-func injectZxcvbn(ctx *web.EventContext) {
-	ctx.Injector.HeadHTML(fmt.Sprintf(`
-<script src="%s"></script>
-    `, login.ZxcvbnJSURL))
-}
 
 type languageItem struct {
 	Label string
@@ -255,7 +92,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 
 		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
-			injectRecaptchaAssets(ctx, "login-form", "token")
+			DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
 		}
 
 		var userPassHTML HTMLComponent
@@ -263,18 +100,18 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML = Div(
 				Form(
 					Div(
-						Label(msgr.AccountLabel).Class(labelClass).For("account"),
-						input("account", msgr.AccountPlaceholder, wIn.Account),
+						Label(msgr.AccountLabel).Class(DefaultViewCommon.LabelClass).For("account"),
+						DefaultViewCommon.Input("account", msgr.AccountPlaceholder, wIn.Account),
 					),
 					Div(
-						Label(msgr.PasswordLabel).Class(labelClass).For("password"),
-						passwordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
+						Label(msgr.PasswordLabel).Class(DefaultViewCommon.LabelClass).For("password"),
+						DefaultViewCommon.PasswordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
 					).Class("mt-6"),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
 						Input("token").Id("token").Type("hidden"),
 					),
-					formSubmitBtn(msgr.SignInBtn).
+					DefaultViewCommon.FormSubmitBtn(msgr.SignInBtn).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
 						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
@@ -306,12 +143,12 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 					Class("mt-12").
 					HideDetails(true),
 			),
-		).Class(wrapperClass).Style(wrapperStyle)
+		).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle)
 
 		r.Body = Div(
-			errNotice(fMsg),
-			warnNotice(wMsg),
-			infoNotice(iMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.WarnNotice(wMsg),
+			DefaultViewCommon.InfoNotice(iMsg),
 			bodyForm,
 		)
 
@@ -338,43 +175,43 @@ func defaultForgetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
-			injectRecaptchaAssets(ctx, "forget-form", "token")
+			DefaultViewCommon.InjectRecaptchaAssets(ctx, "forget-form", "token")
 		}
 
 		r.PageTitle = "Forget Your Password?"
 		r.Body = Div(
-			errNotice(fMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
 			If(secondsToResend > 0,
-				warnNotice(msgr.SendEmailTooFrequentlyNotice),
+				DefaultViewCommon.WarnNotice(msgr.SendEmailTooFrequentlyNotice),
 			),
 			Div(
-				H1(msgr.ForgotMyPasswordTitle).Class(titleClass),
+				H1(msgr.ForgotMyPasswordTitle).Class(DefaultViewCommon.TitleClass),
 				Form(
 					Div(
-						Label(msgr.ForgetPasswordEmailLabel).Class(labelClass).For("account"),
-						input("account", msgr.ForgetPasswordEmailPlaceholder, wIn.Account),
+						Label(msgr.ForgetPasswordEmailLabel).Class(DefaultViewCommon.LabelClass).For("account"),
+						DefaultViewCommon.Input("account", msgr.ForgetPasswordEmailPlaceholder, wIn.Account),
 					),
 					If(doTOTP,
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+							Label(msgr.TOTPValidateCodeLabel).Class(DefaultViewCommon.LabelClass).For("otp"),
+							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
 						).Class("mt-6"),
 					),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
 						Input("token").Id("token").Type("hidden"),
 					),
-					formSubmitBtn(inactiveBtnTextWithInitSeconds).
+					DefaultViewCommon.FormSubmitBtn(inactiveBtnTextWithInitSeconds).
 						Attr("id", "disabledBtn").
 						ClassIf("d-none", secondsToResend <= 0),
-					formSubmitBtn(activeBtnText).
+					DefaultViewCommon.FormSubmitBtn(activeBtnText).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
 						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled).
 						Attr("id", "submitBtn").
 						ClassIf("d-none", secondsToResend > 0),
 				).Id("forget-form").Method(http.MethodPost).Action(actionURL),
-			).Class(wrapperClass).Style(wrapperStyle),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle),
 		)
 
 		if secondsToResend > 0 {
@@ -415,7 +252,7 @@ func defaultResetPasswordLinkSentPage(vh *login.ViewHelper, pb *presets.Builder)
 			Div(
 				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("text-h5"),
 				H2(msgr.ResetPasswordLinkSentPrompt).Class("text-body-1 mt-2"),
-			).Class(wrapperClass).Style(wrapperStyle),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle),
 		)
 		return
 	})
@@ -473,32 +310,32 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 			}
 		}
 
-		injectZxcvbn(ctx)
+		DefaultViewCommon.InjectZxcvbn(ctx)
 
 		r.Body = Div(
-			errNotice(fMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
 			Div(
-				H1(msgr.ResetYourPasswordTitle).Class(titleClass),
+				H1(msgr.ResetYourPasswordTitle).Class(DefaultViewCommon.TitleClass),
 				Form(
 					Input("user_id").Type("hidden").Value(id),
 					Input("token").Type("hidden").Value(token),
 					Div(
-						Label(msgr.ResetPasswordLabel).Class(labelClass).For("password"),
-						passwordInputWithStrengthMeter(passwordInput("password", msgr.ResetPasswordLabel, wIn.Password, true), "password", wIn.Password),
+						Label(msgr.ResetPasswordLabel).Class(DefaultViewCommon.LabelClass).For("password"),
+						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ResetPasswordLabel, wIn.Password, true), "password", wIn.Password),
 					),
 					Div(
-						Label(msgr.ResetPasswordConfirmLabel).Class(labelClass).For("confirm_password"),
-						passwordInput("confirm_password", msgr.ResetPasswordConfirmPlaceholder, wIn.ConfirmPassword, true),
+						Label(msgr.ResetPasswordConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),
+						DefaultViewCommon.PasswordInput("confirm_password", msgr.ResetPasswordConfirmPlaceholder, wIn.ConfirmPassword, true),
 					).Class("mt-6"),
 					If(doTOTP,
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+							Label(msgr.TOTPValidateCodeLabel).Class(DefaultViewCommon.LabelClass).For("otp"),
+							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
 						).Class("mt-6"),
 					),
-					formSubmitBtn(msgr.Confirm),
+					DefaultViewCommon.FormSubmitBtn(msgr.Confirm),
 				).Method(http.MethodPost).Action(actionURL),
-			).Class(wrapperClass).Style(wrapperStyle),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle),
 		)
 		return
 	})
@@ -514,36 +351,36 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 		}
 		wIn := vh.GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
 
-		injectZxcvbn(ctx)
+		DefaultViewCommon.InjectZxcvbn(ctx)
 
 		r.PageTitle = "Change Password"
 
 		r.Body = Div(
-			errNotice(fMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
 			Div(
-				H1(msgr.ChangePasswordTitle).Class(titleClass),
+				H1(msgr.ChangePasswordTitle).Class(DefaultViewCommon.TitleClass),
 				Form(
 					Div(
-						Label(msgr.ChangePasswordOldLabel).Class(labelClass).For("old_password"),
-						passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, wIn.OldPassword, true),
+						Label(msgr.ChangePasswordOldLabel).Class(DefaultViewCommon.LabelClass).For("old_password"),
+						DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, wIn.OldPassword, true),
 					),
 					Div(
-						Label(msgr.ChangePasswordNewLabel).Class(labelClass).For("password"),
-						passwordInputWithStrengthMeter(passwordInput("password", msgr.ChangePasswordNewPlaceholder, wIn.NewPassword, true), "password", wIn.NewPassword),
+						Label(msgr.ChangePasswordNewLabel).Class(DefaultViewCommon.LabelClass).For("password"),
+						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, wIn.NewPassword, true), "password", wIn.NewPassword),
 					).Class("mt-6"),
 					Div(
-						Label(msgr.ChangePasswordNewConfirmLabel).Class(labelClass).For("confirm_password"),
-						passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, wIn.ConfirmPassword, true),
+						Label(msgr.ChangePasswordNewConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),
+						DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, wIn.ConfirmPassword, true),
 					).Class("mt-6"),
 					If(vh.TOTPEnabled(),
 						Div(
-							Label(msgr.TOTPValidateCodeLabel).Class(labelClass).For("otp"),
-							input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
+							Label(msgr.TOTPValidateCodeLabel).Class(DefaultViewCommon.LabelClass).For("otp"),
+							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, wIn.TOTP),
 						).Class("mt-6"),
 					),
-					formSubmitBtn(msgr.Confirm),
+					DefaultViewCommon.FormSubmitBtn(msgr.Confirm),
 				).Method(http.MethodPost).Action(vh.ChangePasswordURL()),
-			).Class(wrapperClass).Style(wrapperStyle),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle),
 		)
 		return
 	})
@@ -580,28 +417,28 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builde
 			v.VCardTitle(Text(msgr.ChangePasswordTitle)),
 			v.VCardText(
 				Div(
-					passwordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
+					DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
 						Outlined(false).
 						Label(msgr.ChangePasswordOldLabel).
 						FieldName("old_password"),
 				),
 				Div(
-					passwordInputWithStrengthMeter(
-						passwordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
+					DefaultViewCommon.PasswordInputWithStrengthMeter(
+						DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
 							Outlined(false).
 							Label(msgr.ChangePasswordNewLabel).
 							FieldName("password"),
 						"password", ""),
 				).Class("mt-12"),
 				Div(
-					passwordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
+					DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
 						Outlined(false).
 						Label(msgr.ChangePasswordNewConfirmLabel).
 						FieldName("confirm_password"),
 				).Class("mt-12"),
 				If(vh.TOTPEnabled(),
 					Div(
-						input("otp", msgr.TOTPValidateCodePlaceholder, "").
+						DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
 							Outlined(false).
 							Label(msgr.TOTPValidateCodeLabel).
 							FieldName("otp"),
@@ -627,7 +464,7 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if len(totpSecret) == 0 {
-			r.Body = errorBody("need setup totp")
+			r.Body = DefaultViewCommon.ErrorBody("need setup totp")
 			return
 		}
 		key, err = otp.NewKeyFromURL(
@@ -641,23 +478,23 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 
 		img, err := key.Image(200, 200)
 		if err != nil {
-			r.Body = errorBody(err.Error())
+			r.Body = DefaultViewCommon.ErrorBody(err.Error())
 			return
 		}
 
 		err = png.Encode(&QRCode, img)
 		if err != nil {
-			r.Body = errorBody(err.Error())
+			r.Body = DefaultViewCommon.ErrorBody(err.Error())
 			return
 		}
 
 		r.PageTitle = "TOTP Setup"
 		r.Body = Div(
-			errNotice(fMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
 			Div(
 				Div(
 					H1(msgr.TOTPSetupTitle).
-						Class(titleClass),
+						Class(DefaultViewCommon.TitleClass),
 					Label(msgr.TOTPSetupScanPrompt),
 				),
 				Div(
@@ -669,10 +506,10 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 				Div(Label(u.GetTOTPSecret())).Class("font-weight-bold my-4"),
 				Form(
 					Label(msgr.TOTPSetupEnterCodePrompt),
-					input("otp", msgr.TOTPSetupCodePlaceholder, "").Class("mt-6"),
-					formSubmitBtn(msgr.Verify),
+					DefaultViewCommon.Input("otp", msgr.TOTPSetupCodePlaceholder, "").Class("mt-6"),
+					DefaultViewCommon.FormSubmitBtn(msgr.Verify),
 				).Method(http.MethodPost).Action(vh.ValidateTOTPURL()),
-			).Class(wrapperClass).Style(wrapperStyle).Class("text-center"),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle).Class("text-center"),
 		)
 
 		return
@@ -687,18 +524,18 @@ func defaultTOTPValidatePage(vh *login.ViewHelper, pb *presets.Builder) web.Page
 
 		r.PageTitle = "TOTP Validate"
 		r.Body = Div(
-			errNotice(fMsg),
+			DefaultViewCommon.ErrNotice(fMsg),
 			Div(
 				Div(
 					H1(msgr.TOTPValidateTitle).
-						Class(titleClass),
+						Class(DefaultViewCommon.TitleClass),
 					Label(msgr.TOTPValidateEnterCodePrompt),
 				),
 				Form(
-					input("otp", msgr.TOTPValidateCodePlaceholder, "").Autofocus(true).Class("mt-6"),
-					formSubmitBtn(msgr.Verify),
+					DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").Autofocus(true).Class("mt-6"),
+					DefaultViewCommon.FormSubmitBtn(msgr.Verify),
 				).Method(http.MethodPost).Action(vh.ValidateTOTPURL()),
-			).Class(wrapperClass).Style(wrapperStyle).Class("text-center"),
+			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle).Class("text-center"),
 		)
 
 		return
