@@ -7,7 +7,7 @@ import (
 	"github.com/qor5/admin/media/media_library"
 )
 
-type InputHarness struct {
+type InputDemo struct {
 	ID               uint
 	TextField1       string
 	TextArea1        string

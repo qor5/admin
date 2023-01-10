@@ -11,8 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func configCustomer(b *presets.Builder, db *gorm.DB) {
-	cust := b.Model(&models.Customer{}).RightDrawerWidth("50%")
+func configNestedFieldDemo(b *presets.Builder, db *gorm.DB) {
+	cust := b.Model(&models.Customer{}).RightDrawerWidth("50%").
+		Label("NestedFieldDemos").URIName("nested-field-demos")
 
 	addFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.Address{}).Only("Street", "HomeImage", "Phones")
 
