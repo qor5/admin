@@ -43,7 +43,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			},
 		).
 		HomeURLFunc(func(r *http.Request, user interface{}) string {
-			return "/admin"
+			return "/"
 		}).
 		MaxRetryCount(5).
 		NotifyUserOfResetPasswordLinkFunc(func(user interface{}, resetLink string) error {

@@ -375,7 +375,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 			Readonly(true).
 			Clearable(true),
 	).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-		URL("/admin/dialog-select-favor-posts").
+		URL("/dialog-select-favor-posts").
 		Go())
 }
 

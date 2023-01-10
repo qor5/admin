@@ -86,8 +86,7 @@ func NewConfig() Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	b.URIPrefix("/admin").
-		BrandTitle("QOR5 Example").
+	b.BrandTitle("QOR5 Example").
 		ProfileFunc(profile).
 		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
@@ -336,9 +335,16 @@ func NewConfig() Config {
 	// sm.RegisterEventFunc(pages.LogInfoEvent, pages.LogInfo)
 	// sm.Listing().PageFunc(pages.Settings(db))
 
+	// FIXME: list editor does not support use in page func
+	// type ListEditorExample struct{}
+	// leem := b.Model(&ListEditorExample{}).Label("List Editor Example")
+	// pf, sf := pages.ListEditorExample(db, b)
+	// leem.Listing().PageFunc(pf)
+	// leem.RegisterEventFunc("save", sf)
+
 	configNestedFieldDemo(b, db)
 
-	pageBuilder := example.ConfigPageBuilder(db, "/admin/page_builder", ``, b.I18n())
+	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
@@ -452,19 +458,19 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 					vuetify.VListItemTitle(h.Text("Pages")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
 				),
-			).TwoLine(true).Href("/admin/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+			).TwoLine(true).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Posts")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
 				),
-			).TwoLine(true).Href("/admin/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+			).TwoLine(true).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			vuetify.VListItem(
 				vuetify.VListItemContent(
 					vuetify.VListItemTitle(h.Text("Users")),
 					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
-			).TwoLine(true).Href("/admin/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+			).TwoLine(true).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
 				vuetify.VListItem(
 					vuetify.VListItemContent(
