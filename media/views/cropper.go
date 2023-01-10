@@ -3,14 +3,15 @@ package views
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/presets"
 	"time"
 
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/ui/cropper"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -138,7 +139,8 @@ func cropImage(db *gorm.DB) web.EventFunc {
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
-				return
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 
 			mb.FileSizes = m.File.FileSizes
