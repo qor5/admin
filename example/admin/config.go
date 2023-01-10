@@ -54,7 +54,7 @@ type Config struct {
 }
 
 func NewConfig() Config {
-	db := ConnectDB()
+	db := ConnectRDS()
 	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
 	oss.Storage = s3.New(&s3.Config{

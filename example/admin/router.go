@@ -11,7 +11,7 @@ import (
 )
 
 func Router() http.Handler {
-	db := ConnectDB()
+	db := ConnectRDS()
 	c := NewConfig()
 
 	mux := http.NewServeMux()
