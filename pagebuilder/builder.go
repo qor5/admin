@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/l10n"
+	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
@@ -144,7 +146,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
 	pm = pb.Model(&Page{})
-	pm.Listing("ID", "Title", "Slug", "Locale")
+	pm.Listing("ID", "Title", "Slug")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 
@@ -248,10 +250,14 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
+			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
+			}
 			return h.Div(
 				VBtn(msgr.EditPageContent).
 					Target("_blank").
-					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+					Href(href).
 					Color("secondary"),
 			)
 		}
@@ -259,6 +265,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		localeCode, _ := l10n.IsLocalizableFromCtx(ctx)
 		p := obj.(*Page)
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
@@ -270,7 +277,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			}
 
 			if strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
-				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}
 				return
@@ -282,10 +289,30 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				if inerr != nil {
 					return
 				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, int(p.ID), p.GetVersion()); inerr != nil {
+				if !l10nON {
+					localeCode = ""
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, "", int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 					return
 				}
+			}
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n_view.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.copyContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
 			}
 			return
 		})

@@ -1,8 +1,7 @@
 package views
 
 import (
-	"fmt"
-	"strings"
+	"reflect"
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
@@ -44,10 +43,10 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -69,10 +68,10 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 
 func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -95,10 +94,10 @@ func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.B
 
 func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("id")
+		paramID := ctx.R.FormValue(presets.ParamID)
 
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, id, ctx)
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
 		}
@@ -109,7 +108,7 @@ func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 			return
 		}
 
-		if err = mb.Editing().Saver(obj, ctx.R.FormValue("id"), ctx); err != nil {
+		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
 			return
 		}
 
@@ -141,9 +140,9 @@ func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		qs := ctx.Queries()
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(ctx.R.FormValue("id"))
+		deletedVersion := cs["version"]
 		deletedID := qs.Get("id")
-		segs := strings.Split(deletedID, "_")
-		id, deletedVersion := segs[0], segs[1]
 		currentSelectedID := qs.Get("current_selected_id")
 		// switching version is one of the following in order that exists:
 		// 1. current selected version
@@ -151,33 +150,36 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 		// 3. prev(newer) version
 		switchingVersion := currentSelectedID
 		if deletedID == currentSelectedID {
-			versions, _ := findVersionItems(db, mb, ctx, id)
-			if len(versions) == 0 {
+			versions, _ := findVersionItems(db, mb, ctx, deletedID)
+			vO := reflect.ValueOf(versions).Elem()
+			if vO.Len() == 0 {
 				r.Reload = true
 				return
 			}
 
-			version := versions[0]
-			if len(versions) > 1 {
+			version := vO.Index(0).Interface()
+			if vO.Len() > 1 {
 				hasOlderVersion := false
-				for _, v := range versions {
-					if v.Version < deletedVersion {
+				for i := 0; i < vO.Len(); i++ {
+					v := vO.Index(i).Interface()
+					if v.(publish.VersionInterface).GetVersion() < deletedVersion {
 						hasOlderVersion = true
 						version = v
 						break
 					}
 				}
 				if !hasOlderVersion {
-					version = versions[len(versions)-1]
+					version = vO.Index(vO.Len() - 1)
 				}
 			}
-			switchingVersion = fmt.Sprintf("%s_%s", version.ID, version.Version)
+
+			switchingVersion = version.(presets.SlugEncoder).PrimarySlug()
 		}
 
 		web.AppendVarsScripts(&r,
 			web.Plaid().
 				EventFunc(switchVersionEvent).
-				Query("id", switchingVersion).
+				Query(presets.ParamID, switchingVersion).
 				Query("selected", qs.Get("selected")).
 				Query("page", qs.Get("page")).
 				Query("no_msg", true).

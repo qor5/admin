@@ -5,13 +5,12 @@ import (
 	"reflect"
 	"sync"
 
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
-	"github.com/sunfmin/reflectutils"
+	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -82,11 +81,8 @@ func StatusEditFunc() presets.FieldComponentFunc {
 				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, republishEvent)),
 			)
 		}
-
-		id := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
-		if v, ok := obj.(publish.VersionInterface); ok {
-			id = fmt.Sprintf("%v_%v", id, v.GetVersion())
-		}
+		
+		paramID := obj.(presets.SlugEncoder).PrimarySlug()
 
 		return web.Scope(
 			VStepper(
@@ -100,7 +96,7 @@ func StatusEditFunc() presets.FieldComponentFunc {
 			btn,
 			h.Br(),
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				Query("id", id).Go(),
+				Query(presets.ParamID, paramID).Go(),
 				utilsMsgr),
 		).Init(`{ action: "", commonConfirmDialog: false}`).VSlot("{ locals }")
 	}

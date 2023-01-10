@@ -79,8 +79,8 @@ func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *
 
 	if slugger, ok := obj.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(id)
-		for _, cond := range cs {
-			wh = wh.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+		for key, value := range cs {
+			wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
 		}
 	} else {
 		wh = wh.Where("id =  ?", id)

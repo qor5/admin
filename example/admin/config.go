@@ -200,6 +200,8 @@ func NewConfig() Config {
 			"Customers",
 			"ListModels",
 			"MicrositeModels",
+			"L10nModel",
+			"L10nModelWithVersion",
 		).Icon("featured_play_list"),
 		"Worker",
 		"ActivityLogs",
@@ -411,8 +413,9 @@ func NewConfig() Config {
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
-
-	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
+	l10nM, l10nVM := configL10nModel(b)
+	_ = l10nM
+	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)
 
@@ -424,7 +427,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm)
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,
