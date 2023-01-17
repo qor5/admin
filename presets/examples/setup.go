@@ -91,9 +91,9 @@ func (l *Language) PrimarySlug() string {
 	return l.Code
 }
 
-func (l *Language) PrimaryColumnValuesBySlug(slug string) [][]string {
-	return [][]string{
-		{"code", slug},
+func (l *Language) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	return map[string]string{
+		"code": slug,
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/web"
 	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -56,7 +56,11 @@ type SearchParams struct {
 }
 
 type SlugDecoder interface {
-	PrimaryColumnValuesBySlug(slug string) [][]string
+	PrimaryColumnValuesBySlug(slug string) map[string]string
+}
+
+type SlugEncoder interface {
+	PrimarySlug() string
 }
 
 type FilterDataFunc func(ctx *web.EventContext) vuetifyx.FilterData
