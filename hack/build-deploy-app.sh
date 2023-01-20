@@ -10,5 +10,8 @@ source hack/get-tools.sh
 plantbuild push ./plantbuild/build.jsonnet
 plantbuild k8s_set_images ./plantbuild/images.jsonnet
 
-NAMESPACE="qor5-test"
-echo "kubectl -n $NAMESPACE get deploy -o name | xargs -n1 kubectl -n $NAMESPACE rollout status --timeout 150s" | $KUBECTL_BASH
+curl -XPOST -H "Content-Type: application/json" \
+    -H "Accept:  application/vnd.github.everest-preview+json" \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    https://api.github.com/repos/theplant/qor5-provisioning/dispatches \
+    ∙ -d '{"event_type":"deploy-test","client_payload":{"github":{"example":{"image":"public.ecr.aws/qor5/example:latest"}}}}'
