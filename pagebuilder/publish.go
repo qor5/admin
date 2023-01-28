@@ -29,7 +29,13 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	p.SetOnlineUrl(p.getPublishUrl())
 
 	var liveRecord Page
-	db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline).First(&liveRecord)
+	{
+		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
+		if l10nON {
+			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
+		}
+		lrdb.First(&liveRecord)
+	}
 	if liveRecord.ID == 0 {
 		return
 	}
