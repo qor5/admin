@@ -30,8 +30,8 @@ func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string 
 	}
 
 	return map[string]string{
-		"id":      segs[0],
-		"version": segs[1],
+		"product_code": segs[0],
+		"color_code":   segs[1],
 	}
 }
 
