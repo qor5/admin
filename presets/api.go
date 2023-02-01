@@ -15,10 +15,13 @@ type EditingTitleComponentFunc func(obj interface{}, defaultTitle string, ctx *w
 
 type FieldComponentFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent
 
-type ActionComponentFunc func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
-type ActionUpdateFunc func(selectedIds []string, ctx *web.EventContext) (err error)
-type ActionSelectedIdsProcessorFunc func(selectedIds []string, ctx *web.EventContext) (processedSelectedIds []string, err error)
-type ActionSelectedIdsProcessorNoticeFunc func(selectedIds []string, processedSelectedIds []string, unactionableIds []string) string
+type ActionComponentFunc func(id string, ctx *web.EventContext) h.HTMLComponent
+type ActionUpdateFunc func(id string, ctx *web.EventContext) (err error)
+
+type BulkActionComponentFunc func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
+type BulkActionUpdateFunc func(selectedIds []string, ctx *web.EventContext) (err error)
+type BulkActionSelectedIdsProcessorFunc func(selectedIds []string, ctx *web.EventContext) (processedSelectedIds []string, err error)
+type BulkActionSelectedIdsProcessorNoticeFunc func(selectedIds []string, processedSelectedIds []string, unactionableIds []string) string
 
 type MessagesFunc func(r *http.Request) *Messages
 
