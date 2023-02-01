@@ -35,6 +35,7 @@ func Router() http.Handler {
 		fmt.Fprintf(w, `<html><head>%s</head><body>%s</body></html>`, seodata, post.Body)
 	}))
 	mux.Handle("/", c.pb)
+	mux.Handle("/export-orders", ExportOrders(db))
 
 	// example of sitemap and robot
 	sitemap.SiteMap("product").RegisterRawString("https://dev.qor5.com/admin", "/product").MountTo(mux)
