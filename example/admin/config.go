@@ -155,9 +155,9 @@ func NewConfig() Config {
 
 	l10nBuilder := l10n.New()
 	l10nBuilder.
-		RegisterLocales(countries.International, "International", "International").
-		RegisterLocales(countries.China, "China", "China").
-		RegisterLocales(countries.Japan, "Japan", "Japan").
+		RegisterLocales(countries.International, "International", "int", "International").
+		RegisterLocales(countries.China, "China", "cn", "China").
+		RegisterLocales(countries.Japan, "Japan", "jp", "Japan").
 		//RegisterLocales(countries.Russia, "Russia", "Russia").
 		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
 			return l10nBuilder.GetSupportLocales()[:]

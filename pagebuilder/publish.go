@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/qor/oss"
+	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/publish"
 	"gorm.io/gorm"
 )
@@ -21,12 +22,21 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	if err != nil {
 		return
 	}
+
+	var localePath string
+	var l10nBuilder *l10n.Builder
+	if l10nBuilder, ok = ctx.Value("l10nbuilder").(*l10n.Builder); ok && l10nBuilder != nil {
+		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+			localePath = l10nBuilder.GetLocalePath(locale)
+		}
+	}
+
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.getPublishUrl(),
+		Url:      p.getPublishUrl(localePath),
 		Content:  content,
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getPublishUrl())
+	p.SetOnlineUrl(p.getPublishUrl(localePath))
 
 	var liveRecord Page
 	{
@@ -42,7 +52,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.getPublishUrl(),
+			Url:      liveRecord.getPublishUrl(localePath),
 			IsDelete: true,
 		})
 	}
@@ -57,8 +67,8 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 	return
 }
 
-func (p Page) getPublishUrl() string {
-	return path.Join(p.Slug, "/index.html")
+func (p Page) getPublishUrl(localePath string) string {
+	return path.Join(localePath, p.Slug, "/index.html")
 }
 
 func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {

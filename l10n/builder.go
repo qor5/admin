@@ -3,6 +3,7 @@ package l10n
 import (
 	"context"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/biter777/countries"
@@ -10,8 +11,9 @@ import (
 
 type Builder struct {
 	supportLocales                   []countries.CountryCode
-	localesLabels                    map[countries.CountryCode]string
 	localesCodes                     map[countries.CountryCode]string
+	localesPaths                     map[countries.CountryCode]string
+	localesLabels                    map[countries.CountryCode]string
 	getSupportLocalesFromRequestFunc func(R *http.Request) []countries.CountryCode
 	cookieName                       string
 	queryName                        string
@@ -20,8 +22,9 @@ type Builder struct {
 func New() *Builder {
 	b := &Builder{
 		supportLocales: []countries.CountryCode{},
-		localesLabels:  make(map[countries.CountryCode]string),
 		localesCodes:   make(map[countries.CountryCode]string),
+		localesPaths:   make(map[countries.CountryCode]string),
+		localesLabels:  make(map[countries.CountryCode]string),
 		cookieName:     "locale",
 		queryName:      "locale",
 	}
@@ -40,25 +43,34 @@ func (b *Builder) GetQueryName() string {
 	return b.queryName
 }
 
-func (b *Builder) RegisterLocales(locale countries.CountryCode, localeCode string, label string) (r *Builder) {
+func (b *Builder) RegisterLocales(locale countries.CountryCode, localeCode, localePath, localeLabel string) (r *Builder) {
 	b.supportLocales = append(b.supportLocales, locale)
 	b.localesCodes[locale] = localeCode
-	b.localesLabels[locale] = label
+	b.localesPaths[locale] = path.Join("/", localePath)
+	b.localesLabels[locale] = localeLabel
 	return b
-}
-
-func (b *Builder) GetLocaleLabel(locale countries.CountryCode) string {
-	label, exist := b.localesLabels[locale]
-	if exist {
-		return label
-	}
-	return "Unkonw"
 }
 
 func (b *Builder) GetLocaleCode(locale countries.CountryCode) string {
 	code, exist := b.localesCodes[locale]
 	if exist {
 		return code
+	}
+	return "Unkonw"
+}
+
+func (b *Builder) GetLocalePath(locale countries.CountryCode) string {
+	p, exist := b.localesPaths[locale]
+	if exist {
+		return p
+	}
+	return ""
+}
+
+func (b *Builder) GetLocaleLabel(locale countries.CountryCode) string {
+	label, exist := b.localesLabels[locale]
+	if exist {
+		return label
 	}
 	return "Unkonw"
 }

@@ -38,6 +38,11 @@ func (b *Builder) WithPageBuilder(val interface{}) *Builder {
 	return b
 }
 
+func (b *Builder) WithL10nBuilder(val interface{}) *Builder {
+	b.context = context.WithValue(b.context, "l10nbuilder", val)
+	return b
+}
+
 func (b *Builder) Context() context.Context {
 	return b.context
 }

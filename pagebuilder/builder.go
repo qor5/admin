@@ -251,7 +251,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
 			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
 				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
 			}
 			return h.Div(
@@ -265,7 +265,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		localeCode, _ := l10n.IsLocalizableFromCtx(ctx)
+		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		p := obj.(*Page)
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
