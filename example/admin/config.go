@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/biter777/countries"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -155,12 +154,12 @@ func NewConfig() Config {
 
 	l10nBuilder := l10n.New()
 	l10nBuilder.
-		RegisterLocales(countries.International, "International", "int", "International").
-		RegisterLocales(countries.China, "China", "cn", "China").
-		RegisterLocales(countries.Japan, "Japan", "jp", "Japan").
+		RegisterLocales("International", "int", "International").
+		RegisterLocales("China", "cn", "China").
+		RegisterLocales("Japan", "jp", "Japan").
 		//RegisterLocales(countries.Russia, "Russia", "Russia").
-		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
-			return l10nBuilder.GetSupportLocales()[:]
+		GetSupportLocaleCodesFromRequestFunc(func(R *http.Request) []string {
+			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
 
 	utils.Configure(b)
