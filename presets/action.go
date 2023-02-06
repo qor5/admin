@@ -3,15 +3,11 @@ package presets
 type ActionBuilder struct {
 	NameLabel
 
-	// ButtonCompFunc will define the components of the button area.
 	buttonCompFunc ComponentFunc
-	// UpdateFunc will be executed when the button is clicked.
-	updateFunc ActionUpdateFunc
-	// CompFunc will define the components in dialog of button click.
-	compFunc ActionComponentFunc
+	updateFunc     ActionUpdateFunc
+	compFunc       ActionComponentFunc
 
 	dialogWidth string
-	// If buttonCompFunc is not defined, use the default button style with buttonColor.
 	buttonColor string
 }
 
@@ -29,16 +25,19 @@ func (b *ActionBuilder) Label(v string) (r *ActionBuilder) {
 	return b
 }
 
+// ButtonCompFunc defines the components of the button area.
 func (b *ActionBuilder) ButtonCompFunc(v ComponentFunc) (r *ActionBuilder) {
 	b.buttonCompFunc = v
 	return b
 }
 
+// UpdateFunc defines event when the button is clicked.
 func (b *ActionBuilder) UpdateFunc(v ActionUpdateFunc) (r *ActionBuilder) {
 	b.updateFunc = v
 	return b
 }
 
+// ComponentFunc defines the components in dialog of button click.
 func (b *ActionBuilder) ComponentFunc(v ActionComponentFunc) (r *ActionBuilder) {
 	b.compFunc = v
 	return b
@@ -49,6 +48,7 @@ func (b *ActionBuilder) DialogWidth(v string) (r *ActionBuilder) {
 	return b
 }
 
+// ButtonColor defines the color of default button if buttonCompFunc is not defined.
 func (b *ActionBuilder) ButtonColor(v string) (r *ActionBuilder) {
 	b.buttonColor = v
 	return b
