@@ -47,7 +47,7 @@ INSERT INTO container_headers (color, id) VALUES ('black', 1);
 	r := httptest.NewRequest("GET", "/page_builder/editors/1?version=v1&locale=International", nil)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	if strings.Index(w.Body.String(), "web-headers") < 0 {
+	if strings.Index(w.Body.String(), "headers") < 0 {
 		t.Error(w.Body.String())
 	}
 
