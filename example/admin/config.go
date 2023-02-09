@@ -11,6 +11,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/biter777/countries"
+	"github.com/qor/oss"
+	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -19,7 +21,7 @@ import (
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/media/oss"
+	media_oss "github.com/qor5/admin/media/oss"
 	media_view "github.com/qor5/admin/media/views"
 	microsite_views "github.com/qor5/admin/microsite/views"
 	"github.com/qor5/admin/note"
@@ -48,6 +50,11 @@ import (
 //go:embed assets
 var assets embed.FS
 
+var (
+	// PublishStorage is used to storage static pages published by page builder.
+	PublishStorage oss.StorageInterface = filesystem.New("publish")
+)
+
 type Config struct {
 	pb          *presets.Builder
 	pageBuilder *pagebuilder.Builder
@@ -57,9 +64,14 @@ func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
-	oss.Storage = s3.New(&s3.Config{
+	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
+		Session: sess,
+	})
+	PublishStorage = s3.New(&s3.Config{
+		Bucket:  os.Getenv("S3_Publish_Bucket"),
+		Region:  os.Getenv("S3_Publish_Region"),
 		Session: sess,
 	})
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
@@ -380,7 +392,7 @@ func NewConfig() Config {
 	tm := pageBuilder.ConfigTemplate(b, db)
 	cm := pageBuilder.ConfigCategory(b, db)
 
-	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
+	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
@@ -412,7 +424,7 @@ func NewConfig() Config {
 		SearchColumns("ID", "Name").
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
+	microsite_views.Configure(b, db, ab, media_oss.Storage, domain, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
