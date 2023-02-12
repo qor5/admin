@@ -50,6 +50,7 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 		if err != nil {
 			return
 		}
+		publisher.WithEventContext(ctx)
 		err = publisher.Publish(obj)
 		if err != nil {
 			return

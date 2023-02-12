@@ -33,13 +33,24 @@ func (b *Builder) WithValue(key, val interface{}) *Builder {
 	return b
 }
 
+const (
+	PublishContextKeyPageBuilder  = "pagebuilder"
+	PublishContextKeyL10nBuilder  = "l10nbuilder"
+	PublishContextKeyEventContext = "eventcontext"
+)
+
 func (b *Builder) WithPageBuilder(val interface{}) *Builder {
-	b.context = context.WithValue(b.context, "pagebuilder", val)
+	b.context = context.WithValue(b.context, PublishContextKeyPageBuilder, val)
 	return b
 }
 
 func (b *Builder) WithL10nBuilder(val interface{}) *Builder {
-	b.context = context.WithValue(b.context, "l10nbuilder", val)
+	b.context = context.WithValue(b.context, PublishContextKeyL10nBuilder, val)
+	return b
+}
+
+func (b *Builder) WithEventContext(val interface{}) *Builder {
+	b.context = context.WithValue(b.context, PublishContextKeyEventContext, val)
 	return b
 }
 

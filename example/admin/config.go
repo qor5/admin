@@ -154,10 +154,9 @@ func NewConfig() Config {
 
 	l10nBuilder := l10n.New()
 	l10nBuilder.
-		RegisterLocales("International", "int", "International").
+		RegisterLocales("International", "international", "International").
 		RegisterLocales("China", "cn", "China").
 		RegisterLocales("Japan", "jp", "Japan").
-		//RegisterLocales(countries.Russia, "Russia", "Russia").
 		GetSupportLocaleCodesFromRequestFunc(func(R *http.Request) []string {
 			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
@@ -379,7 +378,7 @@ func NewConfig() Config {
 	tm := pageBuilder.ConfigTemplate(b, db)
 	cm := pageBuilder.ConfigCategory(b, db)
 
-	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
+	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
