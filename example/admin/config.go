@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/biter777/countries"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
@@ -72,6 +73,7 @@ func NewConfig() Config {
 	PublishStorage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Publish_Bucket"),
 		Region:  os.Getenv("S3_Publish_Region"),
+		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: sess,
 	})
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
