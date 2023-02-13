@@ -880,6 +880,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			return nil
 		}
 
+		pmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		id, err := reflectutils.Get(obj, "id")
@@ -930,23 +931,27 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		return h.Components(
 			VTab(h.Text(msgr.RelatedOnlinePages)),
 			VTabItem(
-				VList(pageListComps),
-				h.Div(
-					VSpacer(),
-					VBtn(msgr.RepublishAllRelatedOnlinePages).
-						Color("primary").
-						Attr("@click",
-							web.Plaid().
-								EventFunc(presets.OpenConfirmationDialogEvent).
-								Query(presets.ConfirmationDialogConfirmEventKey,
-									web.Plaid().
-										EventFunc(republishRelatedOnlinePagesEvent).
-										Query("ids", strings.Join(pageIDs, ",")).
-										Go(),
-								).
-								Go(),
-						),
-				).Class("d-flex"),
+				h.If(len(pages) > 0,
+					VList(pageListComps),
+					h.Div(
+						VSpacer(),
+						VBtn(msgr.RepublishAllRelatedOnlinePages).
+							Color("primary").
+							Attr("@click",
+								web.Plaid().
+									EventFunc(presets.OpenConfirmationDialogEvent).
+									Query(presets.ConfirmationDialogConfirmEventKey,
+										web.Plaid().
+											EventFunc(republishRelatedOnlinePagesEvent).
+											Query("ids", strings.Join(pageIDs, ",")).
+											Go(),
+									).
+									Go(),
+							),
+					).Class("d-flex"),
+				).Else(
+					h.Div(h.Text(pmsgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2 mt-8"),
+				),
 			),
 		)
 	})
