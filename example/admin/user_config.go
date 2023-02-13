@@ -179,16 +179,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 	})
 
-	var roles []role.Role
-	db.Find(&roles)
-	var allRoleItems = []DefaultOptionItem{}
-	for _, r := range roles {
-		allRoleItems = append(allRoleItems, DefaultOptionItem{
-			Text:  r.Name,
-			Value: fmt.Sprint(r.ID),
-		})
-	}
-
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var selectedItems = []DefaultOptionItem{}
@@ -204,6 +194,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 						Value: fmt.Sprint(r.ID),
 					})
 				}
+			}
+
+			var roles []role.Role
+			db.Find(&roles)
+			var allRoleItems = []DefaultOptionItem{}
+			for _, r := range roles {
+				allRoleItems = append(allRoleItems, DefaultOptionItem{
+					Text:  r.Name,
+					Value: fmt.Sprint(r.ID),
+				})
 			}
 
 			return vx.VXAutocomplete().Label(field.Label).
