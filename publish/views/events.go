@@ -15,7 +15,7 @@ import (
 
 const (
 	publishEvent            = "publish_PublishEvent"
-	republishEvent          = "publish_republishEvent"
+	RepublishEvent          = "publish_republishEvent"
 	unpublishEvent          = "publish_UnpublishEvent"
 	switchVersionEvent      = "publish_SwitchVersionEvent"
 	SaveNewVersionEvent     = "publish_SaveNewVersionEvent"
@@ -27,11 +27,13 @@ const (
 	ActivityPublish   = "Publish"
 	ActivityRepublish = "Republish"
 	ActivityUnPublish = "UnPublish"
+
+	ParamScriptAfterPublish = "publish_param_script_after_publish"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(publishEvent, publishAction(db, mb, publisher, ab, ActivityPublish))
-	mb.RegisterEventFunc(republishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
+	mb.RegisterEventFunc(RepublishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(switchVersionEvent, switchVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(SaveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
@@ -60,8 +62,12 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 			}
 		}
 
-		presets.ShowMessage(&r, "success", "")
-		r.Reload = true
+		if script := ctx.R.FormValue(ParamScriptAfterPublish); script != "" {
+			web.AppendVarsScripts(&r, script)
+		} else {
+			presets.ShowMessage(&r, "success", "")
+			r.Reload = true
+		}
 		return
 	}
 }

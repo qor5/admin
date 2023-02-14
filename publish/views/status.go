@@ -78,10 +78,10 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		case publish.StatusOnline:
 			btn = h.Div(
 				VBtn(msgr.Unpublish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, unpublishEvent)),
-				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, republishEvent)),
+				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)),
 			)
 		}
-		
+
 		paramID := obj.(presets.SlugEncoder).PrimarySlug()
 
 		return web.Scope(
