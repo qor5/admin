@@ -51,3 +51,19 @@ var Messages_zh_CN = &Messages{
 	RelatedOnlinePages:             "相关在线页面",
 	RepublishAllRelatedOnlinePages: "重新发布所有页面",
 }
+
+var Messages_ja_JP = &Messages{
+	Category:                       "カテゴリー",
+	EditPageContent:                "ページコンテナを編集する",
+	Preview:                        "プレビュー",
+	Containers:                     "コンテナ",
+	AddContainers:                  "コンテナを追加する",
+	New:                            "新規",
+	Shared:                         "共有",
+	Select:                         "選択する",
+	TemplateID:                     "テンプレートID",
+	TemplateName:                   "テンプレート名",
+	CreateFromTemplate:             "テンプレートから新規作成する",
+	RelatedOnlinePages:             "関連オンラインページ",
+	RepublishAllRelatedOnlinePages: "すべて再公開",
+}

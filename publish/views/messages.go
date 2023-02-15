@@ -94,6 +94,36 @@ var Messages_zh_CN = &Messages{
 	RenameVersion:           "命名版本",
 }
 
+var Messages_ja_JP = &Messages{
+	StatusDraft:             "下書き",
+	StatusOnline:            "公開中",
+	StatusOffline:           "非公開中",
+	Publish:                 "公開する",
+	Unpublish:               "非公開",
+	Republish:               "再公開",
+	Areyousure:              "よろしいですか？",
+	ScheduledStartAt:        "公開開始日時",
+	ScheduledEndAt:          "公開終了日時",
+	PublishedAt:             "開始日時",
+	UnPublishedAt:           "公開終了日時",
+	ActualPublishTime:       "投稿日時",
+	SchedulePublishTime:     "公開日時を設定する",
+	NotSet:                  "未セット",
+	WhenDoYouWantToPublish:  "公開日時を設定してください",
+	PublishScheduleTip:      "{SchedulePublishTime} 設定後、システムが自動で当該記事の公開・非公開を行います。",
+	DateTimePickerClearText: "クリア",
+	DateTimePickerOkText:    "OK",
+	SaveAsNewVersion:        "新規バージョンとして保存する",
+	SwitchedToNewVersion:    "新規バージョンに変更する",
+	SuccessfullyCreated:     "作成に成功しました",
+	SuccessfullyRename:      "名付けに成功しました",
+	OnlineVersion:           "オンラインバージョン",
+	VersionsList:            "バージョンリスト",
+	AllVersions:             "全てのバージョン",
+	NamedVersions:           "名付け済みバージョン",
+	RenameVersion:           "バージョンの名前を変更する",
+}
+
 func GetStatusText(status string, msgr *Messages) string {
 	switch status {
 	case publish.StatusDraft:
