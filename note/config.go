@@ -3,11 +3,11 @@ package note
 import (
 	"fmt"
 
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -38,7 +38,8 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 
 	pb.I18n().
 		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
 }
 
 func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFunc {

@@ -87,7 +87,8 @@ func New() *Builder {
 		builder: web.New(),
 		i18nBuilder: i18n.New().
 			RegisterForModule(language.English, CoreI18nModuleKey, Messages_en_US).
-			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN),
+			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN).
+			RegisterForModule(language.Japanese, CoreI18nModuleKey, Messages_ja_JP),
 		writeFieldDefaults:   NewFieldDefaults(WRITE),
 		listFieldDefaults:    NewFieldDefaults(LIST),
 		detailFieldDefaults:  NewFieldDefaults(DETAIL),

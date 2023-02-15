@@ -138,16 +138,8 @@ func NewConfig() Config {
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
-		RegisterForModule(language.Japanese, presets.CoreI18nModuleKey, Messages_ja_JP_CoreI18nModuleKey).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).
 		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).
-		RegisterForModule(language.Japanese, login.I18nLoginKey, Messages_ja_JP_I18nLoginKey).
-		RegisterForModule(language.Japanese, utils.I18nUtilsKey, Messages_ja_JP_I18nUtilsKey).
-		RegisterForModule(language.Japanese, publish_view.I18nPublishKey, Messages_ja_JP_I18nPublishKey).
-		RegisterForModule(language.Japanese, note.I18nNoteKey, Messages_ja_JP_I18nNoteKey).
-		RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey).
-		//RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey2).
-		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).

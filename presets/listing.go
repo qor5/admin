@@ -427,12 +427,16 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := MustGetMessages(ctx.R)
 	id := ctx.R.FormValue(ParamID)
+	promptID := id
+	if v := ctx.R.FormValue("prompt_id"); v != "" {
+		promptID = v
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: VDialog(
 			VCard(
-				VCardTitle(h.Text(msgr.DeleteConfirmationText(id))),
+				VCardTitle(h.Text(msgr.DeleteConfirmationText(promptID))),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).

@@ -44,6 +44,18 @@ var Messages_zh_CN = &Messages{
 	Japan:                 "日本",
 }
 
+var Messages_ja_JP = &Messages{
+	Localize:              "ローカライズ",
+	LocalizeFrom:          "から",
+	LocalizeTo:            "に",
+	SuccessfullyLocalized: "ローカライズに成功しました",
+	Location:              "場所",
+	Colon:                 ":",
+	International:         "インターナショナル",
+	China:                 "中国",
+	Japan:                 "日本",
+}
+
 func MustGetTranslation(r *http.Request, key string) string {
 	return i18n.T(r, I18nLocalizeKey, key)
 }

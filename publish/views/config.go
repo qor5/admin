@@ -7,10 +7,13 @@ import (
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/publish"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -58,6 +61,70 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 				return searcher(model, params, ctx)
 			})
 
+			// listing-delete deletes all versions
+			{
+				// rewrite Delete row menu item to show correct id in prompt message
+				m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+					msgr := presets.MustGetMessages(ctx.R)
+					if m.Info().Verifier().Do(presets.PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+						return nil
+					}
+
+					promptID := id
+					if slugger, ok := obj.(presets.SlugDecoder); ok {
+						fvs := []string{}
+						for f, v := range slugger.PrimaryColumnValuesBySlug(id) {
+							if f == "id" {
+								fvs = append([]string{v}, fvs...)
+							} else {
+								if f != "version" {
+									fvs = append(fvs, v)
+								}
+							}
+						}
+						promptID = strings.Join(fvs, "_")
+					}
+
+					onclick := web.Plaid().
+						EventFunc(actions.DeleteConfirmation).
+						Query(presets.ParamID, id).
+						Query("all_versions", true).
+						Query("prompt_id", promptID)
+					if presets.IsInDialog(ctx.R.Context()) {
+						onclick.URL(ctx.R.RequestURI).
+							Query(presets.ParamOverlay, actions.Dialog).
+							Query(presets.ParamInDialog, true).
+							Query(presets.ParamListingQueries, ctx.Queries().Encode())
+					}
+					return VListItem(
+						VListItemIcon(VIcon("delete")),
+						VListItemTitle(h.Text(msgr.Delete)),
+					).Attr("@click", onclick.Go())
+				})
+				// rewrite Deleter to ignore version condition
+				m.Editing().DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+					allVersions := ctx.R.URL.Query().Get("all_versions") == "true"
+
+					wh := db.Model(obj)
+
+					if id != "" {
+						if slugger, ok := obj.(presets.SlugDecoder); ok {
+							cs := slugger.PrimaryColumnValuesBySlug(id)
+							for key, value := range cs {
+								if allVersions && key == "version" {
+									continue
+								}
+								wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
+							}
+						} else {
+							wh = wh.Where("id =  ?", id)
+						}
+					}
+
+					return wh.Delete(obj).Error
+				})
+			}
+
 			setter := m.Editing().Setter
 			m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 				if ctx.R.FormValue(presets.ParamID) == "" {
@@ -103,5 +170,6 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 
 	b.I18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nPublishKey, Messages_ja_JP)
 }
