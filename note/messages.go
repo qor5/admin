@@ -20,3 +20,10 @@ var Messages_zh_CN = &Messages{
 	Notes:               "备注",
 	NewNote:             "新建备注",
 }
+
+var Messages_ja_JP = &Messages{
+	SuccessfullyCreated: "作成に成功しました",
+	Item:                "アイテム",
+	Notes:               "ノート",
+	NewNote:             "新規ノート",
+}

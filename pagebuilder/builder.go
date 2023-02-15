@@ -149,7 +149,8 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
 	b.mb = pm
 	pm.Listing("ID", "Title", "Slug")

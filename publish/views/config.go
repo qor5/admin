@@ -170,5 +170,6 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 
 	b.I18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nPublishKey, Messages_ja_JP)
 }

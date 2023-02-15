@@ -78,7 +78,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
 	b.I18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
 }
 
 func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
