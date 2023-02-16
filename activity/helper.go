@@ -20,10 +20,10 @@ func findOldWithSlug(obj interface{}, slug string, db *gorm.DB) (interface{}, bo
 		old      = reflect.New(objValue.Type()).Interface()
 	)
 
-	if slugger, ok := obj.(interface{ PrimaryColumnValuesBySlug(slug string) [][]string }); ok {
+	if slugger, ok := obj.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(slug)
-		for _, cond := range cs {
-			db = db.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+		for key, value := range cs {
+			db = db.Where(fmt.Sprintf("%s = ?", key), value)
 		}
 	} else {
 		db = db.Where("id = ?", slug)

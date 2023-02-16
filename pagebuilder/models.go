@@ -25,19 +25,40 @@ func (*Page) TableName() string {
 	return "page_builder_pages"
 }
 
-func (p *Page) PrimarySlug() string {
-	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
+var l10nON bool
+
+func (p *Page) L10nON() {
+	l10nON = true
+	return
 }
 
-func (p *Page) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (p *Page) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
+	}
+	return fmt.Sprintf("%v_%v_%v", p.ID, p.Version.Version, p.LocaleCode)
+}
+
+func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) != 2 {
+	if !l10nON {
+		if len(segs) != 2 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id":      segs[0],
+			"version": segs[1],
+		}
+	}
+	if len(segs) != 3 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":          segs[0],
+		"version":     segs[1],
+		"locale_code": segs[2],
 	}
 }
 
@@ -58,6 +79,7 @@ type Container struct {
 	gorm.Model
 	PageID       uint
 	PageVersion  string
+	PageLocale   string
 	ModelName    string
 	ModelID      uint
 	DisplayOrder float64

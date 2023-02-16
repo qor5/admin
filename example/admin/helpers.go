@@ -6,6 +6,11 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/gocarina/gocsv"
+	"github.com/qor5/admin/example/models"
+	"gorm.io/gorm"
 )
 
 type DataTableHeader struct {
@@ -46,4 +51,20 @@ func proxy(r *http.Request) []string {
 	}
 
 	return nil
+}
+
+func ExportOrders(db *gorm.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var orders []*models.Order
+
+		if err := db.Model(&models.Order{}).Find(&orders).Error; err != nil {
+			panic(err)
+		}
+
+		name := time.Now().Format("20060102150405")
+		w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="orders-%v.csv"`, name))
+		w.Header().Set("Content-Type", req.Header.Get("Content-Type"))
+
+		gocsv.Marshal(orders, w)
+	})
 }

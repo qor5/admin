@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -13,7 +13,8 @@ const I18nUtilsKey i18n.ModuleKey = "I18nUtilsKey"
 func Configure(b *presets.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nUtilsKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nUtilsKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nUtilsKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nUtilsKey, Messages_ja_JP)
 }
 
 func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {

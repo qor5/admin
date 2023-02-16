@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/l10n"
+	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
@@ -21,6 +23,7 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -57,6 +60,7 @@ type Builder struct {
 	db                *gorm.DB
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
+	mb                *presets.ModelBuilder
 	pageStyle         h.HTMLComponent
 	pageLayoutFunc    PageLayoutFunc
 	preview           http.Handler
@@ -65,8 +69,11 @@ type Builder struct {
 }
 
 const (
-	openTemplateDialogEvent = "openTemplateDialogEvent"
-	selectTemplateEvent     = "selectTemplateEvent"
+	openTemplateDialogEvent          = "openTemplateDialogEvent"
+	selectTemplateEvent              = "selectTemplateEvent"
+	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
+
+	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
 func New(db *gorm.DB, i18nB *i18n.Builder) *Builder {
@@ -142,9 +149,11 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
-	pm.Listing("ID", "Title", "Slug", "Locale")
+	b.mb = pm
+	pm.Listing("ID", "Title", "Slug")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 
@@ -248,10 +257,14 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		p := obj.(*Page)
 		if p.GetStatus() == publish.StatusDraft {
+			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
+			}
 			return h.Div(
 				VBtn(msgr.EditPageContent).
 					Target("_blank").
-					Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
+					Href(href).
 					Color("secondary"),
 			)
 		}
@@ -259,6 +272,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		localeCode, _ := l10n.IsLocalizableFromCtx(ctx)
 		p := obj.(*Page)
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
@@ -270,7 +284,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 			}
 
 			if strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
-				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.ParentVersion, p.GetVersion()); inerr != nil {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}
 				return
@@ -282,10 +296,30 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				if inerr != nil {
 					return
 				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, int(p.ID), p.GetVersion()); inerr != nil {
+				if !l10nON {
+					localeCode = ""
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, "", int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 					return
 				}
+			}
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n_view.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.copyContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
 			}
 			return
 		})
@@ -540,6 +574,9 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 
 func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
+
+	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
+
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
 	listing.RowMenu("").Empty()
 	// ed := pm.Editing("SelectContainer")
@@ -591,6 +628,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 				EventFunc(actions.Edit).
 				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 				Query(presets.ParamID, c.ModelID).
+				Query(paramOpenFromSharedContainer, 1).
 				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
@@ -805,6 +843,8 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	}
 
 	b.modelType = val.Elem().Type()
+
+	b.configureRelatedOnlinePagesTab()
 	return b
 }
 
@@ -832,6 +872,110 @@ func (b *ContainerBuilder) ModelTypeName() string {
 
 func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 	return b.mb.Editing(vs...)
+}
+
+func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
+	eb := b.mb.Editing()
+	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
+			return nil
+		}
+
+		pmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		id, err := reflectutils.Get(obj, "id")
+		if err != nil {
+			panic(err)
+		}
+
+		pages := []*Page{}
+		pageTable := (&Page{}).TableName()
+		containerTable := (&Container{}).TableName()
+		err = b.builder.db.Model(&Page{}).
+			Joins(fmt.Sprintf(`inner join %s on 
+        %s.id = %s.page_id
+        and %s.version = %s.page_version
+        and %s.locale_code = %s.page_locale`,
+				containerTable,
+				pageTable, containerTable,
+				pageTable, containerTable,
+				pageTable, containerTable,
+			)).
+			// FIXME: add container locale condition after container supports l10n
+			Where(fmt.Sprintf(`%s.status = ? and %s.model_id = ? and %s.model_name = ?`,
+				pageTable,
+				containerTable,
+				containerTable,
+			), publish.StatusOnline, id, b.name).
+			Find(&pages).
+			Error
+		if err != nil {
+			panic(err)
+		}
+
+		var pageIDs []string
+		var pageListComps h.HTMLComponents
+		for _, p := range pages {
+			pid := p.PrimarySlug()
+			pageIDs = append(pageIDs, pid)
+			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(pid, "-", "_", -1))
+			pageListComps = append(pageListComps, VListItem(
+				h.Text(fmt.Sprintf("%s (%s)", p.Title, pid)),
+				VSpacer(),
+				VIcon(fmt.Sprintf(`{{vars.%s}}`, statusVar)),
+			).
+				Dense(true).
+				Attr(web.InitContextVars, fmt.Sprintf(`{%s: ""}`, statusVar)))
+		}
+
+		return h.Components(
+			VTab(h.Text(msgr.RelatedOnlinePages)),
+			VTabItem(
+				h.If(len(pages) > 0,
+					VList(pageListComps),
+					h.Div(
+						VSpacer(),
+						VBtn(msgr.RepublishAllRelatedOnlinePages).
+							Color("primary").
+							Attr("@click",
+								web.Plaid().
+									EventFunc(presets.OpenConfirmationDialogEvent).
+									Query(presets.ConfirmationDialogConfirmEventKey,
+										web.Plaid().
+											EventFunc(republishRelatedOnlinePagesEvent).
+											Query("ids", strings.Join(pageIDs, ",")).
+											Go(),
+									).
+									Go(),
+							),
+					).Class("d-flex"),
+				).Else(
+					h.Div(h.Text(pmsgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2 mt-8"),
+				),
+			),
+		)
+	})
+}
+
+func republishRelatedOnlinePages(pageURL string) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		ids := strings.Split(ctx.R.FormValue("ids"), ",")
+		for _, id := range ids {
+			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
+			web.AppendVarsScripts(&r,
+				web.Plaid().
+					URL(pageURL).
+					EventFunc(views.RepublishEvent).
+					Query("id", id).
+					Query(views.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
+					Query("status_var", statusVar).
+					Go(),
+				fmt.Sprintf(`vars.%s = "pending"`, statusVar),
+			)
+		}
+		return r, nil
+	}
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {

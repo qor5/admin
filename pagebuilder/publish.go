@@ -29,7 +29,13 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	p.SetOnlineUrl(p.getPublishUrl())
 
 	var liveRecord Page
-	db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline).First(&liveRecord)
+	{
+		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
+		if l10nON {
+			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
+		}
+		lrdb.First(&liveRecord)
+	}
 	if liveRecord.ID == 0 {
 		return
 	}
@@ -57,7 +63,7 @@ func (p Page) getPublishUrl() string {
 
 func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s", p.ID, p.GetVersion()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)
 
 	r = w.Body.String()

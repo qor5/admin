@@ -25,15 +25,14 @@ func (p *Category) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
 }
 
-func (p *Category) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (p *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
-
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":      segs[0],
+		"version": segs[1],
 	}
 }
 

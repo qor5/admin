@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/biter777/countries"
+	"github.com/qor/oss"
+	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
@@ -18,7 +21,7 @@ import (
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/media/oss"
+	media_oss "github.com/qor5/admin/media/oss"
 	media_view "github.com/qor5/admin/media/views"
 	microsite_views "github.com/qor5/admin/microsite/views"
 	"github.com/qor5/admin/note"
@@ -47,6 +50,11 @@ import (
 //go:embed assets
 var assets embed.FS
 
+var (
+	// PublishStorage is used to storage static pages published by page builder.
+	PublishStorage oss.StorageInterface = filesystem.New("publish")
+)
+
 type Config struct {
 	pb          *presets.Builder
 	pageBuilder *pagebuilder.Builder
@@ -56,9 +64,15 @@ func NewConfig() Config {
 	db := ConnectDB()
 	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
-	oss.Storage = s3.New(&s3.Config{
+	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
+		Session: sess,
+	})
+	PublishStorage = s3.New(&s3.Config{
+		Bucket:  os.Getenv("S3_Publish_Bucket"),
+		Region:  os.Getenv("S3_Publish_Region"),
+		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: sess,
 	})
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
@@ -105,7 +119,7 @@ func NewConfig() Config {
 	// perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*:roles:*", "*:users:*"),
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*"),
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:orders:*"),
 			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
@@ -123,16 +137,8 @@ func NewConfig() Config {
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
-		RegisterForModule(language.Japanese, presets.CoreI18nModuleKey, Messages_ja_JP_CoreI18nModuleKey).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).
 		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).
-		RegisterForModule(language.Japanese, login.I18nLoginKey, Messages_ja_JP_I18nLoginKey).
-		RegisterForModule(language.Japanese, utils.I18nUtilsKey, Messages_ja_JP_I18nUtilsKey).
-		RegisterForModule(language.Japanese, publish_view.I18nPublishKey, Messages_ja_JP_I18nPublishKey).
-		RegisterForModule(language.Japanese, note.I18nNoteKey, Messages_ja_JP_I18nNoteKey).
-		RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey).
-		// RegisterForModule(language.Japanese, l10n_view.I18nLocalizeKey, Messages_ja_JP_I10nLocalizeKey2).
-		RegisterForModule(language.Japanese, pagebuilder.I18nPageBuilderKey, Messages_ja_JP_I18nPageBuilderKey).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
@@ -199,6 +205,8 @@ func NewConfig() Config {
 			"nested-field-demos",
 			"ListModels",
 			"MicrositeModels",
+			"L10nModel",
+			"L10nModelWithVersion",
 		).Icon("featured_play_list"),
 		"Worker",
 		"ActivityLogs",
@@ -377,7 +385,7 @@ func NewConfig() Config {
 	tm := pageBuilder.ConfigTemplate(b, db)
 	cm := pageBuilder.ConfigCategory(b, db)
 
-	publisher := publish.New(db, oss.Storage).WithPageBuilder(pageBuilder)
+	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder)
 
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
@@ -409,9 +417,10 @@ func NewConfig() Config {
 		SearchColumns("ID", "Name").
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, ab, oss.Storage, domain, publisher, mm)
-
-	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category)
+	microsite_views.Configure(b, db, ab, media_oss.Storage, domain, publisher, mm)
+	l10nM, l10nVM := configL10nModel(b)
+	_ = l10nM
+	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)
 
@@ -423,7 +432,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm)
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,

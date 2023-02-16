@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/qor5/web"
 	"github.com/theplant/gofixtures"
 )
 
@@ -23,15 +23,15 @@ func (tv *TestVariant) PrimarySlug() string {
 	return fmt.Sprintf("%s_%s", tv.ProductCode, tv.ColorCode)
 }
 
-func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"product_code", segs[0]},
-		{"color_code", segs[1]},
+	return map[string]string{
+		"product_code": segs[0],
+		"color_code":   segs[1],
 	}
 }
 

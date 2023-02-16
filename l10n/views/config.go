@@ -7,7 +7,6 @@ import (
 
 	"github.com/biter777/countries"
 	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/utils"
@@ -22,10 +21,40 @@ import (
 
 func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.ActivityBuilder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
-		m.Listing().SearchFunc(gorm2op.Searcher(db, m))
-		m.Editing().FetchFunc(gorm2op.Fetcher(db, m))
-		m.Editing().SaveFunc(gorm2op.Saver(db, m))
-		m.Editing().DeleteFunc(gorm2op.Deleter(db, m))
+		obj := m.NewModel()
+		_ = obj.(presets.SlugEncoder)
+		_ = obj.(presets.SlugDecoder)
+		_ = obj.(l10n.L10nInterface)
+		if l10nONModel, exist := obj.(l10n.L10nONInterface); exist {
+			l10nONModel.L10nON()
+		}
+		m.Listing().Field("Locale")
+		searcher := m.Listing().Searcher
+		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+				con := presets.SQLCondition{
+					Query: "locale_code = ?",
+					Args:  []interface{}{localeCode},
+				}
+				params.SQLConditions = append(params.SQLConditions, &con)
+			}
+
+			return searcher(model, params, ctx)
+		})
+
+		setter := m.Editing().Setter
+		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+			if ctx.R.FormValue(presets.ParamID) == "" {
+				if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
+						return
+					}
+				}
+			}
+			if setter != nil {
+				setter(obj, ctx)
+			}
+		})
 
 		rmb := m.Listing().RowMenu()
 		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
@@ -49,7 +78,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
 	b.I18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
 }
 
 func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
