@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	media_view "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 
 	"github.com/qor5/admin/worker"
 	h "github.com/theplant/htmlgo"
@@ -126,27 +126,27 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets
 	listing.BulkAction("Action Job - No parameters").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - No parameters").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - No parameters").Color("secondary").Depressed(true).Class("ml-2").
 					Attr("@click", noParametersJob.URL())
 			})
 
 	listing.BulkAction("Action Job - Parameter input box").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Parameter input box").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Parameter input box").Color("secondary").Depressed(true).Class("ml-2").
 					Attr("@click", parametersBoxJob.URL())
 			})
 	listing.BulkAction("Action Job - Display log").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Display log").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Display log").Color("secondary").Depressed(true).Class("ml-2").
 					Attr("@click", displayLogJob.URL())
 			})
 
 	listing.BulkAction("Action Job - Get Args").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Get Args").Color("primary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Get Args").Color("secondary").Depressed(true).Class("ml-2").
 					Attr("@click", getArgsJob.URL())
 			})
 

@@ -350,7 +350,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			Value(u.CompanyID)
 	})
 
-	dp := m.Detailing("MainInfo", "Details", "Cards", "Payments", "Events")
+	dp := m.Detailing("MainInfo", "Details", "Cards", "Events")
 
 	dp.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
 		var cus = &Customer{}
@@ -512,7 +512,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")
@@ -520,11 +520,11 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			return
 		}
 
-		err = db.Model(&Customer{}).Where("id = ?", selectedIds[0]).
+		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
 
 		return
-	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
 		var alert h.HTMLComponent
 
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {

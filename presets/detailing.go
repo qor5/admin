@@ -3,11 +3,11 @@ package presets
 import (
 	"net/url"
 
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
+	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
-	"github.com/jinzhu/inflection"
+	"github.com/qor5/web"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
 )
@@ -179,17 +179,16 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		panic("action required")
 	}
 	id := ctx.R.FormValue(ParamID)
-	err1 := action.updateFunc([]string{id}, ctx)
-	if err1 != nil || ctx.Flash != nil {
+	if err := action.updateFunc(id, ctx); err != nil || ctx.Flash != nil {
 		if ctx.Flash == nil {
-			ctx.Flash = err1
+			ctx.Flash = err
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: rightDrawerContentPortalName,
 			Body: b.actionForm(action, ctx),
 		})
-		return
+		return r, nil
 	}
 
 	r.PushState = web.Location(url.Values{})
@@ -219,7 +218,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 	return VContainer(
 		VCard(
 			VCardText(
-				action.compFunc([]string{id}, ctx),
+				action.compFunc(id, ctx),
 			),
 			VCardActions(
 				VSpacer(),

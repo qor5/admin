@@ -8,9 +8,9 @@ const (
 	PermUpdate = "presets:update"
 	PermDelete = "presets:delete"
 
-	PermListingActions = "listing_actions"
-	PermActions        = "actions"
-	PermBulkActions    = "bulk_actions"
+	PermActions         = "actions"
+	PermDoListingAction = "do_listing_action"
+	PermBulkActions     = "bulk_actions"
 )
 
 var (
