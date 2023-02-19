@@ -324,7 +324,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					return
 				}
 
-				if inerr = b.copyContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
 					panic(inerr)
 					return
 				}
@@ -335,9 +335,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 		return
 	})
-
-	b.configSharedContainer(pb, db)
-	b.configDemoContainer(pb, db)
 	return
 }
 
@@ -581,7 +578,7 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 	).Cols(3)
 }
 
-func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
@@ -645,7 +642,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	return
 }
 
-func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -790,8 +787,9 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 		}
 
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true").Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
 			return
 		}
 		totalCount = int(c)
@@ -905,7 +903,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			Joins(fmt.Sprintf(`inner join %s on 
         %s.id = %s.page_id
         and %s.version = %s.page_version
-        and %s.locale_code = %s.page_locale`,
+        and %s.locale_code = %s.locale_code`,
 				containerTable,
 				pageTable, containerTable,
 				pageTable, containerTable,

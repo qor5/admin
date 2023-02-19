@@ -79,13 +79,30 @@ type Container struct {
 	gorm.Model
 	PageID       uint
 	PageVersion  string
-	PageLocale   string
 	ModelName    string
 	ModelID      uint
 	DisplayOrder float64
 	Shared       bool
 	Hidden       bool
 	DisplayName  string
+
+	l10n.Locale
+}
+
+func (this *Container) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*Container) TableName() string {
@@ -96,6 +113,23 @@ type DemoContainer struct {
 	gorm.Model
 	ModelName string
 	ModelID   uint
+	l10n.Locale
+}
+
+func (this *DemoContainer) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*DemoContainer) TableName() string {
