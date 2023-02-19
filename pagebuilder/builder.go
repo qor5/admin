@@ -206,9 +206,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					}
 				}
 				if l10nB != nil {
-					u = os.Getenv("PUBLISH_URL") + path.Join(l10nB.GetLocalePath(p.LocaleCode), c.Path, p.Slug)
+					u = os.Getenv("PUBLISH_URL") + path.Join(l10nB.GetLocalePath(p.LocaleCode), c.Path, p.Slug, "/index.html")
 				} else {
-					u = os.Getenv("PUBLISH_URL") + path.Join(c.Path, p.Slug)
+					u = os.Getenv("PUBLISH_URL") + path.Join(c.Path, p.Slug, "/index.html")
 				}
 			}
 
