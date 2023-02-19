@@ -14,6 +14,7 @@ type Page struct {
 	Title      string
 	Slug       string
 	CategoryID uint
+	Category   Category
 
 	publish.Status
 	publish.Schedule

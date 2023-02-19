@@ -141,7 +141,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN)
@@ -187,15 +187,24 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		}
 		var showURL h.HTMLComponent
 		if p.ID != 0 {
-			var c Category
-			for _, e := range categories {
-				if e.ID == p.CategoryID {
-					c = *e
-					break
+			var u string
+			if p.OnlineUrl != "" {
+				u = os.Getenv("PUBLISH_URL") + p.OnlineUrl
+			} else {
+				var c Category
+				for _, e := range categories {
+					if e.ID == p.CategoryID {
+						c = *e
+						break
+					}
+				}
+				if l10nB != nil {
+					u = os.Getenv("PUBLISH_URL") + path.Join(l10nB.GetLocalePath(p.LocaleCode), c.Path, p.Slug)
+				} else {
+					u = os.Getenv("PUBLISH_URL") + path.Join(c.Path, p.Slug)
 				}
 			}
 
-			u := os.Getenv("PUBLISH_URL") + c.Path + p.Slug
 			showURL = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
 			).Class("mb-4")

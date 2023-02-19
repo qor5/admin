@@ -346,7 +346,7 @@ func NewConfig() Config {
 	configCustomer(b, db)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db)
+	pm := pageBuilder.Configure(b, db, l10nBuilder)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		u := getCurrentUser(ctx.R)

@@ -11,9 +11,13 @@ import (
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/web"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+	if err = db.Preload(clause.Associations).First(p).Error; err != nil {
+		return
+	}
 	var b *Builder
 	var ok bool
 	if b, ok = ctx.Value(publish.PublishContextKeyPageBuilder).(*Builder); !ok || b == nil {
@@ -70,7 +74,7 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 }
 
 func (p Page) getPublishUrl(localePath string) string {
-	return path.Join(localePath, p.Slug, "/index.html")
+	return path.Join(localePath, p.Category.Path, p.Slug, "/index.html")
 }
 
 func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
