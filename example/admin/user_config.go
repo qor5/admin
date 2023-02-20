@@ -50,7 +50,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 		return
 	})
-	user.RegisterEventFunc("roles_selector", rolesSelector(db))
 	user.RegisterEventFunc("eventUnlockUser", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		uid := ctx.R.FormValue("id")
 		u := models.User{}
@@ -180,16 +179,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 	})
 
-	var roles []role.Role
-	db.Find(&roles)
-	var allRoleItems = []DefaultOptionItem{}
-	for _, r := range roles {
-		allRoleItems = append(allRoleItems, DefaultOptionItem{
-			Text:  r.Name,
-			Value: fmt.Sprint(r.ID),
-		})
-	}
-
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var selectedItems = []DefaultOptionItem{}
@@ -205,6 +194,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 						Value: fmt.Sprint(r.ID),
 					})
 				}
+			}
+
+			var roles []role.Role
+			db.Find(&roles)
+			var allRoleItems = []DefaultOptionItem{}
+			for _, r := range roles {
+				allRoleItems = append(allRoleItems, DefaultOptionItem{
+					Text:  r.Name,
+					Value: fmt.Sprint(r.ID),
+				})
 			}
 
 			return vx.VXAutocomplete().Label(field.Label).
@@ -333,27 +332,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			},
 		}
 	})
-}
-
-func rolesSelector(db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var roles []role.Role
-		var items []DefaultOptionItem
-		searchKey := ctx.R.FormValue("keyword")
-		sql := db.Order("name").Limit(3)
-		if searchKey != "" {
-			sql = sql.Where("name ILIKE ?", fmt.Sprintf("%%%s%%", searchKey))
-		}
-		sql.Find(&roles)
-		for _, r := range roles {
-			items = append(items, DefaultOptionItem{
-				Text:  r.Name,
-				Value: fmt.Sprint(r.ID),
-			})
-		}
-		r.Data = items
-		return
-	}
 }
 
 func favorPostSelector(id uint) h.HTMLComponent {
