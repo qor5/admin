@@ -541,7 +541,7 @@ func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 func (b *Builder) AddContainerToPage(pageID int, pageVersion, pageLocale, containerName string) (modelID uint, err error) {
 	model := b.ContainerByName(containerName).NewModel()
 	var dc DemoContainer
-	b.db.Where("model_name = ?", containerName).First(&dc)
+	b.db.Where("model_name = ? AND locale_code = ?", containerName, pageLocale).First(&dc)
 	if dc.ID != 0 && dc.ModelID != 0 {
 		b.db.Where("id = ?", dc.ModelID).First(model)
 		reflectutils.Set(model, "ID", uint(0))
@@ -712,6 +712,22 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 			return
 		}
 	}
+	return
+}
+
+func (b *Builder) createModelAfterLocalizeDemoContainer(db *gorm.DB, c *DemoContainer) (err error) {
+	model := b.ContainerByName(c.ModelName).NewModel()
+	if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+		return
+	}
+	if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+		return
+	}
+	if err = db.Create(model).Error; err != nil {
+		return
+	}
+
+	c.ModelID = reflectutils.MustGet(model, "ID").(uint)
 	return
 }
 

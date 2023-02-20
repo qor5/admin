@@ -648,9 +648,11 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		modelID := ctx.QueryAsInt(presets.ParamOverlayUpdateID)
 		modelName := ctx.R.FormValue("ModelName")
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		db.Where(DemoContainer{ModelName: modelName}).FirstOrCreate(&DemoContainer{
 			ModelName: modelName,
 			ModelID:   uint(modelID),
+			Locale:    l10n.Locale{LocaleCode: locale},
 		})
 		r.Reload = true
 		return
@@ -658,6 +660,8 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	listing := pm.Listing("ModelName").SearchColumns("ModelName")
 	listing.Field("ModelName").Label("Name")
 	ed := pm.Editing("SelectContainer").ActionsFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent { return nil })
+	ed.Field("ModelName")
+	ed.Field("ModelID")
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
@@ -738,6 +742,25 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
 
 		return tdbind
+	})
+
+	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		this := obj.(*DemoContainer)
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
+					panic(inerr)
+					return
+				}
+			}
+
+			if inerr = gorm2op.DataOperator(tx).Save(this, id, ctx); inerr != nil {
+				return
+			}
+			return
+		})
+
+		return
 	})
 	return
 }
