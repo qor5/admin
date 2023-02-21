@@ -159,3 +159,37 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		return
 	})
 }
+
+func oauthCompleteInfoPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		dvc := plogin.DefaultViewCommon
+		dvc.InjectZxcvbn(ctx)
+
+		r.PageTitle = "Complete Info"
+		var bodyForm HTMLComponent
+		bodyForm = Div(
+			H1(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoTitle")).Class(dvc.TitleClass),
+
+			Form(
+				Div(
+					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoPositionLabel")).Class(dvc.LabelClass).For("position"),
+					dvc.Input("position", "", ""),
+				),
+				Div(
+					Input("").Type("checkbox").Id("agree").Style("margin-right: 8px; margin-left: 2px;"),
+					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoAgreeLabel")).For("agree"),
+				).Class("mt-6"),
+				dvc.FormSubmitBtn(msgr.Confirm),
+				v.VBtn(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoBackLabel")).Block(true).Large(true).Class("mt-6").Href("/auth/logout"),
+			).Method(http.MethodPost).Action(oauthCompleteInfoActionURL),
+		).Class(dvc.WrapperClass).Style(dvc.WrapperStyle)
+
+		r.Body = Div(
+			dvc.ErrNotice(fMsg),
+			bodyForm,
+		)
+		return
+	})
+}

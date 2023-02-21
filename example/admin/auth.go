@@ -19,6 +19,7 @@ import (
 
 var (
 	loginBuilder *login.Builder
+	vh           *login.ViewHelper
 )
 
 func getCurrentUser(r *http.Request) (u *models.User) {
@@ -127,7 +128,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return nil
 		})
 
-	vh := loginBuilder.ViewHelper()
+	vh = loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))
 
 	GenInitialPasswordUser()
@@ -159,4 +160,20 @@ func GenInitialPasswordUser() {
 	if err := db.Create(user).Error; err != nil {
 		panic(err)
 	}
+}
+
+func doOAuthCompleteInfo(db *gorm.DB) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		position := r.FormValue("position")
+		agree := r.FormValue("agree")
+
+		fmt.Println(position)
+		fmt.Println(agree)
+
+	})
 }

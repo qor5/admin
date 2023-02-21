@@ -7,43 +7,59 @@ import (
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
 
 type Messages struct {
-	FilterTabsAll              string
-	FilterTabsHasUnreadNotes   string
-	FilterTabsActive           string
-	DemoTips                   string
-	LoginProviderGoogleText    string
-	LoginProviderMicrosoftText string
-	LoginProviderGithubText    string
+	FilterTabsAll                  string
+	FilterTabsHasUnreadNotes       string
+	FilterTabsActive               string
+	DemoTips                       string
+	LoginProviderGoogleText        string
+	LoginProviderMicrosoftText     string
+	LoginProviderGithubText        string
+	OAuthCompleteInfoTitle         string
+	OAuthCompleteInfoPositionLabel string
+	OAuthCompleteInfoAgreeLabel    string
+	OAuthCompleteInfoBackLabel     string
 }
 
 var Messages_en_US = &Messages{
-	FilterTabsAll:              "All",
-	FilterTabsHasUnreadNotes:   "Has Unread Notes",
-	FilterTabsActive:           "Active",
-	DemoTips:                   "Please note that the database would be reset every even hour.",
-	LoginProviderGoogleText:    "Login with Google",
-	LoginProviderMicrosoftText: "Login with Microsoft",
-	LoginProviderGithubText:    "Login with Github",
+	FilterTabsAll:                  "All",
+	FilterTabsHasUnreadNotes:       "Has Unread Notes",
+	FilterTabsActive:               "Active",
+	DemoTips:                       "Please note that the database would be reset every even hour.",
+	LoginProviderGoogleText:        "Login with Google",
+	LoginProviderMicrosoftText:     "Login with Microsoft",
+	LoginProviderGithubText:        "Login with Github",
+	OAuthCompleteInfoTitle:         "Complete your information",
+	OAuthCompleteInfoPositionLabel: "Position",
+	OAuthCompleteInfoAgreeLabel:    "I agree to receive marketing communications",
+	OAuthCompleteInfoBackLabel:     "Back to login",
 }
 
 var Messages_ja_JP = &Messages{
-	FilterTabsAll:              "すべて",
-	FilterTabsHasUnreadNotes:   "未読のノートがあります",
-	FilterTabsActive:           "有効",
-	DemoTips:                   "データベースは偶数時間ごとにリセットされることに注意してください。",
-	LoginProviderGoogleText:    "Googleでログイン",
-	LoginProviderMicrosoftText: "Microsoftでログイン",
-	LoginProviderGithubText:    "Githubでログイン",
+	FilterTabsAll:                  "すべて",
+	FilterTabsHasUnreadNotes:       "未読のノートがあります",
+	FilterTabsActive:               "有効",
+	DemoTips:                       "データベースは偶数時間ごとにリセットされることに注意してください。",
+	LoginProviderGoogleText:        "Googleでログイン",
+	LoginProviderMicrosoftText:     "Microsoftでログイン",
+	LoginProviderGithubText:        "Githubでログイン",
+	OAuthCompleteInfoTitle:         "情報を入力してください",
+	OAuthCompleteInfoPositionLabel: "ポジション",
+	OAuthCompleteInfoAgreeLabel:    "マーケティングコミュニケーションを受け取ることに同意します",
+	OAuthCompleteInfoBackLabel:     "ログインに戻る",
 }
 
 var Messages_zh_CN = &Messages{
-	FilterTabsAll:              "全部",
-	FilterTabsHasUnreadNotes:   "未读备注",
-	FilterTabsActive:           "有效",
-	DemoTips:                   "请注意，数据库将每隔偶数小时重置一次。",
-	LoginProviderGoogleText:    "使用Google登录",
-	LoginProviderMicrosoftText: "使用Microsoft登录",
-	LoginProviderGithubText:    "使用Github登录",
+	FilterTabsAll:                  "全部",
+	FilterTabsHasUnreadNotes:       "未读备注",
+	FilterTabsActive:               "有效",
+	DemoTips:                       "请注意，数据库将每隔偶数小时重置一次。",
+	LoginProviderGoogleText:        "使用Google登录",
+	LoginProviderMicrosoftText:     "使用Microsoft登录",
+	LoginProviderGithubText:        "使用Github登录",
+	OAuthCompleteInfoTitle:         "请填写您的信息",
+	OAuthCompleteInfoPositionLabel: "职位",
+	OAuthCompleteInfoAgreeLabel:    "我同意接收营销通讯",
+	OAuthCompleteInfoBackLabel:     "返回登录",
 }
 
 type Messages_ModelsI18nModuleKey struct {
