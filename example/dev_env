@@ -8,14 +8,12 @@ export S3_Publish_Bucket=""
 export S3_Publish_Region=""
 
 export BASE_URL="http://localhost:9500"
-export LOGIN_SECRET=""
+export LOGIN_SECRET="test"
 export LOGIN_GOOGLE_KEY=""
 export LOGIN_GOOGLE_SECRET=""
 export PORT="9500"
-export LOGIN_GOOGLE_KEY=""
-export LOGIN_GOOGLE_SECRET=""
 export LOGIN_INITIAL_USER_EMAIL="qor@theplant.jp"
-export LOGIN_INITIAL_USER_PASSWORD=""
+export LOGIN_INITIAL_USER_PASSWORD="123"
 
 export CGO_CFLAGS_ALLOW="-Xpreprocessor"
 

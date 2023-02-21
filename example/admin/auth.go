@@ -111,7 +111,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			fmt.Println("totp code is reused!")
 			fmt.Println("#########################################end")
 			return nil
-		})
+		}).TOTPEnabled(false)
 
 	genInitialPasswordUser()
 }
