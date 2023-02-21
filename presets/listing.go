@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -1145,6 +1146,18 @@ func (b *ListingBuilder) getTableComponents(
 	if err != nil {
 		panic(err)
 	}
+
+	var newObjs []interface{}
+	objsRv := reflect.ValueOf(objs)
+	for i := 0; i < objsRv.Len(); i++ {
+		item := objsRv.Index(i).Interface()
+		if b.mb.Info().Verifier().Do(PermList).ObjectOn(item).WithReq(ctx.R).IsAllowed() == nil {
+			newObjs = append(newObjs, item)
+		} else {
+			totalCount--
+		}
+	}
+	objs = newObjs
 
 	haveCheckboxes := len(b.bulkActions) > 0
 

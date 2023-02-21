@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/biter777/countries"
+	"github.com/ory/ladon"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
@@ -126,6 +127,13 @@ func NewConfig() Config {
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
 			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
+			perm.PolicyFor("admin").WhoAre(perm.Denied).ToDo("*").On("*").Given(
+				perm.Conditions{
+					"not_for_admin": &ladon.BooleanCondition{
+						BooleanValue: true,
+					},
+				},
+			),
 			activity.PermPolicy,
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
@@ -133,7 +141,33 @@ func NewConfig() Config {
 				return nil
 			}
 			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
+		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute).
+			ContextFunc(func(r *http.Request, objs []interface{}) perm.Context {
+				c := make(perm.Context)
+				for _, obj := range objs {
+					switch v := obj.(type) {
+					case *models.User:
+						var roleIDs []uint
+						if err := db.Table("user_role_join").Select("role_id").Where("user_id=?", v.ID).Scan(&roleIDs).Error; err != nil {
+							panic(err)
+						}
+						if len(roleIDs) > 0 {
+							var roles []role.Role
+							if err := db.Where("id in (?)", roleIDs).Find(&roles).Error; err != nil {
+								panic(err)
+							}
+							v.Roles = roles
+						}
+						for _, r := range v.Roles {
+							if r.Name == "super_admin" {
+								c["not_for_admin"] = true
+							}
+						}
+					}
+				}
+
+				return c
+			}),
 	)
 
 	b.I18n().
