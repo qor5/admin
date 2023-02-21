@@ -76,7 +76,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 							Div(
 								provider.Logo,
 							).Class("mr-2"),
-							Text(provider.Text),
+							Text(i18n.T(ctx.R, I18nExampleKey, provider.Text)),
 						),
 				)
 			}

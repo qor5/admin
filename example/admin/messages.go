@@ -7,34 +7,43 @@ import (
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
 
 type Messages struct {
-	FilterTabsAll            string
-	FilterTabsHasUnreadNotes string
-	FilterTabsActive         string
-	// Demo Account
-	DemoUsernameLabel string
-	DemoPasswordLabel string
-	DemoTips          string
+	FilterTabsAll              string
+	FilterTabsHasUnreadNotes   string
+	FilterTabsActive           string
+	DemoTips                   string
+	LoginProviderGoogleText    string
+	LoginProviderMicrosoftText string
+	LoginProviderGithubText    string
 }
 
 var Messages_en_US = &Messages{
-	FilterTabsAll:            "All",
-	FilterTabsHasUnreadNotes: "Has Unread Notes",
-	FilterTabsActive:         "Active",
-	DemoTips:                 "Please note that the database would be reset every even hour.",
+	FilterTabsAll:              "All",
+	FilterTabsHasUnreadNotes:   "Has Unread Notes",
+	FilterTabsActive:           "Active",
+	DemoTips:                   "Please note that the database would be reset every even hour.",
+	LoginProviderGoogleText:    "Login with Google",
+	LoginProviderMicrosoftText: "Login with Microsoft",
+	LoginProviderGithubText:    "Login with Github",
 }
 
 var Messages_ja_JP = &Messages{
-	FilterTabsAll:            "すべて",
-	FilterTabsHasUnreadNotes: "未読のノートがあります",
-	FilterTabsActive:         "有効",
-	DemoTips:                 "データベースは偶数時間ごとにリセットされることに注意してください。",
+	FilterTabsAll:              "すべて",
+	FilterTabsHasUnreadNotes:   "未読のノートがあります",
+	FilterTabsActive:           "有効",
+	DemoTips:                   "データベースは偶数時間ごとにリセットされることに注意してください。",
+	LoginProviderGoogleText:    "Googleでログイン",
+	LoginProviderMicrosoftText: "Microsoftでログイン",
+	LoginProviderGithubText:    "Githubでログイン",
 }
 
 var Messages_zh_CN = &Messages{
-	FilterTabsAll:            "全部",
-	FilterTabsHasUnreadNotes: "未读备注",
-	FilterTabsActive:         "有效",
-	DemoTips:                 "请注意，数据库将每隔偶数小时重置一次。",
+	FilterTabsAll:              "全部",
+	FilterTabsHasUnreadNotes:   "未读备注",
+	FilterTabsActive:           "有效",
+	DemoTips:                   "请注意，数据库将每隔偶数小时重置一次。",
+	LoginProviderGoogleText:    "使用Google登录",
+	LoginProviderMicrosoftText: "使用Microsoft登录",
+	LoginProviderGithubText:    "使用Github登录",
 }
 
 type Messages_ModelsI18nModuleKey struct {

@@ -3,9 +3,15 @@ package models
 import (
 	"time"
 
-	"github.com/qor5/x/login"
 	"github.com/qor5/admin/role"
+	"github.com/qor5/x/login"
 	"gorm.io/gorm"
+)
+
+const (
+	OAuthProviderGoogle          = "google"
+	OAuthProviderMicrosoftOnline = "microsoftonline"
+	OAuthProviderGithub          = "github"
 )
 
 type User struct {

@@ -176,7 +176,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		} else {
 			return VSelect().FieldName(field.Name).
 				Label(field.Label).Value(p).
-				Items([]string{"google", "microsoftonline"})
+				Items([]string{models.OAuthProviderGoogle, models.OAuthProviderMicrosoftOnline, models.OAuthProviderGithub})
 		}
 	})
 
