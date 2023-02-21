@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
 	"github.com/markbates/goth/providers/microsoftonline"
@@ -84,6 +86,33 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 
 			if err := addSessionLogByUserID(r, user.(*models.User).ID); err != nil {
 				return err
+			}
+
+			return nil
+		}).
+		AfterOAuthComplete(func(r *http.Request, user interface{}, vals ...interface{}) error {
+			u := user.(goth.User)
+			if err := db.Where("o_auth_provider = ? and o_auth_indentifier = ?", u.Provider, u.Email).First(&models.User{}).
+				Error; err == gorm.ErrRecordNotFound {
+				var name string
+				at := strings.LastIndex(u.Email, "@")
+				if at > 0 {
+					name = u.Email[:at]
+				} else {
+					name = u.Email
+				}
+
+				if err := db.Create(&models.User{
+					Name: name,
+					OAuthInfo: login.OAuthInfo{
+						OAuthProvider:    u.Provider,
+						OAuthUserID:      u.UserID,
+						OAuthIndentifier: u.Email,
+						OAuthAvatar:      u.AvatarURL,
+					},
+				}).Error; err != nil {
+					panic(err)
+				}
 			}
 
 			return nil

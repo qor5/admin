@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	"github.com/qor5/admin/example/models"
+	plogin "github.com/qor5/admin/login"
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/login"
-	"github.com/qor5/admin/example/models"
-	plogin "github.com/qor5/admin/login"
-	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -31,6 +31,13 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 	var roles []string
 	for _, role := range u.Roles {
 		roles = append(roles, role.Name)
+	}
+
+	var account string
+	if u.Account != "" {
+		account = u.Account
+	} else {
+		account = u.OAuthIndentifier
 	}
 
 	return VMenu().OffsetY(true).Children(
@@ -54,7 +61,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 				).Class("pa-0 mb-2"),
 				VListItem(
 					VListItemContent(
-						VListItemTitle(h.Text(u.Account)),
+						VListItemTitle(h.Text(account)),
 					),
 					VListItemIcon(
 						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
