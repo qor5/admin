@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	exportOrdersURL            = "/export-orders"
+	logoutURL                  = "/auth/logout"
 	oauthCompleteInfoPageURL   = "/auth/complete-info"
 	oauthCompleteInfoActionURL = "/auth/do-complete-info"
+
+	exportOrdersURL = "/export-orders"
 )
 
 func Router() http.Handler {

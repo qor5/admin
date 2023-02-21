@@ -165,7 +165,6 @@ func oauthCompleteInfoPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFu
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
 		dvc := plogin.DefaultViewCommon
-		dvc.InjectZxcvbn(ctx)
 
 		r.PageTitle = "Complete Info"
 		var bodyForm HTMLComponent
@@ -178,7 +177,7 @@ func oauthCompleteInfoPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFu
 					dvc.Input("position", "", ""),
 				),
 				Div(
-					Input("").Type("checkbox").Id("agree").Style("margin-right: 8px; margin-left: 2px;"),
+					Input("agree").Type("checkbox").Id("agree").Style("margin-right: 8px; margin-left: 2px;"),
 					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoAgreeLabel")).For("agree"),
 				).Class("mt-6"),
 				dvc.FormSubmitBtn(msgr.Confirm),

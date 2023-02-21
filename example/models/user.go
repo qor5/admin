@@ -8,12 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	OAuthProviderGoogle          = "google"
-	OAuthProviderMicrosoftOnline = "microsoftonline"
-	OAuthProviderGithub          = "github"
-)
-
 type User struct {
 	gorm.Model
 
@@ -27,13 +21,25 @@ type User struct {
 	RegistrationDate time.Time `gorm:"type:date"`
 
 	Position        string
-	IsAgreeContact  bool
+	IsSubscribed    bool
 	IsInfoCompleted bool
 
 	// Username is email
 	login.UserPass
 	login.OAuthInfo
 	login.SessionSecure
+}
+
+const (
+	OAuthProviderGoogle          = "google"
+	OAuthProviderMicrosoftOnline = "microsoftonline"
+	OAuthProviderGithub          = "github"
+)
+
+var OAuthProviders = []string{
+	OAuthProviderGoogle,
+	OAuthProviderMicrosoftOnline,
+	OAuthProviderGithub,
 }
 
 func (u User) GetName() string {

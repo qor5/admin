@@ -169,11 +169,25 @@ func doOAuthCompleteInfo(db *gorm.DB) http.Handler {
 			return
 		}
 
+		var isSubscribed bool
 		position := r.FormValue("position")
 		agree := r.FormValue("agree")
+		if agree == "on" {
+			isSubscribed = true
+		}
 
-		fmt.Println(position)
-		fmt.Println(agree)
+		user := getCurrentUser(r)
 
+		if err := db.Model(&models.User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+			"position":          position,
+			"is_subscribed":     isSubscribed,
+			"is_info_completed": true,
+		}).Error; err != nil {
+			http.Redirect(w, r, logoutURL, http.StatusFound)
+		}
+
+		http.Redirect(w, r, "/", http.StatusFound)
+
+		return
 	})
 }

@@ -29,8 +29,8 @@ var Messages_en_US = &Messages{
 	LoginProviderMicrosoftText:     "Login with Microsoft",
 	LoginProviderGithubText:        "Login with Github",
 	OAuthCompleteInfoTitle:         "Complete your information",
-	OAuthCompleteInfoPositionLabel: "Position",
-	OAuthCompleteInfoAgreeLabel:    "I agree to receive marketing communications",
+	OAuthCompleteInfoPositionLabel: "Position(Optional)",
+	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 news(Optional)",
 	OAuthCompleteInfoBackLabel:     "Back to login",
 }
 
@@ -43,8 +43,8 @@ var Messages_ja_JP = &Messages{
 	LoginProviderMicrosoftText:     "Microsoftでログイン",
 	LoginProviderGithubText:        "Githubでログイン",
 	OAuthCompleteInfoTitle:         "情報を入力してください",
-	OAuthCompleteInfoPositionLabel: "ポジション",
-	OAuthCompleteInfoAgreeLabel:    "マーケティングコミュニケーションを受け取ることに同意します",
+	OAuthCompleteInfoPositionLabel: "役職（任意）",
+	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースを購読する（任意）",
 	OAuthCompleteInfoBackLabel:     "ログインに戻る",
 }
 
@@ -57,8 +57,8 @@ var Messages_zh_CN = &Messages{
 	LoginProviderMicrosoftText:     "使用Microsoft登录",
 	LoginProviderGithubText:        "使用Github登录",
 	OAuthCompleteInfoTitle:         "请填写您的信息",
-	OAuthCompleteInfoPositionLabel: "职位",
-	OAuthCompleteInfoAgreeLabel:    "我同意接收营销通讯",
+	OAuthCompleteInfoPositionLabel: "职位（可选）",
+	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
 	OAuthCompleteInfoBackLabel:     "返回登录",
 }
 

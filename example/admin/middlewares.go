@@ -68,7 +68,6 @@ func validateSessionToken() func(next http.Handler) http.Handler {
 
 			valid, err := checkIsTokenValidFromRequest(r, user.ID)
 			if err != nil || !valid {
-				logoutURL := "/auth/logout"
 				if r.URL.Path == logoutURL {
 					next.ServeHTTP(w, r)
 					return
@@ -96,8 +95,8 @@ func isOAuthInfoCompleted() func(next http.Handler) http.Handler {
 			}
 
 			if user.OAuthUserID != "" && !user.IsInfoCompleted {
-				logoutURL := "/auth/logout"
-				if r.URL.Path == logoutURL {
+				if r.URL.Path == logoutURL ||
+					r.URL.Path == oauthCompleteInfoPageURL || r.URL.Path == oauthCompleteInfoActionURL {
 					next.ServeHTTP(w, r)
 					return
 				}
