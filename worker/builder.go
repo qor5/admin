@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"reflect"
 	"strings"
 
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
-	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -31,6 +32,14 @@ type Builder struct {
 }
 
 func New(db *gorm.DB) *Builder {
+	return newWithConfigs(db, NewGoQueQueue(db))
+}
+
+func NewWithQueue(db *gorm.DB, q Queue) *Builder {
+	return newWithConfigs(db, q)
+}
+
+func newWithConfigs(db *gorm.DB, q Queue) *Builder {
 	if db == nil {
 		panic("db can not be nil")
 	}
@@ -42,7 +51,7 @@ func New(db *gorm.DB) *Builder {
 
 	r := &Builder{
 		db:  db,
-		q:   NewGoQueQueue(db),
+		q:   q,
 		jpb: presets.New(),
 	}
 
@@ -254,6 +263,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		}
 
 		var scheduledJobDetailing []HTMLComponent
+		eURL := path.Join(b.mb.Info().ListingHref(), fmt.Sprint(qorJob.ID))
 		if inst.Status == JobStatusScheduled {
 			jb := b.getJobBuilder(qorJob.Job)
 			if jb != nil && jb.r != nil {
@@ -270,14 +280,14 @@ func (b *Builder) Configure(pb *presets.Builder) {
 							VSpacer(),
 							VBtn(msgr.ActionCancelJob).Color("error").Class("mr-2").
 								Attr("@click", web.Plaid().
-									URL(b.mb.Info().ListingHref()).
+									URL(eURL).
 									EventFunc("worker_abortJob").
 									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 									Query("job", qorJob.Job).
 									Go()),
 							VBtn(msgr.ActionUpdateJob).Color("primary").
 								Attr("@click", web.Plaid().
-									URL(b.mb.Info().ListingHref()).
+									URL(eURL).
 									EventFunc("worker_updateJob").
 									Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 									Query("job", qorJob.Job).
@@ -303,7 +313,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 				Div(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
-							URL(b.mb.Info().ListingHref()).
+							URL(eURL).
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 							Query("job", qorJob.Job),
 						).
@@ -484,6 +494,10 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	if err != nil {
 		return er, err
 	}
+	err = b.setStatus(qorJobID, JobStatusNew)
+	if err != nil {
+		return er, err
+	}
 	err = b.q.Add(inst)
 	if err != nil {
 		return er, err
@@ -596,7 +610,7 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 		}
 	}
 	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, logs, hasMoreLogs, inst.ProgressText)
-	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning {
+	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning && inst.Status != JobStatusKilled {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
 		er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
@@ -673,6 +687,7 @@ func (b *Builder) jobProgressing(
 		}
 	}
 	inRefresh := status == JobStatusNew || status == JobStatusRunning
+	eURL := path.Join(b.mb.Info().ListingHref(), fmt.Sprint(id))
 	return Div(
 		Div(Text(msgr.DetailTitleStatus)).Class("text-caption"),
 		Div().Class("d-flex align-center mb-5").Children(
@@ -710,7 +725,7 @@ func (b *Builder) jobProgressing(
 				If(inRefresh,
 					VBtn(msgr.ActionAbortJob).Color("error").
 						Attr("@click", web.Plaid().
-							URL(b.mb.Info().ListingHref()).
+							URL(eURL).
 							EventFunc("worker_abortJob").
 							Query("jobID", fmt.Sprintf("%d", id)).
 							Query("job", job).
@@ -719,7 +734,7 @@ func (b *Builder) jobProgressing(
 				If(status == JobStatusDone,
 					VBtn(msgr.ActionRerunJob).Color("primary").
 						Attr("@click", web.Plaid().
-							URL(b.mb.Info().ListingHref()).
+							URL(eURL).
 							EventFunc("worker_rerunJob").
 							Query("jobID", fmt.Sprintf("%d", id)).
 							Query("job", job).
