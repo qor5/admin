@@ -377,7 +377,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 							VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}"))).Attr("@click",
 								web.Plaid().
 									EventFunc(ToggleContainerVisibilityEvent).
-									Query(paramContainerID, web.Var("item.container_id")).
+									Query(paramContainerID, web.Var("item.param_id")).
 									Go(),
 							).Class("my-2"),
 							VListItemIcon(VBtn("").Icon(true).Children(VIcon("drag_handle"))).Class("handle my-2"),
@@ -395,7 +395,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 									).Attr("@click",
 										web.Plaid().
 											EventFunc(RenameCotainerDialogEvent).
-											Query(paramContainerID, web.Var("item.container_id")).
+											Query(paramContainerID, web.Var("item.param_id")).
 											Query(paramContainerName, web.Var("item.display_name")).
 											Query(presets.ParamOverlay, actions.Dialog).
 											Go(),
@@ -405,7 +405,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										VListItemTitle(h.Text("Delete")),
 									).Attr("@click", web.Plaid().
 										EventFunc(DeleteContainerConfirmationEvent).
-										Query(paramContainerID, web.Var("item.container_id")).
+										Query(paramContainerID, web.Var("item.param_id")).
 										Query(paramContainerName, web.Var("item.display_name")).
 										Go(),
 									),
@@ -489,15 +489,21 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 }
 
 func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containerID := ctx.R.FormValue(paramContainerID)
-	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(COALESCE(hidden,FALSE)) WHERE id = ?", containerID).Error
+	var container Container
+	paramID := ctx.R.FormValue(paramContainerID)
+	cs := container.PrimaryColumnValuesBySlug(paramID)
+	containerID := cs["id"]
+	locale := cs["locale_code"]
+
+	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(COALESCE(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
 
 	r.PushState = web.Location(url.Values{})
 	return
 }
 
 func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containerID := ctx.R.FormValue(paramContainerID)
+	paramID := ctx.R.FormValue(paramContainerID)
+
 	containerName := ctx.R.FormValue(paramContainerName)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -518,7 +524,7 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 						Dark(true).
 						Attr("@click", web.Plaid().
 							EventFunc(DeleteContainerEvent).
-							Query(paramContainerID, containerID).
+							Query(paramContainerID, paramID).
 							Go()),
 				),
 			),
@@ -532,9 +538,13 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containerID := ctx.QueryAsInt(paramContainerID)
+	var container Container
+	paramID := ctx.R.FormValue(paramContainerID)
+	cs := container.PrimaryColumnValuesBySlug(paramID)
+	containerID := cs["id"]
+	locale := cs["locale_code"]
 
-	err = b.db.Delete(&Container{}, "id = ?", containerID).Error
+	err = b.db.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error
 	if err != nil {
 		return
 	}
@@ -751,20 +761,24 @@ func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventRespo
 }
 
 func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containerID := ctx.QueryAsInt(paramContainerID)
+	var container Container
+	paramID := ctx.R.FormValue(paramContainerID)
+	cs := container.PrimaryColumnValuesBySlug(paramID)
+	containerID := cs["id"]
+	locale := cs["locale_code"]
 	name := ctx.R.FormValue("DisplayName")
 	var c Container
-	err = b.db.First(&c, "id = ?  ", containerID).Error
+	err = b.db.First(&c, "id = ? AND locale_code = ?  ", containerID, locale).Error
 	if err != nil {
 		return
 	}
 	if c.Shared {
-		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ?", c.ModelName, c.ModelID).Update("display_name", name).Error
+		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", c.ModelName, c.ModelID, locale).Update("display_name", name).Error
 		if err != nil {
 			return
 		}
 	} else {
-		err = b.db.Model(&Container{}).Where("id = ?", containerID).Update("display_name", name).Error
+		err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("display_name", name).Error
 		if err != nil {
 			return
 		}
@@ -775,9 +789,9 @@ func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, e
 }
 
 func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containerID := ctx.QueryAsInt(paramContainerID)
+	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
-	okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
+	okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: dialogPortalName,
 		Body: web.Scope(
