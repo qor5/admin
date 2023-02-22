@@ -1,5 +1,7 @@
 package worker
 
+//go:generate moq -pkg mock -out mock/queue.go . Queue
+
 type QorJobDefinition struct {
 	Name    string
 	Handler JobHandler
