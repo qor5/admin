@@ -18,6 +18,9 @@ import (
 	"gorm.io/gorm"
 )
 
+const WrapHandlerKey = "l10nWrapHandlerKey"
+const MenuTopItemFunc = "l10nMenuTopItemFunc"
+
 func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.ActivityBuilder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
 		obj := m.NewModel()
@@ -73,8 +76,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			return nil
 		})
 
-	b.AddWrapHandler(lb.EnsureLocale)
-	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
+	b.AddWrapHandler(WrapHandlerKey, lb.EnsureLocale)
+	b.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(lb))
 	b.I18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).

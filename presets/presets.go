@@ -45,7 +45,7 @@ type Builder struct {
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
-	menuTopItems                          []ComponentFunc
+	menuTopItems                          map[string]ComponentFunc
 	notificationCountFunc                 func(ctx *web.EventContext) int
 	notificationContentFunc               ComponentFunc
 	brandTitle                            string
@@ -59,7 +59,7 @@ type Builder struct {
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
 	menuOrder                             []interface{}
-	wrapHandlers                          []func(in http.Handler) (out http.Handler)
+	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -93,6 +93,7 @@ func New() *Builder {
 		listFieldDefaults:    NewFieldDefaults(LIST),
 		detailFieldDefaults:  NewFieldDefaults(DETAIL),
 		progressBarColor:     "amber",
+		menuTopItems:         make(map[string]ComponentFunc),
 		brandTitle:           "Admin",
 		rightDrawerWidth:     "600",
 		verifier:             perm.NewVerifier(PermModule, nil),
@@ -101,6 +102,7 @@ func New() *Builder {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		},
+		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
 
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmationDialogEvent, r.openConfirmationDialog)
@@ -665,8 +667,8 @@ func (b *Builder) runSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	)
 }
 
-func (b *Builder) AddMenuTopItemFunc(v ComponentFunc) (r *Builder) {
-	b.menuTopItems = append(b.menuTopItems, v)
+func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
+	b.menuTopItems[key] = v
 	return b
 }
 
@@ -1202,8 +1204,8 @@ func (b *Builder) initMux() {
 
 	b.mux = mux
 }
-func (b *Builder) AddWrapHandler(f func(in http.Handler) (out http.Handler)) {
-	b.wrapHandlers = append(b.wrapHandlers, f)
+func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
+	b.wrapHandlers[key] = f
 }
 
 func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
