@@ -97,8 +97,17 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 	})
 
 	ed.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		r := obj.(*Role)
-		err = db.Select("Permissions").Delete(&r).Error
+		err = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Delete(&perm.DefaultDBPolicy{}, "refer_id = ?", id).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&Role{}, "id = ?", id).Error; err != nil {
+				return err
+			}
+
+			return nil
+		})
+
 		return
 	})
 
