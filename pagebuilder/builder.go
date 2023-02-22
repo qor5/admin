@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
@@ -146,7 +147,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -335,6 +336,18 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 		return
 	})
+
+	sharedContainerM := b.ConfigSharedContainer(pb, db)
+	demoContainerM := b.ConfigDemoContainer(pb, db)
+	templateM := b.ConfigTemplate(pb, db)
+	categoryM := b.ConfigCategory(pb, db)
+
+	if activityB != nil {
+		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
+	}
+	if l10nB != nil {
+		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM)
+	}
 	return
 }
 

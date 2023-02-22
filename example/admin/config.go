@@ -351,8 +351,19 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
+	// @snippet_begin(ActivityExample)
+	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	_ = ab
+	// ab.Model(m).UseDefaultTab()
+	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db, l10nBuilder)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -380,10 +391,6 @@ func NewConfig() Config {
 			},
 		}
 	})
-	sharedContainerM := pageBuilder.ConfigSharedContainer(b, db)
-	demoContainerM := pageBuilder.ConfigDemoContainer(b, db)
-	templateM := pageBuilder.ConfigTemplate(b, db)
-	categoryM := pageBuilder.ConfigCategory(b, db)
 
 	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
@@ -400,18 +407,8 @@ func NewConfig() Config {
 	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
-	// @snippet_begin(ActivityExample)
-	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
-		})
-	_ = ab
-	// ab.Model(m).UseDefaultTab()
-	// ab.Model(pm).UseDefaultTab()
-	// ab.Model(l).SkipDelete().SkipCreate()
-	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm, sharedContainerM, demoContainerM, templateM, categoryM)
+	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -432,7 +429,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm, demoContainerM, templateM, l10nM, l10nVM)
+	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,

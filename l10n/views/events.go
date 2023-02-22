@@ -142,6 +142,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 
 		var toObjs []interface{}
 		defer func(fromObj interface{}) {
+			if ab == nil {
+				return
+			}
 			if len(toObjs) > 0 {
 				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
 					return
