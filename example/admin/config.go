@@ -11,7 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
-	"github.com/biter777/countries"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
@@ -161,12 +160,11 @@ func NewConfig() Config {
 
 	l10nBuilder := l10n.New()
 	l10nBuilder.
-		RegisterLocales(countries.International, "International", "International").
-		RegisterLocales(countries.China, "China", "China").
-		RegisterLocales(countries.Japan, "Japan", "Japan").
-		//RegisterLocales(countries.Russia, "Russia", "Russia").
-		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
-			return l10nBuilder.GetSupportLocales()[:]
+		RegisterLocales("International", "international", "International").
+		RegisterLocales("China", "cn", "China").
+		RegisterLocales("Japan", "jp", "Japan").
+		GetSupportLocaleCodesFromRequestFunc(func(R *http.Request) []string {
+			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
 
 	utils.Configure(b)
@@ -353,8 +351,19 @@ func NewConfig() Config {
 
 	configCustomer(b, db)
 
+	// @snippet_begin(ActivityExample)
+	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	_ = ab
+	// ab.Model(m).UseDefaultTab()
+	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -383,10 +392,7 @@ func NewConfig() Config {
 		}
 	})
 
-	tm := pageBuilder.ConfigTemplate(b, db)
-	cm := pageBuilder.ConfigCategory(b, db)
-
-	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder)
+	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
@@ -401,18 +407,8 @@ func NewConfig() Config {
 	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
-	// @snippet_begin(ActivityExample)
-	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
-		})
-	_ = ab
-	// ab.Model(m).UseDefaultTab()
-	// ab.Model(pm).UseDefaultTab()
-	// ab.Model(l).SkipDelete().SkipCreate()
-	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm, tm, cm)
+	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -433,7 +429,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm, l10nM, l10nVM)
+	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,

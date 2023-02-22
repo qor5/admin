@@ -1,10 +1,10 @@
 package l10n
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/qor5/admin/utils"
-	"github.com/qor5/web"
 )
 
 type L10nInterface interface {
@@ -16,8 +16,8 @@ func IsLocalizable(obj interface{}) (isLocalizable bool) {
 	return
 }
 
-func IsLocalizableFromCtx(ctx *web.EventContext) (localeCode string, isLocalizable bool) {
-	locale := ctx.R.Context().Value(LocaleCode)
+func IsLocalizableFromCtx(ctx context.Context) (localeCode string, isLocalizable bool) {
+	locale := ctx.Value(LocaleCode)
 	if locale != nil {
 		localeCode = locale.(string)
 		isLocalizable = true
