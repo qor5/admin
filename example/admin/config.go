@@ -382,8 +382,8 @@ func NewConfig() Config {
 	})
 	sharedContainerM := pageBuilder.ConfigSharedContainer(b, db)
 	demoContainerM := pageBuilder.ConfigDemoContainer(b, db)
-	tm := pageBuilder.ConfigTemplate(b, db)
-	cm := pageBuilder.ConfigCategory(b, db)
+	templateM := pageBuilder.ConfigTemplate(b, db)
+	categoryM := pageBuilder.ConfigCategory(b, db)
 
 	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
@@ -411,7 +411,7 @@ func NewConfig() Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm, sharedContainerM, demoContainerM, tm, cm)
+	ab.RegisterModels(l, pm, sharedContainerM, demoContainerM, templateM, categoryM)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -432,7 +432,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm, demoContainerM, l10nM, l10nVM)
+	l10n_view.Configure(b, db, l10nBuilder, ab, pm, demoContainerM, templateM, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,

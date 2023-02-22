@@ -79,6 +79,10 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	if isTpl {
 		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
 		deviceQueries.Add("tpl", "1")
+		if isLocalizable && l10nON {
+			previewHref = fmt.Sprintf("/preview?id=%s&tpl=1&locale=%s", id, locale)
+			deviceQueries.Add("locale", locale)
+		}
 	} else {
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
 		deviceQueries.Add("version", version)
@@ -168,7 +172,7 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	if isTpl {
 		tpl := &Template{}
-		err = b.db.First(tpl, "id = ?", pageOrTemplateID).Error
+		err = b.db.First(tpl, "id = ? and locale_code = ?", pageOrTemplateID, locale).Error
 		if err != nil {
 			return
 		}

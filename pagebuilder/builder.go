@@ -308,7 +308,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				if !l10nON {
 					localeCode = ""
 				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, "", int(p.ID), p.GetVersion(), localeCode); inerr != nil {
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 					return
 				}
@@ -478,8 +478,9 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		msgr := presets.MustGetMessages(ctx.R)
 		tpls := []*Template{}
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 
-		if err := db.Model(&Template{}).Find(&tpls).Error; err != nil {
+		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
 			panic(err)
 		}
 
@@ -556,17 +557,37 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 		desc = tpl.Description
 	}
 
+	if tpl.ID == 0 {
+		return VCol(
+			VCard(
+				h.Div(
+					h.Iframe().Src("").
+						Attr("width", "100%", "height", "150", "frameborder", "no").
+						Style("transform-origin: left top; transform: scale(1, 1);"),
+				),
+				VCardTitle(h.Text(name)),
+				VCardSubtitle(h.Text(desc)),
+				h.Div(
+					h.Input("").Type("radio").Checked(isBlank).
+						Value(fmt.Sprintf("%d", tpl.ID)).
+						Attr(web.VFieldName("TemplateSelectionID")...).
+						Name("TemplateSelectionID").Style("width: 18px; height: 18px"),
+				).Class("mr-4 float-right"),
+			).Height(280).Class("text-truncate").Outlined(true),
+		).Cols(3)
+	}
+
 	return VCol(
 		VCard(
 			h.Div(
-				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 					Attr("width", "100%", "height", "150", "frameborder", "no").
 					Style("transform-origin: left top; transform: scale(1, 1);"),
 			),
 			VCardTitle(h.Text(name)),
 			VCardSubtitle(h.Text(desc)),
 			VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
-				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 				Target("_blank").Color("primary").ClassIf("d-none", isBlank),
 			h.Div(
 				h.Input("").Type("radio").Checked(isBlank).
@@ -777,12 +798,46 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 		if m.ID == 0 {
 			return nil
 		}
+
+		var href = fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)
+		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
+			href = fmt.Sprintf("%s/editors/%d?tpl=1&locale=%s", b.prefix, m.ID, locale)
+		}
 		return h.Div(
 			VBtn(msgr.EditPageContent).
 				Target("_blank").
-				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
+				Href(href).
 				Color("secondary"),
 		)
+	})
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		this := obj.(*Template)
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
+				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
+			}
+			return
+		})
+
+		return
 	})
 
 	return
