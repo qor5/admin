@@ -6,11 +6,11 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
+	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/richeditor"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/richeditor"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -97,7 +97,7 @@ func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLCompon
 		).Class("container-heading-inner")
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, data.FontColor, "",
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,
 		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
