@@ -3,6 +3,7 @@ package admin
 import (
 	"embed"
 	"fmt"
+	"github.com/qor5/admin/role"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,7 +33,6 @@ import (
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/richeditor"
-	"github.com/qor5/admin/role"
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
@@ -328,7 +328,7 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
+	roleBuilder := role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
 		{Text: "Posts", Value: "*:posts:*"},
@@ -342,6 +342,20 @@ func NewConfig() Config {
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
 	})
+
+	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error){
+		u := getCurrentUser(ctx.R)
+		qdb := db
+
+		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
+		// We didn't do this on permission because of we are not supporting the permission on listing page
+		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin)  {
+			qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
+		}
+
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	}
+
 	product := configProduct(b, db, w)
 	category := configCategory(b, db)
 

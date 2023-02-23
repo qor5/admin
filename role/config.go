@@ -21,7 +21,7 @@ var DefaultActions = []DefaultOptionItem{
 	{Text: "Delete", Value: presets.PermDelete},
 }
 
-func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, resources []DefaultOptionItem) {
+func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, resources []DefaultOptionItem) *presets.ModelBuilder {
 	role := b.Model(&Role{})
 
 	ed := role.Editing(
@@ -102,4 +102,5 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 		return
 	})
 
+	return role
 }
