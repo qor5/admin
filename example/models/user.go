@@ -8,6 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	OAuthProviderGoogle          = "google"
+	OAuthProviderMicrosoftOnline = "microsoftonline"
+	OAuthProviderGithub          = "github"
+
+	RoleViewer   = "viewer"
+	RoleEditor  = "editor"
+	RoleManager = "manager"
+	RoleAdmin   = "admin"
+)
+
 type User struct {
 	gorm.Model
 
