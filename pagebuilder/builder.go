@@ -193,11 +193,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
 			panic(err)
 		}
-		var showURL h.HTMLComponent
+		var showURLComp h.HTMLComponent
 		if p.ID != 0 {
 			var u string
+			domain := os.Getenv("PUBLISH_URL")
 			if p.OnlineUrl != "" {
-				u = os.Getenv("PUBLISH_URL") + p.OnlineUrl
+				u = domain + p.getAccessUrl(p.OnlineUrl)
 			} else {
 				var c Category
 				for _, e := range categories {
@@ -206,14 +207,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						break
 					}
 				}
+
+				var localPath string
 				if l10nB != nil {
-					u = os.Getenv("PUBLISH_URL") + path.Join(l10nB.GetLocalePath(p.LocaleCode), c.Path, p.Slug, "/index.html")
-				} else {
-					u = os.Getenv("PUBLISH_URL") + path.Join(c.Path, p.Slug, "/index.html")
+					localPath = l10nB.GetLocalePath(p.LocaleCode)
 				}
+				u = domain + p.getAccessUrl(p.getPublishUrl(localPath, c.Path))
 			}
 
-			showURL = h.Div(
+			showURLComp = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
 			).Class("mb-4")
 		}
@@ -226,7 +228,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		return h.Div(
-			showURL,
+			showURLComp,
 			VAutocomplete().Label(msgr.Category).FieldName(field.Name).
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
@@ -423,21 +425,14 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
-		u := os.Getenv("PUBLISH_URL") + category.Path
 
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
 
-		return h.Div(
-			VTextField().Label("Path").Value(category.Path).Class("mb-n4").
-				FieldName("Path").
-				ErrorMessages(vErr.GetFieldErrors("Category.Category")...),
-			h.Div(
-				h.A().Text(u).Href(u).Target("_blank").ClassIf("d-none", category.ID == 0),
-			).Class("mt-4"),
-		).Class("mb-2")
+		return VTextField().Label("Path").Value(category.Path).Class("mb-2").FieldName("Path").
+			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
