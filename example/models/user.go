@@ -13,11 +13,17 @@ const (
 	OAuthProviderMicrosoftOnline = "microsoftonline"
 	OAuthProviderGithub          = "github"
 
-	RoleViewer   = "viewer"
+	RoleViewer  = "viewer"
 	RoleEditor  = "editor"
 	RoleManager = "manager"
 	RoleAdmin   = "admin"
 )
+
+var OAuthProviders = []string{
+	OAuthProviderGoogle,
+	OAuthProviderMicrosoftOnline,
+	OAuthProviderGithub,
+}
 
 type User struct {
 	gorm.Model
@@ -39,18 +45,6 @@ type User struct {
 	login.UserPass
 	login.OAuthInfo
 	login.SessionSecure
-}
-
-const (
-	OAuthProviderGoogle          = "google"
-	OAuthProviderMicrosoftOnline = "microsoftonline"
-	OAuthProviderGithub          = "github"
-)
-
-var OAuthProviders = []string{
-	OAuthProviderGoogle,
-	OAuthProviderMicrosoftOnline,
-	OAuthProviderGithub,
 }
 
 func (u User) GetName() string {
