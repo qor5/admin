@@ -940,8 +940,8 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 							Color("primary").
 							Attr("@click",
 								web.Plaid().
-									EventFunc(presets.OpenConfirmationDialogEvent).
-									Query(presets.ConfirmationDialogConfirmEventKey,
+									EventFunc(presets.OpenConfirmDialogEvent).
+									Query(presets.ConfirmDialogParamConfirmEvent,
 										web.Plaid().
 											EventFunc(republishRelatedOnlinePagesEvent).
 											Query("ids", strings.Join(pageIDs, ",")).

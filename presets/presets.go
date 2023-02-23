@@ -77,7 +77,7 @@ const (
 )
 
 const (
-	OpenConfirmationDialogEvent = "presets_ConfirmationDialogEvent"
+	OpenConfirmDialogEvent = "presets_ConfirmDialogEvent"
 )
 
 func New() *Builder {
@@ -103,7 +103,7 @@ func New() *Builder {
 		},
 	}
 
-	r.GetWebBuilder().RegisterEventFunc(OpenConfirmationDialogEvent, r.openConfirmationDialog)
+	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialogEvent, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	return r
 }
@@ -716,7 +716,7 @@ const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
 const DialogPortalName = "presets_DialogPortalName"
 const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
-const defaultConfirmationDialogPortalName = "presets_confirmationDialogPortalName"
+const defaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 const listingDialogPortalName = "presets_listingDialogPortalName"
 
 const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
@@ -802,26 +802,26 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 }
 
 const (
-	ConfirmationDialogConfirmEventKey = "presets_ConfirmationDialogConfirmEventKey"
-	ConfirmationDialogTextKey         = "presets_ConfirmationDialogTextKey"
-	ConfirmationDialogPortalNameKey   = "presets_ConfirmationDialogPortalNameKey"
+	ConfirmDialogParamConfirmEvent           = "presets_ConfirmDialogParam_ConfirmEvent"
+	ConfirmDialogParamPromptText             = "presets_ConfirmDialogParam_PromptText"
+	ConfirmDialogParamCustomDialogPortalName = "presets_ConfirmDialogParam_CustomDialogPortalName"
 )
 
-func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
-	confirmEvent := ctx.R.FormValue(ConfirmationDialogConfirmEventKey)
+func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
+	confirmEvent := ctx.R.FormValue(ConfirmDialogParamConfirmEvent)
 	if confirmEvent == "" {
 		ShowMessage(&er, "confirm event is empty", "error")
 		return
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	text := msgr.ConfirmationDialogText
-	if v := ctx.R.FormValue(ConfirmationDialogTextKey); v != "" {
-		text = v
+	promptText := msgr.ConfirmDialogPromptText
+	if v := ctx.R.FormValue(ConfirmDialogParamPromptText); v != "" {
+		promptText = v
 	}
 
-	portal := defaultConfirmationDialogPortalName
-	if v := ctx.R.FormValue(ConfirmationDialogPortalNameKey); v != "" {
+	portal := defaultConfirmDialogPortalName
+	if v := ctx.R.FormValue(ConfirmDialogParamCustomDialogPortalName); v != "" {
 		portal = v
 	}
 	showVar := fmt.Sprintf("show_%s", portal)
@@ -830,7 +830,7 @@ func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventRes
 		Name: portal,
 		Body: VDialog(
 			VCard(
-				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(text)),
+				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
@@ -935,7 +935,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			web.Portal().Name(RightDrawerPortalName),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 			web.Portal().Name(listingDialogPortalName),
 
 			VProgressLinear().
@@ -980,7 +980,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 		pr.Body = VApp(
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 
 			VProgressLinear().
 				Attr(":active", "isFetching").
