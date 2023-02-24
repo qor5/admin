@@ -74,11 +74,16 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 	return
 }
 
-func (p Page) getPublishUrl(localePath, categoryPath string) string {
+func (p *Page) getPublishUrl(localePath, categoryPath string) string {
 	return path.Join(localePath, categoryPath, p.Slug, "/index.html")
 }
 
-func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
+func (p *Page) getAccessUrl(publishUrl string) string {
+	dir, _ := path.Split(publishUrl)
+	return dir
+}
+
+func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)
