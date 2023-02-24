@@ -51,7 +51,7 @@ type Messages struct {
 	ListingClearSelection                      string
 	BulkActionNoAvailableRecords               string
 	BulkActionSelectedIdsProcessNoticeTemplate string
-	ConfirmationDialogText                     string
+	ConfirmDialogPromptText                    string
 	Language                                   string
 	Colon                                      string
 }
@@ -136,7 +136,7 @@ var Messages_en_US = &Messages{
 	ListingClearSelection:          "clear selection",
 	BulkActionNoAvailableRecords:   "None of the selected records can be executed with this action.",
 	BulkActionSelectedIdsProcessNoticeTemplate: "Partially selected records cannot be executed with this action: {ids}.",
-	ConfirmationDialogText:                     "Are you sure?",
+	ConfirmDialogPromptText:                    "Are you sure?",
 	Language:                                   "Language",
 	Colon:                                      ":",
 }
@@ -188,7 +188,7 @@ var Messages_zh_CN = &Messages{
 	ListingClearSelection:          "清除选择",
 	BulkActionNoAvailableRecords:   "所有选中的记录均无法执行这个操作。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分选中的记录无法被执行这个操作: {ids}。",
-	ConfirmationDialogText:                     "你确定吗?",
+	ConfirmDialogPromptText:                    "你确定吗?",
 	Language:                                   "语言",
 	Colon:                                      "：",
 }
@@ -239,7 +239,7 @@ var Messages_ja_JP = &Messages{
 	ListingClearSelection:          "選択をクリア",
 	BulkActionNoAvailableRecords:   "この機能はご利用いただけません",
 	BulkActionSelectedIdsProcessNoticeTemplate: "この一部の機能はご利用いただけません: {ids}",
-	ConfirmationDialogText:                     "よろしいですか？",
+	ConfirmDialogPromptText:                    "よろしいですか？",
 	Language:                                   "言語",
 	Colon:                                      ":",
 }
