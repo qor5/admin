@@ -315,8 +315,6 @@ github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84 h1:4Zueo+/c3cBDSE89CuPcH
 github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
 github.com/qor5/web v1.2.3 h1:OtyfFaHWTAPBz8aYvZL2/yiVf77HvlPwRkmBweKCiWs=
 github.com/qor5/web v1.2.3/go.mod h1:gwAoUC1cQ9y5Vm3zZmWTq9t1iLOrQH+sIvJUpG6V61w=
-github.com/qor5/x v1.2.1-0.20230215023713-a028537191cc h1:NlNBssk3aswMtFQU/hhdOxhBS2zWA31GImy6llakVFw=
-github.com/qor5/x v1.2.1-0.20230215023713-a028537191cc/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
 github.com/qor5/x v1.2.1-0.20230221091118-9decd2841d07 h1:wHT3dda3YMAeOluhBRM2nebSJwKrBdLh9wTr1oVTl5g=
 github.com/qor5/x v1.2.1-0.20230221091118-9decd2841d07/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be h1:ta7tUOvsPHVHGom5hKW5VXNc2xZIkfCKP8iaqOyYtUQ=

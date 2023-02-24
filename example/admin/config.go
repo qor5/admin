@@ -3,7 +3,6 @@ package admin
 import (
 	"embed"
 	"fmt"
-	"github.com/qor5/admin/role"
 	"net/http"
 	"net/url"
 	"os"
@@ -33,6 +32,7 @@ import (
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/richeditor"
+	"github.com/qor5/admin/role"
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
@@ -343,13 +343,13 @@ func NewConfig() Config {
 		{Text: "Workers", Value: "*:workers:*"},
 	})
 
-	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error){
+	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db
 
 		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
 		// We didn't do this on permission because of we are not supporting the permission on listing page
-		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin)  {
+		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
 			qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
 		}
 
