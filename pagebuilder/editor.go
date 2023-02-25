@@ -674,6 +674,7 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 
 	for _, c := range cons {
 		newModelID := c.ModelID
+		newDisplayName := c.DisplayName
 		if !c.Shared {
 			model := b.ContainerByName(c.ModelName).NewModel()
 			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
@@ -707,6 +708,7 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 				newModelID = reflectutils.MustGet(model, "ID").(uint)
 			} else {
 				newModelID = temp.ModelID
+				newDisplayName = temp.DisplayName
 			}
 		}
 
@@ -715,7 +717,7 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 			PageID:       uint(toPageID),
 			PageVersion:  toPageVersion,
 			ModelName:    c.ModelName,
-			DisplayName:  c.DisplayName,
+			DisplayName:  newDisplayName,
 			ModelID:      newModelID,
 			DisplayOrder: c.DisplayOrder,
 			Shared:       c.Shared,
