@@ -448,11 +448,12 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 func selectTemplate(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		templateSelectionID := ctx.R.FormValue("TemplateSelectionID")
+		TemplateSelectionLocale := ctx.R.FormValue("TemplateSelectionLocale")
 
 		tpl := Template{}
 		isBlank := true
 		if templateSelectionID != "0" {
-			if err = db.Model(&Template{}).Where("id = ?", templateSelectionID).First(&tpl).Error; err != nil {
+			if err = db.Model(&Template{}).Where("id = ? AND locale_code = ?", templateSelectionID, TemplateSelectionLocale).First(&tpl).Error; err != nil {
 				panic(err)
 			}
 			isBlank = false
@@ -536,6 +537,7 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 						VBtn(msgr.OK).Color("primary").
 							Attr("@click", fmt.Sprintf("%s;vars.showTemplateDialog=false",
 								web.Plaid().EventFunc(selectTemplateEvent).
+									Query("TemplateSelectionLocale", locale).
 									Query("TemplateSelectionID", ctx.R.Form).Go()),
 							),
 					).Class("pb-4"),

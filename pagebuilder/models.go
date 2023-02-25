@@ -90,11 +90,23 @@ type Container struct {
 }
 
 func (this *Container) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
 	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
 }
 
 func (this *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
@@ -118,11 +130,23 @@ type DemoContainer struct {
 }
 
 func (this *DemoContainer) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
 	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
 }
 
 func (this *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
@@ -146,11 +170,23 @@ type Template struct {
 }
 
 func (this *Template) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
 	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
 }
 
 func (this *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
