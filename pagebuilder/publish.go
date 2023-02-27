@@ -37,6 +37,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	if err = db.Where("id = ?", p.CategoryID).First(&category).Error; err != nil && err != gorm.ErrRecordNotFound {
 		return
 	}
+	err = nil
 	categoryPath = category.Path
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getPublishUrl(localePath, categoryPath),
