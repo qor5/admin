@@ -77,7 +77,7 @@ const (
 )
 
 const (
-	OpenConfirmDialogEvent = "presets_ConfirmDialogEvent"
+	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
 func New() *Builder {
@@ -103,7 +103,7 @@ func New() *Builder {
 		},
 	}
 
-	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialogEvent, r.openConfirmDialog)
+	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	return r
 }
@@ -802,13 +802,13 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 }
 
 const (
-	ConfirmDialogParamConfirmEvent           = "presets_ConfirmDialogParam_ConfirmEvent"
-	ConfirmDialogParamPromptText             = "presets_ConfirmDialogParam_PromptText"
-	ConfirmDialogParamCustomDialogPortalName = "presets_ConfirmDialogParam_CustomDialogPortalName"
+	ConfirmDialogConfirmEvent     = "presets_ConfirmDialog_ConfirmEvent"
+	ConfirmDialogPromptText       = "presets_ConfirmDialog_PromptText"
+	ConfirmDialogDialogPortalName = "presets_ConfirmDialog_DialogPortalName"
 )
 
 func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
-	confirmEvent := ctx.R.FormValue(ConfirmDialogParamConfirmEvent)
+	confirmEvent := ctx.R.FormValue(ConfirmDialogConfirmEvent)
 	if confirmEvent == "" {
 		ShowMessage(&er, "confirm event is empty", "error")
 		return
@@ -816,12 +816,12 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 
 	msgr := MustGetMessages(ctx.R)
 	promptText := msgr.ConfirmDialogPromptText
-	if v := ctx.R.FormValue(ConfirmDialogParamPromptText); v != "" {
+	if v := ctx.R.FormValue(ConfirmDialogPromptText); v != "" {
 		promptText = v
 	}
 
 	portal := defaultConfirmDialogPortalName
-	if v := ctx.R.FormValue(ConfirmDialogParamCustomDialogPortalName); v != "" {
+	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
 	showVar := fmt.Sprintf("show_%s", portal)
