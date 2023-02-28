@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -25,6 +26,10 @@ type ListModel struct {
 
 func (this *ListModel) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
+}
+
+func (this *ListModel) PermissionRN() []string {
+	return []string{"list_models", strconv.Itoa(int(this.ID)), this.Version.Version}
 }
 
 func (this *ListModel) PrimaryColumnValuesBySlug(slug string) map[string]string {
