@@ -49,6 +49,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 	return
 }
+
 func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
@@ -57,11 +58,11 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 	return
 }
 
-func (p Page) getPublishUrl() string {
+func (p *Page) getPublishUrl() string {
 	return path.Join(p.Slug, "/index.html")
 }
 
-func (p Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
+func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)

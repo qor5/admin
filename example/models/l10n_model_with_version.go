@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -21,11 +22,11 @@ type L10nModelWithVersion struct {
 	l10n.Locale
 }
 
-func (this *L10nModelWithVersion) PrimarySlug() string {
-	return fmt.Sprintf("%v_%v_%v", this.ID, this.Version.Version, this.LocaleCode)
+func (lmv *L10nModelWithVersion) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v_%v", lmv.ID, lmv.Version.Version, lmv.LocaleCode)
 }
 
-func (this *L10nModelWithVersion) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (lmv *L10nModelWithVersion) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 3 {
 		panic("wrong slug")
@@ -38,9 +39,14 @@ func (this *L10nModelWithVersion) PrimaryColumnValuesBySlug(slug string) map[str
 	}
 }
 
-func (this *L10nModelWithVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (lmv *L10nModelWithVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
 }
-func (this *L10nModelWithVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+
+func (lmv *L10nModelWithVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
+}
+
+func (lmv *L10nModelWithVersion) PermissionRN() []string {
+	return []string{"l10n_model_with_versions", strconv.Itoa(int(lmv.ID)), lmv.LocaleCode, lmv.Version.Version}
 }
