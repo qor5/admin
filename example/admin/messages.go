@@ -11,6 +11,8 @@ type Messages struct {
 	FilterTabsHasUnreadNotes       string
 	FilterTabsActive               string
 	DemoTips                       string
+	DemoUsernameLabel              string
+	DemoPasswordLabel              string
 	LoginProviderGoogleText        string
 	LoginProviderMicrosoftText     string
 	LoginProviderGithubText        string
@@ -25,6 +27,8 @@ var Messages_en_US = &Messages{
 	FilterTabsHasUnreadNotes:       "Has Unread Notes",
 	FilterTabsActive:               "Active",
 	DemoTips:                       "Please note that the database would be reset every even hour.",
+	DemoUsernameLabel:              "Demo Username: ",
+	DemoPasswordLabel:              "Demo Password: ",
 	LoginProviderGoogleText:        "Login with Google",
 	LoginProviderMicrosoftText:     "Login with Microsoft",
 	LoginProviderGithubText:        "Login with Github",
@@ -39,6 +43,8 @@ var Messages_ja_JP = &Messages{
 	FilterTabsHasUnreadNotes:       "未読のノートがあります",
 	FilterTabsActive:               "有効",
 	DemoTips:                       "データベースは偶数時間ごとにリセットされることに注意してください。",
+	DemoUsernameLabel:              "デモのユーザー名: ",
+	DemoPasswordLabel:              "デモパスワード: ",
 	LoginProviderGoogleText:        "Googleでログイン",
 	LoginProviderMicrosoftText:     "Microsoftでログイン",
 	LoginProviderGithubText:        "Githubでログイン",
@@ -53,6 +59,8 @@ var Messages_zh_CN = &Messages{
 	FilterTabsHasUnreadNotes:       "未读备注",
 	FilterTabsActive:               "有效",
 	DemoTips:                       "请注意，数据库将每隔偶数小时重置一次。",
+	DemoUsernameLabel:              "演示账户：",
+	DemoPasswordLabel:              "演示密码：",
 	LoginProviderGoogleText:        "使用Google登录",
 	LoginProviderMicrosoftText:     "使用Microsoft登录",
 	LoginProviderGithubText:        "使用Github登录",

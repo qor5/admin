@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	plogin "github.com/qor5/admin/login"
 	"github.com/qor5/admin/presets"
@@ -141,19 +142,24 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			),
 		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 
+		username := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
+		password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
+		isDemo := username != "" && password != ""
 		demoTips := Div(
 			Div(
+				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoUsernameLabel")), B(username)),
+				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoPasswordLabel")), B(password)),
 				P(B(i18n.T(ctx.R, I18nExampleKey, "DemoTips"))),
 			).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
 				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
-		).Class("pt-12")
+		).Class("py-12")
 
 		r.Body = Div(
 			plogin.DefaultViewCommon.ErrNotice(fMsg),
 			plogin.DefaultViewCommon.WarnNotice(wMsg),
 			plogin.DefaultViewCommon.InfoNotice(iMsg),
 			bodyForm,
-			demoTips,
+			If(isDemo, demoTips),
 		)
 
 		return

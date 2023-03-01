@@ -9,9 +9,9 @@ export S3_Publish_Region=""
 
 export BASE_URL="http://localhost:9500"
 export LOGIN_SECRET="test"
+
 export LOGIN_GOOGLE_KEY=""
 export LOGIN_GOOGLE_SECRET="test"
-
 export LOGIN_MICROSOFTONLINE_KEY=
 export LOGIN_MICROSOFTONLINE_SECRET="ts"
 export LOGIN_GITHUB_KEY=
