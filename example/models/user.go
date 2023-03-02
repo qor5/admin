@@ -9,14 +9,21 @@ import (
 )
 
 const (
+	// Internal role of the system
+	_ = iota
+	RoleAdminID
+	RoleManagerID
+	RoleEditorID
+	RoleViewerID
+
+	RoleAdmin   = "admin"
+	RoleManager = "manager"
+	RoleEditor  = "editor"
+	RoleViewer  = "viewer"
+
 	OAuthProviderGoogle          = "google"
 	OAuthProviderMicrosoftOnline = "microsoftonline"
 	OAuthProviderGithub          = "github"
-
-	RoleViewer  = "viewer"
-	RoleEditor  = "editor"
-	RoleManager = "manager"
-	RoleAdmin   = "admin"
 )
 
 var OAuthProviders = []string{
@@ -60,7 +67,7 @@ func (u User) GetRoles() (rs []string) {
 		rs = append(rs, r.Name)
 	}
 	if len(rs) == 0 {
-		rs = []string{"root"}
+		rs = []string{RoleAdmin}
 	}
 	return
 }

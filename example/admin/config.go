@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -41,7 +40,6 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -116,33 +114,8 @@ func NewConfig() Config {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
-	// perm.Verbose = true
 
-	b.Permission(
-		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*"),
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:orders:*"),
-			perm.PolicyFor(models.RoleAdmin).WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
-			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
-
-			// Forbid viewer & editor to access users & roles
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(perm.Anything).On("*:users:*"),
-			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Denied).ToDo(perm.Anything).On("*:users:*"),
-
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(perm.Anything).On("*:roles:*"),
-			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Denied).ToDo(perm.Anything).On("*:roles:*"),
-
-			activity.PermPolicy,
-		).SubjectsFunc(func(r *http.Request) []string {
-			u := getCurrentUser(r)
-			if u == nil {
-				return nil
-			}
-			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
-	)
+	initPermission(b, db)
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).

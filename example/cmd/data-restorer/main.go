@@ -33,9 +33,11 @@ func emptyDB(db *gorm.DB) {
 }
 
 func initDB(db *gorm.DB) {
-	admin.GenInitialPasswordUser()
-
 	var err error
+	// Roles
+	admin.InitDefaultRolesToDB(db)
+	// Users
+	admin.GenInitialPasswordUser()
 	// Page Builder
 	if err = db.Exec(initPageBuilderSQL).Error; err != nil {
 		panic(err)
@@ -76,10 +78,7 @@ func initDB(db *gorm.DB) {
 	if err = db.Exec(initProductsSQL).Error; err != nil {
 		panic(err)
 	}
-	// Roles
-	if err = db.Exec(initRolesSQL).Error; err != nil {
-		panic(err)
-	}
+
 	// Media Library
 	if err = db.Model(&media_library.MediaLibrary{}).Create(&[]map[string]interface{}{
 		{"selected_type": "image", "file": fmt.Sprintf(`{"FileName":"mob.jpg","Url":%s,"Width":1536,"Height":2876,"FileSizes":{"@qor_preview":33140,"default":465542,"original":465542},"Video":"","SelectedType":"","Description":""}`, composeS3Path("/100/file.jpg"))},

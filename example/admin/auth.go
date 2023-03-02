@@ -102,7 +102,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 					name = u.Email
 				}
 
-				if err := db.Create(&models.User{
+				user := &models.User{
 					Name: name,
 					OAuthInfo: login.OAuthInfo{
 						OAuthProvider:    u.Provider,
@@ -110,7 +110,15 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 						OAuthIndentifier: u.Email,
 						OAuthAvatar:      u.AvatarURL,
 					},
-				}).Error; err != nil {
+				}
+				if err := db.Create(user).Error; err != nil {
+					panic(err)
+				}
+				if err := db.Table("user_role_join").Create(
+					&map[string]interface{}{
+						"user_id": user.ID,
+						"role_id": models.RoleManagerID,
+					}).Error; err != nil {
 					panic(err)
 				}
 			}
@@ -187,6 +195,13 @@ func GenInitialPasswordUser() {
 	}
 	user.EncryptPassword()
 	if err := db.Create(user).Error; err != nil {
+		panic(err)
+	}
+	if err := db.Table("user_role_join").Create(
+		&map[string]interface{}{
+			"user_id": user.ID,
+			"role_id": models.RoleManagerID,
+		}).Error; err != nil {
 		panic(err)
 	}
 }

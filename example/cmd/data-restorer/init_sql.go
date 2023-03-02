@@ -88,19 +88,19 @@ INSERT INTO public.page_builder_categories VALUES (1, NULL, NULL, NULL, 'Product
 -- Data for Name: page_builder_containers; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_containers VALUES (1, '2023-01-04 09:07:43.59273+00', '2023-01-04 09:07:43.59273+00', NULL, 1, 'tpl', 'PageTitle', 1, 1, false, false, 'PageTitle');
-INSERT INTO public.page_builder_containers VALUES (2, '2023-01-04 09:08:40.231434+00', '2023-01-04 09:14:53.379086+00', NULL, 1, '2023-01-04-v01', 'Header', 1, 1, false, false, 'Header');
-INSERT INTO public.page_builder_containers VALUES (3, '2023-01-04 09:08:57.685107+00', '2023-01-04 09:14:53.380419+00', NULL, 1, '2023-01-04-v01', 'Video Banner', 1, 2, false, false, 'Video Banner');
-INSERT INTO public.page_builder_containers VALUES (4, '2023-01-04 09:09:56.244225+00', '2023-01-04 09:14:53.381369+00', NULL, 1, '2023-01-04-v01', 'Heading', 1, 3, false, false, 'Heading');
-INSERT INTO public.page_builder_containers VALUES (9, '2023-01-04 09:13:28.548712+00', '2023-01-04 09:14:53.382331+00', NULL, 1, '2023-01-04-v01', 'BrandGrid', 1, 4, false, false, 'BrandGrid');
-INSERT INTO public.page_builder_containers VALUES (10, '2023-01-04 09:14:31.861892+00', '2023-01-04 09:14:53.383242+00', NULL, 1, '2023-01-04-v01', 'Heading', 3, 5, false, false, 'Heading');
-INSERT INTO public.page_builder_containers VALUES (5, '2023-01-04 09:10:25.176222+00', '2023-01-04 09:14:53.384206+00', NULL, 1, '2023-01-04-v01', 'ListContent', 1, 6, false, false, 'ListContent');
-INSERT INTO public.page_builder_containers VALUES (6, '2023-01-04 09:11:29.286308+00', '2023-01-04 09:14:53.385357+00', NULL, 1, '2023-01-04-v01', 'Image', 1, 7, false, false, 'Image');
-INSERT INTO public.page_builder_containers VALUES (7, '2023-01-04 09:11:47.766596+00', '2023-01-04 09:14:53.386639+00', NULL, 1, '2023-01-04-v01', 'Heading', 2, 8, false, false, 'Heading');
-INSERT INTO public.page_builder_containers VALUES (8, '2023-01-04 09:12:16.616769+00', '2023-01-04 09:14:53.387601+00', NULL, 1, '2023-01-04-v01', 'ListContent', 2, 9, false, false, 'ListContent');
-INSERT INTO public.page_builder_containers VALUES (11, '2023-01-04 09:16:37.471845+00', '2023-01-04 09:16:37.471845+00', NULL, 1, '2023-01-04-v01', 'InNumbers', 1, 10, false, false, 'InNumbers');
-INSERT INTO public.page_builder_containers VALUES (12, '2023-01-04 09:17:47.129361+00', '2023-01-04 09:18:23.664917+00', NULL, 1, '2023-01-04-v01', 'ContactForm', 1, 11, true, false, 'ContactForm');
-INSERT INTO public.page_builder_containers VALUES (13, '2023-01-04 09:18:30.755094+00', '2023-01-04 09:18:30.755094+00', NULL, 1, '2023-01-04-v01', 'Footer', 1, 12, false, false, 'Footer');
+INSERT INTO public.page_builder_containers VALUES (1, '2023-01-04 09:07:43.59273+00', '2023-01-04 09:07:43.59273+00', NULL, 1, 'tpl', '', 'PageTitle', 1, 1, false, false, 'PageTitle');
+INSERT INTO public.page_builder_containers VALUES (2, '2023-01-04 09:08:40.231434+00', '2023-01-04 09:14:53.379086+00', NULL, 1, '2023-01-04-v01', '', 'Header', 1, 1, false, false, 'Header');
+INSERT INTO public.page_builder_containers VALUES (3, '2023-01-04 09:08:57.685107+00', '2023-01-04 09:14:53.380419+00', NULL, 1, '2023-01-04-v01', '', 'Video Banner', 1, 2, false, false, 'Video Banner');
+INSERT INTO public.page_builder_containers VALUES (4, '2023-01-04 09:09:56.244225+00', '2023-01-04 09:14:53.381369+00', NULL, 1, '2023-01-04-v01', '', 'Heading', 1, 3, false, false, 'Heading');
+INSERT INTO public.page_builder_containers VALUES (9, '2023-01-04 09:13:28.548712+00', '2023-01-04 09:14:53.382331+00', NULL, 1, '2023-01-04-v01', '', 'BrandGrid', 1, 4, false, false, 'BrandGrid');
+INSERT INTO public.page_builder_containers VALUES (10, '2023-01-04 09:14:31.861892+00', '2023-01-04 09:14:53.383242+00', NULL, 1, '2023-01-04-v01', '', 'Heading', 3, 5, false, false, 'Heading');
+INSERT INTO public.page_builder_containers VALUES (5, '2023-01-04 09:10:25.176222+00', '2023-01-04 09:14:53.384206+00', NULL, 1, '2023-01-04-v01', '', 'ListContent', 1, 6, false, false, 'ListContent');
+INSERT INTO public.page_builder_containers VALUES (6, '2023-01-04 09:11:29.286308+00', '2023-01-04 09:14:53.385357+00', NULL, 1, '2023-01-04-v01', '', 'Image', 1, 7, false, false, 'Image');
+INSERT INTO public.page_builder_containers VALUES (7, '2023-01-04 09:11:47.766596+00', '2023-01-04 09:14:53.386639+00', NULL, 1, '2023-01-04-v01', '', 'Heading', 2, 8, false, false, 'Heading');
+INSERT INTO public.page_builder_containers VALUES (8, '2023-01-04 09:12:16.616769+00', '2023-01-04 09:14:53.387601+00', NULL, 1, '2023-01-04-v01', '', 'ListContent', 2, 9, false, false, 'ListContent');
+INSERT INTO public.page_builder_containers VALUES (11, '2023-01-04 09:16:37.471845+00', '2023-01-04 09:16:37.471845+00', NULL, 1, '2023-01-04-v01', '', 'InNumbers', 1, 10, false, false, 'InNumbers');
+INSERT INTO public.page_builder_containers VALUES (12, '2023-01-04 09:17:47.129361+00', '2023-01-04 09:18:23.664917+00', NULL, 1, '2023-01-04-v01', '', 'ContactForm', 1, 11, true, false, 'ContactForm');
+INSERT INTO public.page_builder_containers VALUES (13, '2023-01-04 09:18:30.755094+00', '2023-01-04 09:18:30.755094+00', NULL, 1, '2023-01-04-v01', '', 'Footer', 1, 12, false, false, 'Footer');
 
 
 --
@@ -165,14 +165,6 @@ INSERT INTO public.membership_cards VALUES (1, 1, 0, NULL);
 	initMicrositeModelsSQL = `INSERT INTO "microsite_models" ("name","description","created_at","updated_at","deleted_at","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","version_name","parent_version","online_version","pre_path","package","files_list","unix_key","version") VALUES ('Demo','','2023-01-05 17:49:45.695','2023-01-05 17:49:45.695',NULL,'draft','',NULL,NULL,NULL,NULL,'','',false,'','{"FileName":"","Url":""}','','','2023-01-05-v01') RETURNING "id","version"`
 
 	initProductsSQL = `INSERT INTO "products" ("created_at","updated_at","deleted_at","code","name","price","image","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","version_name","parent_version","online_version","version") VALUES ('2023-01-05 17:55:38.167','2023-01-05 17:55:38.167',NULL,'001','cocacola',5,'{"ID":34,"Url":"//qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/34/file.png","VideoLink":"","FileName":"3110-cocacola.png","Description":"","FileSizes":{"@qor_preview":35552,"default":18409,"original":18409,"thumb":11169},"Width":460,"Height":267}','draft','',NULL,NULL,NULL,NULL,'','',false,'2023-01-05-v01') RETURNING "id","version"`
-
-	initRolesSQL = `
-INSERT INTO public.roles VALUES (1, '2023-01-05 09:03:40.848708+00', '2023-01-05 09:03:40.848708+00', NULL, 'Admin');
-INSERT INTO public.roles VALUES (2, '2023-01-05 09:04:06.487444+00', '2023-01-05 09:04:06.487444+00', NULL, 'Guest');
-
-INSERT INTO public.default_db_policies VALUES (1, '2023-01-05 09:03:40.851701+00', '2023-01-05 09:03:40.851701+00', NULL, 1, 'Admin', 'allow', '{*}', '{*}');
-INSERT INTO public.default_db_policies VALUES (2, '2023-01-05 09:04:06.500409+00', '2023-01-05 09:04:06.500409+00', NULL, 2, 'Guest', 'deny', '{presets:create,presets:update,presets:delete}', '{*}');
-`
 
 	initSeqSQL = `
 ALTER SEQUENCE activity_logs_id_seq RESTART WITH 1;

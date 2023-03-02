@@ -34,7 +34,7 @@ var Messages_en_US = &Messages{
 	LoginProviderGithubText:        "Login with Github",
 	OAuthCompleteInfoTitle:         "Complete your information",
 	OAuthCompleteInfoPositionLabel: "Position(Optional)",
-	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 news(Optional)",
+	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
 	OAuthCompleteInfoBackLabel:     "Back to login",
 }
 
@@ -50,7 +50,7 @@ var Messages_ja_JP = &Messages{
 	LoginProviderGithubText:        "Githubでログイン",
 	OAuthCompleteInfoTitle:         "情報を入力してください",
 	OAuthCompleteInfoPositionLabel: "役職（任意）",
-	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースを購読する（任意）",
+	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
 	OAuthCompleteInfoBackLabel:     "ログインに戻る",
 }
 
