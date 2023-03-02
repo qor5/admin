@@ -79,13 +79,42 @@ type Container struct {
 	gorm.Model
 	PageID       uint
 	PageVersion  string
-	PageLocale   string
 	ModelName    string
 	ModelID      uint
 	DisplayOrder float64
 	Shared       bool
 	Hidden       bool
 	DisplayName  string
+
+	l10n.Locale
+}
+
+func (this *Container) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*Container) TableName() string {
@@ -96,6 +125,36 @@ type DemoContainer struct {
 	gorm.Model
 	ModelName string
 	ModelID   uint
+
+	l10n.Locale
+}
+
+func (this *DemoContainer) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*DemoContainer) TableName() string {
@@ -106,6 +165,36 @@ type Template struct {
 	gorm.Model
 	Name        string
 	Description string
+
+	l10n.Locale
+}
+
+func (this *Template) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*Template) TableName() string {
@@ -127,5 +216,6 @@ func (m *Template) Page() *Page {
 		Version: publish.Version{
 			Version: templateVersion,
 		},
+		Locale: m.Locale,
 	}
 }
