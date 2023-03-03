@@ -18,7 +18,7 @@ func main() {
 }
 
 func emptyDB(db *gorm.DB) {
-	ignoreTableNames := map[string]struct{}{
+	ignoredTableNames := map[string]struct{}{
 		"users":          {},
 		"roles":          {},
 		"user_role_join": {},
@@ -29,10 +29,10 @@ func emptyDB(db *gorm.DB) {
 		Error; err != nil {
 		panic(err)
 	}
-	
+
 	var tableNames []string
 	for _, n := range rawTableNames {
-		if _, ok := ignoreTableNames[n]; !ok {
+		if _, ok := ignoredTableNames[n]; !ok {
 			tableNames = append(tableNames, n)
 		}
 	}
@@ -47,7 +47,7 @@ func emptyDB(db *gorm.DB) {
 func initDB(db *gorm.DB) {
 	var err error
 	// Users
-	admin.GenInitialPasswordUser()
+	admin.GenInitialUser()
 	// Page Builder
 	if err = db.Exec(initPageBuilderSQL).Error; err != nil {
 		panic(err)
