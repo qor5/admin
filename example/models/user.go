@@ -9,13 +9,6 @@ import (
 )
 
 const (
-	// Internal role of the system
-	_ = iota
-	RoleAdminID
-	RoleManagerID
-	RoleEditorID
-	RoleViewerID
-
 	RoleAdmin   = "Admin"
 	RoleManager = "Manager"
 	RoleEditor  = "Editor"

@@ -19,10 +19,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	companyEmailDomain = "theplant.jp"
-)
-
 var (
 	loginBuilder *login.Builder
 	vh           *login.ViewHelper
@@ -99,10 +95,9 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			if err := db.Where("o_auth_provider = ? and o_auth_indentifier = ?", u.Provider, u.Email).First(&models.User{}).
 				Error; err == gorm.ErrRecordNotFound {
 				var name string
-				var domain string
 				at := strings.LastIndex(u.Email, "@")
 				if at > 0 {
-					name, domain = u.Email[:at], u.Email[at+1:]
+					name = u.Email[:at]
 				} else {
 					name = u.Email
 				}
@@ -116,18 +111,12 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 						OAuthAvatar:      u.AvatarURL,
 					},
 				}
-				// User with the company email is assigned the role of admin.
-				roleID := models.RoleManagerID
-				if domain == companyEmailDomain {
-					roleID = models.RoleAdminID
-					user.IsInfoCompleted = true
-				}
 
 				if err := db.Create(user).Error; err != nil {
 					panic(err)
 				}
 
-				if err := grantUserRole(user.ID, roleID); err != nil {
+				if err := grantUserRole(user.ID, models.RoleManager); err != nil {
 					panic(err)
 				}
 			}
@@ -206,12 +195,16 @@ func GenInitialPasswordUser() {
 	if err := db.Create(user).Error; err != nil {
 		panic(err)
 	}
-	if err := grantUserRole(user.ID, models.RoleManagerID); err != nil {
+	if err := grantUserRole(user.ID, models.RoleManager); err != nil {
 		panic(err)
 	}
 }
 
-func grantUserRole(userID uint, roleID int) error {
+func grantUserRole(userID uint, roleName string) error {
+	var roleID int
+	if err := db.Table("roles").Where("name = ?", roleName).Pluck("id", &roleID).Error; err != nil {
+		panic(err)
+	}
 	return db.Table("user_role_join").Create(
 		&map[string]interface{}{
 			"user_id": userID,

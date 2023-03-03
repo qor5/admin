@@ -42,8 +42,6 @@ func emptyDB(db *gorm.DB) {
 
 func initDB(db *gorm.DB) {
 	var err error
-	// Roles
-	admin.InitDefaultRolesToDB(db)
 	// Users
 	admin.GenInitialPasswordUser()
 	// Page Builder
