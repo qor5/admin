@@ -224,12 +224,15 @@ func initDefaultRoles() error {
 	}
 
 	if cnt == 0 {
+		var roles []*role.Role
 		for _, r := range models.DefaultRoles {
-			if err := db.Create(&role.Role{
+			roles = append(roles, &role.Role{
 				Name: r,
-			}).Error; err != nil {
-				return err
-			}
+			})
+		}
+
+		if err := db.Create(roles).Error; err != nil {
+			return err
 		}
 	}
 
