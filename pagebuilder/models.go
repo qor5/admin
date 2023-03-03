@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/qor5/admin/l10n"
@@ -60,6 +61,14 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 		"version":     segs[1],
 		"locale_code": segs[2],
 	}
+}
+
+func (p *Page) PermissionRN() []string {
+	rn := []string{"pages", strconv.Itoa(int(p.ID)), p.Version.Version}
+	if l10nON {
+		rn = append(rn, p.LocaleCode)
+	}
+	return rn
 }
 
 type Category struct {

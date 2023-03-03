@@ -19,12 +19,12 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
-	github.com/markbates/goth v1.75.1
+	github.com/markbates/goth v1.76.0
 	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
 	github.com/qor5/web v1.2.3
-	github.com/qor5/x v1.2.1-0.20230215023713-a028537191cc
+	github.com/qor5/x v1.2.1-0.20230221091118-9decd2841d07
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
@@ -71,6 +71,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/markbates/going v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/ory/ladon v1.2.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect

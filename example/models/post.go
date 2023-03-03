@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,4 +54,8 @@ func (p *Post) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 func (p *Post) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
+}
+
+func (p *Post) PermissionRN() []string {
+	return []string{"posts", strconv.Itoa(int(p.ID)), p.Version.Version}
 }

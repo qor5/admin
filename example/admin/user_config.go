@@ -2,26 +2,27 @@ package admin
 
 import (
 	"fmt"
+
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/note"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/role"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/sunfmin/reflectutils"
-
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/utils"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
-
-	"github.com/qor5/admin/example/models"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -30,6 +31,19 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
 	note.Configure(db, b, user)
+
+	user.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+
+		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager users
+		// We didn't do this on permission because of we are not supporting the permission on listing page
+		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
+			qdb = db.Joins("INNER JOIN user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").Where("r.name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
+		}
+
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	}
 
 	ed := user.Editing(
 		"Type",
@@ -175,7 +189,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		} else {
 			return VSelect().FieldName(field.Name).
 				Label(field.Label).Value(p).
-				Items([]string{"google", "microsoftonline"})
+				Items(models.OAuthProviders)
 		}
 	})
 
@@ -275,19 +289,19 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "created",
 				Label:        "Create Time",
 				ItemType:     vx.ItemTypeDatetimeRange,
-				SQLCondition: `created_at %s ?`,
+				SQLCondition: `users.created_at %s ?`,
 			},
 			{
 				Key:          "name",
 				Label:        "Name",
 				ItemType:     vx.ItemTypeString,
-				SQLCondition: `name %s ?`,
+				SQLCondition: `users.name %s ?`,
 			},
 			{
 				Key:          "status",
 				Label:        "Status",
 				ItemType:     vx.ItemTypeSelect,
-				SQLCondition: `status %s ?`,
+				SQLCondition: `users.status %s ?`,
 				Options: []*vx.SelectItem{
 					{Text: "Active", Value: "active"},
 					{Text: "Inactive", Value: "inactive"},
@@ -302,14 +316,14 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "registration_date",
 				Label:        "Registration Date",
 				ItemType:     vx.ItemTypeDate,
-				SQLCondition: `registration_date %s ?`,
+				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
 			{
 				Key:          "registration_date_range",
 				Label:        "Registration Date Range",
 				ItemType:     vx.ItemTypeDateRange,
-				SQLCondition: `registration_date %s ?`,
+				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
 		}

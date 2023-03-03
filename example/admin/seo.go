@@ -3,8 +3,8 @@ package admin
 import (
 	"net/http"
 
-	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/seo"
 	"gorm.io/gorm"
 )

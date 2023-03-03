@@ -11,15 +11,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/presets"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-//go:generate moq -pkg mock -out mock/mock.go . QorJobInterface
+//go:generate moq -pkg mock -out mock/qor_job.go . QorJobInterface
 
 type JobBuilder struct {
 	b              *Builder

@@ -6,8 +6,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/example/models"
+	"github.com/qor5/web"
 	"github.com/qor5/x/login"
 	"github.com/qor5/x/sitemap"
+)
+
+const (
+	logoutURL                  = "/auth/logout"
+	oauthCompleteInfoPageURL   = "/auth/complete-info"
+	oauthCompleteInfoActionURL = "/auth/do-complete-info"
+
+	exportOrdersURL = "/export-orders"
 )
 
 func Router() http.Handler {
@@ -34,8 +43,13 @@ func Router() http.Handler {
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprintf(w, `<html><head>%s</head><body>%s</body></html>`, seodata, post.Body)
 	}))
+
 	mux.Handle("/", c.pb)
-	mux.Handle("/export-orders", ExportOrders(db))
+
+	mux.Handle(oauthCompleteInfoActionURL, doOAuthCompleteInfo(db))
+	mux.Handle(oauthCompleteInfoPageURL, c.pb.I18n().EnsureLanguage(web.New().Page(oauthCompleteInfoPage(vh, c.pb))))
+
+	mux.Handle(exportOrdersURL, exportOrders(db))
 
 	// example of sitemap and robot
 	sitemap.SiteMap("product").RegisterRawString("https://dev.qor5.com/admin", "/product").MountTo(mux)
@@ -48,6 +62,7 @@ func Router() http.Handler {
 	cr.Use(
 		login.Authenticate(loginBuilder),
 		validateSessionToken(),
+		isOAuthInfoCompleted(),
 		withRoles(db),
 		withNoteContext(),
 	)
