@@ -18,18 +18,22 @@ func main() {
 }
 
 func emptyDB(db *gorm.DB) {
-	var tableNames []string
+	ignoreTableNames := map[string]struct{}{
+		"users":          {},
+		"roles":          {},
+		"user_role_join": {},
+	}
 
-	if err := db.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public';").Scan(&tableNames).
+	var rawTableNames []string
+	if err := db.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public';").Scan(&rawTableNames).
 		Error; err != nil {
 		panic(err)
 	}
-
-	// Keep the data of the user table.
-	for i, n := range tableNames {
-		if n == "users" {
-			tableNames = append(tableNames[:i], tableNames[i+1:]...)
-			break
+	
+	var tableNames []string
+	for _, n := range rawTableNames {
+		if _, ok := ignoreTableNames[n]; !ok {
+			tableNames = append(tableNames, n)
 		}
 	}
 
