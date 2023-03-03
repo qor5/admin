@@ -25,6 +25,14 @@ func emptyDB(db *gorm.DB) {
 		panic(err)
 	}
 
+	// Keep the data of the user table.
+	for i, n := range tableNames {
+		if n == "users" {
+			tableNames = append(tableNames[:i], tableNames[i+1:]...)
+			break
+		}
+	}
+
 	for _, name := range tableNames {
 		if err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE;", name)).Error; err != nil {
 			panic(err)
