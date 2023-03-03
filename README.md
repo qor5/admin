@@ -1,5 +1,7 @@
 # QOR5
 
+![Build status](https://github.com/qor5/admin/actions/workflows/go.yml/badge.svg)
+
 QOR5 is yet another Go library to build web applications. We aim to accelerate the development speed and make the website highly customizable.
 
 - It prefers writing HTML in [static typing Go language](/advanced-functions/the-go-html-builder.html), rather than a certain type of template language, Not even go template.
