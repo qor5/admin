@@ -16,10 +16,10 @@ const (
 	RoleEditorID
 	RoleViewerID
 
-	RoleAdmin   = "admin"
-	RoleManager = "manager"
-	RoleEditor  = "editor"
-	RoleViewer  = "viewer"
+	RoleAdmin   = "Admin"
+	RoleManager = "Manager"
+	RoleEditor  = "Editor"
+	RoleViewer  = "Viewer"
 
 	OAuthProviderGoogle          = "google"
 	OAuthProviderMicrosoftOnline = "microsoftonline"
@@ -67,7 +67,7 @@ func (u User) GetRoles() (rs []string) {
 		rs = append(rs, r.Name)
 	}
 	if len(rs) == 0 {
-		rs = []string{RoleAdmin}
+		rs = []string{RoleViewer}
 	}
 	return
 }
