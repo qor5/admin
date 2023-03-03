@@ -29,7 +29,7 @@ func emptyDB(db *gorm.DB) {
 		Error; err != nil {
 		panic(err)
 	}
-	
+
 	var tableNames []string
 	for _, n := range rawTableNames {
 		if _, ok := ignoreTableNames[n]; !ok {
@@ -47,7 +47,7 @@ func emptyDB(db *gorm.DB) {
 func initDB(db *gorm.DB) {
 	var err error
 	// Users
-	admin.GenInitialPasswordUser()
+	admin.GenInitialUser()
 	// Page Builder
 	if err = db.Exec(initPageBuilderSQL).Error; err != nil {
 		panic(err)

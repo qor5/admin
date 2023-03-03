@@ -14,6 +14,7 @@ import (
 	"github.com/qor5/admin/example/models"
 	plogin "github.com/qor5/admin/login"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/role"
 	"github.com/qor5/x/login"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -166,10 +167,10 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 	vh = loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))
 
-	GenInitialPasswordUser()
+	GenInitialUser()
 }
 
-func GenInitialPasswordUser() {
+func GenInitialUser() {
 	email := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
 	password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
 	if email == "" || password == "" {
@@ -181,6 +182,10 @@ func GenInitialPasswordUser() {
 		panic(err)
 	}
 	if count > 0 {
+		return
+	}
+
+	if err := initDefaultRoles(); err != nil {
 		return
 	}
 
@@ -210,6 +215,25 @@ func grantUserRole(userID uint, roleName string) error {
 			"user_id": userID,
 			"role_id": roleID,
 		}).Error
+}
+
+func initDefaultRoles() error {
+	var cnt int64
+	if err := db.Model(&role.Role{}).Count(&cnt).Error; err != nil {
+		return err
+	}
+
+	if cnt == 0 {
+		for _, r := range models.DefaultRoles {
+			if err := db.Create(&role.Role{
+				Name: r,
+			}).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func doOAuthCompleteInfo(db *gorm.DB) http.Handler {

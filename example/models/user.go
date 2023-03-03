@@ -19,6 +19,13 @@ const (
 	OAuthProviderGithub          = "github"
 )
 
+var DefaultRoles = []string{
+	RoleAdmin,
+	RoleManager,
+	RoleEditor,
+	RoleViewer,
+}
+
 var OAuthProviders = []string{
 	OAuthProviderGoogle,
 	OAuthProviderMicrosoftOnline,
