@@ -1,6 +1,6 @@
 # QOR5
 
-https://prow.theplant.dev/badge.svg?jobs=post-qor5-admin-prod-build
+![Build status](https://prow.theplant.dev/badge.svg?jobs=post-qor5-admin-prod-build)
 
 QOR5 is yet another Go library to build web applications. We aim to accelerate the development speed and make the website highly customizable.
 
