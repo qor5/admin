@@ -227,8 +227,6 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
     }`))
 			input.FreeStyleBottomJs = []string{`
 	function scrolltoCurrentContainer(event) {
-		//console.log("Received from parent", event.data);
-		//console.log("Received from parent", event.origin);
 		const current = document.querySelector("div[data-container-id='"+event.data+"']");
 		if (!current) {
 			return;
