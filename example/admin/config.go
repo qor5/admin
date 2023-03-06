@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -117,7 +116,7 @@ func NewConfig() Config {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
-	// perm.Verbose = true
+	perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*"),
@@ -132,7 +131,7 @@ func NewConfig() Config {
 				return nil
 			}
 			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
+		}).DBPolicy(perm.NewDBPolicy(db)),
 	)
 
 	b.I18n().
