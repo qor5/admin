@@ -15,7 +15,7 @@ build_json=$(plantbuild show ./plantbuild/build.jsonnet | jq -r .services)
 output_json='{"event_type": "deploy-test"}'
 for key in $(echo  "$build_json" | jq -r keys[]); do
   app_name=$(echo "$key" | sed 's/build_image_//')
-  image=$( echo "$build_json" | jq -r ".$key.image")
+  image=$( echo "$build_json" | jq -r --arg key "$key" '.[$key]')
   output_json=$(echo "$output_json" | jq -r ".client_payload.github.$app_name.image = \"$image\"")
 done
 
