@@ -5,35 +5,56 @@ import (
 
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
-	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-var DefaultActions = []DefaultOptionItem{
-	{Text: "All", Value: "*"},
-	{Text: "List", Value: presets.PermList},
-	{Text: "Get", Value: presets.PermGet},
-	{Text: "Create", Value: presets.PermCreate},
-	{Text: "Update", Value: presets.PermUpdate},
-	{Text: "Delete", Value: presets.PermDelete},
+type Builder struct {
+	db        *gorm.DB
+	actions   []*vuetify.DefaultOptionItem
+	resources []*vuetify.DefaultOptionItem
 }
 
-func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, resources []DefaultOptionItem) {
-	role := b.Model(&Role{})
+func New(db *gorm.DB) *Builder {
+	return &Builder{
+		db: db,
+		actions: []*vuetify.DefaultOptionItem{
+			{Text: "All", Value: "*"},
+			{Text: "List", Value: presets.PermList},
+			{Text: "Get", Value: presets.PermGet},
+			{Text: "Create", Value: presets.PermCreate},
+			{Text: "Update", Value: presets.PermUpdate},
+			{Text: "Delete", Value: presets.PermDelete},
+		},
+	}
+}
+
+func (b *Builder) Actions(vs []*vuetify.DefaultOptionItem) *Builder {
+	b.actions = vs
+	return b
+}
+
+func (b *Builder) Resources(vs []*vuetify.DefaultOptionItem) *Builder {
+	b.resources = vs
+	return b
+}
+
+func (b *Builder) Configure(pb *presets.Builder) {
+	role := pb.Model(&Role{})
 
 	ed := role.Editing(
 		"Name",
 		"Permissions",
 	)
 
-	permFb := b.NewFieldsBuilder(presets.WRITE).Model(&perm.DefaultDBPolicy{}).Only("Effect", "Actions", "Resources")
+	permFb := pb.NewFieldsBuilder(presets.WRITE).Model(&perm.DefaultDBPolicy{}).Only("Effect", "Actions", "Resources")
 	ed.Field("Permissions").Nested(permFb)
 
 	permFb.Field("Effect").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VSelect().
+		return vuetify.VSelect().
 			Items([]string{perm.Allowed, perm.Denied}).
 			Value(field.StringValue(obj)).
 			Label(field.Label).
@@ -44,21 +65,21 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 		return
 	})
 	permFb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VAutocomplete().
+		return vuetify.VAutocomplete().
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey).
 			Multiple(true).Chips(true).DeletableChips(true).
-			Items(actions)
+			Items(b.actions)
 	})
 
 	permFb.Field("Resources").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VAutocomplete().
+		return vuetify.VAutocomplete().
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey).
 			Multiple(true).Chips(true).DeletableChips(true).
-			Items(resources)
+			Items(b.resources)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)
 		p.Resources = ctx.R.Form[field.FormKey]
@@ -66,7 +87,7 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 	})
 
 	ed.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		return gorm2op.DataOperator(db.Preload("Permissions")).Fetch(obj, id, ctx)
+		return gorm2op.DataOperator(b.db.Preload("Permissions")).Fetch(obj, id, ctx)
 	})
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -84,20 +105,20 @@ func Configure(b *presets.Builder, db *gorm.DB, actions []DefaultOptionItem, res
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		r := obj.(*Role)
 		if r.ID != 0 {
-			if err = db.Delete(&perm.DefaultDBPolicy{}, "refer_id = ?", r.ID).Error; err != nil {
+			if err = b.db.Delete(&perm.DefaultDBPolicy{}, "refer_id = ?", r.ID).Error; err != nil {
 				return
 			}
 		}
-		if err = gorm2op.DataOperator(db.Session(&gorm.Session{FullSaveAssociations: true})).Save(obj, id, ctx); err != nil {
+		if err = gorm2op.DataOperator(b.db.Session(&gorm.Session{FullSaveAssociations: true})).Save(obj, id, ctx); err != nil {
 			return
 		}
 		startFrom := time.Now().Add(-1 * time.Second)
-		b.GetPermission().LoadDBPoliciesToMemory(db, &startFrom)
+		pb.GetPermission().LoadDBPoliciesToMemory(b.db, &startFrom)
 		return
 	})
 
 	ed.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		err = db.Transaction(func(tx *gorm.DB) error {
+		err = b.db.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Delete(&perm.DefaultDBPolicy{}, "refer_id = ?", id).Error; err != nil {
 				return err
 			}
