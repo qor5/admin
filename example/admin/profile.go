@@ -3,6 +3,7 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -144,6 +145,12 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 	})
 
 	eb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// We don't allow public user to change its password
+		u := getCurrentUser(ctx.R)
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			return h.RawHTML("")
+		}
+
 		var actionBtns h.HTMLComponents
 
 		actionBtns = append(actionBtns,
@@ -166,10 +173,19 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			panic(err)
 		}
 
+		isPublicUser := false
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			isPublicUser = true
+		}
+
 		currentTokenHash := getStringHash(login.GetSessionToken(loginBuilder, ctx.R), LoginTokenHashLen)
 
 		activeDevices := make(map[string]struct{})
 		for _, item := range items {
+			if isPublicUser {
+				item.IP = "Invisible due to security concerns"
+			}
+
 			if isTokenValid(*item) {
 				item.Status = "Expired"
 			} else {
@@ -227,7 +243,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 					VCol(
 						VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
 							Outlined(true).Color("primary").
-							Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")),
+							Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")).Disabled(isPublicUser),
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).
