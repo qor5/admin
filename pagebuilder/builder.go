@@ -279,6 +279,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					Href(href).
 					Color("secondary"),
 			)
+		} else {
+			var href = fmt.Sprintf("%s/preview?id=%d&version=%s", b.prefix, p.ID, p.GetVersion())
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+				href = fmt.Sprintf("%s/preview?id=%d&version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
+			}
+			return h.Div(
+				VBtn(msgr.Preview).
+					Target("_blank").
+					Href(href).
+					Color("secondary"),
+			)
 		}
 		return nil
 	})
