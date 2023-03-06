@@ -126,7 +126,6 @@ func NewConfig() Config {
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
 			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
 			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
-			activity.PermPolicy,
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
 			if u == nil {

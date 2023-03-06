@@ -318,6 +318,8 @@ github.com/qor5/x v1.2.1-0.20230110024146-8d81598098f8 h1:PnFeCPItS9ivqfVBuwhaU1
 github.com/qor5/x v1.2.1-0.20230110024146-8d81598098f8/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
 github.com/qor5/x v1.2.1-0.20230215023713-a028537191cc h1:NlNBssk3aswMtFQU/hhdOxhBS2zWA31GImy6llakVFw=
 github.com/qor5/x v1.2.1-0.20230215023713-a028537191cc/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
+github.com/qor5/x v1.2.1-0.20230306083016-dd3a0f5fa66d h1:t4RaUZvqJwq/vlL1QMs2dV9wL8YkNd04PDq6EUWK5i4=
+github.com/qor5/x v1.2.1-0.20230306083016-dd3a0f5fa66d/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be h1:ta7tUOvsPHVHGom5hKW5VXNc2xZIkfCKP8iaqOyYtUQ=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be/go.mod h1:MIDFMn7db1kT65GmV94GzpX9Qdi7N/pQlwb+AN8wh+Q=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
