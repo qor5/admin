@@ -1,6 +1,7 @@
 package admin
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 
@@ -10,6 +11,9 @@ import (
 	"github.com/qor5/x/login"
 	"github.com/qor5/x/sitemap"
 )
+
+//go:embed assets/favicon.ico
+var favicon []byte
 
 const (
 	logoutURL                  = "/auth/logout"
@@ -45,6 +49,10 @@ func Router() http.Handler {
 	}))
 
 	mux.Handle("/", c.pb)
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(favicon)
+		return
+	})
 
 	mux.Handle(oauthCompleteInfoActionURL, doOAuthCompleteInfo(db))
 	mux.Handle(oauthCompleteInfoPageURL, c.pb.I18n().EnsureLanguage(web.New().Page(oauthCompleteInfoPage(vh, c.pb))))
