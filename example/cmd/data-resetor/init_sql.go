@@ -462,13 +462,6 @@ SELECT pg_catalog.setval('public.qor_notes_id_seq', 1, false);
 
 
 --
--- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: example
---
-
-SELECT pg_catalog.setval('public.roles_id_seq', 3, false);
-
-
---
 -- Name: user_notes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: example
 --
 
@@ -480,12 +473,5 @@ SELECT pg_catalog.setval('public.user_notes_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.user_unread_notes_id_seq', 1, true);
-
-
---
--- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: example
---
-
-SELECT pg_catalog.setval('public.users_id_seq', 2, true);
 `
 )
