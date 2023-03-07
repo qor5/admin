@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go v1.38.62
-	github.com/biter777/countries v1.5.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
@@ -37,7 +36,7 @@ require (
 	github.com/wcharczuk/go-chart/v2 v2.1.0
 	go.uber.org/zap v1.19.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.7.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.2
@@ -85,7 +84,7 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
