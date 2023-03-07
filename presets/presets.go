@@ -473,7 +473,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, om := range b.menuOrder {
 		switch v := om.(type) {
 		case *MenuGroupBuilder:
-			ver := b.verifier.Do(PermList).On("menu:groups").SnakeOn(v.name).WithReq(ctx.R)
+			ver := b.verifier.Do(PermList).SnakeOn("mg_" + v.name).WithReq(ctx.R)
 			if ver.IsAllowed() != nil {
 				continue
 			}
@@ -506,11 +506,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				if m.notInMenu {
 					continue
 				}
-				if ver.SnakeOn(m.uriName).IsAllowed() != nil {
-					ver.RemoveOn(1)
+				if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 					continue
 				}
-				ver.RemoveOn(1)
 				subMenus = append(subMenus, b.menuItem(ctx, m, true))
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
@@ -534,7 +532,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if m == nil {
 				continue
 			}
-			if b.verifier.Do(PermList).On("menu").SnakeOn(m.uriName).WithReq(ctx.R).IsAllowed() != nil {
+			if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 				continue
 			}
 
@@ -553,7 +551,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			continue
 		}
 
-		if b.verifier.Do(PermList).On("menu").SnakeOn(m.uriName).WithReq(ctx.R).IsAllowed() != nil {
+		if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -858,6 +856,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		b.InjectAssets(ctx)
 
+		// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
+		menu := b.createMenus(ctx)
+
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if err == perm.PermissionDenied {
@@ -888,7 +889,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			VNavigationDrawer(
 				b.runBrandProfileSwitchLanguageDisplayFunc(b.runBrandFunc(ctx), profile, b.runSwitchLanguageFunc(ctx), ctx),
 				VDivider(),
-				b.createMenus(ctx),
+				menu,
 			).App(true).
 				// Clipped(true).
 				Fixed(true).
