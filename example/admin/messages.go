@@ -98,14 +98,14 @@ type Messages_ModelsI18nModuleKey struct {
 	ECManagement             string
 	ECDashboard              string
 	Orders                   string
+	InputDemos               string
 	Products                 string
+	NestedFieldDemos         string
 	SiteManagement           string
 	SEO                      string
 	UserManagement           string
 	Profile                  string
 	FeaturedModelsManagement string
-	InputHarnesses           string
-	ListEditorExample        string
 	Customers                string
 	ListModels               string
 	MicrositeModels          string
@@ -241,14 +241,14 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "电子商务管理",
 	ECDashboard:              "电子商务仪表盘",
 	Orders:                   "订单管理",
+	InputDemos:               "表单 示例",
 	Products:                 "产品管理",
+	NestedFieldDemos:         "嵌套表单 示例",
 	SiteManagement:           "站点管理菜单",
 	SEO:                      "SEO 管理",
 	UserManagement:           "用户管理菜单",
 	Profile:                  "个人页面",
 	FeaturedModelsManagement: "特色模块管理菜单",
-	InputHarnesses:           "Input 示例",
-	ListEditorExample:        "ListEditor 示例",
 	Customers:                "Customers 示例",
 	ListModels:               "发布带排序及分页模块 示例",
 	MicrositeModels:          "Microsite 示例",
@@ -384,14 +384,14 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "ECマネジメント",
 	ECDashboard:              "ECダッシュボード",
 	Orders:                   "注文",
+	InputDemos:               "入力デモ",
 	Products:                 "製品",
 	SiteManagement:           "サイト管理",
+	NestedFieldDemos:         "ネストフィールドデモ",
 	SEO:                      "SEO",
 	UserManagement:           "ユーザー管理",
 	Profile:                  "プロフィール",
 	FeaturedModelsManagement: "モデル管理",
-	InputHarnesses:           "ハーネスを入力",
-	ListEditorExample:        "リスト編集サンプル",
 	Customers:                "お客さま",
 	ListModels:               "リストモデル",
 	MicrositeModels:          "マイクロサイトモデル",

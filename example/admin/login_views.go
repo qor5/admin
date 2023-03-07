@@ -92,6 +92,12 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			plogin.DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
 		}
 
+		var logoSection HTMLComponent
+		logo, _ := assets.ReadFile("assets/logo.svg")
+		logoSection = Div(
+			 A( RawHTML(logo) ).Href("https://qor5.com/").Target("_blank"),
+		).Style("text-align: center;")
+
 		var userPassHTML HTMLComponent
 		if vh.UserPassEnabled() {
 			userPassHTML = Div(
@@ -125,6 +131,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		r.PageTitle = "Sign In"
 		var bodyForm HTMLComponent
 		bodyForm = Div(
+			logoSection,
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,

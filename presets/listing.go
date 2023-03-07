@@ -712,7 +712,7 @@ func (b *ListingBuilder) selectColumnsBtn(
 	)
 
 	for _, f := range b.fields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		originalColumns = append(originalColumns, f.name)
@@ -1281,7 +1281,7 @@ func (b *ListingBuilder) getTableComponents(
 	dataTable = sDataTable
 
 	for _, f := range displayFields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		f = b.getFieldOrDefault(f.name) // fill in empty compFunc and setter func with default
