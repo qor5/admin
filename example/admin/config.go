@@ -117,7 +117,7 @@ func NewConfig() Config {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
-	// perm.Verbose = true
+	perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*"),

@@ -230,7 +230,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 	for _, f := range b.fields {
 		info := parent.ModelInfo
 		if info != nil {
-			if info.Verifier().Do(PermCreate).ObjectOn(toObj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(toObj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+			if info.Verifier().Do(PermCreate).ObjectOn(toObj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(toObj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 				continue
 			}
 		}
@@ -632,7 +632,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 	// if f.compFunc == nil {
 	// 	return nil
 	// }
-	if info != nil && info.Verifier().Do(PermGet).ObjectOn(obj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+	if info != nil && info.Verifier().Do(PermGet).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 		return nil
 	}
 
@@ -649,9 +649,9 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 	disabled := false
 	if info != nil {
 		if edit {
-			disabled = info.Verifier().Do(PermUpdate).ObjectOn(obj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil
+			disabled = info.Verifier().Do(PermUpdate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		} else {
-			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil
+			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
 	return f.compFunc(obj, &FieldContext{
