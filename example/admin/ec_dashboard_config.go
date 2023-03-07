@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/ahmetb/go-linq/v3"
+	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/example/models"
 	h "github.com/theplant/htmlgo"
 	"github.com/wcharczuk/go-chart/v2"
 	"github.com/wcharczuk/go-chart/v2/drawing"
