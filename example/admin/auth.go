@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -65,9 +64,6 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		}).
 		MaxRetryCount(5).
 		NotifyUserOfResetPasswordLinkFunc(func(user interface{}, resetLink string) error {
-			fmt.Println("#########################################start")
-			fmt.Println("reset password link:", resetLink)
-			fmt.Println("#########################################end")
 			return nil
 		}).
 		PasswordValidationFunc(func(password string) (message string, ok bool) {
@@ -158,9 +154,6 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return nil
 		}).
 		AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			fmt.Println("#########################################start")
-			fmt.Println("totp code is reused!")
-			fmt.Println("#########################################end")
 			return nil
 		}).TOTPEnabled(false).MaxRetryCount(0)
 
