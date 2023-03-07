@@ -45,7 +45,7 @@ type Builder struct {
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
-	menuTopItems                          []ComponentFunc
+	menuTopItems                          map[string]ComponentFunc
 	notificationCountFunc                 func(ctx *web.EventContext) int
 	notificationContentFunc               ComponentFunc
 	brandTitle                            string
@@ -59,7 +59,7 @@ type Builder struct {
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
 	menuOrder                             []interface{}
-	wrapHandlers                          []func(in http.Handler) (out http.Handler)
+	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -77,7 +77,7 @@ const (
 )
 
 const (
-	OpenConfirmationDialogEvent = "presets_ConfirmationDialogEvent"
+	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
 func New() *Builder {
@@ -93,6 +93,7 @@ func New() *Builder {
 		listFieldDefaults:    NewFieldDefaults(LIST),
 		detailFieldDefaults:  NewFieldDefaults(DETAIL),
 		progressBarColor:     "amber",
+		menuTopItems:         make(map[string]ComponentFunc),
 		brandTitle:           "Admin",
 		rightDrawerWidth:     "600",
 		verifier:             perm.NewVerifier(PermModule, nil),
@@ -101,9 +102,10 @@ func New() *Builder {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		},
+		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
 
-	r.GetWebBuilder().RegisterEventFunc(OpenConfirmationDialogEvent, r.openConfirmationDialog)
+	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	return r
 }
@@ -665,8 +667,8 @@ func (b *Builder) runSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	)
 }
 
-func (b *Builder) AddMenuTopItemFunc(v ComponentFunc) (r *Builder) {
-	b.menuTopItems = append(b.menuTopItems, v)
+func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
+	b.menuTopItems[key] = v
 	return b
 }
 
@@ -716,7 +718,7 @@ const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
 const DialogPortalName = "presets_DialogPortalName"
 const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
-const defaultConfirmationDialogPortalName = "presets_confirmationDialogPortalName"
+const defaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 const listingDialogPortalName = "presets_listingDialogPortalName"
 
 const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
@@ -802,26 +804,26 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 }
 
 const (
-	ConfirmationDialogConfirmEventKey = "presets_ConfirmationDialogConfirmEventKey"
-	ConfirmationDialogTextKey         = "presets_ConfirmationDialogTextKey"
-	ConfirmationDialogPortalNameKey   = "presets_ConfirmationDialogPortalNameKey"
+	ConfirmDialogConfirmEvent     = "presets_ConfirmDialog_ConfirmEvent"
+	ConfirmDialogPromptText       = "presets_ConfirmDialog_PromptText"
+	ConfirmDialogDialogPortalName = "presets_ConfirmDialog_DialogPortalName"
 )
 
-func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
-	confirmEvent := ctx.R.FormValue(ConfirmationDialogConfirmEventKey)
+func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
+	confirmEvent := ctx.R.FormValue(ConfirmDialogConfirmEvent)
 	if confirmEvent == "" {
 		ShowMessage(&er, "confirm event is empty", "error")
 		return
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	text := msgr.ConfirmationDialogText
-	if v := ctx.R.FormValue(ConfirmationDialogTextKey); v != "" {
-		text = v
+	promptText := msgr.ConfirmDialogPromptText
+	if v := ctx.R.FormValue(ConfirmDialogPromptText); v != "" {
+		promptText = v
 	}
 
-	portal := defaultConfirmationDialogPortalName
-	if v := ctx.R.FormValue(ConfirmationDialogPortalNameKey); v != "" {
+	portal := defaultConfirmDialogPortalName
+	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
 	showVar := fmt.Sprintf("show_%s", portal)
@@ -830,7 +832,7 @@ func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventRes
 		Name: portal,
 		Body: VDialog(
 			VCard(
-				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(text)),
+				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
@@ -935,7 +937,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			web.Portal().Name(RightDrawerPortalName),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 			web.Portal().Name(listingDialogPortalName),
 
 			VProgressLinear().
@@ -980,7 +982,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 		pr.Body = VApp(
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 
 			VProgressLinear().
 				Attr(":active", "isFetching").
@@ -1202,8 +1204,8 @@ func (b *Builder) initMux() {
 
 	b.mux = mux
 }
-func (b *Builder) AddWrapHandler(f func(in http.Handler) (out http.Handler)) {
-	b.wrapHandlers = append(b.wrapHandlers, f)
+func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
+	b.wrapHandlers[key] = f
 }
 
 func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {

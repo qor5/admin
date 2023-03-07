@@ -34,6 +34,10 @@ type MicroSite struct {
 	UnixKey string
 }
 
+func (this *MicroSite) PermissionRN() []string {
+	return []string{"microsite_models", strconv.Itoa(int(this.ID)), this.Version.Version}
+}
+
 func (this *MicroSite) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
 }

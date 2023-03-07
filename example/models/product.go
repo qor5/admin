@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -45,4 +46,8 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 
 func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
+}
+
+func (p *Product) PermissionRN() []string {
+	return []string{"products", strconv.Itoa(int(p.ID)), p.Code, p.Version.Version}
 }

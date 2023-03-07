@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/x/login"
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/role"
+	"github.com/qor5/x/login"
 	"gorm.io/gorm"
 )
 
@@ -68,12 +68,39 @@ func validateSessionToken() func(next http.Handler) http.Handler {
 
 			valid, err := checkIsTokenValidFromRequest(r, user.ID)
 			if err != nil || !valid {
-				logoutURL := "/auth/logout"
 				if r.URL.Path == logoutURL {
 					next.ServeHTTP(w, r)
 					return
 				}
 				http.Redirect(w, r, logoutURL, http.StatusFound)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func isOAuthInfoCompleted() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user := getCurrentUser(r)
+			if user == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			if login.IsLoginWIP(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if user.OAuthUserID != "" && !user.IsInfoCompleted {
+				if r.URL.Path == logoutURL ||
+					r.URL.Path == oauthCompleteInfoPageURL || r.URL.Path == oauthCompleteInfoActionURL {
+					next.ServeHTTP(w, r)
+					return
+				}
+				http.Redirect(w, r, oauthCompleteInfoPageURL, http.StatusFound)
 				return
 			}
 

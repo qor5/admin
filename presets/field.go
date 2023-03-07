@@ -17,7 +17,7 @@ import (
 	"github.com/qor5/x/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/thoas/go-funk"
+	funk "github.com/thoas/go-funk"
 )
 
 type FieldContext struct {

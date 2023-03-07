@@ -7,11 +7,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
-	"github.com/biter777/countries"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
@@ -41,7 +39,6 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -116,24 +113,8 @@ func NewConfig() Config {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
-	// perm.Verbose = true
-	b.Permission(
-		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*"),
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:orders:*"),
-			perm.PolicyFor("root").WhoAre(perm.Allowed).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete, presets.PermGet, presets.PermList).On("*"),
-			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:products:*:price:"),
-			perm.PolicyFor("viewer").WhoAre(perm.Denied).ToDo(presets.PermList).On("*:products:price:"),
-			perm.PolicyFor("editor").WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:products:*:price:"),
-			activity.PermPolicy,
-		).SubjectsFunc(func(r *http.Request) []string {
-			u := getCurrentUser(r)
-			if u == nil {
-				return nil
-			}
-			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
-	)
+
+	initPermission(b, db)
 
 	b.I18n().
 		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
@@ -160,12 +141,11 @@ func NewConfig() Config {
 
 	l10nBuilder := l10n.New()
 	l10nBuilder.
-		RegisterLocales(countries.International, "International", "International").
-		RegisterLocales(countries.China, "China", "China").
-		RegisterLocales(countries.Japan, "Japan", "Japan").
-		//RegisterLocales(countries.Russia, "Russia", "Russia").
-		GetSupportLocalesFromRequestFunc(func(R *http.Request) []countries.CountryCode {
-			return l10nBuilder.GetSupportLocales()[:]
+		RegisterLocales("International", "international", "International").
+		RegisterLocales("China", "cn", "China").
+		RegisterLocales("Japan", "jp", "Japan").
+		GetSupportLocaleCodesFromRequestFunc(func(R *http.Request) []string {
+			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
 
 	utils.Configure(b)
@@ -319,7 +299,7 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
+	roleBuilder := role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
 		{Text: "All", Value: "*"},
 		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
 		{Text: "Posts", Value: "*:posts:*"},
@@ -333,6 +313,20 @@ func NewConfig() Config {
 		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 		{Text: "Workers", Value: "*:workers:*"},
 	})
+
+	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+
+		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
+		// We didn't do this on permission because of we are not supporting the permission on listing page
+		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
+			qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
+		}
+
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	}
+
 	product := configProduct(b, db, w)
 	category := configCategory(b, db)
 
@@ -352,8 +346,19 @@ func NewConfig() Config {
 
 	configNestedFieldDemo(b, db)
 
+	// @snippet_begin(ActivityExample)
+	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	_ = ab
+	// ab.Model(m).UseDefaultTab()
+	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -382,10 +387,7 @@ func NewConfig() Config {
 		}
 	})
 
-	tm := pageBuilder.ConfigTemplate(b, db)
-	cm := pageBuilder.ConfigCategory(b, db)
-
-	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder)
+	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
 	l.Listing("ID", "Title", "Status")
@@ -400,18 +402,8 @@ func NewConfig() Config {
 	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
-	// @snippet_begin(ActivityExample)
-	ab := activity.New(b, db).SetCreatorContextKey(login.UserKey).SetTabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
-		})
-	_ = ab
-	// ab.Model(m).UseDefaultTab()
-	// ab.Model(pm).UseDefaultTab()
-	// ab.Model(l).SkipDelete().SkipCreate()
-	// @snippet_end
 	ab.RegisterModel(m).UseDefaultTab()
-	ab.RegisterModels(l, pm, tm, cm)
+	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID", "Name").
@@ -432,7 +424,7 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, pm, l10nM, l10nVM)
+	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
 
 	return Config{
 		pb:          b,

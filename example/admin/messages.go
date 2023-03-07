@@ -7,40 +7,67 @@ import (
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
 
 type Messages struct {
-	FilterTabsAll            string
-	FilterTabsHasUnreadNotes string
-	FilterTabsActive         string
-	// Demo Account
-	DemoUsernameLabel string
-	DemoPasswordLabel string
-	DemoTips          string
+	FilterTabsAll                  string
+	FilterTabsHasUnreadNotes       string
+	FilterTabsActive               string
+	DemoTips                       string
+	DemoUsernameLabel              string
+	DemoPasswordLabel              string
+	LoginProviderGoogleText        string
+	LoginProviderMicrosoftText     string
+	LoginProviderGithubText        string
+	OAuthCompleteInfoTitle         string
+	OAuthCompleteInfoPositionLabel string
+	OAuthCompleteInfoAgreeLabel    string
+	OAuthCompleteInfoBackLabel     string
 }
 
 var Messages_en_US = &Messages{
-	FilterTabsAll:            "All",
-	FilterTabsHasUnreadNotes: "Has Unread Notes",
-	FilterTabsActive:         "Active",
-	DemoUsernameLabel:        "Demo Username: ",
-	DemoPasswordLabel:        "Demo Password: ",
-	DemoTips:                 "Please note that the database would be reset every even hour.",
+	FilterTabsAll:                  "All",
+	FilterTabsHasUnreadNotes:       "Has Unread Notes",
+	FilterTabsActive:               "Active",
+	DemoTips:                       "Please note that the database would be reset every even hour.",
+	DemoUsernameLabel:              "Demo Username: ",
+	DemoPasswordLabel:              "Demo Password: ",
+	LoginProviderGoogleText:        "Login with Google",
+	LoginProviderMicrosoftText:     "Login with Microsoft",
+	LoginProviderGithubText:        "Login with Github",
+	OAuthCompleteInfoTitle:         "Complete your information",
+	OAuthCompleteInfoPositionLabel: "Position(Optional)",
+	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
+	OAuthCompleteInfoBackLabel:     "Back to login",
 }
 
 var Messages_ja_JP = &Messages{
-	FilterTabsAll:            "すべて",
-	FilterTabsHasUnreadNotes: "未読のノートがあります",
-	FilterTabsActive:         "有効",
-	DemoUsernameLabel:        "デモのユーザー名: ",
-	DemoPasswordLabel:        "デモパスワード: ",
-	DemoTips:                 "データベースは偶数時間ごとにリセットされることに注意してください。",
+	FilterTabsAll:                  "すべて",
+	FilterTabsHasUnreadNotes:       "未読のノートがあります",
+	FilterTabsActive:               "有効",
+	DemoTips:                       "データベースは偶数時間ごとにリセットされることに注意してください。",
+	DemoUsernameLabel:              "デモのユーザー名: ",
+	DemoPasswordLabel:              "デモパスワード: ",
+	LoginProviderGoogleText:        "Googleでログイン",
+	LoginProviderMicrosoftText:     "Microsoftでログイン",
+	LoginProviderGithubText:        "Githubでログイン",
+	OAuthCompleteInfoTitle:         "情報を入力してください",
+	OAuthCompleteInfoPositionLabel: "役職（任意）",
+	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
+	OAuthCompleteInfoBackLabel:     "ログインに戻る",
 }
 
 var Messages_zh_CN = &Messages{
-	FilterTabsAll:            "全部",
-	FilterTabsHasUnreadNotes: "未读备注",
-	FilterTabsActive:         "有效",
-	DemoUsernameLabel:        "演示账户：",
-	DemoPasswordLabel:        "演示密码：",
-	DemoTips:                 "请注意，数据库将每隔偶数小时重置一次。",
+	FilterTabsAll:                  "全部",
+	FilterTabsHasUnreadNotes:       "未读备注",
+	FilterTabsActive:               "有效",
+	DemoTips:                       "请注意，数据库将每隔偶数小时重置一次。",
+	DemoUsernameLabel:              "演示账户：",
+	DemoPasswordLabel:              "演示密码：",
+	LoginProviderGoogleText:        "使用Google登录",
+	LoginProviderMicrosoftText:     "使用Microsoft登录",
+	LoginProviderGithubText:        "使用Github登录",
+	OAuthCompleteInfoTitle:         "请填写您的信息",
+	OAuthCompleteInfoPositionLabel: "职位（可选）",
+	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
+	OAuthCompleteInfoBackLabel:     "返回登录",
 }
 
 type Messages_ModelsI18nModuleKey struct {

@@ -8,12 +8,15 @@ export S3_Publish_Bucket=""
 export S3_Publish_Region=""
 
 export BASE_URL="http://localhost:9500"
-export LOGIN_SECRET=""
+export LOGIN_SECRET="test"
+
 export LOGIN_GOOGLE_KEY=""
-export LOGIN_GOOGLE_SECRET=""
-export PORT="9500"
-export LOGIN_GOOGLE_KEY=""
-export LOGIN_GOOGLE_SECRET=""
+export LOGIN_GOOGLE_SECRET="test"
+export LOGIN_MICROSOFTONLINE_KEY=
+export LOGIN_MICROSOFTONLINE_SECRET="ts"
+export LOGIN_GITHUB_KEY=
+export LOGIN_GITHUB_SECRET="ts"
+
 export LOGIN_INITIAL_USER_EMAIL=qor@the-plant.com
 export LOGIN_INITIAL_USER_PASSWORD=theplant
 
@@ -23,4 +26,3 @@ export Site_Domain=""
 
 export RECAPTCHA_SITE_KEY=""
 export RECAPTCHA_SECRET_KEY=""
-

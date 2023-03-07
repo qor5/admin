@@ -77,7 +77,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 							Div(
 								provider.Logo,
 							).Class("mr-2"),
-							Text(provider.Text),
+							Text(i18n.T(ctx.R, I18nExampleKey, provider.Text)),
 						),
 				)
 			}
@@ -91,6 +91,12 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		if isRecaptchaEnabled {
 			plogin.DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
 		}
+
+		var logoSection HTMLComponent
+		logo, _ := assets.ReadFile("assets/logo.svg")
+		logoSection = Div(
+			 A( RawHTML(logo) ).Href("https://qor5.com/").Target("_blank"),
+		).Style("text-align: center;")
 
 		var userPassHTML HTMLComponent
 		if vh.UserPassEnabled() {
@@ -125,6 +131,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		r.PageTitle = "Sign In"
 		var bodyForm HTMLComponent
 		bodyForm = Div(
+			logoSection,
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
@@ -152,7 +159,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 				P(B(i18n.T(ctx.R, I18nExampleKey, "DemoTips"))),
 			).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
 				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
-		).Class("pt-12")
+		).Class("py-12")
 
 		r.Body = Div(
 			plogin.DefaultViewCommon.ErrNotice(fMsg),
@@ -162,6 +169,39 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			If(isDemo, demoTips),
 		)
 
+		return
+	})
+}
+
+func oauthCompleteInfoPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		dvc := plogin.DefaultViewCommon
+
+		r.PageTitle = "Complete Info"
+		var bodyForm HTMLComponent
+		bodyForm = Div(
+			H1(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoTitle")).Class(dvc.TitleClass),
+
+			Form(
+				Div(
+					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoPositionLabel")).Class(dvc.LabelClass).For("position"),
+					dvc.Input("position", "", ""),
+				),
+				Div(
+					Input("agree").Type("checkbox").Id("agree").Style("margin-right: 8px; margin-left: 2px;"),
+					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoAgreeLabel")).For("agree"),
+				).Class("mt-6"),
+				dvc.FormSubmitBtn(msgr.Confirm),
+				v.VBtn(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoBackLabel")).Block(true).Large(true).Class("mt-6").Href("/auth/logout"),
+			).Method(http.MethodPost).Action(oauthCompleteInfoActionURL),
+		).Class(dvc.WrapperClass).Style(dvc.WrapperStyle)
+
+		r.Body = Div(
+			dvc.ErrNotice(fMsg),
+			bodyForm,
+		)
 		return
 	})
 }
