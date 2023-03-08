@@ -299,22 +299,23 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	roleBuilder := role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
-		{Text: "All", Value: "*"},
-		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
-		{Text: "Posts", Value: "*:posts:*"},
-		{Text: "Settings", Value: "*:settings:*,*:site_management:"},
-		{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
-		{Text: "Customers", Value: "*:customers:*"},
-		{Text: "Products", Value: "*:products:*,*:product_management:"},
-		{Text: "Categories", Value: "*:categories:*,*:product_management:"},
-		{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
-		{Text: "ListModels", Value: "*:list_models:*"},
-		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
-		{Text: "Workers", Value: "*:workers:*"},
-	})
-
-	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	roleBuilder := role.New(db).
+		Resources([]*vuetify.DefaultOptionItem{
+			{Text: "All", Value: "*"},
+			{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
+			{Text: "Posts", Value: "*:posts:*"},
+			{Text: "Settings", Value: "*:settings:*,*:site_management:"},
+			{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
+			{Text: "Customers", Value: "*:customers:*"},
+			{Text: "Products", Value: "*:products:*,*:product_management:"},
+			{Text: "Categories", Value: "*:categories:*,*:product_management:"},
+			{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
+			{Text: "ListModels", Value: "*:list_models:*"},
+			{Text: "ActivityLogs", Value: "*:activity_logs:*"},
+			{Text: "Workers", Value: "*:workers:*"},
+		})
+	roleModelBuilder := roleBuilder.Configure(b)
+	roleModelBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db
 

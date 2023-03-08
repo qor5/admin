@@ -665,9 +665,11 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//		),
 	//	)
 	// })
-	pb.GetPermission().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-	)
+	if permB := pb.GetPermission(); permB != nil {
+		permB.CreatePolicies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
+		)
+	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {

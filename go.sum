@@ -49,8 +49,6 @@ github.com/aws/aws-sdk-go v1.38.62 h1:w7r48cTciWCJK//YH+oN8HhNXzPDdlucV3XT6KGDMj
 github.com/aws/aws-sdk-go v1.38.62/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
-github.com/biter777/countries v1.5.6 h1:YdvI0OYZR4gmI8BO+LrAuKmoZgiv4RrMdGBj6iORfn8=
-github.com/biter777/countries v1.5.6/go.mod h1:1HSpZ526mYqKJcpT5Ti1kcGQ0L0SrXWIaptUWjFfv2E=
 github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc h1:biVzkmvwrH8WK8raXaxBx6fRVTlJILwEwQGL1I/ByEI=
 github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -315,8 +313,8 @@ github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84 h1:4Zueo+/c3cBDSE89CuPcH
 github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
 github.com/qor5/web v1.2.3 h1:OtyfFaHWTAPBz8aYvZL2/yiVf77HvlPwRkmBweKCiWs=
 github.com/qor5/web v1.2.3/go.mod h1:gwAoUC1cQ9y5Vm3zZmWTq9t1iLOrQH+sIvJUpG6V61w=
-github.com/qor5/x v1.2.1-0.20230221091118-9decd2841d07 h1:wHT3dda3YMAeOluhBRM2nebSJwKrBdLh9wTr1oVTl5g=
-github.com/qor5/x v1.2.1-0.20230221091118-9decd2841d07/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
+github.com/qor5/x v1.2.1-0.20230308023320-5dd0a2f09c49 h1:IAh1ichaQ6X9jpds5qdxjPUZ/IcchPeidsuF58M/ycA=
+github.com/qor5/x v1.2.1-0.20230308023320-5dd0a2f09c49/go.mod h1:pqE7TSENrUKHlwzDSdaww0pk3E9X1ffoqAfCHzoZrJk=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be h1:ta7tUOvsPHVHGom5hKW5VXNc2xZIkfCKP8iaqOyYtUQ=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be/go.mod h1:MIDFMn7db1kT65GmV94GzpX9Qdi7N/pQlwb+AN8wh+Q=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
