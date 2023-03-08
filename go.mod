@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go v1.38.62
-	github.com/biter777/countries v1.5.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
@@ -19,7 +18,8 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
-	github.com/markbates/goth v1.75.1
+	github.com/markbates/goth v1.76.0
+	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
@@ -71,8 +71,8 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/markbates/going v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
-	github.com/ory/ladon v1.2.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

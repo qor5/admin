@@ -45,10 +45,10 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
 		id := cs["id"]
 
-		fromLocale := lb.GetCorrectLocale(ctx.R)
+		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
 
 		var obj = mb.NewModelSlice()
-		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(obj).Error
 		if err != nil {
 			return
 		}
@@ -57,14 +57,14 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		for i := 0; i < vo.Len(); i++ {
 			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
 		}
-		toLocales := lb.GetSupportLocalesFromRequest(ctx.R)
+		toLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 		var selectLocales []SelectLocale
 		for _, locale := range toLocales {
 			if locale == fromLocale {
 				continue
 			}
-			if !utils.Contains(existLocales, lb.GetLocaleCode(locale)) || vo.Len() == 0 {
-				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
+			if !utils.Contains(existLocales, locale) || vo.Len() == 0 {
+				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: locale})
 			}
 		}
 
@@ -106,7 +106,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 							Attr("@click", web.Plaid().
 								EventFunc(DoLocalize).
 								Query(presets.ParamID, paramID).
-								Query("localize_from", lb.GetLocaleCode(fromLocale)).
+								Query("localize_from", fromLocale).
 								URL(ctx.R.URL.Path).
 								Go()),
 					),
@@ -142,6 +142,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 
 		var toObjs []interface{}
 		defer func(fromObj interface{}) {
+			if ab == nil {
+				return
+			}
 			if len(toObjs) > 0 {
 				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
 					return

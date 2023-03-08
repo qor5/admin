@@ -52,7 +52,7 @@ func (b *Builder) EditorSubject(v string) *Builder {
 	return b
 }
 
-func (b *Builder) Configure(pb *presets.Builder) {
+func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	if b.editorSubject != "" {
 		permB := pb.GetPermission()
 		if permB == nil {
@@ -175,4 +175,5 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		return
 	})
 
+	return role
 }

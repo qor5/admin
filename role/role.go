@@ -8,6 +8,6 @@ import (
 type Role struct {
 	gorm.Model
 
-	Name        string
+	Name        string                  `gorm:"unique"`
 	Permissions []*perm.DefaultDBPolicy `gorm:"foreignKey:ReferID"`
 }
