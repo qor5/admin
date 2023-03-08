@@ -1,8 +1,10 @@
 package role
 
 import (
+	"net/http"
 	"time"
 
+	"github.com/ory/ladon"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/ui/vuetify"
@@ -16,6 +18,9 @@ type Builder struct {
 	db        *gorm.DB
 	actions   []*vuetify.DefaultOptionItem
 	resources []*vuetify.DefaultOptionItem
+	// editorSubject is the subject that has permission to edit roles
+	// empty value means anyone can edit roles
+	editorSubject string
 }
 
 func New(db *gorm.DB) *Builder {
@@ -42,7 +47,45 @@ func (b *Builder) Resources(vs []*vuetify.DefaultOptionItem) *Builder {
 	return b
 }
 
+func (b *Builder) EditorSubject(v string) *Builder {
+	b.editorSubject = v
+	return b
+}
+
 func (b *Builder) Configure(pb *presets.Builder) {
+	if b.editorSubject != "" {
+		permB := pb.GetPermission()
+		if permB == nil {
+			panic("pb does not have a permission builder")
+		}
+		ctxf := permB.GetContextFunc()
+		ssf := permB.GetSubjectsFunc()
+		permB.ContextFunc(func(r *http.Request, objs []interface{}) perm.Context {
+			c := make(perm.Context)
+			if ctxf != nil {
+				c = ctxf(r, objs)
+			}
+			ss := ssf(r)
+			hasRoleEditorSubject := false
+			for _, s := range ss {
+				if s == b.editorSubject {
+					hasRoleEditorSubject = true
+					break
+				}
+			}
+			c["has_role_editor_subject"] = hasRoleEditorSubject
+			return c
+		})
+		permB.CreatePolicies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(perm.Anything).On("*:roles:*").Given(perm.Conditions{
+				"has_role_editor_subject": &ladon.BooleanCondition{
+					BooleanValue: false,
+				},
+			}),
+			perm.PolicyFor(b.editorSubject).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:roles:*"),
+		)
+	}
+
 	role := pb.Model(&Role{})
 
 	ed := role.Editing(
