@@ -2,9 +2,7 @@ package admin
 
 import (
 	"net/http"
-	"time"
 
-	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/x/perm"
@@ -24,13 +22,12 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 				models.RoleManager,
 			).WhoAre(perm.Denied).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete).On("*:roles:*", "*:users:*"),
 			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete).On(perm.Anything),
-			activity.PermPolicy,
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
 			if u == nil {
 				return nil
 			}
 			return u.GetRoles()
-		}).EnableDBPolicy(db, perm.DefaultDBPolicy{}, time.Minute),
+		}).DBPolicy(perm.NewDBPolicy(db)),
 	)
 }
