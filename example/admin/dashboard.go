@@ -11,5 +11,6 @@ func Dashboard() h.HTMLComponent {
 
 		h.A().Text("QOR5 Website").Href("https://qor5.com").Target("_blank"),
 		h.A().Text("QOR5 Documentation").Href("https://docs.qor5.com").Target("_blank").Class("ml-4"),
+		h.A().Text("Source Code").Href("https://github.com/qor5/admin/tree/main/example").Target("_blank").Class("ml-4"),
 	)
 }
