@@ -22,6 +22,7 @@ func emptyDB(db *gorm.DB) {
 		"users":          {},
 		"roles":          {},
 		"user_role_join": {},
+		"login_sessions": {},
 	}
 
 	var rawTableNames []string
