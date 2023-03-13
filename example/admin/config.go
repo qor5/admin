@@ -153,6 +153,7 @@ func NewConfig() Config {
 	// ConfigureSeo(b, db)
 
 	b.MenuOrder(
+		"profile",
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -171,7 +172,6 @@ func NewConfig() Config {
 		// 	"QorSEOSetting",
 		// ).Icon("settings"),
 		b.MenuGroup("User Management").SubItems(
-			"profile",
 			"User",
 			"Role",
 		).Icon("group"),
