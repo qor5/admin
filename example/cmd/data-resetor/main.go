@@ -11,13 +11,7 @@ import (
 
 func main() {
 	db := admin.ConnectDB()
-	emptyDB(db)
-	initDB(db)
 
-	return
-}
-
-func emptyDB(db *gorm.DB) {
 	ignoredTableNames := map[string]struct{}{
 		"users":          {},
 		"roles":          {},
@@ -38,14 +32,21 @@ func emptyDB(db *gorm.DB) {
 		}
 	}
 
-	for _, name := range tableNames {
+	emptyDB(db, tableNames)
+	initDB(db, tableNames)
+
+	return
+}
+
+func emptyDB(db *gorm.DB, tables []string) {
+	for _, name := range tables {
 		if err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE;", name)).Error; err != nil {
 			panic(err)
 		}
 	}
 }
 
-func initDB(db *gorm.DB) {
+func initDB(db *gorm.DB, tables []string) {
 	var err error
 	// Users
 	admin.GenInitialUser()
@@ -110,8 +111,10 @@ func initDB(db *gorm.DB) {
 		panic(err)
 	}
 	// Seq
-	if err = db.Exec(initSeqSQL).Error; err != nil {
-		panic(err)
+	for _, name := range tables {
+		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT MAX(id) FROM %s));", name, name)).Error; err != nil {
+			panic(err)
+		}
 	}
 }
 
