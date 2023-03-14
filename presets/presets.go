@@ -918,6 +918,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							HideDetails(true).
 							Value(ctx.R.URL.Query().Get("keyword")).
 							Attr("@keyup.enter", web.Plaid().
+								ClearMergeQuery("page").
 								Query("keyword", web.Var("[$event.target.value]")).
 								MergeQuery(true).
 								PushState(true).
