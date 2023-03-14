@@ -4,7 +4,7 @@
 
 [Official Website](https://qor5.com)
 
-[QOR5](https://qor5.com) is yet another Go library to build web applications. We aim to accelerate the development speed and make the website highly customizable.
+[QOR5](https://qor5.com) is a Go library to build web applications. We aim to accelerate the development speed and make the website highly customizable.
 
 - It prefers writing HTML in [static typing Go language](https://docs.qor5.com/advanced-functions/the-go-html-builder.html), rather than a certain type of template language, Not even go template.
 - It try to minify the needs to write any JavaScript/Typescript for building interactive web applications
