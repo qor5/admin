@@ -2,8 +2,8 @@ package admin
 
 import (
 	"fmt"
-
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +22,7 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -235,6 +236,9 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			if !ok {
 				return
 			}
+			if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+				return perm.PermissionDenied
+			}
 			rids := ctx.R.Form[field.Name]
 			var roles []role.Role
 			for _, id := range rids {
@@ -274,6 +278,9 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	oldSaver := ed.Saver
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			return perm.PermissionDenied
+		}
 		u.RegistrationDate = time.Now()
 		return oldSaver(obj, id, ctx)
 	})
