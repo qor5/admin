@@ -349,7 +349,14 @@ func NewConfig() Config {
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
-	_ = ab
+	ab.GetPresetModelBuilder().Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+		if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
+			qdb = db.Where("user_id = ?", u.ID)
+		}
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	})
 	// ab.Model(m).UseDefaultTab()
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()

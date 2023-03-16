@@ -224,7 +224,7 @@ func (b *ListingBuilder) listingComponent(
 
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
-	var dialogHeaderbar h.HTMLComponent
+	var dialogHeaderBar h.HTMLComponent
 	if inDialog {
 		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		var searchBox h.HTMLComponent
@@ -248,7 +248,7 @@ func (b *ListingBuilder) listingComponent(
 					Go()).
 				Class("ma-0 pa-0 mr-6")
 		}
-		dialogHeaderbar = VAppBar(
+		dialogHeaderBar = VAppBar(
 			VToolbarTitle("").
 				Children(h.Text(title)),
 			VSpacer(),
@@ -261,7 +261,7 @@ func (b *ListingBuilder) listingComponent(
 	}
 
 	return VContainer(
-		dialogHeaderbar,
+		dialogHeaderBar,
 		tabsAndActionsBar,
 		h.Div(
 			VCard(

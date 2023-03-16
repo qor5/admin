@@ -3,6 +3,8 @@ package admin
 import (
 	"net/http"
 
+	"github.com/ory/ladon"
+	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/x/perm"
@@ -10,7 +12,7 @@ import (
 )
 
 func initPermission(b *presets.Builder, db *gorm.DB) {
-	// perm.Verbose = true
+	perm.Verbose = true
 
 	b.Permission(
 		perm.New().Policies(
@@ -22,12 +24,32 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 				models.RoleManager,
 			).WhoAre(perm.Denied).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete).On("*:roles:*", "*:users:*"),
 			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermCreate, presets.PermUpdate, presets.PermDelete).On(perm.Anything),
+
+			perm.PolicyFor(models.RoleManager).WhoAre(perm.Denied).ToDo(perm.Anything).
+				On("*:activity_logs").On("*:activity_logs:*").
+				Given(perm.Conditions{
+					"is_authorized": &ladon.BooleanCondition{},
+				}),
 		).SubjectsFunc(func(r *http.Request) []string {
 			u := getCurrentUser(r)
 			if u == nil {
 				return nil
 			}
 			return u.GetRoles()
+		}).ContextFunc(func(r *http.Request, objs []interface{}) perm.Context {
+			c := make(perm.Context)
+			for _, obj := range objs {
+				switch v := obj.(type) {
+				case *activity.ActivityLog:
+					u := getCurrentUser(r)
+					if u.GetID() == v.GetUserID() {
+						c["is_authorized"] = true
+					} else {
+						c["is_authorized"] = false
+					}
+				}
+			}
+			return c
 		}).DBPolicy(perm.NewDBPolicy(db)),
 	)
 }

@@ -194,7 +194,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			panic(err)
 		}
 		var showURLComp h.HTMLComponent
-		if p.ID != 0 {
+		if p.ID != 0 && p.GetStatus() == publish.StatusOnline {
 			var u string
 			domain := os.Getenv("PUBLISH_URL")
 			if p.OnlineUrl != "" {
