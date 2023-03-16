@@ -90,6 +90,9 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	obj, err = b.fetcher(obj, id, ctx)
 	if err != nil {
+		if err == ErrRecordNotFound {
+			return b.mb.p.defaultNotFoundPageFunc(ctx)
+		}
 		return
 	}
 
