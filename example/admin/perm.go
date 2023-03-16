@@ -12,7 +12,7 @@ import (
 )
 
 func initPermission(b *presets.Builder, db *gorm.DB) {
-	// perm.Verbose = true
+	perm.Verbose = true
 
 	b.Permission(
 		perm.New().Policies(
