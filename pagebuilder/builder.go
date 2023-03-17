@@ -194,7 +194,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			panic(err)
 		}
 		var showURLComp h.HTMLComponent
-		if p.ID != 0 {
+		if p.ID != 0 && p.GetStatus() == publish.StatusOnline {
 			var u string
 			domain := os.Getenv("PUBLISH_URL")
 			if p.OnlineUrl != "" {
@@ -665,9 +665,11 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//		),
 	//	)
 	// })
-	pb.GetPermission().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-	)
+	if permB := pb.GetPermission(); permB != nil {
+		permB.CreatePolicies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
+		)
+	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {

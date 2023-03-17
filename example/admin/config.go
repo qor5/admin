@@ -103,10 +103,7 @@ func NewConfig() Config {
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
-			r.Body = vuetify.VContainer(
-				h.H1("Home"),
-				h.P().Text("Change your home page here"),
-			)
+			r.Body = Dashboard()
 			return
 		}).
 		NotFoundPageLayoutConfig(&presets.LayoutConfig{
@@ -156,6 +153,7 @@ func NewConfig() Config {
 	// ConfigureSeo(b, db)
 
 	b.MenuOrder(
+		"profile",
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -174,7 +172,6 @@ func NewConfig() Config {
 		// 	"QorSEOSetting",
 		// ).Icon("settings"),
 		b.MenuGroup("User Management").SubItems(
-			"profile",
 			"User",
 			"Role",
 		).Icon("group"),
@@ -299,22 +296,23 @@ func NewConfig() Config {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	roleBuilder := role.Configure(b, db, role.DefaultActions, []vuetify.DefaultOptionItem{
-		{Text: "All", Value: "*"},
-		{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
-		{Text: "Posts", Value: "*:posts:*"},
-		{Text: "Settings", Value: "*:settings:*,*:site_management:"},
-		{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
-		{Text: "Customers", Value: "*:customers:*"},
-		{Text: "Products", Value: "*:products:*,*:product_management:"},
-		{Text: "Categories", Value: "*:categories:*,*:product_management:"},
-		{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
-		{Text: "ListModels", Value: "*:list_models:*"},
-		{Text: "ActivityLogs", Value: "*:activity_logs:*"},
-		{Text: "Workers", Value: "*:workers:*"},
-	})
-
-	roleBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	roleBuilder := role.New(db).
+		Resources([]*vuetify.DefaultOptionItem{
+			{Text: "All", Value: "*"},
+			{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
+			{Text: "Posts", Value: "*:posts:*"},
+			{Text: "Settings", Value: "*:settings:*,*:site_management:"},
+			{Text: "SEO", Value: "*:qor_seo_settings:*,*:site_management:"},
+			{Text: "Customers", Value: "*:customers:*"},
+			{Text: "Products", Value: "*:products:*,*:product_management:"},
+			{Text: "Categories", Value: "*:categories:*,*:product_management:"},
+			{Text: "Pages", Value: "*:pages:*,*:page_builder:"},
+			{Text: "ListModels", Value: "*:list_models:*"},
+			{Text: "ActivityLogs", Value: "*:activity_logs:*"},
+			{Text: "Workers", Value: "*:workers:*"},
+		})
+	roleModelBuilder := roleBuilder.Configure(b)
+	roleModelBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db
 
@@ -351,7 +349,14 @@ func NewConfig() Config {
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
-	_ = ab
+	ab.GetPresetModelBuilder().Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+		if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
+			qdb = db.Where("user_id = ?", u.ID)
+		}
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	})
 	// ab.Model(m).UseDefaultTab()
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()

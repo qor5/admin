@@ -2,8 +2,8 @@ package admin
 
 import (
 	"fmt"
-
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +22,7 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -39,7 +40,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager users
 		// We didn't do this on permission because of we are not supporting the permission on listing page
 		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
-			qdb = db.Joins("INNER JOIN user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").Where("r.name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
+			qdb = db.Joins("inner join user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").
+				Where("r.name not in (?)", []string{models.RoleAdmin, models.RoleManager}).Group("users.id")
 		}
 
 		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
@@ -234,6 +236,9 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			if !ok {
 				return
 			}
+			if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+				return perm.PermissionDenied
+			}
 			rids := ctx.R.Form[field.Name]
 			var roles []role.Role
 			for _, id := range rids {
@@ -273,13 +278,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	oldSaver := ed.Saver
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			return perm.PermissionDenied
+		}
 		u.RegistrationDate = time.Now()
 		return oldSaver(obj, id, ctx)
 	})
 
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
-	cl.SearchColumns("Name", "Account")
+	cl.SearchColumns("users.Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)

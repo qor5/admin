@@ -475,9 +475,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, om := range b.menuOrder {
 		switch v := om.(type) {
 		case *MenuGroupBuilder:
-			ver := b.verifier.Do(PermList).SnakeOn("mg_" + v.name).WithReq(ctx.R)
-			if ver.IsAllowed() != nil {
-				continue
+			disabled := false
+			if b.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
+				disabled = true
 			}
 			groupIcon := v.icon
 			if groupIcon == "" {
@@ -519,6 +519,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				}
 			}
 			if subCount == 0 {
+				continue
+			}
+			if disabled {
 				continue
 			}
 
@@ -915,6 +918,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							HideDetails(true).
 							Value(ctx.R.URL.Query().Get("keyword")).
 							Attr("@keyup.enter", web.Plaid().
+								ClearMergeQuery("page").
 								Query("keyword", web.Var("[$event.target.value]")).
 								MergeQuery(true).
 								PushState(true).
