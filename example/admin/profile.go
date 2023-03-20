@@ -212,6 +212,12 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			items = newItems
 		}
 
+		if isPublicUser {
+			if len(items) > 10 {
+				items = items[:10]
+			}
+		}
+
 		sort.Slice(items, func(i, j int) bool {
 			if items[j].Status == "Current session" {
 				return false
