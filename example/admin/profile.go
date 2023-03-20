@@ -151,14 +151,15 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		}
 
 		var actionBtns h.HTMLComponents
-
-		actionBtns = append(actionBtns,
-			VBtn("").
-				Outlined(true).Color("primary").
-				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
-				Class("mr-2").
-				OnClick(plogin.OpenChangePasswordDialogEvent),
-		)
+		if u.OAuthProvider == "" && u.Account != "" {
+			actionBtns = append(actionBtns,
+				VBtn("").
+					Outlined(true).Color("primary").
+					Children(VIcon("lock_outline").Small(true), h.Text("change password")).
+					Class("mr-2").
+					OnClick(plogin.OpenChangePasswordDialogEvent),
+			)
+		}
 
 		return h.Div(
 			actionBtns...,
