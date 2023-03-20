@@ -1,3 +1,6 @@
+/*
+presets allows you instantly create a beautiful, configurable Admin Interface for managing your data in minutes.
+*/
 package presets
 
 import (
@@ -25,6 +28,7 @@ import (
 	"golang.org/x/text/language/display"
 )
 
+// A Builder represents a presets instance
 type Builder struct {
 	prefix                                string
 	models                                []*ModelBuilder
@@ -80,6 +84,7 @@ const (
 	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
+// New creates default Builder
 func New() *Builder {
 	l, _ := zap.NewDevelopment()
 	r := &Builder{
@@ -110,58 +115,71 @@ func New() *Builder {
 	return r
 }
 
+// I18n gets i18n builder
 func (b *Builder) I18n() (r *i18n.Builder) {
 	return b.i18nBuilder
 }
 
+// SetI18n sets i18n builder
 func (b *Builder) SetI18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
 	return b
 }
 
+// Permission sets permission builder
 func (b *Builder) Permission(v *perm.Builder) (r *Builder) {
 	b.permissionBuilder = v
 	b.verifier = perm.NewVerifier(PermModule, v)
 	return b
 }
 
+// GetPermission gets permission builder
 func (b *Builder) GetPermission() (r *perm.Builder) {
 	return b.permissionBuilder
 }
 
+// URIPrefix customizes the uri prefix
+// default is empty
 func (b *Builder) URIPrefix(v string) (r *Builder) {
 	b.prefix = strings.TrimRight(v, "/")
 	return b
 }
 
+// GetURIPrefix gets uri prefix
 func (b *Builder) GetURIPrefix() string {
 	return b.prefix
 }
 
+// LayoutFunc customizes layout func
 func (b *Builder) LayoutFunc(v func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc)) (r *Builder) {
 	b.layoutFunc = v
 	return b
 }
 
+// HomePageLayoutConfig sets layout config for home page
 func (b *Builder) HomePageLayoutConfig(v *LayoutConfig) (r *Builder) {
 	b.homePageLayoutConfig = v
 	return b
 }
 
+// NotFoundPageLayoutConfig sets layout config for not found page
 func (b *Builder) NotFoundPageLayoutConfig(v *LayoutConfig) (r *Builder) {
 	b.notFoundPageLayoutConfig = v
 	return b
 }
 
+// Builder sets web builder
 func (b *Builder) Builder(v *web.Builder) (r *Builder) {
 	b.builder = v
 	return b
 }
 
+// GetWebBuilder gets web builder
 func (b *Builder) GetWebBuilder() (r *web.Builder) {
 	return b.builder
 }
 
+// Logger sets logger
 func (b *Builder) Logger(v *zap.Logger) (r *Builder) {
 	b.logger = v
 	return b
@@ -172,36 +190,44 @@ func (b *Builder) MessagesFunc(v MessagesFunc) (r *Builder) {
 	return b
 }
 
+// HomePageFunc customizes home page
 func (b *Builder) HomePageFunc(v web.PageFunc) (r *Builder) {
 	b.homePageFunc = v
 	return b
 }
 
+// NotFoundFunc customizes not found page
 func (b *Builder) NotFoundFunc(v web.PageFunc) (r *Builder) {
 	b.notFoundFunc = v
 	return b
 }
 
+// BrandFunc customizes left-top corner
 func (b *Builder) BrandFunc(v ComponentFunc) (r *Builder) {
 	b.brandFunc = v
 	return b
 }
 
+// ProfileFunc customizes the area below the Brand.
+// This area is usually used to display the current user information.
 func (b *Builder) ProfileFunc(v ComponentFunc) (r *Builder) {
 	b.profileFunc = v
 	return b
 }
 
+// SwitchLanguageFunc customizes the switch language component
 func (b *Builder) SwitchLanguageFunc(v ComponentFunc) (r *Builder) {
 	b.switchLanguageFunc = v
 	return b
 }
 
+// BrandProfileSwitchLanguageDisplayFuncFunc customizes positions for brand, profile and switch language components
 func (b *Builder) BrandProfileSwitchLanguageDisplayFuncFunc(f func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent) (r *Builder) {
 	b.brandProfileSwitchLanguageDisplayFunc = f
 	return b
 }
 
+// NotificationFunc sets the notification center
 func (b *Builder) NotificationFunc(contentFunc ComponentFunc, countFunc func(ctx *web.EventContext) int) (r *Builder) {
 	b.notificationCountFunc = countFunc
 	b.notificationContentFunc = contentFunc
@@ -209,31 +235,41 @@ func (b *Builder) NotificationFunc(contentFunc ComponentFunc, countFunc func(ctx
 	return b
 }
 
+// BrandTitle fills the Brand area with simple text.
+// It will be overwritten by BrandFunc.
 func (b *Builder) BrandTitle(v string) (r *Builder) {
 	b.brandTitle = v
 	return b
 }
 
+// VuetifyOptions customizes Vuetify presets values
+// https://v2.vuetifyjs.com/en/features/presets/#default-preset
 func (b *Builder) VuetifyOptions(v string) (r *Builder) {
 	b.vuetifyOptions = v
 	return b
 }
 
+// RightDrawerWidth sets the width for right drawer
+// default is 600
 func (b *Builder) RightDrawerWidth(v string) (r *Builder) {
 	b.rightDrawerWidth = v
 	return b
 }
 
+// ProgressBarColor sets the color for progress bar
+// default is "amber"
 func (b *Builder) ProgressBarColor(v string) (r *Builder) {
 	b.progressBarColor = v
 	return b
 }
 
+// AssetFunc injects assets to layout
 func (b *Builder) AssetFunc(v AssetFunc) (r *Builder) {
 	b.assetFunc = v
 	return b
 }
 
+// ExtraAsset injects asset to layout
 func (b *Builder) ExtraAsset(path string, contentType string, body web.ComponentsPack, refTag ...string) (r *Builder) {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
@@ -262,6 +298,12 @@ func (b *Builder) ExtraAsset(path string, contentType string, body web.Component
 	return b
 }
 
+// FieldDefaults sets default ComponentFunc and SetterFunc for a specific type
+//
+//	b.FieldDefaults(presets.WRITE).
+//	  FieldType(Post{}).
+//	  ComponentFunc(...).
+//	  SetterFunc(...)
 func (b *Builder) FieldDefaults(v FieldMode) (r *FieldDefaults) {
 	if v == WRITE {
 		return b.writeFieldDefaults
@@ -278,17 +320,20 @@ func (b *Builder) FieldDefaults(v FieldMode) (r *FieldDefaults) {
 	return r
 }
 
+// NewFieldsBuilder returns FieldsBuilder with current defaults
 func (b *Builder) NewFieldsBuilder(v FieldMode) (r *FieldsBuilder) {
 	r = NewFieldsBuilder().Defaults(b.FieldDefaults(v))
 	return
 }
 
+// Model creates ModelBuilder for a resource
 func (b *Builder) Model(v interface{}) (r *ModelBuilder) {
 	r = NewModelBuilder(b, v)
 	b.models = append(b.models, r)
 	return r
 }
 
+// DataOperator sets DataOperator
 func (b *Builder) DataOperator(v DataOperator) (r *Builder) {
 	b.dataOperator = v
 	return b
@@ -305,6 +350,7 @@ func (b *Builder) defaultBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	return
 }
 
+// MenuGroup creates menu group builder
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
 	if !b.isMenuGroupInOrder(mgb) {
@@ -332,19 +378,18 @@ func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
 
 }
 
+// MenuOrder customizes order for menu items
 // item can be Slug name, model name, *MenuGroupBuilder
 // the underlying logic is using Slug name,
 // so if the Slug name is customized, item must be the Slug name
-// example:
-// b.MenuOrder(
 //
-//	b.MenuGroup("Product Management").SubItems(
-//		"products",
-//		"Variant",
-//	),
-//	"customized-uri",
-//
-// )
+//	b.MenuOrder(
+//	    b.MenuGroup("Product Management").SubItems(
+//	    	"products",
+//	    	"Variant",
+//	    ),
+//	    "customized-uri",
+//	)
 func (b *Builder) MenuOrder(items ...interface{}) {
 	for _, item := range items {
 		switch v := item.(type) {
@@ -668,6 +713,7 @@ func (b *Builder) runSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	)
 }
 
+// AddMenuTopItemFunc appends component to left-top area
 func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 	b.menuTopItems[key] = v
 	return b
@@ -968,7 +1014,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 	}
 }
 
-// for pages outside the default presets layout
+// PlainLayout is for pages outside the default presets layout.
+// It only contains the necessary assets.
 func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		b.InjectAssets(ctx)
@@ -1012,6 +1059,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 	}
 }
 
+// InjectAssets injects assets to layout
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(strings.Replace(`
 			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
@@ -1066,6 +1114,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	}
 }
 
+// InjectExtraAssets injects extra assets to layout
 func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 	for _, ea := range b.extraAssets {
 		if len(ea.refTag) > 0 {
@@ -1209,6 +1258,8 @@ func (b *Builder) initMux() {
 
 	b.mux = mux
 }
+
+// AddWrapHandler adds wrap handler to requests
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }
