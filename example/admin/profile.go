@@ -15,6 +15,7 @@ import (
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -84,6 +85,10 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		u := getCurrentUser(ctx.R)
 
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			return r, perm.PermissionDenied
+		}
+
 		if err = expireOtherSessionLogs(ctx.R, u.ID); err != nil {
 			return r, err
 		}
@@ -151,14 +156,15 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		}
 
 		var actionBtns h.HTMLComponents
-
-		actionBtns = append(actionBtns,
-			VBtn("").
-				Outlined(true).Color("primary").
-				Children(VIcon("lock_outline").Small(true), h.Text("change password")).
-				Class("mr-2").
-				OnClick(plogin.OpenChangePasswordDialogEvent),
-		)
+		if u.OAuthProvider == "" && u.Account != "" {
+			actionBtns = append(actionBtns,
+				VBtn("").
+					Outlined(true).Color("primary").
+					Children(VIcon("lock_outline").Small(true), h.Text("change password")).
+					Class("mr-2").
+					OnClick(plogin.OpenChangePasswordDialogEvent),
+			)
+		}
 
 		return h.Div(
 			actionBtns...,
@@ -212,6 +218,12 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			items = newItems
 		}
 
+		if isPublicUser {
+			if len(items) > 10 {
+				items = items[:10]
+			}
+		}
+
 		sort.Slice(items, func(i, j int) bool {
 			if items[j].Status == "Current session" {
 				return false
@@ -240,9 +252,10 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 						VCardSubtitle(h.Text("Places where you're logged into QOR5 admin.")),
 					),
 					VCol(
-						VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
-							Outlined(true).Color("primary").
-							Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions")).Disabled(isPublicUser),
+						h.If(!isPublicUser,
+							VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
+								Outlined(true).Color("primary").
+								Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions"))),
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).
