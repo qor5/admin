@@ -3,11 +3,16 @@ package gorm2op
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/web"
 	"gorm.io/gorm"
+)
+
+var (
+	wildcardReg = regexp.MustCompile(`[%_]`)
 )
 
 func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
@@ -31,7 +36,8 @@ func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchPar
 		var args []interface{}
 		for _, c := range params.KeywordColumns {
 			segs = append(segs, fmt.Sprintf("%s %s ?", c, ilike))
-			args = append(args, fmt.Sprintf("%%%s%%", params.Keyword))
+			kw := wildcardReg.ReplaceAllString(params.Keyword, `\$0`)
+			args = append(args, fmt.Sprintf("%%%s%%", kw))
 		}
 		wh = wh.Where(strings.Join(segs, " OR "), args...)
 	}
