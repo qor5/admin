@@ -229,17 +229,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 		return h.Div(
 			showURLComp,
-			VAutocomplete().Label(msgr.Category).FieldName(field.Name).
+			VAutocomplete().Label(msgr.Category).FieldName(field.Name).MenuProps("top").
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
-		).ClassIf("mb-4", p.GetStatus() != "")
+		).ClassIf("mb-4", p.ID != 0)
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		// Only displayed when create action
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		if p.GetStatus() == "" {
+		// Display template selection only when creating a new page
+		if p.ID == 0 {
 			return h.Div(
 				web.Portal().Name("TemplateDialog"),
 				VRow(
