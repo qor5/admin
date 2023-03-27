@@ -89,7 +89,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		}).
 		AfterOAuthComplete(func(r *http.Request, user interface{}, vals ...interface{}) error {
 			u := user.(goth.User)
-			if err := db.Where("o_auth_provider = ? and o_auth_indentifier = ?", u.Provider, u.Email).First(&models.User{}).
+			if err := db.Where("o_auth_provider = ? and o_auth_identifier = ?", u.Provider, u.Email).First(&models.User{}).
 				Error; err == gorm.ErrRecordNotFound {
 				var name string
 				at := strings.LastIndex(u.Email, "@")
@@ -102,10 +102,10 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 				user := &models.User{
 					Name: name,
 					OAuthInfo: login.OAuthInfo{
-						OAuthProvider:    u.Provider,
-						OAuthUserID:      u.UserID,
-						OAuthIndentifier: u.Email,
-						OAuthAvatar:      u.AvatarURL,
+						OAuthProvider:   u.Provider,
+						OAuthUserID:     u.UserID,
+						OAuthIdentifier: u.Email,
+						OAuthAvatar:     u.AvatarURL,
 					},
 				}
 
