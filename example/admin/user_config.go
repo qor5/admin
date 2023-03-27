@@ -180,7 +180,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
 		u.Account = email
-		u.OAuthIndentifier = email
+		u.OAuthIdentifier = email
 		return nil
 	})
 
