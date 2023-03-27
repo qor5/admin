@@ -39,7 +39,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 	if u.Account != "" {
 		account = u.Account
 	} else {
-		account = u.OAuthIndentifier
+		account = u.OAuthIdentifier
 	}
 
 	return VMenu().OffsetY(true).Children(
