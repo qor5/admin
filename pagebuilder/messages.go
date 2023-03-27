@@ -18,6 +18,10 @@ type Messages struct {
 	CreateFromTemplate             string
 	RelatedOnlinePages             string
 	RepublishAllRelatedOnlinePages string
+	Unnamed                        string
+	NotDescribed                   string
+	Blank                          string
+	NewPage                        string
 }
 
 var Messages_en_US = &Messages{
@@ -34,6 +38,10 @@ var Messages_en_US = &Messages{
 	CreateFromTemplate:             "Create From Template",
 	RelatedOnlinePages:             "Related Online Pages",
 	RepublishAllRelatedOnlinePages: "Republish All",
+	Unnamed:                        "Unnamed",
+	NotDescribed:                   "Not Described",
+	Blank:                          "Blank",
+	NewPage:                        "New Page",
 }
 
 var Messages_zh_CN = &Messages{
@@ -50,6 +58,10 @@ var Messages_zh_CN = &Messages{
 	CreateFromTemplate:             "从模板中创建",
 	RelatedOnlinePages:             "相关在线页面",
 	RepublishAllRelatedOnlinePages: "重新发布所有页面",
+	Unnamed:                        "未命名",
+	NotDescribed:                   "未描述",
+	Blank:                          "空白",
+	NewPage:                        "新页面",
 }
 
 var Messages_ja_JP = &Messages{
@@ -66,4 +78,8 @@ var Messages_ja_JP = &Messages{
 	CreateFromTemplate:             "テンプレートから新規作成する",
 	RelatedOnlinePages:             "関連オンラインページ",
 	RepublishAllRelatedOnlinePages: "すべて再公開",
+	Unnamed:                        "名前なし",
+	NotDescribed:                   "記述されていません",
+	Blank:                          "空白",
+	NewPage:                        "新しいページ",
 }
