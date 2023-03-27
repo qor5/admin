@@ -1027,6 +1027,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 				containerTable,
 				containerTable,
 			), publish.StatusOnline, id, b.name).
+			Group(fmt.Sprintf(`%s.id,%s.version,%s.locale_code`, pageTable, pageTable, pageTable)).
 			Find(&pages).
 			Error
 		if err != nil {
