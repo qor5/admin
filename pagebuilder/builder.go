@@ -948,6 +948,14 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) URIName(uri string) *ContainerBuilder {
+	if b.mb == nil {
+		return b
+	}
+	b.mb.URIName(uri)
+	return b
+}
+
 func (b *ContainerBuilder) GetModelBuilder() *presets.ModelBuilder {
 	return b.mb
 }

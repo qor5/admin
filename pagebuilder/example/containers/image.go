@@ -3,13 +3,13 @@ package containers
 import (
 	"fmt"
 
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -35,7 +35,7 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			v := obj.(*ImageContainer)
 			return ImageContainerBody(v, input)
 		})
-	mb := vb.Model(&ImageContainer{})
+	mb := vb.Model(&ImageContainer{}).URIName(inflection.Plural(strcase.ToKebab("Image")))
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "TransitionBackgroundColor", "Image")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
@@ -56,7 +56,7 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ImageContainer"))+"_%v", data.ID), data.AnchorID, "container-image",
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Image"))+"_%v", data.ID), data.AnchorID, "container-image",
 		data.BackgroundColor, data.TransitionBackgroundColor, "",
 		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
 		Div(

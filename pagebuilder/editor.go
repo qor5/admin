@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"net/url"
 	"os"
 	"path"
@@ -224,10 +226,34 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		border: 2px outset #767676;
 		cursor: pointer;
 	}
-	.wrapper-shadow:hover {
+	.wrapper-shadow.hover {
 		cursor: pointer;
 		opacity: 1;
     }`))
+			input.FreeStyleBottomJs = []string{`
+	function scrolltoCurrentContainer(event) {
+		const current = document.querySelector("div[data-container-id='"+event.data+"']");
+		if (!current) {
+			return;
+		}
+		const hover = document.querySelector(".wrapper-shadow.hover")
+		if (hover) {
+			hover.classList.remove('hover');
+		}
+		window.parent.scroll({top: current.offsetTop, behavior: "smooth"});
+		current.querySelector(".wrapper-shadow").classList.add('hover');
+	}
+	document.querySelectorAll('.wrapper-shadow').forEach(shadow => {
+		shadow.addEventListener('mouseover', event => {
+			document.querySelectorAll(".wrapper-shadow.hover").forEach(item => {
+				item.classList.remove('hover');
+			})
+			shadow.classList.add('hover');
+		})
+	})
+
+	window.addEventListener("message", scrolltoCurrentContainer, false);
+`}
 		}
 		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
 		if isEditor {
@@ -329,7 +355,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 			ContainerSorterItem{
 				Index:          i,
 				Label:          displayName,
-				ModelName:      c.ModelName,
+				ModelName:      inflection.Plural(strcase.ToKebab(c.ModelName)),
 				ModelID:        strconv.Itoa(int(c.ModelID)),
 				DisplayName:    displayName,
 				ContainerID:    strconv.Itoa(int(c.ID)),
@@ -420,7 +446,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 									).Attr("v-if", "!item.shared"),
 								).Dense(true),
 							).Left(true),
-						),
+						).Attr("@click", fmt.Sprintf(`document.querySelector("iframe").contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("item.model_name"), web.Var("item.model_id"))),
 						VDivider().Attr("v-if", "index < locals.items.length "),
 					).Attr("v-for", "(item, index) in locals.items", ":key", "item.index"),
 					VListItem(

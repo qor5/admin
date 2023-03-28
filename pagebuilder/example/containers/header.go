@@ -6,10 +6,10 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
+	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/pagebuilder"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -29,7 +29,7 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 			return HeaderTemplate(header, input)
 		})
 
-	ed := header.Model(&WebHeader{}).Editing("Color")
+	ed := header.Model(&WebHeader{}).URIName(inflection.Plural(strcase.ToKebab("Header"))).Editing("Color")
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"black", "white"}).
@@ -50,7 +50,7 @@ func HeaderTemplate(data *WebHeader, input *pagebuilder.RenderInput) (body HTMLC
 	}
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("WebHeader"))+"_%v", data.ID), "", "container-header", "", "", "",
+		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Header"))+"_%v", data.ID), "", "container-header", "", "", "",
 		"", false, false, input.IsEditor, style,
 		Div(RawHTML(`
 <a href="/" class="container-header-logo"><svg viewBox="0 0 29 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.399 10.054V0L0 10.054V29.73h28.792V0L14.4 10.054z" fill="currentColor"><title>The Plant</title></path></svg></a>
