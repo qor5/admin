@@ -120,10 +120,7 @@ func NewConfig() Config {
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
-			r.Body = v.VContainer(
-				h.H1("Home"),
-				h.P().Text("Change your home page here"),
-			)
+			r.Body = Dashboard()
 			return
 		}).
 		NotFoundPageLayoutConfig(&presets.LayoutConfig{
