@@ -21,6 +21,7 @@ type Messages struct {
 	OAuthCompleteInfoAgreeLabel    string
 	OAuthCompleteInfoBackLabel     string
 	Demo                           string
+	DBResetTipLabel                string
 }
 
 var Messages_en_US = &Messages{
@@ -38,6 +39,7 @@ var Messages_en_US = &Messages{
 	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
 	OAuthCompleteInfoBackLabel:     "Back to login",
 	Demo:                           "DEMO",
+	DBResetTipLabel:                "Database reset countdown",
 }
 
 var Messages_ja_JP = &Messages{
@@ -55,6 +57,7 @@ var Messages_ja_JP = &Messages{
 	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
 	OAuthCompleteInfoBackLabel:     "ログインに戻る",
 	Demo:                           "デモ",
+	DBResetTipLabel:                "データベースリセットのカウントダウン",
 }
 
 var Messages_zh_CN = &Messages{
@@ -72,6 +75,7 @@ var Messages_zh_CN = &Messages{
 	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
 	OAuthCompleteInfoBackLabel:     "返回登录",
 	Demo:                           "演示",
+	DBResetTipLabel:                "数据库重置倒计时",
 }
 
 type Messages_ModelsI18nModuleKey struct {
