@@ -34,8 +34,8 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
+	v "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
@@ -97,8 +97,25 @@ func NewConfig() Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	b.BrandTitle("QOR5 Example").
-		ProfileFunc(profile).
+	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		logo := "https://qor5.com/img/qor-logo.png"
+
+		return h.Div(
+			v.VRow(
+				v.VCol(h.Img(logo).Attr("width", "80")),
+				v.VCol(h.H1(i18n.T(ctx.R, I18nExampleKey, "Demo"))).Class("pt-4"),
+			).Dense(true),
+			h.If(os.Getenv("AWS_REGION") != "",
+				h.Div(
+					h.Span(i18n.T(ctx.R, I18nExampleKey, "DBResetTipLabel")),
+					v.VIcon("schedule").XSmall(true).Left(true),
+					h.Span("0:00:00").Id("countdown"),
+				).Class("pt-1 pb-2"),
+				v.VDivider(),
+				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours}:${minutes}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
+			),
+		).Class("mb-n4 mt-n2")
+	}).ProfileFunc(profile).
 		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -153,6 +170,7 @@ func NewConfig() Config {
 	// ConfigureSeo(b, db)
 
 	b.MenuOrder(
+		"profile",
 		b.MenuGroup("Page Builder").SubItems(
 			"Page",
 			"shared_containers",
@@ -171,7 +189,6 @@ func NewConfig() Config {
 		// 	"QorSEOSetting",
 		// ).Icon("settings"),
 		b.MenuGroup("User Management").SubItems(
-			"profile",
 			"User",
 			"Role",
 		).Icon("group"),
@@ -196,10 +213,10 @@ func NewConfig() Config {
 		SearchColumns("title", "body").
 		PerPage(10)
 
-	mListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
 
-		return []*vuetifyx.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
@@ -208,20 +225,20 @@ func NewConfig() Config {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "title",
 				Label:        "Title",
-				ItemType:     vuetifyx.ItemTypeString,
+				ItemType:     vx.ItemTypeString,
 				SQLCondition: `title %s ?`,
 			},
 			{
 				Key:      "status",
 				Label:    "Status",
-				ItemType: vuetifyx.ItemTypeSelect,
-				Options: []*vuetifyx.SelectItem{
+				ItemType: vx.ItemTypeSelect,
+				Options: []*vx.SelectItem{
 					{Text: publish.StatusDraft, Value: publish.StatusDraft},
 					{Text: publish.StatusOnline, Value: publish.StatusOnline},
 					{Text: publish.StatusOffline, Value: publish.StatusOffline},
@@ -231,8 +248,8 @@ func NewConfig() Config {
 			{
 				Key:      "multi_statuses",
 				Label:    "Multiple Statuses",
-				ItemType: vuetifyx.ItemTypeMultipleSelect,
-				Options: []*vuetifyx.SelectItem{
+				ItemType: vx.ItemTypeMultipleSelect,
+				Options: []*vx.SelectItem{
 					{Text: publish.StatusDraft, Value: publish.StatusDraft},
 					{Text: publish.StatusOnline, Value: publish.StatusOnline},
 					{Text: publish.StatusOffline, Value: publish.StatusOffline},
@@ -243,7 +260,7 @@ func NewConfig() Config {
 			{
 				Key:          "id",
 				Label:        "ID",
-				ItemType:     vuetifyx.ItemTypeNumber,
+				ItemType:     vx.ItemTypeNumber,
 				SQLCondition: `id %s ?`,
 				Folded:       true,
 			},
@@ -297,7 +314,7 @@ func NewConfig() Config {
 	})
 
 	roleBuilder := role.New(db).
-		Resources([]*vuetify.DefaultOptionItem{
+		Resources([]*v.DefaultOptionItem{
 			{Text: "All", Value: "*"},
 			{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
 			{Text: "Posts", Value: "*:posts:*"},
@@ -349,7 +366,14 @@ func NewConfig() Config {
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
-	_ = ab
+	ab.GetPresetModelBuilder().Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+		if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
+			qdb = db.Where("user_id = ?", u.ID)
+		}
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	})
 	// ab.Model(m).UseDefaultTab()
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
@@ -358,10 +382,10 @@ func NewConfig() Config {
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
 	pmListing := pm.Listing()
-	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
 
-		return []*vuetifyx.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
@@ -451,29 +475,29 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 
 		a, b, c := data["Pages"], data["Posts"], data["Users"]
 
-		return vuetify.VList(
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Pages")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
+		return v.VList(
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Pages")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
 				),
 			).TwoLine(true).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Posts")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Posts")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
 				),
 			).TwoLine(true).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Users")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Users")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
 			).TwoLine(true).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
-				vuetify.VListItem(
-					vuetify.VListItemContent(
-						vuetify.VListItemSubtitle(h.Text("Mark all as read")),
+				v.VListItem(
+					v.VListItemContent(
+						v.VListItemSubtitle(h.Text("Mark all as read")),
 					),
 				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
 			),

@@ -325,7 +325,7 @@ func (mb *ModelBuilder) save(creator interface{}, action string, v interface{}, 
 	switch user := creator.(type) {
 	case string:
 		log.SetCreator(user)
-	case CreatorInferface:
+	case CreatorInterface:
 		log.SetCreator(user.GetName())
 		log.SetUserID(user.GetID())
 	default:

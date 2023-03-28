@@ -24,7 +24,7 @@ require (
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
 	github.com/qor5/web v1.2.3
-	github.com/qor5/x v1.2.1-0.20230308023320-5dd0a2f09c49
+	github.com/qor5/x v1.2.1-0.20230327060001-99614f5210b8
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
@@ -37,7 +37,7 @@ require (
 	github.com/wcharczuk/go-chart/v2 v2.1.0
 	go.uber.org/zap v1.19.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.8.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.2
@@ -83,8 +83,8 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/image v0.6.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect

@@ -194,7 +194,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			panic(err)
 		}
 		var showURLComp h.HTMLComponent
-		if p.ID != 0 {
+		if p.ID != 0 && p.GetStatus() == publish.StatusOnline {
 			var u string
 			domain := os.Getenv("PUBLISH_URL")
 			if p.OnlineUrl != "" {
@@ -229,17 +229,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 		return h.Div(
 			showURLComp,
-			VAutocomplete().Label(msgr.Category).FieldName(field.Name).
+			VAutocomplete().Label(msgr.Category).FieldName(field.Name).MenuProps("top").
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
-		).ClassIf("mb-4", p.GetStatus() != "")
+		).ClassIf("mb-4", p.ID != 0)
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		// Only displayed when create action
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		if p.GetStatus() == "" {
+		// Display template selection only when creating a new page
+		if p.ID == 0 {
 			return h.Div(
 				web.Portal().Name("TemplateDialog"),
 				VRow(
@@ -485,7 +485,8 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 
 func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		msgr := presets.MustGetMessages(ctx.R)
+		gmsgr := presets.MustGetMessages(ctx.R)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		tpls := []*Template{}
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 
@@ -497,19 +498,19 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 
 		if len(tpls) == 0 {
 			tplHTMLComponents = append(tplHTMLComponents,
-				h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2"),
+				h.Div(h.Text(gmsgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2"),
 			)
 		} else {
 			tplHTMLComponents = append(tplHTMLComponents,
-				getTplColComponent(&Template{
+				getTplColComponent(ctx, &Template{
 					Model:       gorm.Model{},
-					Name:        "Blank",
-					Description: "New page",
+					Name:        msgr.Blank,
+					Description: msgr.NewPage,
 				}, true),
 			)
 			for _, tpl := range tpls {
 				tplHTMLComponents = append(tplHTMLComponents,
-					getTplColComponent(tpl, false),
+					getTplColComponent(ctx, tpl, false),
 				)
 			}
 		}
@@ -533,8 +534,8 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 					),
 					VCardActions(
 						VSpacer(),
-						VBtn(msgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
-						VBtn(msgr.OK).Color("primary").
+						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
+						VBtn(gmsgr.OK).Color("primary").
 							Attr("@click", fmt.Sprintf("%s;vars.showTemplateDialog=false",
 								web.Plaid().EventFunc(selectTemplateEvent).
 									Query("TemplateSelectionLocale", locale).
@@ -552,17 +553,19 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
+func getTplColComponent(ctx *web.EventContext, tpl *Template, isBlank bool) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 	// Avoid layout errors
 	var name string
 	var desc string
 	if tpl.Name == "" {
-		name = "Unnamed"
+		name = msgr.Unnamed
 	} else {
 		name = tpl.Name
 	}
 	if tpl.Description == "" {
-		desc = "Not described"
+		desc = msgr.NotDescribed
 	} else {
 		desc = tpl.Description
 	}
@@ -592,11 +595,11 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 			h.Div(
 				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 					Attr("width", "100%", "height", "150", "frameborder", "no").
-					Style("transform-origin: left top; transform: scale(1, 1);"),
+					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
 			),
 			VCardTitle(h.Text(name)),
 			VCardSubtitle(h.Text(desc)),
-			VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
+			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
 				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 				Target("_blank").Color("primary").ClassIf("d-none", isBlank),
 			h.Div(
@@ -1005,6 +1008,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 				containerTable,
 				containerTable,
 			), publish.StatusOnline, id, b.name).
+			Group(fmt.Sprintf(`%s.id,%s.version,%s.locale_code`, pageTable, pageTable, pageTable)).
 			Find(&pages).
 			Error
 		if err != nil {

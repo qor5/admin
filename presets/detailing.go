@@ -90,6 +90,14 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	obj, err = b.fetcher(obj, id, ctx)
 	if err != nil {
+		if err == ErrRecordNotFound {
+			return b.mb.p.defaultNotFoundPageFunc(ctx)
+		}
+		return
+	}
+
+	if b.mb.Info().Verifier().Do(PermGet).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		r.Body = h.Div(h.Text(perm.PermissionDenied.Error()))
 		return
 	}
 
