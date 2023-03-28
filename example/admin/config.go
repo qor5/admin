@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -100,16 +101,24 @@ func NewConfig() Config {
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		logo := "https://qor5.com/img/qor-logo.png"
 
+		now := time.Now()
+		nextEvenHour := time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+1+(now.Hour()%2), 0, 0, 0, now.Location())
+		diff := int(nextEvenHour.Sub(now).Seconds())
+		hours := diff / 3600
+		minutes := (diff % 3600) / 60
+		seconds := diff % 60
+		countdown := fmt.Sprintf("%d:%d:%02d", hours, minutes, seconds)
+
 		return h.Div(
 			v.VRow(
-				v.VCol(h.Img(logo).Attr("width", "80")),
+				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
 				v.VCol(h.H1(i18n.T(ctx.R, I18nExampleKey, "Demo"))).Class("pt-4"),
 			).Dense(true),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
 					h.Span(i18n.T(ctx.R, I18nExampleKey, "DBResetTipLabel")),
 					v.VIcon("schedule").XSmall(true).Left(true),
-					h.Span("0:00:00").Id("countdown"),
+					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
 				v.VDivider(),
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours}:${minutes}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
