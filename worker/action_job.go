@@ -3,9 +3,10 @@ package worker
 import (
 	"fmt"
 
+	"github.com/qor5/admin/activity"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -119,6 +120,9 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 	job, err := b.createJob(ctx, qorJob)
 	if err != nil {
 		return
+	}
+	if b.ab != nil {
+		b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), job)
 	}
 
 	r.VarsScript = web.Plaid().

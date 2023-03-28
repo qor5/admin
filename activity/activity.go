@@ -331,6 +331,15 @@ func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now in
 	return fmt.Errorf("can't find model builder for %v", now)
 }
 
+// AddEditRecordWithOldAndContext add edit record
+func (ab *ActivityBuilder) AddEditRecordWithOldAndContext(ctx context.Context, old, now interface{}) error {
+	if mb, ok := ab.GetModelBuilder(now); ok {
+		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.getDBFromContext(ctx))
+	}
+
+	return fmt.Errorf("can't find model builder for %v", now)
+}
+
 // GetDB get db from context
 func (ab *ActivityBuilder) getDBFromContext(ctx context.Context) *gorm.DB {
 	if contextdb := ctx.Value(ab.dbContextKey); contextdb != nil {
