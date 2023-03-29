@@ -293,7 +293,6 @@ func NewConfig() Config {
 
 	w := worker.New(db)
 	defer w.Listen()
-	w.Configure(b)
 	addJobs(w)
 
 	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
@@ -387,6 +386,8 @@ func NewConfig() Config {
 	// ab.Model(pm).UseDefaultTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
+
+	w.Activity(ab).Configure(b)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)

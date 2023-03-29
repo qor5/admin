@@ -12,7 +12,7 @@ type QorJob struct {
 
 	Job    string
 	Status string      `sql:"default:'new'"`
-	args   interface{} `sql:"-"`
+	Args   interface{} `sql:"-" gorm:"-"`
 }
 
 type QorJobInstance struct {
