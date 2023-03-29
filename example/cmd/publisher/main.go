@@ -13,8 +13,8 @@ import (
 func main() {
 	db := admin.ConnectDB()
 	storage := s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
+		Bucket:  os.Getenv("S3_Publish_Bucket"),
+		Region:  os.Getenv("S3_Publish_Region"),
 		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: session.Must(session.NewSession()),
 	})

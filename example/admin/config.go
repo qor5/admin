@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -422,8 +423,71 @@ func NewConfig() Config {
 	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
-	l.Listing("ID", "Title", "Status")
-	l.Editing("Status", "Schedule", "Title")
+	{
+		l.Listing("ID", "Title", "Status")
+		ed := l.Editing("Status", "Schedule", "Title", "DetailPath", "ListPath")
+		ed.Field("DetailPath").ComponentFunc(
+			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+				this := obj.(*models.ListModel)
+
+				if this.GetStatus() != publish.StatusOnline {
+					return nil
+				}
+
+				var content []h.HTMLComponent
+
+				content = append(content,
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+				)
+				domain := os.Getenv("PUBLISH_URL")
+				if this.OnlineUrl != "" {
+					p := this.OnlineUrl
+					content = append(content, h.A(h.Text(p)).Href(domain+p))
+				}
+
+				return h.Div(
+					h.Div(
+						h.Div(
+							content...,
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
+			},
+		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
+
+		ed.Field("ListPath").ComponentFunc(
+			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+				this := obj.(*models.ListModel)
+
+				if this.GetStatus() != publish.StatusOnline {
+					return nil
+				}
+
+				var content []h.HTMLComponent
+
+				content = append(content,
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+				)
+				domain := os.Getenv("PUBLISH_URL")
+				if this.OnlineUrl != "" {
+					p := this.GetListUrl(strconv.Itoa(this.GetPageNumber()))
+					content = append(content, h.A(h.Text(p)).Href(domain+p))
+				}
+
+				return h.Div(
+					h.Div(
+						h.Div(
+							content...,
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
+			},
+		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
+	}
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
