@@ -461,7 +461,7 @@ func NewConfig() Config {
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
-				if this.GetStatus() != publish.StatusOnline {
+				if this.GetStatus() != publish.StatusOnline || this.GetPageNumber() == 0 {
 					return nil
 				}
 
