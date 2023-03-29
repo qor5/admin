@@ -14,6 +14,7 @@ import (
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
 	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
@@ -93,7 +94,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			return r, err
 		}
 
-		presets.ShowMessage(&r, "All other sessions have successfully been signed out.", "")
+		presets.ShowMessage(&r, i18n.T(ctx.R, I18nExampleKey, "SignOutAllSuccessfullyTips"), "")
 		r.Reload = true
 		return
 	})
@@ -122,27 +123,27 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		return h.Div(
 			VRow(
 				VCol(
-					VTextField().Label("Name").Value(u.Name).FieldName("name"),
+					VTextField().Label(i18n.T(ctx.R, I18nExampleKey, "Name")).Value(u.Name).FieldName("name"),
 				),
 			).Class("my-n6"),
 			VRow(
 				VCol(
-					vx.VXReadonlyField().Label("Email").Value(u.Account),
+					vx.VXReadonlyField().Label(i18n.T(ctx.R, I18nExampleKey, "Email")).Value(u.Account),
 				),
 			).Class("my-n6"),
 			VRow(
 				VCol(
-					vx.VXReadonlyField().Label("Company").Value(u.Company),
+					vx.VXReadonlyField().Label(i18n.T(ctx.R, I18nExampleKey, "Company")).Value(u.Company),
 				),
 			).Class("my-n6"),
 			VRow(
 				VCol(
-					vx.VXReadonlyField().Label("Role").Value(strings.Join(roles, ", ")),
+					vx.VXReadonlyField().Label(i18n.T(ctx.R, I18nExampleKey, "Role")).Value(strings.Join(roles, ", ")),
 				),
 			).Class("my-n6"),
 			VRow(
 				VCol(
-					vx.VXReadonlyField().Label("Status").Value(u.Status),
+					vx.VXReadonlyField().Label(i18n.T(ctx.R, I18nExampleKey, "Status")).Value(u.Status),
 				),
 			),
 		).Class("mx-2 mt-4")
@@ -160,7 +161,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			actionBtns = append(actionBtns,
 				VBtn("").
 					Outlined(true).Color("primary").
-					Children(VIcon("lock_outline").Small(true), h.Text("change password")).
+					Children(VIcon("lock_outline").Small(true), h.Text(i18n.T(ctx.R, I18nExampleKey, "ChangePassword"))).
 					Class("mr-2").
 					OnClick(plogin.OpenChangePasswordDialogEvent),
 			)
@@ -185,20 +186,26 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 		currentTokenHash := getStringHash(login.GetSessionToken(loginBuilder, ctx.R), LoginTokenHashLen)
 
+		var (
+			expired        = i18n.T(ctx.R, I18nExampleKey, "Expired")
+			active         = i18n.T(ctx.R, I18nExampleKey, "Active")
+			currentSession = i18n.T(ctx.R, I18nExampleKey, "CurrentSession")
+		)
+
 		activeDevices := make(map[string]struct{})
 		for _, item := range items {
 			if isPublicUser {
-				item.IP = "Invisible due to security concerns"
+				item.IP = i18n.T(ctx.R, I18nExampleKey, "HideIPTips")
 			}
 
 			if isTokenValid(*item) {
-				item.Status = "Expired"
+				item.Status = expired
 			} else {
-				item.Status = "Active"
+				item.Status = active
 				activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)] = struct{}{}
 			}
 			if item.TokenHash == currentTokenHash {
-				item.Status = "Current session"
+				item.Status = currentSession
 			}
 
 			item.Time = humanize.Time(item.CreatedAt)
@@ -207,7 +214,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		{
 			newItems := make([]*models.LoginSession, 0, len(items))
 			for _, item := range items {
-				if item.Status == "Expired" {
+				if item.Status == expired {
 					_, ok := activeDevices[fmt.Sprintf("%s#%s", item.Device, item.IP)]
 					if ok {
 						continue
@@ -225,10 +232,11 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		}
 
 		sort.Slice(items, func(i, j int) bool {
-			if items[j].Status == "Current session" {
+			if items[j].Status == currentSession {
 				return false
 			}
-			if items[i].Status == "Expired" && items[j].Status == "Active" {
+			if items[i].Status == expired &&
+				items[j].Status == active {
 				return false
 			}
 			if items[i].CreatedAt.Sub(items[j].CreatedAt) < 0 {
@@ -238,9 +246,9 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		})
 
 		sessionTableHeaders := []DataTableHeader{
-			{"TIME", "Time", "25%", false},
-			{"DEVICE", "Device", "25%", false},
-			{"IP ADDRESS", "IP", "25%", false},
+			{i18n.T(ctx.R, I18nExampleKey, "Time"), "Time", "25%", false},
+			{i18n.T(ctx.R, I18nExampleKey, "Device"), "Device", "25%", false},
+			{i18n.T(ctx.R, I18nExampleKey, "IPAddress"), "IP", "25%", false},
 			{"", "Status", "25%", true},
 		}
 
@@ -248,14 +256,14 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			VCard(
 				VRow(
 					VCol(
-						VCardTitle(h.Text("Login sessions")),
-						VCardSubtitle(h.Text("Places where you're logged into QOR5 admin.")),
+						VCardTitle(h.Text(i18n.T(ctx.R, I18nExampleKey, "LoginSessions"))),
+						VCardSubtitle(h.Text(i18n.T(ctx.R, I18nExampleKey, "LoginSessionsTips"))),
 					),
 					VCol(
 						h.If(!isPublicUser,
 							VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
 								Outlined(true).Color("primary").
-								Children(VIcon("warning").Small(true), h.Text("Sign out all other sessions"))),
+								Children(VIcon("warning").Small(true), h.Text(i18n.T(ctx.R, I18nExampleKey, "SignOutAllOtherSessions")))),
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).
