@@ -114,7 +114,7 @@ func initDB(db *gorm.DB, tables []string) {
 	}
 	// Seq
 	for _, name := range tables {
-		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT MAX(id) FROM %s));", name, name)).Error; err != nil {
+		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT MAX(id)+1 FROM %s));", name, name)).Error; err != nil {
 			panic(err)
 		}
 	}
