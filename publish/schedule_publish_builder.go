@@ -48,7 +48,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_end_at <= ?", flagTime).Find(&tempRecords).Error
+		err = scope.Where("scheduled_end_at <= ?", flagTime).Order("scheduled_end_at").Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
@@ -72,7 +72,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_start_at <= ?", flagTime).Find(&tempRecords).Error
+		err = scope.Where("scheduled_start_at <= ?", flagTime).Order("scheduled_start_at").Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
