@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/theplant/appkit/kerrs"
 	"gorm.io/gorm"
 )
 
@@ -64,7 +65,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = kerrs.Append(err, err2)
 				}
 			}
 		}
@@ -81,7 +82,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
 				if err2 := b.publisher.Publish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = kerrs.Append(err, err2)
 				}
 			}
 		}
@@ -92,7 +93,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := interfaceRecord.(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = kerrs.Append(err, err2)
 				}
 			}
 		}
