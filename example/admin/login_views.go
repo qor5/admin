@@ -25,7 +25,8 @@ type languageItem struct {
 func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
-		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+		loginMsgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		i18nBuilder := vh.I18n()
 		var langs []languageItem
 		var currLangVal string
@@ -53,9 +54,9 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		}
 		// i18n end
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-		wMsg := vh.GetWarnFlashMessage(msgr, ctx.W, ctx.R)
-		iMsg := vh.GetInfoFlashMessage(msgr, ctx.W, ctx.R)
+		fMsg := vh.GetFailFlashMessage(loginMsgr, ctx.W, ctx.R)
+		wMsg := vh.GetWarnFlashMessage(loginMsgr, ctx.W, ctx.R)
+		iMsg := vh.GetInfoFlashMessage(loginMsgr, ctx.W, ctx.R)
 		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
 
 		if iMsg != "" && vh.GetInfoCodeFlash(ctx.W, ctx.R) == login.InfoCodePasswordSuccessfullyChanged {
@@ -95,7 +96,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		var logoSection HTMLComponent
 		logo, _ := assets.ReadFile("assets/logo.svg")
 		logoSection = Div(
-			 A( RawHTML(logo) ).Href("https://qor5.com/").Target("_blank"),
+			A(RawHTML(logo)).Href("https://qor5.com/").Target("_blank"),
 		).Style("text-align: center;")
 
 		var userPassHTML HTMLComponent
@@ -103,25 +104,25 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML = Div(
 				Form(
 					Div(
-						Label(msgr.AccountLabel).Class(plogin.DefaultViewCommon.LabelClass).For("account"),
-						plogin.DefaultViewCommon.Input("account", msgr.AccountPlaceholder, wIn.Account),
+						Label(loginMsgr.AccountLabel).Class(plogin.DefaultViewCommon.LabelClass).For("account"),
+						plogin.DefaultViewCommon.Input("account", loginMsgr.AccountPlaceholder, wIn.Account),
 					),
 					Div(
-						Label(msgr.PasswordLabel).Class(plogin.DefaultViewCommon.LabelClass).For("password"),
-						plogin.DefaultViewCommon.PasswordInput("password", msgr.PasswordPlaceholder, wIn.Password, true),
+						Label(loginMsgr.PasswordLabel).Class(plogin.DefaultViewCommon.LabelClass).For("password"),
+						plogin.DefaultViewCommon.PasswordInput("password", loginMsgr.PasswordPlaceholder, wIn.Password, true),
 					).Class("mt-6"),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
 						Input("token").Id("token").Type("hidden"),
 					),
-					plogin.DefaultViewCommon.FormSubmitBtn(msgr.SignInBtn).
+					plogin.DefaultViewCommon.FormSubmitBtn(loginMsgr.SignInBtn).
 						ClassIf("g-recaptcha", isRecaptchaEnabled).
 						AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
 						AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
 				).Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL()),
 				If(!vh.NoForgetPasswordLink(),
 					Div(
-						A(Text(msgr.ForgetPasswordLink)).Href(vh.ForgetPasswordPageURL()).
+						A(Text(loginMsgr.ForgetPasswordLink)).Href(vh.ForgetPasswordPageURL()).
 							Class("grey--text text--darken-1"),
 					).Class("text-right mt-2"),
 				),
@@ -154,9 +155,9 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		isDemo := username != "" && password != ""
 		demoTips := Div(
 			Div(
-				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoUsernameLabel")), B(username)),
-				P(Text(i18n.T(ctx.R, I18nExampleKey, "DemoPasswordLabel")), B(password)),
-				P(B(i18n.T(ctx.R, I18nExampleKey, "DemoTips"))),
+				P(Text(msgr.DemoUsernameLabel), B(username)),
+				P(Text(msgr.DemoPasswordLabel), B(password)),
+				P(B(msgr.DemoTips)),
 			).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
 				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
 		).Class("py-12")
@@ -175,26 +176,27 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 
 func oauthCompleteInfoPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+		loginMsgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		fMsg := vh.GetFailFlashMessage(loginMsgr, ctx.W, ctx.R)
 		dvc := plogin.DefaultViewCommon
 
 		r.PageTitle = "Complete Info"
 		var bodyForm HTMLComponent
 		bodyForm = Div(
-			H1(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoTitle")).Class(dvc.TitleClass),
+			H1(msgr.OAuthCompleteInfoTitle).Class(dvc.TitleClass),
 
 			Form(
 				Div(
-					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoPositionLabel")).Class(dvc.LabelClass).For("position"),
+					Label(msgr.OAuthCompleteInfoPositionLabel).Class(dvc.LabelClass).For("position"),
 					dvc.Input("position", "", ""),
 				),
 				Div(
 					Input("agree").Type("checkbox").Id("agree").Style("margin-right: 8px; margin-left: 2px;"),
-					Label(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoAgreeLabel")).For("agree"),
+					Label(msgr.OAuthCompleteInfoAgreeLabel).For("agree"),
 				).Class("mt-6"),
-				dvc.FormSubmitBtn(msgr.Confirm),
-				v.VBtn(i18n.T(ctx.R, I18nExampleKey, "OAuthCompleteInfoBackLabel")).Block(true).Large(true).Class("mt-6").Href("/auth/logout"),
+				dvc.FormSubmitBtn(loginMsgr.Confirm),
+				v.VBtn(msgr.OAuthCompleteInfoBackLabel).Block(true).Large(true).Class("mt-6").Href("/auth/logout"),
 			).Method(http.MethodPost).Action(oauthCompleteInfoActionURL),
 		).Class(dvc.WrapperClass).Style(dvc.WrapperStyle)
 

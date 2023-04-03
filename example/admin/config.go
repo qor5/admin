@@ -99,6 +99,7 @@ func NewConfig() Config {
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"
 
 		now := time.Now()
@@ -112,11 +113,11 @@ func NewConfig() Config {
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				v.VCol(h.H1(i18n.T(ctx.R, I18nExampleKey, "Demo"))).Class("pt-4"),
+				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			).Dense(true),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
-					h.Span(i18n.T(ctx.R, I18nExampleKey, "DBResetTipLabel")),
+					h.Span(msgr.DBResetTipLabel),
 					v.VIcon("schedule").XSmall(true).Left(true),
 					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
@@ -277,14 +278,16 @@ func NewConfig() Config {
 	})
 
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -405,14 +408,16 @@ func NewConfig() Config {
 	})
 
 	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
