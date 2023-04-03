@@ -108,7 +108,7 @@ func NewConfig() Config {
 		hours := diff / 3600
 		minutes := (diff % 3600) / 60
 		seconds := diff % 60
-		countdown := fmt.Sprintf("%d:%d:%02d", hours, minutes, seconds)
+		countdown := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 
 		return h.Div(
 			v.VRow(
