@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var QorPeviewSizeName = "@qor_preview"
-var QorPeviewSize = &media.Size{Width: 200, Height: 200}
+var QorPreviewSizeName = "@qor_preview"
+var QorPreviewSize = &media.Size{Width: 200, Height: 200}
 
 type MediaLibrary struct {
 	gorm.Model
@@ -76,7 +76,7 @@ func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size
 	}
 
 	var sizes = map[string]*media.Size{
-		QorPeviewSizeName: QorPeviewSize,
+		QorPreviewSizeName: QorPreviewSize,
 	}
 
 	for key, value := range mediaLibraryStorage.Sizes {
