@@ -573,8 +573,10 @@ func TestFieldsBuilder(t *testing.T) {
 				AddField("Departments[1].Employees[2].Number", "999").
 				AddField("Departments[1].Employees[1].FakeNumber", "666").
 				AddField("Departments[1].DBStatus", "Verified").
+				AddField("Departments[2].Name", "Department C").
 				AddField("__Deleted.Departments[0].Employees", "1,2").
 				AddField("__Deleted.Departments[1].Employees", "0").
+				AddField("__Deleted.Departments[2].Employees", "0").
 				BuildEventFuncRequest(),
 			removeDeletedAndSort: false,
 			expected: &Org{
@@ -606,7 +608,10 @@ func TestFieldsBuilder(t *testing.T) {
 						},
 					},
 					{
-						Name: "Department C",
+						Name: "Department C!!!",
+						Employees: []*Employee{
+							nil,
+						},
 					},
 				},
 			},
