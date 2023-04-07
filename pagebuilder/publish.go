@@ -60,7 +60,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.getPublishUrl(localePath, categoryPath),
+			Url:      liveRecord.GetOnlineUrl(),
 			IsDelete: true,
 		})
 	}
