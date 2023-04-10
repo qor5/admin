@@ -306,8 +306,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).VSlot("{ locals }"),
 		VOverlay(
 			VImg().Attr(":src", "vars.mediaShow? vars.mediaShow: ''").
-				Contain(true).MaxWidth(800).MaxHeight(800).
-				Attr("style", "background: rgba(0, 0, 0, 0.5); height: 80vh;"),
+				Contain(true).
+				Attr("style", "background: rgba(0, 0, 0, 0.5); max-height: 80vh; max-width: 80vw;"),
 			h.Div(
 				h.A(
 					VIcon("info").Small(true).Class("mb-1"),
