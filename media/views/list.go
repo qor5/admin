@@ -1,10 +1,9 @@
 package views
 
 import (
-	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-
 	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
