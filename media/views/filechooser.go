@@ -307,7 +307,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		VOverlay(
 			VImg().Attr(":src", "vars.mediaShow? vars.mediaShow: ''").
 				Contain(true).MaxWidth(800).MaxHeight(800).
-				Attr("style", "background: rgba(0, 0, 0, 0.5);"),
+				Attr("style", "background: rgba(0, 0, 0, 0.5); height: 80vh;"),
 			h.Div(
 				h.A(
 					VIcon("info").Small(true).Class("mb-1"),
