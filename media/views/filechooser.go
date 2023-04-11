@@ -187,10 +187,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
-		var mediaURL string
-		if media.IsImageFormat(f.File.FileName) {
-			mediaURL = f.File.URL()
-		}
+		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
 
 		row.AppendChildren(
 			VCol(
@@ -219,12 +216,10 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Query("id", fmt.Sprint(f.ID)).
 							FieldValue("cfg", h.JSONString(cfg)).
 							Go(), field != mediaLibraryListField).
-						AttrIf("@click",
-							fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'", mediaURL, f.File.FileName), field == mediaLibraryListField),
+						AttrIf("@click", imgClickVars, field == mediaLibraryListField),
 					VCardText(
 						h.A().Text(f.File.FileName).
-							Attr("@click",
-								fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'", mediaURL, f.File.FileName)),
+							Attr("@click", imgClickVars),
 						h.Input("").
 							Style("width: 100%;").
 							Placeholder(msgr.DescriptionForAccessibility).
@@ -305,9 +300,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			).Fluid(true),
 		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).VSlot("{ locals }"),
 		VOverlay(
-			VImg().Attr(":src", "vars.mediaShow? vars.mediaShow: ''").
-				Contain(true).
-				Attr("style", "background: rgba(0, 0, 0, 0.5); max-height: 80vh; max-width: 80vw;"),
+			h.Img("").Attr(":src", "vars.isImage? vars.mediaShow: ''").
+				Style("max-height: 80vh; max-width: 80vw; background: rgba(0, 0, 0, 0.5)"),
 			h.Div(
 				h.A(
 					VIcon("info").Small(true).Class("mb-1"),
@@ -316,7 +310,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					Class("white--text").Style("text-decoration: none;"),
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
-	).Attr(web.InitContextVars, `{snackbarShow: false, mediaShow: null, mediaName: null}`)
+	).Attr(web.InitContextVars, `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
