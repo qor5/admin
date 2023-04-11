@@ -1095,9 +1095,10 @@ func (b *Builder) getHomePageFunc() web.PageFunc {
 }
 
 func (b *Builder) defaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+	msgr := MustGetMessages(ctx.R)
 	r.Body = h.Div(
-		h.H1("404"),
-		h.Text("Sorry, we couldn't find this page."),
+		h.H1("404").Class("mb-2"),
+		h.Text(msgr.NotFoundPageNotice),
 	).Class("text-center mt-8")
 	return
 }
