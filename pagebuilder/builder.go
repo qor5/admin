@@ -714,6 +714,8 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	ed.Field("ModelName")
 	ed.Field("ModelID")
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		locale, localizable := l10n.IsLocalizableFromCtx(ctx.R.Context())
+
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
 
@@ -745,6 +747,9 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 			var modelID uint
 			for _, dc := range demoContainers {
 				if dc.ModelName == builder.name {
+					if localizable && dc.GetLocale() != locale {
+						continue
+					}
 					isExists = true
 					modelID = dc.ModelID
 					break
