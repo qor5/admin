@@ -64,6 +64,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						).Attr("@click", web.Plaid().
 						URL(b.fieldContext.ModelInfo.ListingHref()).
 						EventFunc(actions.RemoveRowEvent).
+						Queries(ctx.Queries()).
 						Query(ParamID, ctx.R.FormValue(ParamID)).
 						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 						Query(ParamRemoveRowFormKey, formKey).
@@ -129,6 +130,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 									web.Plaid().
 										URL(b.fieldContext.ModelInfo.ListingHref()).
 										EventFunc(actions.SortEvent).
+										Queries(ctx.Queries()).
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -144,6 +146,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 									web.Plaid().
 										URL(b.fieldContext.ModelInfo.ListingHref()).
 										EventFunc(actions.SortEvent).
+										Queries(ctx.Queries()).
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -165,6 +168,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(actions.AddRowEvent).
+							Queries(ctx.Queries()).
 							Query(ParamID, ctx.R.FormValue(ParamID)).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamAddRowFormKey, b.fieldContext.FormKey).
