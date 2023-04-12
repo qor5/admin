@@ -20,6 +20,25 @@ type Messages struct {
 	OAuthCompleteInfoPositionLabel string
 	OAuthCompleteInfoAgreeLabel    string
 	OAuthCompleteInfoBackLabel     string
+	Demo                           string
+	DBResetTipLabel                string
+	Name                           string
+	Email                          string
+	Company                        string
+	Role                           string
+	Status                         string
+	ChangePassword                 string
+	LoginSessions                  string
+	LoginSessionsTips              string
+	SignOutAllOtherSessions        string
+	Expired                        string
+	Active                         string
+	CurrentSession                 string
+	Time                           string
+	Device                         string
+	IPAddress                      string
+	HideIPTips                     string
+	SignOutAllSuccessfullyTips     string
 }
 
 var Messages_en_US = &Messages{
@@ -36,6 +55,25 @@ var Messages_en_US = &Messages{
 	OAuthCompleteInfoPositionLabel: "Position(Optional)",
 	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
 	OAuthCompleteInfoBackLabel:     "Back to login",
+	Demo:                           "DEMO",
+	DBResetTipLabel:                "Database reset countdown",
+	Name:                           "Name",
+	Email:                          "Email",
+	Company:                        "Company",
+	Role:                           "Role",
+	Status:                         "Status",
+	ChangePassword:                 "Change Password",
+	LoginSessions:                  "Login Sessions",
+	LoginSessionsTips:              "Places where you're logged into QOR5 admin.",
+	SignOutAllOtherSessions:        "Sign out all other sessions",
+	Expired:                        "Expired",
+	Active:                         "Active",
+	CurrentSession:                 "Current Session",
+	Time:                           "Time",
+	Device:                         "Device",
+	IPAddress:                      "IP Address",
+	HideIPTips:                     "Invisible due to security concerns",
+	SignOutAllSuccessfullyTips:     "All other sessions have successfully been signed out.",
 }
 
 var Messages_ja_JP = &Messages{
@@ -52,6 +90,25 @@ var Messages_ja_JP = &Messages{
 	OAuthCompleteInfoPositionLabel: "役職（任意）",
 	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
 	OAuthCompleteInfoBackLabel:     "ログインに戻る",
+	Demo:                           "デモ",
+	DBResetTipLabel:                "データベースリセットのカウントダウン",
+	Name:                           "名前",
+	Email:                          "メール",
+	Company:                        "会社",
+	Role:                           "役割",
+	Status:                         "ステータス",
+	ChangePassword:                 "パスワードを変更する",
+	LoginSessions:                  "ログインセッション",
+	LoginSessionsTips:              "QOR5管理者にログインしている場所。",
+	SignOutAllOtherSessions:        "他のすべてのセッションをサインアウトする",
+	Expired:                        "期限切れ",
+	Active:                         "アクティブ",
+	CurrentSession:                 "現在のセッション",
+	Time:                           "時間",
+	Device:                         "デバイス",
+	IPAddress:                      "IPアドレス",
+	HideIPTips:                     "セキュリティ上の理由から非表示",
+	SignOutAllSuccessfullyTips:     "他のすべてのセッションは正常にサインアウトされました。",
 }
 
 var Messages_zh_CN = &Messages{
@@ -68,6 +125,25 @@ var Messages_zh_CN = &Messages{
 	OAuthCompleteInfoPositionLabel: "职位（可选）",
 	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
 	OAuthCompleteInfoBackLabel:     "返回登录",
+	Demo:                           "演示",
+	DBResetTipLabel:                "数据库重置倒计时",
+	Name:                           "姓名",
+	Email:                          "邮箱",
+	Company:                        "公司",
+	Role:                           "角色",
+	Status:                         "状态",
+	ChangePassword:                 "修改密码",
+	LoginSessions:                  "登录会话",
+	LoginSessionsTips:              "您在QOR5管理中登录的地方。",
+	SignOutAllOtherSessions:        "退出所有其他会话",
+	Expired:                        "已过期",
+	Active:                         "活跃",
+	CurrentSession:                 "当前会话",
+	Time:                           "时间",
+	Device:                         "设备",
+	IPAddress:                      "IP地址",
+	HideIPTips:                     "由于安全原因，隐藏",
+	SignOutAllSuccessfullyTips:     "所有其他会话已成功退出。",
 }
 
 type Messages_ModelsI18nModuleKey struct {

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -34,8 +35,8 @@ import (
 	"github.com/qor5/admin/slug"
 	"github.com/qor5/admin/utils"
 	"github.com/qor5/admin/worker"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
+	v "github.com/qor5/ui/vuetify"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
@@ -97,8 +98,34 @@ func NewConfig() Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	b.BrandTitle("QOR5 Example").
-		ProfileFunc(profile).
+	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+		logo := "https://qor5.com/img/qor-logo.png"
+
+		now := time.Now()
+		nextEvenHour := time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+1+(now.Hour()%2), 0, 0, 0, now.Location())
+		diff := int(nextEvenHour.Sub(now).Seconds())
+		hours := diff / 3600
+		minutes := (diff % 3600) / 60
+		seconds := diff % 60
+		countdown := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+
+		return h.Div(
+			v.VRow(
+				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
+				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
+			).Dense(true),
+			h.If(os.Getenv("AWS_REGION") != "",
+				h.Div(
+					h.Span(msgr.DBResetTipLabel),
+					v.VIcon("schedule").XSmall(true).Left(true),
+					h.Span(countdown).Id("countdown"),
+				).Class("pt-1 pb-2"),
+				v.VDivider(),
+				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
+			),
+		).Class("mb-n4 mt-n2")
+	}).ProfileFunc(profile).
 		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -196,10 +223,10 @@ func NewConfig() Config {
 		SearchColumns("title", "body").
 		PerPage(10)
 
-	mListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
 
-		return []*vuetifyx.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
@@ -208,20 +235,20 @@ func NewConfig() Config {
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
 				Key:          "title",
 				Label:        "Title",
-				ItemType:     vuetifyx.ItemTypeString,
+				ItemType:     vx.ItemTypeString,
 				SQLCondition: `title %s ?`,
 			},
 			{
 				Key:      "status",
 				Label:    "Status",
-				ItemType: vuetifyx.ItemTypeSelect,
-				Options: []*vuetifyx.SelectItem{
+				ItemType: vx.ItemTypeSelect,
+				Options: []*vx.SelectItem{
 					{Text: publish.StatusDraft, Value: publish.StatusDraft},
 					{Text: publish.StatusOnline, Value: publish.StatusOnline},
 					{Text: publish.StatusOffline, Value: publish.StatusOffline},
@@ -231,8 +258,8 @@ func NewConfig() Config {
 			{
 				Key:      "multi_statuses",
 				Label:    "Multiple Statuses",
-				ItemType: vuetifyx.ItemTypeMultipleSelect,
-				Options: []*vuetifyx.SelectItem{
+				ItemType: vx.ItemTypeMultipleSelect,
+				Options: []*vx.SelectItem{
 					{Text: publish.StatusDraft, Value: publish.StatusDraft},
 					{Text: publish.StatusOnline, Value: publish.StatusOnline},
 					{Text: publish.StatusOffline, Value: publish.StatusOffline},
@@ -243,7 +270,7 @@ func NewConfig() Config {
 			{
 				Key:          "id",
 				Label:        "ID",
-				ItemType:     vuetifyx.ItemTypeNumber,
+				ItemType:     vx.ItemTypeNumber,
 				SQLCondition: `id %s ?`,
 				Folded:       true,
 			},
@@ -251,14 +278,16 @@ func NewConfig() Config {
 	})
 
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -267,7 +296,6 @@ func NewConfig() Config {
 
 	w := worker.New(db)
 	defer w.Listen()
-	w.Configure(b)
 	addJobs(w)
 
 	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
@@ -297,7 +325,7 @@ func NewConfig() Config {
 	})
 
 	roleBuilder := role.New(db).
-		Resources([]*vuetify.DefaultOptionItem{
+		Resources([]*v.DefaultOptionItem{
 			{Text: "All", Value: "*"},
 			{Text: "InputHarnesses", Value: "*:input_harnesses:*"},
 			{Text: "Posts", Value: "*:posts:*"},
@@ -362,13 +390,15 @@ func NewConfig() Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
+	w.Activity(ab).Configure(b)
+
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
 	pmListing := pm.Listing()
-	pmListing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
 
-		return []*vuetifyx.FilterItem{
+		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
@@ -378,14 +408,16 @@ func NewConfig() Config {
 	})
 
 	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -458,29 +490,29 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 
 		a, b, c := data["Pages"], data["Posts"], data["Users"]
 
-		return vuetify.VList(
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Pages")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
+		return v.VList(
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Pages")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
 				),
 			).TwoLine(true).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Posts")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Posts")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
 				),
 			).TwoLine(true).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			vuetify.VListItem(
-				vuetify.VListItemContent(
-					vuetify.VListItemTitle(h.Text("Users")),
-					vuetify.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
+			v.VListItem(
+				v.VListItemContent(
+					v.VListItemTitle(h.Text("Users")),
+					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
 				),
 			).TwoLine(true).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
-				vuetify.VListItem(
-					vuetify.VListItemContent(
-						vuetify.VListItemSubtitle(h.Text("Mark all as read")),
+				v.VListItem(
+					v.VListItemContent(
+						v.VListItemSubtitle(h.Text("Mark all as read")),
 					),
 				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
 			),

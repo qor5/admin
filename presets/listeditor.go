@@ -123,30 +123,34 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						h.If(!isSortStart,
 							VBtn("SortStart").Icon(true).Children(
 								VIcon("sort"),
-							).Attr("@click",
-								web.Plaid().
-									URL(b.fieldContext.ModelInfo.ListingHref()).
-									EventFunc(actions.SortEvent).
-									Query(ParamID, ctx.R.FormValue(ParamID)).
-									Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-									Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
-									Query(ParamIsStartSort, "1").
-									Go(),
-							),
+							).
+								Class("mt-n4").
+								Attr("@click",
+									web.Plaid().
+										URL(b.fieldContext.ModelInfo.ListingHref()).
+										EventFunc(actions.SortEvent).
+										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+										Query(ParamIsStartSort, "1").
+										Go(),
+								),
 						).Else(
 							VBtn("SortDone").Icon(true).Children(
 								VIcon("done"),
-							).Attr("@click",
-								web.Plaid().
-									URL(b.fieldContext.ModelInfo.ListingHref()).
-									EventFunc(actions.SortEvent).
-									Query(ParamID, ctx.R.FormValue(ParamID)).
-									Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-									Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
-									FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
-									Query(ParamIsStartSort, "0").
-									Go(),
-							),
+							).
+								Class("mt-n4").
+								Attr("@click",
+									web.Plaid().
+										URL(b.fieldContext.ModelInfo.ListingHref()).
+										EventFunc(actions.SortEvent).
+										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+										FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
+										Query(ParamIsStartSort, "0").
+										Go(),
+								),
 						),
 					),
 				).Class("d-flex align-end"),

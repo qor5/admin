@@ -54,6 +54,7 @@ type Messages struct {
 	ConfirmDialogPromptText                    string
 	Language                                   string
 	Colon                                      string
+	NotFoundPageNotice                         string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -139,6 +140,7 @@ var Messages_en_US = &Messages{
 	ConfirmDialogPromptText:                    "Are you sure?",
 	Language:                                   "Language",
 	Colon:                                      ":",
+	NotFoundPageNotice:                         "Sorry, the requested page cannot be found. Please check the URL.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -191,6 +193,7 @@ var Messages_zh_CN = &Messages{
 	ConfirmDialogPromptText:                    "你确定吗?",
 	Language:                                   "语言",
 	Colon:                                      "：",
+	NotFoundPageNotice:                         "很抱歉，所请求的页面不存在，请检查URL。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -242,4 +245,5 @@ var Messages_ja_JP = &Messages{
 	ConfirmDialogPromptText:                    "よろしいですか？",
 	Language:                                   "言語",
 	Colon:                                      ":",
+	NotFoundPageNotice:                         "申し訳ありませんが、リクエストされたページは見つかりませんでした。URLを確認してください。",
 }

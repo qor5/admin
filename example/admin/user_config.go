@@ -52,6 +52,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		"Actions",
 		"Name",
 		"OAuthProvider",
+		"OAuthIdentifier",
 		"Account",
 		"Company",
 		"Roles",
@@ -120,10 +121,10 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 
 		var accountType string
-		if u.OAuthProvider == "" && u.Account != "" {
-			accountType = "Main Account"
-		} else {
+		if u.IsOAuthUser() {
 			accountType = "OAuth Account"
+		} else {
+			accountType = "Main Account"
 		}
 
 		return h.Div(
@@ -139,7 +140,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
 
-		if u.OAuthProvider == "" && u.Account != "" {
+		if !u.IsOAuthUser() && u.Account != "" {
 			actionBtns = append(actionBtns,
 				VBtn("Send Reset Password Email").
 					Color("primary").
@@ -184,14 +185,23 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		return nil
 	})
 
-	ed.Field("OAuthProvider").Label("OAuthProvider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("OAuthProvider").Label("OAuth Provider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		u := obj.(*models.User)
-		if p := field.Value(obj); p == "" && u.ID != 0 {
+		if !u.IsOAuthUser() && u.ID != 0 {
 			return nil
 		} else {
 			return VSelect().FieldName(field.Name).
-				Label(field.Label).Value(p).
+				Label(field.Label).Value(field.Value(obj)).
 				Items(models.OAuthProviders)
+		}
+	})
+
+	ed.Field("OAuthIdentifier").Label("OAuth Identifier").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		if !u.IsOAuthUser() {
+			return nil
+		} else {
+			return presets.InputWithDefaults(VTextField(), obj, field).Disabled(true).ErrorMessages(field.Errors...)
 		}
 	})
 
@@ -338,17 +348,19 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsActive"),
+				Label: msgr.FilterTabsActive,
 				Query: url.Values{"status": []string{"active"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -464,14 +476,16 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 	})
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},

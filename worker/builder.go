@@ -9,7 +9,9 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"time"
 
+	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
@@ -29,6 +31,7 @@ type Builder struct {
 	jbs                  []*JobBuilder
 	mb                   *presets.ModelBuilder
 	getCurrentUserIDFunc func(r *http.Request) string
+	ab                   *activity.ActivityBuilder
 }
 
 func New(db *gorm.DB) *Builder {
@@ -66,6 +69,12 @@ func (b *Builder) Queue(q Queue) *Builder {
 
 func (b *Builder) GetCurrentUserIDFunc(f func(r *http.Request) string) *Builder {
 	b.getCurrentUserIDFunc = f
+	return b
+}
+
+// Activity sets Activity Builder to log activities
+func (b *Builder) Activity(ab *activity.ActivityBuilder) *Builder {
+	b.ab = ab
 	return b
 }
 
@@ -122,7 +131,7 @@ func (b *Builder) setStatus(id uint, status string) error {
 
 var permVerifier *perm.Verifier
 
-func (b *Builder) Configure(pb *presets.Builder) {
+func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	b.pb = pb
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 	pb.I18n().
@@ -241,7 +250,7 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		}
 
 		qorJob := obj.(*QorJob)
-		return web.Portal(b.jobEditingContent(ctx, qorJob.Job, qorJob.args)).Name("worker_jobEditingContent")
+		return web.Portal(b.jobEditingContent(ctx, qorJob.Job, qorJob.Args)).Name("worker_jobEditingContent")
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -249,7 +258,13 @@ func (b *Builder) Configure(pb *presets.Builder) {
 		if qorJob.Job == "" {
 			return errors.New("job is required")
 		}
-		_, err = b.createJob(ctx, qorJob)
+		j, err := b.createJob(ctx, qorJob)
+		if err != nil {
+			return err
+		}
+		if b.ab != nil {
+			b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), j)
+		}
 		return
 	})
 
@@ -323,6 +338,34 @@ func (b *Builder) Configure(pb *presets.Builder) {
 			web.Portal().Name("worker_snackbar"),
 		)
 	})
+
+	if b.ab != nil {
+		b.ab.RegisterModel(mb).SkipCreate().SkipUpdate().SkipDelete().
+			AddTypeHanders(time.Time{}, func(old, now interface{}, prefixField string) []activity.Diff {
+				fm := "2006-01-02 15:04:05"
+				oldString := old.(time.Time).Format(fm)
+				nowString := now.(time.Time).Format(fm)
+				if oldString != nowString {
+					return []activity.Diff{
+						{Field: prefixField, Old: oldString, Now: nowString},
+					}
+				}
+				return []activity.Diff{}
+			}).
+			AddTypeHanders(Schedule{}, func(old, now interface{}, prefixField string) []activity.Diff {
+				fm := "2006-01-02 15:04:05"
+				oldString := old.(Schedule).ScheduleTime.Format(fm)
+				nowString := now.(Schedule).ScheduleTime.Format(fm)
+				if oldString != nowString {
+					return []activity.Diff{
+						{Field: prefixField, Old: oldString, Now: nowString},
+					}
+				}
+				return []activity.Diff{}
+			})
+	}
+
+	return mb
 }
 
 func (b *Builder) Listen() {
@@ -382,7 +425,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 		}
 	}
 
-	b.db.Transaction(func(tx *gorm.DB) error {
+	err = b.db.Transaction(func(tx *gorm.DB) error {
 		j = &QorJob{
 			Job:    qorJob.Job,
 			Status: JobStatusNew,
@@ -432,6 +475,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	if err != nil {
 		return er, err
 	}
+	isScheduled := inst.Status == JobStatusScheduled
 
 	err = b.doAbortJob(inst)
 	if err != nil {
@@ -449,6 +493,19 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 
 	er.Reload = true
 	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+
+	if b.ab != nil {
+		action := "Abort"
+		if isScheduled {
+			action = "Cancel"
+		}
+		b.ab.AddCustomizedRecord(action, false, ctx.R.Context(), &QorJob{
+			Model: gorm.Model{
+				ID: inst.QorJobID,
+			},
+		})
+	}
+
 	return er, nil
 }
 
@@ -505,6 +562,14 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 
 	er.Reload = true
 	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+
+	if b.ab != nil {
+		b.ab.AddCustomizedRecord("Rerun", false, ctx.R.Context(), &QorJob{
+			Model: gorm.Model{
+				ID: inst.QorJobID,
+			},
+		})
+	}
 	return
 }
 
@@ -538,6 +603,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	if err != nil {
 		return er, err
 	}
+	oldArgs, _ := jb.parseArgs(old.Args)
 	err = b.doAbortJob(old)
 	if err != nil {
 		_, ok := err.(*cannotAbortError)
@@ -565,6 +631,23 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 
 	er.Reload = true
 	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	if b.ab != nil {
+		b.ab.AddEditRecordWithOldAndContext(
+			ctx.R.Context(),
+			&QorJob{
+				Model: gorm.Model{
+					ID: newInst.QorJobID,
+				},
+				Args: oldArgs,
+			},
+			&QorJob{
+				Model: gorm.Model{
+					ID: newInst.QorJobID,
+				},
+				Args: newArgs,
+			},
+		)
+	}
 	return er, nil
 }
 

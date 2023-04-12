@@ -311,8 +311,8 @@ github.com/qor/oss v0.0.0-20210412121326-3c5583a62015 h1:gmzorMEb+tKC8wkYBsIO9z+
 github.com/qor/oss v0.0.0-20210412121326-3c5583a62015/go.mod h1:JhtPzUhP5KGtCB2yksmxuYAD4hEWw4qGQJpucjsm3U0=
 github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84 h1:4Zueo+/c3cBDSE89CuPcHFRPPIo4UrWbCEc+amCGy84=
 github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
-github.com/qor5/web v1.2.3 h1:OtyfFaHWTAPBz8aYvZL2/yiVf77HvlPwRkmBweKCiWs=
-github.com/qor5/web v1.2.3/go.mod h1:gwAoUC1cQ9y5Vm3zZmWTq9t1iLOrQH+sIvJUpG6V61w=
+github.com/qor5/web v1.2.4 h1:CsChErtiYgaMA7CkqkC7nP2YEAOjDZ7JNrrUJTYGNLc=
+github.com/qor5/web v1.2.4/go.mod h1:4VXydGmy5Uwz8rEeKjcmCetciJo8TpU0mnN7Ca5kMR0=
 github.com/qor5/x v1.2.1-0.20230327060001-99614f5210b8 h1:5L87HRP9GStlXaXOcQG2QMswFx8HoZ3X9D3g7QF0060=
 github.com/qor5/x v1.2.1-0.20230327060001-99614f5210b8/go.mod h1:Zfy7B3X5DnQSud0HTV4h/ih5TTQgaT2NWwuSIRGLdcM=
 github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be h1:ta7tUOvsPHVHGom5hKW5VXNc2xZIkfCKP8iaqOyYtUQ=

@@ -67,7 +67,7 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
 
 		var btn h.HTMLComponent
 		switch s.GetStatus() {
