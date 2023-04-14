@@ -29,7 +29,7 @@ const (
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, ab))
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
 }
 
 type SelectLocale struct {
@@ -121,7 +121,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 
 		fromParamID := ctx.R.FormValue(presets.ParamID)
@@ -129,8 +129,17 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 		fromID := cs["id"]
 		fromVersion := cs["version"]
 		fromLocale := cs["locale_code"]
-		to, exist := ctx.R.Form["localize_to"]
-		if !exist {
+		to := make(map[string]struct{})
+		for _, v := range ctx.R.Form["localize_to"] {
+			for _, lc := range lb.GetSupportLocaleCodes() {
+				if v == lc {
+					to[v] = struct{}{}
+					break
+				}
+			}
+		}
+		if len(to) == 0 {
+			web.AppendVarsScripts(&r, "vars.localizeConfirmation = false")
 			return
 		}
 
@@ -158,7 +167,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 		}(reflect.Indirect(reflect.ValueOf(fromObj)).Interface())
 		me := mb.Editing()
 
-		for _, toLocale := range to {
+		for toLocale, _ := range to {
 			var toObj = mb.NewModel()
 			var fakeToObj = fromObj
 			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {
