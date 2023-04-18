@@ -57,6 +57,7 @@ var (
 type Config struct {
 	pb          *presets.Builder
 	pageBuilder *pagebuilder.Builder
+	Publisher   *publish.Builder
 }
 
 func NewConfig() Config {
@@ -525,6 +526,7 @@ func NewConfig() Config {
 	return Config{
 		pb:          b,
 		pageBuilder: pageBuilder,
+		Publisher:   publisher,
 	}
 }
 

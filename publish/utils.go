@@ -10,9 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func RunPublisher(db *gorm.DB, storage oss.StorageInterface) {
+func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder) {
 	{ // schedule publisher
-		publisher := New(db, storage)
 		scheduleP := NewSchedulePublishBuilder(publisher)
 
 		for name, model := range NonVersionPublishModels {

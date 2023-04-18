@@ -18,9 +18,9 @@ func main() {
 		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: session.Must(session.NewSession()),
 	})
-	admin.NewConfig()
+	config := admin.NewConfig()
 
-	publish.RunPublisher(db, storage)
+	publish.RunPublisher(db, storage, config.Publisher)
 
 	select {}
 }
