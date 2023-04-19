@@ -54,15 +54,6 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		}
 		// i18n end
 
-		fMsg := vh.GetFailFlashMessage(loginMsgr, ctx.W, ctx.R)
-		wMsg := vh.GetWarnFlashMessage(loginMsgr, ctx.W, ctx.R)
-		iMsg := vh.GetInfoFlashMessage(loginMsgr, ctx.W, ctx.R)
-		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
-
-		if iMsg != "" && vh.GetInfoCodeFlash(ctx.W, ctx.R) == login.InfoCodePasswordSuccessfullyChanged {
-			wMsg = ""
-		}
-
 		var oauthHTML HTMLComponent
 		if vh.OAuthEnabled() {
 			ul := Div().Class("d-flex flex-column justify-center mt-8 text-center")
@@ -88,6 +79,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			)
 		}
 
+		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
 		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
 			plogin.DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
@@ -129,7 +121,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			)
 		}
 
-		r.PageTitle = "Sign In"
+		r.PageTitle = loginMsgr.LoginPageTitle
 		var bodyForm HTMLComponent
 		bodyForm = Div(
 			logoSection,
@@ -163,9 +155,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		).Class("py-12")
 
 		r.Body = Div(
-			plogin.DefaultViewCommon.ErrNotice(fMsg),
-			plogin.DefaultViewCommon.WarnNotice(wMsg),
-			plogin.DefaultViewCommon.InfoNotice(iMsg),
+			plogin.DefaultViewCommon.Notice(vh, loginMsgr, ctx.W, ctx.R),
 			bodyForm,
 			If(isDemo, demoTips),
 		)
