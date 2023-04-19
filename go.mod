@@ -14,6 +14,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.2.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
@@ -26,7 +27,6 @@ require (
 	github.com/qor5/web v1.2.3
 	github.com/qor5/x v1.2.1-0.20230327060001-99614f5210b8
 	github.com/sunfmin/reflectutils v1.0.3
-	github.com/theplant/appkit v0.0.0-20230221035445-1fd2e74bca5f
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
@@ -46,6 +46,7 @@ require (
 
 require (
 	cloud.google.com/go v0.67.0 // indirect
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -60,7 +61,6 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
@@ -72,10 +72,8 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jinzhu/configor v1.2.1 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/jjeffery/errors v1.0.3 // indirect
-	github.com/jjeffery/kv v0.8.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/markbates/going v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
@@ -83,7 +81,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
@@ -95,6 +92,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
