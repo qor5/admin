@@ -1,13 +1,17 @@
 package publish
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/qor/oss"
 	"gorm.io/gorm"
+)
+
+const (
+	schedulePublishJobNamePrefix = "schedule-publisher"
+	listPublishJobNamePrefix     = "list-publisher"
 )
 
 func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder) {
@@ -17,9 +21,9 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 		for name, model := range NonVersionPublishModels {
 			name := name
 			model := model
-			go RunJob("schedule-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
+			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
-					panic(err)
+					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})
 		}
@@ -27,9 +31,9 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 		for name, model := range VersionPublishModels {
 			name := name
 			model := model
-			go RunJob("schedule-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
+			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(model); err != nil {
-					panic(err)
+					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})
 		}
@@ -40,9 +44,9 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 		for name, model := range ListPublishModels {
 			name := name
 			model := model
-			go RunJob("list-publisher"+"-"+name, time.Minute, time.Minute*5, func() {
+			go RunJob(listPublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := listP.Run(model); err != nil {
-					panic(err)
+					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})
 		}
@@ -50,21 +54,28 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 }
 
 func RunJob(jobName string, interval time.Duration, timeout time.Duration, f func()) {
-	t := time.Tick(interval)
-	for range t {
+	second := 1
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for now := range ticker.C {
+		targetTime := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute()+1, second, 0, now.Location())
+		time.Sleep(targetTime.Sub(now))
+
 		start := time.Now()
-		s := make(chan bool, 1)
+		done := make(chan struct{})
+
 		go func() {
 			defer func() {
 				stop := time.Now()
-				log.Printf("job_name: %s, started_at: %s, stopped_at: %s, time_spent_ms: %s\n", jobName, start, stop, fmt.Sprintf("%f", float64(stop.Sub(start))/float64(time.Millisecond)))
+				log.Printf("job_name: %s, started_at: %s, stopped_at: %s, time_spent_ms: %d\n", jobName, start, stop, int64(stop.Sub(start)/time.Millisecond))
 			}()
 			f()
-			s <- true
+			done <- struct{}{}
 		}()
 
 		select {
-		case <-s:
+		case <-done:
 		case <-time.After(timeout):
 			log.Printf("job_name: %s, started_at: %s, timeout: %s\n", jobName, start, time.Now())
 			os.Exit(124)

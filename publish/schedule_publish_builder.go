@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"reflect"
-	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"gorm.io/gorm"
@@ -41,10 +40,10 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		scope = b.publisher.db
 	}
 
-	//If model is Product{}
-	//Generate a records: []*Product{}
+	// If model is Product{}
+	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
-	flagTime := scope.NowFunc().Add(time.Minute)
+	flagTime := scope.NowFunc()
 	var unpublishAfterPublishRecords []interface{}
 
 	{
