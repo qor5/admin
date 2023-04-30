@@ -370,7 +370,7 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 
 			err1 = media.SaveUploadAndCropImage(db, &m)
 			if err1 != nil {
-				return
+				panic(err)
 			}
 		}
 
@@ -411,16 +411,16 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 				Crop:  true,
 			})
 			if err != nil {
-				return
+				panic(err)
 			}
 			err = db.Save(&m).Error
 			if err != nil {
-				return
+				panic(err)
 			}
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
-				return
+				panic(err)
 			}
 		}
 
