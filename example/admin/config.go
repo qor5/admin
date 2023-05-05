@@ -463,6 +463,12 @@ func NewConfig() Config {
 
 	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
 
+	if os.Getenv("RESET_AND_IMPORT_INITIAL_DATA") == "true" {
+		tbs := GetNonIgnoredTableNames()
+		EmptyDB(db, tbs)
+		InitDB(db, tbs)
+	}
+
 	return Config{
 		pb:          b,
 		pageBuilder: pageBuilder,

@@ -87,7 +87,14 @@ func New(db *gorm.DB, i18nB *i18n.Builder) *Builder {
 		&DemoContainer{},
 		&Category{},
 	)
-
+	if err != nil {
+		panic(err)
+	}
+	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
+	// fxxk: newline is not allowed
+	err = db.Exec(`
+create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
+`).Error
 	if err != nil {
 		panic(err)
 	}
@@ -700,10 +707,20 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 		modelID := ctx.QueryAsInt(presets.ParamOverlayUpdateID)
 		modelName := ctx.R.FormValue("ModelName")
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		db.Where(DemoContainer{ModelName: modelName}).FirstOrCreate(&DemoContainer{
-			ModelName: modelName,
-			ModelID:   uint(modelID),
-			Locale:    l10n.Locale{LocaleCode: locale},
+		var existID uint
+		{
+			m := DemoContainer{}
+			db.Where("model_name = ?", modelName).First(&m)
+			existID = m.ID
+		}
+		db.Assign(DemoContainer{
+			Model: gorm.Model{
+				ID: existID,
+			},
+			ModelID: uint(modelID),
+		}).FirstOrCreate(&DemoContainer{}, map[string]interface{}{
+			"model_name":  modelName,
+			"locale_code": locale,
 		})
 		r.Reload = true
 		return
@@ -714,6 +731,8 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	ed.Field("ModelName")
 	ed.Field("ModelID")
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		locale, localizable := l10n.IsLocalizableFromCtx(ctx.R.Context())
+
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
 
@@ -745,6 +764,9 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 			var modelID uint
 			for _, dc := range demoContainers {
 				if dc.ModelName == builder.name {
+					if localizable && dc.GetLocale() != locale {
+						continue
+					}
 					isExists = true
 					modelID = dc.ModelID
 					break

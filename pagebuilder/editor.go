@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
@@ -174,6 +174,8 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
+const FreeStyleKey = "FreeStyle"
+
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	if isTpl {
 		tpl := &Template{}
@@ -207,6 +209,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 			IsPreview: !isEditor,
 			Page:      p,
 		}
+
 		if isEditor {
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
@@ -257,6 +260,14 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 
 	window.addEventListener("message", scrolltoCurrentContainer, false);
 `}
+		}
+		if f := ctx.R.Context().Value(FreeStyleKey); f != nil {
+			pl, ok := f.(*PageLayoutInput)
+			if ok {
+				input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)
+				input.FreeStyleTopJs = append(input.FreeStyleTopJs, pl.FreeStyleTopJs...)
+				input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
+			}
 		}
 		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
 		if isEditor {
