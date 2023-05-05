@@ -1104,10 +1104,14 @@ func (b *Builder) defaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResp
 }
 
 func (b *Builder) getNotFoundPageFunc() web.PageFunc {
+	pf := b.defaultNotFoundPageFunc
 	if b.notFoundFunc != nil {
-		return b.notFoundFunc
+		pf = b.notFoundFunc
 	}
-	return b.defaultNotFoundPageFunc
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		ctx.W.WriteHeader(http.StatusNotFound)
+		return pf(ctx)
+	}
 }
 
 func (b *Builder) extraFullPath(ea *extraAsset) string {
@@ -1199,7 +1203,6 @@ func (b *Builder) initMux() {
 				return
 			}
 
-			w.WriteHeader(http.StatusNotFound)
 			b.wrap(
 				nil,
 				b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
