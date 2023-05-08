@@ -25,8 +25,8 @@ var customerData = gofixtures.Data(gofixtures.Sql(`
 			`, []string{"customers"}))
 
 var productData = gofixtures.Data(gofixtures.Sql(`
-				insert into products (id, name) values (12, 'Product 1');
-			`, []string{"products"}))
+				insert into preset_products (id, name) values (12, 'Product 1');
+			`, []string{"preset_products"}))
 
 var emptyCustomerData = gofixtures.Data(gofixtures.Sql(``, []string{"customers"}))
 var creditCardData = gofixtures.Data(customerData, gofixtures.Sql(``, []string{"credit_cards"}))
