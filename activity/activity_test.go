@@ -50,12 +50,12 @@ type (
 
 func init() {
 	var err error
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
 
-	if err := db.AutoMigrate(&TestActivityModel{}); err != nil {
+	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
 		panic(err)
 	}
 }
