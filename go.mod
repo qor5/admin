@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
-	github.com/aws/aws-sdk-go v1.38.62
+	github.com/aws/aws-sdk-go v1.40.45
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
@@ -14,10 +14,11 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.2.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
-	github.com/lib/pq v1.10.3
+	github.com/lib/pq v1.10.7
 	github.com/markbates/goth v1.76.0
 	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.3.0
@@ -45,6 +46,7 @@ require (
 
 require (
 	cloud.google.com/go v0.67.0 // indirect
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -57,7 +59,8 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
-	github.com/gorilla/sessions v1.2.0 // indirect
+	github.com/gorilla/sessions v1.2.1 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
@@ -86,10 +89,11 @@ require (
 	golang.org/x/image v0.6.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
