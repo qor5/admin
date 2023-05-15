@@ -14,3 +14,8 @@ var Messages_zh_CN = &Messages{
 	OK:     "确定",
 	Cancel: "取消",
 }
+
+var Messages_ja_JP = &Messages{
+	OK:     "OK",
+	Cancel: "キャンセル",
+}

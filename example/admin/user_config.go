@@ -3,25 +3,27 @@ package admin
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/note"
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/admin/role"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/sunfmin/reflectutils"
-
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
+	"github.com/qor5/admin/utils"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
-
-	"github.com/qor5/admin/example/models"
+	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/login"
+	"github.com/qor5/x/perm"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -31,11 +33,26 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	// MenuIcon("people")
 	note.Configure(db, b, user)
 
+	user.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		u := getCurrentUser(ctx.R)
+		qdb := db
+
+		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager users
+		// We didn't do this on permission because of we are not supporting the permission on listing page
+		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
+			qdb = db.Joins("inner join user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").
+				Where("r.name not in (?)", []string{models.RoleAdmin, models.RoleManager}).Group("users.id")
+		}
+
+		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+	}
+
 	ed := user.Editing(
 		"Type",
 		"Actions",
 		"Name",
 		"OAuthProvider",
+		"OAuthIdentifier",
 		"Account",
 		"Company",
 		"Roles",
@@ -50,7 +67,6 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 		return
 	})
-	user.RegisterEventFunc("roles_selector", rolesSelector(db))
 	user.RegisterEventFunc("eventUnlockUser", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		uid := ctx.R.FormValue("id")
 		u := models.User{}
@@ -105,10 +121,10 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		}
 
 		var accountType string
-		if u.OAuthProvider == "" && u.Account != "" {
-			accountType = "Main Account"
-		} else {
+		if u.IsOAuthUser() {
 			accountType = "OAuth Account"
+		} else {
+			accountType = "Main Account"
 		}
 
 		return h.Div(
@@ -124,7 +140,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		var actionBtns h.HTMLComponents
 		u := obj.(*models.User)
 
-		if u.OAuthProvider == "" && u.Account != "" {
+		if !u.IsOAuthUser() && u.Account != "" {
 			actionBtns = append(actionBtns,
 				VBtn("Send Reset Password Email").
 					Color("primary").
@@ -165,30 +181,29 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
 		u.Account = email
-		u.OAuthIndentifier = email
+		u.OAuthIdentifier = email
 		return nil
 	})
 
-	ed.Field("OAuthProvider").Label("OAuthProvider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed.Field("OAuthProvider").Label("OAuth Provider").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		u := obj.(*models.User)
-		if p := field.Value(obj); p == "" && u.ID != 0 {
+		if !u.IsOAuthUser() && u.ID != 0 {
 			return nil
 		} else {
 			return VSelect().FieldName(field.Name).
-				Label(field.Label).Value(p).
-				Items([]string{"google", "microsoftonline"})
+				Label(field.Label).Value(field.Value(obj)).
+				Items(models.OAuthProviders)
 		}
 	})
 
-	var roles []role.Role
-	db.Find(&roles)
-	var allRoleItems = []DefaultOptionItem{}
-	for _, r := range roles {
-		allRoleItems = append(allRoleItems, DefaultOptionItem{
-			Text:  r.Name,
-			Value: fmt.Sprint(r.ID),
-		})
-	}
+	ed.Field("OAuthIdentifier").Label("OAuth Identifier").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		u := obj.(*models.User)
+		if !u.IsOAuthUser() {
+			return nil
+		} else {
+			return presets.InputWithDefaults(VTextField(), obj, field).Disabled(true).ErrorMessages(field.Errors...)
+		}
+	})
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -207,6 +222,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				}
 			}
 
+			var roles []role.Role
+			db.Find(&roles)
+			var allRoleItems = []DefaultOptionItem{}
+			for _, r := range roles {
+				allRoleItems = append(allRoleItems, DefaultOptionItem{
+					Text:  r.Name,
+					Value: fmt.Sprint(r.ID),
+				})
+			}
+
 			return vx.VXAutocomplete().Label(field.Label).
 				// ItemText("text").ItemValue("value").
 				FieldName(field.Name).
@@ -220,6 +245,9 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 			u, ok := obj.(*models.User)
 			if !ok {
 				return
+			}
+			if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+				return perm.PermissionDenied
 			}
 			rids := ctx.R.Form[field.Name]
 			var roles []role.Role
@@ -260,13 +288,16 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	oldSaver := ed.Saver
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
+		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			return perm.PermissionDenied
+		}
 		u.RegistrationDate = time.Now()
 		return oldSaver(obj, id, ctx)
 	})
 
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
 	cl.Field("Account").Label("Email")
-	cl.SearchColumns("Name", "Account")
+	cl.SearchColumns("users.Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -276,19 +307,19 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "created",
 				Label:        "Create Time",
 				ItemType:     vx.ItemTypeDatetimeRange,
-				SQLCondition: `created_at %s ?`,
+				SQLCondition: `users.created_at %s ?`,
 			},
 			{
 				Key:          "name",
 				Label:        "Name",
 				ItemType:     vx.ItemTypeString,
-				SQLCondition: `name %s ?`,
+				SQLCondition: `users.name %s ?`,
 			},
 			{
 				Key:          "status",
 				Label:        "Status",
 				ItemType:     vx.ItemTypeSelect,
-				SQLCondition: `status %s ?`,
+				SQLCondition: `users.status %s ?`,
 				Options: []*vx.SelectItem{
 					{Text: "Active", Value: "active"},
 					{Text: "Inactive", Value: "inactive"},
@@ -303,57 +334,38 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 				Key:          "registration_date",
 				Label:        "Registration Date",
 				ItemType:     vx.ItemTypeDate,
-				SQLCondition: `registration_date %s ?`,
+				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
 			{
 				Key:          "registration_date_range",
 				Label:        "Registration Date Range",
 				ItemType:     vx.ItemTypeDateRange,
-				SQLCondition: `registration_date %s ?`,
+				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
 		}
 	})
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsActive"),
+				Label: msgr.FilterTabsActive,
 				Query: url.Values{"status": []string{"active"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
 		}
 	})
-}
-
-func rolesSelector(db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var roles []role.Role
-		var items []DefaultOptionItem
-		searchKey := ctx.R.FormValue("keyword")
-		sql := db.Order("name").Limit(3)
-		if searchKey != "" {
-			sql = sql.Where("name ILIKE ?", fmt.Sprintf("%%%s%%", searchKey))
-		}
-		sql.Find(&roles)
-		for _, r := range roles {
-			items = append(items, DefaultOptionItem{
-				Text:  r.Name,
-				Value: fmt.Sprint(r.ID),
-			})
-		}
-		r.Data = items
-		return
-	}
 }
 
 func favorPostSelector(id uint) h.HTMLComponent {
@@ -375,7 +387,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 			Readonly(true).
 			Clearable(true),
 	).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-		URL("/admin/dialog-select-favor-posts").
+		URL("/dialog-select-favor-posts").
 		Go())
 }
 
@@ -464,14 +476,16 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 	})
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},

@@ -1,13 +1,25 @@
 package admin
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/sitemap"
 	"github.com/qor5/admin/example/models"
+	"github.com/qor5/web"
+	"github.com/qor5/x/sitemap"
+)
+
+//go:embed assets/favicon.ico
+var favicon []byte
+
+const (
+	logoutURL                  = "/auth/logout"
+	oauthCompleteInfoPageURL   = "/auth/complete-info"
+	oauthCompleteInfoActionURL = "/auth/do-complete-info"
+
+	exportOrdersURL = "/export-orders"
 )
 
 func Router() http.Handler {
@@ -25,7 +37,7 @@ func Router() http.Handler {
 	//}
 	//`)))
 
-	mux.Handle("/admin/page_builder/", c.pageBuilder)
+	mux.Handle("/page_builder/", c.pageBuilder)
 	// example of seo
 	mux.Handle("/posts/first", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var post models.Post
@@ -34,7 +46,17 @@ func Router() http.Handler {
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprintf(w, `<html><head>%s</head><body>%s</body></html>`, seodata, post.Body)
 	}))
+
 	mux.Handle("/", c.pb)
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(favicon)
+		return
+	})
+
+	mux.Handle(oauthCompleteInfoActionURL, doOAuthCompleteInfo(db))
+	mux.Handle(oauthCompleteInfoPageURL, c.pb.I18n().EnsureLanguage(web.New().Page(oauthCompleteInfoPage(vh, c.pb))))
+
+	mux.Handle(exportOrdersURL, exportOrders(db))
 
 	// example of sitemap and robot
 	sitemap.SiteMap("product").RegisterRawString("https://dev.qor5.com/admin", "/product").MountTo(mux)
@@ -45,8 +67,9 @@ func Router() http.Handler {
 
 	cr := chi.NewRouter()
 	cr.Use(
-		login.Authenticate(loginBuilder),
+		loginBuilder.Middleware(),
 		validateSessionToken(),
+		isOAuthInfoCompleted(),
 		withRoles(db),
 		withNoteContext(),
 	)

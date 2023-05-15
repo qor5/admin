@@ -177,9 +177,11 @@ func (b ModelInfo) Label() string {
 }
 
 func (b ModelInfo) Verifier() *perm.Verifier {
-	return b.mb.p.verifier.Spawn().
-		SnakeOn(b.mb.menuGroupName).
-		SnakeOn(b.mb.uriName)
+	v := b.mb.p.verifier.Spawn()
+	if b.mb.menuGroupName != "" {
+		v.SnakeOn("mg_" + b.mb.menuGroupName)
+	}
+	return v.SnakeOn(b.mb.uriName)
 }
 
 func (mb *ModelBuilder) URIName(v string) (r *ModelBuilder) {

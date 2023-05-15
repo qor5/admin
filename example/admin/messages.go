@@ -1,40 +1,149 @@
 package admin
 
 import (
-	l10n_view "github.com/qor5/admin/l10n/views"
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	publish_view "github.com/qor5/admin/publish/views"
-	"github.com/qor5/admin/utils"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
 )
 
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
 
 type Messages struct {
-	FilterTabsAll            string
-	FilterTabsHasUnreadNotes string
-	FilterTabsActive         string
+	FilterTabsAll                  string
+	FilterTabsHasUnreadNotes       string
+	FilterTabsActive               string
+	DemoTips                       string
+	DemoUsernameLabel              string
+	DemoPasswordLabel              string
+	LoginProviderGoogleText        string
+	LoginProviderMicrosoftText     string
+	LoginProviderGithubText        string
+	OAuthCompleteInfoTitle         string
+	OAuthCompleteInfoPositionLabel string
+	OAuthCompleteInfoAgreeLabel    string
+	OAuthCompleteInfoBackLabel     string
+	Demo                           string
+	DBResetTipLabel                string
+	Name                           string
+	Email                          string
+	Company                        string
+	Role                           string
+	Status                         string
+	ChangePassword                 string
+	LoginSessions                  string
+	LoginSessionsTips              string
+	SignOutAllOtherSessions        string
+	Expired                        string
+	Active                         string
+	CurrentSession                 string
+	Time                           string
+	Device                         string
+	IPAddress                      string
+	HideIPTips                     string
+	SignOutAllSuccessfullyTips     string
 }
 
 var Messages_en_US = &Messages{
-	FilterTabsAll:            "All",
-	FilterTabsHasUnreadNotes: "Has Unread Notes",
-	FilterTabsActive:         "Active",
+	FilterTabsAll:                  "All",
+	FilterTabsHasUnreadNotes:       "Has Unread Notes",
+	FilterTabsActive:               "Active",
+	DemoTips:                       "Please note that the database would be reset every even hour.",
+	DemoUsernameLabel:              "Demo Username: ",
+	DemoPasswordLabel:              "Demo Password: ",
+	LoginProviderGoogleText:        "Login with Google",
+	LoginProviderMicrosoftText:     "Login with Microsoft",
+	LoginProviderGithubText:        "Login with Github",
+	OAuthCompleteInfoTitle:         "Complete your information",
+	OAuthCompleteInfoPositionLabel: "Position(Optional)",
+	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
+	OAuthCompleteInfoBackLabel:     "Back to login",
+	Demo:                           "DEMO",
+	DBResetTipLabel:                "Database reset countdown",
+	Name:                           "Name",
+	Email:                          "Email",
+	Company:                        "Company",
+	Role:                           "Role",
+	Status:                         "Status",
+	ChangePassword:                 "Change Password",
+	LoginSessions:                  "Login Sessions",
+	LoginSessionsTips:              "Places where you're logged into QOR5 admin.",
+	SignOutAllOtherSessions:        "Sign out all other sessions",
+	Expired:                        "Expired",
+	Active:                         "Active",
+	CurrentSession:                 "Current Session",
+	Time:                           "Time",
+	Device:                         "Device",
+	IPAddress:                      "IP Address",
+	HideIPTips:                     "Invisible due to security concerns",
+	SignOutAllSuccessfullyTips:     "All other sessions have successfully been signed out.",
 }
 
 var Messages_ja_JP = &Messages{
-	FilterTabsAll:            "すべて",
-	FilterTabsHasUnreadNotes: "未読のノートがあります",
-	FilterTabsActive:         "有効",
+	FilterTabsAll:                  "すべて",
+	FilterTabsHasUnreadNotes:       "未読のノートがあります",
+	FilterTabsActive:               "有効",
+	DemoTips:                       "データベースは偶数時間ごとにリセットされることに注意してください。",
+	DemoUsernameLabel:              "デモのユーザー名: ",
+	DemoPasswordLabel:              "デモパスワード: ",
+	LoginProviderGoogleText:        "Googleでログイン",
+	LoginProviderMicrosoftText:     "Microsoftでログイン",
+	LoginProviderGithubText:        "Githubでログイン",
+	OAuthCompleteInfoTitle:         "情報を入力してください",
+	OAuthCompleteInfoPositionLabel: "役職（任意）",
+	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
+	OAuthCompleteInfoBackLabel:     "ログインに戻る",
+	Demo:                           "デモ",
+	DBResetTipLabel:                "データベースリセットのカウントダウン",
+	Name:                           "名前",
+	Email:                          "メール",
+	Company:                        "会社",
+	Role:                           "役割",
+	Status:                         "ステータス",
+	ChangePassword:                 "パスワードを変更する",
+	LoginSessions:                  "ログインセッション",
+	LoginSessionsTips:              "QOR5管理者にログインしている場所。",
+	SignOutAllOtherSessions:        "他のすべてのセッションをサインアウトする",
+	Expired:                        "期限切れ",
+	Active:                         "アクティブ",
+	CurrentSession:                 "現在のセッション",
+	Time:                           "時間",
+	Device:                         "デバイス",
+	IPAddress:                      "IPアドレス",
+	HideIPTips:                     "セキュリティ上の理由から非表示",
+	SignOutAllSuccessfullyTips:     "他のすべてのセッションは正常にサインアウトされました。",
 }
 
 var Messages_zh_CN = &Messages{
-	FilterTabsAll:            "全部",
-	FilterTabsHasUnreadNotes: "未读备注",
-	FilterTabsActive:         "有效",
+	FilterTabsAll:                  "全部",
+	FilterTabsHasUnreadNotes:       "未读备注",
+	FilterTabsActive:               "有效",
+	DemoTips:                       "请注意，数据库将每隔偶数小时重置一次。",
+	DemoUsernameLabel:              "演示账户：",
+	DemoPasswordLabel:              "演示密码：",
+	LoginProviderGoogleText:        "使用Google登录",
+	LoginProviderMicrosoftText:     "使用Microsoft登录",
+	LoginProviderGithubText:        "使用Github登录",
+	OAuthCompleteInfoTitle:         "请填写您的信息",
+	OAuthCompleteInfoPositionLabel: "职位（可选）",
+	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
+	OAuthCompleteInfoBackLabel:     "返回登录",
+	Demo:                           "演示",
+	DBResetTipLabel:                "数据库重置倒计时",
+	Name:                           "姓名",
+	Email:                          "邮箱",
+	Company:                        "公司",
+	Role:                           "角色",
+	Status:                         "状态",
+	ChangePassword:                 "修改密码",
+	LoginSessions:                  "登录会话",
+	LoginSessionsTips:              "您在QOR5管理中登录的地方。",
+	SignOutAllOtherSessions:        "退出所有其他会话",
+	Expired:                        "已过期",
+	Active:                         "活跃",
+	CurrentSession:                 "当前会话",
+	Time:                           "时间",
+	Device:                         "设备",
+	IPAddress:                      "IP地址",
+	HideIPTips:                     "由于安全原因，隐藏",
+	SignOutAllSuccessfullyTips:     "所有其他会话已成功退出。",
 }
 
 type Messages_ModelsI18nModuleKey struct {
@@ -65,14 +174,14 @@ type Messages_ModelsI18nModuleKey struct {
 	ECManagement             string
 	ECDashboard              string
 	Orders                   string
+	InputDemos               string
 	Products                 string
+	NestedFieldDemos         string
 	SiteManagement           string
 	SEO                      string
 	UserManagement           string
 	Profile                  string
 	FeaturedModelsManagement string
-	InputHarnesses           string
-	ListEditorExample        string
 	Customers                string
 	ListModels               string
 	MicrositeModels          string
@@ -208,14 +317,14 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "电子商务管理",
 	ECDashboard:              "电子商务仪表盘",
 	Orders:                   "订单管理",
+	InputDemos:               "表单 示例",
 	Products:                 "产品管理",
+	NestedFieldDemos:         "嵌套表单 示例",
 	SiteManagement:           "站点管理菜单",
 	SEO:                      "SEO 管理",
 	UserManagement:           "用户管理菜单",
 	Profile:                  "个人页面",
 	FeaturedModelsManagement: "特色模块管理菜单",
-	InputHarnesses:           "Input 示例",
-	ListEditorExample:        "ListEditor 示例",
 	Customers:                "Customers 示例",
 	ListModels:               "发布带排序及分页模块 示例",
 	MicrositeModels:          "Microsite 示例",
@@ -351,14 +460,14 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "ECマネジメント",
 	ECDashboard:              "ECダッシュボード",
 	Orders:                   "注文",
+	InputDemos:               "入力デモ",
 	Products:                 "製品",
 	SiteManagement:           "サイト管理",
+	NestedFieldDemos:         "ネストフィールドデモ",
 	SEO:                      "SEO",
 	UserManagement:           "ユーザー管理",
 	Profile:                  "プロフィール",
 	FeaturedModelsManagement: "モデル管理",
-	InputHarnesses:           "ハーネスを入力",
-	ListEditorExample:        "リスト編集サンプル",
 	Customers:                "お客さま",
 	ListModels:               "リストモデル",
 	MicrositeModels:          "マイクロサイトモデル",
@@ -464,180 +573,4 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsThankyouMessage:    "サンキューメッセージ",
 	ContactFormsActionUrl:          "アクションURL",
 	ContactFormsPrivacyPolicy:      "プライバシーポリシー",
-}
-
-var Messages_ja_JP_I18nLoginKey = &login.Messages{
-	Confirm:                             "確認する",
-	Verify:                              "検証",
-	AccountLabel:                        "メールアドレス",
-	AccountPlaceholder:                  "メールアドレス",
-	PasswordLabel:                       "パスワード",
-	PasswordPlaceholder:                 "パスワード",
-	SignInBtn:                           "ログイン",
-	ForgetPasswordLink:                  "パスワードをお忘れですか？",
-	ForgotMyPasswordTitle:               "パスワードを忘れました",
-	ForgetPasswordEmailLabel:            "メールアドレスを入力してください",
-	ForgetPasswordEmailPlaceholder:      "メールアドレス",
-	SendResetPasswordEmailBtn:           "パスワードリセット用メールが送信されました",
-	ResendResetPasswordEmailBtn:         "パスワードリセット用メールを再送する",
-	SendEmailTooFrequentlyNotice:        "メール送信回数が上限を超えています。しばらく経ってから再度お試しください",
-	ResetPasswordLinkWasSentTo:          "パスワードリセット用リンクが送信されました",
-	ResetPasswordLinkSentPrompt:         "このリンクからパスワードリセット手続きを行い、終了後はページを閉じてください",
-	ResetYourPasswordTitle:              "パスワードをリセットしてください",
-	ResetPasswordLabel:                  "パスワードを変更する",
-	ResetPasswordPlaceholder:            "新しいパスワード",
-	ResetPasswordConfirmLabel:           "新しいパスワードを再入力",
-	ResetPasswordConfirmPlaceholder:     "新しいパスワードを確認する",
-	ChangePasswordTitle:                 "パスワードを変更する",
-	ChangePasswordOldLabel:              "古いパスワード",
-	ChangePasswordOldPlaceholder:        "古いパスワード",
-	ChangePasswordNewLabel:              "新しいパスワード",
-	ChangePasswordNewPlaceholder:        "新しいパスワード",
-	ChangePasswordNewConfirmLabel:       "新しいパスワードを再入力する",
-	ChangePasswordNewConfirmPlaceholder: "新しいパスワード",
-	TOTPSetupTitle:                      "二段階認証",
-	TOTPSetupScanPrompt:                 "Google認証アプリ(または同等アプリ)を利用してこのQRコードをスキャンしてください",
-	TOTPSetupSecretPrompt:               "または、お好きな認証アプリを利用して、以下のコードを入力してください",
-	TOTPSetupEnterCodePrompt:            "以下のワンタイムコードを入力してください",
-	TOTPSetupCodePlaceholder:            "パスコード",
-	TOTPValidateTitle:                   "二段階認証",
-	TOTPValidateEnterCodePrompt:         "提供されたワンタイムコードを以下に入力してください",
-	TOTPValidateCodeLabel:               "認証パスコード",
-	TOTPValidateCodePlaceholder:         "パスコード",
-	ErrorSystemError:                    "システムエラー",
-	ErrorCompleteUserAuthFailed:         "ユーザー認証に失敗しました",
-	ErrorUserNotFound:                   "このユーザーは存在しません",
-	ErrorIncorrectAccountNameOrPassword: "メールアドレスまたはパスワードが間違っています",
-	ErrorUserLocked:                     "ユーザーがロックされました",
-	ErrorAccountIsRequired:              "メールアドレスは必須です",
-	ErrorPasswordCannotBeEmpty:          "パスワードは必須です",
-	ErrorPasswordNotMatch:               "パスワードが間違っています",
-	ErrorIncorrectPassword:              "古いパスワードが間違っています",
-	ErrorInvalidToken:                   "このトークンは無効です",
-	ErrorTokenExpired:                   "トークンの有効期限が切れています",
-	ErrorIncorrectTOTPCode:              "パスコードが間違っています",
-	ErrorTOTPCodeReused:                 "このパスコードは既に利用されています",
-	ErrorIncorrectRecaptchaToken:        "reCAPTCHAトークンが間違っています",
-	WarnPasswordHasBeenChanged:          "パスワードが変更されました。再度ログインしてください",
-	InfoPasswordSuccessfullyReset:       "パスワードのリセットに成功しました。再度ログインしてください",
-	InfoPasswordSuccessfullyChanged:     "パスワードの変更に成功しました。再度ログインしてください",
-}
-
-var Messages_ja_JP_I18nUtilsKey = &utils.Messages{
-	OK:     "OK",
-	Cancel: "キャンセル",
-}
-
-var Messages_ja_JP_I18nPublishKey = &publish_view.Messages{
-	StatusDraft:             "下書き",
-	StatusOnline:            "公開中",
-	StatusOffline:           "非公開中",
-	Publish:                 "公開する",
-	Unpublish:               "非公開",
-	Republish:               "再公開",
-	Areyousure:              "よろしいですか？",
-	ScheduledStartAt:        "公開開始日時",
-	ScheduledEndAt:          "公開終了日時",
-	PublishedAt:             "開始日時",
-	UnPublishedAt:           "公開終了日時",
-	ActualPublishTime:       "投稿日時",
-	SchedulePublishTime:     "公開日時を設定する",
-	NotSet:                  "未セット",
-	WhenDoYouWantToPublish:  "公開日時を設定してください",
-	PublishScheduleTip:      "{SchedulePublishTime} 設定後、システムが自動で当該記事の公開・非公開を行います。",
-	DateTimePickerClearText: "クリア",
-	DateTimePickerOkText:    "OK",
-	SaveAsNewVersion:        "新規バージョンとして保存する",
-	SwitchedToNewVersion:    "新規バージョンに変更する",
-	SuccessfullyCreated:     "作成に成功しました",
-	SuccessfullyRename:      "名付けに成功しました",
-	OnlineVersion:           "オンラインバージョン",
-	VersionsList:            "バージョンリスト",
-	AllVersions:             "全てのバージョン",
-	NamedVersions:           "名付け済みバージョン",
-	RenameVersion:           "バージョンの名前を変更する",
-}
-
-var Messages_ja_JP_CoreI18nModuleKey = &presets.Messages{
-	SuccessfullyUpdated:            "更新に成功しました",
-	Search:                         "検索する",
-	New:                            "新規",
-	Update:                         "更新する",
-	Delete:                         "削除する",
-	Edit:                           "編集する",
-	FormTitle:                      "フォーム",
-	OK:                             "OK",
-	Cancel:                         "キャンセル",
-	Create:                         "新規作成",
-	DeleteConfirmationTextTemplate: ": {id}を削除して本当によろしいですか？",
-	CreatingObjectTitleTemplate:    "{modelName} を作る",
-	EditingObjectTitleTemplate:     "{modelName} {id} を編集する",
-	ListingObjectTitleTemplate:     "リスティング {modelName} ",
-	DetailingObjectTitleTemplate:   "{modelName} {id} ",
-	FiltersClear:                   "フィルターをクリアする",
-	FiltersAdd:                     "フィルターを追加する",
-	FilterApply:                    "適用する",
-	FilterByTemplate:               "{filter} でフィルターする",
-	FiltersDateInTheLast:           "がサイト",
-	FiltersDateEquals:              "と同等",
-	FiltersDateBetween:             "の間",
-	FiltersDateIsAfter:             "が後",
-	FiltersDateIsAfterOrOn:         "が同時または後",
-	FiltersDateIsBefore:            "が前",
-	FiltersDateIsBeforeOrOn:        "が前または同時",
-	FiltersDateDays:                "日間",
-	FiltersDateMonths:              "月数",
-	FiltersDateAnd:                 "＆",
-	FiltersDateTo:                  "から",
-	FiltersNumberEquals:            "と同等",
-	FiltersNumberBetween:           "間",
-	FiltersNumberGreaterThan:       "より大きい",
-	FiltersNumberLessThan:          "より少ない",
-	FiltersNumberAnd:               "＆",
-	FiltersStringEquals:            "と同等",
-	FiltersStringContains:          "を含む",
-	FiltersMultipleSelectIn:        "中",
-	FiltersMultipleSelectNotIn:     "以外",
-	PaginationRowsPerPage:          "行 / ページ",
-	ListingNoRecordToShow:          "表示できるデータはありません",
-	ListingSelectedCountNotice:     "{count} レコードが選択されています",
-	ListingClearSelection:          "選択をクリア",
-	BulkActionNoAvailableRecords:   "この機能はご利用いただけません",
-	BulkActionSelectedIdsProcessNoticeTemplate: "この一部の機能はご利用いただけません: {ids}",
-	ConfirmationDialogText:                     "よろしいですか？",
-	Language:                                   "言語",
-	Colon:                                      ":",
-}
-
-var Messages_ja_JP_I18nNoteKey = &note.Messages{
-	SuccessfullyCreated: "作成に成功しました",
-	Item:                "アイテム",
-	Notes:               "ノート",
-	NewNote:             "新規ノート",
-}
-
-var Messages_ja_JP_I10nLocalizeKey = &l10n_view.Messages{
-	Localize:              "ローカライズ",
-	LocalizeFrom:          "から",
-	LocalizeTo:            "に",
-	SuccessfullyLocalized: "ローカライズに成功しました",
-	Location:              "場所",
-	Colon:                 ":",
-	International:         "インターナショナル",
-	China:                 "中国",
-	Japan:                 "日本",
-}
-
-var Messages_ja_JP_I18nPageBuilderKey = &pagebuilder.Messages{
-	Category:           "カテゴリー",
-	EditPageContent:    "ページコンテナを編集する",
-	Preview:            "プレビュー",
-	Containers:         "コンテナ",
-	AddContainers:      "コンテナを追加する",
-	New:                "新規",
-	Shared:             "共有",
-	Select:             "選択する",
-	TemplateID:         "テンプレートID",
-	TemplateName:       "テンプレート名",
-	CreateFromTemplate: "テンプレートから新規作成する",
 }

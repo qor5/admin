@@ -34,19 +34,23 @@ type MicroSite struct {
 	UnixKey string
 }
 
+func (this *MicroSite) PermissionRN() []string {
+	return []string{"microsite_models", strconv.Itoa(int(this.ID)), this.Version.Version}
+}
+
 func (this *MicroSite) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
 }
 
-func (this *MicroSite) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (this *MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":      segs[0],
+		"version": segs[1],
 	}
 }
 

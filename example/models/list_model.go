@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -27,15 +28,19 @@ func (this *ListModel) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
 }
 
-func (this *ListModel) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (this *ListModel) PermissionRN() []string {
+	return []string{"list_models", strconv.Itoa(int(this.ID)), this.Version.Version}
+}
+
+func (this *ListModel) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":      segs[0],
+		"version": segs[1],
 	}
 }
 

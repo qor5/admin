@@ -11,6 +11,9 @@ type Messages struct {
 	Cropping                    string
 	DescriptionUpdated          string
 	DescriptionForAccessibility string
+	OrderBy                     string
+	UploadedAt                  string
+	UploadedAtDESC              string
 	SampleArgsText              func(id string) string
 }
 
@@ -25,6 +28,9 @@ var Messages_en_US = &Messages{
 	Cropping:                    "Cropping",
 	DescriptionUpdated:          "Description Updated",
 	DescriptionForAccessibility: "description for accessibility",
+	OrderBy:                     "Order By",
+	UploadedAt:                  "Date Uploaded",
+	UploadedAtDESC:              "Date Uploaded (DESC)",
 }
 
 var Messages_zh_CN = &Messages{
@@ -38,4 +44,23 @@ var Messages_zh_CN = &Messages{
 	Cropping:                    "正在剪裁...",
 	DescriptionUpdated:          "描述更新成功",
 	DescriptionForAccessibility: "图片描述",
+	OrderBy:                     "排序",
+	UploadedAt:                  "上传时间",
+	UploadedAtDESC:              "上传时间 (降序)",
+}
+
+var Messages_ja_JP = &Messages{
+	Crop:                        "トリミング",
+	CropImage:                   "画像をトリミング",
+	ChooseFile:                  "ファイルを選択",
+	Delete:                      "削除",
+	ChooseAFile:                 "ファイルを選択",
+	Search:                      "検索",
+	UploadFiles:                 "ファイルをアップロード",
+	Cropping:                    "トリミング中",
+	DescriptionUpdated:          "説明を更新しました",
+	DescriptionForAccessibility: "画像の説明",
+	OrderBy:                     "並び替え",
+	UploadedAt:                  "アップロード日時",
+	UploadedAtDESC:              "アップロード日時 (降順)",
 }

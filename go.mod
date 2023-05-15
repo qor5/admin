@@ -5,12 +5,12 @@ go 1.19
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go v1.38.62
-	github.com/biter777/countries v1.5.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gen2brain/go-unarr v0.1.2
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/gocarina/gocsv v0.0.0-20230123225133-763e25b40669
 	github.com/google/go-cmp v0.5.9
 	github.com/gosimple/slug v1.9.0
 	github.com/gosimple/unidecode v1.0.0
@@ -18,13 +18,13 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.3
-	github.com/markbates/goth v1.75.1
+	github.com/markbates/goth v1.76.0
+	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.3.0
 	github.com/qor/oss v0.0.0-20210412121326-3c5583a62015
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
-	github.com/qor5/web v1.2.3
-	github.com/qor5/x v1.2.0
-	github.com/stretchr/testify v1.8.0
+	github.com/qor5/web v1.2.4
+	github.com/qor5/x v1.2.1-0.20230420023921-8f986dddfeaf
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
@@ -37,7 +37,7 @@ require (
 	github.com/wcharczuk/go-chart/v2 v2.1.0
 	go.uber.org/zap v1.19.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/text v0.4.0
+	golang.org/x/text v0.8.0
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.2
@@ -71,19 +71,20 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/markbates/going v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
-	github.com/ory/ladon v1.2.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
 	github.com/rs/xid v1.4.0 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/image v0.6.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.6 // indirect

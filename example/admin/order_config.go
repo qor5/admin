@@ -3,11 +3,11 @@ package admin
 import (
 	"time"
 
+	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/example/models"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -79,6 +79,44 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 				Options:      statusOptions,
 			},
 		}
+	})
+
+	lb.Action("Export").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return vuetify.VBtn("Export").
+			Color("primary").
+			Depressed(true).
+			Class("ml-2").
+			Href(exportOrdersURL)
+	})
+
+	lb.BulkAction("Change status").ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+		vErr := &web.ValidationErrors{}
+		if ctx.Flash != nil {
+			vErr = ctx.Flash.(*web.ValidationErrors)
+		}
+
+		return h.Div(
+			vuetify.VCardText(
+				vuetify.VAutocomplete().Label("Status").
+					FieldName("status").
+					Items(models.OrderStatuses).
+					Attach(false).ErrorMessages(vErr.GetFieldErrors("status")...),
+			),
+		)
+	}).UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		vErr := &web.ValidationErrors{}
+		status := ctx.R.FormValue("status")
+		if status == "" {
+			vErr.FieldError("status", "Please select status")
+			ctx.Flash = vErr
+			return nil
+		}
+
+		if err := db.Model(&models.Order{}).Where("id IN (?)", selectedIds).Update("status", status).Error; err != nil {
+			return err
+		}
+
+		return
 	})
 
 	// detailing

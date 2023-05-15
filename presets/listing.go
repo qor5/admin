@@ -21,7 +21,7 @@ import (
 
 type ListingBuilder struct {
 	mb                *ModelBuilder
-	bulkActions       []*ActionBuilder
+	bulkActions       []*BulkActionBuilder
 	actions           []*ActionBuilder
 	actionsAsMenu     bool
 	rowMenu           *RowMenuBuilder
@@ -224,7 +224,7 @@ func (b *ListingBuilder) listingComponent(
 
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
-	var dialogHeadbar h.HTMLComponent
+	var dialogHeaderBar h.HTMLComponent
 	if inDialog {
 		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		var searchBox h.HTMLComponent
@@ -248,7 +248,7 @@ func (b *ListingBuilder) listingComponent(
 					Go()).
 				Class("ma-0 pa-0 mr-6")
 		}
-		dialogHeadbar = VAppBar(
+		dialogHeaderBar = VAppBar(
 			VToolbarTitle("").
 				Children(h.Text(title)),
 			VSpacer(),
@@ -261,7 +261,7 @@ func (b *ListingBuilder) listingComponent(
 	}
 
 	return VContainer(
-		dialogHeadbar,
+		dialogHeaderBar,
 		tabsAndActionsBar,
 		h.Div(
 			VCard(
@@ -293,7 +293,7 @@ func getSelectedIds(ctx *web.EventContext) (selected []string) {
 }
 
 func (b *ListingBuilder) bulkPanel(
-	bulk *ActionBuilder,
+	bulk *BulkActionBuilder,
 	selectedIds []string,
 	processedSelectedIds []string,
 	ctx *web.EventContext,
@@ -395,13 +395,18 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 		onOK.URL(ctx.R.RequestURI)
 	}
 
+	var comp h.HTMLComponent
+	if action.compFunc != nil {
+		comp = action.compFunc("", ctx)
+	}
+
 	return VCard(
 		VCardTitle(
 			h.Text(action.NameLabel.label),
 		),
 		VCardText(
 			errComp,
-			action.compFunc([]string{}, ctx), // because action and bulk action shared the same func, so pass blank slice here
+			comp,
 		),
 		VCardActions(
 			VSpacer(),
@@ -422,12 +427,16 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := MustGetMessages(ctx.R)
 	id := ctx.R.FormValue(ParamID)
+	promptID := id
+	if v := ctx.R.FormValue("prompt_id"); v != "" {
+		promptID = v
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: VDialog(
 			VCard(
-				VCardTitle(h.Text(msgr.DeleteConfirmationText(id))),
+				VCardTitle(h.Text(msgr.DeleteConfirmationText(promptID))),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
@@ -475,7 +484,7 @@ func (b *ListingBuilder) openBulkActionDialog(ctx *web.EventContext) (r web.Even
 	msgr := MustGetMessages(ctx.R)
 	selected := getSelectedIds(ctx)
 	bulkName := ctx.R.URL.Query().Get(bulkPanelOpenParamName)
-	bulk := getAction(b.bulkActions, bulkName)
+	bulk := getBulkAction(b.bulkActions, bulkName)
 
 	if bulk == nil {
 		err = errors.New("cannot find requested action")
@@ -515,7 +524,7 @@ func (b *ListingBuilder) openBulkActionDialog(ctx *web.EventContext) (r web.Even
 }
 
 func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventResponse, err error) {
-	bulk := getAction(b.bulkActions, ctx.R.FormValue(ParamBulkActionName))
+	bulk := getBulkAction(b.bulkActions, ctx.R.FormValue(ParamBulkActionName))
 	if bulk == nil {
 		panic("bulk required")
 	}
@@ -576,23 +585,21 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 	return
 }
 
-func (b ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResponse, err error) {
 	action := getAction(b.actions, ctx.R.FormValue(ParamListingActionName))
 	if action == nil {
 		panic("action required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermListingActions, action.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(PermDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
 
-	err1 := action.updateFunc([]string{}, ctx)
-
-	if err1 != nil {
-		if _, ok := err1.(*web.ValidationErrors); !ok {
+	if err := action.updateFunc("", ctx); err != nil {
+		if _, ok := err.(*web.ValidationErrors); !ok {
 			vErr := &web.ValidationErrors{}
-			vErr.GlobalError(err1.Error())
+			vErr.GlobalError(err.Error())
 			ctx.Flash = vErr
 		}
 	}
@@ -705,7 +712,7 @@ func (b *ListingBuilder) selectColumnsBtn(
 	)
 
 	for _, f := range b.fields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		originalColumns = append(originalColumns, f.name)
@@ -1274,7 +1281,7 @@ func (b *ListingBuilder) getTableComponents(
 	dataTable = sDataTable
 
 	for _, f := range displayFields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		f = b.getFieldOrDefault(f.name) // fill in empty compFunc and setter func with default
@@ -1428,6 +1435,7 @@ func (b *ListingBuilder) actionsComponent(
 			OffsetY(true).
 			AllowOverflow(true))
 	}
+
 	return h.Components(actionBtns...)
 }
 

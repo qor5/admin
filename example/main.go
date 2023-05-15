@@ -16,7 +16,7 @@ func main() {
 	if len(port) == 0 {
 		port = "9000"
 	}
-	fmt.Println("Served at http://localhost:" + port + "/admin")
+	fmt.Println("Served at http://localhost:" + port)
 	http.Handle("/",
 		middleware.RequestID(
 			middleware.Logger(

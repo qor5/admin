@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -27,15 +28,15 @@ func (p *Product) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
 }
 
-func (p *Product) PrimaryColumnValuesBySlug(slug string) [][]string {
+func (p *Product) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
 
-	return [][]string{
-		{"id", segs[0]},
-		{"version", segs[1]},
+	return map[string]string{
+		"id":      segs[0],
+		"version": segs[1],
 	}
 }
 
@@ -45,4 +46,8 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 
 func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	return
+}
+
+func (p *Product) PermissionRN() []string {
+	return []string{"products", strconv.Itoa(int(p.ID)), p.Code, p.Version.Version}
 }

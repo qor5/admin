@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/web"
 	"gorm.io/gorm"
 )
 
@@ -326,6 +326,15 @@ func (ab *ActivityBuilder) AddEditRecord(creator interface{}, now interface{}, d
 func (ab *ActivityBuilder) AddEditRecordWithOld(creator interface{}, old, now interface{}, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
 		return mb.AddEditRecordWithOld(creator, old, now, db)
+	}
+
+	return fmt.Errorf("can't find model builder for %v", now)
+}
+
+// AddEditRecordWithOldAndContext add edit record
+func (ab *ActivityBuilder) AddEditRecordWithOldAndContext(ctx context.Context, old, now interface{}) error {
+	if mb, ok := ab.GetModelBuilder(now); ok {
+		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.getDBFromContext(ctx))
 	}
 
 	return fmt.Errorf("can't find model builder for %v", now)

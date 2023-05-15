@@ -3,11 +3,16 @@ package gormop
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/web"
+)
+
+var (
+	wildcardReg = regexp.MustCompile(`[%_]`)
 )
 
 func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
@@ -31,7 +36,8 @@ func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchPar
 		var args []interface{}
 		for _, c := range params.KeywordColumns {
 			segs = append(segs, fmt.Sprintf("%s %s ?", c, ilike))
-			args = append(args, fmt.Sprintf("%%%s%%", params.Keyword))
+			kw := wildcardReg.ReplaceAllString(params.Keyword, `\$0`)
+			args = append(args, fmt.Sprintf("%%%s%%", kw))
 		}
 		wh = wh.Where(strings.Join(segs, " OR "), args...)
 	}
@@ -77,8 +83,8 @@ func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *
 
 	if slugger, ok := obj.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(id)
-		for _, cond := range cs {
-			wh = wh.Where(fmt.Sprintf("%s = ?", cond[0]), cond[1])
+		for key, value := range cs {
+			wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
 		}
 	} else {
 		wh = wh.Where("id =  ?", id)

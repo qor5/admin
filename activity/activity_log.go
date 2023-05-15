@@ -11,7 +11,7 @@ const (
 	ActivityDelete = "Delete"
 )
 
-type CreatorInferface interface {
+type CreatorInterface interface {
 	GetID() uint
 	GetName() string
 }

@@ -42,6 +42,7 @@ type VersionInterface interface {
 	SetVersion(v string)
 	GetVersionName() string
 	SetVersionName(v string)
+	CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error)
 }
 
 type ScheduleInterface interface {

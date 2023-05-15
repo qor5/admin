@@ -13,6 +13,23 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
     steps:
     - uses: actions/checkout@v3
 
@@ -24,6 +41,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        sudo apt-get update
         sudo apt-get -y install libvips-dev
 
     - name: Build
@@ -31,3 +49,5 @@ jobs:
 
     - name: Test
       run: go test -v -p=1 -count=1 ./...
+      env:
+        DBURL: "postgres://postgres:postgres@localhost:5432/postgres"

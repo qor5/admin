@@ -14,31 +14,31 @@ var _ worker.QorJobInterface = &QorJobInterfaceMock{}
 
 // QorJobInterfaceMock is a mock implementation of worker.QorJobInterface.
 //
-// 	func TestSomethingThatUsesQorJobInterface(t *testing.T) {
+//	func TestSomethingThatUsesQorJobInterface(t *testing.T) {
 //
-// 		// make and configure a mocked worker.QorJobInterface
-// 		mockedQorJobInterface := &QorJobInterfaceMock{
-// 			AddLogFunc: func(s string) error {
-// 				panic("mock out the AddLog method")
-// 			},
-// 			AddLogfFunc: func(format string, a ...interface{}) error {
-// 				panic("mock out the AddLogf method")
-// 			},
-// 			GetJobInfoFunc: func() (*worker.JobInfo, error) {
-// 				panic("mock out the GetJobInfo method")
-// 			},
-// 			SetProgressFunc: func(v uint) error {
-// 				panic("mock out the SetProgress method")
-// 			},
-// 			SetProgressTextFunc: func(s string) error {
-// 				panic("mock out the SetProgressText method")
-// 			},
-// 		}
+//		// make and configure a mocked worker.QorJobInterface
+//		mockedQorJobInterface := &QorJobInterfaceMock{
+//			AddLogFunc: func(s string) error {
+//				panic("mock out the AddLog method")
+//			},
+//			AddLogfFunc: func(format string, a ...interface{}) error {
+//				panic("mock out the AddLogf method")
+//			},
+//			GetJobInfoFunc: func() (*worker.JobInfo, error) {
+//				panic("mock out the GetJobInfo method")
+//			},
+//			SetProgressFunc: func(v uint) error {
+//				panic("mock out the SetProgress method")
+//			},
+//			SetProgressTextFunc: func(s string) error {
+//				panic("mock out the SetProgressText method")
+//			},
+//		}
 //
-// 		// use mockedQorJobInterface in code that requires worker.QorJobInterface
-// 		// and then make assertions.
+//		// use mockedQorJobInterface in code that requires worker.QorJobInterface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type QorJobInterfaceMock struct {
 	// AddLogFunc mocks the AddLog method.
 	AddLogFunc func(s string) error
@@ -108,7 +108,8 @@ func (mock *QorJobInterfaceMock) AddLog(s string) error {
 
 // AddLogCalls gets all the calls that were made to AddLog.
 // Check the length with:
-//     len(mockedQorJobInterface.AddLogCalls())
+//
+//	len(mockedQorJobInterface.AddLogCalls())
 func (mock *QorJobInterfaceMock) AddLogCalls() []struct {
 	S string
 } {
@@ -141,7 +142,8 @@ func (mock *QorJobInterfaceMock) AddLogf(format string, a ...interface{}) error 
 
 // AddLogfCalls gets all the calls that were made to AddLogf.
 // Check the length with:
-//     len(mockedQorJobInterface.AddLogfCalls())
+//
+//	len(mockedQorJobInterface.AddLogfCalls())
 func (mock *QorJobInterfaceMock) AddLogfCalls() []struct {
 	Format string
 	A      []interface{}
@@ -171,7 +173,8 @@ func (mock *QorJobInterfaceMock) GetJobInfo() (*worker.JobInfo, error) {
 
 // GetJobInfoCalls gets all the calls that were made to GetJobInfo.
 // Check the length with:
-//     len(mockedQorJobInterface.GetJobInfoCalls())
+//
+//	len(mockedQorJobInterface.GetJobInfoCalls())
 func (mock *QorJobInterfaceMock) GetJobInfoCalls() []struct {
 } {
 	var calls []struct {
@@ -200,7 +203,8 @@ func (mock *QorJobInterfaceMock) SetProgress(v uint) error {
 
 // SetProgressCalls gets all the calls that were made to SetProgress.
 // Check the length with:
-//     len(mockedQorJobInterface.SetProgressCalls())
+//
+//	len(mockedQorJobInterface.SetProgressCalls())
 func (mock *QorJobInterfaceMock) SetProgressCalls() []struct {
 	V uint
 } {
@@ -231,7 +235,8 @@ func (mock *QorJobInterfaceMock) SetProgressText(s string) error {
 
 // SetProgressTextCalls gets all the calls that were made to SetProgressText.
 // Check the length with:
-//     len(mockedQorJobInterface.SetProgressTextCalls())
+//
+//	len(mockedQorJobInterface.SetProgressTextCalls())
 func (mock *QorJobInterfaceMock) SetProgressTextCalls() []struct {
 	S string
 } {

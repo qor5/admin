@@ -1,31 +1,35 @@
 package views
 
 import (
-	"fmt"
+	"context"
 	"reflect"
-	"strings"
 
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
 	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/gorm2op"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/utils"
+	v "github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 const (
-	Localize   = "l10n_Localize"
-	DoLocalize = "l10n_DoLocalize"
+	Localize   = "l10n_LocalizeEvent"
+	DoLocalize = "l10n_DoLocalizeEvent"
+
+	FromID      = "l10n_DoLocalize_FromID"
+	FromVersion = "l10n_DoLocalize_FromVersion"
+	FromLocale  = "l10n_DoLocalize_FromLocale"
+
+	LocalizeFrom = "Localize From"
+	LocalizeTo   = "Localize To"
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb))
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
 }
 
 type SelectLocale struct {
@@ -37,17 +41,14 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		//versionName := segs[1]
 		paramID := ctx.R.FormValue(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
+		id := cs["id"]
 
-		//todo get current locale
-		fromLocale := lb.GetCorrectLocale(ctx.R)
+		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
 
-		//todo search distinct locale_code except current locale
 		var obj = mb.NewModelSlice()
-		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(obj).Error
 		if err != nil {
 			return
 		}
@@ -56,14 +57,14 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		for i := 0; i < vo.Len(); i++ {
 			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
 		}
-		toLocales := lb.GetSupportLocalesFromRequest(ctx.R)
+		toLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 		var selectLocales []SelectLocale
 		for _, locale := range toLocales {
 			if locale == fromLocale {
 				continue
 			}
-			if !utils.Contains(existLocales, lb.GetLocaleCode(locale)) || vo.Len() == 0 {
-				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
+			if !utils.Contains(existLocales, locale) || vo.Len() == 0 {
+				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: locale})
 			}
 		}
 
@@ -105,7 +106,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 							Attr("@click", web.Plaid().
 								EventFunc(DoLocalize).
 								Query(presets.ParamID, paramID).
-								Query("localize_from", lb.GetLocaleCode(fromLocale)).
+								Query("localize_from", fromLocale).
 								URL(ctx.R.URL.Path).
 								Go()),
 					),
@@ -120,65 +121,61 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		segs := strings.Split(ctx.R.FormValue("id"), "_")
-		id := segs[0]
-		paramID := ctx.R.FormValue("id")
-		from := ctx.R.FormValue("localize_from")
-		to, exist := ctx.R.Form["localize_to"]
-		if !exist {
+
+		fromParamID := ctx.R.FormValue(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)
+		fromID := cs["id"]
+		fromVersion := cs["version"]
+		fromLocale := cs["locale_code"]
+		to := make(map[string]struct{})
+		for _, v := range ctx.R.Form["localize_to"] {
+			for _, lc := range lb.GetSupportLocaleCodes() {
+				if v == lc {
+					to[v] = struct{}{}
+					break
+				}
+			}
+		}
+		if len(to) == 0 {
+			web.AppendVarsScripts(&r, "vars.localizeConfirmation = false")
 			return
 		}
 
 		var fromObj = mb.NewModel()
-		if err = reflectutils.Set(fromObj, "ID", id); err != nil {
-			return
-		}
-		if err = reflectutils.Set(fromObj, "LocaleCode", from); err != nil {
-			return
-		}
-		var isVersion bool
 
-		if publish.IsVersion(fromObj) {
-			isVersion = true
-			version := segs[1]
-			if err = reflectutils.Set(fromObj, "Version.Version", version); err != nil {
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj).Error; err != nil {
+			return
+		}
+
+		var toObjs []interface{}
+		defer func(fromObj interface{}) {
+			if ab == nil {
 				return
 			}
-		}
-
-		gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx).First(fromObj)
-
+			if len(toObjs) > 0 {
+				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
+					return
+				}
+				for _, toObj := range toObjs {
+					if err = ab.AddCustomizedRecord(LocalizeTo, false, ctx.R.Context(), toObj); err != nil {
+						return
+					}
+				}
+			}
+		}(reflect.Indirect(reflect.ValueOf(fromObj)).Interface())
 		me := mb.Editing()
 
-		for _, toLocale := range to {
+		for toLocale, _ := range to {
 			var toObj = mb.NewModel()
-
-			if err = reflectutils.Set(toObj, "ID", id); err != nil {
+			var fakeToObj = fromObj
+			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {
 				return
 			}
 
-			if isVersion {
-				date := db.NowFunc().Format("2006-01-02")
-				var count int64
-				gorm2op.PrimarySluggerWhere(db, mb.NewModel(), paramID, ctx, "version").
-					Where("version like ?", date+"%").
-					Order("version DESC").
-					Count(&count)
-				versionName := fmt.Sprintf("%s-v%02v", date, count+1)
-				if err = reflectutils.Set(toObj, "Version.Version", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.VersionName", versionName); err != nil {
-					return
-				}
-				if err = reflectutils.Set(toObj, "Version.ParentVersion", ""); err != nil {
-					return
-				}
-			}
-
-			if err = reflectutils.Set(toObj, "LocaleCode", toLocale); err != nil {
+			toParamID := fakeToObj.(presets.SlugEncoder).PrimarySlug()
+			if err = utils.SetPrimaryKeys(fromObj, toObj, db, toParamID); err != nil {
 				return
 			}
 
@@ -193,9 +190,15 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 				}
 			}
 
-			if err = db.Save(toObj).Error; err != nil {
+			newContext := context.WithValue(ctx.R.Context(), FromID, fromID)
+			newContext = context.WithValue(newContext, FromVersion, fromVersion)
+			newContext = context.WithValue(newContext, FromLocale, fromLocale)
+			ctx.R = ctx.R.WithContext(newContext)
+
+			if err = me.Saver(toObj, toParamID, ctx); err != nil {
 				return
 			}
+			toObjs = append(toObjs, toObj)
 		}
 
 		presets.ShowMessage(&r, MustGetTranslation(ctx.R, "SuccessfullyLocalized"), "")
