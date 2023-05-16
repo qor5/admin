@@ -21,7 +21,7 @@ import (
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	db, err = gorm.Open(sqlite.Open("/tmp/worker_integration_test.db"), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
