@@ -152,7 +152,12 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 
 			var detailElems []h.HTMLComponent
 			detailElems = append(detailElems, vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffDetail)),
+				vuetify.VCardTitle(
+					vuetify.VBtn("").Children(
+						vuetify.VIcon("arrow_back").Class("pr-2").Small(true),
+					).Icon(true).Attr("@click", "window.history.back()"),
+					h.Text(msgr.DiffDetail),
+				),
 				vuetify.VSimpleTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
