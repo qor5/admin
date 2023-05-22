@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
-	github.com/aws/aws-sdk-go v1.44.264
+	github.com/aws/aws-sdk-go v1.44.265
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gen2brain/go-unarr v0.1.6
@@ -32,7 +32,7 @@ require (
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testingutils v0.0.0-20220314083015-b74d1aa8ac8a
-	github.com/thoas/go-funk v0.9.3
+	github.com/thoas/go-funk v0.9.2
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f
 	github.com/wcharczuk/go-chart/v2 v2.1.0
@@ -75,7 +75,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/stretchr/testify v1.8.3 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect

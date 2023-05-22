@@ -14,6 +14,7 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"
+	"github.com/thoas/go-funk"
 )
 
 type Company struct {
@@ -974,4 +975,19 @@ func TestFieldsBuilder(t *testing.T) {
 
 	}
 
+}
+
+func TestGoFunk(t *testing.T) {
+	depts := []*Department{
+		{Name: "1"},
+		{Name: "2"},
+	}
+
+	funk.ForEach(depts, func(obj *Department) {
+		obj.Name = "3"
+	})
+
+	funk.ForEach(depts, func(obj interface{}) {
+		obj.(*Department).Name = "3"
+	})
 }
