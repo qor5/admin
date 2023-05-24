@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// @snippet_begin(PublishSchedule)
 type Schedule struct {
 	ScheduledStartAt *time.Time `gorm:"index"`
 	ScheduledEndAt   *time.Time `gorm:"index"`
@@ -11,6 +12,8 @@ type Schedule struct {
 	ActualStartAt *time.Time
 	ActualEndAt   *time.Time
 }
+
+// @snippet_end
 
 func (schedule Schedule) GetScheduledStartAt() *time.Time {
 	return schedule.ScheduledStartAt
