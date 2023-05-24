@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -18,12 +19,12 @@ import (
 	publish_view "github.com/qor5/admin/publish/views"
 	"github.com/qor5/x/perm"
 	"github.com/theplant/gofixtures"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("/tmp/page_builder_integration.db"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -38,9 +39,9 @@ func TestEditor(t *testing.T) {
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
-INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
-INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (1,  1, 'v1','International', 'Header', 1, 1);
-INSERT INTO container_headers (color, id) VALUES ('black', 1);
+INSERT INTO page_builder_pages ( version, locale_code, title, slug) VALUES ( 'v1','International', '123', '123');
+INSERT INTO page_builder_containers ( page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (  1, 'v1','International', 'Header', 1, 1);
+INSERT INTO container_headers (color) VALUES ('black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
 
@@ -79,7 +80,7 @@ func TestUpdatePage(t *testing.T) {
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
-INSERT INTO page_builder_pages (id, title, slug) VALUES (1, '123', '123');
+INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', '123');
 `, []string{"page_builder_pages"}),
 	).TruncatePut(sdb)
 

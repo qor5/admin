@@ -3,10 +3,10 @@ package login
 import (
 	"fmt"
 
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
-	"github.com/qor5/admin/presets"
 )
 
 const (
@@ -63,8 +63,17 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 		err = b.ChangePassword(ctx.R, oldPassword, password, confirmPassword, otp)
 		if err != nil {
 			msg := msgr.ErrorSystemError
-			if ve, ok := err.(*login.ValidationError); ok {
-				msg = ve.Msg
+			var color string
+			if ne, ok := err.(*login.NoticeError); ok {
+				msg = ne.Message
+				switch ne.Level {
+				case login.NoticeLevel_Info:
+					color = "info"
+				case login.NoticeLevel_Warn:
+					color = "warning"
+				case login.NoticeLevel_Error:
+					color = "error"
+				}
 			} else {
 				switch err {
 				case login.ErrWrongPassword:
@@ -78,9 +87,10 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 				case login.ErrTOTPCodeHasBeenUsed:
 					msg = msgr.ErrorTOTPCodeReused
 				}
+				color = "error"
 			}
 
-			presets.ShowMessage(&r, msg, "error")
+			presets.ShowMessage(&r, msg, color)
 			return r, nil
 		}
 

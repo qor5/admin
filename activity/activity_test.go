@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/web"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -49,12 +50,12 @@ type (
 
 func init() {
 	var err error
-	db, err = gorm.Open(sqlite.Open("/tmp/activity.db"), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
 
-	if err := db.AutoMigrate(&TestActivityModel{}); err != nil {
+	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
 		panic(err)
 	}
 }

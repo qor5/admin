@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	"github.com/qor/oss"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/microsite"
 	"github.com/qor5/admin/microsite/utils"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/publish"
 	publish_view "github.com/qor5/admin/publish/views"
+	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/web"
+	"github.com/qor5/x/i18n"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -43,7 +43,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 						h.Div(
 							h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 							h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName),
-						).Class("v-text-field__slot"),
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
 
@@ -135,7 +135,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					h.Div(
 						h.Div(
 							content...,
-						).Class("v-text-field__slot"),
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},

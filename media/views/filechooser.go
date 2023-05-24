@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -78,8 +78,27 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
+
+	type selectItem struct {
+		Text  string
+		Value string
+	}
+	const (
+		orderByKey           = "order_by"
+		orderByCreatedAt     = "created_at"
+		orderByCreatedAtDESC = "created_at_desc"
+	)
+	orderBy := ctx.R.URL.Query().Get(orderByKey)
+
 	var files []*media_library.MediaLibrary
-	wh := db.Model(&media_library.MediaLibrary{}).Order("created_at DESC")
+	wh := db.Model(&media_library.MediaLibrary{})
+	switch orderBy {
+	case orderByCreatedAt:
+		wh = wh.Order("created_at")
+	default:
+		orderBy = orderByCreatedAtDESC
+		wh = wh.Order("created_at DESC")
+	}
 	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
 	if currentPageInt == 0 {
 		currentPageInt = 1
@@ -141,7 +160,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 									Go()),
 					).
 						Height(200).
-						Class("d-flex align-center justify-center").
+						Class("d-flex align-center justify-center pa-6").
 						Attr("role", "button").
 						Attr("v-ripple", true),
 				),
@@ -168,6 +187,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
+		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
 
 		row.AppendChildren(
 			VCol(
@@ -184,7 +204,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
 										Attr("v-if", fmt.Sprintf("locals.%s", croppingVar)),
 								),
-							).Src(f.File.URL("@qor_preview")).Height(200),
+							).Src(f.File.URL(media_library.QorPreviewSizeName)).Height(200).Contain(true),
 						).Else(
 							fileThumb(f.File.FileName),
 						),
@@ -195,9 +215,11 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							Query("field", field).
 							Query("id", fmt.Sprint(f.ID)).
 							FieldValue("cfg", h.JSONString(cfg)).
-							Go(), field != mediaLibraryListField),
+							Go(), field != mediaLibraryListField).
+						AttrIf("@click", imgClickVars, field == mediaLibraryListField),
 					VCardText(
-						h.A().Text(f.File.FileName).Href(f.File.URL("original")).Target("_blank"),
+						h.A().Text(f.File.FileName).
+							Attr("@click", imgClickVars),
 						h.Input("").
 							Style("width: 100%;").
 							Placeholder(msgr.DescriptionForAccessibility).
@@ -242,6 +264,23 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			Timeout(5000),
 		web.Scope(
 			VContainer(
+				h.If(field == mediaLibraryListField,
+					VRow(
+						VCol(
+							VSelect().Items([]selectItem{
+								{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
+								{Text: msgr.UploadedAt, Value: orderByCreatedAt},
+							}).ItemText("Text").ItemValue("Value").
+								Label(msgr.OrderBy).
+								FieldName(orderByKey).Value(orderBy).
+								Attr("@change",
+									web.GET().PushState(true).
+										Query(orderByKey, web.Var("[$event]")).Go(),
+								).
+								Dense(true).Solo(true).Class("mb-n8"),
+						).Cols(3),
+					).Justify("end"),
+				),
 				row,
 				VRow(
 					VCol().Cols(1),
@@ -260,7 +299,18 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				VCol().Cols(1),
 			).Fluid(true),
 		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).VSlot("{ locals }"),
-	).Attr(web.InitContextVars, `{snackbarShow: false}`)
+		VOverlay(
+			h.Img("").Attr(":src", "vars.isImage? vars.mediaShow: ''").
+				Style("max-height: 80vh; max-width: 80vw; background: rgba(0, 0, 0, 0.5)"),
+			h.Div(
+				h.A(
+					VIcon("info").Small(true).Class("mb-1"),
+					h.Text("{{vars.mediaName}}"),
+				).Attr(":href", "vars.mediaShow? vars.mediaShow: ''").Target("_blank").
+					Class("white--text").Style("text-decoration: none;"),
+			).Class("d-flex align-center justify-center pt-2"),
+		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
+	).Attr(web.InitContextVars, `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {

@@ -301,10 +301,6 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 }
 
 func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
-	childToObjs := reflectutils.MustGet(toObj, f.name)
-	if childToObjs == nil {
-		return
-	}
 	if !removeDeletedAndSort {
 		if modifiedIndexes.deletedValues != nil && modifiedIndexes.deletedValues[formKey] != nil {
 			for _, idx := range modifiedIndexes.deletedValues[formKey] {
@@ -315,6 +311,11 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 				}
 			}
 		}
+		return
+	}
+
+	childToObjs := reflectutils.MustGet(toObj, f.name)
+	if childToObjs == nil {
 		return
 	}
 

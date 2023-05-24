@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/web"
+	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
@@ -24,11 +25,14 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		return
 	}
 	var localePath string
-	if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
-		if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil {
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); isLocalizable && l10nON {
+	if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil && l10nON {
+		if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
+			if locale, ok := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); ok {
 				localePath = l10nBuilder.GetLocalePath(locale)
 			}
+		}
+		if localeCode, err := reflectutils.Get(p, "LocaleCode"); err == nil {
+			localePath = l10nBuilder.GetLocalePath(localeCode.(string))
 		}
 	}
 
@@ -60,7 +64,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.getPublishUrl(localePath, categoryPath),
+			Url:      liveRecord.GetOnlineUrl(),
 			IsDelete: true,
 		})
 	}

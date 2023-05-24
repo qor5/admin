@@ -63,18 +63,26 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return "/"
 		}).
 		MaxRetryCount(5).
-		NotifyUserOfResetPasswordLinkFunc(func(user interface{}, resetLink string) error {
-			return nil
-		}).
-		PasswordValidationFunc(func(password string) (message string, ok bool) {
-			if len(password) < 12 {
-				return "Password cannot be less than 12 characters", false
-			}
-			return "", true
-		}).
-		RecaptchaConfig(login.RecaptchaConfig{
+		Recaptcha(true, login.RecaptchaConfig{
 			SiteKey:   os.Getenv("RECAPTCHA_SITE_KEY"),
 			SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
+		}).
+		BeforeSetPassword(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+			u := user.(*models.User)
+			if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+				return &login.NoticeError{
+					Level:   login.NoticeLevel_Error,
+					Message: "Cannot change password for public user",
+				}
+			}
+			password := extraVals[0].(string)
+			if len(password) < 12 {
+				return &login.NoticeError{
+					Level:   login.NoticeLevel_Error,
+					Message: "Password cannot be less than 12 characters",
+				}
+			}
+			return nil
 		}).
 		AfterLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if err := ab.AddCustomizedRecord("log-in", false, r.Context(), user); err != nil {
@@ -87,7 +95,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 
 			return nil
 		}).
-		AfterOAuthComplete(func(r *http.Request, user interface{}, vals ...interface{}) error {
+		AfterOAuthComplete(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			u := user.(goth.User)
 			if err := db.Where("o_auth_provider = ? and o_auth_identifier = ?", u.Provider, u.Email).First(&models.User{}).
 				Error; err == gorm.ErrRecordNotFound {
@@ -121,7 +129,10 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return nil
 		}).
 		AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
+			if user != nil {
+				return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
+			}
+			return nil
 		}).
 		AfterUserLocked(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
@@ -137,7 +148,9 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 
 			return nil
 		}).
-		AfterSendResetPasswordLink(func(r *http.Request, user interface{}, _ ...interface{}) error {
+		AfterConfirmSendResetPasswordLink(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+			resetLink := extraVals[0]
+			_ = resetLink
 			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
 		}).
 		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
@@ -146,8 +159,9 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
 		}).
-		AfterExtendSession(func(r *http.Request, user interface{}, vals ...interface{}) error {
-			if err := updateCurrentSessionLog(r, user.(*models.User).ID, vals[0].(string)); err != nil {
+		AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+			oldToken := extraVals[0].(string)
+			if err := updateCurrentSessionLog(r, user.(*models.User).ID, oldToken); err != nil {
 				return err
 			}
 
@@ -155,7 +169,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		}).
 		AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return nil
-		}).TOTPEnabled(false).MaxRetryCount(0)
+		}).TOTP(false).MaxRetryCount(0)
 
 	vh = loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))

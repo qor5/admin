@@ -348,17 +348,19 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsActive"),
+				Label: msgr.FilterTabsActive,
 				Query: url.Values{"status": []string{"active"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -474,14 +476,16 @@ func configureFavorPostSelectDialog(pb *presets.Builder) {
 	})
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},

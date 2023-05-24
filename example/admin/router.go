@@ -8,7 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/example/models"
 	"github.com/qor5/web"
-	"github.com/qor5/x/login"
 	"github.com/qor5/x/sitemap"
 )
 
@@ -68,7 +67,7 @@ func Router() http.Handler {
 
 	cr := chi.NewRouter()
 	cr.Use(
-		login.Authenticate(loginBuilder),
+		loginBuilder.Middleware(),
 		validateSessionToken(),
 		isOAuthInfoCompleted(),
 		withRoles(db),

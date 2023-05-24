@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ var (
 type Config struct {
 	pb          *presets.Builder
 	pageBuilder *pagebuilder.Builder
+	Publisher   *publish.Builder
 }
 
 func NewConfig() Config {
@@ -99,6 +101,7 @@ func NewConfig() Config {
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"
 
 		now := time.Now()
@@ -107,21 +110,21 @@ func NewConfig() Config {
 		hours := diff / 3600
 		minutes := (diff % 3600) / 60
 		seconds := diff % 60
-		countdown := fmt.Sprintf("%d:%d:%02d", hours, minutes, seconds)
+		countdown := fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				v.VCol(h.H1(i18n.T(ctx.R, I18nExampleKey, "Demo"))).Class("pt-4"),
+				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			).Dense(true),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
-					h.Span(i18n.T(ctx.R, I18nExampleKey, "DBResetTipLabel")),
+					h.Span(msgr.DBResetTipLabel),
 					v.VIcon("schedule").XSmall(true).Left(true),
 					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
 				v.VDivider(),
-				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours}:${minutes}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
+				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
 	}).ProfileFunc(profile).
@@ -277,14 +280,16 @@ func NewConfig() Config {
 	})
 
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -405,14 +410,16 @@ func NewConfig() Config {
 	})
 
 	pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		return []*presets.FilterTab{
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsAll"),
+				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
 			{
-				Label: i18n.T(ctx.R, I18nExampleKey, "FilterTabsHasUnreadNotes"),
+				Label: msgr.FilterTabsHasUnreadNotes,
 				ID:    "hasUnreadNotes",
 				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
@@ -422,8 +429,71 @@ func NewConfig() Config {
 	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
-	l.Listing("ID", "Title", "Status")
-	l.Editing("Status", "Schedule", "Title")
+	{
+		l.Listing("ID", "Title", "Status")
+		ed := l.Editing("Status", "Schedule", "Title", "DetailPath", "ListPath")
+		ed.Field("DetailPath").ComponentFunc(
+			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+				this := obj.(*models.ListModel)
+
+				if this.GetStatus() != publish.StatusOnline {
+					return nil
+				}
+
+				var content []h.HTMLComponent
+
+				content = append(content,
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+				)
+				domain := os.Getenv("PUBLISH_URL")
+				if this.OnlineUrl != "" {
+					p := this.OnlineUrl
+					content = append(content, h.A(h.Text(p)).Href(domain+p))
+				}
+
+				return h.Div(
+					h.Div(
+						h.Div(
+							content...,
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
+			},
+		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
+
+		ed.Field("ListPath").ComponentFunc(
+			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+				this := obj.(*models.ListModel)
+
+				if this.GetStatus() != publish.StatusOnline || this.GetPageNumber() == 0 {
+					return nil
+				}
+
+				var content []h.HTMLComponent
+
+				content = append(content,
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
+				)
+				domain := os.Getenv("PUBLISH_URL")
+				if this.OnlineUrl != "" {
+					p := this.GetListUrl(strconv.Itoa(this.GetPageNumber()))
+					content = append(content, h.A(h.Text(p)).Href(domain+p))
+				}
+
+				return h.Div(
+					h.Div(
+						h.Div(
+							content...,
+						).Class("v-text-field__slot").Style("padding: 8px 0;"),
+					).Class("v-input__slot"),
+				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
+			},
+		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		})
+	}
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
@@ -458,9 +528,16 @@ func NewConfig() Config {
 
 	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
 
+	if os.Getenv("RESET_AND_IMPORT_INITIAL_DATA") == "true" {
+		tbs := GetNonIgnoredTableNames()
+		EmptyDB(db, tbs)
+		InitDB(db, tbs)
+	}
+
 	return Config{
 		pb:          b,
 		pageBuilder: pageBuilder,
+		Publisher:   publisher,
 	}
 }
 

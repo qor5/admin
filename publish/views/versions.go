@@ -40,11 +40,15 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 			selected = "all-versions"
 		}
 
+		var onlineVersionComp h.HTMLComponent
+		if currentVersion != nil {
+			onlineVersionComp = VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass)))
+		}
+
 		return h.Div(
 			VCard(
 				VCardTitle(h.Text(msgr.OnlineVersion)),
-				h.If(currentVersion.VersionName != "",
-					VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass)))),
+				onlineVersionComp,
 			),
 			h.Br(),
 			VCard(
@@ -87,22 +91,22 @@ type versionListTableItem struct {
 	ParamID     string
 }
 
-func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion versionListTableItem, err error) {
+func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion *versionListTableItem, err error) {
 	var obj = mb.NewModel()
 	slugger := obj.(presets.SlugDecoder)
 	paramID := ctx.R.FormValue(presets.ParamID)
 	if paramID == "" {
-		return nil, currentVersion, nil
+		return nil, nil, nil
 	}
 	cs := slugger.PrimaryColumnValuesBySlug(paramID)
 	id, currentVersionName := cs["id"], cs["version"]
 	if id == "" || currentVersionName == "" {
-		return nil, currentVersion, fmt.Errorf("invalid version id: %s", paramID)
+		return nil, nil, fmt.Errorf("invalid version id: %s", paramID)
 	}
 
 	var (
-		versions      []versionListTableItem
-		namedVersions []versionListTableItem
+		versions      []*versionListTableItem
+		namedVersions []*versionListTableItem
 		activeClass   = "vx-list-item--active primary--text"
 		selected      = ctx.R.FormValue("selected")
 		page          = ctx.R.FormValue("page")
@@ -132,7 +136,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	for i := 0; i < vO.Len(); i++ {
 		v := vO.Index(i).Interface()
 
-		var version versionListTableItem
+		version := &versionListTableItem{}
 		ID, _ := reflectutils.Get(v, "ID")
 		version.ID = fmt.Sprintf("%v", ID)
 		version.Version = v.(publish.VersionInterface).GetVersion()

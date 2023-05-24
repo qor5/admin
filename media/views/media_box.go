@@ -55,7 +55,8 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)
 
 	configList(b, db)
 }
@@ -374,7 +375,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 func MediaBoxListFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		mediaBox := field.Value(obj).(media_library.MediaBox)
-		return h.Td(h.Img("").Src(mediaBox.URL("@qor_preview")).Style("height: 48px;"))
+		return h.Td(h.Img("").Src(mediaBox.URL(media_library.QorPreviewSizeName)).Style("height: 48px;"))
 	}
 }
 

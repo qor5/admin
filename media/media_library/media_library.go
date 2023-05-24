@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"math"
 	"path"
 	"strings"
 
@@ -12,8 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var QorPeviewSizeName = "@qor_preview"
-var QorPeviewSize = &media.Size{Width: 200, Height: 200}
+var QorPreviewSizeName = "@qor_preview"
+var QorPreviewMaxSize = 200
 
 type MediaLibrary struct {
 	gorm.Model
@@ -75,8 +76,19 @@ func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size
 		return map[string]*media.Size{}
 	}
 
+	width := mediaLibraryStorage.Width
+	height := mediaLibraryStorage.Height
+	max := math.Max(float64(width), float64(height))
+	if int(max) > QorPreviewMaxSize {
+		ratio := float64(QorPreviewMaxSize) / max
+		width = int(float64(width) * ratio)
+		height = int(float64(height) * ratio)
+	}
 	var sizes = map[string]*media.Size{
-		QorPeviewSizeName: QorPeviewSize,
+		QorPreviewSizeName: {
+			Width:  width,
+			Height: height,
+		},
 	}
 
 	for key, value := range mediaLibraryStorage.Sizes {
