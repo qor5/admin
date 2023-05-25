@@ -451,13 +451,16 @@ func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool 
 		href = m.link
 	}
 	path := strings.TrimSuffix(ctx.R.URL.Path, "/")
+	if path == "" && href == "/" {
+		return true
+	}
 	if path == href {
 		return true
 	}
 	if href == b.prefix {
 		return false
 	}
-	if strings.HasPrefix(path, href) {
+	if href != "/" && strings.HasPrefix(path, href) {
 		return true
 	}
 
