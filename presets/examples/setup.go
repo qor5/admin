@@ -108,6 +108,10 @@ type Product struct {
 	OwnerName string
 }
 
+func (*Product) TableName() string {
+	return "preset_products"
+}
+
 func Preset1(db *gorm.DB) (r *presets.Builder) {
 	err := db.AutoMigrate(
 		&Customer{},

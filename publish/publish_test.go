@@ -14,7 +14,7 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor5/admin/publish"
 	"github.com/theplant/sliceutils"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -210,7 +210,7 @@ func (m *MockStorage) Delete(path string) error {
 }
 
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("/tmp/test_publish.db"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
