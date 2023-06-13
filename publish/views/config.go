@@ -152,7 +152,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			}
 		}
 
-		registerEventFuncs(db, m, publisher, ab)
+		RegisterEventFuncs(db, m, publisher, ab)
 	}
 
 	b.FieldDefaults(presets.LIST).

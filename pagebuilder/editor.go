@@ -46,6 +46,10 @@ const (
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
+
+	Device_Phone    = "phone"
+	Device_Tablet   = "tablet"
+	Device_Computer = "computer"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -156,16 +160,16 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
 	device = ctx.R.FormValue("device")
 	if len(device) == 0 {
-		device = "phone"
+		device = b.defaultDevice
 	}
 
 	switch device {
-	case "phone":
+	case Device_Phone:
 		style = "width: 414px;"
-	case "tablet":
+	case Device_Tablet:
 		style = "width: 768px;"
-	case "laptop":
-		style = "width: 1264px;"
+		//case Device_Computer:
+		//	style = "width: 1264px;"
 	}
 
 	return
@@ -275,9 +279,8 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 			if iframeHeightCookie != nil {
 				iframeValue = iframeHeightCookie.Value
 			}
-			r = VRow(
-				h.Div(
-					h.RawHTML(fmt.Sprintf(`
+			r = h.Div(
+				h.RawHTML(fmt.Sprintf(`
 						<iframe frameborder='0' scrolling='no' srcdoc="%s"
 							@load='
 								var height = $event.target.contentWindow.document.body.parentElement.offsetHeight+"px";
@@ -285,15 +288,15 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 								document.cookie="%s="+height;
 							'
 							style='width:100%%; display:block; border:none; padding:0; margin:0; height:%s;'></iframe>`,
-						strings.ReplaceAll(
-							h.MustString(r, ctx.R.Context()),
-							"\"",
-							"&quot;"),
-						iframeHeightName,
-						iframeValue,
-					)),
-				).Class("page-builder-container mx-auto").Attr("style", width),
-			)
+					strings.ReplaceAll(
+						h.MustString(r, ctx.R.Context()),
+						"\"",
+						"&quot;"),
+					iframeHeightName,
+					iframeValue,
+				)),
+			).Class("page-builder-container mx-auto").Attr("style", width)
+
 		}
 	}
 	return
@@ -380,20 +383,12 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r = web.Scope(
-		VAppBar(
-			VToolbarTitle("").Class("pl-2").
-				Children(h.Text(msgr.Containers)),
-			VSpacer(),
-			// VBtn("").Icon(true).Children(
-			//	VIcon("close"),
-			// ).Attr("@click.stop", "vars.presetsRightDrawer = false"),
-		).Color("white").Elevation(0).Dense(true),
-
 		VSheet(
 			VCard(
 				h.Tag("vx-draggable").
 					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
 					Attr("@end", web.Plaid().
+						URL(fmt.Sprintf("%s/editors", b.prefix)).
 						EventFunc(MoveContainerEvent).
 						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
 						Go()).Children(
@@ -413,6 +408,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 							).Class("my-2"),
 							VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}"))).Attr("@click",
 								web.Plaid().
+									URL(web.Var("item.url")).
 									EventFunc(ToggleContainerVisibilityEvent).
 									Query(paramContainerID, web.Var("item.param_id")).
 									Go(),
@@ -431,6 +427,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										VListItemTitle(h.Text("Rename")),
 									).Attr("@click",
 										web.Plaid().
+											URL(web.Var("item.url")).
 											EventFunc(RenameCotainerDialogEvent).
 											Query(paramContainerID, web.Var("item.param_id")).
 											Query(paramContainerName, web.Var("item.display_name")).
@@ -441,6 +438,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										VListItemIcon(VIcon("delete")).Class("pl-0 mr-2"),
 										VListItemTitle(h.Text("Delete")),
 									).Attr("@click", web.Plaid().
+										URL(web.Var("item.url")).
 										EventFunc(DeleteContainerConfirmationEvent).
 										Query(paramContainerID, web.Var("item.param_id")).
 										Query(paramContainerName, web.Var("item.display_name")).
@@ -451,6 +449,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										VListItemTitle(h.Text("Mark As Shared Container")),
 									).Attr("@click",
 										web.Plaid().
+											URL(web.Var("item.url")).
 											EventFunc(MarkAsSharedContainerEvent).
 											Query(paramContainerID, web.Var("item.param_id")).
 											Go(),
@@ -465,6 +464,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 						VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Text(true)),
 					).Attr("@click",
 						web.Plaid().
+							URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 							EventFunc(AddContainerDialogEvent).
 							Query(paramPageID, pageID).
 							Query(paramPageVersion, pageVersion).
@@ -560,6 +560,7 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 						Depressed(true).
 						Dark(true).
 						Attr("@click", web.Plaid().
+							URL(fmt.Sprintf("%s/editors", b.prefix)).
 							EventFunc(DeleteContainerEvent).
 							Query(paramContainerID, paramID).
 							Go()),
@@ -830,7 +831,9 @@ func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, e
 func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
-	okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+	okAction := web.Plaid().
+		URL(fmt.Sprintf("%s/editors", b.prefix)).
+		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: dialogPortalName,
 		Body: web.Scope(
@@ -885,6 +888,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							Text(true).
 							Color("primary").Attr("@click",
 							"locals.addContainerDialog = false;"+web.Plaid().
+								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 								EventFunc(AddContainerEvent).
 								Query(paramPageID, pageID).
 								Query(paramPageVersion, pageVersion).

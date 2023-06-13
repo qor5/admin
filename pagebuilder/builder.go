@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"goji.io/pat"
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
@@ -21,7 +24,7 @@ import (
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/publish/views"
 	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
+	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
@@ -68,6 +71,7 @@ type Builder struct {
 	preview           http.Handler
 	images            http.Handler
 	imagesPrefix      string
+	defaultDevice     string
 }
 
 const (
@@ -79,7 +83,7 @@ const (
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
-func New(db *gorm.DB, i18nB *i18n.Builder) *Builder {
+func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
 		&Template{},
@@ -100,18 +104,17 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	}
 
 	r := &Builder{
-		db:     db,
-		wb:     web.New(),
-		prefix: "/page_builder",
+		db:            db,
+		wb:            web.New(),
+		prefix:        prefix,
+		defaultDevice: Device_Computer,
 	}
-
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
-		URIPrefix(r.prefix).
+		URIPrefix(prefix).
 		LayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
-
 	type Editor struct {
 	}
 	r.ps.Model(&Editor{}).
@@ -152,6 +155,11 @@ func (b *Builder) Images(v http.Handler, imagesPrefix string) (r *Builder) {
 	return b
 }
 
+func (b *Builder) DefaultDevice(v string) (r *Builder) {
+	b.defaultDevice = v
+	return b
+}
+
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
@@ -164,29 +172,231 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	pm = pb.Model(&Page{})
 	b.mb = pm
 	pm.Listing("ID", "Title", "Slug")
+	dp := pm.Detailing("Overview")
+	dp.Field("Overview").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		mi := field.ModelInfo
+		p := obj.(*Page)
+		c := &Category{}
+		db.First(c, "id = ?", p.CategoryID)
+
+		overview := vx.DetailInfo(
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(p.Title).ZeroLabel("No Title")).Label("Title"),
+				vx.DetailField(vx.OptionalText(c.Path).ZeroLabel("No Category")).Label("Category"),
+			),
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(p.Slug).ZeroLabel("No Slug")).Label("Slug"),
+			),
+		)
+		var start string
+		if p.GetScheduledStartAt() != nil {
+			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
+		}
+		pageState := vx.DetailInfo(
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(p.GetStatus()).ZeroLabel("No State")).Label("State"),
+				vx.DetailField(vx.OptionalText(start).ZeroLabel("No Set")).Label("SchedulePublishTime"),
+			),
+		)
+		return VContainer(VRow(VCol(
+			vx.Card(overview).HeaderTitle("Overview").
+				Actions(
+					VBtn("Edit").
+						Depressed(true).
+						Attr("@click", web.POST().
+							EventFunc(actions.Edit).
+							Query(presets.ParamOverlay, actions.Dialog).
+							Query(presets.ParamID, p.PrimarySlug()).
+							URL(mi.PresetsPrefix()+"/pages").
+							Go(),
+						),
+				).Class("mb-4"),
+			vx.Card(pageState).HeaderTitle("Page State").
+				Actions(
+					VBtn("Edit").
+						Depressed(true).
+						Attr("@click", web.POST().
+							EventFunc(actions.Edit).
+							Query(presets.ParamOverlay, actions.Dialog).
+							Query(presets.ParamID, p.PrimarySlug()).
+							URL(mi.PresetsPrefix()+"/pages").
+							Go(),
+						),
+				).Class("mb-4"),
+		).Cols(8)))
+	})
+
+	oldDetailLayout := pb.GetDetailLayoutFunc()
+	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
+		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
+			if !strings.Contains(ctx.R.RequestURI, "/"+b.mb.Info().URIName()+"/") {
+				pr, err = oldDetailLayout(in, cfg)(ctx)
+				return
+			}
+
+			pb.InjectAssets(ctx)
+			// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
+			menu := pb.CreateMenus(ctx)
+
+			var profile h.HTMLComponent
+			if pb.GetProfileFunc() != nil {
+				profile = pb.GetProfileFunc()(ctx)
+			}
+
+			//msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*Messages)
+			id := pat.Param(ctx.R, "id")
+
+			if id == "" {
+				return pb.DefaultNotFoundPageFunc(ctx)
+			}
+			var obj = pm.NewModel()
+			obj, err = dp.GetFetchFunc()(obj, id, ctx)
+			if err != nil {
+				if err == presets.ErrRecordNotFound {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+				return
+			}
+
+			p := obj.(*Page)
+
+			var tabContent web.PageResponse
+			tab := ctx.R.FormValue("tab")
+			isContent := tab == "content"
+			activeTabIndex := 0
+			if isContent {
+				activeTabIndex = 1
+				ctx.R.Form.Set("id", strconv.Itoa(int(p.ID)))
+				ctx.R.Form.Set("version", p.GetVersion())
+				ctx.R.Form.Set("locale", p.GetLocale())
+				tabContent, err = b.PageContent(ctx)
+			} else {
+				tabContent, err = in(ctx)
+			}
+			if err == perm.PermissionDenied {
+				pr.Body = h.Text(perm.PermissionDenied.Error())
+				return pr, nil
+			}
+			if err != nil {
+				panic(err)
+			}
+			queries := url.Values{}
+			action := web.POST().
+				EventFunc(actions.Edit).
+				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamID, web.Var("arr[1]")).
+				Go()
+			pr.Body = VApp(
+				VNavigationDrawer(
+					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
+					VDivider(),
+					menu,
+				).App(true).
+					Fixed(true).
+					Value(true).
+					Attr("v-model", "vars.navDrawer").
+					Attr(web.InitContextVars, `{navDrawer: null}`),
+
+				VAppBar(
+					VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+					VTabs(
+						VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Queries(queries).Query("tab", web.Var("item.query")).PushState(true).Go()).
+							Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
+					).Class("v-tabs--centered").Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
+					VTextField().Dense(true).Outlined(true).Label("").Value(fmt.Sprintf("%d %s | %s", p.ID, p.GetVersionName(), p.GetStatus())).Attr("style", "top:13px;").AppendIcon("chevron_right"),
+					VBtn("Duplicate").Color("blue").Height(40).Attr("style", "right:13px;"),
+					VBtn("Publish").Color("purple").Height(40),
+				).Dark(true).
+					Color(presets.ColorPrimary).
+					App(true).
+					ClippedRight(true).
+					Fixed(true),
+
+				web.Portal().Name(presets.RightDrawerPortalName),
+				web.Portal().Name(presets.DialogPortalName),
+				web.Portal().Name(presets.DeleteConfirmPortalName),
+				web.Portal().Name(presets.DefaultConfirmDialogPortalName),
+				web.Portal().Name(presets.ListingDialogPortalName),
+				web.Portal().Name(dialogPortalName),
+				h.If(isContent, h.Script(`
+(function(){
+	let scrollLeft = 0;
+	let scrollTop = 0;
+	
+	function pause(duration) {
+		return new Promise(res => setTimeout(res, duration));
+	}
+	function backoff(retries, fn, delay = 100) {
+		fn().catch(err => retries > 1
+			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
+			: Promise.reject(err));
+	}
+
+	function restoreScroll() {
+		window.scroll({left: scrollLeft, top: scrollTop, behavior: "auto"});
+		if (window.scrollX == scrollLeft && window.scrollY == scrollTop) {
+			return Promise.resolve();
+		}
+		return Promise.reject();
+	}
+
+	window.addEventListener('fetchStart', (event) => {
+		scrollLeft = window.scrollX;
+		scrollTop = window.scrollY;
+	});
+	
+	window.addEventListener('fetchEnd', (event) => {
+		backoff(5, restoreScroll, 100);
+	});
+})()
+
+`),
+					vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
+function(e){
+	if (!e.data.split) {
+		return
+	}
+	let arr = e.data.split("_");
+	if (arr.length != 2) {
+		console.log(arr);
+		return
+	}
+	%s
+}`, action))),
+				VProgressLinear().
+					Attr(":active", "isFetching").
+					Attr("style", "position: fixed; z-index: 99").
+					Indeterminate(true).
+					Height(2).
+					Color(pb.GetProgressBarColor()),
+				h.Template(
+					VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+						Attr("v-model", "vars.presetsMessage.show").
+						Attr(":color", "vars.presetsMessage.color").
+						Timeout(2000).
+						Top(true),
+				).Attr("v-if", "vars.presetsMessage"),
+				VMain(
+					tabContent.Body.(h.HTMLComponent),
+				),
+			).Id("vt-app").
+				Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`).
+				Attr(web.InitContextLocals, fmt.Sprintf(`{activeTab:%d, tabs: [{label:"PAGE SETTINGS",query:"settings"},{label:"PAGE CONTENT",query:"content"}]}`, activeTabIndex))
+			return
+		}
+	})
+
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 	pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 
-	// list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	//	p := obj.(*Page)
-	//	return h.Td(
-	//		h.A().Children(
-	//			h.Text(fmt.Sprintf("Editor for %d", p.ID)),
-	//		).Href(fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())).
-	//			Target("_blank"),
-	//		VIcon("open_in_new").Size(16).Class("ml-1"),
-	//	)
-	// })
-
-	eb := pm.Editing("Status", "Schedule", "Title", "Slug", "CategoryID", "TemplateSelection", "EditContainer")
-
+	eb := pm.Editing("Title", "Slug", "CategoryID")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(c, db)
 		return
 	})
-
 	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -196,7 +406,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
 	})
-
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
@@ -499,7 +708,7 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 					h.Input("").Type("hidden").
 						Value(id).
 						Attr(web.VFieldName(templateSelectionID)...),
-					vuetifyx.VXReadonlyField().
+					vx.VXReadonlyField().
 						Label(msgr.SelectedTemplateLabel).
 						Children(
 							h.Text(fmt.Sprintf("%v (ID: %v)", name, id)),

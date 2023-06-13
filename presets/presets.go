@@ -35,6 +35,7 @@ type Builder struct {
 	permissionBuilder                     *perm.Builder
 	verifier                              *perm.Verifier
 	layoutFunc                            func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc)
+	detailLayoutFunc                      func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc)
 	dataOperator                          DataOperator
 	messagesFunc                          MessagesFunc
 	homePageFunc                          web.PageFunc
@@ -107,6 +108,7 @@ func New() *Builder {
 
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
+	r.detailLayoutFunc = r.defaultLayout
 	return r
 }
 
@@ -141,6 +143,19 @@ func (b *Builder) GetURIPrefix() string {
 func (b *Builder) LayoutFunc(v func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc)) (r *Builder) {
 	b.layoutFunc = v
 	return b
+}
+
+func (b *Builder) GetLayoutFunc() func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc) {
+	return b.layoutFunc
+}
+
+func (b *Builder) DetailLayoutFunc(v func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc)) (r *Builder) {
+	b.detailLayoutFunc = v
+	return b
+}
+
+func (b *Builder) GetDetailLayoutFunc() func(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc) {
+	return b.detailLayoutFunc
 }
 
 func (b *Builder) HomePageLayoutConfig(v *LayoutConfig) (r *Builder) {
@@ -191,6 +206,9 @@ func (b *Builder) ProfileFunc(v ComponentFunc) (r *Builder) {
 	b.profileFunc = v
 	return b
 }
+func (b *Builder) GetProfileFunc() ComponentFunc {
+	return b.profileFunc
+}
 
 func (b *Builder) SwitchLanguageFunc(v ComponentFunc) (r *Builder) {
 	b.switchLanguageFunc = v
@@ -214,6 +232,10 @@ func (b *Builder) BrandTitle(v string) (r *Builder) {
 	return b
 }
 
+func (b *Builder) GetBrandTitle() string {
+	return b.brandTitle
+}
+
 func (b *Builder) VuetifyOptions(v string) (r *Builder) {
 	b.vuetifyOptions = v
 	return b
@@ -227,6 +249,9 @@ func (b *Builder) RightDrawerWidth(v string) (r *Builder) {
 func (b *Builder) ProgressBarColor(v string) (r *Builder) {
 	b.progressBarColor = v
 	return b
+}
+func (b *Builder) GetProgressBarColor() string {
+	return b.progressBarColor
 }
 
 func (b *Builder) AssetFunc(v AssetFunc) (r *Builder) {
@@ -467,7 +492,7 @@ func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool 
 	return false
 }
 
-func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
+func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	mMap := make(map[string]*ModelBuilder)
 	for _, m := range b.models {
 		mMap[m.uriName] = m
@@ -575,7 +600,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	return
 }
 
-func (b *Builder) runBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
+func (b *Builder) RunBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.brandFunc != nil {
 		return b.brandFunc(ctx)
 	}
@@ -583,7 +608,7 @@ func (b *Builder) runBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	return VRow(h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))).Class("text-button")
 }
 
-func (b *Builder) runSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponent) {
+func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.switchLanguageFunc != nil {
 		return b.switchLanguageFunc(ctx)
 	}
@@ -676,7 +701,7 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) runBrandProfileSwitchLanguageDisplayFunc(brand, profile, switchLanguage h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
+func (b *Builder) RunBrandProfileSwitchLanguageDisplayFunc(brand, profile, switchLanguage h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.brandProfileSwitchLanguageDisplayFunc != nil {
 		return b.brandProfileSwitchLanguageDisplayFunc(brand, profile, switchLanguage)
 	}
@@ -722,8 +747,8 @@ const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
 const DialogPortalName = "presets_DialogPortalName"
 const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
-const defaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
-const listingDialogPortalName = "presets_listingDialogPortalName"
+const DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
+const ListingDialogPortalName = "presets_listingDialogPortalName"
 
 const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
 const closeDialogVarScript = "vars.presetsDialog = false"
@@ -826,7 +851,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 		promptText = v
 	}
 
-	portal := defaultConfirmDialogPortalName
+	portal := DefaultConfirmDialogPortalName
 	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
@@ -864,8 +889,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		b.InjectAssets(ctx)
 
-		// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
-		menu := b.createMenus(ctx)
+		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
+		menu := b.CreateMenus(ctx)
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
@@ -895,7 +920,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			VNavigationDrawer(
-				b.runBrandProfileSwitchLanguageDisplayFunc(b.runBrandFunc(ctx), profile, b.runSwitchLanguageFunc(ctx), ctx),
+				b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 				VDivider(),
 				menu,
 			).App(true).
@@ -945,8 +970,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			web.Portal().Name(RightDrawerPortalName),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmDialogPortalName),
-			web.Portal().Name(listingDialogPortalName),
+			web.Portal().Name(DefaultConfirmDialogPortalName),
+			web.Portal().Name(ListingDialogPortalName),
 
 			VProgressLinear().
 				Attr(":active", "isFetching").
@@ -990,7 +1015,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 		pr.Body = VApp(
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmDialogPortalName),
+			web.Portal().Name(DefaultConfirmDialogPortalName),
 
 			VProgressLinear().
 				Attr(":active", "isFetching").
@@ -1097,7 +1122,7 @@ func (b *Builder) getHomePageFunc() web.PageFunc {
 	return b.defaultHomePageFunc
 }
 
-func (b *Builder) defaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+func (b *Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	msgr := MustGetMessages(ctx.R)
 	r.Body = h.Div(
 		h.H1("404").Class("mb-2"),
@@ -1107,7 +1132,7 @@ func (b *Builder) defaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResp
 }
 
 func (b *Builder) getNotFoundPageFunc() web.PageFunc {
-	pf := b.defaultNotFoundPageFunc
+	pf := b.DefaultNotFoundPageFunc
 	if b.notFoundFunc != nil {
 		pf = b.notFoundFunc
 	}
@@ -1192,7 +1217,7 @@ func (b *Builder) initMux() {
 			routePath = fmt.Sprintf("%s/%s/:id", b.prefix, pluralUri)
 			mux.Handle(
 				pat.New(routePath),
-				b.wrap(m, b.layoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
+				b.wrap(m, b.detailLayoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
 			)
 			log.Println("mounted url", routePath)
 		}

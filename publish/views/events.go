@@ -31,7 +31,7 @@ const (
 	ParamScriptAfterPublish = "publish_param_script_after_publish"
 )
 
-func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder) {
+func RegisterEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(publishEvent, publishAction(db, mb, publisher, ab, ActivityPublish))
 	mb.RegisterEventFunc(RepublishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))

@@ -55,6 +55,10 @@ func (b *DetailingBuilder) FetchFunc(v FetchFunc) (r *DetailingBuilder) {
 	return b
 }
 
+func (b *DetailingBuilder) GetFetchFunc() FetchFunc {
+	return b.fetcher
+}
+
 func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 	b.drawer = v
 	return b
@@ -70,6 +74,10 @@ func (b *DetailingBuilder) GetPageFunc() web.PageFunc {
 func (b *DetailingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
 	b.tabPanels = append(b.tabPanels, v)
 	return b
+}
+
+func (b *DetailingBuilder) TabsPanelFunc() (r []ObjectComponentFunc) {
+	return b.tabPanels
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -91,7 +99,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	obj, err = b.fetcher(obj, id, ctx)
 	if err != nil {
 		if err == ErrRecordNotFound {
-			return b.mb.p.defaultNotFoundPageFunc(ctx)
+			return b.mb.p.DefaultNotFoundPageFunc(ctx)
 		}
 		return
 	}
