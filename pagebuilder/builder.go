@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/utils"
+
 	"goji.io/pat"
 
 	"github.com/qor5/admin/activity"
@@ -23,6 +25,7 @@ import (
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/publish/views"
+	pv "github.com/qor5/admin/publish/views"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
@@ -198,6 +201,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				vx.DetailField(vx.OptionalText(start).ZeroLabel("No Set")).Label("SchedulePublishTime"),
 			),
 		)
+		var unpublishBtn h.HTMLComponent
+		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
+		if p.GetStatus() == publish.StatusOnline {
+			unpublishBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
+		}
 		return VContainer(VRow(VCol(
 			vx.Card(overview).HeaderTitle("Overview").
 				Actions(
@@ -213,6 +221,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				).Class("mb-4"),
 			vx.Card(pageState).HeaderTitle("Page State").
 				Actions(
+					h.If(unpublishBtn != nil, unpublishBtn),
 					VBtn("Edit").
 						Depressed(true).
 						Attr("@click", web.POST().
@@ -243,7 +252,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				profile = pb.GetProfileFunc()(ctx)
 			}
 
-			//msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*Messages)
+			//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+			pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
 			id := pat.Param(ctx.R, "id")
 
 			if id == "" {
@@ -280,6 +291,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			if err != nil {
 				panic(err)
 			}
+			idVerionStatus := fmt.Sprintf("%d %s | %s", p.ID, p.GetVersionName(), p.GetStatus())
 			queries := url.Values{}
 			action := web.POST().
 				EventFunc(actions.Edit).
@@ -287,6 +299,14 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
+
+			var publishBtn h.HTMLComponent
+			switch p.GetStatus() {
+			case publish.StatusDraft, publish.StatusOffline:
+				publishBtn = VBtn(pvMsgr.Publish).Small(true).Color("#4F378B").Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+			case publish.StatusOnline:
+				publishBtn = VBtn(pvMsgr.Republish).Small(true).Color("#4F378B").Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+			}
 			pr.Body = VApp(
 				VNavigationDrawer(
 					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
@@ -304,9 +324,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Queries(queries).Query("tab", web.Var("item.query")).PushState(true).Go()).
 							Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
 					).Class("v-tabs--centered").Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
-					VTextField().Dense(true).Outlined(true).Label("").Value(fmt.Sprintf("%d %s | %s", p.ID, p.GetVersionName(), p.GetStatus())).Attr("style", "top:13px;").AppendIcon("chevron_right"),
-					VBtn("Duplicate").Color("blue").Height(40).Attr("style", "right:13px;"),
-					VBtn("Publish").Color("purple").Height(40),
+					h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
+					VSelect().HideDetails(true).Dense(true).Outlined(true).
+						Items([]string{idVerionStatus}).Value(idVerionStatus).Class("col col-3").
+						AppendIcon("chevron_right"),
+					VBtn("Duplicate").Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;"),
+					publishBtn,
 				).Dark(true).
 					Color(presets.ColorPrimary).
 					App(true).
@@ -319,6 +342,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				web.Portal().Name(presets.DefaultConfirmDialogPortalName),
 				web.Portal().Name(presets.ListingDialogPortalName),
 				web.Portal().Name(dialogPortalName),
+				utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
+					Query(presets.ParamID, p.PrimarySlug()).Go(),
+					utilsMsgr),
 				h.If(isContent, h.Script(`
 (function(){
 	let scrollLeft = 0;
@@ -382,7 +408,7 @@ function(e){
 				),
 			).Id("vt-app").
 				Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`).
-				Attr(web.InitContextLocals, fmt.Sprintf(`{activeTab:%d, tabs: [{label:"PAGE SETTINGS",query:"settings"},{label:"PAGE CONTENT",query:"content"}]}`, activeTabIndex))
+				Attr(web.InitContextLocals, fmt.Sprintf(`{action: "", commonConfirmDialog: false, activeTab:%d, tabs: [{label:"PAGE SETTINGS",query:"settings"},{label:"PAGE CONTENT",query:"content"}]}`, activeTabIndex))
 			return
 		}
 	})
@@ -517,7 +543,7 @@ function(e){
 				return
 			}
 
-			if strings.Contains(ctx.R.RequestURI, views.SaveNewVersionEvent) {
+			if strings.Contains(ctx.R.RequestURI, pv.SaveNewVersionEvent) {
 				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}

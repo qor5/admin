@@ -93,7 +93,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 			Clipped(true).
 			Fixed(true).
 			Value(true).
-			Width(400).
+			Width(420).
 			Attr("v-model", "vars.pbEditorDrawer").
 			Attr(web.InitContextVars, `{pbEditorDrawer: null}`),
 	)
