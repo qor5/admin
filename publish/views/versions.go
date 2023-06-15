@@ -297,6 +297,53 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 	}
 }
 
+func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var toObj = mb.NewModel()
+		slugger := toObj.(presets.SlugDecoder)
+		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
+		paramID := ctx.R.FormValue(presets.ParamID)
+		me := mb.Editing()
+		vErr := me.RunSetterFunc(ctx, false, toObj)
+		if vErr.HaveErrors() {
+			presets.ShowMessage(&r, vErr.Error(), "error")
+			return
+		}
+
+		var fromObj = mb.NewModel()
+		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
+		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+			return
+		}
+
+		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+			return
+		}
+
+		if me.Validator != nil {
+			if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
+				presets.ShowMessage(&r, vErr.Error(), "error")
+				return
+			}
+		}
+
+		if err = me.Saver(toObj, paramID, ctx); err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+			return
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
+		se := toObj.(presets.SlugEncoder)
+		newQueries := ctx.Queries()
+		newQueries.Del(presets.ParamID)
+		r.PushState = web.Location(newQueries).URL(mb.Info().DetailingHref(se.PrimarySlug()))
+		return
+	}
+}
+
 func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"

@@ -252,7 +252,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				profile = pb.GetProfileFunc()(ctx)
 			}
 
-			//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
 			pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
 			id := pat.Param(ctx.R, "id")
@@ -307,6 +307,18 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			case publish.StatusOnline:
 				publishBtn = VBtn(pvMsgr.Republish).Small(true).Color("#4F378B").Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
 			}
+			device := ctx.R.FormValue("device")
+			duplicateBtn := VBtn(msgr.Duplicate).
+				Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;").
+				Attr("@click", web.Plaid().
+					EventFunc(pv.DuplicateVersionEvent).
+					URL(pm.Info().ListingHref()).
+					Query(presets.ParamID, p.PrimarySlug()).
+					Query("tab", tab).
+					QueryIf("device", device, device != "").
+					FieldValue("Title", p.Title).FieldValue("Slug", p.Slug).FieldValue("CategoryID", p.CategoryID).
+					Go(),
+				)
 			pr.Body = VApp(
 				VNavigationDrawer(
 					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
@@ -328,7 +340,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					VSelect().HideDetails(true).Dense(true).Outlined(true).
 						Items([]string{idVerionStatus}).Value(idVerionStatus).Class("col col-3").
 						AppendIcon("chevron_right"),
-					VBtn("Duplicate").Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;"),
+					duplicateBtn,
 					publishBtn,
 				).Dark(true).
 					Color(presets.ColorPrimary).
@@ -543,7 +555,7 @@ function(e){
 				return
 			}
 
-			if strings.Contains(ctx.R.RequestURI, pv.SaveNewVersionEvent) {
+			if strings.Contains(ctx.R.RequestURI, pv.SaveNewVersionEvent) || strings.Contains(ctx.R.RequestURI, pv.DuplicateVersionEvent) {
 				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}

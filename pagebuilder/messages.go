@@ -21,6 +21,7 @@ type Messages struct {
 	NotDescribed                   string
 	Blank                          string
 	NewPage                        string
+	Duplicate                      string
 }
 
 var Messages_en_US = &Messages{
@@ -40,6 +41,7 @@ var Messages_en_US = &Messages{
 	NotDescribed:                   "Not Described",
 	Blank:                          "Blank",
 	NewPage:                        "New Page",
+	Duplicate:                      "Duplicate",
 }
 
 var Messages_zh_CN = &Messages{
@@ -59,6 +61,7 @@ var Messages_zh_CN = &Messages{
 	NotDescribed:                   "未描述",
 	Blank:                          "空白",
 	NewPage:                        "新页面",
+	Duplicate:                      "复制",
 }
 
 var Messages_ja_JP = &Messages{
