@@ -22,6 +22,9 @@ type Messages struct {
 	Blank                          string
 	NewPage                        string
 	Duplicate                      string
+	FilterTabAllVersions           string
+	FilterTabOnlineVersion         string
+	FilterTabNamedVersions         string
 }
 
 var Messages_en_US = &Messages{
@@ -42,6 +45,9 @@ var Messages_en_US = &Messages{
 	Blank:                          "Blank",
 	NewPage:                        "New Page",
 	Duplicate:                      "Duplicate",
+	FilterTabAllVersions:           "All Versions",
+	FilterTabOnlineVersion:         "Online Version",
+	FilterTabNamedVersions:         "Named Versions",
 }
 
 var Messages_zh_CN = &Messages{
@@ -62,6 +68,9 @@ var Messages_zh_CN = &Messages{
 	Blank:                          "空白",
 	NewPage:                        "新页面",
 	Duplicate:                      "复制",
+	FilterTabAllVersions:           "所有版本",
+	FilterTabOnlineVersion:         "在线版本",
+	FilterTabNamedVersions:         "已命名版本",
 }
 
 var Messages_ja_JP = &Messages{
@@ -81,4 +90,7 @@ var Messages_ja_JP = &Messages{
 	NotDescribed:                   "記述されていません",
 	Blank:                          "空白",
 	NewPage:                        "新しいページ",
+	FilterTabAllVersions:           "全てのバージョン",
+	FilterTabOnlineVersion:         "オンラインバージョン",
+	FilterTabNamedVersions:         "名付け済みバージョン",
 }

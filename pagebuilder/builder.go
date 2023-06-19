@@ -271,6 +271,13 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 			p := obj.(*Page)
 
+			locale := ctx.R.FormValue("locale")
+			if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != p.LocaleCode {
+				// redirect to list page when change locale
+				http.Redirect(ctx.W, ctx.R, pm.Info().ListingHref(), http.StatusSeeOther)
+				return
+			}
+
 			var tabContent web.PageResponse
 			tab := ctx.R.FormValue("tab")
 			isContent := tab == "content"
@@ -339,7 +346,10 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
 					VSelect().HideDetails(true).Dense(true).Outlined(true).
 						Items([]string{idVerionStatus}).Value(idVerionStatus).Class("col col-3").
-						AppendIcon("chevron_right"),
+						AppendIcon("chevron_right").Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
+						URL(b.ps.GetURIPrefix()+"/dialog-version-list").
+						Query(presets.ParamID, p.PrimarySlug()).
+						Go()),
 					duplicateBtn,
 					publishBtn,
 				).Dark(true).
@@ -412,7 +422,7 @@ function(e){
 					VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
 						Attr("v-model", "vars.presetsMessage.show").
 						Attr(":color", "vars.presetsMessage.color").
-						Timeout(2000).
+						Timeout(1000).
 						Top(true),
 				).Attr("v-if", "vars.presetsMessage"),
 				VMain(
@@ -424,6 +434,8 @@ function(e){
 			return
 		}
 	})
+
+	configureVersionListSelectDialog(b.ps, pm)
 
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
@@ -611,6 +623,118 @@ function(e){
 		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM)
 	}
 	return
+}
+
+func configureVersionListSelectDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
+	mb := pb.Model(&Page{}).
+		URIName("dialog-version-list").
+		InMenu(false)
+	searcher := mb.Listing().Searcher
+	lb := mb.Listing("Version", "State", "VersionNote", "Option").
+		SearchColumns("Version", "Version").
+		PerPage(10).
+		OrderableFields([]*presets.OrderableField{
+			{
+				FieldName: "Version",
+				DBColumn:  "version_name",
+			},
+			{
+				FieldName: "State",
+				DBColumn:  "status",
+			},
+		}).SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+
+		id := ctx.R.FormValue(presets.ParamID)
+		if id == "" {
+			id = ctx.R.FormValue("f_" + presets.ParamID)
+		}
+		if id != "" {
+			cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+			con := presets.SQLCondition{
+				Query: "id = ? and locale_code = ?",
+				Args:  []interface{}{cs["id"], cs["locale_code"]},
+			}
+			params.SQLConditions = append(params.SQLConditions, &con)
+		}
+		params.OrderBy = "created_at DESC"
+
+		return searcher(model, params, ctx)
+	})
+	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Td(h.Text(obj.(publish.VersionInterface).GetVersionName()))
+	})
+	lb.Field("State").ComponentFunc(pv.StatusListFunc())
+	lb.Field("VersionNote").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Td(h.Text("todo"))
+	})
+	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Td(h.Text("todo"))
+	})
+	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
+	lb.RowMenu().Empty()
+	pb.GetWebBuilder().RegisterEventFunc("selectVersion", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.R.FormValue(presets.ParamID)
+		refer, _ := url.Parse(ctx.R.Referer())
+		newQueries := refer.Query()
+		newQueries.Del(presets.ParamID)
+		r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
+		return
+	})
+	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		cell.SetAttr("@click.self", web.Plaid().
+			Query("id", obj.(*Page).PrimarySlug()).
+			URL(pb.GetURIPrefix()+"/editors").
+			EventFunc("selectVersion").
+			Go(),
+		)
+		return cell
+	})
+	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		return []*vx.FilterItem{
+			{
+				Key:          "all",
+				Invisible:    true,
+				SQLCondition: ``,
+			},
+			{
+
+				Key:          "online_version",
+				Invisible:    true,
+				SQLCondition: `status = 'online'`,
+			},
+			{
+				Key:          "named_versions",
+				Invisible:    true,
+				SQLCondition: `version <> version_name`,
+			},
+		}
+	})
+
+	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		id := ctx.R.FormValue(presets.ParamID)
+		if id == "" {
+			id = ctx.R.FormValue("f_" + presets.ParamID)
+		}
+		return []*presets.FilterTab{
+			{
+				Label: msgr.FilterTabAllVersions,
+				ID:    "all",
+				Query: url.Values{"all": []string{"1"}, presets.ParamID: []string{id}},
+			},
+			{
+				Label: msgr.FilterTabOnlineVersion,
+				ID:    "online_version",
+				Query: url.Values{"online_version": []string{"1"}, presets.ParamID: []string{id}},
+			},
+			{
+				Label: msgr.FilterTabNamedVersions,
+				ID:    "named_versions",
+				Query: url.Values{"named_versions": []string{"1"}, presets.ParamID: []string{id}},
+			},
+		}
+	})
+
 }
 
 // cats should be ordered by path

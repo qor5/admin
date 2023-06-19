@@ -89,6 +89,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/qor5/web => ../../qor5/web
+replace github.com/qor5/web => ../../qor5/web
 //replace github.com/goplaid/x => ../../goplaid/x
 
