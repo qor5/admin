@@ -38,8 +38,9 @@ import (
 )
 
 type RenderInput struct {
-	IsEditor bool
-	Device   string
+	IsEditor   bool
+	IsReadonly bool
+	Device     string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -201,36 +202,36 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				vx.DetailField(vx.OptionalText(start).ZeroLabel("No Set")).Label("SchedulePublishTime"),
 			),
 		)
-		var unpublishBtn h.HTMLComponent
+		var editBtn h.HTMLComponent
+		var pageStateBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
+		if p.GetStatus() == publish.StatusDraft {
+			editBtn = VBtn("Edit").Depressed(true).
+				Attr("@click", web.POST().
+					EventFunc(actions.Edit).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamID, p.PrimarySlug()).
+					URL(mi.PresetsPrefix()+"/pages").Go(),
+				)
+		}
 		if p.GetStatus() == publish.StatusOnline {
-			unpublishBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
+			pageStateBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
+		} else {
+			pageStateBtn = VBtn("Schedule Publish").Depressed(true).
+				Attr("@click", web.POST().EventFunc(actions.Edit).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamID, p.PrimarySlug()).
+					URL(mi.PresetsPrefix()+"/pages").Go(),
+				)
 		}
 		return VContainer(VRow(VCol(
 			vx.Card(overview).HeaderTitle("Overview").
 				Actions(
-					VBtn("Edit").
-						Depressed(true).
-						Attr("@click", web.POST().
-							EventFunc(actions.Edit).
-							Query(presets.ParamOverlay, actions.Dialog).
-							Query(presets.ParamID, p.PrimarySlug()).
-							URL(mi.PresetsPrefix()+"/pages").
-							Go(),
-						),
+					h.If(editBtn != nil, editBtn),
 				).Class("mb-4"),
 			vx.Card(pageState).HeaderTitle("Page State").
 				Actions(
-					h.If(unpublishBtn != nil, unpublishBtn),
-					VBtn("Edit").
-						Depressed(true).
-						Attr("@click", web.POST().
-							EventFunc(actions.Edit).
-							Query(presets.ParamOverlay, actions.Dialog).
-							Query(presets.ParamID, p.PrimarySlug()).
-							URL(mi.PresetsPrefix()+"/pages").
-							Go(),
-						),
+					h.If(pageStateBtn != nil, pageStateBtn),
 				).Class("mb-4"),
 		).Cols(8)))
 	})

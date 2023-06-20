@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/qor5/admin/publish"
+
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
@@ -53,7 +55,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 		activeDevice = 2
 	}
 
-	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale())
+	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft)
 	if err != nil {
 		return
 	}

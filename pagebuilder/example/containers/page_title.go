@@ -93,7 +93,7 @@ func PageTitleBody(data *PageTitle, input *pagebuilder.RenderInput) (body HTMLCo
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("PageTitle"))+"_%v", data.ID), data.AnchorID, "container-page_title container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
 		image, wraper,
 	)
 	return

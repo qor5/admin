@@ -72,7 +72,7 @@ func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLCo
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("BrandGrid"))+"_%v", data.ID), data.AnchorID, "container-brand_grid",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
 		Div(
 			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),
