@@ -84,6 +84,9 @@ const (
 	clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
+	schedulePublishDialogEvent = "schedulePublishDialogEvent"
+	schedulePublishEvent       = "schedulePublishEvent"
+
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
@@ -192,16 +195,23 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				vx.DetailField(vx.OptionalText(p.Slug).ZeroLabel("No Slug")).Label("Slug"),
 			),
 		)
-		var start string
+		var start, end, se string
 		if p.GetScheduledStartAt() != nil {
 			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
+		}
+		if p.GetScheduledEndAt() != nil {
+			end = p.GetScheduledEndAt().Format("2006-01-02 15:04")
+		}
+		if start != "" || end != "" {
+			se = start + " ~ " + end
 		}
 		pageState := vx.DetailInfo(
 			vx.DetailColumn(
 				vx.DetailField(vx.OptionalText(p.GetStatus()).ZeroLabel("No State")).Label("State"),
-				vx.DetailField(vx.OptionalText(start).ZeroLabel("No Set")).Label("SchedulePublishTime"),
+				vx.DetailField(vx.OptionalText(se).ZeroLabel("No Set")).Label("SchedulePublishTime"),
 			),
 		)
+
 		var editBtn h.HTMLComponent
 		var pageStateBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
@@ -218,7 +228,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			pageStateBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
 		} else {
 			pageStateBtn = VBtn("Schedule Publish").Depressed(true).
-				Attr("@click", web.POST().EventFunc(actions.Edit).
+				Attr("@click", web.POST().EventFunc(schedulePublishDialogEvent).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
@@ -441,6 +451,8 @@ function(e){
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 	pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
+	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 
 	eb := pm.Editing("Title", "Slug", "CategoryID")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -963,6 +975,99 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		})
 
 		er.VarsScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
+		return
+	}
+}
+func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+
+		s, ok := obj.(publish.ScheduleInterface)
+		if !ok {
+			return
+		}
+
+		var start, end string
+		if s.GetScheduledStartAt() != nil {
+			start = s.GetScheduledStartAt().Format("2006-01-02 15:04")
+		}
+		if s.GetScheduledEndAt() != nil {
+			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
+		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		updateBtn := VBtn(cmsgr.Update).
+			Color("primary").
+			Attr(":disabled", "isFetching").
+			Attr(":loading", "isFetching").
+			Attr("@click", web.Plaid().
+				EventFunc(schedulePublishEvent).
+				//Queries(queries).
+				Query(presets.ParamID, paramID).
+				Query(presets.ParamOverlay, actions.Dialog).
+				URL(mb.Info().ListingHref()).
+				Go())
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						VCardTitle(h.Text("Schedule Publish Time")),
+						VCardText(
+							VRow(
+								VCol(
+									vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
+										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
+								).Cols(6),
+								VCol(
+									vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
+										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
+										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
+								).Cols(6),
+							),
+						),
+						VCardActions(
+							VSpacer(),
+							updateBtn,
+						),
+					),
+				).MaxWidth("400px").
+					Attr("v-model", "locals.renameDialog"),
+			).Init("{renameDialog:true}").VSlot("{locals}"),
+		})
+		return
+	}
+}
+
+func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+		err = pv.ScheduleEditSetterFunc(obj, nil, ctx)
+		if err != nil {
+			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
+			return
+		}
+		err = mb.Editing().Saver(obj, paramID, ctx)
+		if err != nil {
+			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
+			return
+		}
+		r.PushState = web.Location(nil)
 		return
 	}
 }
