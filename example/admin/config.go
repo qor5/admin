@@ -179,7 +179,7 @@ func NewConfig() Config {
 	media_view.Configure(b, db)
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
-	// ConfigureSeo(b, db)
+	ConfigureSeo(b, db)
 
 	b.MenuOrder(
 		"profile",
@@ -207,6 +207,7 @@ func NewConfig() Config {
 		b.MenuGroup("Featured Models Management").SubItems(
 			"InputDemo",
 			"Post",
+			"qor-seo-settings",
 			"List Editor Example",
 			"nested-field-demos",
 			"ListModels",
