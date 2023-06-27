@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/note"
+
 	"github.com/qor5/admin/utils"
 
 	"goji.io/pat"
@@ -87,6 +89,9 @@ const (
 	schedulePublishDialogEvent = "schedulePublishDialogEvent"
 	schedulePublishEvent       = "schedulePublishEvent"
 
+	createNoteDialogEvent = "createNoteDialogEvent"
+	createNoteEvent       = "createNoteEvent"
+
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
@@ -97,6 +102,8 @@ func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 		&Container{},
 		&DemoContainer{},
 		&Category{},
+		&note.QorNote{},
+		&note.UserNote{},
 	)
 	if err != nil {
 		panic(err)
@@ -211,7 +218,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				vx.DetailField(vx.OptionalText(se).ZeroLabel("No Set")).Label("SchedulePublishTime"),
 			),
 		)
+		var notes []note.QorNote
+		db.Where("resource_type = ? and resource_id = ?", pm.Info().Label(), p.PrimarySlug()).
+			Order("id DESC").Find(&notes)
 
+		notesSetcion := VContainer()
+		for _, note := range notes {
+			notesSetcion.AppendChildren(VRow(h.Text(note.Content)).Class("ma-1"))
+			notesSetcion.AppendChildren(VRow(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("ma-1 mb-2"))
+		}
 		var editBtn h.HTMLComponent
 		var pageStateBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
@@ -242,6 +257,16 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			vx.Card(pageState).HeaderTitle("Page State").
 				Actions(
 					h.If(pageStateBtn != nil, pageStateBtn),
+				).Class("mb-4"),
+			vx.Card(notesSetcion).HeaderTitle("Version Note").
+				Actions(
+					VBtn("Create").Depressed(true).
+						Attr("@click", web.POST().
+							EventFunc(createNoteDialogEvent).
+							Query(presets.ParamOverlay, actions.Dialog).
+							Query(presets.ParamID, p.PrimarySlug()).
+							URL(mi.PresetsPrefix()+"/pages").Go(),
+						),
 				).Class("mb-4"),
 		).Cols(8)))
 	})
@@ -453,6 +478,8 @@ function(e){
 	pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
+	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
+	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 
 	eb := pm.Editing("Title", "Slug", "CategoryID")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -900,7 +927,6 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-
 func clearTemplate(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
@@ -912,7 +938,6 @@ func clearTemplate(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-
 func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		gmsgr := presets.MustGetMessages(ctx.R)
@@ -978,6 +1003,45 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
+func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+	// Avoid layout errors
+	var name string
+	var desc string
+	if tpl.Name == "" {
+		name = msgr.Unnamed
+	} else {
+		name = tpl.Name
+	}
+	if tpl.Description == "" {
+		desc = msgr.NotDescribed
+	} else {
+		desc = tpl.Description
+	}
+
+	return VCol(
+		VCard(
+			h.Div(
+				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
+					Attr("width", "100%", "height", "150", "frameborder", "no").
+					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
+			),
+			VCardTitle(h.Text(name)),
+			VCardSubtitle(h.Text(desc)),
+			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
+				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
+				Target("_blank").Color("primary"),
+			h.Div(
+				h.Input(templateSelectionID).Type("radio").
+					Value(fmt.Sprintf("%d", tpl.ID)).
+					Attr(web.VFieldName(templateSelectionID)...).
+					Style("width: 18px; height: 18px"),
+			).Class("mr-4 float-right"),
+		).Height(280).Class("text-truncate").Outlined(true),
+	).Cols(3)
+}
+
 func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
@@ -1041,14 +1105,13 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 							updateBtn,
 						),
 					),
-				).MaxWidth("400px").
-					Attr("v-model", "locals.renameDialog"),
-			).Init("{renameDialog:true}").VSlot("{locals}"),
+				).MaxWidth("480px").
+					Attr("v-model", "locals.schedulePublishDialog"),
+			).Init("{schedulePublishDialog:true}").VSlot("{locals}"),
 		})
 		return
 	}
 }
-
 func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
@@ -1072,43 +1135,76 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
 
-	// Avoid layout errors
-	var name string
-	var desc string
-	if tpl.Name == "" {
-		name = msgr.Unnamed
-	} else {
-		name = tpl.Name
-	}
-	if tpl.Description == "" {
-		desc = msgr.NotDescribed
-	} else {
-		desc = tpl.Description
-	}
+		okAction := web.Plaid().
+			URL(mb.Info().ListingHref()).
+			EventFunc(createNoteEvent).
+			Query("resource_id", paramID).
+			Query("resource_type", mb.Info().Label()).
+			Query(presets.ParamOverlay, actions.Dialog).Go()
 
-	return VCol(
-		VCard(
-			h.Div(
-				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
-					Attr("width", "100%", "height", "150", "frameborder", "no").
-					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
-			),
-			VCardTitle(h.Text(name)),
-			VCardSubtitle(h.Text(desc)),
-			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
-				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
-				Target("_blank").Color("primary"),
-			h.Div(
-				h.Input(templateSelectionID).Type("radio").
-					Value(fmt.Sprintf("%d", tpl.ID)).
-					Attr(web.VFieldName(templateSelectionID)...).
-					Style("width: 18px; height: 18px"),
-			).Class("mr-4 float-right"),
-		).Height(280).Class("text-truncate").Outlined(true),
-	).Cols(3)
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						VCardTitle(h.Text("Note")),
+						VCardText(
+							VTextField().FieldName("Content").Value(""),
+						),
+						VCardActions(
+							VSpacer(),
+							VBtn("Cancel").
+								Depressed(true).
+								Class("ml-2").
+								On("click", "locals.createNoteDialog = false"),
+
+							VBtn("OK").
+								Color("primary").
+								Depressed(true).
+								Dark(true).
+								Attr("@click", okAction),
+						),
+					),
+				).MaxWidth("420px").Attr("v-model", "locals.createNoteDialog"),
+			).Init("{createNoteDialog:true}").VSlot("{locals}"),
+		})
+		return
+	}
+}
+func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		ri := ctx.R.FormValue("resource_id")
+		rt := ctx.R.FormValue("resource_type")
+		content := ctx.R.FormValue("Content")
+
+		userID, creator := note.GetUserData(ctx)
+		nt := note.QorNote{
+			UserID:       userID,
+			Creator:      creator,
+			ResourceID:   ri,
+			ResourceType: rt,
+			Content:      content,
+		}
+
+		if err = db.Save(&nt).Error; err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+			err = nil
+			return
+		}
+
+		userNote := note.UserNote{UserID: userID, ResourceType: rt, ResourceID: ri}
+		db.Where(userNote).FirstOrCreate(&userNote)
+
+		var total int64
+		db.Model(&note.QorNote{}).Where("resource_type = ? AND resource_id = ?", rt, ri).Count(&total)
+		db.Model(&userNote).UpdateColumn("Number", total)
+		r.PushState = web.Location(nil)
+		return
+	}
 }
 
 func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {

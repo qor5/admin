@@ -1,9 +1,9 @@
 package note
 
 import (
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +14,7 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		content := ctx.R.FormValue("Content")
 
-		userID, creator := getUserData(ctx)
+		userID, creator := GetUserData(ctx)
 		note := QorNote{
 			UserID:       userID,
 			Creator:      creator,
@@ -58,7 +58,7 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
 
-		userID, _ := getUserData(ctx)
+		userID, _ := GetUserData(ctx)
 		if userID == 0 {
 			return
 		}
