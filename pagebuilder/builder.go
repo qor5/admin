@@ -92,6 +92,10 @@ const (
 	createNoteDialogEvent = "createNoteDialogEvent"
 	createNoteEvent       = "createNoteEvent"
 
+	selectVersionEvent       = "selectVersionEvent"
+	renameVersionDialogEvent = "renameVersionDialogEvent"
+	renameVersionEvent       = "renameVersionEvent"
+
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
@@ -301,7 +305,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					VSelect().HideDetails(true).Dense(true).Outlined(true).
 						Items([]string{idVerionStatus}).Value(idVerionStatus).Class("col col-3").
 						AppendIcon("chevron_right").Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-						URL(b.ps.GetURIPrefix()+"/dialog-version-list").
+						URL(b.ps.GetURIPrefix()+"/version-list-dialog").
 						Query(presets.ParamID, p.PrimarySlug()).
 						Go()),
 					duplicateBtn,
@@ -389,7 +393,7 @@ function(e){
 		}
 	})
 
-	configureVersionListSelectDialog(b.ps, pm)
+	configureVersionListDialog(b.ps, pm)
 
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
@@ -583,43 +587,45 @@ function(e){
 	return
 }
 
-func configureVersionListSelectDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
+func configureVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
 	mb := pb.Model(&Page{}).
-		URIName("dialog-version-list").
+		URIName("version-list-dialog").
 		InMenu(false)
 	searcher := mb.Listing().Searcher
 	lb := mb.Listing("Version", "State", "VersionNote", "Option").
-		SearchColumns("Version", "Version").
+		SearchColumns("version", "version_name").
 		PerPage(10).
-		OrderableFields([]*presets.OrderableField{
-			{
-				FieldName: "Version",
-				DBColumn:  "version_name",
-			},
-			{
-				FieldName: "State",
-				DBColumn:  "status",
-			},
-		}).SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 
-		id := ctx.R.FormValue(presets.ParamID)
-		if id == "" {
-			id = ctx.R.FormValue("f_" + presets.ParamID)
-		}
-		if id != "" {
-			cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-			con := presets.SQLCondition{
-				Query: "id = ? and locale_code = ?",
-				Args:  []interface{}{cs["id"], cs["locale_code"]},
+			id := ctx.R.FormValue(presets.ParamID)
+			if id == "" {
+				id = ctx.R.FormValue("f_" + presets.ParamID)
 			}
-			params.SQLConditions = append(params.SQLConditions, &con)
-		}
-		params.OrderBy = "created_at DESC"
+			if id != "" {
+				cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+				con := presets.SQLCondition{
+					Query: "id = ? and locale_code = ?",
+					Args:  []interface{}{cs["id"], cs["locale_code"]},
+				}
+				params.SQLConditions = append(params.SQLConditions, &con)
+			}
+			params.OrderBy = "created_at DESC"
 
-		return searcher(model, params, ctx)
-	})
+			return searcher(model, params, ctx)
+		})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Td(h.Text(obj.(publish.VersionInterface).GetVersionName()))
+		versionName := obj.(publish.VersionInterface).GetVersionName()
+		return h.Td(
+			h.Text(versionName),
+			VBtn("").Icon(true).Children(VIcon("edit")).Attr("@click", web.Plaid().
+				URL(pb.GetURIPrefix()+"/version-list-dialog").
+				EventFunc(renameVersionDialogEvent).
+				Queries(ctx.Queries()).
+				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamID, obj.(presets.SlugEncoder).PrimarySlug()).
+				Query("version_name", versionName).
+				Go()),
+		)
 	})
 	lb.Field("State").ComponentFunc(pv.StatusListFunc())
 	lb.Field("VersionNote").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -630,7 +636,7 @@ func configureVersionListSelectDialog(pb *presets.Builder, pm *presets.ModelBuil
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
-	pb.GetWebBuilder().RegisterEventFunc("selectVersion", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	mb.RegisterEventFunc(selectVersionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue(presets.ParamID)
 		refer, _ := url.Parse(ctx.R.Referer())
 		newQueries := refer.Query()
@@ -638,11 +644,14 @@ func configureVersionListSelectDialog(pb *presets.Builder, pm *presets.ModelBuil
 		r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
 		return
 	})
+	mb.RegisterEventFunc(renameVersionDialogEvent, renameVersionDialog(mb))
+	mb.RegisterEventFunc(renameVersionEvent, renameVersion(mb))
+
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		cell.SetAttr("@click.self", web.Plaid().
 			Query("id", obj.(*Page).PrimarySlug()).
-			URL(pb.GetURIPrefix()+"/editors").
-			EventFunc("selectVersion").
+			URL(pb.GetURIPrefix()+"/version-list-dialog").
+			EventFunc(selectVersionEvent).
 			Go(),
 		)
 		return cell
@@ -1121,6 +1130,69 @@ func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		db.Model(&note.QorNote{}).Where("resource_type = ? AND resource_id = ?", rt, ri).Count(&total)
 		db.Model(&userNote).UpdateColumn("Number", total)
 		r.PushState = web.Location(nil)
+		return
+	}
+}
+
+func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.R.FormValue(presets.ParamID)
+		versionName := ctx.R.FormValue("version_name")
+		okAction := web.Plaid().
+			URL(mb.Info().ListingHref()).
+			EventFunc(renameVersionEvent).
+			Queries(ctx.Queries()).
+			Query(presets.ParamID, id).
+			Query(presets.ParamOverlay, actions.Dialog).Go()
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						VCardTitle(h.Text("Version")),
+						VCardText(
+							VTextField().FieldName("VersionName").Value(versionName),
+						),
+						VCardActions(
+							VSpacer(),
+							VBtn("Cancel").
+								Depressed(true).
+								Class("ml-2").
+								On("click", "locals.renameVersionDialog = false"),
+
+							VBtn("OK").
+								Color("primary").
+								Depressed(true).
+								Dark(true).
+								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
+						),
+					),
+				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
+			).Init("{renameVersionDialog:true}").VSlot("{locals}"),
+		})
+		return
+	}
+}
+func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+
+		name := ctx.R.FormValue("VersionName")
+		if err = reflectutils.Set(obj, "Version.VersionName", name); err != nil {
+			return
+		}
+
+		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
+			return
+		}
+
+		r.VarsScript = web.Plaid().URL(ctx.R.RequestURI).Queries(ctx.Queries()).EventFunc(actions.UpdateListingDialog).MergeQuery(true).Go()
 		return
 	}
 }
