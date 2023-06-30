@@ -257,7 +257,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			if err != nil {
 				panic(err)
 			}
-			idVerionStatus := fmt.Sprintf("%d %s | %s", p.ID, p.GetVersionName(), p.GetStatus())
+			versionCount := versionCount(db, p)
 			queries := url.Values{}
 			action := web.POST().
 				EventFunc(actions.Edit).
@@ -275,7 +275,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			}
 			device := ctx.R.FormValue("device")
 			duplicateBtn := VBtn(msgr.Duplicate).
-				Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;").
+				Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;").Class("ml-2").
 				Attr("@click", web.Plaid().
 					EventFunc(pv.DuplicateVersionEvent).
 					URL(pm.Info().ListingHref()).
@@ -295,7 +295,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					Value(true).
 					Attr("v-model", "vars.navDrawer").
 					Attr(web.InitContextVars, `{navDrawer: null}`),
-
 				VAppBar(
 					VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 					VTabs(
@@ -303,12 +302,16 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 							Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
 					).Class("v-tabs--centered").Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
 					h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
-					VSelect().HideDetails(true).Dense(true).Outlined(true).
-						Items([]string{idVerionStatus}).Value(idVerionStatus).Class("col col-3").
-						AppendIcon("chevron_right").Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-						URL(b.ps.GetURIPrefix()+"/version-list-dialog").
-						Query(presets.ParamID, p.PrimarySlug()).
-						Go()),
+					VChip(
+						VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Small(true).Class("px-1 mx-1").TextColor("black").Attr("style", "height:20px"),
+						h.Text(p.GetVersionName()+" | "),
+						VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Small(true).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
+						VIcon("chevron_right"),
+					).Label(true).Outlined(true).Class("px-1 ml-8").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
+						Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
+							URL(b.ps.GetURIPrefix()+"/version-list-dialog").
+							Query(presets.ParamID, p.PrimarySlug()).
+							Go()),
 					duplicateBtn,
 					publishBtn,
 				).Dark(true).
@@ -585,6 +588,11 @@ function(e){
 	if l10nB != nil {
 		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM)
 	}
+	return
+}
+
+func versionCount(db *gorm.DB, p *Page) (count int64) {
+	db.Model(&Page{}).Where("id = ? and locale_code = ?", p.ID, p.LocaleCode).Count(&count)
 	return
 }
 

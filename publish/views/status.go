@@ -53,7 +53,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(publish.StatusInterface); ok {
-			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(getStatusColor(s.GetStatus())).Dark(true))
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(GetStatusColor(s.GetStatus())).Dark(true))
 		}
 		return nil
 	}
@@ -107,7 +107,7 @@ func StatusEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web
 	return
 }
 
-func getStatusColor(status string) string {
+func GetStatusColor(status string) string {
 	switch status {
 	case publish.StatusDraft:
 		return "orange"
