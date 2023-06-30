@@ -95,6 +95,7 @@ const (
 	selectVersionEvent       = "selectVersionEvent"
 	renameVersionDialogEvent = "renameVersionDialogEvent"
 	renameVersionEvent       = "renameVersionEvent"
+	deleteVersionDialogEvent = "deleteVersionDialogEvent"
 
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
@@ -632,7 +633,20 @@ func configureVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
 		return h.Td(h.Text("todo"))
 	})
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Td(h.Text("todo"))
+		p := obj.(*Page)
+		id := ctx.R.FormValue(presets.ParamID)
+		versionName := p.GetVersionName()
+		if p.GetStatus() != publish.StatusDraft || p.PrimarySlug() == id {
+			return h.Td()
+		}
+		return h.Td(VBtn("").Icon(true).Children(VIcon("delete")).Attr("@click", web.Plaid().
+			URL(pb.GetURIPrefix()+"/version-list-dialog").
+			EventFunc(deleteVersionDialogEvent).
+			Queries(ctx.Queries()).
+			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamID, obj.(presets.SlugEncoder).PrimarySlug()).
+			Query("version_name", versionName).
+			Go()))
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
@@ -646,6 +660,7 @@ func configureVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
 	})
 	mb.RegisterEventFunc(renameVersionDialogEvent, renameVersionDialog(mb))
 	mb.RegisterEventFunc(renameVersionEvent, renameVersion(mb))
+	mb.RegisterEventFunc(deleteVersionDialogEvent, deleteVersionDialog(mb))
 
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		cell.SetAttr("@click.self", web.Plaid().
@@ -1142,8 +1157,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 			URL(mb.Info().ListingHref()).
 			EventFunc(renameVersionEvent).
 			Queries(ctx.Queries()).
-			Query(presets.ParamID, id).
-			Query(presets.ParamOverlay, actions.Dialog).Go()
+			Query(presets.ParamID, id).Go()
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogPortalName,
@@ -1193,6 +1207,44 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		}
 
 		r.VarsScript = web.Plaid().URL(ctx.R.RequestURI).Queries(ctx.Queries()).EventFunc(actions.UpdateListingDialog).MergeQuery(true).Go()
+		return
+	}
+}
+
+func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.R.FormValue(presets.ParamID)
+		versionName := ctx.R.FormValue("version_name")
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: presets.DeleteConfirmPortalName,
+			Body: VDialog(
+				VCard(
+					VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", versionName))),
+					VCardActions(
+						VSpacer(),
+						VBtn("Cancel").
+							Depressed(true).
+							Class("ml-2").
+							On("click", "vars.deleteConfirmation = false"),
+
+						VBtn("Delete").
+							Color("primary").
+							Depressed(true).
+							Dark(true).
+							Attr("@click", web.Plaid().
+								URL(mb.Info().ListingHref()).
+								EventFunc(actions.DoDelete).
+								Queries(ctx.Queries()).
+								Query(presets.ParamInDialog, true).
+								Query(presets.ParamID, id).Go()),
+					),
+				),
+			).MaxWidth("580px").
+				Attr("v-model", "vars.deleteConfirmation").
+				Attr(web.InitContextVars, `{deleteConfirmation: false}`),
+		})
+
+		r.VarsScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
 		return
 	}
 }
