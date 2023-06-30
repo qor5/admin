@@ -90,5 +90,6 @@ require (
 )
 
 replace github.com/qor5/web => ../../qor5/web
+replace github.com/qor5/ui => ../../qor5/ui
 //replace github.com/goplaid/x => ../../goplaid/x
 
