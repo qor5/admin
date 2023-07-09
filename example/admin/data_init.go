@@ -218,10 +218,11 @@ Startup speed.', '', 'Discover made-to-measure enterprise solutions combining th
 -- Data for Name: page_builder_categories; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '');
-INSERT INTO public.page_builder_categories VALUES (2, '2023-03-03 06:21:15.410972+00', '2023-03-03 06:21:15.410972+00', NULL, 'Order', '/order', '');
-INSERT INTO public.page_builder_categories VALUES (3, '2023-03-03 06:21:31.605906+00', '2023-03-03 06:21:31.605906+00', NULL, 'Food', '/product/food', '');
-
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (2, '2023-03-03 06:21:15.410972+00', '2023-03-03 06:21:15.410972+00', NULL, 'Order', '/order', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (3, '2023-03-03 06:21:31.605906+00', '2023-03-03 06:21:31.605906+00', NULL, 'Food', '/product/food', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'China');
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'Japan');
 
 --
 -- Data for Name: page_builder_containers; Type: TABLE DATA; Schema: public; Owner: example
