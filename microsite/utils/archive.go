@@ -4,23 +4,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/qor/oss"
 )
-
-func RemoveUselessArchiveFiles(list []string) (result []string) {
-	for _, v := range list {
-		// Compressing in mac os may create useless files and dirs whose name contains "__MACOSX" or "DS_Store".
-		// Some compressing may cause dirs to be files, so we need to remove these files(v[len(v)-1] == '/') from our list.
-		if strings.Contains(v, "__MACOSX") || strings.Contains(v, "DS_Store") || v[len(v)-1] == '/' {
-			continue
-		}
-		result = append(result, v)
-	}
-	return
-}
 
 func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err error) {
 	timeBegin := time.Now()
@@ -53,7 +40,23 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	}()
 
 	if storage, ok := storage.(DeleteObjecter); ok {
-		return storage.DeleteObjects(paths)
+		var length = len(paths)
+		var i = 0
+		for i < length {
+			var left, right int
+			left = i
+			if i+1000 < length {
+				right = i + 1000
+			} else {
+				right = length
+			}
+			i = right
+			err = storage.DeleteObjects(paths[left:right])
+			if err != nil {
+				return
+			}
+		}
+		return
 	}
 
 	for _, v := range paths {

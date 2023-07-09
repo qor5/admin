@@ -3,7 +3,7 @@ package views
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/activity"
@@ -81,12 +81,12 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					return
 				}
 
-				fileBytes, err := ioutil.ReadAll(f)
+				fileBytes, err := io.ReadAll(f)
 				if err != nil {
 					return
 				}
 
-				filesList, err := this.GetFilesListAndPublishPreviewFiles(fileName, fileBytes, storage)
+				filesList, err := this.UnArchiveAndPublish(this.GetPreviewPath, fileName, bytes.NewReader(fileBytes), storage)
 				if err != nil {
 					return
 				}

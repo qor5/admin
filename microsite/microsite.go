@@ -1,19 +1,19 @@
 package microsite
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/gen2brain/go-unarr"
+	"github.com/hashicorp/go-multierror"
+	archiver "github.com/mholt/archiver/v4"
 	"github.com/qor/oss"
 	"github.com/qor5/admin/microsite/utils"
 	"github.com/qor5/admin/publish"
@@ -67,41 +67,28 @@ func (this *MicroSite) SetUnixKey() {
 	return
 }
 
-//func (this *MicroSite) BeforeDelete(db *gorm.DB) (err error) {
-//	if this.Status == Status_published {
-//		err = Unpublish(db, this, false)
-//		return
-//	}
-//
-//	return
-//}
-
 func (this MicroSite) GetPackagePath(fileName string) string {
-	return fmt.Sprintf("/%s/__package__/%s/%s", PackageAndPreviewPrepath, this.GetUnixKey(), fileName)
-}
-
-func (this MicroSite) GetPreviewPrePath() string {
-	return fmt.Sprintf("/%s/__preview__/%s", PackageAndPreviewPrepath, this.GetUnixKey())
+	return strings.TrimPrefix(path.Join(PackageAndPreviewPrepath, "__package__", this.GetUnixKey(), fileName), "/")
 }
 
 func (this MicroSite) GetPreviewPath(fileName string) string {
-	return path.Join(this.GetPreviewPrePath(), fileName)
+	return strings.TrimPrefix(path.Join(PackageAndPreviewPrepath, "__preview__", this.GetUnixKey(), fileName), "/")
 }
 
 func (this MicroSite) GetPreviewUrl(domain, fileName string) string {
-	return strings.TrimSuffix(domain, "/") + this.GetPreviewPath(fileName)
+	return strings.TrimSuffix(domain, "/") + "/" + this.GetPreviewPath(fileName)
 }
 
 func (this MicroSite) GetPublishedPath(fileName string) string {
-	return "/" + path.Join(strings.TrimSuffix(this.PrePath, "/"), fileName)
+	return path.Join(strings.TrimPrefix(strings.TrimSuffix(this.PrePath, "/"), "/"), fileName)
 }
 
 func (this MicroSite) GetPublishedUrl(domain, fileName string) string {
-	return strings.TrimSuffix(domain, "/") + this.GetPublishedPath(fileName)
+	return strings.TrimSuffix(domain, "/") + "/" + this.GetPublishedPath(fileName)
 }
 
 func (this MicroSite) GetPackageUrl(domain string) string {
-	return strings.TrimSuffix(domain, "/") + this.Package.Url
+	return strings.TrimSuffix(domain, "/") + "/" + strings.TrimPrefix(this.Package.Url, "/")
 }
 
 func (this MicroSite) GetFileList() (arr []string) {
@@ -130,19 +117,15 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 
 func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) > 0 {
-		f, err := storage.Get(this.Package.Url)
+		var f *os.File
+		f, err = storage.Get(this.Package.Url)
 		if err != nil {
-			return nil, err
+			return
 		}
 
-		fileBytes, err := ioutil.ReadAll(f)
+		_, err = this.UnArchiveAndPublish(this.GetPublishedPath, this.Package.FileName, f, storage)
 		if err != nil {
-			return nil, err
-		}
-
-		err = this.PublishArchiveFiles(this.Package.FileName, fileBytes, storage)
-		if err != nil {
-			return nil, err
+			return
 		}
 
 		var previewPaths []string
@@ -151,7 +134,7 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 		}
 		err = utils.DeleteObjects(storage, previewPaths)
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 	return
@@ -169,53 +152,34 @@ func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, sto
 	return
 }
 
-func (this *MicroSite) PublishArchiveFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (err error) {
-	a, err := unarr.NewArchiveFromMemory(fileBytes)
+func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
+	format, reader, err := archiver.Identify(fileName, f)
 	if err != nil {
-		if err.Error() == INVALID_ARCHIVER_ERROR.Error() {
-			utils.Upload(storage, this.GetPublishedPath(fileName), bytes.NewReader(fileBytes))
-			return nil
+		if err == archiver.ErrNoMatch {
+			err = utils.Upload(storage, getPath(fileName), f)
+			return
 		}
-		return
-	}
-	defer a.Close()
-
-	filesList, err := a.List()
-	if err != nil {
-		return
-	}
-	filesList = utils.RemoveUselessArchiveFiles(filesList)
-
-	if len(filesList) > MaximumNumberOfFilesInArchive {
-		err = TOO_MANY_FILE_ERROR
 		return
 	}
 
 	var wg = sync.WaitGroup{}
 	var putError error
-	var putSemaphore = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
+	var mutex sync.Mutex
 
-	for _, v := range filesList {
-		if putError != nil {
-			err = putError
-			break
-		}
-		e := a.EntryFor(v)
-		if e != nil {
-			if e == io.EOF {
-				break
-			}
-
-			err = e
-			return
-		}
-		data, e := a.ReadAll()
-		if e != nil {
-			err = e
+	err = format.(archiver.Extractor).Extract(context.Background(), reader, nil, func(ctx context.Context, f archiver.File) (err error) {
+		if f.IsDir() {
 			return
 		}
 
-		publishedPath := this.GetPublishedPath(a.Name())
+		rc, err := f.Open()
+		if err != nil {
+			return
+		}
+		defer rc.Close()
+
+		filesList = append(filesList, f.NameInArchive)
+
+		publishedPath := getPath(f.NameInArchive)
 		wg.Add(1)
 		putSemaphore <- struct{}{}
 		go func() {
@@ -223,89 +187,17 @@ func (this *MicroSite) PublishArchiveFiles(fileName string, fileBytes []byte, st
 				<-putSemaphore
 				wg.Done()
 			}()
-			err2 := utils.Upload(storage, publishedPath, bytes.NewReader(data))
+			err2 := utils.Upload(storage, publishedPath, rc)
 			if err2 != nil {
-				putError = err2
+				mutex.Lock()
+				putError = multierror.Append(putError, err2).ErrorOrNil()
+				mutex.Unlock()
 			}
 		}()
-	}
 
-	if putError != nil {
-		err = putError
 		return
-	}
+	})
 	wg.Wait()
-
-	return
-}
-
-func (this *MicroSite) GetFilesListAndPublishPreviewFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (filesList []string, err error) {
-	a, err := unarr.NewArchiveFromMemory(fileBytes)
-	if err != nil {
-		if err.Error() == INVALID_ARCHIVER_ERROR.Error() {
-			filesList = append(filesList, fileName)
-			utils.Upload(storage, this.GetPreviewPath(fileName), bytes.NewReader(fileBytes))
-			return filesList, nil
-		}
-		return
-	}
-	defer a.Close()
-
-	filesList, err = a.List()
-	if err != nil {
-		return
-	}
-	filesList = utils.RemoveUselessArchiveFiles(filesList)
-
-	if len(filesList) > MaximumNumberOfFilesInArchive {
-		err = TOO_MANY_FILE_ERROR
-		return
-	}
-
-	var wg = sync.WaitGroup{}
-	var putError error
-	var putSemaphore = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
-
-	for _, v := range filesList {
-		if putError != nil {
-			err = putError
-			break
-		}
-		e := a.EntryFor(v)
-		if e != nil {
-			if e == io.EOF {
-				break
-			}
-
-			err = e
-			return
-		}
-		data, e := a.ReadAll()
-		if e != nil {
-			err = e
-			return
-		}
-
-		previewPath := this.GetPreviewPath(a.Name())
-		wg.Add(1)
-		putSemaphore <- struct{}{}
-		go func() {
-			defer func() {
-				<-putSemaphore
-				wg.Done()
-			}()
-			err2 := utils.Upload(storage, previewPath, bytes.NewReader(data))
-			if err2 != nil {
-				putError = err2
-			}
-		}()
-	}
-
-	if putError != nil {
-		err = putError
-		return
-	}
-	wg.Wait()
-
+	err = multierror.Append(err, putError).ErrorOrNil()
 	return
 }
