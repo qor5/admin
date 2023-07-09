@@ -39,7 +39,7 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 		}
 	}()
 
-	if storage, ok := storage.(DeleteObjecter); ok {
+	if storage, ok := storage.(DeleteObjectsInterface); ok {
 		var length = len(paths)
 		var i = 0
 		for i < length {
@@ -66,5 +66,21 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 		}
 	}
 
+	return
+}
+
+func Copy(storage oss.StorageInterface, from, to string) (err error) {
+	timeBegin := time.Now()
+	defer func() {
+		timeFinish := time.Now()
+		if err != nil {
+			//todo error log
+			log.Println(err)
+		} else {
+			fmt.Printf("copy: from %s to %s, time_spent_ms: %s \n", from, to, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
+		}
+	}()
+
+	err = storage.(CopyInterface).Copy(from, to)
 	return
 }
