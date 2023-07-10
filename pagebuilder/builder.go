@@ -275,7 +275,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			}
 			device := ctx.R.FormValue("device")
 			duplicateBtn := VBtn(msgr.Duplicate).
-				Small(true).Color("#235FF8").Height(40).Attr("style", "right:13px;").Class("ml-2").
+				Small(true).Color("#235FF8").Height(40).Class("rounded-l-0 mr-3").
 				Attr("@click", web.Plaid().
 					EventFunc(pv.DuplicateVersionEvent).
 					URL(pm.Info().ListingHref()).
@@ -307,7 +307,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						h.Text(p.GetVersionName()+" | "),
 						VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Small(true).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
 						VIcon("chevron_right"),
-					).Label(true).Outlined(true).Class("px-1 ml-8").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
+					).Label(true).Outlined(true).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
 						Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 							URL(b.ps.GetURIPrefix()+"/version-list-dialog").
 							Query(presets.ParamID, p.PrimarySlug()).

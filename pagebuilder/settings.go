@@ -89,11 +89,11 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 			vx.Card(overview).HeaderTitle("Overview").
 				Actions(
 					h.If(editBtn != nil, editBtn),
-				).Class("mb-4").Outlined(true),
+				).Class("mb-4 rounded-lg").Outlined(true),
 			vx.Card(pageState).HeaderTitle("Page State").
 				Actions(
 					h.If(pageStateBtn != nil, pageStateBtn),
-				).Class("mb-4").Outlined(true),
+				).Class("mb-4 rounded-lg").Outlined(true),
 			vx.Card(notesSetcion).HeaderTitle("Notes").
 				Actions(
 					VBtn("Create").Depressed(true).
@@ -103,7 +103,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 							Query(presets.ParamID, p.PrimarySlug()).
 							URL(mi.PresetsPrefix()+"/pages").Go(),
 						),
-				).Class("mb-4").Outlined(true),
+				).Class("mb-4 rounded-lg").Outlined(true),
 		).Cols(8)))
 	}
 }
