@@ -70,15 +70,15 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 					VCol(
 						VBtnToggle(
 							VBtn("").Icon(true).Children(
-								VIcon("laptop_mac"),
+								VIcon("laptop_mac").Small(true),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Computer).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
-								VIcon("tablet_mac"),
+								VIcon("tablet_mac").Small(true),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Tablet).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
-								VIcon("phone_iphone"),
+								VIcon("phone_iphone").Small(true),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Phone).PushState(true).Go()),
-						).Class("pa-2").Attr("v-model", "locals.activeDevice").
+						).Class("pa-2 rounded-lg").Attr("v-model", "locals.activeDevice").
 							Attr(web.InitContextLocals, fmt.Sprintf(`{activeDevice: %d}`, activeDevice)).Dense(true),
 					).Cols(9).Class("pa-2"),
 					VCol(

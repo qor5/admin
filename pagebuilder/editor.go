@@ -404,7 +404,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 								VListItemTitle(h.Text("{{item.label}}")).Attr(":style", "[item.shared ? {'color':'green'}:{}]"),
 							),
 							h.If(!isReadonly,
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit"))).Attr("@click",
+								VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit").Small(true))).Attr("@click",
 									web.Plaid().
 										URL(web.Var("item.url")).
 										EventFunc(actions.Edit).
@@ -412,7 +412,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										Query(presets.ParamID, web.Var("item.model_id")).
 										Go(),
 								).Class("my-2"),
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}"))).Attr("@click",
+								VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}").Small(true))).Attr("@click",
 									web.Plaid().
 										URL(web.Var("item.url")).
 										EventFunc(ToggleContainerVisibilityEvent).
@@ -484,7 +484,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					),
 					// ).Class("py-0"),
 				),
-			),
+			).Outlined(true),
 		).Class("pa-4 pt-2"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
 	return
