@@ -85,25 +85,31 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
 		}
-		return VContainer(VRow(VCol(
-			vx.Card(overview).HeaderTitle("Overview").
-				Actions(
-					h.If(editBtn != nil, editBtn),
-				).Class("mb-4 rounded-lg").Outlined(true),
-			vx.Card(pageState).HeaderTitle("Page State").
-				Actions(
-					h.If(pageStateBtn != nil, pageStateBtn),
-				).Class("mb-4 rounded-lg").Outlined(true),
-			vx.Card(notesSetcion).HeaderTitle("Notes").
-				Actions(
-					VBtn("Create").Depressed(true).
-						Attr("@click", web.POST().
-							EventFunc(createNoteDialogEvent).
-							Query(presets.ParamOverlay, actions.Dialog).
-							Query(presets.ParamID, p.PrimarySlug()).
-							URL(mi.PresetsPrefix()+"/pages").Go(),
-						),
-				).Class("mb-4 rounded-lg").Outlined(true),
-		).Cols(8)))
+		return VContainer(
+			VRow(
+				VCol(
+					vx.Card(overview).HeaderTitle("Overview").
+						Actions(
+							h.If(editBtn != nil, editBtn),
+						).Class("mb-4 rounded-lg").Outlined(true),
+					vx.Card(pageState).HeaderTitle("Page State").
+						Actions(
+							h.If(pageStateBtn != nil, pageStateBtn),
+						).Class("mb-4 rounded-lg").Outlined(true),
+				).Cols(8),
+				VCol(
+					vx.Card(notesSetcion).HeaderTitle("Notes").
+						Actions(
+							VBtn("Create").Depressed(true).
+								Attr("@click", web.POST().
+									EventFunc(createNoteDialogEvent).
+									Query(presets.ParamOverlay, actions.Dialog).
+									Query(presets.ParamID, p.PrimarySlug()).
+									URL(mi.PresetsPrefix()+"/pages").Go(),
+								),
+						).Class("mb-4 rounded-lg").Outlined(true),
+				).Cols(4),
+			),
+		)
 	}
 }
