@@ -397,7 +397,7 @@ function(e){
 		}
 	})
 
-	configureVersionListDialog(b.ps, pm)
+	configureVersionListDialog(db, b.ps, pm)
 
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
@@ -604,12 +604,12 @@ func versionCount(db *gorm.DB, p *Page) (count int64) {
 	return
 }
 
-func configureVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
+func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.ModelBuilder) {
 	mb := pb.Model(&Page{}).
 		URIName("version-list-dialog").
 		InMenu(false)
 	searcher := mb.Listing().Searcher
-	lb := mb.Listing("Version", "State", "VersionNote", "Option").
+	lb := mb.Listing("Version", "State", "Notes", "Option").
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -645,8 +645,20 @@ func configureVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) {
 		)
 	})
 	lb.Field("State").ComponentFunc(pv.StatusListFunc())
-	lb.Field("VersionNote").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Td(h.Text("todo"))
+	lb.Field("Notes").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		rt := pm.Info().Label()
+		ri := p.PrimarySlug()
+		userID, _ := note.GetUserData(ctx)
+		count := note.GetUnreadNotesCount(db, userID, rt, ri)
+
+		return h.Td(
+			h.If(count > 0,
+				VBadge().Content(count).Color("red"),
+			).Else(
+				h.Text(""),
+			),
+		)
 	})
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
