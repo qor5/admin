@@ -51,9 +51,20 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 			),
 		)
 		var notes []note.QorNote
-		db.Where("resource_type = ? and resource_id = ?", pm.Info().Label(), p.PrimarySlug()).
+		ri := p.PrimarySlug()
+		rt := pm.Info().Label()
+		db.Where("resource_type = ? and resource_id = ?", rt, ri).
 			Order("id DESC").Find(&notes)
 
+		if len(notes) > 0 {
+			userID, _ := note.GetUserData(ctx)
+			userNote := note.UserNote{UserID: userID, ResourceType: rt, ResourceID: ri}
+			db.Where(userNote).FirstOrCreate(&userNote)
+			if userNote.Number != int64(len(notes)) {
+				userNote.Number = int64(len(notes))
+				db.Save(&userNote)
+			}
+		}
 		var notesSetcion h.HTMLComponent
 		if len(notes) > 0 {
 			s := VContainer()

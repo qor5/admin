@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	mediav "github.com/qor5/admin/media/views"
+
 	"github.com/qor5/admin/note"
 
 	"github.com/qor5/admin/utils"
@@ -107,8 +109,6 @@ func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 		&Container{},
 		&DemoContainer{},
 		&Category{},
-		&note.QorNote{},
-		&note.UserNote{},
 	)
 	if err != nil {
 		panic(err)
@@ -183,14 +183,14 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder, publisher *publish.Builder) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
 	b.mb = pm
-	pm.Listing("ID", "Title", "Slug")
+	pm.Listing("ID", "Online", "Title", "Slug")
 	dp := pm.Detailing("Overview")
 	dp.Field("Overview").ComponentFunc(settings(db, pm))
 
@@ -588,6 +588,14 @@ function(e){
 	if l10nB != nil {
 		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM)
 	}
+	if publisher != nil {
+		publisher.WithPageBuilder(b)
+		pv.Configure(pb, db, activityB, publisher, pm)
+		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+	}
+	note.Configure(db, pb, pm)
+	eb.CleanTabsPanels()
+	mediav.Configure(b.GetPresetsBuilder(), db)
 	return
 }
 

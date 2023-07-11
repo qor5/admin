@@ -95,6 +95,11 @@ func (b *EditingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *EditingB
 	return b
 }
 
+func (b *EditingBuilder) CleanTabsPanels() (r *EditingBuilder) {
+	b.tabPanels = nil
+	return b
+}
+
 func (b *EditingBuilder) SidePanelFunc(v ComponentFunc) (r *EditingBuilder) {
 	b.sidePanel = v
 	return b
