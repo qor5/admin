@@ -26,8 +26,12 @@ type DataOperatorBuilder struct {
 
 func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 	ilike := "ILIKE"
+	text := "TEXT"
 	if op.db.Dialect().GetName() == "sqlite3" {
 		ilike = "LIKE"
+	}
+	if op.db.Dialect().GetName() == "mysql" {
+		text = "CHAR"
 	}
 
 	wh := op.db.Model(obj)
@@ -35,7 +39,7 @@ func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchPar
 		var segs []string
 		var args []interface{}
 		for _, c := range params.KeywordColumns {
-			segs = append(segs, fmt.Sprintf("%s %s ?", c, ilike))
+			segs = append(segs, fmt.Sprintf("CAST(%s AS %s) %s ?", c, text, ilike))
 			kw := wildcardReg.ReplaceAllString(params.Keyword, `\$0`)
 			args = append(args, fmt.Sprintf("%%%s%%", kw))
 		}
