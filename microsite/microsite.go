@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -117,21 +116,15 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 
 func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) > 0 {
-		var f *os.File
-		f, err = storage.Get(this.Package.Url)
-		if err != nil {
-			return
-		}
-
-		_, err = this.UnArchiveAndPublish(this.GetPublishedPath, this.Package.FileName, f, storage)
-		if err != nil {
-			return
-		}
-
 		var previewPaths []string
 		for _, v := range this.GetFileList() {
+			err = utils.Copy(storage, this.GetPreviewPath(v), this.GetPublishedPath(v))
+			if err != nil {
+				return
+			}
 			previewPaths = append(previewPaths, this.GetPreviewPath(v))
 		}
+
 		err = utils.DeleteObjects(storage, previewPaths)
 		if err != nil {
 			return
