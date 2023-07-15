@@ -62,7 +62,6 @@ type Config struct {
 
 func NewConfig() Config {
 	db := ConnectDB()
-	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
@@ -70,10 +69,11 @@ func NewConfig() Config {
 		Session: sess,
 	})
 	PublishStorage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Publish_Bucket"),
-		Region:  os.Getenv("S3_Publish_Region"),
-		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session: sess,
+		Bucket:   os.Getenv("S3_Publish_Bucket"),
+		Region:   os.Getenv("S3_Publish_Region"),
+		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+		Session:  sess,
+		Endpoint: os.Getenv("PUBLISH_URL"),
 	})
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
@@ -446,7 +446,7 @@ func NewConfig() Config {
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 				)
-				domain := os.Getenv("PUBLISH_URL")
+				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.OnlineUrl
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -477,7 +477,7 @@ func NewConfig() Config {
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 				)
-				domain := os.Getenv("PUBLISH_URL")
+				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.GetPageNumber()))
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -512,7 +512,7 @@ func NewConfig() Config {
 		SearchColumns("ID", "Name").
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, ab, PublishStorage, domain, publisher, mm)
+	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
