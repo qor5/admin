@@ -117,18 +117,37 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) > 0 {
 		var previewPaths []string
+
+		var wg = sync.WaitGroup{}
+		var copyError error
+		var mutex sync.Mutex
 		for _, v := range this.GetFileList() {
-			err = utils.Copy(storage, this.GetPreviewPath(v), this.GetPublishedPath(v))
-			if err != nil {
-				return
-			}
-			previewPaths = append(previewPaths, this.GetPreviewPath(v))
+			wg.Add(1)
+			copySemaphore <- struct{}{}
+			go func(v string) {
+				defer func() {
+					wg.Done()
+					<-copySemaphore
+				}()
+				err = utils.Copy(storage, this.GetPreviewPath(v), this.GetPublishedPath(v))
+				if err != nil {
+					mutex.Lock()
+					copyError = multierror.Append(copyError, err).ErrorOrNil()
+					mutex.Unlock()
+					return
+				}
+				mutex.Lock()
+				previewPaths = append(previewPaths, this.GetPreviewPath(v))
+				mutex.Unlock()
+			}(v)
 		}
 
-		err = utils.DeleteObjects(storage, previewPaths)
-		if err != nil {
-			return
+		wg.Wait()
+
+		if len(previewPaths) > 0 {
+			err = utils.DeleteObjects(storage, previewPaths)
 		}
+		err = multierror.Append(err, copyError).ErrorOrNil()
 	}
 	return
 }

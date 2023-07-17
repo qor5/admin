@@ -23,6 +23,7 @@ import (
 	"github.com/qor5/admin/media/media_library"
 	media_oss "github.com/qor5/admin/media/oss"
 	media_view "github.com/qor5/admin/media/views"
+	microsite_utils "github.com/qor5/admin/microsite/utils"
 	microsite_views "github.com/qor5/admin/microsite/views"
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/pagebuilder"
@@ -68,13 +69,13 @@ func NewConfig() Config {
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-	PublishStorage = s3.New(&s3.Config{
+	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
 		Bucket:   os.Getenv("S3_Publish_Bucket"),
 		Region:   os.Getenv("S3_Publish_Region"),
 		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session:  sess,
 		Endpoint: os.Getenv("PUBLISH_URL"),
-	})
+	}))
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {

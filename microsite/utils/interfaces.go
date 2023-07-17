@@ -7,3 +7,7 @@ type DeleteObjectsInterface interface {
 type CopyInterface interface {
 	Copy(from, to string) (err error)
 }
+
+type GetBucketInterface interface {
+	GetBucket() string
+}
