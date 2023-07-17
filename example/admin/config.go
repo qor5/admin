@@ -509,7 +509,7 @@ func NewConfig() Config {
 	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
-		SearchColumns("ID", "Name").
+		SearchColumns("ID::text", "Name").
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, media_oss.Storage, domain, publisher, mm)
