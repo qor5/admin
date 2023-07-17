@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
-	github.com/aws/aws-sdk-go v1.44.265
+	github.com/aws/aws-sdk-go v1.44.300
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi v1.5.4
@@ -22,7 +22,7 @@ require (
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.4.0
-	github.com/qor/oss v0.0.0-20230714071615-1ebd53398ed5
+	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/ui v1.0.1-0.20221212071205-e794612c1e84
 	github.com/qor5/web v1.2.4
 	github.com/qor5/x v1.2.1-0.20230703035938-40997f230eb2
