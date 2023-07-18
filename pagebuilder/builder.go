@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	mediav "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/seo"
 
 	"github.com/qor5/admin/note"
 
@@ -93,6 +94,9 @@ const (
 
 	createNoteDialogEvent = "createNoteDialogEvent"
 	createNoteEvent       = "createNoteEvent"
+
+	editSEODialogEvent = "editSEODialogEvent"
+	updateSEOEvent     = "updateSEOEvent"
 
 	selectVersionEvent       = "selectVersionEvent"
 	renameVersionDialogEvent = "renameVersionDialogEvent"
@@ -183,7 +187,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder, publisher *publish.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder, publisher *publish.Builder, seoCollection *seo.Collection) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -406,6 +410,8 @@ function(e){
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
+	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoCollection))
+	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
 
 	eb := pm.Editing("Title", "Slug", "CategoryID")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -527,6 +533,13 @@ function(e){
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
 		}
+		funcName := ctx.R.FormValue(web.EventFuncIDName)
+		if funcName == pv.DuplicateVersionEvent {
+			id := ctx.R.FormValue(presets.ParamID)
+			var fromPage Page
+			eb.Fetcher(&fromPage, id, ctx)
+			p.SEO = fromPage.SEO
+		}
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
 			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
@@ -592,6 +605,17 @@ function(e){
 		publisher.WithPageBuilder(b)
 		pv.Configure(pb, db, activityB, publisher, pm)
 		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+	}
+	if seoCollection != nil {
+		seoCollection.RegisterSEO(&Page{}).RegisterContextVariables(
+			"Title",
+			func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+				if p, ok := object.(Page); ok {
+					return p.Title
+				}
+				return ""
+			},
+		)
 	}
 	note.Configure(db, pb, pm)
 	eb.CleanTabsPanels()
@@ -1172,6 +1196,76 @@ func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		var total int64
 		db.Model(&note.QorNote{}).Where("resource_type = ? AND resource_id = ?", rt, ri).Count(&total)
 		db.Model(&userNote).UpdateColumn("Number", total)
+		r.PushState = web.Location(nil)
+		return
+	}
+}
+
+func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoCollection *seo.Collection) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+
+		//msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
+		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		updateBtn := VBtn(cmsgr.Update).
+			Color("primary").
+			Attr(":disabled", "isFetching").
+			Attr(":loading", "isFetching").
+			Attr("@click", web.Plaid().
+				EventFunc(updateSEOEvent).
+				//Queries(queries).
+				Query(presets.ParamID, paramID).
+				//Query(presets.ParamOverlay, actions.Dialog).
+				URL(mb.Info().ListingHref()).
+				Go())
+		ctx.R.Form.Set("openCustomizePanel", "0")
+		seoForm := seoCollection.EditingComponentFunc(obj, nil, ctx)
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						VCardTitle(h.Text("")),
+						VCardText(
+							seoForm,
+						),
+						VCardActions(
+							VSpacer(),
+							updateBtn,
+						),
+					),
+				).MaxWidth("650px").
+					Attr("v-model", "locals.editSEODialog"),
+			).Init("{editSEODialog:true}").VSlot("{locals}"),
+		})
+		return
+	}
+}
+
+func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+		err = seo.EditSetterFunc(obj, &presets.FieldContext{Name: "SEO"}, ctx)
+		if err != nil {
+			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
+			return
+		}
+		err = mb.Editing().Saver(obj, paramID, ctx)
+		if err != nil {
+			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
+			return
+		}
 		r.PushState = web.Location(nil)
 		return
 	}

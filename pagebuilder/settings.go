@@ -69,13 +69,14 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		if len(notes) > 0 {
 			s := VContainer()
 			for _, note := range notes {
-				s.AppendChildren(VRow(h.Text(note.Content)).Class("ma-1"))
-				s.AppendChildren(VRow(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("ma-1 mb-2"))
+				s.AppendChildren(VRow(VCardText(h.Text(note.Content)).Class("pb-0")))
+				s.AppendChildren(VRow(VCardText(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("pt-0")))
 			}
 			notesSetcion = s
 		}
 		var editBtn h.HTMLComponent
 		var pageStateBtn h.HTMLComponent
+		var seoBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
 		if p.GetStatus() == publish.StatusDraft {
 			editBtn = VBtn("Edit").Depressed(true).
@@ -85,17 +86,35 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
+			seoBtn = VBtn("Edit").Depressed(true).
+				Attr("@click", web.POST().
+					EventFunc(editSEODialogEvent).
+					Query(presets.ParamOverlay, actions.Drawer).
+					Query(presets.ParamID, p.PrimarySlug()).
+					URL(mi.PresetsPrefix()+"/pages").Go(),
+				)
 		}
 		if p.GetStatus() == publish.StatusOnline {
 			pageStateBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
 		} else {
 			pageStateBtn = VBtn("Schedule Publish").Depressed(true).
-				Attr("@click", web.POST().EventFunc(schedulePublishDialogEvent).
+				Attr("@click", web.POST().
+					EventFunc(schedulePublishDialogEvent).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
 		}
+
+		seoState := "Default"
+		if p.SEO.EnabledCustomize {
+			seoState = "Customized"
+		}
+		seo := vx.DetailInfo(
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(seoState)).Label("State"),
+			),
+		)
 		return VContainer(
 			VRow(
 				VCol(
@@ -106,6 +125,10 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 					vx.Card(pageState).HeaderTitle("Page State").
 						Actions(
 							h.If(pageStateBtn != nil, pageStateBtn),
+						).Class("mb-4 rounded-lg").Outlined(true),
+					vx.Card(seo).HeaderTitle("SEO").
+						Actions(
+							h.If(seoBtn != nil, seoBtn),
 						).Class("mb-4 rounded-lg").Outlined(true),
 				).Cols(8),
 				VCol(

@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/media/views"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -43,16 +43,8 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(Setting{}).
-		ComponentFunc(collection.editingComponentFunc).
-		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			var setting Setting
-			for key := range ctx.R.Form {
-				if strings.HasPrefix(key, fmt.Sprintf("%s.", field.Name)) {
-					reflectutils.Set(&setting, strings.TrimPrefix(key, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(key))
-				}
-			}
-			return reflectutils.Set(obj, field.Name, setting)
-		})
+		ComponentFunc(collection.EditingComponentFunc).
+		SetterFunc(EditSetterFunc)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
@@ -62,7 +54,17 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 	permVerifier = perm.NewVerifier("seo", b.GetPermission())
 }
 
-func (collection *Collection) editingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+	var setting Setting
+	for key := range ctx.R.Form {
+		if strings.HasPrefix(key, fmt.Sprintf("%s.", field.Name)) {
+			reflectutils.Set(&setting, strings.TrimPrefix(key, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(key))
+		}
+	}
+	return reflectutils.Set(obj, field.Name, setting)
+}
+
+func (collection *Collection) EditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 		fieldPrefix string
@@ -81,6 +83,15 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 			fieldPrefix = value.Type().Field(i).Name
 		}
 	}
+	openCustomizePanel := "1"
+	hideActions := false
+	o := ctx.R.FormValue("openCustomizePanel")
+	if setting.EnabledCustomize && o != "" {
+		openCustomizePanel = o
+	}
+	if o != "" {
+		hideActions = true
+	}
 
 	return web.Scope(
 		h.Div(
@@ -89,22 +100,20 @@ func (collection *Collection) editingComponentFunc(obj interface{}, field *prese
 				VExpansionPanel(
 					VExpansionPanelHeader(
 						h.HTMLComponents{
-							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);event.stopPropagation();"),
+							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}"),
 							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
 						},
-					).Attr("style", "padding: 0px 24px;"),
+					).Attr("style", "padding: 0px 24px;").HideActions(hideActions),
 
 					VExpansionPanelContent(
-						VCard(
-							VCardText(
-								collection.vseo(fieldPrefix, seo, &setting, ctx.R),
-							),
-						).Elevation(0),
+						VCardText(
+							collection.vseo(fieldPrefix, seo, &setting, ctx.R),
+						),
 					).Eager(true),
 				),
-			),
+			).Flat(true).Attr("v-model", "locals.openCustomizePanel"),
 		).Class("pb-4"),
-	).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t}`, setting.EnabledCustomize, !setting.EnabledCustomize)).
+	).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t, openCustomizePanel: %s, }`, setting.EnabledCustomize, !setting.EnabledCustomize, openCustomizePanel)).
 		VSlot("{ locals }")
 }
 
@@ -260,7 +269,7 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 				VTextField().Counter(150).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
 				VTextarea().Counter(255).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 			),
-		).Elevation(1),
+		).Outlined(true).Flat(true),
 
 		h.H4(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;font-weight: 500"),
 		VCard(
@@ -294,7 +303,7 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 							},
 						})).Cols(12)),
 			),
-		).Elevation(1),
+		).Outlined(true).Flat(true),
 	).Attr("ref", "seo")
 }
 

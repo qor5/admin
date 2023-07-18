@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/seo"
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,7 @@ type Page struct {
 	Slug       string
 	CategoryID uint
 
+	SEO seo.Setting
 	publish.Status
 	publish.Schedule
 	publish.Version

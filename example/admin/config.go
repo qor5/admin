@@ -396,7 +396,7 @@ func NewConfig() Config {
 	publisher := publish.New(db, PublishStorage).WithL10nBuilder(l10nBuilder)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db, l10nBuilder, ab, publisher)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab, publisher, SeoCollection)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
