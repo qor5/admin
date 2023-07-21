@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
@@ -158,7 +159,7 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 	if err != nil {
 		return
 	}
-	r.Body = b.editFormFor(obj, ctx)
+	r.Body = web.Portal(b.editFormFor(obj, ctx)).Name(singletonEditingPortalName)
 	return
 }
 
@@ -201,25 +202,37 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	}
 
 	var notice h.HTMLComponent
-	if msg, ok := ctx.Flash.(string); ok {
-		if len(msg) > 0 {
-			notice = VAlert(h.Text(msg)).
-				Border("left").
-				Type("success").
-				Elevation(2).
-				ColoredBorder(true)
+	{
+		var text string
+		var color string
+		if msg, ok := ctx.Flash.(string); ok {
+			if len(msg) > 0 {
+				text = msg
+				color = "success"
+			}
 		}
-	}
-
-	vErr, ok := ctx.Flash.(*web.ValidationErrors)
-	if ok {
-		gErr := vErr.GetGlobalError()
-		if len(gErr) > 0 {
-			notice = VAlert(h.Text(gErr)).
-				Border("left").
-				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+		vErr, ok := ctx.Flash.(*web.ValidationErrors)
+		if ok {
+			gErr := vErr.GetGlobalError()
+			if len(gErr) > 0 {
+				text = gErr
+				color = "error"
+			}
+		}
+		if text != "" {
+			showVar := fmt.Sprintf("id%d", uuid.New().ID())
+			notice = VSnackbar().Top(true).Timeout(-1).Color(color).
+				Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
+				Attr(web.InitContextVars, fmt.Sprintf(`{%s: true}`, showVar)).
+				Children(
+					h.Text(text),
+					h.Template().Attr("v-slot:action", "{ attrs }").Children(
+						VBtn("").Text(true).
+							Attr("v-bind", "attrs").
+							Attr("@click", fmt.Sprintf("vars.%s = false", showVar)).
+							Children(VIcon("close")),
+					),
+				)
 		}
 	}
 
@@ -256,7 +269,6 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 
 	formContent := h.Components(
 		VCardText(
-			notice,
 			h.Components(hiddenComps...),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
@@ -303,6 +315,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	}
 
 	return web.Scope(
+		notice,
 		h.If(!b.mb.singleton,
 			VAppBar(
 				VToolbarTitle("").Class("pl-2").
@@ -523,6 +536,10 @@ func (b *EditingBuilder) UpdateOverlayContent(
 
 	if overlayType == actions.Dialog {
 		p = dialogContentPortalName
+	}
+
+	if b.mb.singleton {
+		p = singletonEditingPortalName
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
