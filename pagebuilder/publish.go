@@ -36,19 +36,17 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		}
 	}
 
-	var categoryPath string
 	var category Category
-	if err = db.Where("id = ?", p.CategoryID).First(&category).Error; err != nil && err != gorm.ErrRecordNotFound {
+	category, err = p.GetCategory(db)
+	if err != nil {
 		return
 	}
-	err = nil
-	categoryPath = category.Path
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.getPublishUrl(localePath, categoryPath),
+		Url:      p.getPublishUrl(localePath, category.Path),
 		Content:  content,
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getPublishUrl(localePath, categoryPath))
+	p.SetOnlineUrl(p.getPublishUrl(localePath, category.Path))
 
 	var liveRecord Page
 	{
@@ -80,8 +78,12 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 	return
 }
 
+func generatePublishUrl(localePath, categoryPath, slug string) string {
+	return path.Join("/", localePath, categoryPath, slug, "/index.html")
+}
+
 func (p *Page) getPublishUrl(localePath, categoryPath string) string {
-	return path.Join(localePath, categoryPath, p.Slug, "/index.html")
+	return generatePublishUrl(localePath, categoryPath, p.Slug)
 }
 
 func (p *Page) getAccessUrl(publishUrl string) string {
