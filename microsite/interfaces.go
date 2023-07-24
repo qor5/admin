@@ -1,6 +1,10 @@
 package microsite
 
-import "github.com/qor/oss"
+import (
+	"io"
+
+	"github.com/qor/oss"
+)
 
 type MicroSiteInterface interface {
 	GetID() uint
@@ -10,7 +14,8 @@ type MicroSiteInterface interface {
 	GetStatus() string
 
 	GetPackagePath(fileName string) string
-	GetPreviewPrePath() string
+	GetPackageUrl(domain string) string
+	GetPreviewPath(fileName string) string
 	GetPreviewUrl(domain, fileName string) string
 	GetPublishedPath(fileName string) string
 	GetPublishedUrl(domain, fileName string) string
@@ -18,7 +23,5 @@ type MicroSiteInterface interface {
 	SetFilesList(filesList []string)
 	GetPackage() FileSystem
 	SetPackage(fileName, url string)
-	GetPackageUrl(domain string) string
-	GetFilesListAndPublishPreviewFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (filesList []string, err error)
-	PublishArchiveFiles(fileName string, fileBytes []byte, storage oss.StorageInterface) (err error)
+	UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error)
 }

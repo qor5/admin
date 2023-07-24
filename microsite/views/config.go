@@ -3,7 +3,7 @@ package views
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/activity"
@@ -22,7 +22,7 @@ import (
 
 const I18nMicrositeKey i18n.ModuleKey = "I18nMicrositeKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, storage oss.StorageInterface, domain string, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, storage oss.StorageInterface, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
@@ -42,7 +42,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					h.Div(
 						h.Div(
 							h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), "Current Package")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
-							h.A().Href(this.GetPackageUrl(domain)).Text(this.GetPackage().FileName),
+							h.A().Href(this.GetPackageUrl(storage.GetEndpoint())).Text(this.GetPackage().FileName),
 						).Class("v-text-field__slot").Style("padding: 8px 0;"),
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
@@ -81,12 +81,12 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					return
 				}
 
-				fileBytes, err := ioutil.ReadAll(f)
+				fileBytes, err := io.ReadAll(f)
 				if err != nil {
 					return
 				}
 
-				filesList, err := this.GetFilesListAndPublishPreviewFiles(fileName, fileBytes, storage)
+				filesList, err := this.UnArchiveAndPublish(this.GetPreviewPath, fileName, bytes.NewReader(fileBytes), storage)
 				if err != nil {
 					return
 				}
@@ -120,14 +120,14 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 						if k != 0 {
 							content = append(content, h.Br())
 						}
-						content = append(content, h.A(h.Text(v)).Href(this.GetPublishedUrl(domain, v)))
+						content = append(content, h.A(h.Text(v)).Href(this.GetPublishedUrl(storage.GetEndpoint(), v)))
 					}
 				} else {
 					for k, v := range this.GetFileList() {
 						if k != 0 {
 							content = append(content, h.Br())
 						}
-						content = append(content, h.A(h.Text(v)).Href(this.GetPreviewUrl(domain, v)))
+						content = append(content, h.A(h.Text(v)).Href(this.GetPreviewUrl(storage.GetEndpoint(), v)))
 					}
 				}
 
