@@ -53,7 +53,7 @@ func proxy(r *http.Request) []string {
 	return nil
 }
 
-func ExportOrders(db *gorm.DB) http.Handler {
+func exportOrders(db *gorm.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var orders []*models.Order
 

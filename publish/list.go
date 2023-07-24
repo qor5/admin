@@ -1,11 +1,14 @@
 package publish
 
+// @snippet_begin(PublishList)
 type List struct {
 	PageNumber  int
 	Position    int
 	ListDeleted bool
 	ListUpdated bool
 }
+
+// @snippet_end
 
 func (this List) GetPageNumber() int {
 	return this.PageNumber

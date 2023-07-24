@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"reflect"
 
-	"github.com/biter777/countries"
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
@@ -18,6 +17,9 @@ import (
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
+
+const WrapHandlerKey = "l10nWrapHandlerKey"
+const MenuTopItemFunc = "l10nMenuTopItemFunc"
 
 func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.ActivityBuilder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
@@ -74,8 +76,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			return nil
 		})
 
-	b.AddWrapHandler(lb.EnsureLocale)
-	b.AddMenuTopItemFunc(runSwitchLocaleFunc(lb))
+	b.AddWrapHandler(WrapHandlerKey, lb.EnsureLocale)
+	b.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(lb))
 	b.I18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
@@ -88,10 +90,10 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 		if err != nil {
 			return nil
 		}
-		fromLocale := lb.GetCorrectLocale(ctx.R)
+		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
 
 		objs := reflect.New(reflect.SliceOf(reflect.TypeOf(obj).Elem())).Interface()
-		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(objs).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(objs).Error
 		if err != nil {
 			return nil
 		}
@@ -101,10 +103,10 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 			existLocales = append(existLocales, vo.Index(i).FieldByName("LocaleCode").String())
 		}
 
-		allLocales := lb.GetSupportLocalesFromRequest(ctx.R)
-		var otherLocales []countries.CountryCode
+		allLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
+		var otherLocales []string
 		for _, locale := range allLocales {
-			if utils.Contains(existLocales, lb.GetLocaleCode(locale)) {
+			if utils.Contains(existLocales, locale) {
 				otherLocales = append(otherLocales, locale)
 			}
 		}
@@ -123,9 +125,9 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 
 func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {
 	return func(ctx *web.EventContext) (r h.HTMLComponent) {
-		var supportLocales = lb.GetSupportLocalesFromRequest(ctx.R)
+		var supportLocales = lb.GetSupportLocaleCodesFromRequest(ctx.R)
 
-		if len(lb.GetSupportLocales()) <= 1 || len(supportLocales) == 0 {
+		if len(lb.GetSupportLocaleCodes()) <= 1 || len(supportLocales) == 0 {
 			return nil
 		}
 
@@ -146,11 +148,11 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 							),
 						).Class("pa-0").Dense(true),
 					).Class("pa-0 ma-n4 mt-n6"),
-				).Attr("@click", web.Plaid().Query(localeQueryName, lb.GetLocaleCode(supportLocales[0])).Go()),
+				).Attr("@click", web.Plaid().Query(localeQueryName, supportLocales[0]).Go()),
 			)
 		}
 
-		locale := lb.GetCorrectLocale(ctx.R)
+		locale := lb.GetCorrectLocaleCode(ctx.R)
 
 		var locales []h.HTMLComponent
 		for _, contry := range supportLocales {
@@ -162,7 +164,7 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 								h.Div(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(contry)))),
 							),
 						),
-					).Attr("@click", web.Plaid().Query(localeQueryName, lb.GetLocaleCode(contry)).Go()),
+					).Attr("@click", web.Plaid().Query(localeQueryName, contry).Go()),
 				),
 			)
 		}

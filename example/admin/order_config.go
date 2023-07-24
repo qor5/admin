@@ -86,7 +86,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 			Color("primary").
 			Depressed(true).
 			Class("ml-2").
-			Href("/export-orders")
+			Href(exportOrdersURL)
 	})
 
 	lb.BulkAction("Change status").ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {

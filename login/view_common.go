@@ -2,6 +2,7 @@ package login
 
 import (
 	"fmt"
+	"net/http"
 
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -21,6 +22,26 @@ type ViewCommon struct {
 	WrapperStyle string
 	TitleClass   string
 	LabelClass   string
+}
+
+func (vc *ViewCommon) Notice(vh *login.ViewHelper, msgr *login.Messages, w http.ResponseWriter, r *http.Request) HTMLComponent {
+	var nn HTMLComponent
+	if n := vh.GetNoticeFlash(w, r); n != nil && n.Message != "" {
+		switch n.Level {
+		case login.NoticeLevel_Info:
+			nn = vc.InfoNotice(n.Message)
+		case login.NoticeLevel_Warn:
+			nn = vc.WarnNotice(n.Message)
+		case login.NoticeLevel_Error:
+			nn = vc.ErrNotice(n.Message)
+		}
+	}
+	return Components(
+		vc.ErrNotice(vh.GetFailFlashMessage(msgr, w, r)),
+		vc.WarnNotice(vh.GetWarnFlashMessage(msgr, w, r)),
+		vc.InfoNotice(vh.GetInfoFlashMessage(msgr, w, r)),
+		nn,
+	)
 }
 
 func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {

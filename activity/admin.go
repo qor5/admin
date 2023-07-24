@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -25,6 +25,10 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
+
+	if permB := b.GetPermission(); permB != nil {
+		permB.CreatePolicies(permPolicy)
+	}
 
 	var (
 		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
@@ -148,7 +152,12 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 
 			var detailElems []h.HTMLComponent
 			detailElems = append(detailElems, vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffDetail)),
+				vuetify.VCardTitle(
+					vuetify.VBtn("").Children(
+						vuetify.VIcon("arrow_back").Class("pr-2").Small(true),
+					).Icon(true).Attr("@click", "window.history.back()"),
+					h.Text(msgr.DiffDetail),
+				),
 				vuetify.VSimpleTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),

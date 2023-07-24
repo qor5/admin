@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM golang:1.20.5-alpine as builder
 RUN apk update && apk add git gcc libc-dev sqlite sqlite-dev && rm -rf /var/cache/apk/*
 ARG GITHUB_TOKEN
 WORKDIR /qor5

@@ -166,7 +166,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 	objs = b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err1 = UploadOrDelete(objs, b.storage); err1 != nil {
 			return
 		}
 
@@ -205,7 +205,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		}
 		return
 	})
-	return nil
+	return
 }
 
 func (b *ListPublishBuilder) NeedNextPageFunc(f func(totalNumberPerPage, currentPageNumber, totalNumberOfItems int) bool) *ListPublishBuilder {

@@ -3,10 +3,34 @@ package models
 import (
 	"time"
 
-	"github.com/qor5/x/login"
 	"github.com/qor5/admin/role"
+	"github.com/qor5/x/login"
 	"gorm.io/gorm"
 )
+
+const (
+	RoleAdmin   = "Admin"
+	RoleManager = "Manager"
+	RoleEditor  = "Editor"
+	RoleViewer  = "Viewer"
+
+	OAuthProviderGoogle          = "google"
+	OAuthProviderMicrosoftOnline = "microsoftonline"
+	OAuthProviderGithub          = "github"
+)
+
+var DefaultRoles = []string{
+	RoleAdmin,
+	RoleManager,
+	RoleEditor,
+	RoleViewer,
+}
+
+var OAuthProviders = []string{
+	OAuthProviderGoogle,
+	OAuthProviderMicrosoftOnline,
+	OAuthProviderGithub,
+}
 
 type User struct {
 	gorm.Model
@@ -19,6 +43,10 @@ type User struct {
 	CreatedAt        time.Time
 	FavorPostID      uint
 	RegistrationDate time.Time `gorm:"type:date"`
+
+	Position        string
+	IsSubscribed    bool
+	IsInfoCompleted bool
 
 	// Username is email
 	login.UserPass
@@ -39,7 +67,11 @@ func (u User) GetRoles() (rs []string) {
 		rs = append(rs, r.Name)
 	}
 	if len(rs) == 0 {
-		rs = []string{"root"}
+		rs = []string{RoleViewer}
 	}
 	return
+}
+
+func (u User) IsOAuthUser() bool {
+	return u.OAuthProvider != "" && u.OAuthIdentifier != ""
 }

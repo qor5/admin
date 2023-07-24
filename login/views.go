@@ -17,7 +17,6 @@ import (
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
-	"gorm.io/gorm"
 )
 
 type languageItem struct {
@@ -56,15 +55,6 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		}
 		// i18n end
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-		wMsg := vh.GetWarnFlashMessage(msgr, ctx.W, ctx.R)
-		iMsg := vh.GetInfoFlashMessage(msgr, ctx.W, ctx.R)
-		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
-
-		if iMsg != "" && vh.GetInfoCodeFlash(ctx.W, ctx.R) == login.InfoCodePasswordSuccessfullyChanged {
-			wMsg = ""
-		}
-
 		var oauthHTML HTMLComponent
 		if vh.OAuthEnabled() {
 			ul := Div().Class("d-flex flex-column justify-center mt-8 text-center")
@@ -90,6 +80,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			)
 		}
 
+		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
 		isRecaptchaEnabled := vh.RecaptchaEnabled()
 		if isRecaptchaEnabled {
 			DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
@@ -125,7 +116,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			)
 		}
 
-		r.PageTitle = "Sign In"
+		r.PageTitle = msgr.LoginPageTitle
 		var bodyForm HTMLComponent
 		bodyForm = Div(
 			userPassHTML,
@@ -146,9 +137,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle)
 
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
-			DefaultViewCommon.WarnNotice(wMsg),
-			DefaultViewCommon.InfoNotice(iMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			bodyForm,
 		)
 
@@ -160,7 +149,6 @@ func defaultForgetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
 		wIn := vh.GetWrongForgetPasswordInputFlash(ctx.W, ctx.R)
 		secondsToResend := vh.GetSecondsToRedoFlash(ctx.W, ctx.R)
 		activeBtnText := msgr.SendResetPasswordEmailBtn
@@ -178,9 +166,9 @@ func defaultForgetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 			DefaultViewCommon.InjectRecaptchaAssets(ctx, "forget-form", "token")
 		}
 
-		r.PageTitle = "Forget Your Password?"
+		r.PageTitle = msgr.ForgetPasswordPageTitle
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			If(secondsToResend > 0,
 				DefaultViewCommon.WarnNotice(msgr.SendEmailTooFrequentlyNotice),
 			),
@@ -247,8 +235,9 @@ func defaultResetPasswordLinkSentPage(vh *login.ViewHelper, pb *presets.Builder)
 
 		a := ctx.R.URL.Query().Get("a")
 
-		r.PageTitle = "Forget Your Password?"
+		r.PageTitle = msgr.ResetPasswordLinkSentPageTitle
 		r.Body = Div(
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
 				H1(fmt.Sprintf("%s %s.", msgr.ResetPasswordLinkWasSentTo, a)).Class("text-h5"),
 				H2(msgr.ResetPasswordLinkSentPrompt).Class("text-body-1 mt-2"),
@@ -262,10 +251,6 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-		if fMsg == "" {
-			fMsg = vh.GetCustomErrorMessageFlash(ctx.W, ctx.R)
-		}
 		wIn := vh.GetWrongResetPasswordInputFlash(ctx.W, ctx.R)
 
 		doTOTP := ctx.R.URL.Query().Get("totp") == "1"
@@ -276,7 +261,7 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 
 		var user interface{}
 
-		r.PageTitle = "Reset Password"
+		r.PageTitle = msgr.ResetPasswordPageTitle
 
 		query := ctx.R.URL.Query()
 		id := query.Get("id")
@@ -286,12 +271,11 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 		} else {
 			user, err = vh.FindUserByID(id)
 			if err != nil {
-				if err == gorm.ErrRecordNotFound {
+				if err == login.ErrUserNotFound {
 					r.Body = Div(Text("user not found"))
 					return r, nil
 				}
-				r.Body = Div(Text("system error"))
-				return r, nil
+				panic(err)
 			}
 		}
 		token := query.Get("token")
@@ -313,7 +297,7 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 		DefaultViewCommon.InjectZxcvbn(ctx)
 
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
 				H1(msgr.ResetYourPasswordTitle).Class(DefaultViewCommon.TitleClass),
 				Form(
@@ -345,18 +329,14 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-		if fMsg == "" {
-			fMsg = vh.GetCustomErrorMessageFlash(ctx.W, ctx.R)
-		}
 		wIn := vh.GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
 
 		DefaultViewCommon.InjectZxcvbn(ctx)
 
-		r.PageTitle = "Change Password"
+		r.PageTitle = msgr.ChangePasswordPageTitle
 
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
 				H1(msgr.ChangePasswordTitle).Class(DefaultViewCommon.TitleClass),
 				Form(
@@ -453,8 +433,6 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-
 		user := login.GetCurrentUser(ctx.R)
 		u := user.(login.UserPasser)
 
@@ -488,9 +466,9 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 			return
 		}
 
-		r.PageTitle = "TOTP Setup"
+		r.PageTitle = msgr.TOTPSetupPageTitle
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
 				Div(
 					H1(msgr.TOTPSetupTitle).
@@ -520,11 +498,9 @@ func defaultTOTPValidatePage(vh *login.ViewHelper, pb *presets.Builder) web.Page
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 
-		fMsg := vh.GetFailFlashMessage(msgr, ctx.W, ctx.R)
-
-		r.PageTitle = "TOTP Validate"
+		r.PageTitle = msgr.TOTPValidatePageTitle
 		r.Body = Div(
-			DefaultViewCommon.ErrNotice(fMsg),
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
 				Div(
 					H1(msgr.TOTPValidateTitle).

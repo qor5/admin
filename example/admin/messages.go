@@ -7,27 +7,143 @@ import (
 const I18nExampleKey i18n.ModuleKey = "I18nExampleKey"
 
 type Messages struct {
-	FilterTabsAll            string
-	FilterTabsHasUnreadNotes string
-	FilterTabsActive         string
+	FilterTabsAll                  string
+	FilterTabsHasUnreadNotes       string
+	FilterTabsActive               string
+	DemoTips                       string
+	DemoUsernameLabel              string
+	DemoPasswordLabel              string
+	LoginProviderGoogleText        string
+	LoginProviderMicrosoftText     string
+	LoginProviderGithubText        string
+	OAuthCompleteInfoTitle         string
+	OAuthCompleteInfoPositionLabel string
+	OAuthCompleteInfoAgreeLabel    string
+	OAuthCompleteInfoBackLabel     string
+	Demo                           string
+	DBResetTipLabel                string
+	Name                           string
+	Email                          string
+	Company                        string
+	Role                           string
+	Status                         string
+	ChangePassword                 string
+	LoginSessions                  string
+	LoginSessionsTips              string
+	SignOutAllOtherSessions        string
+	Expired                        string
+	Active                         string
+	CurrentSession                 string
+	Time                           string
+	Device                         string
+	IPAddress                      string
+	HideIPTips                     string
+	SignOutAllSuccessfullyTips     string
 }
 
 var Messages_en_US = &Messages{
-	FilterTabsAll:            "All",
-	FilterTabsHasUnreadNotes: "Has Unread Notes",
-	FilterTabsActive:         "Active",
+	FilterTabsAll:                  "All",
+	FilterTabsHasUnreadNotes:       "Has Unread Notes",
+	FilterTabsActive:               "Active",
+	DemoTips:                       "Please note that the database would be reset every even hour.",
+	DemoUsernameLabel:              "Demo Username: ",
+	DemoPasswordLabel:              "Demo Password: ",
+	LoginProviderGoogleText:        "Login with Google",
+	LoginProviderMicrosoftText:     "Login with Microsoft",
+	LoginProviderGithubText:        "Login with Github",
+	OAuthCompleteInfoTitle:         "Complete your information",
+	OAuthCompleteInfoPositionLabel: "Position(Optional)",
+	OAuthCompleteInfoAgreeLabel:    "Subscribe to QOR5 newsletter(Optional)",
+	OAuthCompleteInfoBackLabel:     "Back to login",
+	Demo:                           "DEMO",
+	DBResetTipLabel:                "Database reset countdown",
+	Name:                           "Name",
+	Email:                          "Email",
+	Company:                        "Company",
+	Role:                           "Role",
+	Status:                         "Status",
+	ChangePassword:                 "Change Password",
+	LoginSessions:                  "Login Sessions",
+	LoginSessionsTips:              "Places where you're logged into QOR5 admin.",
+	SignOutAllOtherSessions:        "Sign out all other sessions",
+	Expired:                        "Expired",
+	Active:                         "Active",
+	CurrentSession:                 "Current Session",
+	Time:                           "Time",
+	Device:                         "Device",
+	IPAddress:                      "IP Address",
+	HideIPTips:                     "Invisible due to security concerns",
+	SignOutAllSuccessfullyTips:     "All other sessions have successfully been signed out.",
 }
 
 var Messages_ja_JP = &Messages{
-	FilterTabsAll:            "すべて",
-	FilterTabsHasUnreadNotes: "未読のノートがあります",
-	FilterTabsActive:         "有効",
+	FilterTabsAll:                  "すべて",
+	FilterTabsHasUnreadNotes:       "未読のノートがあります",
+	FilterTabsActive:               "有効",
+	DemoTips:                       "データベースは偶数時間ごとにリセットされることに注意してください。",
+	DemoUsernameLabel:              "デモのユーザー名: ",
+	DemoPasswordLabel:              "デモパスワード: ",
+	LoginProviderGoogleText:        "Googleでログイン",
+	LoginProviderMicrosoftText:     "Microsoftでログイン",
+	LoginProviderGithubText:        "Githubでログイン",
+	OAuthCompleteInfoTitle:         "情報を入力してください",
+	OAuthCompleteInfoPositionLabel: "役職（任意）",
+	OAuthCompleteInfoAgreeLabel:    "QOR5ニュースレターを購読する（任意）",
+	OAuthCompleteInfoBackLabel:     "ログインに戻る",
+	Demo:                           "デモ",
+	DBResetTipLabel:                "データベースリセットのカウントダウン",
+	Name:                           "名前",
+	Email:                          "メール",
+	Company:                        "会社",
+	Role:                           "役割",
+	Status:                         "ステータス",
+	ChangePassword:                 "パスワードを変更する",
+	LoginSessions:                  "ログインセッション",
+	LoginSessionsTips:              "QOR5管理者にログインしている場所。",
+	SignOutAllOtherSessions:        "他のすべてのセッションをサインアウトする",
+	Expired:                        "期限切れ",
+	Active:                         "アクティブ",
+	CurrentSession:                 "現在のセッション",
+	Time:                           "時間",
+	Device:                         "デバイス",
+	IPAddress:                      "IPアドレス",
+	HideIPTips:                     "セキュリティ上の理由から非表示",
+	SignOutAllSuccessfullyTips:     "他のすべてのセッションは正常にサインアウトされました。",
 }
 
 var Messages_zh_CN = &Messages{
-	FilterTabsAll:            "全部",
-	FilterTabsHasUnreadNotes: "未读备注",
-	FilterTabsActive:         "有效",
+	FilterTabsAll:                  "全部",
+	FilterTabsHasUnreadNotes:       "未读备注",
+	FilterTabsActive:               "有效",
+	DemoTips:                       "请注意，数据库将每隔偶数小时重置一次。",
+	DemoUsernameLabel:              "演示账户：",
+	DemoPasswordLabel:              "演示密码：",
+	LoginProviderGoogleText:        "使用Google登录",
+	LoginProviderMicrosoftText:     "使用Microsoft登录",
+	LoginProviderGithubText:        "使用Github登录",
+	OAuthCompleteInfoTitle:         "请填写您的信息",
+	OAuthCompleteInfoPositionLabel: "职位（可选）",
+	OAuthCompleteInfoAgreeLabel:    "订阅QOR5新闻（可选）",
+	OAuthCompleteInfoBackLabel:     "返回登录",
+	Demo:                           "演示",
+	DBResetTipLabel:                "数据库重置倒计时",
+	Name:                           "姓名",
+	Email:                          "邮箱",
+	Company:                        "公司",
+	Role:                           "角色",
+	Status:                         "状态",
+	ChangePassword:                 "修改密码",
+	LoginSessions:                  "登录会话",
+	LoginSessionsTips:              "您在QOR5管理中登录的地方。",
+	SignOutAllOtherSessions:        "退出所有其他会话",
+	Expired:                        "已过期",
+	Active:                         "活跃",
+	CurrentSession:                 "当前会话",
+	Time:                           "时间",
+	Device:                         "设备",
+	IPAddress:                      "IP地址",
+	HideIPTips:                     "由于安全原因，隐藏",
+	SignOutAllSuccessfullyTips:     "所有其他会话已成功退出。",
 }
 
 type Messages_ModelsI18nModuleKey struct {
@@ -58,14 +174,14 @@ type Messages_ModelsI18nModuleKey struct {
 	ECManagement             string
 	ECDashboard              string
 	Orders                   string
+	InputDemos               string
 	Products                 string
+	NestedFieldDemos         string
 	SiteManagement           string
 	SEO                      string
 	UserManagement           string
 	Profile                  string
 	FeaturedModelsManagement string
-	InputHarnesses           string
-	ListEditorExample        string
 	Customers                string
 	ListModels               string
 	MicrositeModels          string
@@ -201,14 +317,14 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "电子商务管理",
 	ECDashboard:              "电子商务仪表盘",
 	Orders:                   "订单管理",
+	InputDemos:               "表单 示例",
 	Products:                 "产品管理",
+	NestedFieldDemos:         "嵌套表单 示例",
 	SiteManagement:           "站点管理菜单",
 	SEO:                      "SEO 管理",
 	UserManagement:           "用户管理菜单",
 	Profile:                  "个人页面",
 	FeaturedModelsManagement: "特色模块管理菜单",
-	InputHarnesses:           "Input 示例",
-	ListEditorExample:        "ListEditor 示例",
 	Customers:                "Customers 示例",
 	ListModels:               "发布带排序及分页模块 示例",
 	MicrositeModels:          "Microsite 示例",
@@ -344,14 +460,14 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ECManagement:             "ECマネジメント",
 	ECDashboard:              "ECダッシュボード",
 	Orders:                   "注文",
+	InputDemos:               "入力デモ",
 	Products:                 "製品",
 	SiteManagement:           "サイト管理",
+	NestedFieldDemos:         "ネストフィールドデモ",
 	SEO:                      "SEO",
 	UserManagement:           "ユーザー管理",
 	Profile:                  "プロフィール",
 	FeaturedModelsManagement: "モデル管理",
-	InputHarnesses:           "ハーネスを入力",
-	ListEditorExample:        "リスト編集サンプル",
 	Customers:                "お客さま",
 	ListModels:               "リストモデル",
 	MicrositeModels:          "マイクロサイトモデル",

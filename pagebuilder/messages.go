@@ -13,11 +13,14 @@ type Messages struct {
 	New                            string
 	Shared                         string
 	Select                         string
-	TemplateID                     string
-	TemplateName                   string
+	SelectedTemplateLabel          string
 	CreateFromTemplate             string
 	RelatedOnlinePages             string
 	RepublishAllRelatedOnlinePages string
+	Unnamed                        string
+	NotDescribed                   string
+	Blank                          string
+	NewPage                        string
 }
 
 var Messages_en_US = &Messages{
@@ -29,11 +32,14 @@ var Messages_en_US = &Messages{
 	New:                            "New",
 	Shared:                         "Shared",
 	Select:                         "Select",
-	TemplateID:                     "Template ID",
-	TemplateName:                   "Template Name",
+	SelectedTemplateLabel:          "Template",
 	CreateFromTemplate:             "Create From Template",
 	RelatedOnlinePages:             "Related Online Pages",
 	RepublishAllRelatedOnlinePages: "Republish All",
+	Unnamed:                        "Unnamed",
+	NotDescribed:                   "Not Described",
+	Blank:                          "Blank",
+	NewPage:                        "New Page",
 }
 
 var Messages_zh_CN = &Messages{
@@ -45,11 +51,14 @@ var Messages_zh_CN = &Messages{
 	New:                            "新增",
 	Shared:                         "公用的",
 	Select:                         "选择",
-	TemplateID:                     "模板ID",
-	TemplateName:                   "模板名",
+	SelectedTemplateLabel:          "模板",
 	CreateFromTemplate:             "从模板中创建",
 	RelatedOnlinePages:             "相关在线页面",
 	RepublishAllRelatedOnlinePages: "重新发布所有页面",
+	Unnamed:                        "未命名",
+	NotDescribed:                   "未描述",
+	Blank:                          "空白",
+	NewPage:                        "新页面",
 }
 
 var Messages_ja_JP = &Messages{
@@ -61,9 +70,12 @@ var Messages_ja_JP = &Messages{
 	New:                            "新規",
 	Shared:                         "共有",
 	Select:                         "選択する",
-	TemplateID:                     "テンプレートID",
-	TemplateName:                   "テンプレート名",
+	SelectedTemplateLabel:          "テンプレート",
 	CreateFromTemplate:             "テンプレートから新規作成する",
 	RelatedOnlinePages:             "関連オンラインページ",
 	RepublishAllRelatedOnlinePages: "すべて再公開",
+	Unnamed:                        "名前なし",
+	NotDescribed:                   "記述されていません",
+	Blank:                          "空白",
+	NewPage:                        "新しいページ",
 }

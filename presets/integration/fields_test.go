@@ -14,6 +14,7 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"
+	"github.com/thoas/go-funk"
 )
 
 type Company struct {
@@ -573,8 +574,10 @@ func TestFieldsBuilder(t *testing.T) {
 				AddField("Departments[1].Employees[2].Number", "999").
 				AddField("Departments[1].Employees[1].FakeNumber", "666").
 				AddField("Departments[1].DBStatus", "Verified").
+				AddField("Departments[2].Name", "Department C").
 				AddField("__Deleted.Departments[0].Employees", "1,2").
 				AddField("__Deleted.Departments[1].Employees", "0").
+				AddField("__Deleted.Departments[2].Employees", "0").
 				BuildEventFuncRequest(),
 			removeDeletedAndSort: false,
 			expected: &Org{
@@ -606,7 +609,10 @@ func TestFieldsBuilder(t *testing.T) {
 						},
 					},
 					{
-						Name: "Department C",
+						Name: "Department C!!!",
+						Employees: []*Employee{
+							nil,
+						},
 					},
 				},
 			},
@@ -969,4 +975,19 @@ func TestFieldsBuilder(t *testing.T) {
 
 	}
 
+}
+
+func TestGoFunk(t *testing.T) {
+	depts := []*Department{
+		{Name: "1"},
+		{Name: "2"},
+	}
+
+	funk.ForEach(depts, func(obj *Department) {
+		obj.Name = "3"
+	})
+
+	funk.ForEach(depts, func(obj interface{}) {
+		obj.(*Department).Name = "3"
+	})
 }

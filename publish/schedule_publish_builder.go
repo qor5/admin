@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 	"reflect"
-	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"gorm.io/gorm"
 )
 
@@ -40,15 +40,15 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		scope = b.publisher.db
 	}
 
-	//If model is Product{}
-	//Generate a records: []*Product{}
+	// If model is Product{}
+	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
-	flagTime := scope.NowFunc().Add(time.Minute)
+	flagTime := scope.NowFunc()
 	var unpublishAfterPublishRecords []interface{}
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_end_at <= ?", flagTime).Find(&tempRecords).Error
+		err = scope.Where("scheduled_end_at <= ?", flagTime).Order("scheduled_end_at").Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
@@ -64,7 +64,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = multierror.Append(err, err2).ErrorOrNil()
 				}
 			}
 		}
@@ -72,7 +72,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		tempRecords := records
-		err = scope.Where("scheduled_start_at <= ?", flagTime).Find(&tempRecords).Error
+		err = scope.Where("scheduled_start_at <= ?", flagTime).Order("scheduled_start_at").Find(&tempRecords).Error
 		if err != nil {
 			return
 		}
@@ -81,7 +81,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
 				if err2 := b.publisher.Publish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = multierror.Append(err, err2).ErrorOrNil()
 				}
 			}
 		}
@@ -92,7 +92,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 			if record, ok := interfaceRecord.(UnPublishInterface); ok {
 				if err2 := b.publisher.UnPublish(record); err2 != nil {
 					log.Printf("error: %s\n", err2)
-					err = err2
+					err = multierror.Append(err, err2).ErrorOrNil()
 				}
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 	examples2 "github.com/qor5/admin/presets/examples"
 	"github.com/qor5/web/multipartestutils"
 	"github.com/theplant/gofixtures"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -24,8 +25,8 @@ var customerData = gofixtures.Data(gofixtures.Sql(`
 			`, []string{"customers"}))
 
 var productData = gofixtures.Data(gofixtures.Sql(`
-				insert into products (id, name) values (12, 'Product 1');
-			`, []string{"products"}))
+				insert into preset_products (id, name) values (12, 'Product 1');
+			`, []string{"preset_products"}))
 
 var emptyCustomerData = gofixtures.Data(gofixtures.Sql(``, []string{"customers"}))
 var creditCardData = gofixtures.Data(customerData, gofixtures.Sql(``, []string{"credit_cards"}))
@@ -228,7 +229,7 @@ var cases = []reqCase{
 }
 
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("/tmp/my_integration.db"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

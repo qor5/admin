@@ -51,9 +51,10 @@ type Messages struct {
 	ListingClearSelection                      string
 	BulkActionNoAvailableRecords               string
 	BulkActionSelectedIdsProcessNoticeTemplate string
-	ConfirmationDialogText                     string
+	ConfirmDialogPromptText                    string
 	Language                                   string
 	Colon                                      string
+	NotFoundPageNotice                         string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -136,9 +137,10 @@ var Messages_en_US = &Messages{
 	ListingClearSelection:          "clear selection",
 	BulkActionNoAvailableRecords:   "None of the selected records can be executed with this action.",
 	BulkActionSelectedIdsProcessNoticeTemplate: "Partially selected records cannot be executed with this action: {ids}.",
-	ConfirmationDialogText:                     "Are you sure?",
+	ConfirmDialogPromptText:                    "Are you sure?",
 	Language:                                   "Language",
 	Colon:                                      ":",
+	NotFoundPageNotice:                         "Sorry, the requested page cannot be found. Please check the URL.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -188,9 +190,10 @@ var Messages_zh_CN = &Messages{
 	ListingClearSelection:          "清除选择",
 	BulkActionNoAvailableRecords:   "所有选中的记录均无法执行这个操作。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分选中的记录无法被执行这个操作: {ids}。",
-	ConfirmationDialogText:                     "你确定吗?",
+	ConfirmDialogPromptText:                    "你确定吗?",
 	Language:                                   "语言",
 	Colon:                                      "：",
+	NotFoundPageNotice:                         "很抱歉，所请求的页面不存在，请检查URL。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -239,7 +242,8 @@ var Messages_ja_JP = &Messages{
 	ListingClearSelection:          "選択をクリア",
 	BulkActionNoAvailableRecords:   "この機能はご利用いただけません",
 	BulkActionSelectedIdsProcessNoticeTemplate: "この一部の機能はご利用いただけません: {ids}",
-	ConfirmationDialogText:                     "よろしいですか？",
+	ConfirmDialogPromptText:                    "よろしいですか？",
 	Language:                                   "言語",
 	Colon:                                      ":",
+	NotFoundPageNotice:                         "申し訳ありませんが、リクエストされたページは見つかりませんでした。URLを確認してください。",
 }

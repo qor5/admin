@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
 	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
@@ -20,6 +21,7 @@ import (
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/publish/views"
 	. "github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/perm"
@@ -71,6 +73,7 @@ type Builder struct {
 const (
 	openTemplateDialogEvent          = "openTemplateDialogEvent"
 	selectTemplateEvent              = "selectTemplateEvent"
+	clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
 	paramOpenFromSharedContainer = "open_from_shared_container"
@@ -84,7 +87,14 @@ func New(db *gorm.DB, i18nB *i18n.Builder) *Builder {
 		&DemoContainer{},
 		&Category{},
 	)
-
+	if err != nil {
+		panic(err)
+	}
+	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
+	// fxxk: newline is not allowed
+	err = db.Exec(`
+create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
+`).Error
 	if err != nil {
 		panic(err)
 	}
@@ -146,7 +156,7 @@ func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder) (pm *presets.ModelBuilder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -156,6 +166,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	pm.Listing("ID", "Title", "Slug")
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
+	pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 
 	// list.Field("ID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	p := obj.(*Page)
@@ -172,7 +183,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(c, db)
+		err = pageValidator(c, db, l10nB)
 		return
 	})
 
@@ -189,21 +200,33 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
-		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
-		var showURL h.HTMLComponent
-		if p.ID != 0 {
-			var c Category
-			for _, e := range categories {
-				if e.ID == p.CategoryID {
-					c = *e
-					break
+		var showURLComp h.HTMLComponent
+		if p.ID != 0 && p.GetStatus() == publish.StatusOnline {
+			var u string
+			domain := os.Getenv("PUBLISH_URL")
+			if p.OnlineUrl != "" {
+				u = domain + p.getAccessUrl(p.OnlineUrl)
+			} else {
+				var c Category
+				for _, e := range categories {
+					if e.ID == p.CategoryID {
+						c = *e
+						break
+					}
 				}
+
+				var localPath string
+				if l10nB != nil {
+					localPath = l10nB.GetLocalePath(p.LocaleCode)
+				}
+				u = domain + p.getAccessUrl(p.getPublishUrl(localPath, c.Path))
 			}
 
-			u := os.Getenv("PUBLISH_URL") + c.Path + p.Slug
-			showURL = h.Div(
+			showURLComp = h.Div(
 				h.A().Text(u).Href(u).Target("_blank"),
 			).Class("mb-4")
 		}
@@ -216,32 +239,21 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		return h.Div(
-			showURL,
-			VAutocomplete().Label(msgr.Category).FieldName(field.Name).
+			showURLComp,
+			VAutocomplete().Label(msgr.Category).FieldName(field.Name).MenuProps("top").
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
-		).ClassIf("mb-4", p.GetStatus() != "")
+		).ClassIf("mb-4", p.ID != 0)
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		// Only displayed when create action
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		if p.GetStatus() == "" {
+		// Display template selection only when creating a new page
+		if p.ID == 0 {
 			return h.Div(
-				web.Portal().Name("TemplateDialog"),
-				VRow(
-					VCol(
-						web.Portal(
-							VTextField().Disabled(true).Label(msgr.TemplateID),
-						).Name("TemplateIDTextField"),
-					),
-					VCol(
-						web.Portal(
-							VTextField().Disabled(true).Label(msgr.TemplateName),
-						).Name("TemplateNameTextField"),
-					),
-				),
+				web.Portal().Name(templateSelectPortal),
+				web.Portal().Name(selectedTemplatePortal),
 				VRow(
 					VCol(
 						VBtn(msgr.CreateFromTemplate).Color("primary").
@@ -256,13 +268,27 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		p := obj.(*Page)
+		if p.ID == 0 {
+			return nil
+		}
 		if p.GetStatus() == publish.StatusDraft {
 			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx); isLocalizable && l10nON {
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
 				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
 			}
 			return h.Div(
 				VBtn(msgr.EditPageContent).
+					Target("_blank").
+					Href(href).
+					Color("secondary"),
+			)
+		} else {
+			var href = fmt.Sprintf("%s/preview?id=%d&version=%s", b.prefix, p.ID, p.GetVersion())
+			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
+				href = fmt.Sprintf("%s/preview?id=%d&version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
+			}
+			return h.Div(
+				VBtn(msgr.Preview).
 					Target("_blank").
 					Href(href).
 					Color("secondary"),
@@ -272,7 +298,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		localeCode, _ := l10n.IsLocalizableFromCtx(ctx)
+		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		p := obj.(*Page)
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
@@ -290,7 +316,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				return
 			}
 
-			if v := ctx.R.FormValue("TemplateSelectionID"); v != "" {
+			if v := ctx.R.FormValue(templateSelectionID); v != "" {
 				var tplID int
 				tplID, inerr = strconv.Atoi(v)
 				if inerr != nil {
@@ -299,7 +325,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 				if !l10nON {
 					localeCode = ""
 				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, "", int(p.ID), p.GetVersion(), localeCode); inerr != nil {
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 					return
 				}
@@ -315,7 +341,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 					return
 				}
 
-				if inerr = b.copyContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
 					panic(inerr)
 					return
 				}
@@ -327,8 +353,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB) (pm *presets.Model
 		return
 	})
 
-	b.configSharedContainer(pb, db)
-	b.configDemoContainer(pb, db)
+	sharedContainerM := b.ConfigSharedContainer(pb, db)
+	demoContainerM := b.ConfigDemoContainer(pb, db)
+	templateM := b.ConfigTemplate(pb, db)
+	categoryM := b.ConfigCategory(pb, db, l10nB)
+
+	if activityB != nil {
+		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
+	}
+	if l10nB != nil {
+		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM, categoryM)
+	}
 	return
 }
 
@@ -347,7 +382,7 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
 	lb := pm.Listing("Name", "Path", "Description")
@@ -382,15 +417,19 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	eb := pm.Editing("Name", "Path", "Description")
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+		ID := cs["id"]
+		Locale := cs["locale_code"]
+
 		var count int64
-		if err = db.Model(&Page{}).Where("category_id = ?", id).Count(&count).Error; err != nil {
+		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
 			err = errors.New(unableDeleteCategoryMsg)
 			return
 		}
-		if err = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err != nil {
+		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
 			return
 		}
 		return
@@ -398,27 +437,20 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
-		err = categoryValidator(c, db)
+		err = categoryValidator(c, db, l10nB)
 		return
 	})
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		category := obj.(*Category)
-		u := os.Getenv("PUBLISH_URL") + category.Path
 
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
 
-		return h.Div(
-			VTextField().Label("Path").Value(category.Path).Class("mb-n4").
-				FieldName("Path").
-				ErrorMessages(vErr.GetFieldErrors("Category.Category")...),
-			h.Div(
-				h.A().Text(u).Href(u).Target("_blank").ClassIf("d-none", category.ID == 0),
-			).Class("mt-4"),
-		).Class("mb-2")
+		return VTextField().Label("Path").Value(category.Path).Class("mb-2").FieldName("Path").
+			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -431,76 +463,110 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	return
 }
 
+const (
+	templateSelectPortal   = "templateSelectPortal"
+	selectedTemplatePortal = "selectedTemplatePortal"
+
+	templateSelectionID     = "TemplateSelectionID"
+	templateSelectionLocale = "TemplateSelectionLocale"
+	templateUnselectVal     = "unselect"
+)
+
 func selectTemplate(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		templateSelectionID := ctx.R.FormValue("TemplateSelectionID")
+		defer func() {
+			web.AppendVarsScripts(&er, "vars.showTemplateDialog=false")
+		}()
+
+		id := ctx.R.FormValue(templateSelectionID)
+		if id == templateUnselectVal {
+			er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+				Name: selectedTemplatePortal,
+				Body: h.Input("").Type("hidden").
+					Value("").
+					Attr(web.VFieldName(templateSelectionID)...),
+			})
+			return
+		}
+		locale := ctx.R.FormValue(templateSelectionLocale)
 
 		tpl := Template{}
-		isBlank := true
-		if templateSelectionID != "0" {
-			if err = db.Model(&Template{}).Where("id = ?", templateSelectionID).First(&tpl).Error; err != nil {
-				panic(err)
-			}
-			isBlank = false
+		if err = db.Model(&Template{}).Where("id = ? AND locale_code = ?", id, locale).First(&tpl).Error; err != nil {
+			panic(err)
 		}
-
-		var ID string
-		var Name string
-		if isBlank {
-			ID = ""
-			Name = "Blank"
-		} else {
-			ID = strconv.Itoa(int(tpl.ID))
-			Name = tpl.Name
-		}
+		name := tpl.Name
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: "TemplateIDTextField",
-			Body: VTextField().Disabled(true).Label(msgr.TemplateID).Value(ID),
-		})
-		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: "TemplateNameTextField",
-			Body: VTextField().Disabled(true).Label(msgr.TemplateName).Value(Name),
+			Name: selectedTemplatePortal,
+			Body: VRow(
+				VCol(
+					h.Input("").Type("hidden").
+						Value(id).
+						Attr(web.VFieldName(templateSelectionID)...),
+					vuetifyx.VXReadonlyField().
+						Label(msgr.SelectedTemplateLabel).
+						Children(
+							h.Text(fmt.Sprintf("%v (ID: %v)", name, id)),
+							VBtn("").Children(
+								VIcon("close"),
+							).Text(true).Fab(true).Small(true).
+								Class("ml-2").
+								Attr("@click", web.Plaid().EventFunc(clearTemplateEvent).Go()),
+						),
+				),
+			).Class("mb-n4"),
 		})
 
 		return
 	}
 }
 
+func clearTemplate(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
+		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
+			Name: selectedTemplatePortal,
+			Body: h.Input("").Type("hidden").
+				Value("").
+				Attr(web.VFieldName(templateSelectionID)...),
+		})
+		return
+	}
+}
+
 func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		msgr := presets.MustGetMessages(ctx.R)
-		tpls := []*Template{}
+		gmsgr := presets.MustGetMessages(ctx.R)
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 
-		if err := db.Model(&Template{}).Find(&tpls).Error; err != nil {
+		tpls := []*Template{}
+		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
 			panic(err)
 		}
 
 		var tplHTMLComponents []h.HTMLComponent
-
+		tplHTMLComponents = append(tplHTMLComponents,
+			h.Div(
+				h.Input(templateSelectionID).Type("radio").
+					Value(templateUnselectVal).
+					Attr(web.VFieldName(templateSelectionID)...).
+					Attr("checked", "checked"),
+			).Style("visibility:hidden;width:0;height:0;"),
+		)
+		for _, tpl := range tpls {
+			tplHTMLComponents = append(tplHTMLComponents,
+				getTplColComponent(ctx, tpl),
+			)
+		}
 		if len(tpls) == 0 {
 			tplHTMLComponents = append(tplHTMLComponents,
-				h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2"),
+				h.Div(h.Text(gmsgr.ListingNoRecordToShow)).Class("pl-4 text-center grey--text text--darken-2"),
 			)
-		} else {
-			tplHTMLComponents = append(tplHTMLComponents,
-				getTplColComponent(&Template{
-					Model:       gorm.Model{},
-					Name:        "Blank",
-					Description: "New page",
-				}, true),
-			)
-			for _, tpl := range tpls {
-				tplHTMLComponents = append(tplHTMLComponents,
-					getTplColComponent(tpl, false),
-				)
-			}
 		}
 		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: "TemplateDialog",
+			Name: templateSelectPortal,
 			Body: VDialog(
 				VCard(
 					VCardTitle(
@@ -512,16 +578,15 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 							On("click", fmt.Sprintf("vars.showTemplateDialog=false")),
 					),
 					VCardActions(
-						VRow(tplHTMLComponents...).ClassIf("d-none", len(tpls) == 0),
-						h.Div(tplHTMLComponents...).ClassIf("d-none", len(tpls) != 0),
+						VRow(tplHTMLComponents...),
 					),
 					VCardActions(
 						VSpacer(),
-						VBtn(msgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
-						VBtn(msgr.OK).Color("primary").
-							Attr("@click", fmt.Sprintf("%s;vars.showTemplateDialog=false",
-								web.Plaid().EventFunc(selectTemplateEvent).
-									Query("TemplateSelectionID", ctx.R.Form).Go()),
+						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
+						VBtn(gmsgr.OK).Color("primary").
+							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
+								Query(templateSelectionLocale, locale).
+								Go(),
 							),
 					).Class("pb-4"),
 				).Tile(true),
@@ -535,17 +600,19 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
+func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 	// Avoid layout errors
 	var name string
 	var desc string
 	if tpl.Name == "" {
-		name = "Unnamed"
+		name = msgr.Unnamed
 	} else {
 		name = tpl.Name
 	}
 	if tpl.Description == "" {
-		desc = "Not described"
+		desc = msgr.NotDescribed
 	} else {
 		desc = tpl.Description
 	}
@@ -553,26 +620,26 @@ func getTplColComponent(tpl *Template, isBlank bool) h.HTMLComponent {
 	return VCol(
 		VCard(
 			h.Div(
-				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
+				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 					Attr("width", "100%", "height", "150", "frameborder", "no").
-					Style("transform-origin: left top; transform: scale(1, 1);"),
+					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
 			),
 			VCardTitle(h.Text(name)),
 			VCardSubtitle(h.Text(desc)),
-			VBtn("Preview").Text(true).XSmall(true).Class("ml-2 mb-4").
-				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1", tpl.ID)).
-				Target("_blank").Color("primary").ClassIf("d-none", isBlank),
+			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
+				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
+				Target("_blank").Color("primary"),
 			h.Div(
-				h.Input("").Type("radio").Checked(isBlank).
+				h.Input(templateSelectionID).Type("radio").
 					Value(fmt.Sprintf("%d", tpl.ID)).
-					Attr(web.VFieldName("TemplateSelectionID")...).
-					Name("TemplateSelectionID").Style("width: 18px; height: 18px"),
+					Attr(web.VFieldName(templateSelectionID)...).
+					Style("width: 18px; height: 18px"),
 			).Class("mr-4 float-right"),
 		).Height(280).Class("text-truncate").Outlined(true),
 	).Cols(3)
 }
 
-func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
@@ -614,9 +681,11 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//		),
 	//	)
 	// })
-	pb.GetPermission().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-	)
+	if permB := pb.GetPermission(); permB != nil {
+		permB.CreatePolicies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
+		)
+	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, pm))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
@@ -636,15 +705,27 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	return
 }
 
-func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		modelID := ctx.QueryAsInt(presets.ParamOverlayUpdateID)
 		modelName := ctx.R.FormValue("ModelName")
-		db.Where(DemoContainer{ModelName: modelName}).FirstOrCreate(&DemoContainer{
-			ModelName: modelName,
-			ModelID:   uint(modelID),
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		var existID uint
+		{
+			m := DemoContainer{}
+			db.Where("model_name = ?", modelName).First(&m)
+			existID = m.ID
+		}
+		db.Assign(DemoContainer{
+			Model: gorm.Model{
+				ID: existID,
+			},
+			ModelID: uint(modelID),
+		}).FirstOrCreate(&DemoContainer{}, map[string]interface{}{
+			"model_name":  modelName,
+			"locale_code": locale,
 		})
 		r.Reload = true
 		return
@@ -652,7 +733,11 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	listing := pm.Listing("ModelName").SearchColumns("ModelName")
 	listing.Field("ModelName").Label("Name")
 	ed := pm.Editing("SelectContainer").ActionsFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent { return nil })
+	ed.Field("ModelName")
+	ed.Field("ModelID")
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		locale, localizable := l10n.IsLocalizableFromCtx(ctx.R.Context())
+
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
 
@@ -684,6 +769,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 			var modelID uint
 			for _, dc := range demoContainers {
 				if dc.ModelName == builder.name {
+					if localizable && dc.GetLocale() != locale {
+						continue
+					}
 					isExists = true
 					modelID = dc.ModelID
 					break
@@ -733,6 +821,25 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 
 		return tdbind
 	})
+
+	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		this := obj.(*DemoContainer)
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
+					panic(inerr)
+					return
+				}
+			}
+
+			if inerr = gorm2op.DataOperator(tx).Save(this, id, ctx); inerr != nil {
+				return
+			}
+			return
+		})
+
+		return
+	})
 	return
 }
 
@@ -748,12 +855,46 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 		if m.ID == 0 {
 			return nil
 		}
+
+		var href = fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)
+		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
+			href = fmt.Sprintf("%s/editors/%d?tpl=1&locale=%s", b.prefix, m.ID, locale)
+		}
 		return h.Div(
 			VBtn(msgr.EditPageContent).
 				Target("_blank").
-				Href(fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)).
+				Href(href).
 				Color("secondary"),
 		)
+	})
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		this := obj.(*Template)
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
+				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
+			}
+			return
+		})
+
+		return
 	})
 
 	return
@@ -781,8 +922,9 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 		}
 
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true").Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
 			return
 		}
 		totalCount = int(c)
@@ -848,6 +990,14 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) URIName(uri string) *ContainerBuilder {
+	if b.mb == nil {
+		return b
+	}
+	b.mb.URIName(uri)
+	return b
+}
+
 func (b *ContainerBuilder) GetModelBuilder() *presets.ModelBuilder {
 	return b.mb
 }
@@ -896,7 +1046,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			Joins(fmt.Sprintf(`inner join %s on 
         %s.id = %s.page_id
         and %s.version = %s.page_version
-        and %s.locale_code = %s.page_locale`,
+        and %s.locale_code = %s.locale_code`,
 				containerTable,
 				pageTable, containerTable,
 				pageTable, containerTable,
@@ -908,6 +1058,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 				containerTable,
 				containerTable,
 			), publish.StatusOnline, id, b.name).
+			Group(fmt.Sprintf(`%s.id,%s.version,%s.locale_code`, pageTable, pageTable, pageTable)).
 			Find(&pages).
 			Error
 		if err != nil {
@@ -940,8 +1091,8 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 							Color("primary").
 							Attr("@click",
 								web.Plaid().
-									EventFunc(presets.OpenConfirmationDialogEvent).
-									Query(presets.ConfirmationDialogConfirmEventKey,
+									EventFunc(presets.OpenConfirmDialog).
+									Query(presets.ConfirmDialogConfirmEvent,
 										web.Plaid().
 											EventFunc(republishRelatedOnlinePagesEvent).
 											Query("ids", strings.Join(pageIDs, ",")).

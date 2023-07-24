@@ -224,7 +224,7 @@ func (b *ListingBuilder) listingComponent(
 
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
-	var dialogHeaderbar h.HTMLComponent
+	var dialogHeaderBar h.HTMLComponent
 	if inDialog {
 		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		var searchBox h.HTMLComponent
@@ -248,7 +248,7 @@ func (b *ListingBuilder) listingComponent(
 					Go()).
 				Class("ma-0 pa-0 mr-6")
 		}
-		dialogHeaderbar = VAppBar(
+		dialogHeaderBar = VAppBar(
 			VToolbarTitle("").
 				Children(h.Text(title)),
 			VSpacer(),
@@ -261,7 +261,7 @@ func (b *ListingBuilder) listingComponent(
 	}
 
 	return VContainer(
-		dialogHeaderbar,
+		dialogHeaderBar,
 		tabsAndActionsBar,
 		h.Div(
 			VCard(
@@ -712,7 +712,7 @@ func (b *ListingBuilder) selectColumnsBtn(
 	)
 
 	for _, f := range b.fields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		originalColumns = append(originalColumns, f.name)
@@ -1281,7 +1281,7 @@ func (b *ListingBuilder) getTableComponents(
 	dataTable = sDataTable
 
 	for _, f := range displayFields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn(f.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 		f = b.getFieldOrDefault(f.name) // fill in empty compFunc and setter func with default

@@ -6,9 +6,9 @@ import (
 
 	"github.com/qor5/admin/media/media_library"
 
+	"github.com/qor5/admin/presets"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/presets"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -39,9 +39,9 @@ func ContainerWrapper(containerID, anchorID, classes,
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
 		AttrIf("data-background-color", backgroundColor, backgroundColor != "").
+		AttrIf("data-transition-background-color", transitionBackgroundColor, transitionBackgroundColor != "").
 		AttrIf("data-font-color", fontColor, fontColor != "").
 		AttrIf("data-image-position", imagePosition, imagePosition != "").
-		AttrIf("data-transition-background-color", transitionBackgroundColor, transitionBackgroundColor != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
 		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")

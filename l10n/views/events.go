@@ -29,7 +29,7 @@ const (
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, ab))
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
 }
 
 type SelectLocale struct {
@@ -45,10 +45,10 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
 		id := cs["id"]
 
-		fromLocale := lb.GetCorrectLocale(ctx.R)
+		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
 
 		var obj = mb.NewModelSlice()
-		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, lb.GetLocaleCode(fromLocale)).Find(obj).Error
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(obj).Error
 		if err != nil {
 			return
 		}
@@ -57,14 +57,14 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 		for i := 0; i < vo.Len(); i++ {
 			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
 		}
-		toLocales := lb.GetSupportLocalesFromRequest(ctx.R)
+		toLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 		var selectLocales []SelectLocale
 		for _, locale := range toLocales {
 			if locale == fromLocale {
 				continue
 			}
-			if !utils.Contains(existLocales, lb.GetLocaleCode(locale)) || vo.Len() == 0 {
-				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: lb.GetLocaleCode(locale)})
+			if !utils.Contains(existLocales, locale) || vo.Len() == 0 {
+				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: locale})
 			}
 		}
 
@@ -106,7 +106,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 							Attr("@click", web.Plaid().
 								EventFunc(DoLocalize).
 								Query(presets.ParamID, paramID).
-								Query("localize_from", lb.GetLocaleCode(fromLocale)).
+								Query("localize_from", fromLocale).
 								URL(ctx.R.URL.Path).
 								Go()),
 					),
@@ -121,7 +121,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 
 		fromParamID := ctx.R.FormValue(presets.ParamID)
@@ -129,8 +129,17 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 		fromID := cs["id"]
 		fromVersion := cs["version"]
 		fromLocale := cs["locale_code"]
-		to, exist := ctx.R.Form["localize_to"]
-		if !exist {
+		to := make(map[string]struct{})
+		for _, v := range ctx.R.Form["localize_to"] {
+			for _, lc := range lb.GetSupportLocaleCodes() {
+				if v == lc {
+					to[v] = struct{}{}
+					break
+				}
+			}
+		}
+		if len(to) == 0 {
+			web.AppendVarsScripts(&r, "vars.localizeConfirmation = false")
 			return
 		}
 
@@ -142,6 +151,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 
 		var toObjs []interface{}
 		defer func(fromObj interface{}) {
+			if ab == nil {
+				return
+			}
 			if len(toObjs) > 0 {
 				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
 					return
@@ -155,7 +167,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, ab *activity.ActivityBu
 		}(reflect.Indirect(reflect.ValueOf(fromObj)).Interface())
 		me := mb.Editing()
 
-		for _, toLocale := range to {
+		for toLocale, _ := range to {
 			var toObj = mb.NewModel()
 			var fakeToObj = fromObj
 			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {

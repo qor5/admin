@@ -1,5 +1,6 @@
 package publish
 
+// @snippet_begin(PublishStatus)
 const (
 	StatusDraft   = "draft"
 	StatusOnline  = "online"
@@ -10,6 +11,8 @@ type Status struct {
 	Status    string `gorm:"default:'draft'"`
 	OnlineUrl string
 }
+
+// @snippet_end
 
 func (status Status) GetStatus() string {
 	return status.Status

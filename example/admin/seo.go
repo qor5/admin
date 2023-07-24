@@ -3,8 +3,8 @@ package admin
 import (
 	"net/http"
 
-	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/seo"
 	"gorm.io/gorm"
 )
@@ -23,7 +23,7 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 			return ""
 		},
 	).RegisterSettingVaribles(struct{ Test string }{})
-	SeoCollection.RegisterSEOByNames("Not Found", "Internal Server Error")
+	SeoCollection.RegisterSEOByNames("Product", "Announcement")
 	SeoCollection.Configure(b, db)
 }
 

@@ -45,7 +45,7 @@ type Builder struct {
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
-	menuTopItems                          []ComponentFunc
+	menuTopItems                          map[string]ComponentFunc
 	notificationCountFunc                 func(ctx *web.EventContext) int
 	notificationContentFunc               ComponentFunc
 	brandTitle                            string
@@ -59,7 +59,7 @@ type Builder struct {
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
 	menuOrder                             []interface{}
-	wrapHandlers                          []func(in http.Handler) (out http.Handler)
+	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -77,7 +77,7 @@ const (
 )
 
 const (
-	OpenConfirmationDialogEvent = "presets_ConfirmationDialogEvent"
+	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
 func New() *Builder {
@@ -93,6 +93,7 @@ func New() *Builder {
 		listFieldDefaults:    NewFieldDefaults(LIST),
 		detailFieldDefaults:  NewFieldDefaults(DETAIL),
 		progressBarColor:     "amber",
+		menuTopItems:         make(map[string]ComponentFunc),
 		brandTitle:           "Admin",
 		rightDrawerWidth:     "600",
 		verifier:             perm.NewVerifier(PermModule, nil),
@@ -101,9 +102,10 @@ func New() *Builder {
 			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		},
+		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
 
-	r.GetWebBuilder().RegisterEventFunc(OpenConfirmationDialogEvent, r.openConfirmationDialog)
+	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	return r
 }
@@ -449,13 +451,16 @@ func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool 
 		href = m.link
 	}
 	path := strings.TrimSuffix(ctx.R.URL.Path, "/")
+	if path == "" && href == "/" {
+		return true
+	}
 	if path == href {
 		return true
 	}
 	if href == b.prefix {
 		return false
 	}
-	if strings.HasPrefix(path, href) {
+	if href != "/" && strings.HasPrefix(path, href) {
 		return true
 	}
 
@@ -473,9 +478,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, om := range b.menuOrder {
 		switch v := om.(type) {
 		case *MenuGroupBuilder:
-			ver := b.verifier.Do(PermList).On("menu:groups").SnakeOn(v.name).WithReq(ctx.R)
-			if ver.IsAllowed() != nil {
-				continue
+			disabled := false
+			if b.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
+				disabled = true
 			}
 			groupIcon := v.icon
 			if groupIcon == "" {
@@ -506,11 +511,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				if m.notInMenu {
 					continue
 				}
-				if ver.SnakeOn(m.uriName).IsAllowed() != nil {
-					ver.RemoveOn(1)
+				if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 					continue
 				}
-				ver.RemoveOn(1)
 				subMenus = append(subMenus, b.menuItem(ctx, m, true))
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
@@ -519,6 +522,9 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				}
 			}
 			if subCount == 0 {
+				continue
+			}
+			if disabled {
 				continue
 			}
 
@@ -534,7 +540,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if m == nil {
 				continue
 			}
-			if b.verifier.Do(PermList).On("menu").SnakeOn(m.uriName).WithReq(ctx.R).IsAllowed() != nil {
+			if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 				continue
 			}
 
@@ -553,7 +559,7 @@ func (b *Builder) createMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			continue
 		}
 
-		if b.verifier.Do(PermList).On("menu").SnakeOn(m.uriName).WithReq(ctx.R).IsAllowed() != nil {
+		if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -665,8 +671,8 @@ func (b *Builder) runSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	)
 }
 
-func (b *Builder) AddMenuTopItemFunc(v ComponentFunc) (r *Builder) {
-	b.menuTopItems = append(b.menuTopItems, v)
+func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
+	b.menuTopItems[key] = v
 	return b
 }
 
@@ -716,7 +722,7 @@ const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
 const DialogPortalName = "presets_DialogPortalName"
 const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
-const defaultConfirmationDialogPortalName = "presets_confirmationDialogPortalName"
+const defaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 const listingDialogPortalName = "presets_listingDialogPortalName"
 
 const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
@@ -802,26 +808,26 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 }
 
 const (
-	ConfirmationDialogConfirmEventKey = "presets_ConfirmationDialogConfirmEventKey"
-	ConfirmationDialogTextKey         = "presets_ConfirmationDialogTextKey"
-	ConfirmationDialogPortalNameKey   = "presets_ConfirmationDialogPortalNameKey"
+	ConfirmDialogConfirmEvent     = "presets_ConfirmDialog_ConfirmEvent"
+	ConfirmDialogPromptText       = "presets_ConfirmDialog_PromptText"
+	ConfirmDialogDialogPortalName = "presets_ConfirmDialog_DialogPortalName"
 )
 
-func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
-	confirmEvent := ctx.R.FormValue(ConfirmationDialogConfirmEventKey)
+func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse, err error) {
+	confirmEvent := ctx.R.FormValue(ConfirmDialogConfirmEvent)
 	if confirmEvent == "" {
 		ShowMessage(&er, "confirm event is empty", "error")
 		return
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	text := msgr.ConfirmationDialogText
-	if v := ctx.R.FormValue(ConfirmationDialogTextKey); v != "" {
-		text = v
+	promptText := msgr.ConfirmDialogPromptText
+	if v := ctx.R.FormValue(ConfirmDialogPromptText); v != "" {
+		promptText = v
 	}
 
-	portal := defaultConfirmationDialogPortalName
-	if v := ctx.R.FormValue(ConfirmationDialogPortalNameKey); v != "" {
+	portal := defaultConfirmDialogPortalName
+	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
 	showVar := fmt.Sprintf("show_%s", portal)
@@ -830,7 +836,7 @@ func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventRes
 		Name: portal,
 		Body: VDialog(
 			VCard(
-				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(text)),
+				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
@@ -857,6 +863,9 @@ func (b *Builder) openConfirmationDialog(ctx *web.EventContext) (er web.EventRes
 func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		b.InjectAssets(ctx)
+
+		// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
+		menu := b.createMenus(ctx)
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
@@ -888,7 +897,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			VNavigationDrawer(
 				b.runBrandProfileSwitchLanguageDisplayFunc(b.runBrandFunc(ctx), profile, b.runSwitchLanguageFunc(ctx), ctx),
 				VDivider(),
-				b.createMenus(ctx),
+				menu,
 			).App(true).
 				// Clipped(true).
 				Fixed(true).
@@ -912,6 +921,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							HideDetails(true).
 							Value(ctx.R.URL.Query().Get("keyword")).
 							Attr("@keyup.enter", web.Plaid().
+								ClearMergeQuery("page").
 								Query("keyword", web.Var("[$event.target.value]")).
 								MergeQuery(true).
 								PushState(true).
@@ -935,7 +945,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			web.Portal().Name(RightDrawerPortalName),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 			web.Portal().Name(listingDialogPortalName),
 
 			VProgressLinear().
@@ -980,7 +990,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 		pr.Body = VApp(
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(defaultConfirmationDialogPortalName),
+			web.Portal().Name(defaultConfirmDialogPortalName),
 
 			VProgressLinear().
 				Attr(":active", "isFetching").
@@ -1088,18 +1098,23 @@ func (b *Builder) getHomePageFunc() web.PageFunc {
 }
 
 func (b *Builder) defaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+	msgr := MustGetMessages(ctx.R)
 	r.Body = h.Div(
-		h.H1("404"),
-		h.Text("Sorry, we couldn't find this page."),
+		h.H1("404").Class("mb-2"),
+		h.Text(msgr.NotFoundPageNotice),
 	).Class("text-center mt-8")
 	return
 }
 
 func (b *Builder) getNotFoundPageFunc() web.PageFunc {
+	pf := b.defaultNotFoundPageFunc
 	if b.notFoundFunc != nil {
-		return b.notFoundFunc
+		pf = b.notFoundFunc
 	}
-	return b.defaultNotFoundPageFunc
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		ctx.W.WriteHeader(http.StatusNotFound)
+		return pf(ctx)
+	}
 }
 
 func (b *Builder) extraFullPath(ea *extraAsset) string {
@@ -1191,7 +1206,6 @@ func (b *Builder) initMux() {
 				return
 			}
 
-			w.WriteHeader(http.StatusNotFound)
 			b.wrap(
 				nil,
 				b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
@@ -1202,8 +1216,8 @@ func (b *Builder) initMux() {
 
 	b.mux = mux
 }
-func (b *Builder) AddWrapHandler(f func(in http.Handler) (out http.Handler)) {
-	b.wrapHandlers = append(b.wrapHandlers, f)
+func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
+	b.wrapHandlers[key] = f
 }
 
 func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {

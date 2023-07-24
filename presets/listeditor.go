@@ -57,16 +57,19 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
-				VBtn("Delete").Icon(true).Class("float-right ma-2").
-					Children(
-						VIcon("delete"),
-					).Attr("@click", web.Plaid().
-					URL(b.fieldContext.ModelInfo.ListingHref()).
-					EventFunc(actions.RemoveRowEvent).
-					Query(ParamID, ctx.R.FormValue(ParamID)).
-					Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-					Query(ParamRemoveRowFormKey, formKey).
-					Go()),
+				h.If(!b.fieldContext.Disabled,
+					VBtn("Delete").Icon(true).Class("float-right ma-2").
+						Children(
+							VIcon("delete"),
+						).Attr("@click", web.Plaid().
+						URL(b.fieldContext.ModelInfo.ListingHref()).
+						EventFunc(actions.RemoveRowEvent).
+						Queries(ctx.Queries()).
+						Query(ParamID, ctx.R.FormValue(ParamID)).
+						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+						Query(ParamRemoveRowFormKey, formKey).
+						Go()),
+				),
 				content,
 			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Outlined(true)
 		})
@@ -113,53 +116,65 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	return h.Div(
 		web.Scope(
-			h.Div(
-				h.Label(b.fieldContext.Label).Class("v-label theme--light text-caption"),
-				VSpacer(),
-				h.If(haveSorterIcon,
-					h.If(!isSortStart,
-						VBtn("SortStart").Icon(true).Children(
-							VIcon("sort"),
-						).Attr("@click",
-							web.Plaid().
-								URL(b.fieldContext.ModelInfo.ListingHref()).
-								EventFunc(actions.SortEvent).
-								Query(ParamID, ctx.R.FormValue(ParamID)).
-								Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
-								Query(ParamIsStartSort, "1").
-								Go(),
-						),
-					).Else(
-						VBtn("SortDone").Icon(true).Children(
-							VIcon("done"),
-						).Attr("@click",
-							web.Plaid().
-								URL(b.fieldContext.ModelInfo.ListingHref()).
-								EventFunc(actions.SortEvent).
-								Query(ParamID, ctx.R.FormValue(ParamID)).
-								Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-								Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
-								FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
-								Query(ParamIsStartSort, "0").
-								Go(),
+			h.If(!b.fieldContext.Disabled,
+				h.Div(
+					h.Label(b.fieldContext.Label).Class("v-label theme--light text-caption"),
+					VSpacer(),
+					h.If(haveSorterIcon,
+						h.If(!isSortStart,
+							VBtn("SortStart").Icon(true).Children(
+								VIcon("sort"),
+							).
+								Class("mt-n4").
+								Attr("@click",
+									web.Plaid().
+										URL(b.fieldContext.ModelInfo.ListingHref()).
+										EventFunc(actions.SortEvent).
+										Queries(ctx.Queries()).
+										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+										Query(ParamIsStartSort, "1").
+										Go(),
+								),
+						).Else(
+							VBtn("SortDone").Icon(true).Children(
+								VIcon("done"),
+							).
+								Class("mt-n4").
+								Attr("@click",
+									web.Plaid().
+										URL(b.fieldContext.ModelInfo.ListingHref()).
+										EventFunc(actions.SortEvent).
+										Queries(ctx.Queries()).
+										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
+										FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
+										Query(ParamIsStartSort, "0").
+										Go(),
+								),
 						),
 					),
-				),
-			).Class("d-flex align-end"),
+				).Class("d-flex align-end"),
+			),
 			sorter,
 			h.Div(
 				form,
-				VBtn("Add row").
-					Text(true).
-					Color("primary").
-					Attr("@click", web.Plaid().
-						URL(b.fieldContext.ModelInfo.ListingHref()).
-						EventFunc(actions.AddRowEvent).
-						Query(ParamID, ctx.R.FormValue(ParamID)).
-						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-						Query(ParamAddRowFormKey, b.fieldContext.FormKey).
-						Go()),
+				h.If(!b.fieldContext.Disabled,
+					VBtn("Add row").
+						Text(true).
+						Color("primary").
+						Attr("@click", web.Plaid().
+							URL(b.fieldContext.ModelInfo.ListingHref()).
+							EventFunc(actions.AddRowEvent).
+							Queries(ctx.Queries()).
+							Query(ParamID, ctx.R.FormValue(ParamID)).
+							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+							Query(ParamAddRowFormKey, b.fieldContext.FormKey).
+							Go(),
+						),
+				),
 			).Attr("v-show", h.JSONString(!isSortStart)).
 				Class("mt-1 mb-4"),
 		).Init(h.JSONString(sorterData)).VSlot("{ locals }"),
