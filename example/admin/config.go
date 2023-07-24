@@ -388,8 +388,8 @@ func NewConfig() Config {
 		}
 		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
 	})
-	// ab.Model(m).UseDefaultTab()
-	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(m).EnableActivityInfoTab()
+	// ab.Model(pm).EnableActivityInfoTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
@@ -505,7 +505,7 @@ func NewConfig() Config {
 	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
-	ab.RegisterModel(m).UseDefaultTab()
+	ab.RegisterModel(m).EnableActivityInfoTab()
 	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
