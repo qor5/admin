@@ -169,7 +169,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		}).
 		AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			return nil
-		}).TOTPEnabled(false).MaxRetryCount(0)
+		}).TOTP(false).MaxRetryCount(0)
 
 	vh = loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))
