@@ -8,12 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// @snippet_begin(PublishVersion)
 type Version struct {
 	Version       string `gorm:"primary_key;size:128"`
 	VersionName   string
 	ParentVersion string
-	OnlineVersion bool `gorm:"index;default:false"`
 }
+
+// @snippet_end
 
 func (version Version) GetVersion() string {
 	return version.Version

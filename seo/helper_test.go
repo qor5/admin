@@ -1,10 +1,11 @@
 package seo
 
 import (
+	"os"
 	"strings"
 
 	_ "github.com/lib/pq"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,7 @@ type TestQorSEOSetting struct {
 }
 
 func init() {
-	if db, err := gorm.Open(sqlite.Open("/tmp/seo_helper.db"), &gorm.Config{}); err != nil {
+	if db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{}); err != nil {
 		panic(err)
 	} else {
 		GlobalDB = db

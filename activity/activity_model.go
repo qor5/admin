@@ -62,7 +62,7 @@ func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
 	return mb
 }
 
-// SetLink set the model link
+// SetLink set the link that linked to the modified record
 func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
 	mb.link = f
 	return mb
@@ -104,8 +104,9 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-// UseDefaultTab use activity tab on the admin model edit page
-func (mb *ModelBuilder) UseDefaultTab() *ModelBuilder {
+
+// EnableActivityInfoTab enable activity info tab on the given model's editing page
+func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 	if mb.presetModel == nil {
 		return mb
 	}
@@ -144,13 +145,13 @@ func (mb *ModelBuilder) UseDefaultTab() *ModelBuilder {
 	return mb
 }
 
-// AddIgnoredFields add ignored fields to the model builder
+// AddIgnoredFields append ignored fields to the default ignored fields, this would not overwrite the default ignored fields
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = append(mb.ignoredFields, fields...)
 	return mb
 }
 
-// SetIgnoredFields set ignored fields for the model builder
+// SetIgnoredFields set ignored fields to replace the default ignored fields with the new set.
 func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = fields
 	return mb

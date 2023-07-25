@@ -183,7 +183,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(c, db)
+		err = pageValidator(c, db, l10nB)
 		return
 	})
 
@@ -200,7 +200,8 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
-		if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
 		var showURLComp h.HTMLComponent
@@ -355,13 +356,13 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	sharedContainerM := b.ConfigSharedContainer(pb, db)
 	demoContainerM := b.ConfigDemoContainer(pb, db)
 	templateM := b.ConfigTemplate(pb, db)
-	categoryM := b.ConfigCategory(pb, db)
+	categoryM := b.ConfigCategory(pb, db, l10nB)
 
 	if activityB != nil {
 		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
 	}
 	if l10nB != nil {
-		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM)
+		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM, categoryM)
 	}
 	return
 }
@@ -381,7 +382,7 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
 	lb := pm.Listing("Name", "Path", "Description")
@@ -416,15 +417,19 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	eb := pm.Editing("Name", "Path", "Description")
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+		ID := cs["id"]
+		Locale := cs["locale_code"]
+
 		var count int64
-		if err = db.Model(&Page{}).Where("category_id = ?", id).Count(&count).Error; err != nil {
+		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
 			err = errors.New(unableDeleteCategoryMsg)
 			return
 		}
-		if err = db.Model(&Category{}).Where("id = ?", id).Delete(&Category{}).Error; err != nil {
+		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
 			return
 		}
 		return
@@ -432,7 +437,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
-		err = categoryValidator(c, db)
+		err = categoryValidator(c, db, l10nB)
 		return
 	})
 

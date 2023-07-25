@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/web"
+	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
@@ -24,27 +25,28 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		return
 	}
 	var localePath string
-	if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
-		if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil {
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); isLocalizable && l10nON {
+	if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil && l10nON {
+		if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
+			if locale, ok := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); ok {
 				localePath = l10nBuilder.GetLocalePath(locale)
 			}
 		}
+		if localeCode, err := reflectutils.Get(p, "LocaleCode"); err == nil {
+			localePath = l10nBuilder.GetLocalePath(localeCode.(string))
+		}
 	}
 
-	var categoryPath string
 	var category Category
-	if err = db.Where("id = ?", p.CategoryID).First(&category).Error; err != nil && err != gorm.ErrRecordNotFound {
+	category, err = p.GetCategory(db)
+	if err != nil {
 		return
 	}
-	err = nil
-	categoryPath = category.Path
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.getPublishUrl(localePath, categoryPath),
+		Url:      p.getPublishUrl(localePath, category.Path),
 		Content:  content,
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getPublishUrl(localePath, categoryPath))
+	p.SetOnlineUrl(p.getPublishUrl(localePath, category.Path))
 
 	var liveRecord Page
 	{
@@ -76,8 +78,12 @@ func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss
 	return
 }
 
+func generatePublishUrl(localePath, categoryPath, slug string) string {
+	return path.Join("/", localePath, categoryPath, slug, "/index.html")
+}
+
 func (p *Page) getPublishUrl(localePath, categoryPath string) string {
-	return path.Join(localePath, categoryPath, p.Slug, "/index.html")
+	return generatePublishUrl(localePath, categoryPath, p.Slug)
 }
 
 func (p *Page) getAccessUrl(publishUrl string) string {
