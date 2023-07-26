@@ -81,6 +81,8 @@ type Builder struct {
 	images            http.Handler
 	imagesPrefix      string
 	defaultDevice     string
+	publishBtnColor   string
+	duplicateBtnColor string
 }
 
 const (
@@ -127,10 +129,12 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	}
 
 	r := &Builder{
-		db:            db,
-		wb:            web.New(),
-		prefix:        prefix,
-		defaultDevice: Device_Computer,
+		db:                db,
+		wb:                web.New(),
+		prefix:            prefix,
+		defaultDevice:     Device_Computer,
+		publishBtnColor:   "primary",
+		duplicateBtnColor: "primary",
 	}
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
@@ -185,6 +189,15 @@ func (b *Builder) DefaultDevice(v string) (r *Builder) {
 
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
+}
+
+func (b *Builder) PublishBtnColor(v string) (r *Builder) {
+	b.publishBtnColor = v
+	return b
+}
+func (b *Builder) DuplicateBtnColor(v string) (r *Builder) {
+	b.duplicateBtnColor = v
+	return b
 }
 
 func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.ActivityBuilder, publisher *publish.Builder, seoCollection *seo.Collection) (pm *presets.ModelBuilder) {
@@ -273,13 +286,13 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			var publishBtn h.HTMLComponent
 			switch p.GetStatus() {
 			case publish.StatusDraft, publish.StatusOffline:
-				publishBtn = VBtn(pvMsgr.Publish).Small(true).Color("#4F378B").Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+				publishBtn = VBtn(pvMsgr.Publish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
 			case publish.StatusOnline:
-				publishBtn = VBtn(pvMsgr.Republish).Small(true).Color("#4F378B").Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+				publishBtn = VBtn(pvMsgr.Republish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
 			}
 			device := ctx.R.FormValue("device")
 			duplicateBtn := VBtn(msgr.Duplicate).
-				Small(true).Color("#235FF8").Height(40).Class("rounded-l-0 mr-3").
+				Small(true).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
 				Attr("@click", web.Plaid().
 					EventFunc(pv.DuplicateVersionEvent).
 					URL(pm.Info().ListingHref()).
