@@ -71,6 +71,14 @@ func (p *Page) PermissionRN() []string {
 	return rn
 }
 
+func (p Page) GetCategory(db *gorm.DB) (category Category, err error) {
+	err = db.Where("id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode).First(&category).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	return
+}
+
 type Category struct {
 	gorm.Model
 	Name        string
@@ -78,6 +86,36 @@ type Category struct {
 	Description string
 
 	IndentLevel int `gorm:"-"`
+
+	l10n.Locale
+}
+
+func (this *Category) PrimarySlug() string {
+	if !l10nON {
+		return fmt.Sprintf("%v", this.ID)
+	}
+	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+}
+
+func (this *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if !l10nON {
+		if len(segs) != 1 {
+			panic("wrong slug")
+		}
+
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":          segs[0],
+		"locale_code": segs[1],
+	}
 }
 
 func (*Category) TableName() string {

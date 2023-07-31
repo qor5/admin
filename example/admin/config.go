@@ -23,6 +23,7 @@ import (
 	"github.com/qor5/admin/media/media_library"
 	media_oss "github.com/qor5/admin/media/oss"
 	media_view "github.com/qor5/admin/media/views"
+	microsite_utils "github.com/qor5/admin/microsite/utils"
 	microsite_views "github.com/qor5/admin/microsite/views"
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/pagebuilder"
@@ -62,19 +63,19 @@ type Config struct {
 
 func NewConfig() Config {
 	db := ConnectDB()
-	domain := os.Getenv("Site_Domain")
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
 		Session: sess,
 	})
-	PublishStorage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Publish_Bucket"),
-		Region:  os.Getenv("S3_Publish_Region"),
-		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session: sess,
-	})
+	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
+		Bucket:   os.Getenv("S3_Publish_Bucket"),
+		Region:   os.Getenv("S3_Publish_Region"),
+		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+		Session:  sess,
+		Endpoint: os.Getenv("PUBLISH_URL"),
+	}))
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
   icons: {
@@ -388,8 +389,8 @@ func NewConfig() Config {
 		}
 		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
 	})
-	// ab.Model(m).UseDefaultTab()
-	// ab.Model(pm).UseDefaultTab()
+	// ab.Model(m).EnableActivityInfoTab()
+	// ab.Model(pm).EnableActivityInfoTab()
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
@@ -446,7 +447,7 @@ func NewConfig() Config {
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 				)
-				domain := os.Getenv("PUBLISH_URL")
+				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.OnlineUrl
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -477,7 +478,7 @@ func NewConfig() Config {
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 				)
-				domain := os.Getenv("PUBLISH_URL")
+				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.GetPageNumber()))
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -505,14 +506,14 @@ func NewConfig() Config {
 	}
 	note.AfterCreateFunc = NoteAfterCreateFunc
 
-	ab.RegisterModel(m).UseDefaultTab()
+	ab.RegisterModel(m).EnableActivityInfoTab()
 	ab.RegisterModels(l)
 	mm := b.Model(&models.MicrositeModel{})
 	mm.Listing("ID", "Name", "PrePath", "Status").
-		SearchColumns("ID", "Name").
+		SearchColumns("ID::text", "Name").
 		PerPage(10)
 	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, ab, media_oss.Storage, domain, publisher, mm)
+	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
 	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)

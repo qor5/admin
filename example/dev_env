@@ -9,16 +9,18 @@ export S3_Publish_Region=""
 
 export BASE_URL="http://localhost:9500"
 export LOGIN_SECRET="test"
-
 export LOGIN_GOOGLE_KEY=""
-export LOGIN_GOOGLE_SECRET="test"
+export LOGIN_GOOGLE_SECRET=""
+export PORT="9500"
+export LOGIN_INITIAL_USER_EMAIL="qor@theplant.jp"
+export LOGIN_INITIAL_USER_PASSWORD="123"
+
 export LOGIN_MICROSOFTONLINE_KEY=
 export LOGIN_MICROSOFTONLINE_SECRET="ts"
 export LOGIN_GITHUB_KEY=
 export LOGIN_GITHUB_SECRET="ts"
 
-export LOGIN_INITIAL_USER_EMAIL=qor@the-plant.com
-export LOGIN_INITIAL_USER_PASSWORD=theplant
+
 
 export CGO_CFLAGS_ALLOW="-Xpreprocessor"
 

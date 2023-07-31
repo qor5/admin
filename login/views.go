@@ -17,7 +17,6 @@ import (
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
-	"gorm.io/gorm"
 )
 
 type languageItem struct {
@@ -272,12 +271,11 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 		} else {
 			user, err = vh.FindUserByID(id)
 			if err != nil {
-				if err == gorm.ErrRecordNotFound {
+				if err == login.ErrUserNotFound {
 					r.Body = Div(Text("user not found"))
 					return r, nil
 				}
-				r.Body = Div(Text("system error"))
-				return r, nil
+				panic(err)
 			}
 		}
 		token := query.Get("token")

@@ -5,11 +5,14 @@ import (
 	"net/http"
 	"path"
 	"time"
+
+	"github.com/qor5/admin/utils"
 )
 
 type Builder struct {
 	supportLocaleCodes                   []string
 	localesPaths                         map[string]string
+	paths                                []string
 	localesLabels                        map[string]string
 	getSupportLocaleCodesFromRequestFunc func(R *http.Request) []string
 	cookieName                           string
@@ -20,6 +23,7 @@ func New() *Builder {
 	b := &Builder{
 		supportLocaleCodes: []string{},
 		localesPaths:       make(map[string]string),
+		paths:              []string{},
 		localesLabels:      make(map[string]string),
 		cookieName:         "locale",
 		queryName:          "locale",
@@ -42,6 +46,9 @@ func (b *Builder) GetQueryName() string {
 func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r *Builder) {
 	b.supportLocaleCodes = append(b.supportLocaleCodes, localeCode)
 	b.localesPaths[localeCode] = path.Join("/", localePath)
+	if !utils.Contains(b.paths, localePath) {
+		b.paths = append(b.paths, localePath)
+	}
 	b.localesLabels[localeCode] = localeLabel
 	return b
 }
@@ -52,6 +59,10 @@ func (b *Builder) GetLocalePath(localeCode string) string {
 		return p
 	}
 	return ""
+}
+
+func (b *Builder) GetAllLocalePaths() []string {
+	return b.paths
 }
 
 func (b *Builder) GetLocaleLabel(localeCode string) string {
