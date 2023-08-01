@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
 
   build:
@@ -29,7 +33,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-          
+
     steps:
     - uses: actions/checkout@v3
 
@@ -44,6 +48,12 @@ jobs:
         sudo apt-get update
         sudo apt-get -y install libvips-dev
 
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-region: ap-northeast-1
+        role-to-assume: arn:aws:iam::475867236237:role/qor5-test-example-ci-github-actions-upload-assets
+
     - name: Build
       run: go build -v ./...
 
@@ -51,3 +61,6 @@ jobs:
       run: go test -v -p=1 -count=1 ./...
       env:
         DBURL: "postgres://postgres:postgres@localhost:5432/postgres"
+        AWS_SDK_LOAD_CONFIG: 1
+        S3_Bucket: "qor5-test-example-ci"
+        S3_Region: "ap-northeast-1"
