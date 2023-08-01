@@ -206,6 +206,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
+	templateM := b.ConfigTemplate(pb, db)
 	b.mb = pm
 	pm.Listing("ID", "Online", "Title", "Slug")
 	dp := pm.Detailing("Overview")
@@ -214,7 +215,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			if !strings.Contains(ctx.R.RequestURI, "/"+b.mb.Info().URIName()+"/") {
+			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && !strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/") {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}
@@ -236,8 +237,18 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			if id == "" {
 				return pb.DefaultNotFoundPageFunc(ctx)
 			}
-			var obj = pm.NewModel()
-			obj, err = dp.GetFetchFunc()(obj, id, ctx)
+
+			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
+			isTempate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			var obj interface{}
+			var dmb *presets.ModelBuilder
+			if isPage {
+				dmb = pm
+			} else {
+				dmb = templateM
+			}
+			obj = dmb.NewModel()
+			obj, err = dmb.Detailing().GetFetchFunc()(obj, id, ctx)
 			if err != nil {
 				if err == presets.ErrRecordNotFound {
 					return pb.DefaultNotFoundPageFunc(ctx)
@@ -245,24 +256,39 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				return
 			}
 
-			p := obj.(*Page)
-
-			locale := ctx.R.FormValue("locale")
-			if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != p.LocaleCode {
-				// redirect to list page when change locale
-				http.Redirect(ctx.W, ctx.R, pm.Info().ListingHref(), http.StatusSeeOther)
-				return
+			if l, ok := obj.(l10n.L10nInterface); ok {
+				locale := ctx.R.FormValue("locale")
+				if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != l.GetLocale() {
+					// redirect to list page when change locale
+					http.Redirect(ctx.W, ctx.R, dmb.Info().ListingHref(), http.StatusSeeOther)
+					return
+				}
 			}
 
 			var tabContent web.PageResponse
 			tab := ctx.R.FormValue("tab")
 			isContent := tab == "content"
 			activeTabIndex := 0
+			isVersion := false
+			if _, ok := obj.(publish.VersionInterface); ok {
+				isVersion = true
+			}
 			if isContent {
 				activeTabIndex = 1
-				ctx.R.Form.Set("id", strconv.Itoa(int(p.ID)))
-				ctx.R.Form.Set("version", p.GetVersion())
-				ctx.R.Form.Set("locale", p.GetLocale())
+				if v, ok := obj.(interface {
+					GetID() uint
+				}); ok {
+					ctx.R.Form.Set("id", strconv.Itoa(int(v.GetID())))
+				}
+				if v, ok := obj.(publish.VersionInterface); ok {
+					ctx.R.Form.Set("version", v.GetVersion())
+				}
+				if l, ok := obj.(l10n.L10nInterface); ok {
+					ctx.R.Form.Set("locale", l.GetLocale())
+				}
+				if isTempate {
+					ctx.R.Form.Set("tpl", "1")
+				}
 				tabContent, err = b.PageContent(ctx)
 			} else {
 				tabContent, err = in(ctx)
@@ -274,9 +300,8 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			if err != nil {
 				panic(err)
 			}
-			versionCount := versionCount(db, p)
-			queries := url.Values{}
-			action := web.POST().
+			device := ctx.R.FormValue("device")
+			editAction := web.POST().
 				EventFunc(actions.Edit).
 				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 				Query(presets.ParamOverlay, actions.Dialog).
@@ -284,24 +309,44 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				Go()
 
 			var publishBtn h.HTMLComponent
-			switch p.GetStatus() {
-			case publish.StatusDraft, publish.StatusOffline:
-				publishBtn = VBtn(pvMsgr.Publish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
-			case publish.StatusOnline:
-				publishBtn = VBtn(pvMsgr.Republish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+			var duplicateBtn h.HTMLComponent
+			var versionSwitch h.HTMLComponent
+			primarySlug := ""
+			if v, ok := obj.(presets.SlugEncoder); ok {
+				primarySlug = v.PrimarySlug()
 			}
-			device := ctx.R.FormValue("device")
-			duplicateBtn := VBtn(msgr.Duplicate).
-				Small(true).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
-				Attr("@click", web.Plaid().
-					EventFunc(pv.DuplicateVersionEvent).
-					URL(pm.Info().ListingHref()).
-					Query(presets.ParamID, p.PrimarySlug()).
-					Query("tab", tab).
-					QueryIf("device", device, device != "").
-					FieldValue("Title", p.Title).FieldValue("Slug", p.Slug).FieldValue("CategoryID", p.CategoryID).
-					Go(),
-				)
+			if isVersion {
+				p := obj.(*Page)
+				versionCount := versionCount(db, p)
+				switch p.GetStatus() {
+				case publish.StatusDraft, publish.StatusOffline:
+					publishBtn = VBtn(pvMsgr.Publish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+				case publish.StatusOnline:
+					publishBtn = VBtn(pvMsgr.Republish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+				}
+				duplicateBtn = VBtn(msgr.Duplicate).
+					Small(true).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
+					Attr("@click", web.Plaid().
+						EventFunc(pv.DuplicateVersionEvent).
+						URL(pm.Info().ListingHref()).
+						Query(presets.ParamID, primarySlug).
+						Query("tab", tab).
+						QueryIf("device", device, device != "").
+						FieldValue("Title", p.Title).FieldValue("Slug", p.Slug).FieldValue("CategoryID", p.CategoryID).
+						Go(),
+					)
+				versionSwitch = VChip(
+					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Small(true).Class("px-1 mx-1").TextColor("black").Attr("style", "height:20px"),
+					h.Text(p.GetVersionName()+" | "),
+					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Small(true).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
+					VIcon("chevron_right"),
+				).Label(true).Outlined(true).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
+					Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
+						URL(b.ps.GetURIPrefix()+"/version-list-dialog").
+						Query(presets.ParamID, primarySlug).
+						Go())
+			}
+
 			pr.Body = VApp(
 				VNavigationDrawer(
 					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
@@ -315,22 +360,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				VAppBar(
 					VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 					VTabs(
-						VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Queries(queries).Query("tab", web.Var("item.query")).PushState(true).Go()).
+						VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
 							Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
-					).Class("v-tabs--centered").Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
-					h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
-					VChip(
-						VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Small(true).Class("px-1 mx-1").TextColor("black").Attr("style", "height:20px"),
-						h.Text(p.GetVersionName()+" | "),
-						VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Small(true).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
-						VIcon("chevron_right"),
-					).Label(true).Outlined(true).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
-						Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-							URL(b.ps.GetURIPrefix()+"/version-list-dialog").
-							Query(presets.ParamID, p.PrimarySlug()).
-							Go()),
-					duplicateBtn,
-					publishBtn,
+					).Centered(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
+					//h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
+					h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
 				).Dark(true).
 					Color(presets.ColorPrimary).
 					App(true).
@@ -344,7 +378,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				web.Portal().Name(presets.ListingDialogPortalName),
 				web.Portal().Name(dialogPortalName),
 				utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-					Query(presets.ParamID, p.PrimarySlug()).Go(),
+					Query(presets.ParamID, primarySlug).Go(),
 					utilsMsgr),
 				h.If(isContent, h.Script(`
 (function(){
@@ -390,7 +424,7 @@ function(e){
 		return
 	}
 	%s
-}`, action))),
+}`, editAction))),
 				VProgressLinear().
 					Attr(":active", "isFetching").
 					Attr("style", "position: fixed; z-index: 99").
@@ -409,7 +443,7 @@ function(e){
 				),
 			).Id("vt-app").
 				Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`).
-				Attr(web.InitContextLocals, fmt.Sprintf(`{action: "", commonConfirmDialog: false, activeTab:%d, tabs: [{label:"PAGE SETTINGS",query:"settings"},{label:"PAGE CONTENT",query:"content"}]}`, activeTabIndex))
+				Attr(web.InitContextLocals, fmt.Sprintf(`{action: "", commonConfirmDialog: false, activeTab:%d, tabs: [{label:"SETTINGS",query:"settings"},{label:"CONTENT",query:"content"}]}`, activeTabIndex))
 			return
 		}
 	})
@@ -418,7 +452,7 @@ function(e){
 
 	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
-	pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	//pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
@@ -426,7 +460,7 @@ function(e){
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoCollection))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
 
-	eb := pm.Editing("Title", "Slug", "CategoryID")
+	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(c, db)
@@ -496,13 +530,18 @@ function(e){
 		if p.ID == 0 {
 			return h.Div(
 				web.Portal().Name(templateSelectPortal),
-				web.Portal().Name(selectedTemplatePortal),
-				VRow(
-					VCol(
-						VBtn(msgr.CreateFromTemplate).Color("primary").
-							Attr("@click", web.Plaid().EventFunc(openTemplateDialogEvent).Go()),
+				web.Portal(
+					VRow(
+						VCol(
+							h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+							VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
+						).Cols(5),
+						VCol(
+							VBtn(msgr.ChangeTemplate).Color("primary").
+								Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+						).Cols(5),
 					),
-				),
+				).Name(selectedTemplatePortal),
 			).Class("my-2").Attr(web.InitContextVars, `{showTemplateDialog: false}`)
 		}
 		return nil
@@ -605,7 +644,6 @@ function(e){
 
 	sharedContainerM := b.ConfigSharedContainer(pb, db)
 	demoContainerM := b.ConfigDemoContainer(pb, db)
-	templateM := b.ConfigTemplate(pb, db)
 	categoryM := b.ConfigCategory(pb, db)
 
 	if activityB != nil {
@@ -882,7 +920,7 @@ const (
 
 	templateSelectionID     = "TemplateSelectionID"
 	templateSelectionLocale = "TemplateSelectionLocale"
-	templateUnselectVal     = "unselect"
+	templateBlankVal        = "blank"
 )
 
 func selectTemplate(db *gorm.DB) web.EventFunc {
@@ -891,13 +929,22 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			web.AppendVarsScripts(&er, "vars.showTemplateDialog=false")
 		}()
 
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 		id := ctx.R.FormValue(templateSelectionID)
-		if id == templateUnselectVal {
+		if id == templateBlankVal {
 			er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 				Name: selectedTemplatePortal,
-				Body: h.Input("").Type("hidden").
-					Value("").
-					Attr(web.VFieldName(templateSelectionID)...),
+				Body: VRow(
+					VCol(
+						h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
+					).Cols(5),
+					VCol(
+						VBtn(msgr.ChangeTemplate).Color("primary").
+							Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+					).Cols(5),
+				),
 			})
 			return
 		}
@@ -908,65 +955,82 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			panic(err)
 		}
 		name := tpl.Name
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: selectedTemplatePortal,
 			Body: VRow(
 				VCol(
-					h.Input("").Type("hidden").
-						Value(id).
-						Attr(web.VFieldName(templateSelectionID)...),
-					vx.VXReadonlyField().
-						Label(msgr.SelectedTemplateLabel).
-						Children(
-							h.Text(fmt.Sprintf("%v (ID: %v)", name, id)),
-							VBtn("").Children(
-								VIcon("close"),
-							).Text(true).Fab(true).Small(true).
-								Class("ml-2").
-								Attr("@click", web.Plaid().EventFunc(clearTemplateEvent).Go()),
-						),
-				),
-			).Class("mb-n4"),
+					h.Input("").Type("hidden").Value(id).Attr(web.VFieldName(templateSelectionID)...),
+					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
+				).Cols(5),
+				VCol(
+					VBtn(msgr.ChangeTemplate).Color("primary").
+						Attr("@click", web.Plaid().Query(templateSelectionID, id).EventFunc(openTemplateDialogEvent).Go()),
+				).Cols(5),
+			),
 		})
 
 		return
 	}
 }
+
+// Unused
 func clearTemplate(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: selectedTemplatePortal,
-			Body: h.Input("").Type("hidden").
-				Value("").
-				Attr(web.VFieldName(templateSelectionID)...),
+			Body: VRow(
+				VCol(
+					h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
+				).Cols(5),
+				VCol(
+					VBtn(msgr.ChangeTemplate).Color("primary").
+						Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+				).Cols(5),
+			),
 		})
 		return
 	}
 }
+
 func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		selectedID := ctx.R.FormValue(templateSelectionID)
 
 		tpls := []*Template{}
 		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
 			panic(err)
 		}
+		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		var tplHTMLComponents []h.HTMLComponent
 		tplHTMLComponents = append(tplHTMLComponents,
-			h.Div(
-				h.Input(templateSelectionID).Type("radio").
-					Value(templateUnselectVal).
-					Attr(web.VFieldName(templateSelectionID)...).
-					Attr("checked", "checked"),
-			).Style("visibility:hidden;width:0;height:0;"),
+			VCol(
+				VCard(
+					h.Div(
+						h.Iframe().
+							Attr("width", "100%", "height", "150", "frameborder", "no").
+							Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
+					),
+					VCardTitle(h.Text(msgrPb.Blank)),
+					VCardSubtitle(h.Text("")),
+					h.Div(
+						h.Input(templateSelectionID).Type("radio").
+							Value(templateBlankVal).
+							Attr(web.VFieldName(templateSelectionID)...).
+							AttrIf("checked", "checked", selectedID == "").
+							Style("width: 18px; height: 18px"),
+					).Class("mr-4 float-right"),
+				).Height(280).Class("text-truncate").Outlined(true),
+			).Cols(3),
 		)
 		for _, tpl := range tpls {
 			tplHTMLComponents = append(tplHTMLComponents,
-				getTplColComponent(ctx, tpl),
+				getTplColComponent(ctx, tpl, selectedID),
 			)
 		}
 		if len(tpls) == 0 {
@@ -974,7 +1038,6 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 				h.Div(h.Text(gmsgr.ListingNoRecordToShow)).Class("pl-4 text-center grey--text text--darken-2"),
 			)
 		}
-		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: templateSelectPortal,
@@ -1010,7 +1073,7 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
+func getTplColComponent(ctx *web.EventContext, tpl *Template, selectedID string) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	// Avoid layout errors
@@ -1026,7 +1089,7 @@ func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
 	} else {
 		desc = tpl.Description
 	}
-
+	id := fmt.Sprintf("%d", tpl.ID)
 	return VCol(
 		VCard(
 			h.Div(
@@ -1041,8 +1104,9 @@ func getTplColComponent(ctx *web.EventContext, tpl *Template) h.HTMLComponent {
 				Target("_blank").Color("primary"),
 			h.Div(
 				h.Input(templateSelectionID).Type("radio").
-					Value(fmt.Sprintf("%d", tpl.ID)).
+					Value(id).
 					Attr(web.VFieldName(templateSelectionID)...).
+					AttrIf("checked", "checked", selectedID == id).
 					Style("width: 18px; height: 18px"),
 			).Class("mr-4 float-right"),
 		).Height(280).Class("text-truncate").Outlined(true),
@@ -1593,7 +1657,10 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 
 	pm.Listing("ID", "Name", "Description")
 
-	eb := pm.Editing("Name", "Description", "EditContainer")
+	dp := pm.Detailing("Overview")
+	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
+
+	eb := pm.Editing("Name", "Description")
 	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		m := obj.(*Template)

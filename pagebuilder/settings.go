@@ -147,3 +147,35 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		)
 	}
 }
+
+func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Template)
+
+		overview := vx.DetailInfo(
+			vx.DetailColumn(
+				vx.DetailField(vx.OptionalText(p.Name)).Label("Title"),
+				vx.DetailField(vx.OptionalText(p.Description)).Label("Description"),
+			),
+		)
+
+		editBtn := VBtn("Edit").Depressed(true).
+			Attr("@click", web.POST().
+				EventFunc(actions.Edit).
+				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamID, p.PrimarySlug()).
+				URL(pm.Info().ListingHref()).Go(),
+			)
+
+		return VContainer(
+			VRow(
+				VCol(
+					vx.Card(overview).HeaderTitle("Overview").
+						Actions(
+							h.If(editBtn != nil, editBtn),
+						).Class("mb-4 rounded-lg").Outlined(true),
+				).Cols(8),
+			),
+		)
+	}
+}

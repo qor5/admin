@@ -24,6 +24,10 @@ type Page struct {
 	l10n.Locale
 }
 
+func (p *Page) GetID() uint {
+	return p.ID
+}
+
 func (*Page) TableName() string {
 	return "page_builder_pages"
 }
@@ -178,6 +182,10 @@ type Template struct {
 	Description string
 
 	l10n.Locale
+}
+
+func (this *Template) GetID() uint {
+	return this.ID
 }
 
 func (this *Template) PrimarySlug() string {

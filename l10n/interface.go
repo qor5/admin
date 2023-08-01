@@ -9,6 +9,7 @@ import (
 
 type L10nInterface interface {
 	SetLocale(locale string)
+	GetLocale() string
 }
 
 func IsLocalizable(obj interface{}) (isLocalizable bool) {

@@ -15,6 +15,7 @@ type Messages struct {
 	Select                         string
 	SelectedTemplateLabel          string
 	CreateFromTemplate             string
+	ChangeTemplate                 string
 	RelatedOnlinePages             string
 	RepublishAllRelatedOnlinePages string
 	Unnamed                        string
@@ -38,6 +39,7 @@ var Messages_en_US = &Messages{
 	Select:                         "Select",
 	SelectedTemplateLabel:          "Template",
 	CreateFromTemplate:             "Create From Template",
+	ChangeTemplate:                 "Change Template",
 	RelatedOnlinePages:             "Related Online Pages",
 	RepublishAllRelatedOnlinePages: "Republish All",
 	Unnamed:                        "Unnamed",
@@ -61,6 +63,7 @@ var Messages_zh_CN = &Messages{
 	Select:                         "选择",
 	SelectedTemplateLabel:          "模板",
 	CreateFromTemplate:             "从模板中创建",
+	ChangeTemplate:                 "更改模版",
 	RelatedOnlinePages:             "相关在线页面",
 	RepublishAllRelatedOnlinePages: "重新发布所有页面",
 	Unnamed:                        "未命名",
@@ -84,6 +87,7 @@ var Messages_ja_JP = &Messages{
 	Select:                         "選択する",
 	SelectedTemplateLabel:          "テンプレート",
 	CreateFromTemplate:             "テンプレートから新規作成する",
+	ChangeTemplate:                 "テンプレートを変更する",
 	RelatedOnlinePages:             "関連オンラインページ",
 	RepublishAllRelatedOnlinePages: "すべて再公開",
 	Unnamed:                        "名前なし",
