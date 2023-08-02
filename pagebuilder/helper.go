@@ -25,12 +25,11 @@ FROM page_builder_pages pages
 LEFT JOIN page_builder_categories categories ON category_id = categories.id AND pages.locale_code = categories.locale_code
 WHERE pages.deleted_at IS NULL AND categories.deleted_at IS NULL
 `
-	missingCategoryOrSlugMsg = "Category or Slug is required"
-	invalidPathMsg           = "Invalid Path"
-	invalidSlugMsg           = "Invalid Slug"
-	conflictSlugMsg          = "Conflicting Slug"
-	conflictPathMsg          = "Conflicting Path"
-	existingPathMsg          = "Existing Path"
+	invalidPathMsg  = "Invalid Path"
+	invalidSlugMsg  = "Invalid Slug"
+	conflictSlugMsg = "Conflicting Slug"
+	conflictPathMsg = "Conflicting Path"
+	existingPathMsg = "Existing Path"
 
 	unableDeleteCategoryMsg = "this category cannot be deleted because it has used with pages"
 )
@@ -44,13 +43,6 @@ type pagePathInfo struct {
 }
 
 func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
-	if p.CategoryID == 0 && p.Slug == "" {
-		// Page category can be empty when slug is not empty.
-		err.FieldError("Page.Category", missingCategoryOrSlugMsg)
-		err.FieldError("Page.Slug", missingCategoryOrSlugMsg)
-		return
-	}
-
 	if p.Slug != "" {
 		if !slugRe.MatchString(p.Slug) {
 			err.FieldError("Page.Slug", invalidSlugMsg)
