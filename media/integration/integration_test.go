@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
@@ -39,6 +40,7 @@ func setup() (db *gorm.DB) {
 	oss.Storage = s3.New(&s3.Config{
 		Bucket:  os.Getenv("S3_Bucket"),
 		Region:  os.Getenv("S3_Region"),
+		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: sess,
 	})
 
