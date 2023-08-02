@@ -18,7 +18,7 @@ func main() {
 		DataOperator(gorm2op.DataOperator(db))
 	pb := example.ConfigPageBuilder(db, "/page_builder", `<link rel="stylesheet" href="/frontstyle.css">`, p.I18n())
 
-	pb.Configure(p, db, nil, nil)
+	pb.Configure(p, db, nil, nil, nil, nil)
 
 	mux := http.NewServeMux()
 
