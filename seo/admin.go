@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/qor5/admin/l10n"
+
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/media/views"
@@ -69,6 +71,8 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 		fieldPrefix string
 		setting     Setting
+		db          = collection.getDBFromContext(ctx.R.Context())
+		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
 	)
 
 	seo := collection.GetSEOByModel(obj)
@@ -83,6 +87,19 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 			fieldPrefix = value.Type().Field(i).Name
 		}
 	}
+	if setting.IsEmpty() {
+		modelSetting := collection.NewSettingModelInstance().(QorSEOSettingInterface)
+		db.Where("name = ? AND locale_code = ?", seo.name, locale).First(modelSetting)
+		setting.Title = modelSetting.GetTitle()
+		setting.Description = modelSetting.GetDescription()
+		setting.Keywords = modelSetting.GetKeywords()
+		setting.OpenGraphURL = modelSetting.GetOpenGraphURL()
+		setting.OpenGraphType = modelSetting.GetOpenGraphType()
+		setting.OpenGraphImageURL = modelSetting.GetOpenGraphImageURL()
+		setting.OpenGraphImageFromMediaLibrary = modelSetting.GetOpenGraphImageFromMediaLibrary()
+		setting.OpenGraphMetadata = modelSetting.GetOpenGraphMetadata()
+	}
+
 	openCustomizePanel := "1"
 	hideActions := false
 	o := ctx.R.FormValue("openCustomizePanel")
@@ -119,16 +136,18 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 
 func (collection *Collection) pageFunc(ctx *web.EventContext) (_ web.PageResponse, err error) {
 	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-		db   = collection.getDBFromContext(ctx.R.Context())
+		msgr      = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		db        = collection.getDBFromContext(ctx.R.Context())
+		locale, _ = l10n.IsLocalizableFromCtx(ctx.R.Context())
 	)
 
 	var seoComponents h.HTMLComponents
 	for _, seo := range collection.registeredSEO {
 		modelSetting := collection.NewSettingModelInstance().(QorSEOSettingInterface)
-		err := db.Where("name = ?", seo.name).First(modelSetting).Error
+		err := db.Where("name = ? AND locale_code = ?", seo.name, locale).First(modelSetting).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			modelSetting.SetName(seo.name)
+			modelSetting.SetLocale(locale)
 			if err := db.Save(modelSetting).Error; err != nil {
 				panic(err)
 			}
@@ -309,12 +328,13 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 
 func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		db      = collection.getDBFromContext(ctx.R.Context())
-		name    = ctx.R.FormValue("name")
-		setting = collection.NewSettingModelInstance().(QorSEOSettingInterface)
+		db        = collection.getDBFromContext(ctx.R.Context())
+		name      = ctx.R.FormValue("name")
+		setting   = collection.NewSettingModelInstance().(QorSEOSettingInterface)
+		locale, _ = l10n.IsLocalizableFromCtx(ctx.R.Context())
 	)
 
-	if err = db.Where("name = ?", name).First(setting).Error; err != nil {
+	if err = db.Where("name = ? AND locale_code = ?", name, locale).First(setting).Error; err != nil {
 		return
 	}
 
@@ -362,6 +382,7 @@ func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, 
 
 	setting.SetSEOSetting(s)
 	setting.SetVariables(variables)
+	setting.SetLocale(locale)
 	if err = db.Save(setting).Error; err != nil {
 		return
 	}

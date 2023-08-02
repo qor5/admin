@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/qor5/admin/l10n"
+
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -201,7 +203,7 @@ func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	return nil
 }
 
-//RenderGlobal render global seo
+// RenderGlobal render global seo
 func (collection Collection) RenderGlobal(req *http.Request) h.HTMLComponent {
 	return collection.Render(collection.globalName, req)
 }
@@ -215,6 +217,7 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 		sortedDBSettings []QorSEOSettingInterface
 		sortedSettings   []Setting
 		setting          Setting
+		locale           string
 	)
 
 	// sort all SEOs
@@ -233,9 +236,13 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 	}
 	sortedSeoNames = append(sortedSeoNames, globalSeo.name)
 
+	if v, ok := obj.(l10n.L10nInterface); ok {
+		locale = v.GetLocale()
+	}
+
 	// sort all QorSEOSettingInterface
 	var settingModelSlice = collection.NewSettingModelSlice()
-	if db.Find(settingModelSlice, "name in (?)", sortedSeoNames).Error != nil {
+	if db.Find(settingModelSlice, "name in (?) AND locale_code = ?", sortedSeoNames, locale).Error != nil {
 		return h.RawHTML("")
 	}
 
