@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func (p *Page) PermissionRN() []string {
 
 func (p Page) GetCategory(db *gorm.DB) (category Category, err error) {
 	err = db.Where("id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode).First(&category).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
 	}
 	return
