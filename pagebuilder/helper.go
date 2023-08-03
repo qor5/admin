@@ -11,7 +11,6 @@ import (
 
 var (
 	directoryRe = regexp.MustCompile(`^([\/]{1}[a-z0-9.]+)+(\/?){1}$|^([\/]{1})$`)
-	slugRe      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 )
 
 const (
@@ -44,7 +43,8 @@ type pagePathInfo struct {
 
 func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	if p.Slug != "" {
-		if !slugRe.MatchString(p.Slug) {
+		pagePath := "/" + path.Clean(p.Slug)
+		if !directoryRe.MatchString(pagePath) {
 			err.FieldError("Page.Slug", invalidSlugMsg)
 			return
 		}
