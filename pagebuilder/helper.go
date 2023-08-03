@@ -113,9 +113,8 @@ func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.Validatio
 }
 
 func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
-	categoryPath := path.Clean(category.Path)
-	categoryPath = path.Join("/", categoryPath)
-	if categoryPath == "/" || !directoryRe.MatchString(categoryPath) {
+	categoryPath := "/" + path.Clean(category.Path)
+	if !directoryRe.MatchString(categoryPath) {
 		err.FieldError("Category.Category", invalidPathMsg)
 		return
 	}
