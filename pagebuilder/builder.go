@@ -193,8 +193,17 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			vErr = *ve
 		}
 
-		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).
+		return VTextField().
+			FieldName(field.Name).
+			Prefix("/").
+			Label(field.Label).Value(strings.TrimPrefix(field.Value(obj).(string), "/")).
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		m := obj.(*Page)
+		slug := ctx.R.FormValue(field.Name)
+		slug = path.Join("/", slug)
+		m.Slug = slug
+		return nil
 	})
 
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -416,6 +425,25 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 
 	eb := pm.Editing("Name", "Path", "Description")
 
+	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().Label("Path").
+			Value(strings.TrimPrefix(field.Value(obj).(string), "/")).
+			FieldName("Path").
+			Prefix("/").
+			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		m := obj.(*Category)
+		p := ctx.R.FormValue(field.Name)
+		p = path.Join("/", p)
+		m.Path = p
+		return nil
+	})
+
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
 		ID := cs["id"]
@@ -439,18 +467,6 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 		c := obj.(*Category)
 		err = categoryValidator(c, db, l10nB)
 		return
-	})
-
-	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		category := obj.(*Category)
-
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		return VTextField().Label("Path").Value(category.Path).Class("mb-2").FieldName("Path").
-			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
