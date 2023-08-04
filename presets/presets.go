@@ -749,6 +749,7 @@ const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
 const DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 const ListingDialogPortalName = "presets_listingDialogPortalName"
+const singletonEditingPortalName = "presets_SingletonEditingPortalName"
 
 const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
 const closeDialogVarScript = "vars.presetsDialog = false"

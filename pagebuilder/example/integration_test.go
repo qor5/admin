@@ -41,7 +41,7 @@ func TestEditor(t *testing.T) {
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
-INSERT INTO page_builder_pages ( version, locale_code, title, slug) VALUES ( 'v1','International', '123', '123');
+INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
 INSERT INTO page_builder_containers ( page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (  1, 'v1','International', 'Header', 1, 1);
 INSERT INTO container_headers (color) VALUES ('black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),

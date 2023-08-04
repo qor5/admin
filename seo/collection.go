@@ -80,7 +80,7 @@ func (seo *SEO) SetName(name string) *SEO {
 	return seo
 }
 
-// RegisterContextVariables register context variables
+// RegisterContextVariables register context variables. the registered variables will be rendered to the page
 func (seo *SEO) RegisterContextVariables(key string, f contextVariablesFunc) *SEO {
 	if seo.contextVariables == nil {
 		seo.contextVariables = map[string]contextVariablesFunc{}

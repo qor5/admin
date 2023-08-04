@@ -102,10 +102,11 @@ func composeS3Path(filePath string) string {
 // GetNonIgnoredTableNames returns all table names except the ignored ones.
 func GetNonIgnoredTableNames() []string {
 	ignoredTableNames := map[string]struct{}{
-		"users":          {},
-		"roles":          {},
-		"user_role_join": {},
-		"login_sessions": {},
+		"users":            {},
+		"roles":            {},
+		"user_role_join":   {},
+		"login_sessions":   {},
+		"qor_seo_settings": {},
 	}
 
 	var rawTableNames []string
@@ -218,10 +219,11 @@ Startup speed.', '', 'Discover made-to-measure enterprise solutions combining th
 -- Data for Name: page_builder_categories; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '');
-INSERT INTO public.page_builder_categories VALUES (2, '2023-03-03 06:21:15.410972+00', '2023-03-03 06:21:15.410972+00', NULL, 'Order', '/order', '');
-INSERT INTO public.page_builder_categories VALUES (3, '2023-03-03 06:21:31.605906+00', '2023-03-03 06:21:31.605906+00', NULL, 'Food', '/product/food', '');
-
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (2, '2023-03-03 06:21:15.410972+00', '2023-03-03 06:21:15.410972+00', NULL, 'Order', '/order', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (3, '2023-03-03 06:21:31.605906+00', '2023-03-03 06:21:31.605906+00', NULL, 'Food', '/product/food', '', 'International');
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'China');
+INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.782515+00', '2023-03-03 06:21:07.782515+00', NULL, 'Product', '/product', '', 'Japan');
 
 --
 -- Data for Name: page_builder_containers; Type: TABLE DATA; Schema: public; Owner: example
@@ -253,7 +255,7 @@ INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.3053
 -- Data for Name: page_builder_pages; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', false, 'International');
+INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', 'International');
 
 
 --
