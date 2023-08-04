@@ -43,7 +43,7 @@ type pagePathInfo struct {
 
 func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	if p.Slug != "" {
-		pagePath := "/" + path.Clean(p.Slug)
+		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
 			err.FieldError("Page.Slug", invalidSlugMsg)
 			return
@@ -113,7 +113,7 @@ func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.Validatio
 }
 
 func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
-	categoryPath := "/" + path.Clean(category.Path)
+	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
 		err.FieldError("Category.Category", invalidPathMsg)
 		return
