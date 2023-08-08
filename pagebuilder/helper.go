@@ -92,7 +92,7 @@ func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.Validatio
 		}
 	}
 
-	if p.Slug != "" {
+	if p.Slug != "/" {
 		var allLocalePaths []string
 		if l10nB != nil {
 			allLocalePaths = l10nB.GetAllLocalePaths()
