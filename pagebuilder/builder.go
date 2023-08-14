@@ -343,7 +343,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				).Label(true).Outlined(true).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
 					Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 						URL(b.ps.GetURIPrefix()+"/version-list-dialog").
-						Query(presets.ParamID, primarySlug).
+						Query("select_id", primarySlug).
 						Go())
 			}
 
@@ -698,10 +698,9 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-
-			id := ctx.R.FormValue(presets.ParamID)
+			id := ctx.R.FormValue("select_id")
 			if id == "" {
-				id = ctx.R.FormValue("f_" + presets.ParamID)
+				id = ctx.R.FormValue("f_select_id")
 			}
 			if id != "" {
 				cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
@@ -724,7 +723,7 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 				EventFunc(renameVersionDialogEvent).
 				Queries(ctx.Queries()).
 				Query(presets.ParamOverlay, actions.Dialog).
-				Query(presets.ParamID, obj.(presets.SlugEncoder).PrimarySlug()).
+				Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
 				Query("version_name", versionName).
 				Go()),
 		)
@@ -747,27 +746,34 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 	})
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.R.FormValue("select_id")
+		if id == "" {
+			id = ctx.R.FormValue("f_select_id")
+		}
+
 		versionName := p.GetVersionName()
-		if p.GetStatus() != publish.StatusDraft || p.PrimarySlug() == id {
+		if p.PrimarySlug() == id {
+			return h.Td(h.Text("current"))
+		}
+		if p.GetStatus() != publish.StatusDraft {
 			return h.Td()
 		}
+
 		return h.Td(VBtn("").Icon(true).Children(VIcon("delete")).Attr("@click", web.Plaid().
 			URL(pb.GetURIPrefix()+"/version-list-dialog").
 			EventFunc(deleteVersionDialogEvent).
 			Queries(ctx.Queries()).
 			Query(presets.ParamOverlay, actions.Dialog).
-			Query(presets.ParamID, obj.(presets.SlugEncoder).PrimarySlug()).
+			Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
 			Query("version_name", versionName).
 			Go()))
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
 	mb.RegisterEventFunc(selectVersionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.R.FormValue("select_id")
 		refer, _ := url.Parse(ctx.R.Referer())
 		newQueries := refer.Query()
-		newQueries.Del(presets.ParamID)
 		r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
 		return
 	})
@@ -777,7 +783,7 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		cell.SetAttr("@click.self", web.Plaid().
-			Query("id", obj.(*Page).PrimarySlug()).
+			Query("select_id", obj.(*Page).PrimarySlug()).
 			URL(pb.GetURIPrefix()+"/version-list-dialog").
 			EventFunc(selectVersionEvent).
 			Go(),
@@ -807,25 +813,25 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.R.FormValue("select_id")
 		if id == "" {
-			id = ctx.R.FormValue("f_" + presets.ParamID)
+			id = ctx.R.FormValue("f_select_id")
 		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabAllVersions,
 				ID:    "all",
-				Query: url.Values{"all": []string{"1"}, presets.ParamID: []string{id}},
+				Query: url.Values{"all": []string{"1"}, "select_id": []string{id}},
 			},
 			{
 				Label: msgr.FilterTabOnlineVersion,
 				ID:    "online_version",
-				Query: url.Values{"online_version": []string{"1"}, presets.ParamID: []string{id}},
+				Query: url.Values{"online_version": []string{"1"}, "select_id": []string{id}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,
 				ID:    "named_versions",
-				Query: url.Values{"named_versions": []string{"1"}, presets.ParamID: []string{id}},
+				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{id}},
 			},
 		}
 	})
@@ -1371,13 +1377,13 @@ func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.R.FormValue("rename_id")
 		versionName := ctx.R.FormValue("version_name")
 		okAction := web.Plaid().
 			URL(mb.Info().ListingHref()).
 			EventFunc(renameVersionEvent).
 			Queries(ctx.Queries()).
-			Query(presets.ParamID, id).Go()
+			Query("rename_id", id).Go()
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogPortalName,
@@ -1410,7 +1416,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 }
 func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.R.FormValue("rename_id")
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
@@ -1425,15 +1431,18 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
 			return
 		}
+		qs := ctx.Queries()
+		delete(qs, "version_name")
+		delete(qs, "rename_id")
 
-		r.VarsScript = web.Plaid().URL(ctx.R.RequestURI).Queries(ctx.Queries()).EventFunc(actions.UpdateListingDialog).MergeQuery(true).Go()
+		r.VarsScript = web.Plaid().URL(ctx.R.RequestURI).Queries(qs).EventFunc(actions.UpdateListingDialog).Go()
 		return
 	}
 }
 
 func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.R.FormValue("delete_id")
 		versionName := ctx.R.FormValue("version_name")
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,

@@ -372,6 +372,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 					URL(u).
 					EventFunc(actions.UpdateListingDialog).
 					MergeQuery(true).
+					Queries(ctx.Queries()).
 					Query(ParamSelectedIds, removeSelectQuery).
 					Go(),
 			)
