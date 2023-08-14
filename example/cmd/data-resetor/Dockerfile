@@ -1,4 +1,4 @@
-FROM golang:1.20.5-alpine as builder
+FROM golang:1.21.0-alpine as builder
 RUN apk update && apk add git gcc libc-dev && rm -rf /var/cache/apk/*
 WORKDIR /qor5
 COPY . .
