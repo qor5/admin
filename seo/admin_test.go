@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/qor5/admin/l10n"
+	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
 	"gorm.io/gorm"
 )
@@ -21,10 +23,10 @@ func TestAdmin(t *testing.T) {
 
 	collection := NewCollection().SetSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product Detail", "Product")
 	collection.Configure(admin, GlobalDB)
-
+	l10n_view.Configure(admin, GlobalDB, l10n.New().RegisterLocales("en", "en", "English"), nil)
 	// should create all seo setting in the first time
 	resetDB()
-	if req, err := http.Get(server.URL + "/admin/test-qor-seo-settings?__execute_event__=__reload__"); err == nil {
+	if req, err := http.Get(server.URL + "/admin/test-qor-seo-settings?__execute_event__=__reload__&locale=en"); err == nil {
 		if req.StatusCode != 200 {
 			t.Errorf("Setting page should be exist, status code is %v", req.StatusCode)
 		}
@@ -56,7 +58,7 @@ func TestAdmin(t *testing.T) {
 	mwriter.WriteField("Product.Keywords", keyword)
 	mwriter.Close()
 
-	req, err := http.DefaultClient.Post(server.URL+"/admin/test-qor-seo-settings?__execute_event__=seo_save_collection&name=Product", mwriter.FormDataContentType(), form)
+	req, err := http.DefaultClient.Post(server.URL+"/admin/test-qor-seo-settings?__execute_event__=seo_save_collection&name=Product&locale=en", mwriter.FormDataContentType(), form)
 	if err != nil {
 		t.Fatal(err)
 	}
