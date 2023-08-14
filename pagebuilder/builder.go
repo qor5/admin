@@ -543,12 +543,12 @@ function(e){
 				web.Portal(
 					VRow(
 						VCol(
-							h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+							h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
 							VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
 						).Cols(5),
 						VCol(
 							VBtn(msgr.ChangeTemplate).Color("primary").
-								Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+								Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
 						).Cols(5),
 					),
 				).Name(selectedTemplatePortal),
@@ -615,7 +615,7 @@ function(e){
 				return
 			}
 
-			if v := ctx.R.FormValue(templateSelectionID); v != "" {
+			if v := ctx.R.FormValue(templateSelectedID); v != "" {
 				var tplID int
 				tplID, inerr = strconv.Atoi(v)
 				if inerr != nil {
@@ -945,7 +945,8 @@ const (
 	templateSelectPortal   = "templateSelectPortal"
 	selectedTemplatePortal = "selectedTemplatePortal"
 
-	templateSelectionID     = "TemplateSelectionID"
+	templateSelectedID      = "TemplateSelectedID"
+	templateID              = "TemplateID"
 	templateSelectionLocale = "TemplateSelectionLocale"
 	templateBlankVal        = "blank"
 )
@@ -958,18 +959,18 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		id := ctx.R.FormValue(templateSelectionID)
+		id := ctx.R.FormValue(templateID)
 		if id == templateBlankVal {
 			er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 				Name: selectedTemplatePortal,
 				Body: VRow(
 					VCol(
-						h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+						h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
 						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
 					).Cols(5),
 					VCol(
 						VBtn(msgr.ChangeTemplate).Color("primary").
-							Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+							Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
 					).Cols(5),
 				),
 			})
@@ -987,12 +988,12 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			Name: selectedTemplatePortal,
 			Body: VRow(
 				VCol(
-					h.Input("").Type("hidden").Value(id).Attr(web.VFieldName(templateSelectionID)...),
+					h.Input("").Type("hidden").Value(id).Attr(web.VFieldName(templateSelectedID)...),
 					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
 				).Cols(5),
 				VCol(
 					VBtn(msgr.ChangeTemplate).Color("primary").
-						Attr("@click", web.Plaid().Query(templateSelectionID, id).EventFunc(openTemplateDialogEvent).Go()),
+						Attr("@click", web.Plaid().Query(templateSelectedID, id).EventFunc(openTemplateDialogEvent).Go()),
 				).Cols(5),
 			),
 		})
@@ -1009,12 +1010,12 @@ func clearTemplate(db *gorm.DB) web.EventFunc {
 			Name: selectedTemplatePortal,
 			Body: VRow(
 				VCol(
-					h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectionID)...),
+					h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
 					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
 				).Cols(5),
 				VCol(
 					VBtn(msgr.ChangeTemplate).Color("primary").
-						Attr("@click", web.Plaid().Query(templateSelectionID, "").EventFunc(openTemplateDialogEvent).Go()),
+						Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
 				).Cols(5),
 			),
 		})
@@ -1026,7 +1027,7 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		selectedID := ctx.R.FormValue(templateSelectionID)
+		selectedID := ctx.R.FormValue(templateSelectedID)
 
 		tpls := []*Template{}
 		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
@@ -1046,9 +1047,9 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 					VCardTitle(h.Text(msgrPb.Blank)),
 					VCardSubtitle(h.Text("")),
 					h.Div(
-						h.Input(templateSelectionID).Type("radio").
+						h.Input(templateID).Type("radio").
 							Value(templateBlankVal).
-							Attr(web.VFieldName(templateSelectionID)...).
+							Attr(web.VFieldName(templateID)...).
 							AttrIf("checked", "checked", selectedID == "").
 							Style("width: 18px; height: 18px"),
 					).Class("mr-4 float-right"),
@@ -1130,9 +1131,9 @@ func getTplColComponent(ctx *web.EventContext, tpl *Template, selectedID string)
 				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
 				Target("_blank").Color("primary"),
 			h.Div(
-				h.Input(templateSelectionID).Type("radio").
+				h.Input(templateID).Type("radio").
 					Value(id).
-					Attr(web.VFieldName(templateSelectionID)...).
+					Attr(web.VFieldName(templateID)...).
 					AttrIf("checked", "checked", selectedID == id).
 					Style("width: 18px; height: 18px"),
 			).Class("mr-4 float-right"),
