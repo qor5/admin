@@ -37,6 +37,7 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 	if err != nil {
 		panic(err)
 	}
+
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 

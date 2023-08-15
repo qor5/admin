@@ -3,6 +3,7 @@ package views
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/presets"
 	"mime/multipart"
 	"strconv"
 	"strings"
@@ -363,14 +364,15 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 			} else {
 				m.SelectedType = media_library.ALLOW_TYPE_FILE
 			}
-			err1 := m.File.Scan(fh)
-			if err1 != nil {
+			err = m.File.Scan(fh)
+			if err != nil {
 				panic(err)
 			}
 
-			err1 = media.SaveUploadAndCropImage(db, &m)
-			if err1 != nil {
-				return
+			err = media.SaveUploadAndCropImage(db, &m)
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 		}
 
@@ -420,7 +422,8 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
-				return
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 		}
 
