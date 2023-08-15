@@ -78,7 +78,7 @@ func (p *Page) PermissionRN() []string {
 	return rn
 }
 
-func (p Page) GetCategory(db *gorm.DB) (category Category, err error) {
+func (p *Page) GetCategory(db *gorm.DB) (category Category, err error) {
 	err = db.Where("id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode).First(&category).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
@@ -97,14 +97,14 @@ type Category struct {
 	l10n.Locale
 }
 
-func (this *Category) PrimarySlug() string {
+func (c *Category) PrimarySlug() string {
 	if !l10nON {
-		return fmt.Sprintf("%v", this.ID)
+		return fmt.Sprintf("%v", c.ID)
 	}
-	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
 }
 
-func (this *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (c *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if !l10nON {
 		if len(segs) != 1 {
@@ -143,14 +143,14 @@ type Container struct {
 	l10n.Locale
 }
 
-func (this *Container) PrimarySlug() string {
+func (c *Container) PrimarySlug() string {
 	if !l10nON {
-		return fmt.Sprintf("%v", this.ID)
+		return fmt.Sprintf("%v", c.ID)
 	}
-	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
 }
 
-func (this *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (c *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if !l10nON {
 		if len(segs) != 1 {
@@ -183,14 +183,14 @@ type DemoContainer struct {
 	l10n.Locale
 }
 
-func (this *DemoContainer) PrimarySlug() string {
+func (c *DemoContainer) PrimarySlug() string {
 	if !l10nON {
-		return fmt.Sprintf("%v", this.ID)
+		return fmt.Sprintf("%v", c.ID)
 	}
-	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
 }
 
-func (this *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (c *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if !l10nON {
 		if len(segs) != 1 {
@@ -223,18 +223,18 @@ type Template struct {
 	l10n.Locale
 }
 
-func (this *Template) GetID() uint {
-	return this.ID
+func (t *Template) GetID() uint {
+	return t.ID
 }
 
-func (this *Template) PrimarySlug() string {
+func (t *Template) PrimarySlug() string {
 	if !l10nON {
-		return fmt.Sprintf("%v", this.ID)
+		return fmt.Sprintf("%v", t.ID)
 	}
-	return fmt.Sprintf("%v_%v", this.ID, this.LocaleCode)
+	return fmt.Sprintf("%v_%v", t.ID, t.LocaleCode)
 }
 
-func (this *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (t *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if !l10nON {
 		if len(segs) != 1 {
@@ -261,10 +261,10 @@ func (*Template) TableName() string {
 
 const templateVersion = "tpl"
 
-func (m *Template) Page() *Page {
+func (t *Template) Page() *Page {
 	return &Page{
-		Model: m.Model,
-		Title: m.Name,
+		Model: t.Model,
+		Title: t.Name,
 		Slug:  "",
 		Status: publish.Status{
 			Status:    publish.StatusDraft,
@@ -274,6 +274,6 @@ func (m *Template) Page() *Page {
 		Version: publish.Version{
 			Version: templateVersion,
 		},
-		Locale: m.Locale,
+		Locale: t.Locale,
 	}
 }

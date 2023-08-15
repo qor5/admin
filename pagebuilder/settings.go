@@ -3,8 +3,6 @@ package pagebuilder
 import (
 	"fmt"
 
-	"gorm.io/gorm"
-
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
@@ -16,6 +14,7 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
@@ -68,9 +67,9 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		var notesSetcion h.HTMLComponent
 		if len(notes) > 0 {
 			s := VContainer()
-			for _, note := range notes {
-				s.AppendChildren(VRow(VCardText(h.Text(note.Content)).Class("pb-0")))
-				s.AppendChildren(VRow(VCardText(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("pt-0")))
+			for _, n := range notes {
+				s.AppendChildren(VRow(VCardText(h.Text(n.Content)).Class("pb-0")))
+				s.AppendChildren(VRow(VCardText(h.Text(fmt.Sprintf("%v - %v", n.Creator, n.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("pt-0")))
 			}
 			notesSetcion = s
 		}

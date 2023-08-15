@@ -13,24 +13,19 @@ import (
 	"strconv"
 	"strings"
 
-	mediav "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/seo"
-
-	"github.com/qor5/admin/note"
-
-	"github.com/qor5/admin/utils"
-
-	"goji.io/pat"
-
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
 	l10n_view "github.com/qor5/admin/l10n/views"
+	mediav "github.com/qor5/admin/media/views"
+	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/admin/presets/gorm2op"
 	"github.com/qor5/admin/publish"
 	"github.com/qor5/admin/publish/views"
 	pv "github.com/qor5/admin/publish/views"
+	"github.com/qor5/admin/seo"
+	"github.com/qor5/admin/utils"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
@@ -38,6 +33,7 @@ import (
 	"github.com/qor5/x/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"goji.io/pat"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -86,9 +82,9 @@ type Builder struct {
 }
 
 const (
-	openTemplateDialogEvent          = "openTemplateDialogEvent"
-	selectTemplateEvent              = "selectTemplateEvent"
-	clearTemplateEvent               = "clearTemplateEvent"
+	openTemplateDialogEvent = "openTemplateDialogEvent"
+	selectTemplateEvent     = "selectTemplateEvent"
+	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
 	schedulePublishDialogEvent = "schedulePublishDialogEvent"
@@ -132,7 +128,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		db:                db,
 		wb:                web.New(),
 		prefix:            prefix,
-		defaultDevice:     Device_Computer,
+		defaultDevice:     DeviceComputer,
 		publishBtnColor:   "primary",
 		duplicateBtnColor: "primary",
 	}
@@ -154,7 +150,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
 	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(RenameCotainerDialogEvent, r.RenameContainerDialog)
+	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
 	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
 	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
 	return r
@@ -293,7 +289,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			} else {
 				tabContent, err = in(ctx)
 			}
-			if err == perm.PermissionDenied {
+			if errors.Is(err, perm.PermissionDenied) {
 				pr.Body = h.Text(perm.PermissionDenied.Error())
 				return pr, nil
 			}
