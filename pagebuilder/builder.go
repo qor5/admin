@@ -363,7 +363,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
 							Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
 					).Centered(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
-					//h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
+					// h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
 					h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
 				).Dark(true).
 					Color(presets.ColorPrimary).
@@ -450,9 +450,9 @@ function(e){
 
 	configureVersionListDialog(db, b.ps, pm)
 
-	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db))
+	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
 	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
-	//pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
@@ -1023,7 +1023,7 @@ func clearTemplate(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func openTemplateDialog(db *gorm.DB) web.EventFunc {
+func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
@@ -1058,7 +1058,7 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		)
 		for _, tpl := range tpls {
 			tplHTMLComponents = append(tplHTMLComponents,
-				getTplColComponent(ctx, tpl, selectedID),
+				getTplColComponent(ctx, prefix, tpl, selectedID),
 			)
 		}
 		if len(tpls) == 0 {
@@ -1101,7 +1101,8 @@ func openTemplateDialog(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-func getTplColComponent(ctx *web.EventContext, tpl *Template, selectedID string) h.HTMLComponent {
+
+func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, selectedID string) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	// Avoid layout errors
@@ -1118,17 +1119,20 @@ func getTplColComponent(ctx *web.EventContext, tpl *Template, selectedID string)
 		desc = tpl.Description
 	}
 	id := fmt.Sprintf("%d", tpl.ID)
+
+	src := fmt.Sprintf("./%s/preview?id=%d&tpl=1&locale=%s", prefix, tpl.ID, tpl.LocaleCode)
+
 	return VCol(
 		VCard(
 			h.Div(
-				h.Iframe().Src(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
+				h.Iframe().Src(src).
 					Attr("width", "100%", "height", "150", "frameborder", "no").
 					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
 			),
 			VCardTitle(h.Text(name)),
 			VCardSubtitle(h.Text(desc)),
 			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
-				Href(fmt.Sprintf("./page_builder/preview?id=%d&tpl=1&locale=%s", tpl.ID, tpl.LocaleCode)).
+				Href(src).
 				Target("_blank").Color("primary"),
 			h.Div(
 				h.Input(templateID).Type("radio").
@@ -1171,7 +1175,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 			Attr(":loading", "isFetching").
 			Attr("@click", web.Plaid().
 				EventFunc(schedulePublishEvent).
-				//Queries(queries).
+				// Queries(queries).
 				Query(presets.ParamID, paramID).
 				Query(presets.ParamOverlay, actions.Dialog).
 				URL(mb.Info().ListingHref()).
@@ -1189,13 +1193,13 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 									vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
+									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
 								).Cols(6),
 								VCol(
 									vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
+									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
 								).Cols(6),
 							),
 						),
@@ -1211,6 +1215,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 		return
 	}
 }
+
 func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
@@ -1274,6 +1279,7 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		return
 	}
 }
+
 func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
@@ -1315,7 +1321,7 @@ func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoCollection *seo.Col
 			return
 		}
 
-		//msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
+		// msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		updateBtn := VBtn(cmsgr.Update).
 			Color("primary").
@@ -1323,9 +1329,9 @@ func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoCollection *seo.Col
 			Attr(":loading", "isFetching").
 			Attr("@click", web.Plaid().
 				EventFunc(updateSEOEvent).
-				//Queries(queries).
+				// Queries(queries).
 				Query(presets.ParamID, paramID).
-				//Query(presets.ParamOverlay, actions.Dialog).
+				// Query(presets.ParamOverlay, actions.Dialog).
 				URL(mb.Info().ListingHref()).
 				Go())
 		ctx.R.Form.Set("openCustomizePanel", "0")
@@ -1415,6 +1421,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 		return
 	}
 }
+
 func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue("rename_id")
