@@ -34,7 +34,7 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 func ContainerWrapper(containerID, anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
-	isEditor bool, style string, comp ...HTMLComponent) HTMLComponent {
+	isEditor bool, isReadonly bool, style string, comp ...HTMLComponent) HTMLComponent {
 	r := Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
@@ -47,7 +47,11 @@ func ContainerWrapper(containerID, anchorID, classes,
 		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")
 
 	if isEditor {
-		r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
+		if isReadonly {
+			r.AppendChildren(RawHTML(`<div class="wrapper-shadow"></div>`))
+		} else {
+			r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
+		}
 	}
 	return r
 

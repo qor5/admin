@@ -8,6 +8,7 @@ import (
 
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/seo"
 	"gorm.io/gorm"
 )
 
@@ -17,10 +18,15 @@ type Page struct {
 	Slug       string
 	CategoryID uint
 
+	SEO seo.Setting
 	publish.Status
 	publish.Schedule
 	publish.Version
 	l10n.Locale
+}
+
+func (p *Page) GetID() uint {
+	return p.ID
 }
 
 func (*Page) TableName() string {
@@ -215,6 +221,10 @@ type Template struct {
 	Description string
 
 	l10n.Locale
+}
+
+func (this *Template) GetID() uint {
+	return this.ID
 }
 
 func (this *Template) PrimarySlug() string {

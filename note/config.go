@@ -55,7 +55,7 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 
-		userID, _ := getUserData(ctx)
+		userID, _ := GetUserData(ctx)
 		count := GetUnreadNotesCount(db, userID, tn, id)
 
 		notesTab := VBadge(h.Text(msgr.Notes)).
@@ -104,7 +104,7 @@ func noteFunc(db *gorm.DB, mb *presets.ModelBuilder) presets.FieldComponentFunc 
 		if len(content) > 60 {
 			result = string(content[0:60]) + "..."
 		}
-		userID, _ := getUserData(ctx)
+		userID, _ := GetUserData(ctx)
 		count := GetUnreadNotesCount(db, userID, tn, id)
 		return h.Td(
 			h.If(count > 0,

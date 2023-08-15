@@ -3,12 +3,12 @@ package note
 import (
 	"fmt"
 
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/actions"
 	"github.com/qor5/ui/vuetify"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ const (
 	UserKey
 )
 
-func getUserData(ctx *web.EventContext) (userID uint, creator string) {
+func GetUserData(ctx *web.EventContext) (userID uint, creator string) {
 	if ctx.R.Context().Value(UserIDKey) != nil {
 		userID = ctx.R.Context().Value(UserIDKey).(uint)
 	}
