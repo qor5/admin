@@ -34,7 +34,7 @@ const (
 	MoveContainerEvent               = "page_builder_MoveContainerEvent"
 	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
-	RenameCotainerDialogEvent        = "page_builder_RenameContainerDialogEvent"
+	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
 
 	paramPageID          = "pageID"
@@ -46,9 +46,9 @@ const (
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
 
-	Device_Phone    = "phone"
-	Device_Tablet   = "tablet"
-	Device_Computer = "computer"
+	DevicePhone    = "phone"
+	DeviceTablet   = "tablet"
+	DeviceComputer = "computer"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -163,11 +163,11 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	}
 
 	switch device {
-	case Device_Phone:
+	case DevicePhone:
 		style = "width: 414px;"
-	case Device_Tablet:
+	case DeviceTablet:
 		style = "width: 768px;"
-		//case Device_Computer:
+		// case Device_Computer:
 		//	style = "width: 1264px;"
 	}
 
@@ -435,7 +435,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										).Attr("@click",
 											web.Plaid().
 												URL(web.Var("item.url")).
-												EventFunc(RenameCotainerDialogEvent).
+												EventFunc(RenameContainerDialogEvent).
 												Query(paramContainerID, web.Var("item.param_id")).
 												Query(paramContainerName, web.Var("item.display_name")).
 												Query(presets.ParamOverlay, actions.Dialog).

@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/qor5/admin/publish"
-
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
@@ -26,18 +25,18 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	deviceQueries.Add("tab", "content")
 	if isTpl {
 		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
-		//deviceQueries.Add("tpl", "1")
+		// deviceQueries.Add("tpl", "1")
 		if isLocalizable && l10nON {
 			previewHref = fmt.Sprintf("/preview?id=%s&tpl=1&locale=%s", id, locale)
-			//deviceQueries.Add("locale", locale)
+			// deviceQueries.Add("locale", locale)
 		}
 	} else {
 		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
-		//deviceQueries.Add("version", version)
+		// deviceQueries.Add("version", version)
 
 		if isLocalizable && l10nON {
 			previewHref = fmt.Sprintf("/preview?id=%s&version=%s&locale=%s", id, version, locale)
-			//deviceQueries.Add("locale", locale)
+			// deviceQueries.Add("locale", locale)
 		}
 	}
 
@@ -49,9 +48,9 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	device, _ = b.getDevice(ctx)
 	activeDevice := 0
 	switch device {
-	case Device_Tablet:
+	case DeviceTablet:
 		activeDevice = 1
-	case Device_Phone:
+	case DevicePhone:
 		activeDevice = 2
 	}
 
@@ -59,7 +58,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	if err != nil {
 		return
 	}
-	//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	r.Body = h.Components(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
@@ -71,13 +70,13 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 						VBtnToggle(
 							VBtn("").Icon(true).Children(
 								VIcon("laptop_mac").Small(true),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Computer).PushState(true).Go()),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
 								VIcon("tablet_mac").Small(true),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Tablet).PushState(true).Go()),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
 								VIcon("phone_iphone").Small(true),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", Device_Phone).PushState(true).Go()),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
 						).Class("pa-2 rounded-lg").Attr("v-model", "locals.activeDevice").
 							Attr(web.InitContextLocals, fmt.Sprintf(`{activeDevice: %d}`, activeDevice)).Dense(true),
 					).Cols(9).Class("pa-2"),
