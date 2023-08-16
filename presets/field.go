@@ -272,13 +272,12 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 			}
 		}
 
+		val, err1 := reflectutils.Get(fromObj, f.name)
+		if err1 == nil {
+			reflectutils.Set(toObj, f.name, val)
+		}
+
 		if f.setterFunc == nil {
-			val, err1 := reflectutils.Get(fromObj, f.name)
-			if err1 != nil {
-				continue
-			}
-			_ = reflectutils.Set(toObj, f.name, val)
-			// fmt.Printf("fromObj %#+v, f.name %#+v, toObj %#+v, val %#+v\n", fromObj, f.name, toObj, val)
 			continue
 		}
 
@@ -286,8 +285,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 		if parent != nil && parent.FormKey != "" {
 			keyPath = fmt.Sprintf("%s.%s", parent.FormKey, f.name)
 		}
-
-		err1 := f.setterFunc(toObj, &FieldContext{
+		err1 = f.setterFunc(toObj, &FieldContext{
 			ModelInfo: info,
 			FormKey:   keyPath,
 			Name:      f.name,
