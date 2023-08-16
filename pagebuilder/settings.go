@@ -2,6 +2,8 @@ package pagebuilder
 
 import (
 	"fmt"
+	"net/url"
+	"os"
 
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/presets"
@@ -43,9 +45,18 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		if start != "" || end != "" {
 			se = start + " ~ " + end
 		}
+		var publishURL string
+		if p.GetStatus() == publish.StatusOnline {
+			var err error
+			publishURL, err = url.JoinPath(os.Getenv("PUBLISH_URL"), p.getAccessUrl(p.GetOnlineUrl()))
+			if err != nil {
+				panic(err)
+			}
+		}
 		pageState := vx.DetailInfo(
 			vx.DetailColumn(
 				vx.DetailField(vx.OptionalText(p.GetStatus()).ZeroLabel("No State")).Label("State"),
+				vx.DetailField(h.A(h.Text(publishURL)).Href(publishURL).Target("_blank").Class("text-truncate")).Label("URL"),
 				vx.DetailField(vx.OptionalText(se).ZeroLabel("No Set")).Label("SchedulePublishTime"),
 			),
 		)
