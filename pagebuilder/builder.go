@@ -674,6 +674,7 @@ function(e){
 	}
 	note.Configure(db, pb, pm)
 	eb.CleanTabsPanels()
+	dp.CleanTabsPanels()
 	mediav.Configure(b.GetPresetsBuilder(), db)
 	return
 }
