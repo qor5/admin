@@ -145,21 +145,52 @@ type DisplayFieldInSorter struct {
 
 func (i *DisplayFieldInSorter) nested() {}
 
+type AddListItemRowEvent struct {
+	Event string
+}
+
+func (*AddListItemRowEvent) nested() {}
+
+type RemoveListItemRowEvent struct {
+	Event string
+}
+
+func (*RemoveListItemRowEvent) nested() {}
+
+type SortListItemsEvent struct {
+	Event string
+}
+
+func (*SortListItemsEvent) nested() {}
+
 func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
 	b.nestedFieldsBuilder = fb
 	switch b.rt.Kind() {
 	case reflect.Slice:
-		displayFieldInSorter := ""
+		var displayFieldInSorter string
+		var addListItemRowEvent string
+		var removeListItemRowEvent string
+		var sortListItemsEvent string
 		for _, cfg := range cfgs {
 			switch t := cfg.(type) {
 			case *DisplayFieldInSorter:
 				displayFieldInSorter = t.Field
+			case *AddListItemRowEvent:
+				addListItemRowEvent = t.Event
+			case *RemoveListItemRowEvent:
+				removeListItemRowEvent = t.Event
+			case *SortListItemsEvent:
+				sortListItemsEvent = t.Event
 			default:
 				panic("unknown nested config")
 			}
 		}
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return NewListEditor(field).Value(field.Value(obj)).DisplayFieldInSorter(displayFieldInSorter)
+			return NewListEditor(field).Value(field.Value(obj)).
+				DisplayFieldInSorter(displayFieldInSorter).
+				AddListItemRowEvnet(addListItemRowEvent).
+				RemoveListItemRowEvent(removeListItemRowEvent).
+				SortListItemsEvent(sortListItemsEvent)
 		})
 	default:
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
