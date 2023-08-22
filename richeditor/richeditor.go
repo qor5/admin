@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/qor5/admin/media/media_library"
+	media_view "github.com/qor5/admin/media/views"
 	"github.com/qor5/ui/redactor"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -32,6 +32,7 @@ type RichEditorBuilder struct {
 	placeholder string
 	plugins     []string
 	setPlugins  bool
+	rawConfig   interface{}
 }
 
 func RichEditor(db *gorm.DB, name string) (r *RichEditorBuilder) {
@@ -60,15 +61,27 @@ func (b *RichEditorBuilder) Plugins(v []string) (r *RichEditorBuilder) {
 	return b
 }
 
+// Note: RawConfig overwrites Plugins
+func (b *RichEditorBuilder) RawConfig(v interface{}) (r *RichEditorBuilder) {
+	b.rawConfig = v
+	return b
+}
+
 func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	p := Plugins
 	if b.setPlugins {
 		p = b.plugins
 	}
+	redactorB := redactor.New().Value(b.value).Placeholder(b.placeholder).Attr(web.VFieldName(b.name)...)
+	if b.rawConfig != nil {
+		redactorB.RawConfig(b.rawConfig)
+	} else {
+		redactorB.Config(redactor.Config{Plugins: p})
+	}
 	r := h.Components(
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
-			redactor.New().Value(b.value).Placeholder(b.placeholder).Config(redactor.Config{Plugins: p}).Attr(web.VFieldName(b.name)...),
+			redactorB,
 			h.Div(
 				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
