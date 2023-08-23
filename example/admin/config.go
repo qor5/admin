@@ -67,6 +67,7 @@ func NewConfig() Config {
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   os.Getenv("S3_Bucket"),
 		Region:   os.Getenv("S3_Region"),
+		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Endpoint: os.Getenv("S3_Endpoint"),
 		Session:  sess,
 	})
