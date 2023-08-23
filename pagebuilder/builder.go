@@ -475,9 +475,7 @@ function(e){
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		m := obj.(*Page)
-		slug := ctx.R.FormValue(field.Name)
-		slug = path.Join("/", slug)
-		m.Slug = slug
+		m.Slug = path.Join("/", m.Slug)
 		return nil
 	})
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -676,6 +674,7 @@ function(e){
 	}
 	note.Configure(db, pb, pm)
 	eb.CleanTabsPanels()
+	dp.CleanTabsPanels()
 	mediav.Configure(b.GetPresetsBuilder(), db)
 	return
 }

@@ -80,6 +80,11 @@ func (b *DetailingBuilder) TabsPanelFunc() (r []ObjectComponentFunc) {
 	return b.tabPanels
 }
 
+func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
+	b.tabPanels = nil
+	return b
+}
+
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 
 	var id string
