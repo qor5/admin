@@ -738,7 +738,7 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 				h.Text(""),
 			),
 		)
-	})
+	}).Label("Unread Notes")
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		id := ctx.R.FormValue("select_id")
