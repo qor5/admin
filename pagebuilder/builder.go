@@ -521,7 +521,8 @@ function(e){
 
 		return h.Div(
 			showURLComp,
-			VAutocomplete().Label(msgr.Category).FieldName(field.Name).MenuProps("top").
+			vx.VXAutocomplete().Label(msgr.Category).FieldName(field.Name).
+				Multiple(false).Chips(false).
 				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
 		).ClassIf("mb-4", p.ID != 0)
