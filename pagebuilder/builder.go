@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"reflect"
 	"sort"
@@ -485,32 +484,6 @@ function(e){
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
-		var showURLComp h.HTMLComponent
-		if p.ID != 0 && p.GetStatus() == publish.StatusOnline {
-			var u string
-			domain := os.Getenv("PUBLISH_URL")
-			if p.OnlineUrl != "" {
-				u = domain + p.getAccessUrl(p.OnlineUrl)
-			} else {
-				var c Category
-				for _, e := range categories {
-					if e.ID == p.CategoryID {
-						c = *e
-						break
-					}
-				}
-
-				var localPath string
-				if l10nB != nil {
-					localPath = l10nB.GetLocalePath(p.LocaleCode)
-				}
-				u = domain + p.getAccessUrl(p.getPublishUrl(localPath, c.Path))
-			}
-
-			showURLComp = h.Div(
-				h.A().Text(u).Href(u).Target("_blank"),
-			).Class("mb-4")
-		}
 
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -519,13 +492,10 @@ function(e){
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return h.Div(
-			showURLComp,
-			vx.VXAutocomplete().Label(msgr.Category).FieldName(field.Name).
-				Multiple(false).Chips(false).
-				Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
-				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
-		).ClassIf("mb-4", p.ID != 0)
+		return vx.VXAutocomplete().Label(msgr.Category).FieldName(field.Name).
+			Multiple(false).Chips(false).
+			Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
+			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
