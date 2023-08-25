@@ -49,10 +49,11 @@ func NewCollection() *Collection {
 // @snippet_begin(SeoCollectionDefinition)
 type Collection struct {
 	registeredSEO []*SEO
-	globalName    string      //default name is GlobalSEO
-	inherited     bool        //default is true. the order is model seo setting, system seo setting, global seo setting
-	dbContextKey  interface{} // get db from context
-	settingModel  interface{} // db model
+	globalName    string                                                             //default name is GlobalSEO
+	inherited     bool                                                               //default is true. the order is model seo setting, system seo setting, global seo setting
+	dbContextKey  interface{}                                                        // get db from context
+	settingModel  interface{}                                                        // db model
+	afterSave     func(ctx context.Context, settingName string, locale string) error // hook called after saving
 }
 
 // @snippet_end
@@ -201,6 +202,12 @@ func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	}
 
 	return nil
+}
+
+// AfterSave set the hook called after saving
+func (collection *Collection) AfterSave(v func(ctx context.Context, settingName string, locale string) error) *Collection {
+	collection.afterSave = v
+	return collection
 }
 
 // RenderGlobal render global seo
