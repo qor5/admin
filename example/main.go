@@ -10,21 +10,23 @@ import (
 )
 
 func main() {
-	mux := admin.Router()
+	h := admin.Router()
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
 		port = "9000"
 	}
 	fmt.Println("Served at http://localhost:" + port)
-	http.Handle("/",
+
+	mux := http.NewServeMux()
+	mux.Handle("/",
 		middleware.RequestID(
 			middleware.Logger(
-				middleware.Recoverer(mux),
+				middleware.Recoverer(h),
 			),
 		),
 	)
-	err := http.ListenAndServe(":"+port, nil)
+	err := http.ListenAndServe(":"+port, mux)
 	if err != nil {
 		panic(err)
 	}
