@@ -387,5 +387,10 @@ func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, 
 		return
 	}
 	r.VarsScript = fmt.Sprintf(`vars.seoSnackbarShow = true;vars.%s = false;`, ctx.R.FormValue("loadingName"))
+	if collection.afterSave != nil {
+		if err = collection.afterSave(ctx.R.Context(), name, locale); err != nil {
+			return
+		}
+	}
 	return
 }
