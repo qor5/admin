@@ -96,6 +96,11 @@ func (b *EditingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *EditingB
 	return b
 }
 
+func (b *EditingBuilder) CleanTabsPanels() (r *EditingBuilder) {
+	b.tabPanels = nil
+	return b
+}
+
 func (b *EditingBuilder) SidePanelFunc(v ComponentFunc) (r *EditingBuilder) {
 	b.sidePanel = v
 	return b
@@ -367,6 +372,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 					URL(u).
 					EventFunc(actions.UpdateListingDialog).
 					MergeQuery(true).
+					Queries(ctx.Queries()).
 					Query(ParamSelectedIds, removeSelectQuery).
 					Go(),
 			)

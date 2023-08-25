@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	publishEvent            = "publish_PublishEvent"
-	RepublishEvent          = "publish_republishEvent"
-	unpublishEvent          = "publish_UnpublishEvent"
+	PublishEvent            = "publish_PublishEvent"
+	RepublishEvent          = "publish_RepublishEvent"
+	UnpublishEvent          = "publish_UnpublishEvent"
 	switchVersionEvent      = "publish_SwitchVersionEvent"
 	SaveNewVersionEvent     = "publish_SaveNewVersionEvent"
-	saveNameVersionEvent    = "publish_SaveNameVersionEvent"
+	DuplicateVersionEvent   = "publish_DuplicateVersionEvent"
 	renameVersionEvent      = "publish_RenameVersionEvent"
 	selectVersionsEvent     = "publish_SelectVersionsEvent"
 	afterDeleteVersionEvent = "publish_AfterDeleteVersionEvent"
@@ -32,11 +32,12 @@ const (
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.ActivityBuilder) {
-	mb.RegisterEventFunc(publishEvent, publishAction(db, mb, publisher, ab, ActivityPublish))
+	mb.RegisterEventFunc(PublishEvent, publishAction(db, mb, publisher, ab, ActivityPublish))
 	mb.RegisterEventFunc(RepublishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
-	mb.RegisterEventFunc(unpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
+	mb.RegisterEventFunc(UnpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(switchVersionEvent, switchVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(SaveNewVersionEvent, saveNewVersionAction(db, mb, publisher))
+	mb.RegisterEventFunc(DuplicateVersionEvent, duplicateVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(renameVersionEvent, renameVersionAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(selectVersionsEvent, selectVersionsAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(afterDeleteVersionEvent, afterDeleteVersionAction(db, mb, publisher))

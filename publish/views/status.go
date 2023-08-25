@@ -53,7 +53,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(publish.StatusInterface); ok {
-			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(getStatusColor(s.GetStatus())).Dark(true))
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(GetStatusColor(s.GetStatus())).Dark(true))
 		}
 		return nil
 	}
@@ -73,11 +73,11 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		switch s.GetStatus() {
 		case publish.StatusDraft, publish.StatusOffline:
 			btn = h.Div(
-				VBtn(msgr.Publish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, publishEvent)),
+				VBtn(msgr.Publish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)),
 			)
 		case publish.StatusOnline:
 			btn = h.Div(
-				VBtn(msgr.Unpublish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, unpublishEvent)),
+				VBtn(msgr.Unpublish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)),
 				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)),
 			)
 		}
@@ -107,7 +107,7 @@ func StatusEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web
 	return
 }
 
-func getStatusColor(status string) string {
+func GetStatusColor(status string) string {
 	switch status {
 	case publish.StatusDraft:
 		return "orange"

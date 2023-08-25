@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"path"
+	"path/filepath"
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/l10n"
@@ -87,8 +88,7 @@ func (p *Page) getPublishUrl(localePath, categoryPath string) string {
 }
 
 func (p *Page) getAccessUrl(publishUrl string) string {
-	dir, _ := path.Split(publishUrl)
-	return dir
+	return filepath.Dir(publishUrl)
 }
 
 func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {

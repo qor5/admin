@@ -3,10 +3,10 @@ package containers
 import (
 	"fmt"
 
-	"github.com/qor5/web"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -90,7 +90,7 @@ func ContactFormBody(data *ContactForm, input *pagebuilder.RenderInput) (body HT
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ContactForm"))+"_%v", data.ID), data.AnchorID, "container-contact_form container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
 		Div(
 			n,
 		).Class("container-wrapper"),

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/media/media_library"
 	h "github.com/theplant/htmlgo"
 )
@@ -18,6 +19,8 @@ type QorSEOSettingInterface interface {
 	SetSEOSetting(Setting)
 	GetVariables() Variables
 	SetVariables(Variables)
+	GetLocale() string
+	SetLocale(string)
 	GetTitle() string
 	GetDescription() string
 	GetKeywords() string
@@ -38,6 +41,7 @@ type QorSEOSetting struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `gorm:"index"`
+	l10n.Locale
 }
 
 // Setting defined meta's attributes
@@ -76,6 +80,16 @@ func (s *QorSEOSetting) SetVariables(setting Variables) {
 // GetVariablesSetting get variables setting
 func (s QorSEOSetting) GetVariables() Variables {
 	return s.Variables
+}
+
+// GetName get QorSeoSetting's name
+func (s QorSEOSetting) GetLocale() string {
+	return s.Name
+}
+
+// SetName set QorSeoSetting's name
+func (s *QorSEOSetting) SetLocale(locale string) {
+	s.LocaleCode = locale
 }
 
 // GetName get QorSeoSetting's name
@@ -137,6 +151,10 @@ func (setting *Setting) Scan(value interface{}) error {
 func (setting Setting) Value() (driver.Value, error) {
 	result, err := json.Marshal(setting)
 	return string(result), err
+}
+
+func (setting Setting) IsEmpty() bool {
+	return setting.Title == "" && setting.Description == "" && setting.Keywords == "" && setting.OpenGraphURL == "" && setting.OpenGraphType == "" && setting.OpenGraphImageURL == "" && setting.OpenGraphImageFromMediaLibrary.Url == "" && len(setting.OpenGraphMetadata) == 0
 }
 
 type Variables map[string]string

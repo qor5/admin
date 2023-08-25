@@ -65,9 +65,11 @@ func NewConfig() Config {
 	db := ConnectDB()
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		Session: sess,
+		Bucket:   os.Getenv("S3_Bucket"),
+		Region:   os.Getenv("S3_Region"),
+		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+		Endpoint: os.Getenv("S3_Endpoint"),
+		Session:  sess,
 	})
 	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
 		Bucket:   os.Getenv("S3_Publish_Bucket"),
@@ -395,9 +397,10 @@ func NewConfig() Config {
 	// @snippet_end
 
 	w.Activity(ab).Configure(b)
+	publisher := publish.New(db, PublishStorage).WithL10nBuilder(l10nBuilder)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db, l10nBuilder, ab)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab, publisher, SeoCollection)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
@@ -427,8 +430,6 @@ func NewConfig() Config {
 			},
 		}
 	})
-
-	publisher := publish.New(db, PublishStorage).WithPageBuilder(pageBuilder).WithL10nBuilder(l10nBuilder)
 
 	l := b.Model(&models.ListModel{})
 	{

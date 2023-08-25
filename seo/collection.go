@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/qor5/admin/l10n"
+
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -47,10 +49,11 @@ func NewCollection() *Collection {
 // @snippet_begin(SeoCollectionDefinition)
 type Collection struct {
 	registeredSEO []*SEO
-	globalName    string      //default name is GlobalSEO
-	inherited     bool        //default is true. the order is model seo setting, system seo setting, global seo setting
-	dbContextKey  interface{} // get db from context
-	settingModel  interface{} // db model
+	globalName    string                                                             //default name is GlobalSEO
+	inherited     bool                                                               //default is true. the order is model seo setting, system seo setting, global seo setting
+	dbContextKey  interface{}                                                        // get db from context
+	settingModel  interface{}                                                        // db model
+	afterSave     func(ctx context.Context, settingName string, locale string) error // hook called after saving
 }
 
 // @snippet_end
@@ -201,7 +204,13 @@ func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	return nil
 }
 
-//RenderGlobal render global seo
+// AfterSave set the hook called after saving
+func (collection *Collection) AfterSave(v func(ctx context.Context, settingName string, locale string) error) *Collection {
+	collection.afterSave = v
+	return collection
+}
+
+// RenderGlobal render global seo
 func (collection Collection) RenderGlobal(req *http.Request) h.HTMLComponent {
 	return collection.Render(collection.globalName, req)
 }
@@ -215,6 +224,7 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 		sortedDBSettings []QorSEOSettingInterface
 		sortedSettings   []Setting
 		setting          Setting
+		locale           string
 	)
 
 	// sort all SEOs
@@ -233,9 +243,13 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 	}
 	sortedSeoNames = append(sortedSeoNames, globalSeo.name)
 
+	if v, ok := obj.(l10n.L10nInterface); ok {
+		locale = v.GetLocale()
+	}
+
 	// sort all QorSEOSettingInterface
 	var settingModelSlice = collection.NewSettingModelSlice()
-	if db.Find(settingModelSlice, "name in (?)", sortedSeoNames).Error != nil {
+	if db.Find(settingModelSlice, "name in (?) AND locale_code = ?", sortedSeoNames, locale).Error != nil {
 		return h.RawHTML("")
 	}
 

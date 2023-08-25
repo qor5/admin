@@ -16,9 +16,12 @@ import (
 )
 
 type ListEditorBuilder struct {
-	fieldContext         *FieldContext
-	value                interface{}
-	displayFieldInSorter string
+	fieldContext           *FieldContext
+	value                  interface{}
+	displayFieldInSorter   string
+	addListItemRowEvent    string
+	removeListItemRowEvent string
+	sortListItemsEvent     string
 }
 
 type ListSorter struct {
@@ -31,7 +34,12 @@ type ListSorterItem struct {
 }
 
 func NewListEditor(v *FieldContext) *ListEditorBuilder {
-	return &ListEditorBuilder{fieldContext: v}
+	return &ListEditorBuilder{
+		fieldContext:           v,
+		addListItemRowEvent:    actions.AddRowEvent,
+		removeListItemRowEvent: actions.RemoveRowEvent,
+		sortListItemsEvent:     actions.SortEvent,
+	}
 }
 
 func (b *ListEditorBuilder) Value(v interface{}) (r *ListEditorBuilder) {
@@ -50,6 +58,30 @@ func (b *ListEditorBuilder) DisplayFieldInSorter(v string) (r *ListEditorBuilder
 	return b
 }
 
+func (b *ListEditorBuilder) AddListItemRowEvnet(v string) (r *ListEditorBuilder) {
+	if v == "" {
+		return b
+	}
+	b.addListItemRowEvent = v
+	return b
+}
+
+func (b *ListEditorBuilder) RemoveListItemRowEvent(v string) (r *ListEditorBuilder) {
+	if v == "" {
+		return b
+	}
+	b.removeListItemRowEvent = v
+	return b
+}
+
+func (b *ListEditorBuilder) SortListItemsEvent(v string) (r *ListEditorBuilder) {
+	if v == "" {
+		return b
+	}
+	b.sortListItemsEvent = v
+	return b
+}
+
 func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	ctx := web.MustGetEventContext(c)
 	formKey := b.fieldContext.FormKey
@@ -63,7 +95,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							VIcon("delete"),
 						).Attr("@click", web.Plaid().
 						URL(b.fieldContext.ModelInfo.ListingHref()).
-						EventFunc(actions.RemoveRowEvent).
+						EventFunc(b.removeListItemRowEvent).
 						Queries(ctx.Queries()).
 						Query(ParamID, ctx.R.FormValue(ParamID)).
 						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
@@ -129,7 +161,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 								Attr("@click",
 									web.Plaid().
 										URL(b.fieldContext.ModelInfo.ListingHref()).
-										EventFunc(actions.SortEvent).
+										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
@@ -145,7 +177,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 								Attr("@click",
 									web.Plaid().
 										URL(b.fieldContext.ModelInfo.ListingHref()).
-										EventFunc(actions.SortEvent).
+										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
@@ -167,7 +199,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Color("primary").
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
-							EventFunc(actions.AddRowEvent).
+							EventFunc(b.addListItemRowEvent).
 							Queries(ctx.Queries()).
 							Query(ParamID, ctx.R.FormValue(ParamID)).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).

@@ -58,7 +58,7 @@ func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (b
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Image"))+"_%v", data.ID), data.AnchorID, "container-image",
 		data.BackgroundColor, data.TransitionBackgroundColor, "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
 		Div(
 			ImageHtml(data.Image),
 			Div().Class("container-image-corner"),

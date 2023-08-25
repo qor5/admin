@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/publish"
 	. "github.com/qor5/ui/vuetify"
 	vx "github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/publish"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
@@ -136,13 +136,13 @@ func ScheduleEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *w
 	return
 }
 
-var timeFormat = "2006-01-02 15:04:05 -0700"
+var timeFormat = "2006-01-02 15:04:05"
 
 func setTime(obj interface{}, fieldName string, val string) (err error) {
 	if val == "" {
 		err = reflectutils.Set(obj, fieldName, nil)
 	} else {
-		startAt, err1 := time.Parse(timeFormat, fmt.Sprintf("%v:00 +0900", val))
+		startAt, err1 := time.ParseInLocation(timeFormat, fmt.Sprintf("%v:00", val), time.Local)
 		if err1 == nil && !startAt.IsZero() {
 			err = reflectutils.Set(obj, fieldName, startAt)
 		}
