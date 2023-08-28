@@ -517,23 +517,21 @@ function(e){
 		if !b.templateEnabled {
 			return nil
 		}
+
 		p := obj.(*Page)
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		selectedID := ctx.R.FormValue(templateSelectedID)
+		body, err := getTplPortalComp(ctx, db, selectedID)
+		if err != nil {
+			panic(err)
+		}
+
 		// Display template selection only when creating a new page
 		if p.ID == 0 {
 			return h.Div(
 				web.Portal().Name(templateSelectPortal),
 				web.Portal(
-					VRow(
-						VCol(
-							h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
-							VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
-						).Cols(5),
-						VCol(
-							VBtn(msgr.ChangeTemplate).Color("primary").
-								Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
-						).Cols(5),
-					),
+					body,
 				).Name(selectedTemplatePortal),
 			).Class("my-2").Attr(web.InitContextVars, `{showTemplateDialog: false}`)
 		}
@@ -929,10 +927,9 @@ const (
 	templateSelectPortal   = "templateSelectPortal"
 	selectedTemplatePortal = "selectedTemplatePortal"
 
-	templateSelectedID      = "TemplateSelectedID"
-	templateID              = "TemplateID"
-	templateSelectionLocale = "TemplateSelectionLocale"
-	templateBlankVal        = "blank"
+	templateSelectedID = "TemplateSelectedID"
+	templateID         = "TemplateID"
+	templateBlankVal   = "blank"
 )
 
 func selectTemplate(db *gorm.DB) web.EventFunc {
@@ -960,30 +957,42 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			})
 			return
 		}
-		locale := ctx.R.FormValue(templateSelectionLocale)
 
-		tpl := Template{}
-		if err = db.Model(&Template{}).Where("id = ? AND locale_code = ?", id, locale).First(&tpl).Error; err != nil {
-			panic(err)
+		var body h.HTMLComponent
+		if body, err = getTplPortalComp(ctx, db, id); err != nil {
+			return
 		}
-		name := tpl.Name
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: selectedTemplatePortal,
-			Body: VRow(
-				VCol(
-					h.Input("").Type("hidden").Value(id).Attr(web.VFieldName(templateSelectedID)...),
-					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
-				).Cols(5),
-				VCol(
-					VBtn(msgr.ChangeTemplate).Color("primary").
-						Attr("@click", web.Plaid().Query(templateSelectedID, id).EventFunc(openTemplateDialogEvent).Go()),
-				).Cols(5),
-			),
+			Body: body,
 		})
 
 		return
 	}
+}
+
+func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.HTMLComponent, error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+
+	name := msgr.Blank
+	if selectedID != "" {
+		if err := db.Model(&Template{}).Where("id = ? AND locale_code = ?", selectedID, locale).Pluck("name", &name).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	return VRow(
+		VCol(
+			h.Input("").Type("hidden").Value(selectedID).Attr(web.VFieldName(templateSelectedID)...),
+			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
+		).Cols(5),
+		VCol(
+			VBtn(msgr.ChangeTemplate).Color("primary").
+				Attr("@click", web.Plaid().Query(templateSelectedID, selectedID).EventFunc(openTemplateDialogEvent).Go()),
+		).Cols(5),
+	), nil
 }
 
 // Unused
@@ -1071,7 +1080,6 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
 						VBtn(gmsgr.OK).Color("primary").
 							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
-								Query(templateSelectionLocale, locale).
 								Go(),
 							),
 					).Class("pb-4"),
