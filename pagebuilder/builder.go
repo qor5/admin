@@ -60,7 +60,6 @@ type PageLayoutInput struct {
 	IsEditor          bool
 	EditorCss         []h.HTMLComponent
 	IsPreview         bool
-	Locale            string
 }
 
 type Builder struct {

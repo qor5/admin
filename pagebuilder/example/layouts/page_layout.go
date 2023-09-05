@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor5/web"
 	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -34,38 +34,36 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
-	return Components(
-		RawHTML("<!DOCTYPE html>\n"),
-		Tag("html").Attr("lang", input.Locale).Children(
-			Head(
-				Meta().Attr("charset", "utf-8"),
-				seoTags,
-				canonicalLink,
-				Meta().Attr("http-equiv", "X-UA-Compatible").Content("IE=edge"),
-				Meta().Content("true").Name("HandheldFriendly"),
-				Meta().Content("yes").Name("apple-mobile-web-app-capable"),
-				Meta().Content("black").Name("apple-mobile-web-app-status-bar-style"),
-				Meta().Name("format-detection").Content("telephone=no"),
-				Meta().Name("viewport").Content("width=device-width, initial-scale=1"),
+	head := Components(
+		Meta().Attr("charset", "utf-8"),
+		seoTags,
+		canonicalLink,
+		Meta().Attr("http-equiv", "X-UA-Compatible").Content("IE=edge"),
+		Meta().Content("true").Name("HandheldFriendly"),
+		Meta().Content("yes").Name("apple-mobile-web-app-capable"),
+		Meta().Content("black").Name("apple-mobile-web-app-status-bar-style"),
+		Meta().Name("format-detection").Content("telephone=no"),
+		Meta().Name("viewport").Content("width=device-width, initial-scale=1"),
 
-				Link("").Rel("stylesheet").Type("text/css").Href(css),
-				If(len(input.EditorCss) > 0, input.EditorCss...),
-				freeStyleCss,
-				//RawHTML(dataLayer),
-				structureData,
-				scriptWithCodes(input.FreeStyleTopJs),
-			),
-
-			Body(
-				//It's required as the body first element!
-				If(input.Header != nil, input.Header),
-				body,
-				If(input.Footer != nil, input.Footer),
-				Script("").Src(js),
-				scriptWithCodes(input.FreeStyleBottomJs),
-			).Attr("data-site-domain", domain),
-		),
+		Link("").Rel("stylesheet").Type("text/css").Href(css),
+		If(len(input.EditorCss) > 0, input.EditorCss...),
+		freeStyleCss,
+		//RawHTML(dataLayer),
+		structureData,
+		scriptWithCodes(input.FreeStyleTopJs),
 	)
+	ctx.Injector.HTMLLang(input.Page.LocaleCode)
+	ctx.Injector.HeadHTML(MustString(head, nil))
+
+	return Body(
+		//It's required as the body first element!
+		If(input.Header != nil, input.Header),
+		body,
+		If(input.Footer != nil, input.Footer),
+		Script("").Src(js),
+		scriptWithCodes(input.FreeStyleBottomJs),
+	).Attr("data-site-domain", domain)
+
 }
 
 func scriptWithCodes(jscodes []string) HTMLComponent {
