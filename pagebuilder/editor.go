@@ -56,7 +56,6 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 	id := ctx.R.FormValue("id")
 	version := ctx.R.FormValue("version")
 	locale := ctx.R.FormValue("locale")
-	ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 
 	var p *Page
 	r.Body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, false)
@@ -269,8 +268,29 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 				input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
 			}
 		}
-		r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+
 		if isEditor {
+			// use newCtx to avoid inserting page head to head outside of iframe
+			newCtx := &web.EventContext{
+				R:        ctx.R,
+				Injector: &web.PageInjector{},
+			}
+			r = b.pageLayoutFunc(h.Components(comps...), input, newCtx)
+			newCtx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
+			r = h.HTMLComponents{
+				h.RawHTML("<!DOCTYPE html>\n"),
+				h.Tag("html").Children(
+					h.Head(
+						newCtx.Injector.GetHeadHTMLComponent(),
+					),
+					h.Body(
+						h.Div(
+							r,
+						).Id("app").Attr("v-cloak", true),
+						newCtx.Injector.GetTailHTMLComponent(),
+					).Class("front"),
+				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
+			}
 			_, width := b.getDevice(ctx)
 			iframeHeightName := "_iframeHeight"
 			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
@@ -296,6 +316,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 				)),
 			).Class("page-builder-container mx-auto").Attr("style", width)
 
+		} else {
+			r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
+			ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 		}
 	}
 	return
