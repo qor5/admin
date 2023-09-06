@@ -32,10 +32,10 @@ func Router() http.Handler {
 	// :host {
 	//	all: initial;
 	//	display: block;
-	//div {
+	// div {
 	//	background-color:orange;
-	//}
-	//`)))
+	// }
+	// `)))
 
 	mux.Handle("/page_builder/", c.pageBuilder)
 	// example of seo
@@ -72,6 +72,7 @@ func Router() http.Handler {
 		isOAuthInfoCompleted(),
 		withRoles(db),
 		withNoteContext(),
+		securityMiddleware(),
 	)
 	cr.Mount("/", mux)
 	return cr

@@ -36,6 +36,16 @@ func withRoles(db *gorm.DB) func(next http.Handler) http.Handler {
 	}
 }
 
+func securityMiddleware() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
 func withNoteContext() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
