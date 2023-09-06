@@ -154,6 +154,9 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
 		}).
 		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
+			if err := expireAllSessionLogs(user.(*models.User).ID); err != nil {
+				return err
+			}
 			return ab.AddCustomizedRecord("reset-password", false, r.Context(), user)
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
