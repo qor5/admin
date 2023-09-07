@@ -88,7 +88,7 @@ require (
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/stretchr/testify v1.8.3 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
@@ -105,4 +105,4 @@ require (
 
 //replace github.com/qor5/web => ../../qor5/web
 //replace github.com/qor5/ui => ../../qor5/ui
-//replace github.com/goplaid/x => ../../goplaid/x
+//replace github.com/qor5/x => ../../qor5/x

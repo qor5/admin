@@ -290,8 +290,6 @@ github.com/qor/oss v0.0.0-20230717083721-c04686f83630 h1:CRi4xF7B8aGX/y48NCjarNd
 github.com/qor/oss v0.0.0-20230717083721-c04686f83630/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124 h1:zFsaGk50v8uI8FQxIIdnTyqRM32sMj0ZWCOyd5lxwRg=
 github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
-github.com/qor5/web v1.2.5-0.20230807024808-102831643c1f h1:L+ldp7TAk/0Rhc0njYxZ8+NQ/NUVUEesAvx99TR4b1Y=
-github.com/qor5/web v1.2.5-0.20230807024808-102831643c1f/go.mod h1:4VXydGmy5Uwz8rEeKjcmCetciJo8TpU0mnN7Ca5kMR0=
 github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f h1:xQwS/HKx9unrQ964UGkKiiXZPOpnLaQbRQ9DpaPJVKc=
 github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f/go.mod h1:4VXydGmy5Uwz8rEeKjcmCetciJo8TpU0mnN7Ca5kMR0=
 github.com/qor5/x v1.2.1-0.20230703035938-40997f230eb2 h1:p37xD7d1L/4oxFuwvhgF28tuyT8A+TjiHDhHd+oxXcc=
@@ -341,8 +339,8 @@ github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761/go.mod h1:j+L/Ih47B
 github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f h1:A+MmlgpvrHLeUP8dkBVn4Pnf5Bp5Yk2OALm7SEJLLE8=
 github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f/go.mod h1:OBcG9bn7sHtXgarhUEb3OfCnNsgtGnkVf41ilSZ3K3E=
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
-github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
+github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/wcharczuk/go-chart/v2 v2.1.0 h1:tY2slqVQ6bN+yHSnDYwZebLQFkphK4WNrVwnt7CJZ2I=
 github.com/wcharczuk/go-chart/v2 v2.1.0/go.mod h1:yx7MvAVNcP/kN9lKXM/NTce4au4DFN99j6i1OwDclNA=
 github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4 h1:0sw0nJM544SpsihWx1bkXdYLQDlzRflMgFJQ4Yih9ts=
