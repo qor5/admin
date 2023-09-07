@@ -255,6 +255,19 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				dmb = templateM
 			}
 			obj = dmb.NewModel()
+			if sd, ok := obj.(presets.SlugDecoder); ok {
+				vs, err := presets.RecoverPrimaryColumnValuesBySlug(sd, id)
+				if err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+				if _, err := strconv.Atoi(vs["id"]); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			} else {
+				if _, err := strconv.Atoi(id); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			}
 			obj, err = dmb.Detailing().GetFetchFunc()(obj, id, ctx)
 			if err != nil {
 				if errors.Is(err, presets.ErrRecordNotFound) {
