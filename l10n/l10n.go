@@ -6,7 +6,7 @@ type Locale struct {
 }
 
 // GetLocale get model's locale
-func (l *Locale) GetLocale() string {
+func (l Locale) GetLocale() string {
 	return l.LocaleCode
 }
 

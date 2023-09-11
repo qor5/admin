@@ -1,9 +1,11 @@
 package views
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
+	"time"
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
@@ -31,6 +33,8 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			l10nONModel.L10nON()
 		}
 		m.Listing().Field("Locale")
+		m.Editing().Field("Locale")
+
 		searcher := m.Listing().Searcher
 		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
@@ -58,6 +62,25 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			}
 		})
 
+		deleter := m.Editing().Deleter
+		m.Editing().DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = deleter(obj, id, ctx); err != nil {
+				return
+			}
+			Locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
+			Locale = fmt.Sprintf("%s(del:%d)", Locale, time.Now().UnixMilli())
+
+			withoutKeys := []string{}
+			if ctx.R.URL.Query().Get("all_versions") == "true" {
+				withoutKeys = append(withoutKeys, "version")
+			}
+
+			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", Locale).Error; err != nil {
+				return
+			}
+			return
+		})
+
 		rmb := m.Listing().RowMenu()
 		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
 
@@ -70,9 +93,14 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.FieldDefaults(presets.WRITE).
 		FieldType(l10n.Locale{}).
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return nil
+			return h.Input("").Type("hidden").Value(field.Value(obj).(l10n.Locale).GetLocale()).Attr(web.VFieldName("LocaleCode")...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			value := field.Value(obj).(l10n.Locale).GetLocale()
+			if !utils.Contains(lb.GetSupportLocaleCodesFromRequest(ctx.R), value) {
+				return errors.New("Incorrect locale.")
+			}
+
 			return nil
 		})
 
