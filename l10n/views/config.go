@@ -93,7 +93,15 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 	b.FieldDefaults(presets.WRITE).
 		FieldType(l10n.Locale{}).
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Input("").Type("hidden").Value(field.Value(obj).(l10n.Locale).GetLocale()).Attr(web.VFieldName("LocaleCode")...)
+			var value string
+			id, err := reflectutils.Get(obj, "ID")
+			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
+				value = field.Value(obj).(l10n.Locale).GetLocale()
+			} else {
+				value = lb.GetCorrectLocaleCode(ctx.R)
+			}
+
+			return h.Input("").Type("hidden").Value(value).Attr(web.VFieldName("LocaleCode")...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := field.Value(obj).(l10n.Locale).GetLocale()
