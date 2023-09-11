@@ -500,7 +500,7 @@ func NewConfig() Config {
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
-	note.Configure(db, b, m, pm)
+	note.Configure(db, b, m)
 
 	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
 		panic(err)
@@ -517,7 +517,7 @@ func NewConfig() Config {
 	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
-	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
+	publish_view.Configure(b, db, ab, publisher, m, l, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)
 
