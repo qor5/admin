@@ -3,11 +3,11 @@ package views
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/presets"
 	"time"
 
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/cropper"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -143,6 +143,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 				return r, nil
 			}
 
+			mb.Url = m.File.Url
 			mb.FileSizes = m.File.FileSizes
 			if thumb == media.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
