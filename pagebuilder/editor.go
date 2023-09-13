@@ -431,7 +431,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 									web.Plaid().
 										URL(web.Var("item.url")).
 										EventFunc(actions.Edit).
-										Query(presets.ParamOverlay, actions.Dialog).
+										Query(presets.ParamOverlay, actions.Drawer).
 										Query(presets.ParamID, web.Var("item.model_id")).
 										Go(),
 								).Class("my-2"),
@@ -461,7 +461,6 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 												EventFunc(RenameContainerDialogEvent).
 												Query(paramContainerID, web.Var("item.param_id")).
 												Query(paramContainerName, web.Var("item.display_name")).
-												Query(presets.ParamOverlay, actions.Dialog).
 												Go(),
 										),
 										VListItem(
@@ -501,7 +500,6 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 								Query(paramPageID, pageID).
 								Query(paramPageVersion, pageVersion).
 								Query(paramLocale, locale).
-								Query(presets.ParamOverlay, actions.Dialog).
 								Go(),
 						),
 					),
@@ -529,7 +527,7 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		r.VarsScript = web.Plaid().
 			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 			EventFunc(actions.Edit).
-			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamOverlay, actions.Drawer).
 			Query(presets.ParamID, fmt.Sprint(newModelID)).
 			Go()
 	}
@@ -1077,7 +1075,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 		action := web.POST().
 			EventFunc(actions.Edit).
 			URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamOverlay, actions.Drawer).
 			Query(presets.ParamID, web.Var("arr[1]")).
 			// Query(presets.ParamOverlayAfterUpdateScript,
 			// 	web.Var(
