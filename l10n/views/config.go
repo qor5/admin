@@ -67,15 +67,15 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 			if err = deleter(obj, id, ctx); err != nil {
 				return
 			}
-			Locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
-			Locale = fmt.Sprintf("%s(del:%d)", Locale, time.Now().UnixMilli())
+			locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
+			locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
 
 			withoutKeys := []string{}
 			if ctx.R.URL.Query().Get("all_versions") == "true" {
 				withoutKeys = append(withoutKeys, "version")
 			}
 
-			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", Locale).Error; err != nil {
+			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", locale).Error; err != nil {
 				return
 			}
 			return
