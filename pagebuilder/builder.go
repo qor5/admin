@@ -324,7 +324,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			editAction := web.POST().
 				EventFunc(actions.Edit).
 				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamOverlay, actions.Drawer).
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
 
