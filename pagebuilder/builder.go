@@ -550,38 +550,6 @@ function(e){
 		return nil
 	})
 
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		p := obj.(*Page)
-		if p.ID == 0 {
-			return nil
-		}
-		if p.GetStatus() == publish.StatusDraft {
-			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.EditPageContent).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
-		} else {
-			var href = fmt.Sprintf("%s/preview?id=%d&version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/preview?id=%d&version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.Preview).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
-		}
-		return nil
-	})
-
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		p := obj.(*Page)
@@ -1703,24 +1671,6 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
 
 	eb := pm.Editing("Name", "Description")
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		m := obj.(*Template)
-		if m.ID == 0 {
-			return nil
-		}
-
-		var href = fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)
-		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-			href = fmt.Sprintf("%s/editors/%d?tpl=1&locale=%s", b.prefix, m.ID, locale)
-		}
-		return h.Div(
-			VBtn(msgr.EditPageContent).
-				Target("_blank").
-				Href(href).
-				Color("secondary"),
-		)
-	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*Template)

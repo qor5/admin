@@ -6,7 +6,6 @@ const I18nPageBuilderKey i18n.ModuleKey = "I18nPageBuilderKey"
 
 type Messages struct {
 	Category                       string
-	EditPageContent                string
 	Preview                        string
 	Containers                     string
 	AddContainers                  string
@@ -30,7 +29,6 @@ type Messages struct {
 
 var Messages_en_US = &Messages{
 	Category:                       "Category",
-	EditPageContent:                "Edit Page Content",
 	Preview:                        "Preview",
 	Containers:                     "Containers",
 	AddContainers:                  "Add Containers",
@@ -54,7 +52,6 @@ var Messages_en_US = &Messages{
 
 var Messages_zh_CN = &Messages{
 	Category:                       "目录",
-	EditPageContent:                "编辑页面内容",
 	Preview:                        "预览",
 	Containers:                     "组件",
 	AddContainers:                  "增加组件",
@@ -78,7 +75,6 @@ var Messages_zh_CN = &Messages{
 
 var Messages_ja_JP = &Messages{
 	Category:                       "カテゴリー",
-	EditPageContent:                "ページコンテナを編集する",
 	Preview:                        "プレビュー",
 	Containers:                     "コンテナ",
 	AddContainers:                  "コンテナを追加する",
