@@ -83,7 +83,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 			return err
 		}
 		for key, _ := range m.GetSizes() {
-			if key == "original" {
+			if key == media.DefaultSizeKey {
 				continue
 			}
 			img := copyImage(buffer.Bytes())
@@ -106,7 +106,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 		img := copyImage(buffer.Bytes())
 		bimgOption := bimg.Options{Quality: quality, Palette: true, Compression: PNGCompression}
 		// Crop original image if specified
-		if cropOption := m.GetCropOption("original"); cropOption != nil {
+		if cropOption := m.GetCropOption(media.DefaultSizeKey); cropOption != nil {
 			options := bimg.Options{
 				Quality:    100, // Don't compress twice
 				Top:        cropOption.Min.Y,
@@ -137,7 +137,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 
 	// Handle size images
 	for key, size := range m.GetSizes() {
-		if key == "original" {
+		if key == media.DefaultSizeKey {
 			continue
 		}
 		img := copyImage(buffer.Bytes())
