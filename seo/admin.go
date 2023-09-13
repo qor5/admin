@@ -59,6 +59,11 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 	var setting Setting
 	for key := range ctx.R.Form {
+		if key == fmt.Sprintf("%s.%s", field.Name, "OpenGraphMetadataString") {
+			metadata := GetOpenGraphMetadata(ctx.R.Form.Get(key))
+			reflectutils.Set(&setting, "OpenGraphMetadata", metadata)
+			continue
+		}
 		if strings.HasPrefix(key, fmt.Sprintf("%s.", field.Name)) {
 			reflectutils.Set(&setting, strings.TrimPrefix(key, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(key))
 		}
@@ -93,6 +98,8 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 		setting.Title = modelSetting.GetTitle()
 		setting.Description = modelSetting.GetDescription()
 		setting.Keywords = modelSetting.GetKeywords()
+		setting.OpenGraphTitle = modelSetting.GetOpenGraphTitle()
+		setting.OpenGraphDescription = modelSetting.GetOpenGraphDescription()
 		setting.OpenGraphURL = modelSetting.GetOpenGraphURL()
 		setting.OpenGraphType = modelSetting.GetOpenGraphType()
 		setting.OpenGraphImageURL = modelSetting.GetOpenGraphImageURL()
@@ -207,7 +214,6 @@ func (collection *Collection) pageFunc(ctx *web.EventContext) (_ web.PageRespons
 		)
 		seoComponents = append(seoComponents, comp)
 	}
-
 	return web.PageResponse{
 		PageTitle: msgr.PageTitle,
 		Body: h.If(editIsAllowed(ctx.R) == nil, VContainer(
@@ -238,7 +244,6 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
 		db   = collection.getDBFromContext(req.Context())
 	)
-
 	if seo.name == collection.globalName {
 		seos = append(seos, seo)
 	} else {
@@ -294,11 +299,15 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 		VCard(
 			VCardText(
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL)).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType)).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle")).Label(msgr.OpenGraphTitle).Value(setting.OpenGraphTitle).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix))).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription")).Label(msgr.OpenGraphDescription).Value(setting.OpenGraphDescription).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix))).Cols(6),
 				),
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL)).Cols(12),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix))).Cols(6),
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_type", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_type", refPrefix))).Cols(6),
+				),
+				VRow(
+					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix))).Cols(12),
 				),
 				VRow(
 					VCol(views.QMediaBox(db).Label(msgr.OpenGraphImage).
@@ -321,6 +330,9 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 								},
 							},
 						})).Cols(12)),
+				VRow(
+					VCol(VTextarea().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString")).Label(msgr.OpenGraphMetadata).Value(GetOpenGraphMetadataString(setting.OpenGraphMetadata)).Attr("@click", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix))).Cols(12),
+				),
 			),
 		).Outlined(true).Flat(true),
 	).Attr("ref", "seo")
@@ -374,6 +386,14 @@ func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, 
 	}
 	s := setting.GetSEOSetting()
 	for k, v := range settingVals {
+		if k == "OpenGraphMetadataString" {
+			metadata := GetOpenGraphMetadata(v.(string))
+			err = reflectutils.Set(&s, "OpenGraphMetadata", metadata)
+			if err != nil {
+				return
+			}
+			continue
+		}
 		err = reflectutils.Set(&s, k, v)
 		if err != nil {
 			return

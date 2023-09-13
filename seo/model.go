@@ -1,8 +1,11 @@
 package seo
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/csv"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/qor5/admin/l10n"
@@ -24,6 +27,8 @@ type QorSEOSettingInterface interface {
 	GetTitle() string
 	GetDescription() string
 	GetKeywords() string
+	GetOpenGraphTitle() string
+	GetOpenGraphDescription() string
 	GetOpenGraphURL() string
 	GetOpenGraphType() string
 	GetOpenGraphImageURL() string
@@ -49,6 +54,8 @@ type Setting struct {
 	Title                          string `gorm:"size:4294967295"`
 	Description                    string
 	Keywords                       string
+	OpenGraphTitle                 string
+	OpenGraphDescription           string
 	OpenGraphURL                   string
 	OpenGraphType                  string
 	OpenGraphImageURL              string
@@ -102,6 +109,12 @@ func (s *QorSEOSetting) SetName(name string) {
 	s.Name = name
 }
 
+func (s QorSEOSetting) GetOpenGraphTitle() string {
+	return s.Setting.OpenGraphTitle
+}
+func (s QorSEOSetting) GetOpenGraphDescription() string {
+	return s.Setting.OpenGraphDescription
+}
 func (s QorSEOSetting) GetOpenGraphURL() string {
 	return s.Setting.OpenGraphURL
 }
@@ -154,7 +167,10 @@ func (setting Setting) Value() (driver.Value, error) {
 }
 
 func (setting Setting) IsEmpty() bool {
-	return setting.Title == "" && setting.Description == "" && setting.Keywords == "" && setting.OpenGraphURL == "" && setting.OpenGraphType == "" && setting.OpenGraphImageURL == "" && setting.OpenGraphImageFromMediaLibrary.Url == "" && len(setting.OpenGraphMetadata) == 0
+	return setting.Title == "" && setting.Description == "" && setting.Keywords == "" &&
+		setting.OpenGraphTitle == "" && setting.OpenGraphDescription == "" &&
+		setting.OpenGraphURL == "" && setting.OpenGraphType == "" && setting.OpenGraphImageURL == "" &&
+		setting.OpenGraphImageFromMediaLibrary.Url == "" && len(setting.OpenGraphMetadata) == 0
 }
 
 type Variables map[string]string
@@ -181,8 +197,8 @@ func (setting Variables) Value() (driver.Value, error) {
 
 func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 	openGraphData := map[string]string{
-		"og:title":       setting.Title,
-		"og:description": setting.Description,
+		"og:title":       setting.OpenGraphTitle,
+		"og:description": setting.OpenGraphDescription,
 		"og:url":         setting.OpenGraphURL,
 		"og:type":        setting.OpenGraphType,
 		"og:image":       setting.OpenGraphImageURL,
@@ -221,4 +237,33 @@ func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 		h.Meta().Attr("name", "keywords").Attr("content", setting.Keywords),
 		openGraphDataComponents,
 	}
+}
+
+func GetOpenGraphMetadata(in string) (metadata []OpenGraphMetadata) {
+	r := csv.NewReader(strings.NewReader(in))
+	records, err := r.ReadAll()
+	if err != nil {
+		return
+	}
+	for _, row := range records {
+		if len(row) != 2 {
+			continue
+		}
+		metadata = append(metadata, OpenGraphMetadata{
+			Property: row[0],
+			Content:  row[1],
+		})
+	}
+	return
+}
+
+func GetOpenGraphMetadataString(metadata []OpenGraphMetadata) string {
+	records := [][]string{}
+	for _, m := range metadata {
+		records = append(records, []string{m.Property, m.Content})
+	}
+	buf := new(bytes.Buffer)
+	w := csv.NewWriter(buf)
+	w.WriteAll(records)
+	return buf.String()
 }
