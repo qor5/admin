@@ -24,7 +24,7 @@ require (
 	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124
+	github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1
 	github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f
 	github.com/qor5/x v1.2.1-0.20230907054212-50b1a850acf6
 	github.com/sunfmin/reflectutils v1.0.3

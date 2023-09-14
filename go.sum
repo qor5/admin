@@ -288,8 +288,8 @@ github.com/pquerna/otp v1.4.0/go.mod h1:dkJfzwRKNiegxyNb54X/3fLwhCynbMspSyWKnvi1
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/qor/oss v0.0.0-20230717083721-c04686f83630 h1:CRi4xF7B8aGX/y48NCjarNdCIYZ9ZYRr3SLzzTEccOU=
 github.com/qor/oss v0.0.0-20230717083721-c04686f83630/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
-github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124 h1:zFsaGk50v8uI8FQxIIdnTyqRM32sMj0ZWCOyd5lxwRg=
-github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
+github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1 h1:6ZIyg13zG0ki2yE2XcFN20RkwCMUjIJkYHCGIIqrq5c=
+github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
 github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f h1:xQwS/HKx9unrQ964UGkKiiXZPOpnLaQbRQ9DpaPJVKc=
 github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f/go.mod h1:4VXydGmy5Uwz8rEeKjcmCetciJo8TpU0mnN7Ca5kMR0=
 github.com/qor5/x v1.2.1-0.20230907054212-50b1a850acf6 h1:GyPeYULwjUPGR6fT/lZicJ8dkoKL5cu/hRNefxX+V7g=

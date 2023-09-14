@@ -255,6 +255,19 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				dmb = templateM
 			}
 			obj = dmb.NewModel()
+			if sd, ok := obj.(presets.SlugDecoder); ok {
+				vs, err := presets.RecoverPrimaryColumnValuesBySlug(sd, id)
+				if err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+				if _, err := strconv.Atoi(vs["id"]); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			} else {
+				if _, err := strconv.Atoi(id); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			}
 			obj, err = dmb.Detailing().GetFetchFunc()(obj, id, ctx)
 			if err != nil {
 				if errors.Is(err, presets.ErrRecordNotFound) {
@@ -311,7 +324,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			editAction := web.POST().
 				EventFunc(actions.Edit).
 				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamOverlay, actions.Drawer).
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
 
@@ -533,38 +546,6 @@ function(e){
 					body,
 				).Name(selectedTemplatePortal),
 			).Class("my-2").Attr(web.InitContextVars, `{showTemplateDialog: false}`)
-		}
-		return nil
-	})
-
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		p := obj.(*Page)
-		if p.ID == 0 {
-			return nil
-		}
-		if p.GetStatus() == publish.StatusDraft {
-			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.EditPageContent).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
-		} else {
-			var href = fmt.Sprintf("%s/preview?id=%d&version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/preview?id=%d&version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.Preview).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
 		}
 		return nil
 	})
@@ -1690,24 +1671,6 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
 
 	eb := pm.Editing("Name", "Description")
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		m := obj.(*Template)
-		if m.ID == 0 {
-			return nil
-		}
-
-		var href = fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)
-		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-			href = fmt.Sprintf("%s/editors/%d?tpl=1&locale=%s", b.prefix, m.ID, locale)
-		}
-		return h.Div(
-			VBtn(msgr.EditPageContent).
-				Target("_blank").
-				Href(href).
-				Color("secondary"),
-		)
-	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*Template)
