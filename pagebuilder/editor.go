@@ -563,7 +563,7 @@ func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventR
 	containerID := cs["id"]
 	locale := cs["locale_code"]
 
-	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(COALESCE(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
+	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
 
 	r.PushState = web.Location(url.Values{})
 	return
@@ -781,19 +781,23 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 			}
 		}
 
-		if err = db.Create(&Container{
-			Model:        gorm.Model{ID: c.ID},
-			PageID:       uint(toPageID),
-			PageVersion:  toPageVersion,
-			ModelName:    c.ModelName,
-			DisplayName:  newDisplayName,
-			ModelID:      newModelID,
-			DisplayOrder: c.DisplayOrder,
-			Shared:       c.Shared,
-			Locale: l10n.Locale{
-				LocaleCode: toPageLocale,
-			},
-		}).Error; err != nil {
+		var newCon Container
+		err = db.Order("display_order ASC").Find(&newCon, "id = ? AND locale_code = ?", c.ID, toPageLocale).Error
+		if err != nil {
+			return
+		}
+
+		newCon.ID = c.ID
+		newCon.PageID = uint(toPageID)
+		newCon.PageVersion = toPageVersion
+		newCon.ModelName = c.ModelName
+		newCon.DisplayName = newDisplayName
+		newCon.ModelID = newModelID
+		newCon.DisplayOrder = c.DisplayOrder
+		newCon.Shared = c.Shared
+		newCon.LocaleCode = toPageLocale
+
+		if err = db.Save(&newCon).Error; err != nil {
 			return
 		}
 	}
