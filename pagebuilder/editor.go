@@ -759,7 +759,7 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 		} else {
 			var count int64
 			var sharedCon Container
-			if err = db.Where("localize_from_model_id = ? AND locale_code = ? AND shared = ?", c.ModelID, toPageLocale, true).First(&sharedCon).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
+			if err = db.Where("model_name = ? AND localize_from_model_id = ? AND locale_code = ? AND shared = ?", c.ModelName, c.ModelID, toPageLocale, true).First(&sharedCon).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
 				return
 			}
 
