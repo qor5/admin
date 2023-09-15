@@ -304,16 +304,20 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *pu
 		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
 		paramID := ctx.R.FormValue(presets.ParamID)
 		me := mb.Editing()
-		vErr := me.RunSetterFunc(ctx, false, toObj)
-		if vErr.HaveErrors() {
-			presets.ShowMessage(&r, vErr.Error(), "error")
+
+		var fromObj = mb.NewModel()
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj).Error; err != nil {
+			return
+		}
+		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
 
-		var fromObj = mb.NewModel()
-		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
-		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
+		if vErr := me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
+			ModelInfo: mb.Info(),
+		}, false, presets.ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R), ctx); vErr.HaveErrors() {
+			presets.ShowMessage(&r, vErr.Error(), "error")
 			return
 		}
 

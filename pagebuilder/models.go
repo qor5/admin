@@ -141,6 +141,7 @@ type Container struct {
 	DisplayName  string
 
 	l10n.Locale
+	LocalizeFromModelID uint
 }
 
 func (c *Container) PrimarySlug() string {
