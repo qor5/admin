@@ -758,8 +758,8 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 			newModelID = reflectutils.MustGet(model, "ID").(uint)
 		} else {
 			var count int64
-			var temp Container
-			if err = db.Where("model_name = ? AND locale_code = ?", c.ModelName, toPageLocale).First(&temp).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
+			var sharedCon Container
+			if err = db.Where("localize_from_model_id = ? AND locale_code = ? AND shared = ?", c.ModelID, toPageLocale, true).First(&sharedCon).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
 				return
 			}
 
@@ -776,8 +776,8 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 				}
 				newModelID = reflectutils.MustGet(model, "ID").(uint)
 			} else {
-				newModelID = temp.ModelID
-				newDisplayName = temp.DisplayName
+				newModelID = sharedCon.ModelID
+				newDisplayName = sharedCon.DisplayName
 			}
 		}
 
@@ -796,6 +796,7 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 		newCon.DisplayOrder = c.DisplayOrder
 		newCon.Shared = c.Shared
 		newCon.LocaleCode = toPageLocale
+		newCon.LocalizeFromModelID = c.ModelID
 
 		if err = db.Save(&newCon).Error; err != nil {
 			return
