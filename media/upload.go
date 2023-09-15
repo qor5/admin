@@ -77,7 +77,7 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 	// Save File
 	if !handled {
 		err = media.Store(media.URL(), option, mediaFile)
-		return false, err
+		return true, err
 	}
 
 	return true, nil
