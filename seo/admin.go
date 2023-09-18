@@ -58,14 +58,32 @@ func (collection *Collection) Configure(b *presets.Builder, db *gorm.DB) {
 
 func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 	var setting Setting
-	for key := range ctx.R.Form {
-		if key == fmt.Sprintf("%s.%s", field.Name, "OpenGraphMetadataString") {
-			metadata := GetOpenGraphMetadata(ctx.R.Form.Get(key))
+	var mediaBox = media_library.MediaBox{}
+	for fieldWithPrefix := range ctx.R.Form {
+		// make sure OpenGraphImageFromMediaLibrary.Description set after OpenGraphImageFromMediaLibrary.Values
+		if fieldWithPrefix == fmt.Sprintf("%s.%s", field.Name, "OpenGraphImageFromMediaLibrary.Values") {
+			err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
+			if err != nil {
+				return
+			}
+			break
+		}
+	}
+	for fieldWithPrefix := range ctx.R.Form {
+		if strings.HasPrefix(fieldWithPrefix, fmt.Sprintf("%s.%s", field.Name, "OpenGraphImageFromMediaLibrary")) {
+			if fieldWithPrefix == fmt.Sprintf("%s.%s", field.Name, "OpenGraphImageFromMediaLibrary.Description") {
+				mediaBox.Description = ctx.R.Form.Get(fieldWithPrefix)
+				reflectutils.Set(&setting, "OpenGraphImageFromMediaLibrary", mediaBox)
+			}
+			continue
+		}
+		if fieldWithPrefix == fmt.Sprintf("%s.%s", field.Name, "OpenGraphMetadataString") {
+			metadata := GetOpenGraphMetadata(ctx.R.Form.Get(fieldWithPrefix))
 			reflectutils.Set(&setting, "OpenGraphMetadata", metadata)
 			continue
 		}
-		if strings.HasPrefix(key, fmt.Sprintf("%s.", field.Name)) {
-			reflectutils.Set(&setting, strings.TrimPrefix(key, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(key))
+		if strings.HasPrefix(fieldWithPrefix, fmt.Sprintf("%s.", field.Name)) {
+			reflectutils.Set(&setting, strings.TrimPrefix(fieldWithPrefix, fmt.Sprintf("%s.", field.Name)), ctx.R.Form.Get(fieldWithPrefix))
 		}
 	}
 	return reflectutils.Set(obj, field.Name, setting)
@@ -360,24 +378,33 @@ func (collection *Collection) save(ctx *web.EventContext) (r web.EventResponse, 
 		if !strings.HasPrefix(fieldWithPrefix, name) {
 			continue
 		}
+		field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", name), "", -1)
+		// make sure OpenGraphImageFromMediaLibrary.Description set after OpenGraphImageFromMediaLibrary.Values
+		if field == "OpenGraphImageFromMediaLibrary.Values" {
+			err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
+			if err != nil {
+				return
+			}
+			break
+		}
+	}
 
+	for fieldWithPrefix := range ctx.R.Form {
+		if !strings.HasPrefix(fieldWithPrefix, name) {
+			continue
+		}
 		field := strings.Replace(fieldWithPrefix, fmt.Sprintf("%s.", name), "", -1)
 		if strings.HasPrefix(field, "OpenGraphImageFromMediaLibrary") {
-			if field == "OpenGraphImageFromMediaLibrary.Values" {
-				err = mediaBox.Scan(ctx.R.FormValue(fieldWithPrefix))
-				if err != nil {
-					return
-				}
-				settingVals["OpenGraphImageFromMediaLibrary"] = mediaBox
-			}
-
 			if field == "OpenGraphImageFromMediaLibrary.Description" {
 				mediaBox.Description = ctx.R.FormValue(fieldWithPrefix)
 				if err != nil {
 					return
 				}
+				settingVals["OpenGraphImageFromMediaLibrary"] = mediaBox
 			}
-		} else if strings.HasPrefix(field, "Variables") {
+			continue
+		}
+		if strings.HasPrefix(field, "Variables") {
 			key := strings.Replace(field, "Variables.", "", -1)
 			variables[key] = ctx.R.FormValue(fieldWithPrefix)
 		} else {
