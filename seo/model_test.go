@@ -15,34 +15,38 @@ func TestSettingHTMLComponent(t *testing.T) {
 		{
 			name: "Render the seo html",
 			setting: Setting{
-				Title:             "title",
-				Description:       "description",
-				Keywords:          "keyword",
-				OpenGraphURL:      "http://dev.qor5.com/product/1",
-				OpenGraphType:     "",
-				OpenGraphImageURL: "http://dev.qor5.com/product/1/og.jpg",
+				Title:                "title",
+				Description:          "description",
+				Keywords:             "keyword",
+				OpenGraphTitle:       "og title",
+				OpenGraphDescription: "og description",
+				OpenGraphURL:         "http://dev.qor5.com/product/1",
+				OpenGraphType:        "",
+				OpenGraphImageURL:    "http://dev.qor5.com/product/1/og.jpg",
 			},
 			tags: map[string]string{},
 			want: `
 			<title>title</title>
 			<meta name='description' content='description'>
 			<meta name='keywords' content='keyword'>
+			<meta property='og:title' name='og:title' content='og title'>
+			<meta property='og:description' name='og:description' content='og description'>
 			<meta property='og:type' name='og:type' content='website'>
 			<meta property='og:image' name='og:image' content='http://dev.qor5.com/product/1/og.jpg'>
-			<meta property='og:title' name='og:title' content='title'>
-			<meta property='og:description' name='og:description' content='description'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>`,
 		},
 
 		{
 			name: "Render the seo html using the tag data",
 			setting: Setting{
-				Title:             "title",
-				Description:       "description",
-				Keywords:          "keyword",
-				OpenGraphURL:      "http://dev.qor5.com/product/1",
-				OpenGraphType:     "",
-				OpenGraphImageURL: "http://dev.qor5.com/product/1/og.jpg",
+				Title:                "title",
+				Description:          "description",
+				Keywords:             "keyword",
+				OpenGraphTitle:       "og title",
+				OpenGraphDescription: "og description",
+				OpenGraphURL:         "http://dev.qor5.com/product/1",
+				OpenGraphType:        "",
+				OpenGraphImageURL:    "http://dev.qor5.com/product/1/og.jpg",
 			},
 			tags: map[string]string{
 				"og:type":       "product",
@@ -52,10 +56,10 @@ func TestSettingHTMLComponent(t *testing.T) {
 			<title>title</title>
 			<meta name='description' content='description'>
 			<meta name='keywords' content='keyword'>
+			<meta property='og:title' name='og:title' content='og title'>
+			<meta property='og:description' name='og:description' content='og description'>
 			<meta property='og:type' name='og:type' content='product'>
 			<meta property='og:image' name='og:image' content='http://dev.qor5.com/product/1/og.jpg'>
-			<meta property='og:title' name='og:title' content='title'>
-			<meta property='og:description' name='og:description' content='description'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
 			<meta property='twiiter:image' name='twiiter:image' content='http://dev.qor5.com/product/1/twitter.jpg'>`,
 		},

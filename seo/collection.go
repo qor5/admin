@@ -296,6 +296,12 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 		if s.Keywords != "" && setting.Keywords == "" {
 			setting.Keywords = s.Keywords
 		}
+		if s.OpenGraphTitle != "" && setting.OpenGraphTitle == "" {
+			setting.OpenGraphTitle = s.OpenGraphTitle
+		}
+		if s.OpenGraphDescription != "" && setting.OpenGraphDescription == "" {
+			setting.OpenGraphDescription = s.OpenGraphDescription
+		}
 		if s.OpenGraphURL != "" && setting.OpenGraphURL == "" {
 			setting.OpenGraphURL = s.OpenGraphURL
 		}
@@ -374,6 +380,19 @@ func replaceVariables(setting Setting, values map[string]string) Setting {
 	setting.Title = replace(setting.Title)
 	setting.Description = replace(setting.Description)
 	setting.Keywords = replace(setting.Keywords)
+	setting.OpenGraphTitle = replace(setting.OpenGraphTitle)
+	setting.OpenGraphDescription = replace(setting.OpenGraphDescription)
+	setting.OpenGraphURL = replace(setting.OpenGraphURL)
+	setting.OpenGraphType = replace(setting.OpenGraphType)
+	setting.OpenGraphImageURL = replace(setting.OpenGraphImageURL)
+	var metadata []OpenGraphMetadata
+	for _, m := range setting.OpenGraphMetadata {
+		metadata = append(metadata, OpenGraphMetadata{
+			Property: m.Property,
+			Content:  replace(m.Content),
+		})
+	}
+	setting.OpenGraphMetadata = metadata
 	return setting
 }
 
