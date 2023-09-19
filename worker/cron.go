@@ -277,3 +277,7 @@ func (c *cron) doRunJob(job QueJobInterface) error {
 
 	return nil
 }
+
+func (c *cron) Shutdown() error {
+	return nil
+}

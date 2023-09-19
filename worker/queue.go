@@ -12,4 +12,5 @@ type Queue interface {
 	Kill(QueJobInterface) error
 	Remove(QueJobInterface) error
 	Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error
+	Shutdown() error
 }

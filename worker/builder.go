@@ -392,6 +392,10 @@ func (b *Builder) Listen() {
 	}
 }
 
+func (b *Builder) Shutdown() error {
+	return b.q.Shutdown()
+}
+
 func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, err error) {
 	if err = editIsAllowed(ctx.R, qorJob.Job); err != nil {
 		return
