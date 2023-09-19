@@ -60,7 +60,6 @@ type PageLayoutInput struct {
 	IsEditor          bool
 	EditorCss         []h.HTMLComponent
 	IsPreview         bool
-	Locale            string
 }
 
 type Builder struct {
@@ -78,6 +77,7 @@ type Builder struct {
 	defaultDevice     string
 	publishBtnColor   string
 	duplicateBtnColor string
+	templateEnabled   bool
 }
 
 const (
@@ -130,6 +130,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		defaultDevice:     DeviceComputer,
 		publishBtnColor:   "primary",
 		duplicateBtnColor: "primary",
+		templateEnabled:   true,
 	}
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
@@ -190,8 +191,14 @@ func (b *Builder) PublishBtnColor(v string) (r *Builder) {
 	b.publishBtnColor = v
 	return b
 }
+
 func (b *Builder) DuplicateBtnColor(v string) (r *Builder) {
 	b.duplicateBtnColor = v
+	return b
+}
+
+func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
+	b.templateEnabled = v
 	return b
 }
 
@@ -201,7 +208,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
-	templateM := b.ConfigTemplate(pb, db)
+
+	templateM := presets.NewModelBuilder(pb, &Template{})
+	if b.templateEnabled {
+		templateM = b.ConfigTemplate(pb, db)
+	}
+
 	b.mb = pm
 	pm.Listing("ID", "Online", "Title", "Slug")
 	dp := pm.Detailing("Overview")
@@ -234,7 +246,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			}
 
 			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
-			isTempate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			isTemplate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
 			var obj interface{}
 			var dmb *presets.ModelBuilder
 			if isPage {
@@ -243,9 +255,22 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				dmb = templateM
 			}
 			obj = dmb.NewModel()
+			if sd, ok := obj.(presets.SlugDecoder); ok {
+				vs, err := presets.RecoverPrimaryColumnValuesBySlug(sd, id)
+				if err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+				if _, err := strconv.Atoi(vs["id"]); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			} else {
+				if _, err := strconv.Atoi(id); err != nil {
+					return pb.DefaultNotFoundPageFunc(ctx)
+				}
+			}
 			obj, err = dmb.Detailing().GetFetchFunc()(obj, id, ctx)
 			if err != nil {
-				if err == presets.ErrRecordNotFound {
+				if errors.Is(err, presets.ErrRecordNotFound) {
 					return pb.DefaultNotFoundPageFunc(ctx)
 				}
 				return
@@ -281,7 +306,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				if l, ok := obj.(l10n.L10nInterface); ok {
 					ctx.R.Form.Set("locale", l.GetLocale())
 				}
-				if isTempate {
+				if isTemplate {
 					ctx.R.Form.Set("tpl", "1")
 				}
 				tabContent, err = b.PageContent(ctx)
@@ -299,7 +324,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			editAction := web.POST().
 				EventFunc(actions.Edit).
 				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamOverlay, actions.Drawer).
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
 
@@ -445,9 +470,11 @@ function(e){
 
 	configureVersionListDialog(db, b.ps, pm)
 
-	pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
-	pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
-	// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	if b.templateEnabled {
+		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
+		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
+		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	}
 	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
@@ -499,57 +526,26 @@ function(e){
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		if !b.templateEnabled {
+			return nil
+		}
+
 		p := obj.(*Page)
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		selectedID := ctx.R.FormValue(templateSelectedID)
+		body, err := getTplPortalComp(ctx, db, selectedID)
+		if err != nil {
+			panic(err)
+		}
+
 		// Display template selection only when creating a new page
 		if p.ID == 0 {
 			return h.Div(
 				web.Portal().Name(templateSelectPortal),
 				web.Portal(
-					VRow(
-						VCol(
-							h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
-							VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
-						).Cols(5),
-						VCol(
-							VBtn(msgr.ChangeTemplate).Color("primary").
-								Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
-						).Cols(5),
-					),
+					body,
 				).Name(selectedTemplatePortal),
 			).Class("my-2").Attr(web.InitContextVars, `{showTemplateDialog: false}`)
-		}
-		return nil
-	})
-
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		p := obj.(*Page)
-		if p.ID == 0 {
-			return nil
-		}
-		if p.GetStatus() == publish.StatusDraft {
-			var href = fmt.Sprintf("%s/editors/%d?version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.EditPageContent).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
-		} else {
-			var href = fmt.Sprintf("%s/preview?id=%d&version=%s", b.prefix, p.ID, p.GetVersion())
-			if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-				href = fmt.Sprintf("%s/preview?id=%d&version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)
-			}
-			return h.Div(
-				VBtn(msgr.Preview).
-					Target("_blank").
-					Href(href).
-					Color("secondary"),
-			)
 		}
 		return nil
 	})
@@ -911,10 +907,9 @@ const (
 	templateSelectPortal   = "templateSelectPortal"
 	selectedTemplatePortal = "selectedTemplatePortal"
 
-	templateSelectedID      = "TemplateSelectedID"
-	templateID              = "TemplateID"
-	templateSelectionLocale = "TemplateSelectionLocale"
-	templateBlankVal        = "blank"
+	templateSelectedID = "TemplateSelectedID"
+	templateID         = "TemplateID"
+	templateBlankVal   = "blank"
 )
 
 func selectTemplate(db *gorm.DB) web.EventFunc {
@@ -942,30 +937,42 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 			})
 			return
 		}
-		locale := ctx.R.FormValue(templateSelectionLocale)
 
-		tpl := Template{}
-		if err = db.Model(&Template{}).Where("id = ? AND locale_code = ?", id, locale).First(&tpl).Error; err != nil {
-			panic(err)
+		var body h.HTMLComponent
+		if body, err = getTplPortalComp(ctx, db, id); err != nil {
+			return
 		}
-		name := tpl.Name
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: selectedTemplatePortal,
-			Body: VRow(
-				VCol(
-					h.Input("").Type("hidden").Value(id).Attr(web.VFieldName(templateSelectedID)...),
-					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
-				).Cols(5),
-				VCol(
-					VBtn(msgr.ChangeTemplate).Color("primary").
-						Attr("@click", web.Plaid().Query(templateSelectedID, id).EventFunc(openTemplateDialogEvent).Go()),
-				).Cols(5),
-			),
+			Body: body,
 		})
 
 		return
 	}
+}
+
+func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.HTMLComponent, error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+
+	name := msgr.Blank
+	if selectedID != "" {
+		if err := db.Model(&Template{}).Where("id = ? AND locale_code = ?", selectedID, locale).Pluck("name", &name).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	return VRow(
+		VCol(
+			h.Input("").Type("hidden").Value(selectedID).Attr(web.VFieldName(templateSelectedID)...),
+			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
+		).Cols(5),
+		VCol(
+			VBtn(msgr.ChangeTemplate).Color("primary").
+				Attr("@click", web.Plaid().Query(templateSelectedID, selectedID).EventFunc(openTemplateDialogEvent).Go()),
+		).Cols(5),
+	), nil
 }
 
 // Unused
@@ -1053,7 +1060,6 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
 						VBtn(gmsgr.OK).Color("primary").
 							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
-								Query(templateSelectionLocale, locale).
 								Go(),
 							),
 					).Class("pb-4"),
@@ -1665,24 +1671,6 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
 
 	eb := pm.Editing("Name", "Description")
-	eb.Field("EditContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		m := obj.(*Template)
-		if m.ID == 0 {
-			return nil
-		}
-
-		var href = fmt.Sprintf("%s/editors/%d?tpl=1", b.prefix, m.ID)
-		if locale, isLocalizable := l10n.IsLocalizableFromCtx(ctx.R.Context()); isLocalizable && l10nON {
-			href = fmt.Sprintf("%s/editors/%d?tpl=1&locale=%s", b.prefix, m.ID, locale)
-		}
-		return h.Div(
-			VBtn(msgr.EditPageContent).
-				Target("_blank").
-				Href(href).
-				Color("secondary"),
-		)
-	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*Template)

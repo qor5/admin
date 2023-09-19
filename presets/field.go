@@ -511,6 +511,29 @@ func (b *FieldsBuilder) getField(name string) (r *FieldBuilder) {
 	return
 }
 
+func (b *FieldsBuilder) getFieldNamesFromLayout() []string {
+	var ns []string
+	for _, iv := range b.fieldsLayout {
+		switch t := iv.(type) {
+		case string:
+			ns = append(ns, t)
+		case []string:
+			for _, n := range t {
+				ns = append(ns, n)
+			}
+		case *FieldsSection:
+			for _, row := range t.Rows {
+				for _, n := range row {
+					ns = append(ns, n)
+				}
+			}
+		default:
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
+		}
+	}
+	return ns
+}
+
 func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 	if len(vs) == 0 {
 		return b
@@ -519,25 +542,9 @@ func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 	r = b.Clone()
 
 	r.fieldsLayout = vs
-	for _, iv := range vs {
-		switch t := iv.(type) {
-		case string:
-			r.appendFieldAfterClone(b, t)
-		case []string:
-			for _, n := range t {
-				r.appendFieldAfterClone(b, n)
-			}
-		case *FieldsSection:
-			for _, row := range t.Rows {
-				for _, n := range row {
-					r.appendFieldAfterClone(b, n)
-				}
-			}
-		default:
-			panic("unknown fields layout, must be string/[]string/*FieldsSection")
-		}
+	for _, fn := range r.getFieldNamesFromLayout() {
+		r.appendFieldAfterClone(b, fn)
 	}
-
 	return
 }
 
@@ -596,10 +603,22 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		edit = true
 	}
 
-	layout := b.fieldsLayout
-	if layout == nil {
+	var layout []interface{}
+	if b.fieldsLayout == nil {
 		layout = make([]interface{}, 0, len(b.fields))
 		for _, f := range b.fields {
+			layout = append(layout, f.name)
+		}
+	} else {
+		layout = b.fieldsLayout[:]
+		layoutFM := make(map[string]struct{})
+		for _, fn := range b.getFieldNamesFromLayout() {
+			layoutFM[fn] = struct{}{}
+		}
+		for _, f := range b.fields {
+			if _, ok := layoutFM[f.name]; ok {
+				continue
+			}
 			layout = append(layout, f.name)
 		}
 	}

@@ -25,7 +25,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/ui v1.0.1-0.20230822092653-afb0ab3fb124
-	github.com/qor5/web v1.2.5-0.20230807024808-102831643c1f
+	github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f
 	github.com/qor5/x v1.2.1-0.20230703035938-40997f230eb2
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1

@@ -39,7 +39,6 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 			// deviceQueries.Add("locale", locale)
 		}
 	}
-
 	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
 	if err != nil {
 		return
