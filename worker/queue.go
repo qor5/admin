@@ -1,5 +1,7 @@
 package worker
 
+import "context"
+
 //go:generate moq -pkg mock -out mock/queue.go . Queue
 
 type QorJobDefinition struct {
@@ -8,9 +10,9 @@ type QorJobDefinition struct {
 }
 
 type Queue interface {
-	Add(QueJobInterface) error
-	Kill(QueJobInterface) error
-	Remove(QueJobInterface) error
+	Add(ctx context.Context, job QueJobInterface) error
+	Kill(ctx context.Context, job QueJobInterface) error
+	Remove(ctx context.Context, job QueJobInterface) error
 	Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error
-	Shutdown() error
+	Shutdown(ctx context.Context) error
 }

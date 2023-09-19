@@ -253,9 +253,9 @@ func (b *Builder) eventActionJobClose(ctx *web.EventContext) (er web.EventRespon
 
 	switch inst.Status {
 	case JobStatusRunning:
-		err = b.q.Kill(inst)
+		err = b.q.Kill(ctx.R.Context(), inst)
 	case JobStatusNew, JobStatusScheduled:
-		err = b.q.Remove(inst)
+		err = b.q.Remove(ctx.R.Context(), inst)
 	}
 
 	return er, err

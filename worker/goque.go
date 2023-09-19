@@ -45,7 +45,7 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 	}
 }
 
-func (q *goque) Add(job QueJobInterface) error {
+func (q *goque) Add(ctx context.Context, job QueJobInterface) error {
 	jobInfo, err := job.GetJobInfo()
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (q *goque) Add(job QueJobInterface) error {
 		job.SetStatus(JobStatusScheduled)
 	}
 
-	_, err = q.q.Enqueue(context.Background(), nil, que.Plan{
+	_, err = q.q.Enqueue(ctx, nil, que.Plan{
 		Queue: "worker_" + jobInfo.JobName,
 		Args:  que.Args(jobInfo.JobID, jobInfo.Argument),
 		RunAt: runAt,
@@ -76,11 +76,11 @@ func (q *goque) run(ctx context.Context, job QueJobInterface) error {
 	return job.GetHandler()(ctx, job)
 }
 
-func (q *goque) Kill(job QueJobInterface) error {
+func (q *goque) Kill(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusKilled)
 }
 
-func (q *goque) Remove(job QueJobInterface) error {
+func (q *goque) Remove(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusCancelled)
 }
 
@@ -192,10 +192,10 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 	return nil
 }
 
-func (q *goque) Shutdown() error {
+func (q *goque) Shutdown(ctx context.Context) error {
 	var errs error
 	for _, wk := range q.wks {
-		if err := wk.Stop(context.Background()); err != nil {
+		if err := wk.Stop(ctx); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
