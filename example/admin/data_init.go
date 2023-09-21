@@ -84,7 +84,7 @@ func InitDB(db *gorm.DB, tables []string) {
 	}
 	// Seq
 	for _, name := range tables {
-		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id)+1 FROM %s));", name, name)).Error; err != nil {
+		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id) FROM %s));", name, name)).Error; err != nil {
 			panic(err)
 		}
 	}
@@ -255,7 +255,7 @@ INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.3053
 -- Data for Name: page_builder_pages; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', 'International');
+INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', '', 'International');
 
 
 --
