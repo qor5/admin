@@ -14,7 +14,7 @@ import (
 func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	p := b.Model(&models.Category{})
 
-	eb := p.Editing("Status", "Schedule", "Name", "Products")
+	eb := p.Editing("StatusBar", "Schedule", "Name", "Products")
 	p.Listing("Name")
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {

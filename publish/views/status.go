@@ -102,11 +102,6 @@ func StatusEditFunc() presets.FieldComponentFunc {
 	}
 }
 
-// need empty setterFunc here to avoid set status to empty when update
-func StatusEditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-	return
-}
-
 func GetStatusColor(status string) string {
 	switch status {
 	case publish.StatusDraft:

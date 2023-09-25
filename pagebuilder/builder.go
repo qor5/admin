@@ -481,7 +481,6 @@ function(e){
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoCollection))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
