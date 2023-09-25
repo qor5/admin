@@ -292,8 +292,8 @@ github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1 h1:6ZIyg13zG0ki2yE2XcFN2
 github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1/go.mod h1:bgBqjIytHRdfTsiZea8df/ltAcyQyuHiLbecgo8Iwgw=
 github.com/qor5/web v1.3.0 h1:nz/MP1TJ/ffGA6FgWXJ1ljPZDfd3RQSTHz/4ZrzKqX0=
 github.com/qor5/web v1.3.0/go.mod h1:4VXydGmy5Uwz8rEeKjcmCetciJo8TpU0mnN7Ca5kMR0=
-github.com/qor5/x v1.2.1-0.20230703035938-40997f230eb2 h1:p37xD7d1L/4oxFuwvhgF28tuyT8A+TjiHDhHd+oxXcc=
-github.com/qor5/x v1.2.1-0.20230703035938-40997f230eb2/go.mod h1:Zfy7B3X5DnQSud0HTV4h/ih5TTQgaT2NWwuSIRGLdcM=
+github.com/qor5/x v1.2.1-0.20230907054212-50b1a850acf6 h1:GyPeYULwjUPGR6fT/lZicJ8dkoKL5cu/hRNefxX+V7g=
+github.com/qor5/x v1.2.1-0.20230907054212-50b1a850acf6/go.mod h1:Zfy7B3X5DnQSud0HTV4h/ih5TTQgaT2NWwuSIRGLdcM=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
@@ -339,8 +339,8 @@ github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761/go.mod h1:j+L/Ih47B
 github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f h1:A+MmlgpvrHLeUP8dkBVn4Pnf5Bp5Yk2OALm7SEJLLE8=
 github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f/go.mod h1:OBcG9bn7sHtXgarhUEb3OfCnNsgtGnkVf41ilSZ3K3E=
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
-github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
+github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/wcharczuk/go-chart/v2 v2.1.0 h1:tY2slqVQ6bN+yHSnDYwZebLQFkphK4WNrVwnt7CJZ2I=
 github.com/wcharczuk/go-chart/v2 v2.1.0/go.mod h1:yx7MvAVNcP/kN9lKXM/NTce4au4DFN99j6i1OwDclNA=
 github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4 h1:0sw0nJM544SpsihWx1bkXdYLQDlzRflMgFJQ4Yih9ts=
