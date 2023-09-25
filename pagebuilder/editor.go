@@ -870,8 +870,12 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	okAction := web.Plaid().
 		URL(fmt.Sprintf("%s/editors", b.prefix)).
 		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+	portalName := dialogPortalName
+	if ctx.R.FormValue("portal") == "presets" {
+		portalName = presets.DialogPortalName
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: dialogPortalName,
+		Name: portalName,
 		Body: web.Scope(
 			VDialog(
 				VCard(
