@@ -25,6 +25,7 @@ type Messages struct {
 	FilterTabAllVersions           string
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
+	Rename                         string
 }
 
 var Messages_en_US = &Messages{
@@ -48,6 +49,7 @@ var Messages_en_US = &Messages{
 	FilterTabAllVersions:           "All Versions",
 	FilterTabOnlineVersion:         "Online Version",
 	FilterTabNamedVersions:         "Named Versions",
+	Rename:                         "Rename",
 }
 
 var Messages_zh_CN = &Messages{
@@ -71,6 +73,7 @@ var Messages_zh_CN = &Messages{
 	FilterTabAllVersions:           "所有版本",
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
+	Rename:                         "重命名",
 }
 
 var Messages_ja_JP = &Messages{
@@ -93,4 +96,5 @@ var Messages_ja_JP = &Messages{
 	FilterTabAllVersions:           "全てのバージョン",
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名付け済みバージョン",
+	Rename:                         "名前の変更",
 }

@@ -1464,7 +1464,24 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
-	listing.RowMenu("").Empty()
+	listing.RowMenu("Rename").RowMenuItem("Rename").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		c := obj.(*Container)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VListItem(
+			VListItemIcon(VIcon("edit_note")),
+
+			VListItemTitle(h.Text(msgr.Rename)),
+		).Attr("@click",
+			web.Plaid().
+				URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+				EventFunc(RenameContainerDialogEvent).
+				Query(paramContainerID, c.PrimarySlug()).
+				Query(paramContainerName, c.DisplayName).
+				Query("portal", "presets").
+				Go(),
+		)
+	})
+
 	// ed := pm.Editing("SelectContainer")
 	// ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	//	var containers []h.HTMLComponent
@@ -1728,7 +1745,7 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
 			return
 		}
 		totalCount = int(c)
@@ -1743,7 +1760,7 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 			wh = wh.Offset(int(offset))
 		}
 
-		if err = wh.Select("display_name,model_name,model_id").Find(obj).Error; err != nil {
+		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(obj).Error; err != nil {
 			return
 		}
 		r = reflect.ValueOf(obj).Elem().Interface()

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -392,6 +393,10 @@ func (b *Builder) Listen() {
 	}
 }
 
+func (b *Builder) Shutdown(ctx context.Context) error {
+	return b.q.Shutdown(ctx)
+}
+
 func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, err error) {
 	if err = editIsAllowed(ctx.R, qorJob.Job); err != nil {
 		return
@@ -439,7 +444,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 		if err != nil {
 			return err
 		}
-		return b.q.Add(inst)
+		return b.q.Add(ctx.R.Context(), inst)
 	})
 	return
 }
@@ -477,7 +482,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 	isScheduled := inst.Status == JobStatusScheduled
 
-	err = b.doAbortJob(inst)
+	err = b.doAbortJob(ctx.R.Context(), inst)
 	if err != nil {
 		_, ok := err.(*cannotAbortError)
 		if !ok {
@@ -517,12 +522,12 @@ func (e *cannotAbortError) Error() string {
 	return e.err.Error()
 }
 
-func (b *Builder) doAbortJob(inst *QorJobInstance) (err error) {
+func (b *Builder) doAbortJob(ctx context.Context, inst *QorJobInstance) (err error) {
 	switch inst.Status {
 	case JobStatusRunning:
-		return b.q.Kill(inst)
+		return b.q.Kill(ctx, inst)
 	case JobStatusNew, JobStatusScheduled:
-		return b.q.Remove(inst)
+		return b.q.Remove(ctx, inst)
 	default:
 		return &cannotAbortError{
 			err: fmt.Errorf("job status is %s, cannot be aborted/canceled", inst.Status),
@@ -555,7 +560,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	if err != nil {
 		return er, err
 	}
-	err = b.q.Add(inst)
+	err = b.q.Add(ctx.R.Context(), inst)
 	if err != nil {
 		return er, err
 	}
@@ -604,7 +609,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, err
 	}
 	oldArgs, _ := jb.parseArgs(old.Args)
-	err = b.doAbortJob(old)
+	err = b.doAbortJob(ctx.R.Context(), old)
 	if err != nil {
 		_, ok := err.(*cannotAbortError)
 		if !ok {
@@ -624,7 +629,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	if err != nil {
 		return er, err
 	}
-	err = b.q.Add(newInst)
+	err = b.q.Add(ctx.R.Context(), newInst)
 	if err != nil {
 		return er, err
 	}

@@ -14,7 +14,7 @@ import (
 var items []worker.QueJobInterface
 
 var Que = &mock.QueueMock{
-	AddFunc: func(job worker.QueJobInterface) error {
+	AddFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 		jobInfo, err := job.GetJobInfo()
 
 		if err != nil {
@@ -26,14 +26,17 @@ var Que = &mock.QueueMock{
 		items = append(items, job)
 		return nil
 	},
-	KillFunc: func(job worker.QueJobInterface) error {
+	KillFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 		return job.SetStatus(worker.JobStatusKilled)
 	},
 	ListenFunc: func(jobDefs []*worker.QorJobDefinition, getJob func(qorJobID uint) (worker.QueJobInterface, error)) error {
 		return nil
 	},
-	RemoveFunc: func(job worker.QueJobInterface) error {
+	RemoveFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 		return job.SetStatus(worker.JobStatusCancelled)
+	},
+	ShutdownFunc: func(ctx context.Context) error {
+		return nil
 	},
 }
 

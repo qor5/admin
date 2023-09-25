@@ -25,7 +25,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1
-	github.com/qor5/web v1.2.5-0.20230905084205-145cb859a65f
+	github.com/qor5/web v1.3.0
 	github.com/qor5/x v1.2.1-0.20230907054212-50b1a850acf6
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
@@ -37,6 +37,7 @@ require (
 	github.com/tnclong/go-que v0.0.0-20201111043106-1fc5fa2b9761
 	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f
 	github.com/wcharczuk/go-chart/v2 v2.1.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/text v0.9.0
@@ -90,7 +91,6 @@ require (
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/image v0.7.0 // indirect
