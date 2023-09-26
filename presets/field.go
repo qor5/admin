@@ -439,7 +439,7 @@ func (b *FieldsBuilder) Model(v interface{}) (r *FieldsBuilder) {
 }
 
 func (b *FieldsBuilder) Field(name string) (r *FieldBuilder) {
-	r = b.getField(name)
+	r = b.GetField(name)
 	if r != nil {
 		return
 	}
@@ -484,7 +484,7 @@ func (b *FieldsBuilder) getLabel(field NameLabel) (r string) {
 }
 
 func (b *FieldsBuilder) getFieldOrDefault(name string) (r *FieldBuilder) {
-	r = b.getField(name)
+	r = b.GetField(name)
 	if r.compFunc == nil {
 		if b.defaults == nil {
 			panic("field defaults must be provided")
@@ -502,7 +502,7 @@ func (b *FieldsBuilder) getFieldOrDefault(name string) (r *FieldBuilder) {
 	return
 }
 
-func (b *FieldsBuilder) getField(name string) (r *FieldBuilder) {
+func (b *FieldsBuilder) GetField(name string) (r *FieldBuilder) {
 	for _, f := range b.fields {
 		if f.name == name {
 			return f
@@ -549,7 +549,7 @@ func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 }
 
 func (b *FieldsBuilder) appendFieldAfterClone(ob *FieldsBuilder, name string) {
-	f := ob.getField(name)
+	f := ob.GetField(name)
 	if f == nil {
 		b.appendNewFieldWithName(name)
 	} else {

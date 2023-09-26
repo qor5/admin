@@ -143,6 +143,9 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 
 			m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
 			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
+			if m.Editing().GetField("StatusBar") != nil {
+				m.Editing().Field("StatusBar").ComponentFunc(StatusEditFunc())
+			}
 		} else {
 			if schedulePublishModel, ok := obj.(publish.ScheduleInterface); ok {
 				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
@@ -161,10 +164,6 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 	b.FieldDefaults(presets.LIST).
 		FieldType(publish.Status{}).
 		ComponentFunc(StatusListFunc())
-	b.FieldDefaults(presets.WRITE).
-		FieldType(publish.Status{}).
-		ComponentFunc(StatusEditFunc()).
-		SetterFunc(StatusEditSetterFunc)
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(publish.Schedule{}).
