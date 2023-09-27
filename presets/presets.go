@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -895,8 +896,12 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
-		if err == perm.PermissionDenied {
+		if errors.Is(err, perm.PermissionDenied) {
 			pr.Body = h.Text(perm.PermissionDenied.Error())
+			return pr, nil
+		}
+		if errors.Is(err, ErrIDRequired) {
+			pr.Body = h.Text(ErrIDRequired.Error())
 			return pr, nil
 		}
 		if err != nil {

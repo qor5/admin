@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/jinzhu/inflection"
@@ -9,7 +10,6 @@ import (
 	"github.com/qor5/web"
 	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
-	"goji.io/pat"
 )
 
 type DetailingBuilder struct {
@@ -86,24 +86,25 @@ func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
-
 	var id string
 	if b.drawer {
 		id = ctx.R.FormValue(ParamID)
 	} else {
-		id = pat.Param(ctx.R, "id")
+		if v := ctx.R.Context().Value(ParamID); v != nil {
+			id = v.(string)
+		}
 	}
 	r.Body = VContainer(h.Text(id))
 
 	var obj = b.mb.NewModel()
 
 	if id == "" {
-		panic("not found")
+		return r, ErrIDRequired
 	}
 
 	obj, err = b.fetcher(obj, id, ctx)
 	if err != nil {
-		if err == ErrRecordNotFound {
+		if errors.Is(err, ErrRecordNotFound) {
 			return b.mb.p.DefaultNotFoundPageFunc(ctx)
 		}
 		return
@@ -159,6 +160,10 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 
 	pr, err := b.GetPageFunc()(ctx)
 	if err != nil {
+		if errors.Is(err, ErrIDRequired) {
+			r.VarsScript = closeRightDrawerVarScript
+			return r, nil
+		}
 		return
 	}
 
