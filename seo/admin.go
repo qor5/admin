@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/l10n"
-
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
 	"github.com/qor5/admin/media/views"
@@ -110,7 +109,7 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 			fieldPrefix = value.Type().Field(i).Name
 		}
 	}
-	if setting.IsEmpty() {
+	if !setting.EnabledCustomize && setting.IsEmpty() {
 		modelSetting := collection.NewSettingModelInstance().(QorSEOSettingInterface)
 		db.Where("name = ? AND locale_code = ?", seo.name, locale).First(modelSetting)
 		setting.Title = modelSetting.GetTitle()
