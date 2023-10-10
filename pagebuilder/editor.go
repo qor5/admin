@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -801,6 +802,29 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 		if err = db.Save(&newCon).Error; err != nil {
 			return
 		}
+	}
+	return
+}
+
+func (b *Builder) localizeCategory(db *gorm.DB, fromCategoryID uint, fromLocale string, toLocale string) (err error) {
+	if fromCategoryID == 0 {
+		return
+	}
+	var category Category
+	var toCategory Category
+	err = db.First(&category, "id = ? AND locale_code = ?", fromCategoryID, fromLocale).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+		return
+	}
+	if err != nil {
+		return
+	}
+	err = db.First(&toCategory, "id = ? AND locale_code = ?", fromCategoryID, toLocale).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		category.LocaleCode = toLocale
+		err = db.Save(&category).Error
+		return
 	}
 	return
 }
