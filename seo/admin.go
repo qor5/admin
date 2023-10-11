@@ -288,11 +288,16 @@ func (collection *Collection) vseo(fieldPrefix string, seo *SEO, setting *Settin
 		}
 	}
 
+	var varComps []h.HTMLComponent
 	for _, variable := range variables {
-		variablesEle = append(variablesEle, VCol(
-			VBtn("").Width(100).Icon(true).Attr("style", "text-transform: none").Children(VIcon("add_box"), h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", variable))).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)),
-		).Cols(2))
+		varComps = append(varComps,
+			VChip(
+				VIcon("add_box").Class("mr-2"),
+				h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", variable)),
+			).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", variable)).Label(true).Outlined(true),
+		)
 	}
+	variablesEle = append(variablesEle, VChipGroup(varComps...).Column(true).Class("ma-4"))
 
 	image := &setting.OpenGraphImageFromMediaLibrary
 	if image.ID.String() == "0" {
