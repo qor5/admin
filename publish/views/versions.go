@@ -169,7 +169,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	}
 
 	var (
-		swithVersionEvent  = web.Plaid().EventFunc(switchVersionEvent).Query(presets.ParamID, web.Var(`$event.ParamID`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
+		switchVersionEvent = web.Plaid().EventFunc(switchVersionEvent).Query(presets.ParamID, web.Var(`$event.ParamID`)).Query("selected", selected).Query("page", web.Var("locals.versionPage")).Go()
 		deleteVersionEvent = web.Plaid().EventFunc(actions.DeleteConfirmation).Query(presets.ParamID, web.Var(`props.item.ParamID`)).
 					Query(presets.ParamAfterDeleteEvent, afterDeleteVersionEvent).
 					Query("current_selected_id", ctx.R.FormValue(presets.ParamID)).
@@ -184,23 +184,26 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 			web.Slot(
 				VEditDialog(
 					VIcon("edit").Small(true).Class("mr-2").Attr(":class", "props.item.ItemClass"),
-					VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
 				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Large(true).Transition("slide-x-reverse-transition"),
-			).Name("item.Actions").Scope("props"),
+			).Name("item.Edit").Scope("props"),
+			web.Slot(
+				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
+			).Name("item.Delete").Scope("props"),
 		).
 			Items(versions).
 			Headers(
 				[]map[string]interface{}{
-					{"text": "VersionName", "value": "VersionName"},
-					{"text": "Status", "value": "Status"},
-					{"text": "Actions", "value": "Actions"},
+					{"text": "VersionName", "value": "VersionName", "width": "60%"},
+					{"text": "Status", "value": "Status", "width": "20%"},
+					{"text": "Edit", "value": "Edit", "width": "10%"},
+					{"text": "Delete", "value": "Delete", "width": "10%"},
 				}).
-			HideDefaultHeader(true).
+			DisableSort(true).
 			HideDefaultFooter(len(versions) <= 10).
-			On("click:row", swithVersionEvent).
+			On("click:row", switchVersionEvent).
 			On("pagination", "locals.versionPage = $event.page").
 			ItemClass("ItemClass").
 			FooterProps(
