@@ -88,18 +88,38 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		orderByKey           = "order_by"
 		orderByCreatedAt     = "created_at"
 		orderByCreatedAtDESC = "created_at_desc"
+
+		typeKey   = "type"
+		typeAll   = "all"
+		typeImage = "image"
+		typeVideo = "video"
+		typeFile  = "file"
 	)
-	orderBy := ctx.R.URL.Query().Get(orderByKey)
+	orderByVal := ctx.R.URL.Query().Get(orderByKey)
+	typeVal := ctx.R.URL.Query().Get(typeKey)
 
 	var files []*media_library.MediaLibrary
 	wh := db.Model(&media_library.MediaLibrary{})
-	switch orderBy {
+
+	switch orderByVal {
 	case orderByCreatedAt:
 		wh = wh.Order("created_at")
 	default:
-		orderBy = orderByCreatedAtDESC
+		orderByVal = orderByCreatedAtDESC
 		wh = wh.Order("created_at DESC")
 	}
+
+	switch typeVal {
+	case typeImage:
+		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_IMAGE)
+	case typeVideo:
+		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_VIDEO)
+	case typeFile:
+		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_FILE)
+	default:
+		typeVal = typeAll
+	}
+
 	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
 	if currentPageInt == 0 {
 		currentPageInt = 1
@@ -269,14 +289,29 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					VRow(
 						VCol(
 							VSelect().Items([]selectItem{
+								{Text: msgr.All, Value: typeAll},
+								{Text: msgr.Images, Value: typeImage},
+								{Text: msgr.Videos, Value: typeVideo},
+								{Text: msgr.Files, Value: typeFile},
+							}).ItemText("Text").ItemValue("Value").
+								FieldName(typeKey).Value(typeVal).
+								Attr("@change",
+									web.GET().PushState(true).
+										Query(typeKey, web.Var("$event")).
+										MergeQuery(true).Go(),
+								).
+								Dense(true).Solo(true).Class("mb-n8"),
+						).Cols(3),
+						VCol(
+							VSelect().Items([]selectItem{
 								{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
 								{Text: msgr.UploadedAt, Value: orderByCreatedAt},
 							}).ItemText("Text").ItemValue("Value").
-								Label(msgr.OrderBy).
-								FieldName(orderByKey).Value(orderBy).
+								FieldName(orderByKey).Value(orderByVal).
 								Attr("@change",
 									web.GET().PushState(true).
-										Query(orderByKey, web.Var("[$event]")).Go(),
+										Query(orderByKey, web.Var("$event")).
+										MergeQuery(true).Go(),
 								).
 								Dense(true).Solo(true).Class("mb-n8"),
 						).Cols(3),

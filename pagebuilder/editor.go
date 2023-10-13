@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -566,7 +567,7 @@ func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventR
 	containerID := cs["id"]
 	locale := cs["locale_code"]
 
-	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(COALESCE(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
+	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
 
 	r.PushState = web.Location(url.Values{})
 	return
@@ -761,8 +762,8 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 			newModelID = reflectutils.MustGet(model, "ID").(uint)
 		} else {
 			var count int64
-			var temp Container
-			if err = db.Where("model_name = ? AND locale_code = ?", c.ModelName, toPageLocale).First(&temp).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
+			var sharedCon Container
+			if err = db.Where("model_name = ? AND localize_from_model_id = ? AND locale_code = ? AND shared = ?", c.ModelName, c.ModelID, toPageLocale, true).First(&sharedCon).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
 				return
 			}
 
@@ -779,26 +780,54 @@ func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageV
 				}
 				newModelID = reflectutils.MustGet(model, "ID").(uint)
 			} else {
-				newModelID = temp.ModelID
-				newDisplayName = temp.DisplayName
+				newModelID = sharedCon.ModelID
+				newDisplayName = sharedCon.DisplayName
 			}
 		}
 
-		if err = db.Create(&Container{
-			Model:        gorm.Model{ID: c.ID},
-			PageID:       uint(toPageID),
-			PageVersion:  toPageVersion,
-			ModelName:    c.ModelName,
-			DisplayName:  newDisplayName,
-			ModelID:      newModelID,
-			DisplayOrder: c.DisplayOrder,
-			Shared:       c.Shared,
-			Locale: l10n.Locale{
-				LocaleCode: toPageLocale,
-			},
-		}).Error; err != nil {
+		var newCon Container
+		err = db.Order("display_order ASC").Find(&newCon, "id = ? AND locale_code = ?", c.ID, toPageLocale).Error
+		if err != nil {
 			return
 		}
+
+		newCon.ID = c.ID
+		newCon.PageID = uint(toPageID)
+		newCon.PageVersion = toPageVersion
+		newCon.ModelName = c.ModelName
+		newCon.DisplayName = newDisplayName
+		newCon.ModelID = newModelID
+		newCon.DisplayOrder = c.DisplayOrder
+		newCon.Shared = c.Shared
+		newCon.LocaleCode = toPageLocale
+		newCon.LocalizeFromModelID = c.ModelID
+
+		if err = db.Save(&newCon).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (b *Builder) localizeCategory(db *gorm.DB, fromCategoryID uint, fromLocale string, toLocale string) (err error) {
+	if fromCategoryID == 0 {
+		return
+	}
+	var category Category
+	var toCategory Category
+	err = db.First(&category, "id = ? AND locale_code = ?", fromCategoryID, fromLocale).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+		return
+	}
+	if err != nil {
+		return
+	}
+	err = db.First(&toCategory, "id = ? AND locale_code = ?", fromCategoryID, toLocale).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		category.LocaleCode = toLocale
+		err = db.Save(&category).Error
+		return
 	}
 	return
 }
@@ -868,8 +897,12 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	okAction := web.Plaid().
 		URL(fmt.Sprintf("%s/editors", b.prefix)).
 		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+	portalName := dialogPortalName
+	if ctx.R.FormValue("portal") == "presets" {
+		portalName = presets.DialogPortalName
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: dialogPortalName,
+		Name: portalName,
 		Body: web.Scope(
 			VDialog(
 				VCard(

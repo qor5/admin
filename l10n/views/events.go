@@ -154,6 +154,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *a
 			if ab == nil {
 				return
 			}
+			if _, ok := ab.GetModelBuilder(fromObj); !ok {
+				return
+			}
 			if len(toObjs) > 0 {
 				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
 					return

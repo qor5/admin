@@ -84,7 +84,7 @@ func InitDB(db *gorm.DB, tables []string) {
 	}
 	// Seq
 	for _, name := range tables {
-		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT MAX(id)+1 FROM %s));", name, name)).Error; err != nil {
+		if err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id) FROM %s));", name, name)).Error; err != nil {
 			panic(err)
 		}
 	}
@@ -229,20 +229,20 @@ INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.78251
 -- Data for Name: page_builder_containers; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_containers VALUES (1, '2023-03-03 06:20:48.334178+00', '2023-03-03 06:20:48.334178+00', NULL, 1, 'tpl', 'Image', 1, 1, false, false, 'Image', 'International');
-INSERT INTO public.page_builder_containers VALUES (2, '2023-03-03 06:21:40.233601+00', '2023-03-03 06:21:40.233601+00', NULL, 1, '2023-03-03-v01', 'Header', 1, 1, false, false, 'Header', 'International');
-INSERT INTO public.page_builder_containers VALUES (3, '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:54.868151+00', 1, '2023-03-03-v01', 'Header', 2, 2, false, false, 'Header', 'International');
-INSERT INTO public.page_builder_containers VALUES (4, '2023-03-03 06:21:58.674323+00', '2023-03-03 06:21:58.674323+00', NULL, 1, '2023-03-03-v01', 'Video Banner', 1, 2, false, false, 'Video Banner', 'International');
-INSERT INTO public.page_builder_containers VALUES (5, '2023-03-03 06:22:46.641959+00', '2023-03-03 06:22:46.641959+00', NULL, 1, '2023-03-03-v01', 'Heading', 1, 3, false, false, 'Heading', 'International');
-INSERT INTO public.page_builder_containers VALUES (6, '2023-03-03 06:23:12.458215+00', '2023-03-03 06:23:12.458215+00', NULL, 1, '2023-03-03-v01', 'BrandGrid', 1, 4, false, false, 'BrandGrid', 'International');
-INSERT INTO public.page_builder_containers VALUES (7, '2023-03-03 06:24:15.676928+00', '2023-03-03 06:24:15.676928+00', NULL, 1, '2023-03-03-v01', 'Heading', 2, 5, false, false, 'Heading', 'International');
-INSERT INTO public.page_builder_containers VALUES (8, '2023-03-03 06:24:40.374505+00', '2023-03-03 06:24:40.374505+00', NULL, 1, '2023-03-03-v01', 'ListContent', 1, 6, false, false, 'ListContent', 'International');
-INSERT INTO public.page_builder_containers VALUES (9, '2023-03-03 06:25:41.972811+00', '2023-03-03 06:25:41.972811+00', NULL, 1, '2023-03-03-v01', 'Image', 2, 7, false, false, 'Image', 'International');
-INSERT INTO public.page_builder_containers VALUES (10, '2023-03-03 06:25:55.874078+00', '2023-03-03 06:25:55.874078+00', NULL, 1, '2023-03-03-v01', 'Heading', 3, 8, false, false, 'Heading', 'International');
-INSERT INTO public.page_builder_containers VALUES (11, '2023-03-03 06:26:29.013538+00', '2023-03-03 06:26:29.013538+00', NULL, 1, '2023-03-03-v01', 'ListContent', 2, 9, false, false, 'ListContent', 'International');
-INSERT INTO public.page_builder_containers VALUES (12, '2023-03-03 06:27:24.174737+00', '2023-03-03 06:27:24.174737+00', NULL, 1, '2023-03-03-v01', 'InNumbers', 1, 10, false, false, 'InNumbers', 'International');
-INSERT INTO public.page_builder_containers VALUES (13, '2023-03-03 06:27:54.022522+00', '2023-03-03 06:28:27.625631+00', NULL, 1, '2023-03-03-v01', 'ContactForm', 1, 11, true, false, 'ContactForm', 'International');
-INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.305332+00', '2023-03-03 06:28:30.305332+00', NULL, 1, '2023-03-03-v01', 'Footer', 1, 12, false, false, 'Footer', 'International');
+INSERT INTO public.page_builder_containers VALUES (1, '2023-03-03 06:20:48.334178+00', '2023-03-03 06:20:48.334178+00', NULL, 1, 'tpl', 'Image', 1, 1, false, false, 'Image', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (2, '2023-03-03 06:21:40.233601+00', '2023-03-03 06:21:40.233601+00', NULL, 1, '2023-03-03-v01', 'Header', 1, 1, false, false, 'Header', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (3, '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:54.868151+00', 1, '2023-03-03-v01', 'Header', 2, 2, false, false, 'Header', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (4, '2023-03-03 06:21:58.674323+00', '2023-03-03 06:21:58.674323+00', NULL, 1, '2023-03-03-v01', 'Video Banner', 1, 2, false, false, 'Video Banner', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (5, '2023-03-03 06:22:46.641959+00', '2023-03-03 06:22:46.641959+00', NULL, 1, '2023-03-03-v01', 'Heading', 1, 3, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (6, '2023-03-03 06:23:12.458215+00', '2023-03-03 06:23:12.458215+00', NULL, 1, '2023-03-03-v01', 'BrandGrid', 1, 4, false, false, 'BrandGrid', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (7, '2023-03-03 06:24:15.676928+00', '2023-03-03 06:24:15.676928+00', NULL, 1, '2023-03-03-v01', 'Heading', 2, 5, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (8, '2023-03-03 06:24:40.374505+00', '2023-03-03 06:24:40.374505+00', NULL, 1, '2023-03-03-v01', 'ListContent', 1, 6, false, false, 'ListContent', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (9, '2023-03-03 06:25:41.972811+00', '2023-03-03 06:25:41.972811+00', NULL, 1, '2023-03-03-v01', 'Image', 2, 7, false, false, 'Image', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (10, '2023-03-03 06:25:55.874078+00', '2023-03-03 06:25:55.874078+00', NULL, 1, '2023-03-03-v01', 'Heading', 3, 8, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (11, '2023-03-03 06:26:29.013538+00', '2023-03-03 06:26:29.013538+00', NULL, 1, '2023-03-03-v01', 'ListContent', 2, 9, false, false, 'ListContent', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (12, '2023-03-03 06:27:24.174737+00', '2023-03-03 06:27:24.174737+00', NULL, 1, '2023-03-03-v01', 'InNumbers', 1, 10, false, false, 'InNumbers', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (13, '2023-03-03 06:27:54.022522+00', '2023-03-03 06:28:27.625631+00', NULL, 1, '2023-03-03-v01', 'ContactForm', 1, 11, true, false, 'ContactForm', 'International', 0);
+INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.305332+00', '2023-03-03 06:28:30.305332+00', NULL, 1, '2023-03-03-v01', 'Footer', 1, 12, false, false, 'Footer', 'International', 0);
 
 
 --
@@ -255,7 +255,7 @@ INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.3053
 -- Data for Name: page_builder_pages; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', 'International');
+INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', '', 'International');
 
 
 --
@@ -284,17 +284,17 @@ INSERT INTO public.qor_jobs VALUES (3, '2022-01-10 20:51:44.495127+09', '2022-01
 INSERT INTO public.qor_jobs VALUES (67, '2022-10-20 11:38:34.139332+09', '2022-10-20 11:38:39.247979+09', NULL, 'errorJob', 'exception');
 INSERT INTO public.qor_jobs VALUES (68, '2022-10-20 11:46:25.042928+09', '2022-10-20 11:46:30.094506+09', NULL, 'panicJob', 'exception');
 
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (1, '2021-11-15 05:38:25.337004 +00:00', '2021-11-15 05:38:25.517271 +00:00', null, 1, 'noArgJob', 'done', 'null', 100, '', null, null);
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (34, '2022-10-08 03:15:48.270563 +00:00', '2022-10-14 07:16:05.224650 +00:00', null, 34, 'scheduleJob', 'done', '{"F1":"f","ScheduleTime":"2022-10-14T07:16:00Z"}', 100, '', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (2, '2021-12-07 13:31:07.389003 +00:00', '2021-12-07 13:31:12.460350 +00:00', null, 2, 'progressTextJob', 'done', 'null', 100, '<a href="https://www.google.com">Download users</a>', null, null);
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (3, '2022-01-10 11:51:44.506654 +00:00', '2022-01-10 11:51:44.631661 +00:00', null, 3, 'scheduleJob', 'done', '{"F1":"fda","ScheduleTime":null}', 100, '', null, null);
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (67, '2022-10-20 02:38:34.152825 +00:00', '2022-10-20 02:38:39.251747 +00:00', null, 67, 'errorJob', 'exception', 'null', 0, 'imError', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
-insert into public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) values (68, '2022-10-20 02:46:25.047450 +00:00', '2022-10-20 02:46:30.102953 +00:00', null, 68, 'panicJob', 'exception', 'null', 0, 'letsPanic', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (1, '2021-11-15 05:38:25.337004 +00:00', '2021-11-15 05:38:25.517271 +00:00', NULL, 1, 'noArgJob', 'done', 'null', 100, '', NULL, NULL);
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (34, '2022-10-08 03:15:48.270563 +00:00', '2022-10-14 07:16:05.224650 +00:00', NULL, 34, 'scheduleJob', 'done', '{"F1":"f","ScheduleTime":"2022-10-14T07:16:00Z"}', 100, '', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (2, '2021-12-07 13:31:07.389003 +00:00', '2021-12-07 13:31:12.460350 +00:00', NULL, 2, 'progressTextJob', 'done', 'null', 100, '<a href="https://www.google.com">Download users</a>', NULL, NULL);
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (3, '2022-01-10 11:51:44.506654 +00:00', '2022-01-10 11:51:44.631661 +00:00', NULL, 3, 'scheduleJob', 'done', '{"F1":"fda","ScheduleTime":null}', 100, '', NULL, NULL);
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (67, '2022-10-20 02:38:34.152825 +00:00', '2022-10-20 02:38:39.251747 +00:00', NULL, 67, 'errorJob', 'exception', 'null', 0, 'imError', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
+INSERT INTO public.qor_job_instances (id, created_at, updated_at, deleted_at, qor_job_id, job, status, args, progress, progress_text, operator, context) VALUES (68, '2022-10-20 02:46:25.047450 +00:00', '2022-10-20 02:46:30.102953 +00:00', NULL, 68, 'panicJob', 'exception', 'null', 0, 'letsPanic', '', '{"URL":"https://example.qor5.theplant-dev.com/admin/workers"}');
 `
 
 	initCategoriesSQL = `INSERT INTO "categories" ("created_at","updated_at","deleted_at","name","products","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","version_name","parent_version","version") VALUES ('2023-01-05 15:19:30.633','2023-01-05 15:19:30.633',NULL,'Demo',NULL,'draft','',NULL,NULL,NULL,NULL,'','','2023-01-05-v01') RETURNING "id","version"`
 
-	initInputDemosSQL = `INSERT INTO "input_demos" ("text_field1","text_area1","switch1","slider1","select1","range_slider1","radio1","file_input1","combobox1","checkbox1","autocomplete1","button_group1","chip_group1","item_group1","list_item_group1","slide_group1","color_picker1","date_picker1","date_picker_month1","time_picker1","media_library1","updated_at","created_at") VALUES ('Demo','',false,0,'',NULL,'','','',false,'{""}','','','','','','','','','',NULL,'2023-01-05 15:21:36.488','2023-01-05 15:21:36.488') RETURNING "id"`
+	initInputDemosSQL = `INSERT INTO "input_demos" ("text_field1","text_area1","switch1","slider1","select1","range_slider1","radio1","file_input1","combobox1","checkbox1","autocomplete1","button_group1","chip_group1","item_group1","list_item_group1","slide_group1","color_picker1","date_picker1","date_picker_month1","time_picker1","media_library1","updated_at","created_at") VALUES ('Demo','',FALSE,0,'',NULL,'','','',FALSE,'{""}','','','','','','','','','',NULL,'2023-01-05 15:21:36.488','2023-01-05 15:21:36.488') RETURNING "id"`
 
 	initPostsSQL = `INSERT INTO "posts" ("created_at","updated_at","deleted_at","title","title_with_slug","seo","body","hero_image","body_image","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","version_name","parent_version","version") VALUES ('2023-01-05 15:23:55.553','2023-01-05 15:23:55.553',NULL,'Demo','demo','{"Title":"","Description":"","Keywords":"","OpenGraphURL":"","OpenGraphType":"","OpenGraphImageURL":"","OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""},"OpenGraphMetadata":null,"EnabledCustomize":false}','<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit amet commodo magna eros quis urna. Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci. Aenean nec lorem. In porttitor. Donec laoreet nonummy augue. Suspendisse dui purus, scelerisque at, vulputate vitae, pretium mattis, nunc. Mauris eget neque at sem venenatis eleifend. Ut nonummy.</p>','{"ID":1,"Url":"//qor5-test.s3.ap-northeast-1.amazonaws.com/system/media_libraries/1/file.jpeg","VideoLink":"","FileName":"demo image.jpeg","Description":"","FileSizes":{"@qor_preview":8917,"default":326350,"main":94913,"og":123973,"original":326350,"thumb":21199,"twitter-large":117784,"twitter-small":77615},"Width":750,"Height":1000}',NULL,'draft','',NULL,NULL,NULL,NULL,'','','2023-01-05-v01') RETURNING "id","version"`
 
@@ -308,7 +308,7 @@ INSERT INTO public.addresses VALUES (3, 1, 'Canberra 73/30 Lonsdale Street, Brad
 INSERT INTO public.membership_cards VALUES (1, 1, 0, NULL);
 `
 
-	initListModelsSQL = `INSERT INTO "list_models" ("created_at","updated_at","deleted_at","title","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","page_number","position","list_deleted","list_updated","version_name","parent_version","version") VALUES ('2023-01-05 17:45:36.783','2023-01-05 17:45:36.783',NULL,'Demo','draft','',NULL,NULL,NULL,NULL,0,0,false,false,'','','2023-01-05-v01') RETURNING "id","version"`
+	initListModelsSQL = `INSERT INTO "list_models" ("created_at","updated_at","deleted_at","title","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","page_number","position","list_deleted","list_updated","version_name","parent_version","version") VALUES ('2023-01-05 17:45:36.783','2023-01-05 17:45:36.783',NULL,'Demo','draft','',NULL,NULL,NULL,NULL,0,0,FALSE,FALSE,'','','2023-01-05-v01') RETURNING "id","version"`
 
 	initMicrositeModelsSQL = `INSERT INTO "microsite_models" ("name","description","created_at","updated_at","deleted_at","status","online_url","scheduled_start_at","scheduled_end_at","actual_start_at","actual_end_at","version_name","parent_version","pre_path","package","files_list","unix_key","version") VALUES ('Demo','','2023-01-05 17:49:45.695','2023-01-05 17:49:45.695',NULL,'draft','',NULL,NULL,NULL,NULL,'','','','{"FileName":"","Url":""}','','','2023-01-05-v01') RETURNING "id","version"`
 

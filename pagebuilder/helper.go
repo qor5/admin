@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	directoryRe = regexp.MustCompile(`^([\/]{1}[a-z0-9.-]+)+(\/?){1}$|^([\/]{1})$`)
+	directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
 )
 
 const (

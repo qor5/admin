@@ -12,12 +12,14 @@ import (
 
 	"github.com/tnclong/go-que"
 	"github.com/tnclong/go-que/pg"
+	"go.uber.org/multierr"
 	"gorm.io/gorm"
 )
 
 type goque struct {
-	q  que.Queue
-	db *gorm.DB
+	q   que.Queue
+	db  *gorm.DB
+	wks []*que.Worker
 }
 
 func NewGoQueQueue(db *gorm.DB) Queue {
@@ -43,7 +45,7 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 	}
 }
 
-func (q *goque) Add(job QueJobInterface) error {
+func (q *goque) Add(ctx context.Context, job QueJobInterface) error {
 	jobInfo, err := job.GetJobInfo()
 
 	if err != nil {
@@ -55,7 +57,7 @@ func (q *goque) Add(job QueJobInterface) error {
 		job.SetStatus(JobStatusScheduled)
 	}
 
-	_, err = q.q.Enqueue(context.Background(), nil, que.Plan{
+	_, err = q.q.Enqueue(ctx, nil, que.Plan{
 		Queue: "worker_" + jobInfo.JobName,
 		Args:  que.Args(jobInfo.JobID, jobInfo.Argument),
 		RunAt: runAt,
@@ -74,11 +76,11 @@ func (q *goque) run(ctx context.Context, job QueJobInterface) error {
 	return job.GetHandler()(ctx, job)
 }
 
-func (q *goque) Kill(job QueJobInterface) error {
+func (q *goque) Kill(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusKilled)
 }
 
-func (q *goque) Remove(job QueJobInterface) error {
+func (q *goque) Remove(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusCancelled)
 }
 
@@ -135,7 +137,7 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 					return err
 				}
 
-				hctx, cf := context.WithCancel(context.Background())
+				hctx, cf := context.WithCancel(ctx)
 				hDoneC := make(chan struct{})
 				isAborted := false
 				go func() {
@@ -177,19 +179,27 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 		if err != nil {
 			panic(err)
 		}
-
+		q.wks = append(q.wks, worker)
 		go func() {
 			if err := worker.Run(); err != nil {
-				errStr := fmt.Sprintf("worker Run() error: %s", err.Error())
-				fmt.Println(errStr)
 				q.db.Create(&GoQueError{
-					Error: errStr,
+					Error: fmt.Sprintf("worker Run() error: %s", err.Error()),
 				})
 			}
 		}()
 	}
 
 	return nil
+}
+
+func (q *goque) Shutdown(ctx context.Context) error {
+	var errs error
+	for _, wk := range q.wks {
+		if err := wk.Stop(ctx); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
 }
 
 func (q *goque) parseArgs(data []byte, args ...interface{}) error {

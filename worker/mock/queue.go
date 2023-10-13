@@ -4,6 +4,7 @@
 package mock
 
 import (
+	"context"
 	"github.com/qor5/admin/worker"
 	"sync"
 )
@@ -18,17 +19,20 @@ var _ worker.Queue = &QueueMock{}
 //
 //		// make and configure a mocked worker.Queue
 //		mockedQueue := &QueueMock{
-//			AddFunc: func(queJobInterface worker.QueJobInterface) error {
+//			AddFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 //				panic("mock out the Add method")
 //			},
-//			KillFunc: func(queJobInterface worker.QueJobInterface) error {
+//			KillFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 //				panic("mock out the Kill method")
 //			},
 //			ListenFunc: func(jobDefs []*worker.QorJobDefinition, getJob func(qorJobID uint) (worker.QueJobInterface, error)) error {
 //				panic("mock out the Listen method")
 //			},
-//			RemoveFunc: func(queJobInterface worker.QueJobInterface) error {
+//			RemoveFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 //				panic("mock out the Remove method")
+//			},
+//			ShutdownFunc: func(ctx context.Context) error {
+//				panic("mock out the Shutdown method")
 //			},
 //		}
 //
@@ -38,28 +42,35 @@ var _ worker.Queue = &QueueMock{}
 //	}
 type QueueMock struct {
 	// AddFunc mocks the Add method.
-	AddFunc func(queJobInterface worker.QueJobInterface) error
+	AddFunc func(ctx context.Context, job worker.QueJobInterface) error
 
 	// KillFunc mocks the Kill method.
-	KillFunc func(queJobInterface worker.QueJobInterface) error
+	KillFunc func(ctx context.Context, job worker.QueJobInterface) error
 
 	// ListenFunc mocks the Listen method.
 	ListenFunc func(jobDefs []*worker.QorJobDefinition, getJob func(qorJobID uint) (worker.QueJobInterface, error)) error
 
 	// RemoveFunc mocks the Remove method.
-	RemoveFunc func(queJobInterface worker.QueJobInterface) error
+	RemoveFunc func(ctx context.Context, job worker.QueJobInterface) error
+
+	// ShutdownFunc mocks the Shutdown method.
+	ShutdownFunc func(ctx context.Context) error
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Add holds details about calls to the Add method.
 		Add []struct {
-			// QueJobInterface is the queJobInterface argument value.
-			QueJobInterface worker.QueJobInterface
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Job is the job argument value.
+			Job worker.QueJobInterface
 		}
 		// Kill holds details about calls to the Kill method.
 		Kill []struct {
-			// QueJobInterface is the queJobInterface argument value.
-			QueJobInterface worker.QueJobInterface
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Job is the job argument value.
+			Job worker.QueJobInterface
 		}
 		// Listen holds details about calls to the Listen method.
 		Listen []struct {
@@ -70,30 +81,40 @@ type QueueMock struct {
 		}
 		// Remove holds details about calls to the Remove method.
 		Remove []struct {
-			// QueJobInterface is the queJobInterface argument value.
-			QueJobInterface worker.QueJobInterface
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Job is the job argument value.
+			Job worker.QueJobInterface
+		}
+		// Shutdown holds details about calls to the Shutdown method.
+		Shutdown []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 	}
-	lockAdd    sync.RWMutex
-	lockKill   sync.RWMutex
-	lockListen sync.RWMutex
-	lockRemove sync.RWMutex
+	lockAdd      sync.RWMutex
+	lockKill     sync.RWMutex
+	lockListen   sync.RWMutex
+	lockRemove   sync.RWMutex
+	lockShutdown sync.RWMutex
 }
 
 // Add calls AddFunc.
-func (mock *QueueMock) Add(queJobInterface worker.QueJobInterface) error {
+func (mock *QueueMock) Add(ctx context.Context, job worker.QueJobInterface) error {
 	if mock.AddFunc == nil {
 		panic("QueueMock.AddFunc: method is nil but Queue.Add was just called")
 	}
 	callInfo := struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}{
-		QueJobInterface: queJobInterface,
+		Ctx: ctx,
+		Job: job,
 	}
 	mock.lockAdd.Lock()
 	mock.calls.Add = append(mock.calls.Add, callInfo)
 	mock.lockAdd.Unlock()
-	return mock.AddFunc(queJobInterface)
+	return mock.AddFunc(ctx, job)
 }
 
 // AddCalls gets all the calls that were made to Add.
@@ -101,10 +122,12 @@ func (mock *QueueMock) Add(queJobInterface worker.QueJobInterface) error {
 //
 //	len(mockedQueue.AddCalls())
 func (mock *QueueMock) AddCalls() []struct {
-	QueJobInterface worker.QueJobInterface
+	Ctx context.Context
+	Job worker.QueJobInterface
 } {
 	var calls []struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}
 	mock.lockAdd.RLock()
 	calls = mock.calls.Add
@@ -113,19 +136,21 @@ func (mock *QueueMock) AddCalls() []struct {
 }
 
 // Kill calls KillFunc.
-func (mock *QueueMock) Kill(queJobInterface worker.QueJobInterface) error {
+func (mock *QueueMock) Kill(ctx context.Context, job worker.QueJobInterface) error {
 	if mock.KillFunc == nil {
 		panic("QueueMock.KillFunc: method is nil but Queue.Kill was just called")
 	}
 	callInfo := struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}{
-		QueJobInterface: queJobInterface,
+		Ctx: ctx,
+		Job: job,
 	}
 	mock.lockKill.Lock()
 	mock.calls.Kill = append(mock.calls.Kill, callInfo)
 	mock.lockKill.Unlock()
-	return mock.KillFunc(queJobInterface)
+	return mock.KillFunc(ctx, job)
 }
 
 // KillCalls gets all the calls that were made to Kill.
@@ -133,10 +158,12 @@ func (mock *QueueMock) Kill(queJobInterface worker.QueJobInterface) error {
 //
 //	len(mockedQueue.KillCalls())
 func (mock *QueueMock) KillCalls() []struct {
-	QueJobInterface worker.QueJobInterface
+	Ctx context.Context
+	Job worker.QueJobInterface
 } {
 	var calls []struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}
 	mock.lockKill.RLock()
 	calls = mock.calls.Kill
@@ -181,19 +208,21 @@ func (mock *QueueMock) ListenCalls() []struct {
 }
 
 // Remove calls RemoveFunc.
-func (mock *QueueMock) Remove(queJobInterface worker.QueJobInterface) error {
+func (mock *QueueMock) Remove(ctx context.Context, job worker.QueJobInterface) error {
 	if mock.RemoveFunc == nil {
 		panic("QueueMock.RemoveFunc: method is nil but Queue.Remove was just called")
 	}
 	callInfo := struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}{
-		QueJobInterface: queJobInterface,
+		Ctx: ctx,
+		Job: job,
 	}
 	mock.lockRemove.Lock()
 	mock.calls.Remove = append(mock.calls.Remove, callInfo)
 	mock.lockRemove.Unlock()
-	return mock.RemoveFunc(queJobInterface)
+	return mock.RemoveFunc(ctx, job)
 }
 
 // RemoveCalls gets all the calls that were made to Remove.
@@ -201,13 +230,47 @@ func (mock *QueueMock) Remove(queJobInterface worker.QueJobInterface) error {
 //
 //	len(mockedQueue.RemoveCalls())
 func (mock *QueueMock) RemoveCalls() []struct {
-	QueJobInterface worker.QueJobInterface
+	Ctx context.Context
+	Job worker.QueJobInterface
 } {
 	var calls []struct {
-		QueJobInterface worker.QueJobInterface
+		Ctx context.Context
+		Job worker.QueJobInterface
 	}
 	mock.lockRemove.RLock()
 	calls = mock.calls.Remove
 	mock.lockRemove.RUnlock()
+	return calls
+}
+
+// Shutdown calls ShutdownFunc.
+func (mock *QueueMock) Shutdown(ctx context.Context) error {
+	if mock.ShutdownFunc == nil {
+		panic("QueueMock.ShutdownFunc: method is nil but Queue.Shutdown was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockShutdown.Lock()
+	mock.calls.Shutdown = append(mock.calls.Shutdown, callInfo)
+	mock.lockShutdown.Unlock()
+	return mock.ShutdownFunc(ctx)
+}
+
+// ShutdownCalls gets all the calls that were made to Shutdown.
+// Check the length with:
+//
+//	len(mockedQueue.ShutdownCalls())
+func (mock *QueueMock) ShutdownCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockShutdown.RLock()
+	calls = mock.calls.Shutdown
+	mock.lockShutdown.RUnlock()
 	return calls
 }

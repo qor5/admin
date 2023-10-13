@@ -24,7 +24,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		mi := field.ModelInfo
 		p := obj.(*Page)
 		c := &Category{}
-		db.First(c, "id = ?", p.CategoryID)
+		db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
 
 		overview := vx.DetailInfo(
 			vx.DetailColumn(

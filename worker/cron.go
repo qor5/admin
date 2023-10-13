@@ -94,7 +94,7 @@ func (c *cron) writeCronJob() error {
 }
 
 // Add a job to cron queue
-func (c *cron) Add(job QueJobInterface) (err error) {
+func (c *cron) Add(ctx context.Context, job QueJobInterface) (err error) {
 	c.parseJobs()
 	defer c.writeCronJob()
 
@@ -135,7 +135,7 @@ func (c *cron) Add(job QueJobInterface) (err error) {
 }
 
 // Run a job from cron queue
-func (c *cron) run(qorJob QueJobInterface) (err error) {
+func (c *cron) run(ctx context.Context, qorJob QueJobInterface) (err error) {
 	jobInfo, err := qorJob.GetJobInfo()
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (c *cron) run(qorJob QueJobInterface) (err error) {
 	qorJob.StartRefresh()
 	defer qorJob.StopRefresh()
 
-	err = h(context.Background(), qorJob)
+	err = h(ctx, qorJob)
 	if err == nil {
 		c.parseJobs()
 		defer c.writeCronJob()
@@ -180,7 +180,7 @@ func (c *cron) run(qorJob QueJobInterface) (err error) {
 }
 
 // Kill a job from cron queue
-func (c *cron) Kill(job QueJobInterface) (err error) {
+func (c *cron) Kill(ctx context.Context, job QueJobInterface) (err error) {
 	c.parseJobs()
 	defer c.writeCronJob()
 
@@ -204,7 +204,7 @@ func (c *cron) Kill(job QueJobInterface) (err error) {
 }
 
 // Remove a job from cron queue
-func (c *cron) Remove(job QueJobInterface) error {
+func (c *cron) Remove(ctx context.Context, job QueJobInterface) error {
 	c.parseJobs()
 	defer c.writeCronJob()
 
@@ -242,7 +242,7 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		if err := c.doRunJob(job); err == nil {
+		if err := c.doRunJob(context.Background(), job); err == nil {
 			os.Exit(0)
 		} else {
 			fmt.Println(err)
@@ -253,7 +253,7 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 	return nil
 }
 
-func (c *cron) doRunJob(job QueJobInterface) error {
+func (c *cron) doRunJob(ctx context.Context, job QueJobInterface) error {
 	defer func() {
 		if r := recover(); r != nil {
 			job.AddLog(string(debug.Stack()))
@@ -267,7 +267,7 @@ func (c *cron) doRunJob(job QueJobInterface) error {
 	}
 
 	if err := job.SetStatus(JobStatusRunning); err == nil {
-		if err := c.run(job); err == nil {
+		if err := c.run(ctx, job); err == nil {
 			return job.SetStatus(JobStatusDone)
 		}
 
@@ -275,5 +275,9 @@ func (c *cron) doRunJob(job QueJobInterface) error {
 		job.SetStatus(JobStatusException)
 	}
 
+	return nil
+}
+
+func (c *cron) Shutdown(ctx context.Context) error {
 	return nil
 }

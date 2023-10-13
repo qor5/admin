@@ -459,11 +459,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 			).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
 		),
 	)
-	if strings.HasPrefix(href, "/") {
-		item.Attr("@click", web.Plaid().PushStateURL(href).Go())
-	} else {
-		item.Href(href)
-	}
+	item.Href(href)
 	if b.isMenuItemActive(ctx, m) {
 		item = item.Class("v-list-item--active")
 	}

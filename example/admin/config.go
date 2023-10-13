@@ -304,7 +304,7 @@ func NewConfig() Config {
 	defer w.Listen()
 	addJobs(w)
 
-	ed := m.Editing("Status", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("StatusBar", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -434,7 +434,7 @@ func NewConfig() Config {
 	l := b.Model(&models.ListModel{})
 	{
 		l.Listing("ID", "Title", "Status")
-		ed := l.Editing("Status", "Schedule", "Title", "DetailPath", "ListPath")
+		ed := l.Editing("StatusBar", "Schedule", "Title", "DetailPath", "ListPath")
 		ed.Field("DetailPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
@@ -500,7 +500,7 @@ func NewConfig() Config {
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
-	note.Configure(db, b, m, pm)
+	note.Configure(db, b, m)
 
 	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
 		panic(err)
@@ -513,11 +513,11 @@ func NewConfig() Config {
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID::text", "Name").
 		PerPage(10)
-	mm.Editing("Status", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
+	mm.Editing("StatusBar", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
-	publish_view.Configure(b, db, ab, publisher, m, l, pm, product, category, l10nVM)
+	publish_view.Configure(b, db, ab, publisher, m, l, product, category, l10nVM)
 
 	initLoginBuilder(db, b, ab)
 
