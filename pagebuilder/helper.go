@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"context"
 	"path"
 	"regexp"
 
@@ -41,7 +42,7 @@ type pagePathInfo struct {
 	Slug         string
 }
 
-func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+func pageValidator(ctx context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
@@ -50,21 +51,23 @@ func pageValidator(p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.Validatio
 		}
 	}
 
+	var localeCode string
+	var localePath string
+	if l10nB != nil {
+		localePath = l10nB.GetLocalePath(p.LocaleCode)
+		localeCode, _ = l10n.IsLocalizableFromCtx(ctx)
+	}
+
 	categories := []*Category{}
 	if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
 		panic(err)
 	}
 	var currentPageCategory Category
 	for _, category := range categories {
-		if category.ID == p.CategoryID && category.LocaleCode == p.LocaleCode {
+		if category.ID == p.CategoryID && category.LocaleCode == localeCode {
 			currentPageCategory = *category
 			break
 		}
-	}
-
-	var localePath string
-	if l10nB != nil {
-		localePath = l10nB.GetLocalePath(p.LocaleCode)
 	}
 
 	currentPagePublishUrl := p.getPublishUrl(localePath, currentPageCategory.Path)
