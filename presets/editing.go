@@ -552,5 +552,4 @@ func (b *EditingBuilder) UpdateOverlayContent(
 		Name: p,
 		Body: b.editFormFor(obj, ctx),
 	})
-
 }

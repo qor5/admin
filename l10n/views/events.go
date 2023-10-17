@@ -123,7 +123,6 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-
 		fromParamID := ctx.R.FormValue(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)
 		fromID := cs["id"]
@@ -188,7 +187,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *a
 
 			if me.Validator != nil {
 				if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
-					me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
+					presets.ShowMessage(&r, vErr.Error(), "error")
 					return
 				}
 			}
