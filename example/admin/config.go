@@ -304,7 +304,7 @@ func NewConfig() Config {
 	defer w.Listen()
 	addJobs(w)
 
-	ed := m.Editing("StatusBar", "Schedule", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("StatusBar", "ScheduleBar", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
 			media_view.MediaBoxConfig,
@@ -434,7 +434,7 @@ func NewConfig() Config {
 	l := b.Model(&models.ListModel{})
 	{
 		l.Listing("ID", "Title", "Status")
-		ed := l.Editing("StatusBar", "Schedule", "Title", "DetailPath", "ListPath")
+		ed := l.Editing("StatusBar", "ScheduleBar", "Title", "DetailPath", "ListPath")
 		ed.Field("DetailPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
@@ -513,7 +513,7 @@ func NewConfig() Config {
 	mm.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID::text", "Name").
 		PerPage(10)
-	mm.Editing("StatusBar", "Schedule", "Name", "Description", "PrePath", "FilesList", "Package")
+	mm.Editing("StatusBar", "ScheduleBar", "Name", "Description", "PrePath", "FilesList", "Package")
 	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM

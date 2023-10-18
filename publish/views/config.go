@@ -152,6 +152,12 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			}
 		}
 
+		if _, ok := obj.(publish.ScheduleInterface); ok {
+			if m.Editing().GetField("ScheduleBar") != nil {
+				m.Editing().Field("ScheduleBar").ComponentFunc(ScheduleEditFunc()).SetterFunc(ScheduleEditSetterFunc)
+			}
+		}
+
 		if model, ok := obj.(publish.ListInterface); ok {
 			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
 				publish.ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
@@ -164,11 +170,6 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 	b.FieldDefaults(presets.LIST).
 		FieldType(publish.Status{}).
 		ComponentFunc(StatusListFunc())
-
-	b.FieldDefaults(presets.WRITE).
-		FieldType(publish.Schedule{}).
-		ComponentFunc(ScheduleEditFunc()).
-		SetterFunc(ScheduleEditSetterFunc)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
