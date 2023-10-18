@@ -21,7 +21,7 @@ import (
 
 func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets.ModelBuilder {
 	p := b.Model(&models.Product{})
-	eb := p.Editing("StatusBar", "Schedule", "Code", "Name", "Price", "Image")
+	eb := p.Editing("StatusBar", "ScheduleBar", "Code", "Name", "Price", "Image")
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
 
