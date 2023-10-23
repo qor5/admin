@@ -280,7 +280,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		VCardActions(actionButtons),
 	)
 
-	var asideContent h.HTMLComponent
+	var asideContent h.HTMLComponent = formContent
 	if len(b.tabPanels) != 0 {
 		var tabs []h.HTMLComponent
 
