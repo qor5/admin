@@ -189,6 +189,10 @@ func (mb *ModelBuilder) URIName(v string) (r *ModelBuilder) {
 	return mb
 }
 
+func (mb *ModelBuilder) GetURIName() (r string) {
+	return mb.uriName
+}
+
 func (mb *ModelBuilder) DefaultURLQueryFunc(v func(*http.Request) url.Values) (r *ModelBuilder) {
 	mb.defaultURLQueryFunc = v
 	return mb

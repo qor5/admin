@@ -151,11 +151,15 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 			)
 
 			var detailElems []h.HTMLComponent
+			href, err := url.JoinPath("/", mb.GetURIName())
+			if err != nil {
+				panic("Get model href failed!")
+			}
 			detailElems = append(detailElems, vuetify.VCard(
 				vuetify.VCardTitle(
 					vuetify.VBtn("").Children(
 						vuetify.VIcon("arrow_back").Class("pr-2").Small(true),
-					).Icon(true).Attr("@click", "window.history.back()"),
+					).Icon(true).Attr("@click", web.Plaid().PushStateURL(href).Go()),
 					h.Text(msgr.DiffDetail),
 				),
 				vuetify.VSimpleTable(
