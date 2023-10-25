@@ -97,22 +97,26 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 		}).
 		AfterOAuthComplete(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			u := user.(goth.User)
-			if err := db.Where("o_auth_provider = ? and o_auth_identifier = ?", u.Provider, u.Email).First(&models.User{}).
+			if err := db.Where("o_auth_provider = ? and o_auth_user_id = ?", u.Provider, u.UserID).First(&models.User{}).
 				Error; err == gorm.ErrRecordNotFound {
 				var name string
-				at := strings.LastIndex(u.Email, "@")
-				if at > 0 {
-					name = u.Email[:at]
-				} else {
-					name = u.Email
+				for _, v := range []string{strings.Split(u.Email, "@")[0], u.Name, u.NickName, u.UserID} {
+					if v == "" {
+						continue
+					}
+					name = v
+					break
 				}
-
+				identifier := u.Email
+				if identifier == "" {
+					identifier = u.UserID
+				}
 				user := &models.User{
 					Name: name,
 					OAuthInfo: login.OAuthInfo{
 						OAuthProvider:   u.Provider,
 						OAuthUserID:     u.UserID,
-						OAuthIdentifier: u.Email,
+						OAuthIdentifier: identifier,
 						OAuthAvatar:     u.AvatarURL,
 					},
 				}
