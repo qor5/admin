@@ -26,7 +26,7 @@ require (
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1
 	github.com/qor5/web v1.3.1
-	github.com/qor5/x v1.2.1-0.20231023082337-966ef667beea
+	github.com/qor5/x v1.2.1-0.20231025063809-3344ed4b91f3
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
