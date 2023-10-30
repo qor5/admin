@@ -41,7 +41,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		// We didn't do this on permission because of we are not supporting the permission on listing page
 		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
 			qdb = db.Joins("inner join user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").
-				Where("r.name not in (?)", []string{models.RoleAdmin, models.RoleManager}).Group("users.id")
+				Group("users.id").
+				Having("COUNT(CASE WHEN r.name in (?) THEN 1 END) = 0", []string{models.RoleAdmin, models.RoleManager})
 		}
 
 		return gorm2op.DataOperator(qdb).Search(model, params, ctx)

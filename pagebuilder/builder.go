@@ -215,7 +215,16 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	}
 
 	b.mb = pm
-	pm.Listing("ID", "Online", "Title", "Slug")
+	lb := pm.Listing("ID", "Online", "Title", "Path")
+	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		page := obj.(*Page)
+		category, err := page.GetCategory(db)
+		if err != nil {
+			panic(err)
+		}
+		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
+	})
+
 	dp := pm.Detailing("Overview")
 	dp.Field("Overview").ComponentFunc(settings(db, pm))
 
@@ -484,7 +493,7 @@ function(e){
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(c, db, l10nB)
+		err = pageValidator(ctx.R.Context(), c, db, l10nB)
 		return
 	})
 	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -866,9 +875,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		m := obj.(*Category)
-		p := ctx.R.FormValue(field.Name)
-		p = path.Join("/", p)
-		m.Path = p
+		m.Path = path.Join("/", m.Path)
 		return nil
 	})
 
