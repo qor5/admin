@@ -7,11 +7,11 @@ import (
 	"strings"
 	syncp "sync"
 
+	"github.com/gosimple/unidecode"
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
-	"github.com/qor5/admin/presets"
-	"github.com/gosimple/unidecode"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -81,7 +81,8 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 						Value(reflectutils.MustGet(obj, slugFieldName).(Slug))).Name(portalName(slugFieldName)),
 			).Cols(8),
 			VCol(
-				VCheckbox().FieldName(checkBoxName(slugFieldName)).InputValue("checked").Label(fmt.Sprintf(msgr.Sync, strings.ToLower(field.Label))),
+				VCheckbox().FieldName(checkBoxName(slugFieldName)).InputValue(true).Label(fmt.Sprintf(msgr.Sync,
+					strings.ToLower(field.Label))),
 			).Cols(4),
 		),
 	)
@@ -103,7 +104,7 @@ func sync(ctx *web.EventContext) (r web.EventResponse, err error) {
 	}
 
 	slugFieldName := fieldName + "WithSlug"
-	if checked := ctx.R.FormValue(checkBoxName(slugFieldName)); checked != "checked" {
+	if checked := ctx.R.FormValue(checkBoxName(slugFieldName)); checked != "true" {
 		return
 	}
 
