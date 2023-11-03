@@ -73,5 +73,5 @@ func (u User) GetRoles() (rs []string) {
 }
 
 func (u User) IsOAuthUser() bool {
-	return u.OAuthProvider != "" && u.OAuthUserID != ""
+	return u.OAuthProvider != "" && u.OAuthIdentifier != ""
 }
