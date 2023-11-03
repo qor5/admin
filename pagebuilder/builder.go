@@ -1317,7 +1317,7 @@ func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoCollection *seo.Col
 				// Query(presets.ParamOverlay, actions.Dialog).
 				URL(mb.Info().ListingHref()).
 				Go())
-		ctx.R.Form.Set("openCustomizePanel", "0")
+		ctx.R.Form.Set("hideActionsIconForSEOForm", "true")
 		seoForm := seoCollection.EditingComponentFunc(obj, nil, ctx)
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

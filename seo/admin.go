@@ -124,14 +124,13 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 		setting.OpenGraphMetadata = modelSetting.GetOpenGraphMetadata()
 	}
 
-	openCustomizePanel := "1"
 	hideActions := false
-	o := ctx.R.FormValue("openCustomizePanel")
-	if setting.EnabledCustomize && o != "" {
-		openCustomizePanel = o
-	}
-	if o != "" {
+	if ctx.R.FormValue("hideActionsIconForSEOForm") == "true" {
 		hideActions = true
+	}
+	openCustomizePanel := 1
+	if setting.EnabledCustomize {
+		openCustomizePanel = 0
 	}
 
 	return web.Scope(
@@ -141,11 +140,14 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 				VExpansionPanel(
 					VExpansionPanelHeader(
 						h.HTMLComponents{
-							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}"),
-							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
-						},
-					).Attr("style", "padding: 0px 24px;").HideActions(hideActions),
-
+							VSwitch().
+								Label(msgr.UseDefaults).Attr("ref", "switchComp").
+								Bind("value", "!locals.enabledCustomize").
+								Bind("input-value", "!locals.enabledCustomize").
+								FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "enabledCustomize")),
+						}).
+						Attr("style", "padding: 0px 24px;").HideActions(hideActions).
+						Attr("@click", "locals.enabledCustomize=!locals.enabledCustomize;$refs.switchComp.$emit('change', locals.enabledCustomize)"),
 					VExpansionPanelContent(
 						VCardText(
 							collection.vseo(fieldPrefix, seo, &setting, ctx.R),
@@ -154,7 +156,7 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 				),
 			).Flat(true).Attr("v-model", "locals.openCustomizePanel"),
 		).Class("pb-4"),
-	).Init(fmt.Sprintf(`{enabledCustomize: %t, userDefaults: %t, openCustomizePanel: %s, }`, setting.EnabledCustomize, !setting.EnabledCustomize, openCustomizePanel)).
+	).Init(fmt.Sprintf(`{enabledCustomize: %t, openCustomizePanel: %d}`, setting.EnabledCustomize, openCustomizePanel)).
 		VSlot("{ locals }")
 }
 
