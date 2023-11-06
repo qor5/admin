@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/qor5/admin/example/models"
 	"github.com/qor5/admin/media/media_library"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,48 @@ func EmptyDB(db *gorm.DB, tables []string) {
 		if err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE;", name)).Error; err != nil {
 			panic(err)
 		}
+	}
+}
+
+// ErasePublicUsersData erase all non-admin users but preserve the following three users
+// qor@the-plant.com
+// demo-editor@the-plant.com
+// demo-viewer@the-plant.com
+func ErasePublicUsersData(db *gorm.DB) {
+	reservedAccount := []string{
+		"qor@the-plant.com",
+		"demo-editor@the-plant.com",
+		"demo-viewer@the-plant.com",
+	}
+
+	var err error
+	var adminRoleID int
+	// obtain the admin role ID
+	if err = db.Table("roles").Where("name = ?", models.RoleAdmin).
+		Pluck("id", &adminRoleID).Error; err != nil {
+		panic(fmt.Errorf("failed to obtain the admin role ID! %v", err))
+	}
+
+	// subQuery for finding the ids of these demo users
+	subQuery := db.Table("users").Select("id").Where("account in (?)", reservedAccount)
+	// obtain the user ids to be reserved
+	var reservedUserIds []int
+	err = db.Table("user_role_join").Group("user_id").
+		Having("user_id IN (?) or COUNT(CASE WHEN role_id = (?) then 1 end)=1", subQuery, adminRoleID).
+		Pluck("user_id", &reservedUserIds).Error
+	if err != nil {
+		panic(fmt.Sprintf("failed to obtain the user ids to be retained! %v", err))
+	}
+
+	// First delete the data in the user_role_join table, then delete the data in the users table.
+	// Due to foreign key constraints, it is not possible to delete data from the users table first.
+	err = db.Exec("DELETE FROM user_role_join WHERE user_id NOT IN (?)", reservedUserIds).Error
+	if err != nil {
+		panic(fmt.Errorf("failed to delete public user related record in user_role_join table! %v", err))
+	}
+	err = db.Exec("DELETE FROM users WHERE id NOT IN (?)", reservedUserIds).Error
+	if err != nil {
+		panic(fmt.Errorf("failed to delete public user in users table! %v", err))
 	}
 }
 
