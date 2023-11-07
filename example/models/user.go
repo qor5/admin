@@ -44,10 +44,6 @@ type User struct {
 	FavorPostID      uint
 	RegistrationDate time.Time `gorm:"type:date"`
 
-	Position        string
-	IsSubscribed    bool
-	IsInfoCompleted bool
-
 	// Username is email
 	login.UserPass
 	login.OAuthInfo

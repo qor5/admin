@@ -258,33 +258,3 @@ func initDefaultRoles() error {
 
 	return nil
 }
-
-func doOAuthCompleteInfo(db *gorm.DB) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		var isSubscribed bool
-		position := r.FormValue("position")
-		agree := r.FormValue("agree")
-		if agree == "on" {
-			isSubscribed = true
-		}
-
-		user := getCurrentUser(r)
-
-		if err := db.Model(&models.User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
-			"position":          position,
-			"is_subscribed":     isSubscribed,
-			"is_info_completed": true,
-		}).Error; err != nil {
-			http.Redirect(w, r, logoutURL, http.StatusFound)
-		}
-
-		http.Redirect(w, r, "/", http.StatusFound)
-
-		return
-	})
-}
