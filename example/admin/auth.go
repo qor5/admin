@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
@@ -112,7 +113,8 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 				}
 
 				user := &models.User{
-					Name: name,
+					Name:             name,
+					RegistrationDate: time.Now(),
 					OAuthInfo: login.OAuthInfo{
 						OAuthProvider:   u.Provider,
 						OAuthUserID:     u.UserID,
