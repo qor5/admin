@@ -92,31 +92,3 @@ func validateSessionToken() func(next http.Handler) http.Handler {
 		})
 	}
 }
-
-func isOAuthInfoCompleted() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user := getCurrentUser(r)
-			if user == nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-			if login.IsLoginWIP(r) {
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			if user.OAuthUserID != "" && !user.IsInfoCompleted {
-				if r.URL.Path == logoutURL ||
-					r.URL.Path == oauthCompleteInfoPageURL || r.URL.Path == oauthCompleteInfoActionURL {
-					next.ServeHTTP(w, r)
-					return
-				}
-				http.Redirect(w, r, oauthCompleteInfoPageURL, http.StatusFound)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
