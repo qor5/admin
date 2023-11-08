@@ -38,6 +38,7 @@ import (
 )
 
 type RenderInput struct {
+	Page       *Page
 	IsEditor   bool
 	IsReadonly bool
 	Device     string

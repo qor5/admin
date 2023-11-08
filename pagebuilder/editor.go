@@ -198,7 +198,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	}
 
 	var comps []h.HTMLComponent
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), p.GetLocale(), isEditor, isReadonly)
+	comps, err = b.renderContainers(ctx, p, isEditor, isReadonly)
 	if err != nil {
 		return
 	}
@@ -325,9 +325,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
+func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", p.ID, p.GetVersion(), p.GetLocale()).Error
 	if err != nil {
 		return
 	}
@@ -346,6 +346,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		}
 
 		input := RenderInput{
+			Page:       p,
 			IsEditor:   isEditor,
 			IsReadonly: isReadonly,
 			Device:     device,
