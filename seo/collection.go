@@ -26,7 +26,7 @@ type (
 	contextVariablesFunc func(interface{}, *Setting, *http.Request) string
 )
 
-// Create a SeoCollection instance
+// NewCollection creates a new SeoCollection instance
 func NewCollection() *Collection {
 	collection := &Collection{
 		settingModel: &QorSEOSetting{},
@@ -49,8 +49,8 @@ func NewCollection() *Collection {
 // @snippet_begin(SeoCollectionDefinition)
 type Collection struct {
 	registeredSEO []*SEO
-	globalName    string                                                             //default name is GlobalSEO
-	inherited     bool                                                               //default is true. the order is model seo setting, system seo setting, global seo setting
+	globalName    string                                                             // default name is GlobalSEO
+	inherited     bool                                                               // default is true. the order is model seo setting, system seo setting, global seo setting
 	dbContextKey  interface{}                                                        // get db from context
 	settingModel  interface{}                                                        // db model
 	afterSave     func(ctx context.Context, settingName string, locale string) error // hook called after saving
@@ -69,7 +69,6 @@ type SEO struct {
 
 // @snippet_end
 
-// RegisterModel register a model to seo
 func (seo *SEO) SetModel(model interface{}) *SEO {
 	seo.modelTyp = reflect.Indirect(reflect.ValueOf(model)).Type()
 	return seo
@@ -115,25 +114,23 @@ func (collection *Collection) NewSettingModelSlice() interface{} {
 	return slice.Interface()
 }
 
-// RegisterVariblesSetting register variables setting
 func (collection *Collection) SetInherited(b bool) *Collection {
 	collection.inherited = b
 	return collection
 }
 
-// RegisterVariblesSetting register variables setting
 func (collection *Collection) SetSettingModel(s interface{}) *Collection {
 	collection.settingModel = s
 	return collection
 }
 
-// RegisterDBContextKey register a key to get db from context
+// SetDBContextKey sets the key to get db instance from context
 func (collection *Collection) SetDBContextKey(key interface{}) *Collection {
 	collection.dbContextKey = key
 	return collection
 }
 
-// RegisterSEOByNames register mutiple seo by names
+// RegisterSEOByNames registers multiple SEOs at once through name
 func (collection *Collection) RegisterSEOByNames(names ...string) *Collection {
 	for index := range names {
 		collection.registeredSEO = append(collection.registeredSEO, &SEO{name: names[index]})
@@ -141,7 +138,7 @@ func (collection *Collection) RegisterSEOByNames(names ...string) *Collection {
 	return collection
 }
 
-// RegisterSEO register a seo
+// RegisterSEO registers a seo through name or model
 func (collection *Collection) RegisterSEO(obj interface{}) (seo *SEO) {
 	if name, ok := obj.(string); ok {
 		seo = &SEO{name: name}
@@ -154,7 +151,7 @@ func (collection *Collection) RegisterSEO(obj interface{}) (seo *SEO) {
 	return
 }
 
-// RegisterSEO remove a seo
+// RemoveSEO removes the specified seo
 func (collection *Collection) RemoveSEO(obj interface{}) *Collection {
 	var name string
 	if n, ok := obj.(string); ok {
@@ -173,7 +170,8 @@ func (collection *Collection) RemoveSEO(obj interface{}) *Collection {
 	return collection
 }
 
-// GetSEO get a Seo
+// GetSEO gets the specified SEO by name or model.
+// It calls methods GetSEOByName and GetSEOByModel to realize its functionality.
 func (collection *Collection) GetSEO(obj interface{}) *SEO {
 	if name, ok := obj.(string); ok {
 		return collection.GetSEOByName(name)
@@ -182,7 +180,7 @@ func (collection *Collection) GetSEO(obj interface{}) *SEO {
 	}
 }
 
-// GetSEO get a Seo by name
+// GetSEOByName gets the specified SEO by name
 func (collection *Collection) GetSEOByName(name string) *SEO {
 	for _, s := range collection.registeredSEO {
 		if s.name == name {
@@ -193,7 +191,7 @@ func (collection *Collection) GetSEOByName(name string) *SEO {
 	return nil
 }
 
-// GetSEOByModel get a seo by model
+// GetSEOByModel gets a seo by model
 func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	for _, s := range collection.registeredSEO {
 		if reflect.Indirect(reflect.ValueOf(model)).Type() == s.modelTyp {
@@ -204,13 +202,13 @@ func (collection *Collection) GetSEOByModel(model interface{}) *SEO {
 	return nil
 }
 
-// AfterSave set the hook called after saving
+// AfterSave sets the hook called after saving
 func (collection *Collection) AfterSave(v func(ctx context.Context, settingName string, locale string) error) *Collection {
 	collection.afterSave = v
 	return collection
 }
 
-// RenderGlobal render global seo
+// RenderGlobal renders global SEO
 func (collection Collection) RenderGlobal(req *http.Request) h.HTMLComponent {
 	return collection.Render(collection.globalName, req)
 }
@@ -253,11 +251,11 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 		return h.RawHTML("")
 	}
 
-	reflectVlaue := reflect.Indirect(reflect.ValueOf(settingModelSlice))
+	reflectValue := reflect.Indirect(reflect.ValueOf(settingModelSlice))
 
 	for _, name := range sortedSeoNames {
-		for i := 0; i < reflectVlaue.Len(); i++ {
-			if modelSetting, ok := reflectVlaue.Index(i).Interface().(QorSEOSettingInterface); ok && modelSetting.GetName() == name {
+		for i := 0; i < reflectValue.Len(); i++ {
+			if modelSetting, ok := reflectValue.Index(i).Interface().(QorSEOSettingInterface); ok && modelSetting.GetName() == name {
 				sortedDBSettings = append(sortedDBSettings, modelSetting)
 			}
 		}
@@ -358,10 +356,10 @@ func (collection Collection) Render(obj interface{}, req *http.Request) h.HTMLCo
 	return setting.HTMLComponent(tags)
 }
 
-// GetDB get db from context
+// getDBFromContext get the db from the ctx
 func (collection Collection) getDBFromContext(ctx context.Context) *gorm.DB {
-	if contextdb := ctx.Value(collection.dbContextKey); contextdb != nil {
-		return contextdb.(*gorm.DB)
+	if ctxDB := ctx.Value(collection.dbContextKey); ctxDB != nil {
+		return ctxDB.(*gorm.DB)
 	}
 	return GlobalDB
 }
