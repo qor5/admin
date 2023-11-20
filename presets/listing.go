@@ -932,6 +932,7 @@ func (b *ListingBuilder) filterBar(
 		filter.OnChange(web.Plaid().
 			URL(ctx.R.RequestURI).
 			StringQuery(web.Var("$event.encodedFilterData")).
+			Query("page", 1).
 			ClearMergeQuery(web.Var("$event.filterKeys")).
 			EventFunc(actions.UpdateListingDialog).
 			Go())
