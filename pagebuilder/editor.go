@@ -174,7 +174,7 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-const FreeStyleKey = "FreeStyle"
+const ContainerToPageLayoutKey = "ContainerToPageLayout"
 
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	if isTpl {
@@ -204,10 +204,15 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	}
 	r = h.Components(comps...)
 	if b.pageLayoutFunc != nil {
+		var seoTags h.HTMLComponent
+		if b.seoCollection != nil {
+			seoTags = b.seoCollection.Render(p, ctx.R)
+		}
 		input := &PageLayoutInput{
 			IsEditor:  isEditor,
 			IsPreview: !isEditor,
 			Page:      p,
+			SeoTags:   seoTags,
 		}
 
 		if isEditor {
@@ -261,12 +266,13 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	window.addEventListener("message", scrolltoCurrentContainer, false);
 `}
 		}
-		if f := ctx.R.Context().Value(FreeStyleKey); f != nil {
+		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
 			pl, ok := f.(*PageLayoutInput)
 			if ok {
 				input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)
 				input.FreeStyleTopJs = append(input.FreeStyleTopJs, pl.FreeStyleTopJs...)
 				input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
+				input.Hreflang = pl.Hreflang
 			}
 		}
 

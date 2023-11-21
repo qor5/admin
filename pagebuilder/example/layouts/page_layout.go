@@ -10,20 +10,6 @@ import (
 )
 
 func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
-	var seoTags HTMLComponent
-	if len(input.SeoTags) > 0 {
-		seoTags = RawHTML(input.SeoTags)
-	}
-
-	var canonicalLink HTMLComponent
-	if len(input.CanonicalLink) > 0 {
-		canonicalLink = Link(string(input.CanonicalLink)).Attr("ref", "canonical")
-	}
-
-	var structureData HTMLComponent
-	if len(input.StructuredData) > 0 {
-		structureData = RawHTML(input.StructuredData)
-	}
 
 	var freeStyleCss HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
@@ -36,8 +22,8 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 
 	head := Components(
 		Meta().Attr("charset", "utf-8"),
-		seoTags,
-		canonicalLink,
+		input.SeoTags,
+		input.CanonicalLink,
 		Meta().Attr("http-equiv", "X-UA-Compatible").Content("IE=edge"),
 		Meta().Content("true").Name("HandheldFriendly"),
 		Meta().Content("yes").Name("apple-mobile-web-app-capable"),
@@ -49,7 +35,7 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 		If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		//RawHTML(dataLayer),
-		structureData,
+		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
 	)
 	ctx.Injector.HTMLLang(input.Page.LocaleCode)
