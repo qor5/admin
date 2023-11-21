@@ -56,6 +56,7 @@ type PageLayoutInput struct {
 	FreeStyleCss      []string
 	FreeStyleTopJs    []string
 	FreeStyleBottomJs []string
+	Hreflang          map[string]string
 	Header            h.HTMLComponent
 	Footer            h.HTMLComponent
 	IsEditor          bool
@@ -74,6 +75,7 @@ type Builder struct {
 	pageLayoutFunc    PageLayoutFunc
 	preview           http.Handler
 	images            http.Handler
+	seoCollection     *seo.Collection
 	imagesPrefix      string
 	defaultDevice     string
 	publishBtnColor   string
@@ -209,6 +211,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
+	b.seoCollection = seoCollection
 
 	templateM := presets.NewModelBuilder(pb, &Template{})
 	if b.templateEnabled {
