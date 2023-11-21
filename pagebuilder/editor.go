@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/url"
 	"os"
 	"path"
@@ -205,12 +204,15 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	}
 	r = h.Components(comps...)
 	if b.pageLayoutFunc != nil {
-		seoTags, _ := b.seoCollection.Render(p, ctx.R).MarshalHTML(ctx.R.Context())
+		var seoTags h.HTMLComponent
+		if b.seoCollection != nil {
+			seoTags = b.seoCollection.Render(p, ctx.R)
+		}
 		input := &PageLayoutInput{
 			IsEditor:  isEditor,
 			IsPreview: !isEditor,
 			Page:      p,
-			SeoTags:   template.HTML(seoTags),
+			SeoTags:   seoTags,
 		}
 
 		if isEditor {

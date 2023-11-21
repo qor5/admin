@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"path"
@@ -50,9 +49,9 @@ type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.
 
 type PageLayoutInput struct {
 	Page              *Page
-	SeoTags           template.HTML
-	CanonicalLink     template.HTML
-	StructuredData    template.HTML
+	SeoTags           h.HTMLComponent
+	CanonicalLink     h.HTMLComponent
+	StructuredData    h.HTMLComponent
 	FreeStyleCss      []string
 	FreeStyleTopJs    []string
 	FreeStyleBottomJs []string
