@@ -48,6 +48,12 @@ func (b *EditingBuilder) Only(vs ...interface{}) (r *EditingBuilder) {
 	return
 }
 
+func (b *EditingBuilder) Except(vs ...string) (r *EditingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)
+	return
+}
+
 func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 	if b.mb.creating == nil {
 		b.mb.creating = &EditingBuilder{

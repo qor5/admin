@@ -559,15 +559,16 @@ func (b *FieldsBuilder) appendFieldAfterClone(ob *FieldsBuilder, name string) {
 
 func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 	if len(patterns) == 0 {
-		return
+		return b
 	}
 
-	r = &FieldsBuilder{fieldLabels: b.fieldLabels}
+	r = b.Clone()
+
 	for _, f := range b.fields {
 		if hasMatched(patterns, f.name) {
 			continue
 		}
-		r.fields = append(r.fields, f.Clone())
+		r.appendFieldAfterClone(b, f.name)
 	}
 	return
 }
