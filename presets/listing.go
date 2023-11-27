@@ -63,6 +63,12 @@ func (b *ListingBuilder) Only(vs ...string) (r *ListingBuilder) {
 	return
 }
 
+func (b *ListingBuilder) Except(vs ...string) (r *ListingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)
+	return
+}
+
 func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	b.pageFunc = pf
 	return b
