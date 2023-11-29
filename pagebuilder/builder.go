@@ -648,7 +648,7 @@ function(e){
 		seoCollection.RegisterSEO(&Page{}).RegisterContextVariables(
 			"Title",
 			func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-				if p, ok := object.(Page); ok {
+				if p, ok := object.(*Page); ok {
 					return p.Title
 				}
 				return ""
