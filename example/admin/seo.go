@@ -10,21 +10,23 @@ import (
 )
 
 // @snippet_begin(SeoExample)
-var SeoCollection *seo.Collection
+var seoBuilder *seo.Builder
 
-func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
-	SeoCollection = seo.NewCollection()
-	SeoCollection.RegisterSEO(&models.Post{}).RegisterContextVariables(
-		"Title",
-		func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-			if article, ok := object.(models.Post); ok {
-				return article.Title
-			}
-			return ""
+func ConfigureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
+	seoBuilder = seo.NewBuilder(db, seo.WithLocales(locales...))
+	seoBuilder.RegisterSEO(&models.Post{}).RegisterContextVariables(
+		&seo.ContextVar{
+			Name: "Title",
+			Func: func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+				if article, ok := object.(models.Post); ok {
+					return article.Title
+				}
+				return ""
+			},
 		},
-	).RegisterSettingVaribles(struct{ Test string }{})
-	SeoCollection.RegisterSEOByNames("Product", "Announcement")
-	SeoCollection.Configure(b, db)
+	).RegisterSettingVariables(struct{ Test string }{})
+	seoBuilder.RegisterMultipleSEO("Product", "Announcement")
+	seoBuilder.Configure(pb)
 }
 
 // @snippet_end

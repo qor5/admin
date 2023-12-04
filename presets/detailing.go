@@ -45,6 +45,12 @@ func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	return
 }
 
+func (b *DetailingBuilder) Except(vs ...string) (r *DetailingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)
+	return
+}
+
 func (b *DetailingBuilder) PageFunc(pf web.PageFunc) (r *DetailingBuilder) {
 	b.pageFunc = pf
 	return b

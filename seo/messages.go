@@ -22,6 +22,7 @@ type Messages struct {
 	SavedSuccessfully       string
 	Seo                     string
 	UseDefaults             string
+	Customize               string
 	GlobalName              string
 }
 
@@ -46,6 +47,7 @@ var Messages_en_US = &Messages{
 	SavedSuccessfully:       "Saved successfully",
 	Seo:                     "SEO",
 	UseDefaults:             "Use Defaults",
+	Customize:               "Customize",
 	GlobalName:              "Global Default SEO",
 }
 
@@ -70,5 +72,6 @@ var Messages_zh_CN = &Messages{
 	SavedSuccessfully:       "成功保存",
 	Seo:                     "搜索引擎优化",
 	UseDefaults:             "使用默认值",
+	Customize:               "自定义",
 	GlobalName:              "全局默认SEO",
 }
