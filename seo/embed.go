@@ -14,5 +14,5 @@ func SeoJSComponentsPack() web.ComponentsPack {
 	if err != nil {
 		panic(err)
 	}
-	return web.ComponentsPack(string(c))
+	return web.ComponentsPack(c)
 }

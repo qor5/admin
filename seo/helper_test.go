@@ -3,35 +3,39 @@ package seo
 import (
 	"os"
 	"strings"
+	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/qor5/admin/l10n"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type TestQorSEOSetting struct {
-	QorSEOSetting
-}
+var dbForTest *gorm.DB
 
 func init() {
 	if db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{}); err != nil {
 		panic(err)
 	} else {
-		GlobalDB = db
+		err := db.AutoMigrate(&QorSEOSetting{})
+		if err != nil {
+			panic("failed to migrate db")
+		}
+		dbForTest = db
 	}
-	GlobalDB.AutoMigrate(&TestQorSEOSetting{})
 }
 
 // @snippet_begin(SeoModelExample)
 type Product struct {
 	Name string
 	SEO  Setting
+	l10n.Locale
 }
 
 // @snippet_end
 
 func resetDB() {
-	GlobalDB.Exec("truncate test_qor_seo_settings;")
+	dbForTest.Exec("truncate qor_seo_settings;")
 }
 
 func metaEqual(got, want string) bool {
@@ -45,4 +49,16 @@ func metaEqual(got, want string) bool {
 		}
 	}
 	return true
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	resetDB()
+	os.Exit(code)
 }

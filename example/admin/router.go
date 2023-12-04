@@ -39,7 +39,7 @@ func Router() http.Handler {
 	mux.Handle("/posts/first", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var post models.Post
 		db.First(&post)
-		seodata, _ := SeoCollection.Render(post, r).MarshalHTML(r.Context())
+		seodata, _ := seoBuilder.Render(post, r).MarshalHTML(r.Context())
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprintf(w, `<html><head>%s</head><body>%s</body></html>`, seodata, post.Body)
 	}))

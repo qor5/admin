@@ -3,77 +3,189 @@ package seo
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/qor5/admin/l10n"
-	l10n_view "github.com/qor5/admin/l10n/views"
 	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/presets/gorm2op"
+	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
 )
 
-func TestAdmin(t *testing.T) {
-	var (
-		admin  = presets.New().URIPrefix("/admin")
-		server = httptest.NewServer(admin)
-	)
-
-	collection := NewCollection().SetSettingModel(&TestQorSEOSetting{}).RegisterSEOByNames("Product Detail", "Product")
-	collection.Configure(admin, GlobalDB)
-	l10n_view.Configure(admin, GlobalDB, l10n.New().RegisterLocales("en", "en", "English"), nil)
-	// should create all seo setting in the first time
-	resetDB()
-	if req, err := http.Get(server.URL + "/admin/test-qor-seo-settings?__execute_event__=__reload__&locale=en"); err == nil {
-		if req.StatusCode != 200 {
-			t.Errorf("Setting page should be exist, status code is %v", req.StatusCode)
-		}
-
-		var seoSetting = collection.NewSettingModelSlice()
-		err := GlobalDB.Find(seoSetting, "name in (?)", []string{"Product Detail", "Product", collection.globalName}).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			t.Errorf("SEO Setting should be created successfully")
-		}
-
-		if reflect.Indirect(reflect.ValueOf(seoSetting)).Len() != 3 {
-			t.Errorf("SEO Setting should be created successfully")
-		}
-	} else {
-		t.Errorf(err.Error())
+func TestUpdate(t *testing.T) {
+	cases := []struct {
+		name      string
+		prepareDB func()
+		builder   func() *Builder
+		form      func() (*bytes.Buffer, *multipart.Writer)
+		expected  *QorSEOSetting
+		locale    string
+	}{
+		{
+			name: "update_setting",
+			prepareDB: func() {
+				seoSetting := QorSEOSetting{
+					Name:   "Product",
+					Locale: l10n.Locale{LocaleCode: "en"},
+					Setting: Setting{
+						Title: "productA",
+					},
+				}
+				if err := dbForTest.Save(&seoSetting).Error; err != nil {
+					panic(err)
+				}
+			},
+			builder: func() *Builder {
+				builder := NewBuilder(dbForTest, WithLocales("en"))
+				builder.RegisterSEO("Product Detail")
+				builder.RegisterSEO("Product")
+				return builder
+			},
+			form: func() (*bytes.Buffer, *multipart.Writer) {
+				form := &bytes.Buffer{}
+				mwriter := multipart.NewWriter(form)
+				must(mwriter.WriteField("Setting.Title", "productB"))
+				must(mwriter.WriteField("id", fmt.Sprintf("Product_%s", "en")))
+				must(mwriter.Close())
+				return form, mwriter
+			},
+			expected: &QorSEOSetting{
+				Name:   "Product",
+				Locale: l10n.Locale{LocaleCode: "en"},
+				Setting: Setting{
+					Title: "productB",
+				},
+				Variables: map[string]string{},
+			},
+			locale: "en",
+		},
+		{
+			name: "update_setting_without_locale",
+			prepareDB: func() {
+				seoSetting := QorSEOSetting{
+					Name: "Product",
+					Setting: Setting{
+						Title: "productA",
+					},
+				}
+				if err := dbForTest.Save(&seoSetting).Error; err != nil {
+					panic(err)
+				}
+			},
+			builder: func() *Builder {
+				builder := NewBuilder(dbForTest)
+				builder.RegisterSEO("Product Detail")
+				builder.RegisterSEO("Product")
+				return builder
+			},
+			form: func() (*bytes.Buffer, *multipart.Writer) {
+				form := &bytes.Buffer{}
+				mwriter := multipart.NewWriter(form)
+				must(mwriter.WriteField("Setting.Title", "productB"))
+				must(mwriter.WriteField("id", "Product_"))
+				must(mwriter.Close())
+				return form, mwriter
+			},
+			expected: &QorSEOSetting{
+				Name: "Product",
+				Setting: Setting{
+					Title: "productB",
+				},
+				Variables: map[string]string{},
+			},
+			locale: "",
+		},
+		{
+			name: "update_variables",
+			prepareDB: func() {
+				seoSetting := QorSEOSetting{
+					Name:   "Product",
+					Locale: l10n.Locale{LocaleCode: "en"},
+					Setting: Setting{
+						Title: "productA",
+					},
+					Variables: map[string]string{
+						"varA": "A",
+					},
+				}
+				if err := dbForTest.Save(&seoSetting).Error; err != nil {
+					panic(err)
+				}
+			},
+			builder: func() *Builder {
+				builder := NewBuilder(dbForTest, WithLocales("en"))
+				builder.RegisterSEO("Product Detail")
+				builder.RegisterSEO("Product")
+				return builder
+			},
+			form: func() (*bytes.Buffer, *multipart.Writer) {
+				form := &bytes.Buffer{}
+				mwriter := multipart.NewWriter(form)
+				must(mwriter.WriteField("Variables.varA", "B"))
+				must(mwriter.WriteField("id", fmt.Sprintf("Product_%s", "en")))
+				must(mwriter.Close())
+				return form, mwriter
+			},
+			expected: &QorSEOSetting{
+				Name:   "Product",
+				Locale: l10n.Locale{LocaleCode: "en"},
+				Setting: Setting{
+					Title: "productA",
+				},
+				Variables: map[string]string{
+					"varA": "B",
+				},
+			},
+			locale: "en",
+		},
 	}
 
-	// save seo setting
-	var (
-		title       = "title test"
-		description = "description test"
-		keyword     = "keyword test"
-	)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			resetDB()
+			if c.prepareDB != nil {
+				c.prepareDB()
+			}
 
-	var form = &bytes.Buffer{}
-	mwriter := multipart.NewWriter(form)
-	mwriter.WriteField("Product.Title", title)
-	mwriter.WriteField("Product.Description", description)
-	mwriter.WriteField("Product.Keywords", keyword)
-	mwriter.Close()
+			admin := presets.New().URIPrefix("/admin").DataOperator(gorm2op.DataOperator(dbForTest))
+			server := httptest.NewServer(admin)
 
-	req, err := http.DefaultClient.Post(server.URL+"/admin/test-qor-seo-settings?__execute_event__=seo_save_collection&name=Product&locale=en", mwriter.FormDataContentType(), form)
-	if err != nil {
-		t.Fatal(err)
+			l10nBuilder := l10n.New()
+			l10nBuilder.RegisterLocales(c.locale, c.locale, c.locale)
+			builder := c.builder()
+			builder.Configure(admin)
+
+			form, mwriter := c.form()
+			req, err := http.DefaultClient.Post(
+				server.URL+"/admin/qor-seo-settings?__execute_event__=presets_Update",
+				mwriter.FormDataContentType(),
+				form)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if req.StatusCode != 200 {
+				t.Errorf("Update should be processed successfully, status code is %v", req.StatusCode)
+			}
+
+			seoSetting := &QorSEOSetting{}
+			err = dbForTest.First(seoSetting, "name = ? and locale_code = ?", "Product", c.locale).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				t.Errorf("SEO Setting should be updated successfully")
+			}
+			var actualSetting QorSEOSetting
+			actualSetting.Name = seoSetting.Name
+			actualSetting.Setting = seoSetting.Setting
+			actualSetting.LocaleCode = seoSetting.LocaleCode
+			actualSetting.Variables = seoSetting.Variables
+			r := testingutils.PrettyJsonDiff(c.expected, actualSetting)
+			if r != "" {
+				t.Errorf(r)
+			}
+		})
 	}
 
-	if req.StatusCode != 200 {
-		t.Errorf("Save should be processed successfully, status code is %v", req.StatusCode)
-	}
-
-	var seoSetting = collection.NewSettingModelInstance().(QorSEOSettingInterface)
-	err = GlobalDB.First(&seoSetting, "name = ?", "Product").Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		t.Errorf("SEO Setting should be created successfully")
-	}
-
-	if seoSetting.GetSEOSetting().Title != title || seoSetting.GetSEOSetting().Description != description || seoSetting.GetSEOSetting().Keywords != keyword {
-		t.Errorf("SEOSetting should be Save correctly, its value %#v", seoSetting)
-	}
 }

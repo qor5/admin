@@ -10,11 +10,11 @@ import (
 )
 
 // @snippet_begin(SeoExample)
-var SeoCollection *seo.Collection
+var seoBuilder *seo.Builder
 
-func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
-	SeoCollection = seo.NewCollection()
-	SeoCollection.RegisterSEO(&models.Post{}).RegisterContextVariables(
+func ConfigureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
+	seoBuilder = seo.NewBuilder(db, seo.WithLocales(locales...))
+	seoBuilder.RegisterSEO("Post", &models.Post{}).RegisterContextVariable(
 		"Title",
 		func(object interface{}, _ *seo.Setting, _ *http.Request) string {
 			if article, ok := object.(models.Post); ok {
@@ -22,9 +22,10 @@ func ConfigureSeo(b *presets.Builder, db *gorm.DB) {
 			}
 			return ""
 		},
-	).RegisterSettingVaribles(struct{ Test string }{})
-	SeoCollection.RegisterSEOByNames("Product", "Announcement")
-	SeoCollection.Configure(b, db)
+	).RegisterSettingVariables("Test")
+	seoBuilder.RegisterSEO("Product")
+	seoBuilder.RegisterSEO("Announcement")
+	seoBuilder.Configure(pb)
 }
 
 // @snippet_end
