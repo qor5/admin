@@ -375,6 +375,7 @@ type ContainerSorterItem struct {
 	Shared         bool   `json:"shared"`
 	VisibilityIcon string `json:"visibility_icon"`
 	ParamID        string `json:"param_id"`
+	Locale         string `json:"locale"`
 }
 
 type ContainerSorter struct {
@@ -408,6 +409,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 				Shared:         c.Shared,
 				VisibilityIcon: vicon,
 				ParamID:        c.PrimarySlug(),
+				Locale:         locale,
 			},
 		)
 	}
@@ -553,7 +555,7 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 	}
 	err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
 		for i, r := range result {
-			if inerr = tx.Model(&Container{}).Where("id = ?", r.ContainerID).Update("display_order", i+1).Error; inerr != nil {
+			if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", r.ContainerID, r.Locale).Update("display_order", i+1).Error; inerr != nil {
 				return
 			}
 		}
