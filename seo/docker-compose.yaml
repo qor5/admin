@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=seo"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=seo_dev"
+    ports:
+      - "8822:5432"

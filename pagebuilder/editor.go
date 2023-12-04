@@ -205,8 +205,8 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	r = h.Components(comps...)
 	if b.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
-		if b.seoCollection != nil {
-			seoTags = b.seoCollection.Render(p, ctx.R)
+		if b.seoBuilder != nil {
+			seoTags = b.seoBuilder.Render(p, ctx.R)
 		}
 		input := &PageLayoutInput{
 			IsEditor:  isEditor,

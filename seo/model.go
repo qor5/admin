@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,137 +14,54 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-// QorSEOSettingInterface support customize Seo model
-// @snippet_begin(QorSEOSettingInterface)
-type QorSEOSettingInterface interface {
-	GetName() string
-	SetName(string)
-	GetSEOSetting() Setting
-	SetSEOSetting(Setting)
-	GetVariables() Variables
-	SetVariables(Variables)
-	GetLocale() string
-	SetLocale(string)
-	GetTitle() string
-	GetDescription() string
-	GetKeywords() string
-	GetOpenGraphTitle() string
-	GetOpenGraphDescription() string
-	GetOpenGraphURL() string
-	GetOpenGraphType() string
-	GetOpenGraphImageURL() string
-	GetOpenGraphImageFromMediaLibrary() media_library.MediaBox
-	GetOpenGraphMetadata() []OpenGraphMetadata
-}
-
-// @snippet_end
-
-// QorSEOSetting default seo model
 type QorSEOSetting struct {
 	Name      string `gorm:"primary_key"`
 	Setting   Setting
 	Variables Variables `sql:"type:text"`
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time `gorm:"index"`
 	l10n.Locale
 }
 
+func (s *QorSEOSetting) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", s.Name, s.LocaleCode)
+}
+
+func (s *QorSEOSetting) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+	if segs[1] == "" {
+		segs[1] = "en"
+	}
+	return map[string]string{
+		"name":        segs[0],
+		"locale_code": segs[1],
+	}
+}
+
 // Setting defined meta's attributes
 type Setting struct {
-	Title                          string `gorm:"size:4294967295"`
-	Description                    string
-	Keywords                       string
-	OpenGraphTitle                 string
-	OpenGraphDescription           string
-	OpenGraphURL                   string
-	OpenGraphType                  string
-	OpenGraphImageURL              string
-	OpenGraphImageFromMediaLibrary media_library.MediaBox
-	OpenGraphMetadata              []OpenGraphMetadata
-	EnabledCustomize               bool
+	Title                          string                 `gorm:"size:4294967295" json:",omitempty"`
+	Description                    string                 `json:",omitempty"`
+	Keywords                       string                 `json:",omitempty"`
+	OpenGraphTitle                 string                 `json:",omitempty"`
+	OpenGraphDescription           string                 `json:",omitempty"`
+	OpenGraphURL                   string                 `json:",omitempty"`
+	OpenGraphType                  string                 `json:",omitempty"`
+	OpenGraphImageURL              string                 `json:",omitempty"`
+	OpenGraphImageFromMediaLibrary media_library.MediaBox `json:",omitempty"`
+	OpenGraphMetadata              []OpenGraphMetadata    `json:",omitempty"`
+	EnabledCustomize               bool                   `json:",omitempty"`
 }
 
 // OpenGraphMetadata open graph meta data
 type OpenGraphMetadata struct {
 	Property string
 	Content  string
-}
-
-func (s *QorSEOSetting) SetSEOSetting(setting Setting) {
-	s.Setting = setting
-}
-
-// GetSEOSetting get seo setting
-func (s QorSEOSetting) GetSEOSetting() Setting {
-	return s.Setting
-}
-
-// SetVariables set variables setting
-func (s *QorSEOSetting) SetVariables(setting Variables) {
-	s.Variables = setting
-}
-
-// GetVariables get variables setting
-func (s QorSEOSetting) GetVariables() Variables {
-	return s.Variables
-}
-
-// GetLocale get QorSeoSetting's name
-func (s QorSEOSetting) GetLocale() string {
-	return s.LocaleCode
-}
-
-// SetLocale set QorSeoSetting's name
-func (s *QorSEOSetting) SetLocale(locale string) {
-	s.LocaleCode = locale
-}
-
-// GetName get QorSeoSetting's name
-func (s QorSEOSetting) GetName() string {
-	return s.Name
-}
-
-// SetName set QorSeoSetting's name
-func (s *QorSEOSetting) SetName(name string) {
-	s.Name = name
-}
-
-func (s QorSEOSetting) GetOpenGraphTitle() string {
-	return s.Setting.OpenGraphTitle
-}
-func (s QorSEOSetting) GetOpenGraphDescription() string {
-	return s.Setting.OpenGraphDescription
-}
-func (s QorSEOSetting) GetOpenGraphURL() string {
-	return s.Setting.OpenGraphURL
-}
-func (s QorSEOSetting) GetOpenGraphType() string {
-	return s.Setting.OpenGraphType
-}
-func (s QorSEOSetting) GetOpenGraphImageURL() string {
-	return s.Setting.OpenGraphImageURL
-}
-func (s QorSEOSetting) GetOpenGraphImageFromMediaLibrary() media_library.MediaBox {
-	return s.Setting.OpenGraphImageFromMediaLibrary
-}
-func (s QorSEOSetting) GetOpenGraphMetadata() []OpenGraphMetadata {
-	return s.Setting.OpenGraphMetadata
-}
-
-// GetTitle get Setting's title
-func (s QorSEOSetting) GetTitle() string {
-	return s.Setting.Title
-}
-
-// GetDescription get Setting's description
-func (s QorSEOSetting) GetDescription() string {
-	return s.Setting.Description
-}
-
-// GetKeywords get Setting's keywords
-func (s QorSEOSetting) GetKeywords() string {
-	return s.Setting.Keywords
 }
 
 // Scan scan value from database into struct
@@ -161,12 +79,16 @@ func (setting *Setting) Scan(value interface{}) error {
 }
 
 // Value get value from struct, and save into database
+// Do not changed it to pointer receiver method, If you
+// change it to a pointer receiver, GORM may encounter
+// errors "cannot found encode plan" when operating the
+// qor_seo_settings table.
 func (setting Setting) Value() (driver.Value, error) {
 	result, err := json.Marshal(setting)
 	return string(result), err
 }
 
-func (setting Setting) IsEmpty() bool {
+func (setting *Setting) IsEmpty() bool {
 	return setting.Title == "" && setting.Description == "" && setting.Keywords == "" &&
 		setting.OpenGraphTitle == "" && setting.OpenGraphDescription == "" &&
 		setting.OpenGraphURL == "" && setting.OpenGraphType == "" && setting.OpenGraphImageURL == "" &&
@@ -190,12 +112,16 @@ func (setting *Variables) Scan(value interface{}) error {
 }
 
 // Value get value from struct, and save into database
+// Do not changed it to pointer receiver method, If you
+// change it to a pointer receiver, GORM may encounter
+// errors "cannot found encode plan" when operating the
+// qor_seo_settings table.
 func (setting Variables) Value() (driver.Value, error) {
 	result, err := json.Marshal(setting)
 	return string(result), err
 }
 
-func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
+func (setting *Setting) HTMLComponent(ogProps map[string]string) h.HTMLComponent {
 	openGraphData := map[string]string{
 		"og:title":       setting.OpenGraphTitle,
 		"og:description": setting.OpenGraphDescription,
@@ -204,13 +130,13 @@ func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 		"og:image":       setting.OpenGraphImageURL,
 	}
 
-	for _, metavalue := range setting.OpenGraphMetadata {
-		openGraphData[metavalue.Property] = metavalue.Content
+	for _, meta := range setting.OpenGraphMetadata {
+		openGraphData[meta.Property] = meta.Content
 	}
 
 	for _, key := range []string{"og:title", "og:description", "og:url", "og:type", "og:image"} {
 		if v := openGraphData[key]; v == "" {
-			if v, ok := tags[key]; ok {
+			if v, ok := ogProps[key]; ok {
 				openGraphData[key] = v
 			}
 		}
@@ -220,7 +146,7 @@ func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 		openGraphData["og:type"] = "website"
 	}
 
-	for key, value := range tags {
+	for key, value := range ogProps {
 		if _, ok := openGraphData[key]; !ok {
 			openGraphData[key] = value
 		}
@@ -228,7 +154,10 @@ func (setting Setting) HTMLComponent(tags map[string]string) h.HTMLComponent {
 
 	var openGraphDataComponents h.HTMLComponents
 	for key, value := range openGraphData {
-		openGraphDataComponents = append(openGraphDataComponents, h.Meta().Attr("property", key).Attr("name", key).Attr("content", value))
+		openGraphDataComponents = append(
+			openGraphDataComponents,
+			h.Meta().Attr("property", key).Attr("name", key).Attr("content", value),
+		)
 	}
 
 	return h.HTMLComponents{
@@ -258,7 +187,7 @@ func GetOpenGraphMetadata(in string) (metadata []OpenGraphMetadata) {
 }
 
 func GetOpenGraphMetadataString(metadata []OpenGraphMetadata) string {
-	records := [][]string{}
+	var records [][]string
 	for _, m := range metadata {
 		records = append(records, []string{m.Property, m.Content})
 	}
