@@ -416,13 +416,13 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 (function(){
 	let scrollLeft = 0;
 	let scrollTop = 0;
-	
+
 	function pause(duration) {
 		return new Promise(res => setTimeout(res, duration));
 	}
 	function backoff(retries, fn, delay = 100) {
 		fn().catch(err => retries > 1
-			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
+			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2))
 			: Promise.reject(err));
 	}
 
@@ -438,7 +438,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		scrollLeft = window.scrollX;
 		scrollTop = window.scrollY;
 	});
-	
+
 	window.addEventListener('fetchEnd', (event) => {
 		backoff(5, restoreScroll, 100);
 	});
@@ -645,15 +645,13 @@ function(e){
 		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
 	}
 	if seoBuilder != nil {
-		seoBuilder.RegisterSEO(&Page{}).RegisterContextVariables(
-			&seo.ContextVar{
-				Name: "Title",
-				Func: func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-					if p, ok := object.(*Page); ok {
-						return p.Title
-					}
-					return ""
-				},
+		seoBuilder.RegisterSEO(&Page{}).RegisterContextVariable(
+			"Title",
+			func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+				if p, ok := object.(*Page); ok {
+					return p.Title
+				}
+				return ""
 			},
 		)
 	}
@@ -1880,7 +1878,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		pageTable := (&Page{}).TableName()
 		containerTable := (&Container{}).TableName()
 		err = b.builder.db.Model(&Page{}).
-			Joins(fmt.Sprintf(`inner join %s on 
+			Joins(fmt.Sprintf(`inner join %s on
         %s.id = %s.page_id
         and %s.version = %s.page_version
         and %s.locale_code = %s.locale_code`,

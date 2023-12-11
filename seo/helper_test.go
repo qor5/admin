@@ -47,6 +47,12 @@ func metaEqual(got, want string) bool {
 	return true
 }
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	resetDB()

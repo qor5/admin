@@ -34,9 +34,6 @@ func (s *QorSEOSetting) PrimaryColumnValuesBySlug(slug string) map[string]string
 	if len(segs) != 2 {
 		panic("wrong slug")
 	}
-	if segs[1] == "" {
-		segs[1] = "en"
-	}
 	return map[string]string{
 		"name":        segs[0],
 		"locale_code": segs[1],
@@ -121,8 +118,8 @@ func (setting Variables) Value() (driver.Value, error) {
 	return string(result), err
 }
 
-func (setting *Setting) HTMLComponent(ogProps map[string]string) h.HTMLComponent {
-	openGraphData := map[string]string{
+func (setting *Setting) HTMLComponent(metaProperties map[string]string) h.HTMLComponent {
+	metaPropertyData := map[string]string{
 		"og:title":       setting.OpenGraphTitle,
 		"og:description": setting.OpenGraphDescription,
 		"og:url":         setting.OpenGraphURL,
@@ -131,31 +128,31 @@ func (setting *Setting) HTMLComponent(ogProps map[string]string) h.HTMLComponent
 	}
 
 	for _, meta := range setting.OpenGraphMetadata {
-		openGraphData[meta.Property] = meta.Content
+		metaPropertyData[meta.Property] = meta.Content
 	}
 
 	for _, key := range []string{"og:title", "og:description", "og:url", "og:type", "og:image"} {
-		if v := openGraphData[key]; v == "" {
-			if v, ok := ogProps[key]; ok {
-				openGraphData[key] = v
+		if v := metaPropertyData[key]; v == "" {
+			if v, ok := metaProperties[key]; ok {
+				metaPropertyData[key] = v
 			}
 		}
 	}
 
-	if openGraphData["og:type"] == "" {
-		openGraphData["og:type"] = "website"
+	if metaPropertyData["og:type"] == "" {
+		metaPropertyData["og:type"] = "website"
 	}
 
-	for key, value := range ogProps {
-		if _, ok := openGraphData[key]; !ok {
-			openGraphData[key] = value
+	for key, value := range metaProperties {
+		if _, ok := metaPropertyData[key]; !ok {
+			metaPropertyData[key] = value
 		}
 	}
 
-	var openGraphDataComponents h.HTMLComponents
-	for key, value := range openGraphData {
-		openGraphDataComponents = append(
-			openGraphDataComponents,
+	var metaPropertyComponents h.HTMLComponents
+	for key, value := range metaPropertyData {
+		metaPropertyComponents = append(
+			metaPropertyComponents,
 			h.Meta().Attr("property", key).Attr("name", key).Attr("content", value),
 		)
 	}
@@ -164,7 +161,7 @@ func (setting *Setting) HTMLComponent(ogProps map[string]string) h.HTMLComponent
 		h.Title(setting.Title),
 		h.Meta().Attr("name", "description").Attr("content", setting.Description),
 		h.Meta().Attr("name", "keywords").Attr("content", setting.Keywords),
-		openGraphDataComponents,
+		metaPropertyComponents,
 	}
 }
 

@@ -17,8 +17,9 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var (
+const (
 	defaultGlobalSEOName = "Global SEO"
+	defaultLocale        = "en"
 )
 
 type (
@@ -52,15 +53,7 @@ func WithLocales(locales ...string) Option {
 
 func NewBuilder(db *gorm.DB, ops ...Option) *Builder {
 	globalSEO := &SEO{name: defaultGlobalSEOName}
-	globalSEO.RegisterSettingVariables(struct {
-		SiteName string
-	}{})
-	globalSEO.RegisterPropFuncForOG(&PropFunc{
-		Name: "og:url",
-		Func: func(_ interface{}, _ *Setting, req *http.Request) string {
-			return req.URL.String()
-		},
-	})
+	globalSEO.RegisterSettingVariables("SiteName")
 	b := &Builder{
 		registeredSEO: make(map[string]*SEO),
 		seoRoot:       globalSEO,
@@ -74,6 +67,10 @@ func NewBuilder(db *gorm.DB, ops ...Option) *Builder {
 	}
 
 	if err := db.AutoMigrate(&QorSEOSetting{}); err != nil {
+		panic(err)
+	}
+
+	if err := insertIfNotExists(db, b.seoRoot.name, b.locales); err != nil {
 		panic(err)
 	}
 	return b
@@ -141,23 +138,7 @@ func (b *Builder) RegisterSEO(obj interface{}) *SEO {
 		}
 	}
 	b.registeredSEO[seoName] = seo
-	settings := make([]QorSEOSetting, 0, len(b.locales))
-	if len(b.locales) == 0 {
-		settings = append(settings, QorSEOSetting{
-			Name:   seo.name,
-			Locale: l10n.Locale{LocaleCode: "en"},
-		})
-	} else {
-		for _, locale := range b.locales {
-			settings = append(settings, QorSEOSetting{
-				Name:   seo.name,
-				Locale: l10n.Locale{LocaleCode: locale},
-			})
-		}
-	}
-	// The aim to use `Clauses(clause.OnConflict{DoNothing: true})` is it will not affect the existing data
-	// or cause the create function to fail When the data to be inserted already exists in the database,
-	if err := b.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&settings).Error; err != nil {
+	if err := insertIfNotExists(b.db, seoName, b.locales); err != nil {
 		panic(err)
 	}
 	return seo
@@ -171,7 +152,7 @@ func (b *Builder) RemoveSEO(obj interface{}) *Builder {
 	if seoToBeRemoved == nil || seoToBeRemoved == b.seoRoot {
 		return b
 	}
-	seoToBeRemoved.RemoveSelf()
+	seoToBeRemoved.removeSelf()
 	delete(b.registeredSEO, seoToBeRemoved.name)
 	return b
 }
@@ -235,9 +216,11 @@ func (b *Builder) Render(obj interface{}, req *http.Request) h.HTMLComponent {
 		return h.RawHTML("")
 	}
 
-	var locale string
+	locale := defaultLocale
 	if v, ok := obj.(l10n.L10nInterface); ok {
-		locale = v.GetLocale()
+		if v.GetLocale() != "" {
+			locale = v.GetLocale()
+		}
 	}
 	localeFinalSeoSetting := seo.getLocaleFinalQorSEOSetting(locale, b.db)
 	return b.render(obj, localeFinalSeoSetting, seo, req)
@@ -258,9 +241,11 @@ func (b *Builder) BatchRender(objs []interface{}, req *http.Request) []h.HTMLCom
 	finalSeoSettings := seo.getFinalQorSEOSetting(b.db)
 	comps := make([]h.HTMLComponent, 0, len(objs))
 	for _, obj := range objs {
-		var locale string
+		locale := defaultLocale
 		if v, ok := obj.(l10n.L10nInterface); ok {
-			locale = v.GetLocale()
+			if v.GetLocale() != "" {
+				locale = v.GetLocale()
+			}
 		}
 		defaultSetting := finalSeoSettings[locale]
 		if defaultSetting == nil {
@@ -316,13 +301,13 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 		}
 	}
 
-	ogProps := map[string]string{}
-	finalPropFuncForOG := seo.getFinalPropFuncForOG()
-	for propName, propFunc := range finalPropFuncForOG {
-		ogProps[propName] = propFunc(obj, &setting, req)
+	metaProperties := map[string]string{}
+	finalMetaProperties := seo.getFinalMetaProps()
+	for propName, propFunc := range finalMetaProperties {
+		metaProperties[propName] = propFunc(obj, &setting, req)
 	}
 
-	return setting.HTMLComponent(ogProps)
+	return setting.HTMLComponent(metaProperties)
 }
 
 var regex = regexp.MustCompile("{{([a-zA-Z0-9]*)}}")
@@ -360,6 +345,29 @@ func isAbsoluteURL(str string) bool {
 		return true
 	}
 	return false
+}
+
+func insertIfNotExists(db *gorm.DB, seoName string, locales []string) error {
+	settings := make([]QorSEOSetting, 0, len(locales))
+	if len(locales) == 0 {
+		settings = append(settings, QorSEOSetting{
+			Name:   seoName,
+			Locale: l10n.Locale{LocaleCode: defaultLocale},
+		})
+	} else {
+		for _, locale := range locales {
+			settings = append(settings, QorSEOSetting{
+				Name:   seoName,
+				Locale: l10n.Locale{LocaleCode: locale},
+			})
+		}
+	}
+	// The aim to use `Clauses(clause.OnConflict{DoNothing: true})` is it will not affect the existing data
+	// or cause the create function to fail When the data to be inserted already exists in the database,
+	if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&settings).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetSEOName return the SEO name.

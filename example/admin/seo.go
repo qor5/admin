@@ -14,17 +14,15 @@ var seoBuilder *seo.Builder
 
 func ConfigureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
 	seoBuilder = seo.NewBuilder(db, seo.WithLocales(locales...))
-	seoBuilder.RegisterSEO(&models.Post{}).RegisterContextVariables(
-		&seo.ContextVar{
-			Name: "Title",
-			Func: func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-				if article, ok := object.(models.Post); ok {
-					return article.Title
-				}
-				return ""
-			},
+	seoBuilder.RegisterSEO(&models.Post{}).RegisterContextVariable(
+		"Title",
+		func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+			if article, ok := object.(models.Post); ok {
+				return article.Title
+			}
+			return ""
 		},
-	).RegisterSettingVariables(struct{ Test string }{})
+	).RegisterSettingVariables("Test")
 	seoBuilder.RegisterMultipleSEO("Product", "Announcement")
 	seoBuilder.Configure(pb)
 }

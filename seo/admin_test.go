@@ -42,8 +42,8 @@ func TestUpdate(t *testing.T) {
 			form: func() (*bytes.Buffer, *multipart.Writer) {
 				form := &bytes.Buffer{}
 				mwriter := multipart.NewWriter(form)
-				mwriter.WriteField("Setting.Title", "productB")
-				mwriter.Close()
+				must(mwriter.WriteField("Setting.Title", "productB"))
+				must(mwriter.Close())
 				return form, mwriter
 			},
 			expected: &QorSEOSetting{
@@ -77,8 +77,8 @@ func TestUpdate(t *testing.T) {
 			form: func() (*bytes.Buffer, *multipart.Writer) {
 				form := &bytes.Buffer{}
 				mwriter := multipart.NewWriter(form)
-				mwriter.WriteField("Variables.varA", "B")
-				mwriter.Close()
+				must(mwriter.WriteField("Variables.varA", "B"))
+				must(mwriter.Close())
 				return form, mwriter
 			},
 			expected: &QorSEOSetting{

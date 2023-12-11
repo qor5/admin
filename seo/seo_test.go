@@ -71,18 +71,14 @@ func TestSEO_AddChildren(t *testing.T) {
 			name: "add_child_that_cause_conflicts",
 			getSeoRoot: func() *SEO {
 				rootSeo := &SEO{name: "Root"}
-				rootSeo.RegisterContextVariables(
-					&ContextVar{
-						Name: "ctx1",
-						Func: func(_ interface{}, _ *Setting, _ *http.Request) string {
-							return "ctx1"
-						},
+				rootSeo.RegisterContextVariable(
+					"ctx1",
+					func(_ interface{}, _ *Setting, _ *http.Request) string {
+						return "ctx1"
 					},
 				)
 				child := &SEO{name: "Child"}
-				child.RegisterSettingVariables(struct {
-					ctx1 string
-				}{})
+				child.RegisterSettingVariables("ctx1")
 				rootSeo.AppendChildren(child)
 				return rootSeo
 			},
@@ -103,7 +99,7 @@ func TestSEO_AddChildren(t *testing.T) {
 	}
 }
 
-func TestSEO_RemoveSelf(t *testing.T) {
+func TestSEO_removeSelf(t *testing.T) {
 	cases := []struct {
 		name     string
 		seoRoot  *SEO
@@ -118,7 +114,7 @@ func TestSEO_RemoveSelf(t *testing.T) {
 				node3 := &SEO{name: "level2-1"}
 				node4 := &SEO{name: "level2-2"}
 				seoRoot.AppendChildren(node1.AppendChildren(node3, node4), node2)
-				node1.RemoveSelf()
+				node1.removeSelf()
 				return seoRoot
 			}(),
 			expected: [][]string{
@@ -136,7 +132,7 @@ func TestSEO_RemoveSelf(t *testing.T) {
 	}
 }
 
-func TestSEO_RegisterContextVariables(t *testing.T) {
+func TestSEO_RegisterContextVariable(t *testing.T) {
 	ctxFunc1 := func(i interface{}, setting *Setting, request *http.Request) string {
 		return "contextFunc1"
 	}
@@ -153,7 +149,7 @@ func TestSEO_RegisterContextVariables(t *testing.T) {
 			name: "register_context_variables",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterContextVariables(&ContextVar{Name: "ctxFunc1", Func: ctxFunc1})
+				seoRoot.RegisterContextVariable("ctxFunc1", ctxFunc1)
 				return seoRoot
 			},
 			expected: map[string]map[string]contextVariablesFunc{
@@ -164,11 +160,11 @@ func TestSEO_RegisterContextVariables(t *testing.T) {
 			name: "register_context_var_that_exists_in_parent",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterContextVariables(&ContextVar{Name: "c1", Func: ctxFunc1})
+				seoRoot.RegisterContextVariable("c1", ctxFunc1)
 				child := &SEO{name: "Child"}
 				// If the context var "c1" is already exist in parent,
 				// it should use the ctxFunc2 func to replace the ctxFunc1 func from parent
-				child.SetParent(seoRoot).RegisterContextVariables(&ContextVar{Name: "c1", Func: ctxFunc2})
+				child.SetParent(seoRoot).RegisterContextVariable("c1", ctxFunc2)
 				return seoRoot
 			},
 			expected: map[string]map[string]contextVariablesFunc{
@@ -180,11 +176,9 @@ func TestSEO_RegisterContextVariables(t *testing.T) {
 			name: "register_context_var_that_conflicts_with_setting_var",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterSettingVariables(struct {
-					ctxFunc1 string
-				}{})
+				seoRoot.RegisterSettingVariables("ctxFunc1")
 				child := &SEO{name: "Child"}
-				child.SetParent(seoRoot).RegisterContextVariables(&ContextVar{Name: "ctxFunc1", Func: ctxFunc1})
+				child.SetParent(seoRoot).RegisterContextVariable("ctxFunc1", ctxFunc1)
 				return seoRoot
 			},
 			shouldPanic: true,
@@ -193,7 +187,7 @@ func TestSEO_RegisterContextVariables(t *testing.T) {
 			name: "register_context_var_with_nil_func",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterContextVariables(&ContextVar{Name: "aa", Func: nil})
+				seoRoot.RegisterContextVariable("aa", nil)
 				return seoRoot
 			},
 			shouldPanic: true,
@@ -258,9 +252,7 @@ func TestSEO_RegisterSettingVariables(t *testing.T) {
 			name: "register_setting_var",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterSettingVariables(struct {
-					Var1 string
-				}{})
+				seoRoot.RegisterSettingVariables("Var1")
 				return seoRoot
 			},
 			expected: map[string]map[string]struct{}{
@@ -271,11 +263,9 @@ func TestSEO_RegisterSettingVariables(t *testing.T) {
 			name: "register_setting_var_that_conflicts_with_context_var",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterContextVariables(&ContextVar{Name: "c1", Func: ctxFunc1})
+				seoRoot.RegisterContextVariable("c1", ctxFunc1)
 				child := &SEO{name: "Child"}
-				child.SetParent(seoRoot).RegisterSettingVariables(struct {
-					c1 string
-				}{})
+				child.SetParent(seoRoot).RegisterSettingVariables("c1")
 				return seoRoot
 			},
 			shouldPanic: true,
@@ -284,16 +274,10 @@ func TestSEO_RegisterSettingVariables(t *testing.T) {
 			name: "chain_call",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterContextVariables(
-					&ContextVar{
-						Name: "ctx1",
-						Func: ctxFunc1,
-					},
-				).AppendChildren(
-					(&SEO{name: "Child1"}).RegisterSettingVariables(struct {
-						ctx1 string
-					}{}),
-				)
+				seoRoot.RegisterContextVariable("ctx1", ctxFunc1).
+					AppendChildren(
+						(&SEO{name: "Child1"}).RegisterSettingVariables("ctx1"),
+					)
 				return seoRoot
 			},
 			shouldPanic: true,
@@ -341,7 +325,7 @@ func TestSEO_RegisterSettingVariables(t *testing.T) {
 	}
 }
 
-func TestSEO_RegisterPropFuncForOG(t *testing.T) {
+func TestSEO_RegisterMetaProperty(t *testing.T) {
 	cases := []struct {
 		name        string
 		getSeoRoot  func() *SEO
@@ -351,12 +335,10 @@ func TestSEO_RegisterPropFuncForOG(t *testing.T) {
 			name: "malformed_prop_name",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterPropFuncForOG(
-					&PropFunc{
-						Name: "ogaudio",
-						Func: func(_ interface{}, _ *Setting, _ *http.Request) string {
-							return "ogaudio"
-						},
+				seoRoot.RegisterMetaProperty(
+					"ogaudio",
+					func(_ interface{}, _ *Setting, _ *http.Request) string {
+						return "ogaudio"
 					},
 				)
 				return seoRoot
@@ -367,12 +349,7 @@ func TestSEO_RegisterPropFuncForOG(t *testing.T) {
 			name: "prop_func_is_nil",
 			getSeoRoot: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterPropFuncForOG(
-					&PropFunc{
-						Name: "og:audio",
-						Func: nil,
-					},
-				)
+				seoRoot.RegisterMetaProperty("og:audio", nil)
 				return seoRoot
 			},
 			shouldPanic: true,
@@ -437,18 +414,12 @@ func TestSEO_getLocaleFinalQorSEOSetting(t *testing.T) {
 				// seoRoot --> nodeA --> nodeB --> nodeC
 				seoRoot := &SEO{}
 				nodeA := &SEO{name: "nodeA"}
-				nodeA.RegisterSettingVariables(struct {
-					varA string
-				}{})
+				nodeA.RegisterSettingVariables("varA")
 				nodeB := &SEO{name: "nodeB"}
-				nodeB.RegisterSettingVariables(struct {
-					varB string
-				}{})
+				nodeB.RegisterSettingVariables("varB")
 				nodeC := &SEO{name: "nodeC"}
 				// Override the `varB` from the nodeB
-				nodeC.RegisterSettingVariables(struct {
-					varB string
-				}{})
+				nodeC.RegisterSettingVariables("varB")
 				seoRoot.AppendChildren(nodeA.AppendChildren(nodeB.AppendChildren(nodeC)))
 				return nodeC
 			}(),
@@ -601,12 +572,11 @@ func TestSEO_getFinalContextVars(t *testing.T) {
 			name: "override_context_var_from_parent",
 			seo: func() *SEO {
 				nodeA := &SEO{name: "nodeA"}
-				nodeA.RegisterContextVariables(
-					&ContextVar{Name: "ctxVarA", Func: ctxFunc1},
-					&ContextVar{Name: "ctxVarB", Func: ctxFunc2},
-				)
+				nodeA.
+					RegisterContextVariable("ctxVarA", ctxFunc1).
+					RegisterContextVariable("ctxVarB", ctxFunc2)
 				nodeB := &SEO{name: "nodeB"}
-				nodeB.RegisterContextVariables(&ContextVar{Name: "ctxVarA", Func: ctxFunc2})
+				nodeB.RegisterContextVariable("ctxVarA", ctxFunc2)
 				nodeA.AppendChildren(nodeB)
 				return nodeB
 			}(),
@@ -643,21 +613,17 @@ func TestSEO_getFinalPropFuncForOG(t *testing.T) {
 			name: "override_config_inherited_from_upper_level",
 			getSEO: func() *SEO {
 				seoRoot := &SEO{name: "Root"}
-				seoRoot.RegisterPropFuncForOG(
-					&PropFunc{
-						Name: "og:audio",
-						Func: func(_ interface{}, _ *Setting, _ *http.Request) string {
-							return "https://example.com/bond/root.mp3"
-						},
+				seoRoot.RegisterMetaProperty(
+					"og:audio",
+					func(_ interface{}, _ *Setting, _ *http.Request) string {
+						return "https://example.com/bond/root.mp3"
 					},
 				)
 				child := &SEO{name: "Child"}
-				child.RegisterPropFuncForOG(
-					&PropFunc{
-						Name: "og:audio",
-						Func: func(_ interface{}, _ *Setting, _ *http.Request) string {
-							return "https://example.com/bond/child.mp3"
-						},
+				child.RegisterMetaProperty(
+					"og:audio",
+					func(_ interface{}, _ *Setting, _ *http.Request) string {
+						return "https://example.com/bond/child.mp3"
 					},
 				).SetParent(seoRoot)
 				return child
@@ -671,11 +637,11 @@ func TestSEO_getFinalPropFuncForOG(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			seo := c.getSEO()
-			finalOgTag := seo.getFinalPropFuncForOG()
-			if len(finalOgTag) != len(c.expected) {
+			finalMetaProps := seo.getFinalMetaProps()
+			if len(finalMetaProps) != len(c.expected) {
 				t.Errorf("The number of og property is not equal to expectation")
 			}
-			for prop, propFunc := range finalOgTag {
+			for prop, propFunc := range finalMetaProps {
 				actualVal := propFunc(nil, nil, nil)
 				if c.expected[prop] != actualVal {
 					t.Errorf("The %v property's actual value: %v, but %v is expected",

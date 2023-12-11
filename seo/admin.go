@@ -51,7 +51,7 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 		ComponentFunc(b.EditingComponentFunc).
 		SetterFunc(EditSetterFunc)
 
-	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").Label("SEO")
+	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").Label("SEO").RightDrawerWidth("1000")
 
 	// Configure Listing Page
 	b.configListing(seoModel)
@@ -80,14 +80,14 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 	// Configure the indentation for Name field to display hierarchy.
 	listing.Field("Name").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			seo := obj.(*QorSEOSetting)
+			seoSetting := obj.(*QorSEOSetting)
 			icon := "folder"
-			priority := b.GetSEOPriority(seo.Name)
+			priority := b.GetSEOPriority(seoSetting.Name)
 			return &myTd{
 				td: h.Td(),
 				child: h.Div(
 					VIcon(icon).Small(true).Class("mb-1"),
-					h.Text(seo.Name),
+					h.Text(seoSetting.Name),
 				).Style(fmt.Sprintf("padding-left: %dpx;", 32*(priority-1))),
 			}
 		},

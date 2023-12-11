@@ -29,8 +29,7 @@ type SEO struct {
 
 	modelTyp reflect.Type
 
-	// [The Optional Metadata for Open Graph Protocol](https://ogp.me/#optional)
-	propFuncForOG map[string]contextVariablesFunc
+	metaProps map[string]contextVariablesFunc
 
 	// Dynamically retrieve the content that replaces the placeholders with its value
 	contextVars map[string]contextVariablesFunc
@@ -40,7 +39,7 @@ type SEO struct {
 	settingVars map[string]struct{}
 
 	finalContextVarsCache   map[string]contextVariablesFunc
-	finalPropFuncForOGCache map[string]contextVariablesFunc
+	finalMetaPropsCache     map[string]contextVariablesFunc
 	finalAvailableVarsCache map[string]struct{}
 }
 
@@ -58,7 +57,7 @@ type SEO struct {
 // Or:
 // builder.RegisterSEO(parent).AppendChildren(
 //
-//	builder.RegisterMultipleSEO(child1, child2, child3)
+//	builder.RegisterMultipleSEO(child1, child2, child3)...
 //
 // )
 func (seo *SEO) AppendChildren(children ...*SEO) *SEO {
@@ -126,9 +125,9 @@ func (seo *SEO) SetParent(newParent *SEO) *SEO {
 	return seo
 }
 
-// RemoveSelf removes itself from the SEO tree.
+// removeSelf removes itself from the SEO tree.
 // the parent of its every child will be changed to the parent of it
-func (seo *SEO) RemoveSelf() *SEO {
+func (seo *SEO) removeSelf() *SEO {
 	if seo == nil {
 		return seo
 	}
@@ -149,103 +148,85 @@ func (seo *SEO) RemoveSelf() *SEO {
 	return seo
 }
 
-type ContextVar struct {
-	Name string
-	Func contextVariablesFunc
-}
-
-func (seo *SEO) RegisterContextVariables(contextVars ...*ContextVar) *SEO {
+func (seo *SEO) RegisterContextVariable(varName string, varFunc contextVariablesFunc) *SEO {
 	if seo == nil {
 		return nil
 	}
 	if seo.contextVars == nil {
 		seo.contextVars = make(map[string]contextVariablesFunc)
 	}
-	for _, contextVar := range contextVars {
-		varName, varFunc := strings.TrimSpace(contextVar.Name), contextVar.Func
-		if varName == "" {
-			panic("The name of context var must not be empty")
-		}
-		if _, isExist := seo.contextVars[varName]; isExist {
-			panic(fmt.Sprintf("The context variable %v has already been registered", varName))
-		}
-		if varFunc == nil {
-			panic("The function of context var must not be nil")
-		}
-		seo.checkConflict(varName, true)
-		seo.contextVars[varName] = varFunc
+	varName = strings.TrimSpace(varName)
+	if varName == "" {
+		panic("The name of context var must not be empty")
 	}
+	if _, isExist := seo.contextVars[varName]; isExist {
+		panic(fmt.Sprintf("The context variable %v has already been registered", varName))
+	}
+	if varFunc == nil {
+		panic("The function of context var must not be nil")
+	}
+	seo.checkConflict(varName, true)
+	seo.contextVars[varName] = varFunc
 	return seo
 }
 
-func (seo *SEO) RegisterSettingVariables(settingVars interface{}) *SEO {
+func (seo *SEO) RegisterSettingVariables(names ...string) *SEO {
 	if seo == nil {
 		return seo
 	}
 	if seo.settingVars == nil {
 		seo.settingVars = make(map[string]struct{})
 	}
-	tType := reflect.Indirect(reflect.ValueOf(settingVars)).Type()
-	if tType.Kind() != reflect.Struct {
-		panic("The setting vars must be of type struct")
-	}
-	for i := 0; i < tType.NumField(); i++ {
-		fieldName := tType.Field(i).Name
-		seo.checkConflict(fieldName, false)
-		seo.settingVars[fieldName] = struct{}{}
+	for _, name := range names {
+		name = GetSEOName(name)
+		if name == "" {
+			panic("The name of setting var must be not empty")
+		}
+		seo.checkConflict(name, false)
+		seo.settingVars[name] = struct{}{}
 	}
 	return seo
 }
 
-type PropFunc struct {
-	Name string
-	Func contextVariablesFunc
-}
-
-func (seo *SEO) RegisterPropFuncForOG(propFuncs ...*PropFunc) *SEO {
+func (seo *SEO) RegisterMetaProperty(propName string, propFunc contextVariablesFunc) *SEO {
 	if seo == nil {
 		return nil
 	}
-	if seo.propFuncForOG == nil {
-		seo.propFuncForOG = make(map[string]contextVariablesFunc)
+	if seo.metaProps == nil {
+		seo.metaProps = make(map[string]contextVariablesFunc)
 	}
-	for _, propAndFunc := range propFuncs {
-		propName := propAndFunc.Name
-		propFunc := propAndFunc.Func
-
-		prop := strings.TrimSpace(propName)
-		if prop == "" || propFunc == nil {
-			panic("Both property name and function are required")
-		}
-		if !strings.Contains(prop, ":") {
-			panic(fmt.Sprintf("%v is not a valid OpenGraph property name", prop))
-		}
-		if _, isExist := seo.propFuncForOG[prop]; isExist {
-			panic(fmt.Sprintf("property %v has already been registered", prop))
-		}
-		seo.propFuncForOG[prop] = propFunc
+	prop := strings.TrimSpace(propName)
+	if prop == "" || propFunc == nil {
+		panic("Both property name and function are required")
 	}
+	if !strings.Contains(prop, ":") {
+		panic(fmt.Sprintf("%v is not a valid OpenGraph property name", prop))
+	}
+	if _, isExist := seo.metaProps[prop]; isExist {
+		panic(fmt.Sprintf("property %v has already been registered", prop))
+	}
+	seo.metaProps[prop] = propFunc
 	return seo
 }
 
-func (seo *SEO) getFinalPropFuncForOG() map[string]contextVariablesFunc {
+func (seo *SEO) getFinalMetaProps() map[string]contextVariablesFunc {
 	if seo == nil {
 		return nil
 	}
-	if seo.finalPropFuncForOGCache != nil {
-		return seo.finalPropFuncForOGCache
+	if seo.finalMetaPropsCache != nil {
+		return seo.finalMetaPropsCache
 	} else {
-		seo.finalPropFuncForOGCache = make(map[string]contextVariablesFunc)
-		for propName, propFunc := range seo.propFuncForOG {
-			seo.finalPropFuncForOGCache[propName] = propFunc
+		seo.finalMetaPropsCache = make(map[string]contextVariablesFunc)
+		for propName, propFunc := range seo.metaProps {
+			seo.finalMetaPropsCache[propName] = propFunc
 		}
-		cacheOfParent := seo.parent.getFinalPropFuncForOG()
+		cacheOfParent := seo.parent.getFinalMetaProps()
 		for propName, propFunc := range cacheOfParent {
-			if _, isExist := seo.finalPropFuncForOGCache[propName]; !isExist {
-				seo.finalPropFuncForOGCache[propName] = propFunc
+			if _, isExist := seo.finalMetaPropsCache[propName]; !isExist {
+				seo.finalMetaPropsCache[propName] = propFunc
 			}
 		}
-		return seo.finalPropFuncForOGCache
+		return seo.finalMetaPropsCache
 	}
 }
 
