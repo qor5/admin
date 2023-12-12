@@ -239,6 +239,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		border: 2px outset #767676;
 		cursor: pointer;
 	}
+	.wrapper-shadow i{
+		text-emphasis: none;
+	}
 	.wrapper-shadow.hover {
 		cursor: pointer;
 		opacity: 1;
