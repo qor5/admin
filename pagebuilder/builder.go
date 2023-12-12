@@ -1234,8 +1234,8 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
-		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
-		if !hasPerm {
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		if permDeny {
 			return r, perm.PermissionDenied
 		}
 
@@ -1296,8 +1296,8 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil
-		if !hasPerm {
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		if permDeny {
 			return r, perm.PermissionDenied
 		}
 		ri := ctx.R.FormValue("resource_id")
@@ -1392,8 +1392,8 @@ func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
-		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
-		if !hasPerm {
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		if permDeny {
 			return r, perm.PermissionDenied
 		}
 		err = seo.EditSetterFunc(obj, &presets.FieldContext{Name: "SEO"}, ctx)
@@ -1459,8 +1459,8 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
-		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil
-		if !hasPerm {
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		if permDeny {
 			return r, perm.PermissionDenied
 		}
 		name := ctx.R.FormValue("VersionName")
