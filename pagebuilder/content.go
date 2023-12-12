@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"github.com/qor5/admin/presets"
 	"net/url"
 
 	"github.com/qor5/admin/publish"
@@ -52,8 +53,8 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	case DevicePhone:
 		activeDevice = 2
 	}
-
-	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft)
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(p).WithReq(ctx.R).IsAllowed() != nil
+	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft || permDeny)
 	if err != nil {
 		return
 	}

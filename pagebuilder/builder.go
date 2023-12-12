@@ -211,6 +211,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 	pm = pb.Model(&Page{})
 	b.seoCollection = seoCollection
+	b.ps.Permission(pb.GetPermission())
 
 	templateM := presets.NewModelBuilder(pb, &Template{})
 	if b.templateEnabled {
@@ -340,8 +341,8 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
 
-			var publishBtn h.HTMLComponent
-			var duplicateBtn h.HTMLComponent
+			var publishBtn *VBtnBuilder
+			var duplicateBtn *VBtnBuilder
 			var versionSwitch h.HTMLComponent
 			primarySlug := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
@@ -378,7 +379,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Query("select_id", primarySlug).
 						Go())
 			}
-
+			permDeny := dmb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+			if permDeny {
+				if publishBtn != nil {
+					publishBtn = publishBtn.Disabled(permDeny)
+				}
+				if duplicateBtn != nil {
+					duplicateBtn = duplicateBtn.Disabled(permDeny)
+				}
+			}
 			pr.Body = VApp(
 				VNavigationDrawer(
 					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
@@ -694,16 +703,22 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		versionName := obj.(publish.VersionInterface).GetVersionName()
-		return h.Td(
-			h.Text(versionName),
-			VBtn("").Icon(true).Children(VIcon("edit")).Attr("@click", web.Plaid().
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		var editBtn h.HTMLComponent
+		if !permDeny {
+			editBtn = VBtn("").Icon(true).Children(VIcon("edit")).Attr("@click", web.Plaid().
 				URL(pb.GetURIPrefix()+"/version-list-dialog").
 				EventFunc(renameVersionDialogEvent).
 				Queries(ctx.Queries()).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
 				Query("version_name", versionName).
-				Go()),
+				Go())
+		}
+
+		return h.Td(
+			h.Text(versionName),
+			h.If(editBtn != nil, editBtn),
 		)
 	})
 	lb.Field("State").ComponentFunc(pv.StatusListFunc())
@@ -733,7 +748,8 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		if p.PrimarySlug() == id {
 			return h.Td(h.Text("current"))
 		}
-		if p.GetStatus() != publish.StatusDraft {
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		if p.GetStatus() != publish.StatusDraft || permDeny {
 			return h.Td()
 		}
 
@@ -1155,6 +1171,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
 		updateBtn := VBtn(cmsgr.Update).
 			Color("primary").
 			Attr(":disabled", "isFetching").
@@ -1166,6 +1183,13 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 				Query(presets.ParamOverlay, actions.Dialog).
 				URL(mb.Info().ListingHref()).
 				Go())
+
+		if permDeny {
+			updateBtn = updateBtn.Disabled(permDeny)
+		} else {
+			updateBtn = updateBtn.Attr(":disabled", "isFetching").
+				Attr(":loading", "isFetching")
+		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogPortalName,
@@ -1210,6 +1234,11 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
+		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
+		if !hasPerm {
+			return r, perm.PermissionDenied
+		}
+
 		err = pv.ScheduleEditSetterFunc(obj, nil, ctx)
 		if err != nil {
 			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
@@ -1228,7 +1257,6 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
-
 		okAction := web.Plaid().
 			URL(mb.Info().ListingHref()).
 			EventFunc(createNoteEvent).
@@ -1268,6 +1296,10 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil
+		if !hasPerm {
+			return r, perm.PermissionDenied
+		}
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
 		content := ctx.R.FormValue("Content")
@@ -1320,6 +1352,13 @@ func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoCollection *seo.Col
 				// Query(presets.ParamOverlay, actions.Dialog).
 				URL(mb.Info().ListingHref()).
 				Go())
+		permDeny := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		if permDeny {
+			updateBtn = updateBtn.Disabled(permDeny)
+		} else {
+			updateBtn = updateBtn.Attr(":disabled", "isFetching").
+				Attr(":loading", "isFetching")
+		}
 		ctx.R.Form.Set("hideActionsIconForSEOForm", "true")
 		seoForm := seoCollection.EditingComponentFunc(obj, nil, ctx)
 
@@ -1352,6 +1391,10 @@ func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
 			return
+		}
+		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
+		if !hasPerm {
+			return r, perm.PermissionDenied
 		}
 		err = seo.EditSetterFunc(obj, &presets.FieldContext{Name: "SEO"}, ctx)
 		if err != nil {
@@ -1416,7 +1459,10 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
-
+		hasPerm := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil
+		if !hasPerm {
+			return r, perm.PermissionDenied
+		}
 		name := ctx.R.FormValue("VersionName")
 		if err = reflectutils.Set(obj, "Version.VersionName", name); err != nil {
 			return

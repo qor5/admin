@@ -87,8 +87,10 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		var editBtn h.HTMLComponent
 		var pageStateBtn h.HTMLComponent
 		var seoBtn h.HTMLComponent
+		var noteBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
-		if p.GetStatus() == publish.StatusDraft {
+		permDeny := mi.Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		if p.GetStatus() == publish.StatusDraft && !permDeny {
 			editBtn = VBtn("Edit").Depressed(true).
 				Attr("@click", web.POST().
 					EventFunc(actions.Edit).
@@ -104,12 +106,21 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
 		}
-		if p.GetStatus() == publish.StatusOnline {
+		if p.GetStatus() == publish.StatusOnline && !permDeny {
 			pageStateBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
-		} else {
+		} else if !permDeny {
 			pageStateBtn = VBtn("Schedule Publish").Depressed(true).
 				Attr("@click", web.POST().
 					EventFunc(schedulePublishDialogEvent).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamID, p.PrimarySlug()).
+					URL(mi.PresetsPrefix()+"/pages").Go(),
+				)
+		}
+		if !permDeny {
+			noteBtn = VBtn("Create").Depressed(true).
+				Attr("@click", web.POST().
+					EventFunc(createNoteDialogEvent).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
@@ -144,14 +155,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 				VCol(
 					vx.Card(notesSetcion).HeaderTitle("Notes").
 						Actions(
-							VBtn("Create").Depressed(true).
-								Attr("@click", web.POST().
-									EventFunc(createNoteDialogEvent).
-									Query(presets.ParamOverlay, actions.Dialog).
-									Query(presets.ParamID, p.PrimarySlug()).
-									URL(mi.PresetsPrefix()+"/pages").Go(),
-								),
-						).Class("mb-4 rounded-lg").Outlined(true),
+							h.If(noteBtn != nil, noteBtn)).Class("mb-4 rounded-lg").Outlined(true),
 				).Cols(4),
 			),
 		)
@@ -168,15 +172,17 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 				vx.DetailField(vx.OptionalText(p.Description)).Label("Description"),
 			),
 		)
-
-		editBtn := VBtn("Edit").Depressed(true).
-			Attr("@click", web.POST().
-				EventFunc(actions.Edit).
-				Query(presets.ParamOverlay, actions.Dialog).
-				Query(presets.ParamID, p.PrimarySlug()).
-				URL(pm.Info().ListingHref()).Go(),
-			)
-
+		var editBtn h.HTMLComponent
+		permDeny := pm.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		if !permDeny {
+			editBtn = VBtn("Edit").Depressed(true).
+				Attr("@click", web.POST().
+					EventFunc(actions.Edit).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamID, p.PrimarySlug()).
+					URL(pm.Info().ListingHref()).Go(),
+				)
+		}
 		return VContainer(
 			VRow(
 				VCol(
