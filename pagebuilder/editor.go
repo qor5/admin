@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/qor5/x/perm"
 	"net/url"
 	"os"
 	"path"
@@ -104,8 +105,8 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 	device, _ = b.getDevice(ctx)
-
-	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft)
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(p).WithReq(ctx.R).IsAllowed() != nil
+	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft || permDeny)
 	if err != nil {
 		return
 	}
@@ -193,7 +194,8 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	}
 
 	var isReadonly bool
-	if p.GetStatus() != publish.StatusDraft && isEditor {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(p).WithReq(ctx.R).IsAllowed() != nil
+	if (p.GetStatus() != publish.StatusDraft && isEditor) || permDeny {
 		isReadonly = true
 	}
 
@@ -375,6 +377,7 @@ type ContainerSorterItem struct {
 	Shared         bool   `json:"shared"`
 	VisibilityIcon string `json:"visibility_icon"`
 	ParamID        string `json:"param_id"`
+	Locale         string `json:"locale"`
 }
 
 type ContainerSorter struct {
@@ -408,6 +411,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 				Shared:         c.Shared,
 				VisibilityIcon: vicon,
 				ParamID:        c.PrimarySlug(),
+				Locale:         locale,
 			},
 		)
 	}
@@ -520,6 +524,10 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 }
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
 	locale := ctx.R.FormValue(paramLocale)
@@ -544,8 +552,11 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 }
 
 func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	moveResult := ctx.R.FormValue(paramMoveResult)
-
 	var result []ContainerSorterItem
 	err = json.Unmarshal([]byte(moveResult), &result)
 	if err != nil {
@@ -553,7 +564,7 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 	}
 	err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
 		for i, r := range result {
-			if inerr = tx.Model(&Container{}).Where("id = ?", r.ContainerID).Update("display_order", i+1).Error; inerr != nil {
+			if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", r.ContainerID, r.Locale).Update("display_order", i+1).Error; inerr != nil {
 				return
 			}
 		}
@@ -565,6 +576,10 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 }
 
 func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
@@ -579,7 +594,6 @@ func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventR
 
 func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
 	paramID := ctx.R.FormValue(paramContainerID)
-
 	containerName := ctx.R.FormValue(paramContainerName)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -615,6 +629,10 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 }
 
 func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
@@ -853,6 +871,10 @@ func (b *Builder) createModelAfterLocalizeDemoContainer(db *gorm.DB, c *DemoCont
 }
 
 func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
@@ -868,6 +890,10 @@ func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventRespo
 }
 
 func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	permDeny := b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+	if permDeny {
+		return r, perm.PermissionDenied
+	}
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)

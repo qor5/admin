@@ -318,27 +318,25 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 		c.AppendChildren(row)
 
-		if media.IsImageFormat(mediaBox.FileName) {
-			fieldName := fmt.Sprintf("%s.Description", field)
-			value := ctx.R.FormValue(fieldName)
-			if len(value) == 0 {
-				value = mediaBox.Description
-			}
-			c.AppendChildren(
-				VRow(
-					VCol(
-						VTextField().
-							Value(value).
-							Attr(web.VFieldName(fieldName)...).
-							Label(msgr.DescriptionForAccessibility).
-							Dense(true).
-							HideDetails(true).
-							Outlined(true).
-							Disabled(disabled),
-					).Cols(12).Class("pl-0 pt-0"),
-				),
-			)
+		fieldName := fmt.Sprintf("%s.Description", field)
+		value := ctx.R.FormValue(fieldName)
+		if len(value) == 0 {
+			value = mediaBox.Description
 		}
+		c.AppendChildren(
+			VRow(
+				VCol(
+					VTextField().
+						Value(value).
+						Attr(web.VFieldName(fieldName)...).
+						Label(msgr.DescriptionForAccessibility).
+						Dense(true).
+						HideDetails(true).
+						Outlined(true).
+						Disabled(disabled),
+				).Cols(12).Class("pl-0 pt-0"),
+			),
+		)
 	}
 
 	mediaBoxValue := ""
