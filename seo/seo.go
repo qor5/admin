@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
-	"reflect"
 	"strings"
 )
 
@@ -27,19 +26,17 @@ type SEO struct {
 	// the program to panic.
 	name string
 
-	modelTyp reflect.Type
-
-	metaProps map[string]contextVariablesFunc
+	metaProps map[string]ContextVarFunc
 
 	// Dynamically retrieve the content that replaces the placeholders with its value
-	contextVars map[string]contextVariablesFunc
+	contextVars map[string]ContextVarFunc
 
 	// Replace the placeholders within {{}} with the values from the variable field in the database.
 	// For example, if the variable field in the database contains a:"b", then {{a}} will be replaced with b.
 	settingVars map[string]struct{}
 
-	finalContextVarsCache   map[string]contextVariablesFunc
-	finalMetaPropsCache     map[string]contextVariablesFunc
+	finalContextVarsCache   map[string]ContextVarFunc
+	finalMetaPropsCache     map[string]ContextVarFunc
 	finalAvailableVarsCache map[string]struct{}
 }
 
@@ -148,12 +145,12 @@ func (seo *SEO) removeSelf() *SEO {
 	return seo
 }
 
-func (seo *SEO) RegisterContextVariable(varName string, varFunc contextVariablesFunc) *SEO {
+func (seo *SEO) RegisterContextVariable(varName string, varFunc ContextVarFunc) *SEO {
 	if seo == nil {
 		return nil
 	}
 	if seo.contextVars == nil {
-		seo.contextVars = make(map[string]contextVariablesFunc)
+		seo.contextVars = make(map[string]ContextVarFunc)
 	}
 	varName = strings.TrimSpace(varName)
 	if varName == "" {
@@ -178,7 +175,7 @@ func (seo *SEO) RegisterSettingVariables(names ...string) *SEO {
 		seo.settingVars = make(map[string]struct{})
 	}
 	for _, name := range names {
-		name = GetSEOName(name)
+		name = strings.TrimSpace(name)
 		if name == "" {
 			panic("The name of setting var must be not empty")
 		}
@@ -188,12 +185,12 @@ func (seo *SEO) RegisterSettingVariables(names ...string) *SEO {
 	return seo
 }
 
-func (seo *SEO) RegisterMetaProperty(propName string, propFunc contextVariablesFunc) *SEO {
+func (seo *SEO) RegisterMetaProperty(propName string, propFunc ContextVarFunc) *SEO {
 	if seo == nil {
 		return nil
 	}
 	if seo.metaProps == nil {
-		seo.metaProps = make(map[string]contextVariablesFunc)
+		seo.metaProps = make(map[string]ContextVarFunc)
 	}
 	prop := strings.TrimSpace(propName)
 	if prop == "" || propFunc == nil {
@@ -209,14 +206,14 @@ func (seo *SEO) RegisterMetaProperty(propName string, propFunc contextVariablesF
 	return seo
 }
 
-func (seo *SEO) getFinalMetaProps() map[string]contextVariablesFunc {
+func (seo *SEO) getFinalMetaProps() map[string]ContextVarFunc {
 	if seo == nil {
 		return nil
 	}
 	if seo.finalMetaPropsCache != nil {
 		return seo.finalMetaPropsCache
 	} else {
-		seo.finalMetaPropsCache = make(map[string]contextVariablesFunc)
+		seo.finalMetaPropsCache = make(map[string]ContextVarFunc)
 		for propName, propFunc := range seo.metaProps {
 			seo.finalMetaPropsCache[propName] = propFunc
 		}
@@ -313,14 +310,14 @@ func (seo *SEO) getFinalQorSEOSetting(db *gorm.DB) map[string]*QorSEOSetting {
 	return r
 }
 
-func (seo *SEO) getFinalContextVars() map[string]contextVariablesFunc {
+func (seo *SEO) getFinalContextVars() map[string]ContextVarFunc {
 	if seo == nil {
 		return nil
 	}
 	if seo.finalContextVarsCache != nil {
 		return seo.finalContextVarsCache
 	} else {
-		seo.finalContextVarsCache = make(map[string]contextVariablesFunc)
+		seo.finalContextVarsCache = make(map[string]ContextVarFunc)
 		for varName, varFunc := range seo.contextVars {
 			seo.finalContextVarsCache[varName] = varFunc
 		}

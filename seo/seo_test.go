@@ -143,7 +143,7 @@ func TestSEO_RegisterContextVariable(t *testing.T) {
 		name        string
 		getSeoRoot  func() *SEO
 		shouldPanic bool
-		expected    map[string]map[string]contextVariablesFunc
+		expected    map[string]map[string]ContextVarFunc
 	}{
 		{
 			name: "register_context_variables",
@@ -152,7 +152,7 @@ func TestSEO_RegisterContextVariable(t *testing.T) {
 				seoRoot.RegisterContextVariable("ctxFunc1", ctxFunc1)
 				return seoRoot
 			},
-			expected: map[string]map[string]contextVariablesFunc{
+			expected: map[string]map[string]ContextVarFunc{
 				"Root": {"ctxFunc1": ctxFunc1},
 			},
 		},
@@ -167,7 +167,7 @@ func TestSEO_RegisterContextVariable(t *testing.T) {
 				child.SetParent(seoRoot).RegisterContextVariable("c1", ctxFunc2)
 				return seoRoot
 			},
-			expected: map[string]map[string]contextVariablesFunc{
+			expected: map[string]map[string]ContextVarFunc{
 				"Root":  {"c1": ctxFunc1},
 				"Child": {"c1": ctxFunc2},
 			},

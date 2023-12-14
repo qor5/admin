@@ -51,7 +51,13 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 		ComponentFunc(b.EditingComponentFunc).
 		SetterFunc(EditSetterFunc)
 
-	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").Label("SEO").RightDrawerWidth("1000")
+	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").
+		Label("SEO").
+		RightDrawerWidth("1000").
+		LayoutConfig(&presets.LayoutConfig{
+			SearchBoxInvisible:          true,
+			NotificationCenterInvisible: true,
+		})
 
 	// Configure Listing Page
 	b.configListing(seoModel)
@@ -68,11 +74,12 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 }
 
 func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
-	listing := seoModel.Listing("Name")
+	listing := seoModel.Listing("Name").Title("SEO")
 	// disable new btn globally, no one can add new SEO record after the server start up.
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return nil
 	})
+	listing.DisablePagination(true)
 
 	// Remove the row menu from each row
 	listing.RowMenu().Empty()
@@ -98,7 +105,9 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		var seoNames []string
 		for name := range b.registeredSEO {
-			seoNames = append(seoNames, name)
+			if name, ok := name.(string); ok {
+				seoNames = append(seoNames, name)
+			}
 		}
 		cond := presets.SQLCondition{
 			Query: "locale_code = ? and name in (?)",
@@ -141,7 +150,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 				var variablesComps h.HTMLComponents
 				if len(settingVars) > 0 {
 					variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"))
-					for varName, _ := range settingVars {
+					for varName := range settingVars {
 						fieldComp := VTextField().
 							FieldName(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName)).
 							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName)).
@@ -213,7 +222,7 @@ func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.Event
 	return reflectutils.Set(obj, field.Name, setting)
 }
 
-func (b *Builder) EditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 		fieldPrefix string

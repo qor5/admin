@@ -40,50 +40,17 @@ The seo package allows for the management and injection of dynamic data into HTM
 
 All registered SEO names are unique, If you have already registered a SEO named `Test`, attempting to register SEO with the same name `Test` will cause the program to panic.
 
+The second parameter named `model` in the `RegisterSEO(name string, model ...interface{})` method is an
+instance of a type that has a field of type `Setting`. If you pass a  `model` whose type
+does not have such a field, the program will panic.
+
 ```go
 builder.RegisterSEO("Test")
 type Test struct {
     ...
 }
-builder.RegisterSEO(&Test{}) // will panic
+builder.RegisterSEO("Test", &Test{}) // will panic
 ```
-
-- Register single seo by name
-
-  ```go
-  builder.RegisterSEO("News")
-  ```
-
-- Register single seo by model
-
-  **NOTE: the mode to be registered must embed the `Setting` struct**
-
-  **NOTE: The name of the SEO registered through the model is obtained by reflecting the type name, which is `reflect.Type(...).Name()`**
-
-  ```go
-  type Page struct {
-      ...
-      seo Setting // embed `Setting`
-      ...
-  }
-  // The seo name will be "Page"
-  builder.RegisterSEO(&Page{})
-  ```
-
-- Register multiple SEOs by a list of names
-
-  ```go
-  builder.RegisterMultipleSEO("Not Fount", "Internal Server Error")
-  ```
-
-- Register multiple SEOs by a list of models
-
-  **NOTE: the mode to be registered must embed the Setting struct**
-
-  ```go
-  // The name of the SEOs are "Product" and "Customer" respectively.
-  builder.RegisterMultipleSEO(&Product{}, &Customer{})
-  ```
 
 - Remove a SEO
 
@@ -104,11 +71,6 @@ builder.RegisterSEO(&Test{}) // will panic
       builder.RegisterSEO("B"),
       builder.RegisterSEO("C"),
       builder.RegisterSEO("D"),
-  )
-
-  // The following code is equivalent to the code above.
-  builder.RegisterSEO("A").AppendChildren(
-      builder.RegisterMultipleSEO("B", "C", D)...
   )
   ```
 

@@ -95,7 +95,8 @@ func TestUpdate(t *testing.T) {
 	admin := presets.New().URIPrefix("/admin").DataOperator(gorm2op.DataOperator(dbForTest))
 	server := httptest.NewServer(admin)
 	builder := NewBuilder(dbForTest, WithLocales("en"))
-	builder.RegisterMultipleSEO("Product Detail", "Product")
+	builder.RegisterSEO("Product Detail")
+	builder.RegisterSEO("Product")
 	builder.Configure(admin)
 
 	l10nBuilder := l10n.New().RegisterLocales("en", "en", "English")
