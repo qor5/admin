@@ -1322,7 +1322,12 @@ func (b *ListingBuilder) getTableComponents(
 			CellComponentFunc(b.cellComponentFunc(f))
 	}
 
-	if totalCount > 0 && !b.disablePagination {
+	if b.disablePagination {
+		// if disable pagination, we don't need to add
+		// the pagination component and the no-record message to page.
+		return
+	}
+	if totalCount > 0 {
 		tpb := vx.VXTablePagination().
 			Total(int64(totalCount)).
 			CurrPage(searchParams.Page).
