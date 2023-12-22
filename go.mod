@@ -81,6 +81,7 @@ require (
 	github.com/markbates/going v1.0.3 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/nwaples/rardecode/v2 v2.0.0-beta.2 // indirect
+	github.com/ompluscator/dynamic-struct v1.4.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
