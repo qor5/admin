@@ -37,7 +37,7 @@ func TestEditor(t *testing.T) {
 	db := ConnectDB()
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
-
+	pb.Configure(b, db, nil, nil, nil, nil)
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
