@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/example/models"
-	"github.com/qor5/web"
 	"github.com/qor5/x/sitemap"
 )
 
@@ -15,9 +14,7 @@ import (
 var favicon []byte
 
 const (
-	logoutURL                  = "/auth/logout"
-	oauthCompleteInfoPageURL   = "/auth/complete-info"
-	oauthCompleteInfoActionURL = "/auth/do-complete-info"
+	logoutURL = "/auth/logout"
 
 	exportOrdersURL = "/export-orders"
 )
@@ -53,9 +50,6 @@ func Router() http.Handler {
 		return
 	})
 
-	mux.Handle(oauthCompleteInfoActionURL, doOAuthCompleteInfo(db))
-	mux.Handle(oauthCompleteInfoPageURL, c.pb.I18n().EnsureLanguage(web.New().Page(oauthCompleteInfoPage(vh, c.pb))))
-
 	mux.Handle(exportOrdersURL, exportOrders(db))
 
 	// example of sitemap and robot
@@ -69,7 +63,6 @@ func Router() http.Handler {
 	cr.Use(
 		loginBuilder.Middleware(),
 		validateSessionToken(),
-		isOAuthInfoCompleted(),
 		withRoles(db),
 		withNoteContext(),
 		securityMiddleware(),

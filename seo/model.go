@@ -79,22 +79,22 @@ func (s QorSEOSetting) GetSEOSetting() Setting {
 	return s.Setting
 }
 
-// SetVariablesSetting set variables setting
+// SetVariables set variables setting
 func (s *QorSEOSetting) SetVariables(setting Variables) {
 	s.Variables = setting
 }
 
-// GetVariablesSetting get variables setting
+// GetVariables get variables setting
 func (s QorSEOSetting) GetVariables() Variables {
 	return s.Variables
 }
 
-// GetName get QorSeoSetting's name
+// GetLocale get QorSeoSetting's name
 func (s QorSEOSetting) GetLocale() string {
-	return s.Name
+	return s.LocaleCode
 }
 
-// SetName set QorSeoSetting's name
+// SetLocale set QorSeoSetting's name
 func (s *QorSEOSetting) SetLocale(locale string) {
 	s.LocaleCode = locale
 }

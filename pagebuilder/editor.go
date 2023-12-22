@@ -177,7 +177,7 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-const FreeStyleKey = "FreeStyle"
+const ContainerToPageLayoutKey = "ContainerToPageLayout"
 
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	if isTpl {
@@ -201,16 +201,21 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	}
 
 	var comps []h.HTMLComponent
-	comps, err = b.renderContainers(ctx, p.ID, p.GetVersion(), p.GetLocale(), isEditor, isReadonly)
+	comps, err = b.renderContainers(ctx, p, isEditor, isReadonly)
 	if err != nil {
 		return
 	}
 	r = h.Components(comps...)
 	if b.pageLayoutFunc != nil {
+		var seoTags h.HTMLComponent
+		if b.seoCollection != nil {
+			seoTags = b.seoCollection.Render(p, ctx.R)
+		}
 		input := &PageLayoutInput{
 			IsEditor:  isEditor,
 			IsPreview: !isEditor,
 			Page:      p,
+			SeoTags:   seoTags,
 		}
 
 		if isEditor {
@@ -264,12 +269,13 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	window.addEventListener("message", scrolltoCurrentContainer, false);
 `}
 		}
-		if f := ctx.R.Context().Value(FreeStyleKey); f != nil {
+		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
 			pl, ok := f.(*PageLayoutInput)
 			if ok {
 				input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)
 				input.FreeStyleTopJs = append(input.FreeStyleTopJs, pl.FreeStyleTopJs...)
 				input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
+				input.Hreflang = pl.Hreflang
 			}
 		}
 
@@ -328,9 +334,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 	return
 }
 
-func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersion, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
+func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", p.ID, p.GetVersion(), p.GetLocale()).Error
 	if err != nil {
 		return
 	}
@@ -349,6 +355,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, pageID uint, pageVersi
 		}
 
 		input := RenderInput{
+			Page:       p,
 			IsEditor:   isEditor,
 			IsReadonly: isReadonly,
 			Device:     device,
@@ -371,6 +378,7 @@ type ContainerSorterItem struct {
 	Shared         bool   `json:"shared"`
 	VisibilityIcon string `json:"visibility_icon"`
 	ParamID        string `json:"param_id"`
+	Locale         string `json:"locale"`
 }
 
 type ContainerSorter struct {
@@ -404,6 +412,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 				Shared:         c.Shared,
 				VisibilityIcon: vicon,
 				ParamID:        c.PrimarySlug(),
+				Locale:         locale,
 			},
 		)
 	}
@@ -549,7 +558,7 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 	}
 	err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
 		for i, r := range result {
-			if inerr = tx.Model(&Container{}).Where("id = ?", r.ContainerID).Update("display_order", i+1).Error; inerr != nil {
+			if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", r.ContainerID, r.Locale).Update("display_order", i+1).Error; inerr != nil {
 				return
 			}
 		}

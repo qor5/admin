@@ -9,5 +9,6 @@ func main() {
 	tbs := admin.GetNonIgnoredTableNames()
 	admin.EmptyDB(db, tbs)
 	admin.InitDB(db, tbs)
+	admin.ErasePublicUsersData(db)
 	return
 }

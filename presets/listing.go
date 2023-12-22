@@ -20,20 +20,36 @@ import (
 )
 
 type ListingBuilder struct {
-	mb                *ModelBuilder
-	bulkActions       []*BulkActionBuilder
-	actions           []*ActionBuilder
-	actionsAsMenu     bool
-	rowMenu           *RowMenuBuilder
-	filterDataFunc    FilterDataFunc
-	filterTabsFunc    FilterTabsFunc
-	newBtnFunc        ComponentFunc
-	pageFunc          web.PageFunc
-	cellWrapperFunc   vx.CellWrapperFunc
-	Searcher          SearchFunc
-	searchColumns     []string
-	perPage           int64
-	totalVisible      int64
+	mb              *ModelBuilder
+	bulkActions     []*BulkActionBuilder
+	actions         []*ActionBuilder
+	actionsAsMenu   bool
+	rowMenu         *RowMenuBuilder
+	filterDataFunc  FilterDataFunc
+	filterTabsFunc  FilterTabsFunc
+	newBtnFunc      ComponentFunc
+	pageFunc        web.PageFunc
+	cellWrapperFunc vx.CellWrapperFunc
+	Searcher        SearchFunc
+	searchColumns   []string
+
+	// title is the title of the listing page.
+	// its default value is "Listing ${modelName}".
+	title string
+
+	// perPage is the number of records per page.
+	// if request query param "per_page" is set, it will be set to that value.
+	// if the final value is less than 0, it will be set to 50.
+	// if the final value is greater than 1000, it will be set to 1000.
+	perPage int64
+
+	// disablePagination is used to disable pagination, its default value is false.
+	// if it is true, the following will happen:
+	// 1. the pagination component will not display on listing page.
+	// 2. the perPage will actually be ignored.
+	// 3. all data will be returned in one page.
+	disablePagination bool
+
 	orderBy           string
 	orderableFields   []*OrderableField
 	selectableColumns bool
@@ -63,6 +79,12 @@ func (b *ListingBuilder) Only(vs ...string) (r *ListingBuilder) {
 	return
 }
 
+func (b *ListingBuilder) Except(vs ...string) (r *ListingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)
+	return
+}
+
 func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	b.pageFunc = pf
 	return b
@@ -73,8 +95,18 @@ func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuil
 	return b
 }
 
+func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
+	b.disablePagination = v
+	return b
+}
+
 func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
 	b.Searcher = v
+	return b
+}
+
+func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
+	b.title = title
 	return b
 }
 
@@ -85,11 +117,6 @@ func (b *ListingBuilder) SearchColumns(vs ...string) (r *ListingBuilder) {
 
 func (b *ListingBuilder) PerPage(v int64) (r *ListingBuilder) {
 	b.perPage = v
-	return b
-}
-
-func (b *ListingBuilder) TotalVisible(v int64) (r *ListingBuilder) {
-	b.totalVisible = v
 	return b
 }
 
@@ -159,7 +186,10 @@ func (b *ListingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRespo
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+	title := b.title
+	if title == "" {
+		title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+	}
 	r.PageTitle = title
 
 	r.Body = b.listingComponent(ctx, false)
@@ -932,6 +962,7 @@ func (b *ListingBuilder) filterBar(
 		filter.OnChange(web.Plaid().
 			URL(ctx.R.RequestURI).
 			StringQuery(web.Var("$event.encodedFilterData")).
+			Query("page", 1).
 			ClearMergeQuery(web.Var("$event.filterKeys")).
 			EventFunc(actions.UpdateListingDialog).
 			Go())
@@ -945,6 +976,10 @@ func getLocalPerPage(
 	ctx *web.EventContext,
 	mb *ModelBuilder,
 ) int64 {
+	// c is the cookie value of a serials of per page value, split by "$".
+	// each value is split by "#".
+	// the first part is the uri name of the model builder.
+	// the second part is the per page value.
 	c, err := ctx.R.Cookie("_perPage")
 	if err != nil {
 		return 0
@@ -964,6 +999,8 @@ func getLocalPerPage(
 	return 0
 }
 
+// setLocalPerPage set the per page value to cookie.
+// v is the per page value to set.
 func setLocalPerPage(
 	ctx *web.EventContext,
 	mb *ModelBuilder,
@@ -999,8 +1036,10 @@ type ColOrderBy struct {
 	OrderBy string
 }
 
+// GetOrderBysFromQuery gets order bys from query string.
 func GetOrderBysFromQuery(query url.Values) []*ColOrderBy {
 	r := make([]*ColOrderBy, 0)
+	// qs is like "field1_ASC,field2_DESC"
 	qs := strings.Split(query.Get("order_by"), ",")
 	for _, q := range qs {
 		ss := strings.Split(q, "_")
@@ -1022,7 +1061,7 @@ func GetOrderBysFromQuery(query url.Values) []*ColOrderBy {
 
 func newQueryWithFieldToggleOrderBy(query url.Values, fieldName string) url.Values {
 	oldOrderBys := GetOrderBysFromQuery(query)
-	newOrderBysQueryValue := []string{}
+	var newOrderBysQueryValue []string
 	existed := false
 	for _, oob := range oldOrderBys {
 		if oob.FieldName == fieldName {
@@ -1058,29 +1097,29 @@ func (b *ListingBuilder) getTableComponents(
 
 	qs := ctx.R.URL.Query()
 
-	var requestPerPage int64
-	qPerPageStr := qs.Get("per_page")
-	qPerPage, _ := strconv.ParseInt(qPerPageStr, 10, 64)
-	if qPerPage != 0 {
-		setLocalPerPage(ctx, b.mb, qPerPage)
-		requestPerPage = qPerPage
-	} else if cPerPage := getLocalPerPage(ctx, b.mb); cPerPage != 0 {
-		requestPerPage = cPerPage
-	}
-	perPage := b.perPage
-	if requestPerPage != 0 {
-		perPage = requestPerPage
-	}
-	if perPage == 0 {
-		perPage = 50
-	}
-	if perPage > 1000 {
-		perPage = 1000
-	}
+	var perPage int64 = 0
+	if !b.disablePagination {
+		var requestPerPage int64
+		qPerPageStr := qs.Get("per_page")
+		qPerPage, _ := strconv.ParseInt(qPerPageStr, 10, 64)
+		if qPerPage != 0 {
+			setLocalPerPage(ctx, b.mb, qPerPage)
+			requestPerPage = qPerPage
+		} else if cPerPage := getLocalPerPage(ctx, b.mb); cPerPage != 0 {
+			requestPerPage = cPerPage
+		}
 
-	totalVisible := b.totalVisible
-	if totalVisible == 0 {
-		totalVisible = 10
+		perPage = b.perPage
+		if requestPerPage != 0 {
+			perPage = requestPerPage
+		}
+		if perPage == 0 {
+			perPage = 50
+		}
+		if perPage > 1000 {
+			perPage = 1000
+		}
+
 	}
 
 	var orderBySQL string
@@ -1097,6 +1136,7 @@ func (b *ListingBuilder) getTableComponents(
 		}
 		orderBySQL += fmt.Sprintf("%s %s,", dbCol, ob.OrderBy)
 	}
+	// remove the last ","
 	if orderBySQL != "" {
 		orderBySQL = orderBySQL[:len(orderBySQL)-1]
 	}
@@ -1148,19 +1188,11 @@ func (b *ListingBuilder) getTableComponents(
 
 	haveCheckboxes := len(b.bulkActions) > 0
 
-	pagesCount := int(int64(totalCount)/searchParams.PerPage + 1)
-	if int64(totalCount)%searchParams.PerPage == 0 {
-		pagesCount--
-	}
-
 	var cellWraperFunc = func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		if b.mb.hasDetailing && !b.mb.detailing.drawer {
 			tdbind.SetAttr("@click.self", web.Plaid().
-				PushStateURL(
-					b.mb.Info().
-						DetailingHref(id)).
-				Go())
+				PushStateURL(b.mb.Info().DetailingHref(id)).Go())
 		} else {
 			event := actions.Edit
 			if b.mb.hasDetailing {
@@ -1290,6 +1322,11 @@ func (b *ListingBuilder) getTableComponents(
 			CellComponentFunc(b.cellComponentFunc(f))
 	}
 
+	if b.disablePagination {
+		// if disable pagination, we don't need to add
+		// the pagination component and the no-record message to page.
+		return
+	}
 	if totalCount > 0 {
 		tpb := vx.VXTablePagination().
 			Total(int64(totalCount)).

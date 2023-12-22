@@ -24,8 +24,8 @@ require (
 	github.com/ory/ladon v1.2.0
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/ui v1.0.1-0.20230913083355-743825ff29b1
-	github.com/qor5/web v1.3.1
+	github.com/qor5/ui v1.0.1-0.20231120014901-0977f907aaf7
+	github.com/qor5/web v1.3.2
 	github.com/qor5/x v1.2.1-0.20231025063809-3344ed4b91f3
 	github.com/sunfmin/reflectutils v1.0.3
 	github.com/theplant/bimg v1.1.1
@@ -93,7 +93,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/image v0.7.0 // indirect
+	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
