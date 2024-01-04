@@ -1,0 +1,2 @@
+docker-compose -f docker-compose.yaml up -d
+export DBURL="user=seo password=123 dbname=seo_dev sslmode=disable host=localhost port=8822"

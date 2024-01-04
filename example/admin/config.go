@@ -182,7 +182,7 @@ func NewConfig() Config {
 	media_view.Configure(b, db)
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
-	ConfigureSeo(b, db)
+	ConfigureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
 
 	b.MenuOrder(
 		"profile",
@@ -400,7 +400,7 @@ func NewConfig() Config {
 	publisher := publish.New(db, PublishStorage).WithL10nBuilder(l10nBuilder)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pm := pageBuilder.Configure(b, db, l10nBuilder, ab, publisher, SeoCollection)
+	pm := pageBuilder.Configure(b, db, l10nBuilder, ab, publisher, seoBuilder)
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
