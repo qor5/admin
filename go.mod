@@ -40,7 +40,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/text v0.13.0
+	golang.org/x/text v0.14.0
 	gorm.io/driver/postgres v1.4.8
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.2
@@ -92,7 +92,7 @@ require (
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
