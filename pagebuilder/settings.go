@@ -89,14 +89,14 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 		var seoBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
 		if p.GetStatus() == publish.StatusDraft {
-			editBtn = VBtn("Edit").Depressed(true).
+			editBtn = VBtn("Edit").Variant(VariantFlat).
 				Attr("@click", web.POST().
 					EventFunc(actions.Edit).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
-			seoBtn = VBtn("Edit").Depressed(true).
+			seoBtn = VBtn("Edit").Variant(VariantFlat).
 				Attr("@click", web.POST().
 					EventFunc(editSEODialogEvent).
 					Query(presets.ParamOverlay, actions.Drawer).
@@ -105,9 +105,9 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 				)
 		}
 		if p.GetStatus() == publish.StatusOnline {
-			pageStateBtn = VBtn(pvMsgr.Unpublish).Depressed(true).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
+			pageStateBtn = VBtn(pvMsgr.Unpublish).Variant(VariantFlat).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
 		} else {
-			pageStateBtn = VBtn("Schedule Publish").Depressed(true).
+			pageStateBtn = VBtn("Schedule Publish").Variant(VariantFlat).
 				Attr("@click", web.POST().
 					EventFunc(schedulePublishDialogEvent).
 					Query(presets.ParamOverlay, actions.Dialog).
@@ -131,27 +131,27 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 					vx.Card(overview).HeaderTitle("Overview").
 						Actions(
 							h.If(editBtn != nil, editBtn),
-						).Class("mb-4 rounded-lg").Outlined(true),
+						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
 					vx.Card(pageState).HeaderTitle("Page State").
 						Actions(
 							h.If(pageStateBtn != nil, pageStateBtn),
-						).Class("mb-4 rounded-lg").Outlined(true),
+						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
 					vx.Card(seo).HeaderTitle("SEO").
 						Actions(
 							h.If(seoBtn != nil, seoBtn),
-						).Class("mb-4 rounded-lg").Outlined(true),
+						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
 				).Cols(8),
 				VCol(
 					vx.Card(notesSetcion).HeaderTitle("Notes").
 						Actions(
-							VBtn("Create").Depressed(true).
+							VBtn("Create").Variant(VariantFlat).
 								Attr("@click", web.POST().
 									EventFunc(createNoteDialogEvent).
 									Query(presets.ParamOverlay, actions.Dialog).
 									Query(presets.ParamID, p.PrimarySlug()).
 									URL(mi.PresetsPrefix()+"/pages").Go(),
 								),
-						).Class("mb-4 rounded-lg").Outlined(true),
+						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
 				).Cols(4),
 			),
 		)
@@ -169,7 +169,7 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 			),
 		)
 
-		editBtn := VBtn("Edit").Depressed(true).
+		editBtn := VBtn("Edit").Variant(VariantFlat).
 			Attr("@click", web.POST().
 				EventFunc(actions.Edit).
 				Query(presets.ParamOverlay, actions.Dialog).
@@ -183,7 +183,7 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 					vx.Card(overview).HeaderTitle("Overview").
 						Actions(
 							h.If(editBtn != nil, editBtn),
-						).Class("mb-4 rounded-lg").Outlined(true),
+						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
 				).Cols(8),
 			),
 		)

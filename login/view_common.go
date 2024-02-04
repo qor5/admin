@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	v "github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/login"
 	. "github.com/theplant/htmlgo"
@@ -49,8 +49,8 @@ func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("error")
@@ -61,8 +61,8 @@ func (vc *ViewCommon) WarnNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("warning")
@@ -73,8 +73,8 @@ func (vc *ViewCommon) InfoNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("info")
@@ -90,15 +90,15 @@ func (vc *ViewCommon) Input(
 	id string,
 	placeholder string,
 	val string,
-) *v.VTextFieldBuilder {
-	return v.VTextField().
+) *VTextFieldBuilder {
+	return VTextField().
 		Attr("name", id).
 		Id(id).
 		Placeholder(placeholder).
 		Value(val).
-		Outlined(true).
+		Variant(VariantOutlined).
 		HideDetails(true).
-		Dense(true)
+		Density(DensityCompact)
 }
 
 func (vc *ViewCommon) PasswordInput(
@@ -106,7 +106,7 @@ func (vc *ViewCommon) PasswordInput(
 	placeholder string,
 	val string,
 	canReveal bool,
-) *v.VTextFieldBuilder {
+) *VTextFieldBuilder {
 	in := vc.Input(id, placeholder, val)
 	if canReveal {
 		varName := fmt.Sprintf(`show_%s`, id)
@@ -142,14 +142,14 @@ func (vc *ViewCommon) PasswordInput(
 // }
 
 // need to import zxcvbn.js
-func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
+func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *VTextFieldBuilder, id string, val string) HTMLComponent {
 	passVar := fmt.Sprintf(`password_%s`, id)
 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
 	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
 		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
 	return Div(
 		in,
-		v.VProgressLinear().
+		VProgressLinear().
 			Class("mt-2").
 			Attr(":value", fmt.Sprintf(`vars.%s * 20`, meterScoreVar)).
 			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][vars.%s]`, meterScoreVar)).
@@ -159,12 +159,12 @@ func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id
 
 func (vc *ViewCommon) FormSubmitBtn(
 	label string,
-) *v.VBtnBuilder {
-	return v.VBtn(label).
+) *VBtnBuilder {
+	return VBtn(label).
 		Color("primary").
 		Block(true).
-		Large(true).
-		Type("submit").
+		Size(SizeLarge).
+		Attr("type", "submit").
 		Class("mt-6")
 }
 

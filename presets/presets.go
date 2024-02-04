@@ -603,7 +603,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	}
 
 	r = h.Div(
-		VList(menus...).Class("primary--text").Dense(true),
+		VList(menus...).Class("primary--text").Density(DensityCompact),
 	)
 	return
 }
@@ -636,14 +636,14 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				VList(
 					VListItem(
 						VListItemIcon(
-							VIcon("translate").Small(true).Class("ml-1"),
+							VIcon("translate").Size(SizeSmall).Class("ml-1"),
 						).Attr("style", "margin-right: 16px"),
 						VListItemContent(
 							VListItemTitle(
 								h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
 							),
 						),
-					).Class("pa-0").Dense(true),
+					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
 			).Attr("@click", web.Plaid().Query(queryName, supportLanguages[0].String()).Go()),
 		)
@@ -677,13 +677,13 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		)
 	}
 
-	return VMenu().OffsetY(true).Children(
+	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
 			h.Div(
 				VList(
 					VListItem(
 						VListItemIcon(
-							VIcon("translate").Small(true).Class("ml-1"),
+							VIcon("translate").Size(SizeSmall).Class("ml-1"),
 						).Attr("style", "margin-right: 16px"),
 						VListItemContent(
 							VListItemTitle(
@@ -691,16 +691,16 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 							),
 						),
 						VListItemIcon(
-							VIcon("arrow_drop_down").Small(false).Class("mr-1"),
+							VIcon("arrow_drop_down").Class("mr-1"),
 						),
-					).Class("pa-0").Dense(true),
+					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
 			).Attr("v-bind", "attrs").Attr("v-on", "on"),
 		),
 
 		VList(
 			languages...,
-		).Dense(true),
+		).Density(DensityCompact),
 	)
 }
 
@@ -729,7 +729,7 @@ func (b *Builder) RunBrandProfileSwitchLanguageDisplayFunc(brand, profile, switc
 		h.If(switchLanguage != nil,
 			VListItem(
 				VCardText(switchLanguage),
-			).Dense(true),
+			).Density(DensityCompact),
 		),
 	)
 	for _, v := range b.menuTopItems {
@@ -784,10 +784,9 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
 			Class("v-navigation-drawer--temporary").
 			Attr("v-model", "vars.presetsRightDrawer").
-			Right(true).
-			Fixed(true).
+			Location(LocationRight).
+			// Fixed(true).
 			Attr("width", width).
-			Bottom(false).
 			Attr(":height", `"100%"`),
 		// Temporary(true),
 		// HideOverlay(true).
@@ -826,13 +825,13 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 	content := b.notificationContentFunc(ctx)
 
 	icon := VIcon("notifications").Color("white")
-	er.Body = VMenu().OffsetY(true).Children(
+	er.Body = VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
 			VBtn("").Icon(true).Children(
 				h.If(total > 0,
 					VBadge(
 						icon,
-					).Content(total).Overlap(true).Color("red"),
+					).Content(total).Floating(true).Color("red"),
 				).Else(icon),
 			).Attr("v-bind", "attrs").Attr("v-on", "on").Class("ml-1"),
 		),
@@ -874,14 +873,14 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
-						Depressed(true).
+						Variant(VariantFlat).
 						Class("ml-2").
 						On("click", fmt.Sprintf("vars.%s = false", showVar)),
 
 					VBtn(msgr.OK).
 						Color("primary").
-						Depressed(true).
-						Dark(true).
+						Variant(VariantFlat).
+						Theme(ThemeDark).
 						Attr("@click", fmt.Sprintf("%s;vars.%s = false", confirmEvent, showVar)),
 				),
 			),
@@ -932,10 +931,11 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 				VDivider(),
 				menu,
-			).App(true).
+			).
+				// App(true).
 				// Clipped(true).
-				Fixed(true).
-				Value(true).
+				// Fixed(true).
+				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
 				Attr(web.InitContextVars, `{navDrawer: null}`),
 
@@ -947,7 +947,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					VLayout(
 						// h.Form(
 						VTextField().
-							SoloInverted(true).
+							Variant(FieldVariantSoloInverted).
 							PrependIcon("search").
 							Label(msgr.Search).
 							Flat(true).
@@ -965,15 +965,17 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 								PushState(true).
 								Go()),
 						// ).Method("GET"),
-					).AlignCenter(true).Attr("style", "max-width: 650px"),
+					).
+						// AlignCenter(true).
+						Attr("style", "max-width: 650px"),
 				),
 				h.If(showNotificationCenter,
 					notifier,
 				),
-			).Dark(true).
-				Color(ColorPrimary).
-				App(true).
-				Fixed(true),
+			).Theme(ThemeDark).
+				Color(ColorPrimary),
+			// App(true).
+			// Fixed(true),
 			// ClippedLeft(true),
 
 			web.Portal().Name(RightDrawerPortalName),
@@ -993,12 +995,12 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(2000).
-					Top(true),
+					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
 				innerPr.Body.(h.HTMLComponent),
 			),
-		).Id("vt-app").
+		).Attr("id", "vt-app").
 			Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
 
 		return
@@ -1037,12 +1039,13 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(2000).
-					Top(true),
+					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
 				innerPr.Body.(h.HTMLComponent),
 			),
-		).Id("vt-app").
+		).
+			Attr("id", "vt-app").
 			Attr(web.InitContextVars, `{presetsDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
 
 		return

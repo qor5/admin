@@ -68,16 +68,16 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 					VCol(
 						VBtnToggle(
 							VBtn("").Icon(true).Children(
-								VIcon("laptop_mac").Small(true),
+								VIcon("laptop_mac").Size(SizeSmall),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
-								VIcon("tablet_mac").Small(true),
+								VIcon("tablet_mac").Size(SizeSmall),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
 							VBtn("").Icon(true).Children(
-								VIcon("phone_iphone").Small(true),
+								VIcon("phone_iphone").Size(SizeSmall),
 							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
 						).Class("pa-2 rounded-lg").Attr("v-model", "locals.activeDevice").
-							Attr(web.InitContextLocals, fmt.Sprintf(`{activeDevice: %d}`, activeDevice)).Dense(true),
+							Attr(web.InitContextLocals, fmt.Sprintf(`{activeDevice: %d}`, activeDevice)).Density(DensityCompact),
 					).Cols(9).Class("pa-2"),
 					VCol(
 						VBtn("").Icon(true).Children(
@@ -89,7 +89,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 			containerList,
 		).
 			App(true).
-			Right(true).
+			Location(LocationRight).
 			Clipped(true).
 			Fixed(true).
 			Value(true).

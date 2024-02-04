@@ -103,7 +103,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Go()),
 				),
 				content,
-			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Outlined(true)
+			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
 		})
 	}
 
@@ -143,7 +143,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 					VDivider().Attr("v-if", "index < locals.items.length - 1", ":key", "index"),
 				).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),
 			),
-		).Class("pa-0")).Outlined(true).Class("mx-0 mt-1 mb-4")
+		).Class("pa-0")).Variant(VariantOutlined).Class("mx-0 mt-1 mb-4")
 	}
 
 	return h.Div(
@@ -195,7 +195,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				form,
 				h.If(!b.fieldContext.Disabled,
 					VBtn("Add row").
-						Text(true).
+						Variant(VariantText).
 						Color("primary").
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).

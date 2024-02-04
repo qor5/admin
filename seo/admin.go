@@ -93,7 +93,7 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 			return &myTd{
 				td: h.Td(),
 				child: h.Div(
-					VIcon(icon).Small(true).Class("mb-1"),
+					VIcon(icon).Size(SizeSmall).Class("mb-1"),
 					h.Text(seoSetting.Name),
 				).Style(fmt.Sprintf("padding-left: %dpx;", 32*(priority-1))),
 			}
@@ -299,7 +299,7 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 			VChip(
 				VIcon("add_box").Class("mr-2"),
 				h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", varName)),
-			).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Outlined(true),
+			).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Variant(VariantOutlined),
 		)
 	}
 	var variablesEle []h.HTMLComponent
@@ -321,7 +321,7 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 				VTextField().Attr("counter", true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
 				VTextarea().Attr("counter", true).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 			),
-		).Outlined(true).Flat(true),
+		).Variant(VariantOutlined).Flat(true),
 
 		h.H4(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;font-weight: 500"),
 		VCard(
@@ -362,6 +362,6 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 					VCol(VTextarea().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString")).Label(msgr.OpenGraphMetadata).Value(GetOpenGraphMetadataString(setting.OpenGraphMetadata)).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix))).Cols(12),
 				),
 			),
-		).Outlined(true).Flat(true),
+		).Variant(VariantOutlined).Flat(true),
 	).Attr("ref", "seo")
 }

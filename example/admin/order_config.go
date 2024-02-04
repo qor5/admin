@@ -84,7 +84,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	lb.Action("Export").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return vuetify.VBtn("Export").
 			Color("primary").
-			Depressed(true).
+			Variant(VariantFlat).
 			Class("ml-2").
 			Href(exportOrdersURL)
 	})
@@ -181,5 +181,5 @@ func GetColoredStatus(status models.OrderStatus) h.HTMLComponent {
 		return h.Text(string(status))
 	}
 
-	return vuetify.VChip(h.Text(string(status))).Color(color).Dark(true)
+	return vuetify.VChip(h.Text(string(status))).Color(color).Theme(ThemeDark)
 }

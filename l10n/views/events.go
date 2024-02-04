@@ -8,7 +8,7 @@ import (
 	"github.com/qor5/admin/l10n"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/utils"
-	v "github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -70,39 +70,39 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DialogPortalName,
-			Body: v.VDialog(
-				v.VCard(
-					v.VCardTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
+			Body: VDialog(
+				VCard(
+					VCardTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
 
-					v.VCardText(
+					VCardText(
 						h.Div(
 							h.Div(
 								h.Div(
 									h.Label(MustGetTranslation(ctx.R, "LocalizeFrom")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
-									//h.Br(),
+									// h.Br(),
 									h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale))),
 								).Class("v-text-field__slot"),
 							).Class("v-input__slot"),
 						).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
-						v.VSelect().FieldName("localize_to").
+						VSelect().FieldName("localize_to").
 							Label(MustGetTranslation(ctx.R, "LocalizeTo")).
 							Multiple(true).Chips(true).
 							Items(selectLocales).
-							ItemText("Label").
+							ItemTitle("Label").
 							ItemValue("Code"),
 					).Attr("style", "height: 200px;"),
 
-					v.VCardActions(
-						v.VSpacer(),
-						v.VBtn(presetsMsgr.Cancel).
-							Depressed(true).
+					VCardActions(
+						VSpacer(),
+						VBtn(presetsMsgr.Cancel).
+							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "vars.localizeConfirmation = false"),
 
-						v.VBtn(presetsMsgr.OK).
+						VBtn(presetsMsgr.OK).
 							Color("primary").
-							Depressed(true).
-							Dark(true).
+							Variant(VariantFlat).
+							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
 								EventFunc(DoLocalize).
 								Query(presets.ParamID, paramID).

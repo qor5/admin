@@ -352,12 +352,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				versionCount := versionCount(db, p)
 				switch p.GetStatus() {
 				case publish.StatusDraft, publish.StatusOffline:
-					publishBtn = VBtn(pvMsgr.Publish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
 				case publish.StatusOnline:
-					publishBtn = VBtn(pvMsgr.Republish).Small(true).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+					publishBtn = VBtn(pvMsgr.Republish).Size(SizeSmall).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
 				}
 				duplicateBtn = VBtn(msgr.Duplicate).
-					Small(true).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
+					Size(SizeSmall).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
 					Attr("@click", web.Plaid().
 						EventFunc(pv.DuplicateVersionEvent).
 						URL(pm.Info().ListingHref()).
@@ -368,11 +368,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go(),
 					)
 				versionSwitch = VChip(
-					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Small(true).Class("px-1 mx-1").TextColor("black").Attr("style", "height:20px"),
+					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1").TextColor("black").Attr("style", "height:20px"),
 					h.Text(p.GetVersionName()+" | "),
-					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Small(true).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
+					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1").TextColor("black").Attr("style", "height:20px"),
 					VIcon("chevron_right"),
-				).Label(true).Outlined(true).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
+				).Label(true).Variant(VariantOutlined).Class("px-1 ml-8 rounded-r-0").Attr("style", "height:40px;background-color:#FFFFFF!important;").TextColor("black").
 					Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 						URL(b.ps.GetURIPrefix()+"/version-list-dialog").
 						Query("select_id", primarySlug).
@@ -384,9 +384,10 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
 					VDivider(),
 					menu,
-				).App(true).
-					Fixed(true).
-					Value(true).
+				).
+					// App(true).
+					// Fixed(true).
+					ModelValue(true).
 					Attr("v-model", "vars.navDrawer").
 					Attr(web.InitContextVars, `{navDrawer: null}`),
 				VAppBar(
@@ -397,10 +398,10 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					).Centered(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
 					// h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
 					h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
-				).Dark(true).
+				).Theme(ThemeDark).
 					Color(presets.ColorPrimary).
 					App(true).
-					ClippedRight(true).
+					ClippedLocation(LocationRight).
 					Fixed(true),
 
 				web.Portal().Name(presets.RightDrawerPortalName),
@@ -857,7 +858,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 
 		return h.Td(
 			h.Div(
-				VIcon(icon).Small(true).Class("mb-1"),
+				VIcon(icon).Size(SizeSmall).Class("mb-1"),
 				h.Text(cat.Name),
 			).Style(fmt.Sprintf("padding-left: %dpx;", cat.IndentLevel*32)),
 		)
@@ -941,7 +942,7 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 				Body: VRow(
 					VCol(
 						h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
-						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
+						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
 					).Cols(5),
 					VCol(
 						VBtn(msgr.ChangeTemplate).Color("primary").
@@ -980,7 +981,7 @@ func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.
 	return VRow(
 		VCol(
 			h.Input("").Type("hidden").Value(selectedID).Attr(web.VFieldName(templateSelectedID)...),
-			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Dense(true).Outlined(true),
+			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(name).Density(DensityCompact).Variant(VariantOutlined),
 		).Cols(5),
 		VCol(
 			VBtn(msgr.ChangeTemplate).Color("primary").
@@ -998,7 +999,7 @@ func clearTemplate(db *gorm.DB) web.EventFunc {
 			Body: VRow(
 				VCol(
 					h.Input("").Type("hidden").Value("").Attr(web.VFieldName(templateSelectedID)...),
-					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Dense(true).Outlined(true),
+					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).Value(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
 				).Cols(5),
 				VCol(
 					VBtn(msgr.ChangeTemplate).Color("primary").
@@ -1040,7 +1041,7 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 							AttrIf("checked", "checked", selectedID == "").
 							Style("width: 18px; height: 18px"),
 					).Class("mr-4 float-right"),
-				).Height(280).Class("text-truncate").Outlined(true),
+				).Height(280).Class("text-truncate").Variant(VariantOutlined),
 			).Cols(3),
 		)
 		for _, tpl := range tpls {
@@ -1063,7 +1064,7 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 						VSpacer(),
 						VBtn("").Icon(true).
 							Children(VIcon("close")).
-							Large(true).
+							Size(SizeLarge).
 							On("click", fmt.Sprintf("vars.showTemplateDialog=false")),
 					),
 					VCardActions(
@@ -1117,9 +1118,9 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 			),
 			VCardTitle(h.Text(name)),
 			VCardSubtitle(h.Text(desc)),
-			VBtn(msgr.Preview).Text(true).XSmall(true).Class("ml-2 mb-4").
+			VBtn(msgr.Preview).Variant(VariantText).Size(SizeSmall).Class("ml-2 mb-4").
 				Href(src).
-				Target("_blank").Color("primary"),
+				Attr("target", "_blank").Color("primary"),
 			h.Div(
 				h.Input(templateID).Type("radio").
 					Value(id).
@@ -1127,7 +1128,7 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 					AttrIf("checked", "checked", selectedID == id).
 					Style("width: 18px; height: 18px"),
 			).Class("mr-4 float-right"),
-		).Height(280).Class("text-truncate").Outlined(true),
+		).Height(280).Class("text-truncate").Variant(VariantOutlined),
 	).Cols(3)
 }
 
@@ -1248,14 +1249,14 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 						VCardActions(
 							VSpacer(),
 							VBtn("Cancel").
-								Depressed(true).
+								Variant(VariantFlat).
 								Class("ml-2").
 								On("click", "locals.createNoteDialog = false"),
 
 							VBtn("OK").
 								Color("primary").
-								Depressed(true).
-								Dark(true).
+								Variant(VariantFlat).
+								Theme(ThemeDark).
 								Attr("@click", okAction),
 						),
 					),
@@ -1390,14 +1391,14 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 						VCardActions(
 							VSpacer(),
 							VBtn("Cancel").
-								Depressed(true).
+								Variant(VariantFlat).
 								Class("ml-2").
 								On("click", "locals.renameVersionDialog = false"),
 
 							VBtn("OK").
 								Color("primary").
-								Depressed(true).
-								Dark(true).
+								Variant(VariantFlat).
+								Theme(ThemeDark).
 								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
 						),
 					),
@@ -1446,14 +1447,14 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 					VCardActions(
 						VSpacer(),
 						VBtn("Cancel").
-							Depressed(true).
+							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "vars.deleteConfirmation = false"),
 
 						VBtn("Delete").
 							Color("primary").
-							Depressed(true).
-							Dark(true).
+							Variant(VariantFlat).
+							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
 								URL(mb.Info().ListingHref()).
 								EventFunc(actions.DoDelete).
@@ -1512,7 +1513,7 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//						VCardTitle(h.Text(builder.name)),
 	//						VSpacer(),
 	//						VBtn("Select").
-	//							Text(true).
+	//							Variant(VariantText).
 	//							Color("primary").Attr("@click",
 	//							web.Plaid().
 	//								EventFunc(actions.New).
@@ -1604,7 +1605,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 						VCardTitle(h.Text(builder.name)),
 						VSpacer(),
 						VBtn("Select").
-							Text(true).
+							Variant(VariantText).
 							Color("primary").Attr("@click",
 							web.Plaid().
 								EventFunc(actions.New).
@@ -1635,7 +1636,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 							VCardTitle(h.Text(builder.name)),
 							VSpacer(),
 							VBtn("Edit").
-								Text(true).
+								Variant(VariantText).
 								Color("primary").Attr("@click",
 								web.Plaid().
 									EventFunc(actions.Edit).
@@ -1911,7 +1912,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 				VSpacer(),
 				VIcon(fmt.Sprintf(`{{vars.%s}}`, statusVar)),
 			).
-				Dense(true).
+				Density(DensityCompact).
 				Attr(web.InitContextVars, fmt.Sprintf(`{%s: ""}`, statusVar)))
 		}
 

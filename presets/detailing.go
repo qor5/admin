@@ -125,7 +125,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
-		notice = VSnackbar(h.Text(msg)).Value(true).Top(true).Color("success").Value(true)
+		notice = VSnackbar(h.Text(msg)).ModelValue(true).Location("top").Color("success")
 	}
 
 	comp := b.ToComponent(b.mb.Info(), obj, ctx)
@@ -181,7 +181,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 			VBtn("").Icon(true).Children(
 				VIcon("close"),
 			).Attr("@click.stop", closeBtnVarScript),
-		).Color("white").Elevation(0).Dense(true),
+		).Color("white").Elevation(0).Density("compact"),
 
 		VSheet(
 			VCard(pr.Body).Flat(true).Class("pa-1"),
@@ -250,7 +250,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 			VCardActions(
 				VSpacer(),
 				VBtn(msgr.Update).
-					Dark(true).
+					Theme("dark").
 					Color(ColorPrimary).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.DoAction).

@@ -183,14 +183,14 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		VDataTable(
 			web.Slot(
 				VEditDialog(
-					VIcon("edit").Small(true).Class("mr-2").Attr(":class", "props.item.ItemClass"),
+					VIcon("edit").Size(SizeSmall).Class("mr-2").Attr(":class", "props.item.ItemClass"),
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
-				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Large(true).Transition("slide-x-reverse-transition"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Size(SizeLarge).Transition("slide-x-reverse-transition"),
 			).Name("item.Edit").Scope("props"),
 			web.Slot(
-				VIcon("delete").Small(true).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
+				VIcon("delete").Size(SizeSmall).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
 			).Name("item.Delete").Scope("props"),
 		).
 			Items(versions).

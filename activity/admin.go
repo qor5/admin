@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/ui/vuetifyx"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
@@ -151,14 +151,14 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 			)
 
 			var detailElems []h.HTMLComponent
-			detailElems = append(detailElems, vuetify.VCard(
-				vuetify.VCardTitle(
-					vuetify.VBtn("").Children(
-						vuetify.VIcon("arrow_back").Class("pr-2").Small(true),
+			detailElems = append(detailElems, VCard(
+				VCardTitle(
+					VBtn("").Children(
+						VIcon("arrow_back").Class("pr-2").Size(SizeSmall),
 					).Icon(true).Attr("@click", "window.history.back()"),
 					h.Text(msgr.DiffDetail),
 				),
-				vuetify.VSimpleTable(
+				VSimpleTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
 						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
@@ -230,9 +230,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffNew)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffNew)),
+				VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -246,9 +246,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffDelete)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffDelete)),
+				VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -262,9 +262,9 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffChanges)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffChanges)),
+				VSimpleTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
 					h.Tbody(elems...),
 				),

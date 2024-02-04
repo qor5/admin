@@ -119,11 +119,11 @@ func NewConfig() Config {
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
 				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
-			).Dense(true),
+			).Density(DensityCompact),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
 					h.Span(msgr.DBResetTipLabel),
-					v.VIcon("schedule").XSmall(true).Left(true),
+					v.VIcon("schedule").XSize(SizeSmall).Left(true),
 					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
 				v.VDivider(),

@@ -313,7 +313,7 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 				}
 			} else {
 				scheduledJobDetailing = []HTMLComponent{
-					VAlert().Dense(true).Type("warning").Children(
+					VAlert().Density(DensityCompact).Type("warning").Children(
 						Text(msgr.NoticeJobWontBeExecuted),
 					),
 					Div(Text("args: " + inst.Args)),
@@ -756,8 +756,8 @@ func (b *Builder) jobProgressing(
 			VBtn("Load hidden logs").Attr("@click", web.Plaid().EventFunc("worker_loadHiddenLogs").
 				Query("jobID", id).
 				Query("currentCount", len(logs)).Go()).
-				Small(true).
-				Depressed(true).
+				Size(SizeSmall).
+				Variant(VariantFlat).
 				Class("mb-3"),
 		).Name("worker_hiddenLogs"))
 	}
@@ -868,7 +868,7 @@ func (b *Builder) jobSelectList(
 		Input("").Type("hidden").Value(job).Attr(web.VFieldName("Job")...),
 		If(job == "",
 			alert,
-			VList(items...).Nav(true).Dense(true),
+			VList(items...).Nav(true).Density(DensityCompact),
 		).Else(
 			Div(
 				VIcon("arrow_back").Attr("@click",

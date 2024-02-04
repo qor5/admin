@@ -31,7 +31,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 					VToolbar(
 						VBtn("").
 							Icon(true).
-							Dark(true).
+							Theme(ThemeDark).
 							Attr("@click", "vars.showFileChooser = false").
 							Children(
 								VIcon("close"),
@@ -40,7 +40,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 						VSpacer(),
 						VLayout(
 							VTextField().
-								SoloInverted(true).
+								Variant(FieldVariantSoloInverted).
 								PrependIcon("search").
 								Label(msgr.Search).
 								Flat(true).
@@ -53,16 +53,16 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 									FieldValue("cfg", h.JSONString(cfg)).
 									FieldValue(searchKeywordName(field), web.Var("$event")).
 									Go()),
-						).AlignCenter(true).Attr("style", "max-width: 650px"),
+						).Attr("style", "max-width: 650px"),
 					).Color("primary").
 						// MaxHeight(64).
 						Flat(true).
-						Dark(true),
+						Theme(ThemeDark),
 					web.Portal().Name(deleteConfirmPortalName(field)),
 					web.Portal(
 						fileChooserDialogContent(db, field, ctx, cfg),
 					).Name(dialogContentPortalName(field)),
-				).Tile(true),
+				),
 			).
 				Fullscreen(true).
 				// HideOverlay(true).
@@ -165,7 +165,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				h.Label("").Children(
 					VCard(
 						VCardTitle(h.Text(msgr.UploadFiles)),
-						VIcon("backup").XLarge(true),
+						VIcon("backup").XSize(SizeLarge),
 						h.Input("").
 							Attr("accept", fileAccept).
 							Type("file").
@@ -261,7 +261,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						VCardActions(
 							VSpacer(),
 							VBtn(msgr.Delete).
-								Text(true).
+								Variant(VariantText).
 								Attr("@click",
 									web.Plaid().
 										EventFunc(deleteConfirmationEvent).
@@ -300,7 +300,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 										Query(typeKey, web.Var("$event")).
 										MergeQuery(true).Go(),
 								).
-								Dense(true).Solo(true).Class("mb-n8"),
+								Density(DensityCompact).Solo(true).Class("mb-n8"),
 						).Cols(3),
 						VCol(
 							VSelect().Items([]selectItem{
@@ -313,7 +313,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 										Query(orderByKey, web.Var("$event")).
 										MergeQuery(true).Go(),
 								).
-								Dense(true).Solo(true).Class("mb-n8"),
+								Density(DensityCompact).Solo(true).Class("mb-n8"),
 						).Cols(3),
 					).Justify("end"),
 				),
@@ -340,7 +340,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				Style("max-height: 80vh; max-width: 80vw; background: rgba(0, 0, 0, 0.5)"),
 			h.Div(
 				h.A(
-					VIcon("info").Small(true).Class("mb-1"),
+					VIcon("info").Size(SizeSmall).Class("mb-1"),
 					h.Text("{{vars.mediaName}}"),
 				).Attr(":href", "vars.mediaShow? vars.mediaShow: ''").Target("_blank").
 					Class("white--text").Style("text-decoration: none;"),
@@ -359,7 +359,7 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
 	}
 	g.AppendChildren(
-		VChip(h.Text(text)).XSmall(true),
+		VChip(h.Text(text)).XSize(SizeSmall),
 	)
 	// if len(f.File.Sizes) == 0 {
 	//	return g
@@ -367,7 +367,7 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 
 	// for k, size := range f.File.GetSizes() {
 	//	g.AppendChildren(
-	//		VChip(thumbName(k, size)).XSmall(true),
+	//		VChip(thumbName(k, size)).XSize(SizeSmall),
 	//	)
 	// }
 	return g

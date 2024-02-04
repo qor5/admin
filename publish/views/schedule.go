@@ -64,7 +64,7 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 									VIcon("publish").Attr("v-bind", "attrs", "v-on", "on"),
 								).Name("activator").Scope("{ on, attrs }"),
 								h.Span(strings.ReplaceAll(msgr.PublishScheduleTip, "{SchedulePublishTime}", msgr.SchedulePublishTime)),
-							).Bottom(true).MaxWidth(285),
+							).Location(LocationBottom).MaxWidth(285),
 						).Class("v-expansion-panel-header__icon"),
 					).Class("v-expansion-panel-header"),
 				),
@@ -97,18 +97,18 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 									vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
+									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
 								).Cols(6),
 								VCol(
 									vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									//h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
+									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
 								).Cols(6),
 							),
 						),
 					),
-				).Flat(true).Hover(true),
+				),
 			),
 			h.Br(),
 		)

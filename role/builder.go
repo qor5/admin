@@ -7,7 +7,7 @@ import (
 	"github.com/ory/ladon"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/perm"
 	h "github.com/theplant/htmlgo"
@@ -16,8 +16,8 @@ import (
 
 type Builder struct {
 	db        *gorm.DB
-	actions   []*vuetify.DefaultOptionItem
-	resources []*vuetify.DefaultOptionItem
+	actions   []*DefaultOptionItem
+	resources []*DefaultOptionItem
 	// editorSubject is the subject that has permission to edit roles
 	// empty value means anyone can edit roles
 	editorSubject string
@@ -26,7 +26,7 @@ type Builder struct {
 func New(db *gorm.DB) *Builder {
 	return &Builder{
 		db: db,
-		actions: []*vuetify.DefaultOptionItem{
+		actions: []*DefaultOptionItem{
 			{Text: "All", Value: "*"},
 			{Text: "List", Value: presets.PermList},
 			{Text: "Get", Value: presets.PermGet},
@@ -37,12 +37,12 @@ func New(db *gorm.DB) *Builder {
 	}
 }
 
-func (b *Builder) Actions(vs []*vuetify.DefaultOptionItem) *Builder {
+func (b *Builder) Actions(vs []*DefaultOptionItem) *Builder {
 	b.actions = vs
 	return b
 }
 
-func (b *Builder) Resources(vs []*vuetify.DefaultOptionItem) *Builder {
+func (b *Builder) Resources(vs []*DefaultOptionItem) *Builder {
 	b.resources = vs
 	return b
 }
@@ -97,7 +97,7 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	ed.Field("Permissions").Nested(permFb)
 
 	permFb.Field("Effect").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VSelect().
+		return VSelect().
 			Items([]string{perm.Allowed, perm.Denied}).
 			Value(field.StringValue(obj)).
 			Label(field.Label).
@@ -108,20 +108,24 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 		return
 	})
 	permFb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VAutocomplete().
+		return VAutocomplete().
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey).
-			Multiple(true).Chips(true).DeletableChips(true).
+			Multiple(true).
+			Chips(true).
+			ClosableChips(true).
 			Items(b.actions)
 	})
 
 	permFb.Field("Resources").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VAutocomplete().
+		return VAutocomplete().
 			Value(field.Value(obj)).
 			Label(field.Label).
 			FieldName(field.FormKey).
-			Multiple(true).Chips(true).DeletableChips(true).
+			Multiple(true).
+			Chips(true).
+			ClosableChips(true).
 			Items(b.resources)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)

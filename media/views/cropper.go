@@ -88,7 +88,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 							c,
 						).Attr("style", "max-height: 500px"),
 					),
-				).Value(true).
+				).ModelValue(true).
 					Scrollable(true).
 					MaxWidth("800px"),
 			).Init(`{cropping: false}`).VSlot("{ locals }"),

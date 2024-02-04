@@ -105,13 +105,13 @@ func configECDashboard(pb *presets.Builder, db *gorm.DB) {
 							vuetify.VCard(
 								vuetify.VCardTitle(h.Text(strconv.Itoa(int(productCount)))),
 								vuetify.VCardSubtitle(h.Text("Products")),
-							).Outlined(true),
+							).Variant(VariantOutlined),
 						).Class("pa-4 pt-12"),
 						h.Div(
 							vuetify.VCard(
 								vuetify.VCardTitle(h.Text(strconv.Itoa(int(orderCount)))),
 								vuetify.VCardSubtitle(h.Text("Orders")),
-							).Outlined(true),
+							).Variant(VariantOutlined),
 						).Class("pa-4"),
 					).Class("v-card v-sheet theme--light").Style("height: 300px;"),
 				).Class("col col-6"),

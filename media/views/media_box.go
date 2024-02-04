@@ -185,7 +185,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 			VCardActions(
 				VChip(
 					thumbName(thumb, size, fileSize, f),
-				).Small(true).Disabled(disabled).Attr("@click", web.Plaid().
+				).Size(SizeSmall).Disabled(disabled).Attr("@click", web.Plaid().
 					EventFunc(loadImageCropperEvent).
 					Query("field", field).
 					Query("id", fmt.Sprint(f.ID)).
@@ -219,14 +219,14 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 					VCardActions(
 						VSpacer(),
 						VBtn(msgr.Cancel).
-							Depressed(true).
+							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "vars.mediaLibrary_deleteConfirmation = false"),
 
 						VBtn(msgr.Delete).
 							Color("primary").
-							Depressed(true).
-							Dark(true).
+							Variant(VariantFlat).
+							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
 								EventFunc(doDeleteEvent).
 								Query("field", field).
@@ -330,9 +330,9 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 						Value(value).
 						Attr(web.VFieldName(fieldName)...).
 						Label(msgr.DescriptionForAccessibility).
-						Dense(true).
+						Density(DensityCompact).
 						HideDetails(true).
-						Outlined(true).
+						Variant(VariantOutlined).
 						Disabled(disabled),
 				).Cols(12).Class("pl-0 pt-0"),
 			),
@@ -352,7 +352,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
 
 		VBtn(msgr.ChooseFile).
-			Depressed(true).
+			Variant(VariantFlat).
 			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
 				Query("field", field).
 				FieldValue("cfg", h.JSONString(cfg)).
@@ -361,7 +361,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 		h.If(mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0",
 			VBtn(msgr.Delete).
-				Depressed(true).
+				Variant(VariantFlat).
 				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
 					Query("field", field).
 					FieldValue("cfg", h.JSONString(cfg)).

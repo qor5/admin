@@ -132,9 +132,9 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 			VSpacer(),
 
-			VBtn(msgr.Preview).Text(true).Href(b.prefix+previewHref).Target("_blank"),
+			VBtn(msgr.Preview).Variant(VariantText).Href(b.prefix+previewHref).Target("_blank"),
 			VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-		).Dark(true).
+		).Theme(ThemeDark).
 			Color("primary").
 			App(true),
 
@@ -144,7 +144,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 				Fluid(true),
 			VNavigationDrawer(containerList).
 				App(true).
-				Right(true).
+				Location(LocationRight).
 				Fixed(true).
 				Value(true).
 				Width(420).
@@ -437,7 +437,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 								VListItemTitle(h.Text("{{item.label}}")).Attr(":style", "[item.shared ? {'color':'green'}:{}]"),
 							),
 							h.If(!isReadonly,
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit").Small(true))).Attr("@click",
+								VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit").Size(SizeSmall))).Attr("@click",
 									web.Plaid().
 										URL(web.Var("item.url")).
 										EventFunc(actions.Edit).
@@ -445,7 +445,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 										Query(presets.ParamID, web.Var("item.model_id")).
 										Go(),
 								).Class("my-2"),
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}").Small(true))).Attr("@click",
+								VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}").Size(SizeSmall))).Attr("@click",
 									web.Plaid().
 										URL(web.Var("item.url")).
 										EventFunc(ToggleContainerVisibilityEvent).
@@ -458,7 +458,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 									web.Slot(
 										VBtn("").Children(
 											VIcon("more_horiz"),
-										).Attr("v-on", "on").Text(true).Fab(true).Small(true),
+										).Attr("v-on", "on").Variant(VariantText).Fab(true).Size(SizeSmall),
 									).Name("activator").Scope("{ on }"),
 
 									VList(
@@ -493,7 +493,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 												Query(paramContainerID, web.Var("item.param_id")).
 												Go(),
 										).Attr("v-if", "!item.shared"),
-									).Dense(true),
+									).Density(DensityCompact),
 								).Left(true),
 							),
 						).Class("pl-0").Attr("@click", fmt.Sprintf(`document.querySelector("iframe").contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("item.model_name"), web.Var("item.model_id"))),
@@ -502,7 +502,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					h.If(!isReadonly,
 						VListItem(
 							VListItemIcon(VIcon("add").Color("primary")).Class("ma-4"),
-							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Text(true)),
+							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Variant(VariantText)),
 						).Attr("@click",
 							web.Plaid().
 								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
@@ -515,7 +515,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					),
 					// ).Class("py-0"),
 				),
-			).Outlined(true),
+			).Variant(VariantOutlined),
 		).Class("pa-4 pt-2"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
 	return
@@ -592,14 +592,14 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 				VCardActions(
 					VSpacer(),
 					VBtn("Cancel").
-						Depressed(true).
+						Variant(VariantFlat).
 						Class("ml-2").
 						On("click", "vars.deleteConfirmation = false"),
 
 					VBtn("Delete").
 						Color("primary").
-						Depressed(true).
-						Dark(true).
+						Variant(VariantFlat).
+						Theme(ThemeDark).
 						Attr("@click", web.Plaid().
 							URL(fmt.Sprintf("%s/editors", b.prefix)).
 							EventFunc(DeleteContainerEvent).
@@ -919,14 +919,14 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 					VCardActions(
 						VSpacer(),
 						VBtn("Cancel").
-							Depressed(true).
+							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "locals.renameDialog = false"),
 
 						VBtn("OK").
 							Color("primary").
-							Depressed(true).
-							Dark(true).
+							Variant(VariantFlat).
+							Theme(ThemeDark).
 							Attr("@click", okAction),
 					),
 				),
@@ -958,7 +958,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 						VCardTitle(h.Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name))),
 						VSpacer(),
 						VBtn(msgr.Select).
-							Text(true).
+							Variant(VariantText).
 							Color("primary").Attr("@click",
 							"locals.addContainerDialog = false;"+web.Plaid().
 								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
@@ -996,7 +996,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 						VCardTitle(h.Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, sharedC.DisplayName))),
 						VSpacer(),
 						VBtn(msgr.Select).
-							Text(true).
+							Variant(VariantText).
 							Color("primary").Attr("@click",
 							"locals.addContainerDialog = false;"+web.Plaid().
 								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).

@@ -53,7 +53,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(publish.StatusInterface); ok {
-			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(GetStatusColor(s.GetStatus())).Dark(true))
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(GetStatusColor(s.GetStatus())).Theme(ThemeDark))
 		}
 		return nil
 	}

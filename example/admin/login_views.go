@@ -61,9 +61,9 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 				ul.AppendChildren(
 					v.VBtn("").
 						Block(true).
-						Large(true).
+						Size(SizeLarge).
 						Class("mt-4").
-						Outlined(true).
+						Variant(VariantOutlined).
 						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
 						Children(
 							Div(
@@ -135,8 +135,8 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 					Attr(web.InitContextVars, fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).
 					Attr("v-model", `vars.currLangVal`).
 					Attr("@change", `window.location.href=vars.currLangVal`).
-					Outlined(true).
-					Dense(true).
+					Variant(VariantOutlined).
+					Density(DensityCompact).
 					Class("mt-12").
 					HideDetails(true),
 			),

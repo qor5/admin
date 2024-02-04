@@ -171,7 +171,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		).HeaderTitle(field.Label).
 			Actions(
 				VBtn("Add Event").
-					Depressed(true).Attr("@click",
+					Variant(VariantFlat).Attr("@click",
 					web.Plaid().EventFunc(actions.New).
 						Query("model", typeName).
 						Query("model_id", objId).
@@ -396,7 +396,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			n := obj.(*Note)
 			return h.Td(h.Div(
 				h.Div(
-					VIcon("comment").Color("blue").Small(true).Class("pr-2"),
+					VIcon("comment").Color("blue").Size(SizeSmall).Class("pr-2"),
 					h.Text(n.Content),
 				).Class("body-1"),
 				h.Div(
@@ -415,7 +415,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		).HeaderTitle(title).
 			Actions(
 				VBtn("Add Note").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click",
 						web.Plaid().EventFunc(actions.New).
 							Query("model", "Customer").
@@ -454,7 +454,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
 				VBtn("Agree Terms").
-					Depressed(true).Class("mr-2").
+					Variant(VariantFlat).Class("mr-2").
 					Attr("@click", web.Plaid().
 						EventFunc(actions.Action).
 						Query(presets.ParamAction, "AgreeTerms").
@@ -462,7 +462,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 						Go()),
 
 				VBtn("Update details").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.Edit).
 						Query("customerID", cusID).
@@ -507,7 +507,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
 				VBtn("Add Card").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click",
 						web.Plaid().EventFunc(
 							actions.New).Query("customerID", cusID).

@@ -5,7 +5,7 @@ import (
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	h "github.com/theplant/htmlgo"
 )
@@ -31,9 +31,9 @@ var (
 type ActionJobBuilder struct {
 	fullname            string
 	shortname           string
-	description         string //optional
+	description         string // optional
 	hasParams           bool
-	displayLog          bool //optional
+	displayLog          bool // optional
 	progressingInterval int
 
 	b  *Builder    // worker builder
@@ -149,28 +149,28 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "presets_DialogPortalName",
 		Body: web.Scope(
-			vuetify.VDialog(
-				vuetify.VCard(
-					vuetify.VCardTitle(
+			VDialog(
+				VCard(
+					VCardTitle(
 						h.Text(config.shortname),
-						vuetify.VSpacer(),
-						vuetify.VBtn("").Icon(true).Children(
-							vuetify.VIcon("close"),
+						VSpacer(),
+						VBtn("").Icon(true).Children(
+							VIcon("close"),
 						).Attr("@click.stop", "vars.presetsDialog=false"),
 					),
 
-					h.If(config.description != "", vuetify.VCardSubtitle(
+					h.If(config.description != "", VCardSubtitle(
 						h.Text(config.description),
 					)),
 
-					h.If(config.hasParams, vuetify.VCardText(
+					h.If(config.hasParams, VCardText(
 						b.jobEditingContent(ctx, jobName, nil),
 					)),
 
-					vuetify.VCardActions(
-						vuetify.VSpacer(),
-						vuetify.VBtn(msgr.Cancel).Elevation(0).Attr("@click", "vars.presetsDialog=false"),
-						vuetify.VBtn(msgr.OK).Color("primary").Large(true).
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Cancel).Elevation(0).Attr("@click", "vars.presetsDialog=false"),
+						VBtn(msgr.OK).Color("primary").Size(SizeLarge).
 							Attr("@click", web.Plaid().
 								URL(b.mb.Info().ListingHref()).
 								EventFunc(ActionJobCreate).
@@ -200,22 +200,22 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "presets_DialogPortalName",
 		Body: web.Scope(
-			vuetify.VDialog(
-				vuetify.VAppBar(
-					vuetify.VToolbarTitle(config.shortname).Class("pl-2"),
-					vuetify.VSpacer(),
-					vuetify.VBtn("").Icon(true).Children(
-						vuetify.VIcon("close"),
+			VDialog(
+				VAppBar(
+					VToolbarTitle(config.shortname).Class("pl-2"),
+					VSpacer(),
+					VBtn("").Icon(true).Children(
+						VIcon("close"),
 					).Attr("@click.stop", web.Plaid().
 						URL(b.mb.Info().ListingHref()).
 						EventFunc(ActionJobClose).
 						Query("jobID", jobID).
 						Query("jobName", jobName).
 						Go()),
-				).Color("white").Elevation(0).Dense(true),
+				).Color("white").Elevation(0).Density(DensityCompact),
 
-				vuetify.VCard(
-					vuetify.VCardText(
+				VCard(
+					VCardText(
 						h.Div(
 							web.Portal().Loader(
 								web.Plaid().EventFunc(ActionJobProgressing).
@@ -278,7 +278,7 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	er.Body = h.Div(
-		h.Div(vuetify.VProgressLinear(
+		h.Div(VProgressLinear(
 			h.Strong(fmt.Sprintf("%d%%", inst.Progress)),
 		).Value(int(inst.Progress)).Height(20)).Class("mb-5"),
 		h.If(config.displayLog, actionJobLog(*config.b, inst)),

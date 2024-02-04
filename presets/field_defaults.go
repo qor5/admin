@@ -178,7 +178,7 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 	return VCheckbox().
 		FieldName(field.FormKey).
 		Label(field.Label).
-		InputValue(reflectutils.MustGet(obj, field.Name).(bool)).
+		Value(reflectutils.MustGet(obj, field.Name).(bool)).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }

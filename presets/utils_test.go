@@ -33,8 +33,8 @@ func TestInputWithDefaults(t *testing.T) {
 
 	// Vuetify component
 	t.Run("VSelect", func(t *testing.T) {
-		expect, _ := v.VSelect().FieldName(field.FormKey).Value(field.Value(obj)).Label(field.Label).Outlined(true).MarshalHTML(ctx)
-		result, _ := InputWithDefaults(v.VSelect(), obj, field).Outlined(true).MarshalHTML(ctx)
+		expect, _ := v.VSelect().FieldName(field.FormKey).Value(field.Value(obj)).Label(field.Label).Variant(VariantOutlined).MarshalHTML(ctx)
+		result, _ := InputWithDefaults(v.VSelect(), obj, field).Variant(VariantOutlined).MarshalHTML(ctx)
 		if diff := cmp.Diff(expect, result); diff != "" {
 			t.Fatal(diff)
 		}

@@ -28,7 +28,7 @@ const (
 func profile(ctx *web.EventContext) h.HTMLComponent {
 	u := getCurrentUser(ctx.R)
 	if u == nil {
-		return VBtn("Login").Text(true).Href("/auth/login")
+		return VBtn("Login").Variant(VariantText).Href("/auth/login")
 	}
 
 	var roles []string
@@ -43,7 +43,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		account = u.OAuthIdentifier
 	}
 
-	return VMenu().OffsetY(true).Children(
+	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
 			VList(
 				VListItem(
@@ -67,9 +67,9 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 						VListItemTitle(h.Text(account)),
 					),
 					VListItemIcon(
-						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
+						VIcon("logout").Size(SizeSmall).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
 					),
-				).Class("pa-0 my-n4 ml-1").Dense(true),
+				).Class("pa-0 my-n4 ml-1").Density(DensityCompact),
 			).Class("pa-0 ma-n4"),
 		),
 	)
@@ -166,8 +166,8 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		if u.OAuthProvider == "" && u.Account != "" {
 			actionBtns = append(actionBtns,
 				VBtn("").
-					Outlined(true).Color("primary").
-					Children(VIcon("lock_outline").Small(true), h.Text(msgr.ChangePassword)).
+					Variant(VariantOutlined).Color("primary").
+					Children(VIcon("lock_outline").Size(SizeSmall), h.Text(msgr.ChangePassword)).
 					Class("mr-2").
 					OnClick(plogin.OpenChangePasswordDialogEvent),
 			)
@@ -270,8 +270,8 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 					VCol(
 						h.If(!isPublicUser,
 							VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
-								Outlined(true).Color("primary").
-								Children(VIcon("warning").Small(true), h.Text(msgr.SignOutAllOtherSessions))),
+								Variant(VariantOutlined).Color("primary").
+								Children(VIcon("warning").Size(SizeSmall), h.Text(msgr.SignOutAllOtherSessions))),
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).

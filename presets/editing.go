@@ -232,13 +232,13 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		}
 		if text != "" {
 			showVar := fmt.Sprintf("id%d", uuid.New().ID())
-			notice = VSnackbar().Top(true).Timeout(-1).Color(color).
+			notice = VSnackbar().Location("top").Timeout(-1).Color(color).
 				Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
 				Attr(web.InitContextVars, fmt.Sprintf(`{%s: true}`, showVar)).
 				Children(
 					h.Text(text),
 					h.Template().Attr("v-slot:action", "{ attrs }").Children(
-						VBtn("").Text(true).
+						VBtn("").Variant("text").
 							Attr("v-bind", "attrs").
 							Attr("@click", fmt.Sprintf("vars.%s = false", showVar)).
 							Children(VIcon("close")),
@@ -336,7 +336,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				VBtn("").Icon(true).Children(
 					VIcon("close"),
 				).Attr("@click.stop", closeBtnVarScript),
-			).Color("white").Elevation(0).Dense(true),
+			).Color("white").Elevation(0).Density("compact"),
 		),
 
 		VSheet(

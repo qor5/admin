@@ -229,8 +229,8 @@ func (b *ListingBuilder) listingComponent(
 				}
 				actionsComponent = append(actionsComponent, VBtn(msgr.New).
 					Color("primary").
-					Depressed(true).
-					Dark(true).Class("ml-2").
+					Variant(VariantFlat).
+					Theme("dark").Class("ml-2").
 					Disabled(disableNewBtn).
 					Attr("@click", onclick.Go()))
 			}
@@ -285,9 +285,9 @@ func (b *ListingBuilder) listingComponent(
 			searchBox,
 			VBtn("").Icon(true).
 				Children(VIcon("close")).
-				Large(true).
+				Size(SizeLarge).
 				Attr("@click.stop", CloseListingDialogVarScript),
-		).Color("white").Elevation(0).Dense(true)
+		).Color("white").Elevation(0).Density(DensityCompact)
 	}
 
 	return VContainer(
@@ -336,8 +336,7 @@ func (b *ListingBuilder) bulkPanel(
 			errComp = VAlert(h.Text(gErr)).
 				Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 	}
 	var processSelectedIdsNotice h.HTMLComponent
@@ -391,14 +390,14 @@ func (b *ListingBuilder) bulkPanel(
 		VCardActions(
 			VSpacer(),
 			VBtn(msgr.Cancel).
-				Depressed(true).
+				Variant(VariantFlat).
 				Class("ml-2").
 				Attr("@click", closeDialogVarScript),
 
 			VBtn(msgr.OK).
 				Color("primary").
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Attr("@click", onOK.Go()),
 		),
 	)
@@ -413,8 +412,7 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 			errComp = VAlert(h.Text(gErr)).
 				Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 	}
 
@@ -441,14 +439,14 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 		VCardActions(
 			VSpacer(),
 			VBtn(msgr.Cancel).
-				Depressed(true).
+				Variant(VariantFlat).
 				Class("ml-2").
 				Attr("@click", closeDialogVarScript),
 
 			VBtn(msgr.OK).
 				Color("primary").
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Attr("@click", onOK.Go()),
 		),
 	)
@@ -470,14 +468,14 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
-						Depressed(true).
+						Variant(VariantFlat).
 						Class("ml-2").
 						On("click", "vars.deleteConfirmation = false"),
 
 					VBtn(msgr.Delete).
 						Color("primary").
-						Depressed(true).
-						Dark(true).
+						Variant(VariantFlat).
+						Theme(ThemeDark).
 						Attr("@click", web.Plaid().
 							EventFunc(actions.DoDelete).
 							Queries(ctx.Queries()).
@@ -715,7 +713,7 @@ func (b *ListingBuilder) filterTabs(
 				Attr("@click", onclick.Go()),
 		)
 	}
-	return tabs.Value(value)
+	return tabs.ModelValue(value)
 }
 
 type selectColumns struct {
@@ -882,7 +880,7 @@ func (b *ListingBuilder) selectColumnsBtn(
 	// add the HTML component of columns setting into toolbar
 	btn = VMenu(
 		web.Slot(
-			VBtn("").Children(VIcon("settings")).Attr("v-on", "on").Text(true).Fab(true).Small(true),
+			VBtn("").Children(VIcon("settings")).Attr("v-on", "on").Variant(VariantText).Size(SizeSmall),
 		).Name("activator").Scope("{ on }"),
 
 		web.Scope(VList(
@@ -891,7 +889,9 @@ func (b *ListingBuilder) selectColumnsBtn(
 					VListItem(
 						VListItemContent(
 							VListItemTitle(
-								VSwitch().Dense(true).Attr("v-model", "locals.displayColumns", ":value", "column.name", ":label", "column.label", "@click", "event.preventDefault()"),
+								VSwitch().Density(DensityCompact).Attr("v-model", "locals.displayColumns", ":value",
+									"column.name",
+									":label", "column.label", "@click", "event.preventDefault()"),
 							),
 						),
 						VListItemIcon(
@@ -904,10 +904,10 @@ func (b *ListingBuilder) selectColumnsBtn(
 			VListItem(
 				VListItemAction(VBtn(msgr.Cancel).Elevation(0).Attr("@click", `vars.selectColumnsMenu = false`)),
 				VListItemAction(VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `vars.selectColumnsMenu = false;`+onOK.Go()))),
-		).Dense(true)).
+		).Density(DensityCompact)).
 			Init(h.JSONString(selectColumns)).
 			VSlot("{ locals }"),
-	).OffsetY(true).CloseOnClick(false).CloseOnContentClick(false).
+	).CloseOnContentClick(false).
 		Attr(web.InitContextVars, `{selectColumnsMenu: false}`).
 		Attr("v-model", "vars.selectColumnsMenu")
 	return
@@ -1240,15 +1240,15 @@ func (b *ListingBuilder) getTableComponents(
 						h.Span(title).
 							Style("text-decoration: underline;"),
 						h.If(orderBy == "ASC",
-							VIcon("arrow_drop_up").Small(true),
+							VIcon("arrow_drop_up").Size(SizeSmall),
 							h.Span(fmt.Sprint(orderByIdx)),
 						).ElseIf(orderBy == "DESC",
-							VIcon("arrow_drop_down").Small(true),
+							VIcon("arrow_drop_down").Size(SizeSmall),
 							h.Span(fmt.Sprint(orderByIdx)),
 						).Else(
 							// take up place
 							h.Span("").Style("visibility: hidden;").Children(
-								VIcon("arrow_drop_down").Small(true),
+								VIcon("arrow_drop_down").Size(SizeSmall),
 								h.Span(fmt.Sprint(orderByIdx)),
 							),
 						),
@@ -1410,8 +1410,8 @@ func (b *ListingBuilder) actionsComponent(
 			}
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1443,8 +1443,8 @@ func (b *ListingBuilder) actionsComponent(
 			}
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1468,9 +1468,7 @@ func (b *ListingBuilder) actionsComponent(
 					Attr("v-on", "on"),
 			).Name("activator").Scope("{ on, attrs }"),
 			VList(listItems...),
-		).OpenOnHover(true).
-			OffsetY(true).
-			AllowOverflow(true))
+		).OpenOnHover(true))
 	}
 
 	return h.Components(actionBtns...)

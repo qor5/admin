@@ -24,14 +24,14 @@ func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent 
 			VCardActions(
 				VSpacer(),
 				VBtn(msgr.Cancel).
-					Depressed(true).
+					Variant(VariantFlat).
 					Class("ml-2").
 					On("click", "locals.commonConfirmDialog = false"),
 
 				VBtn(msgr.OK).
 					Color("primary").
-					Depressed(true).
-					Dark(true).
+					Variant(VariantFlat).
+					Theme(ThemeDark).
 					Attr("@click", okAction),
 			),
 		),

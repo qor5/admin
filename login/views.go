@@ -10,7 +10,7 @@ import (
 
 	"github.com/pquerna/otp"
 	"github.com/qor5/admin/presets"
-	v "github.com/qor5/ui/vuetify"
+	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
 	"github.com/qor5/x/login"
@@ -60,11 +60,11 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			ul := Div().Class("d-flex flex-column justify-center mt-8 text-center")
 			for _, provider := range vh.OAuthProviders() {
 				ul.AppendChildren(
-					v.VBtn("").
+					VBtn("").
 						Block(true).
-						Large(true).
+						Size(SizeLarge).
 						Class("mt-4").
-						Outlined(true).
+						Variant(VariantOutlined).
 						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
 						Children(
 							Div(
@@ -122,15 +122,15 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
-				v.VSelect().
+				VSelect().
 					Items(langs).
-					ItemText("Label").
+					ItemTitle("Label").
 					ItemValue("Value").
 					Attr(web.InitContextVars, fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).
 					Attr("v-model", `vars.currLangVal`).
 					Attr("@change", `window.location.href=vars.currLangVal`).
-					Outlined(true).
-					Dense(true).
+					Variant(VariantOutlined).
+					Density(DensityCompact).
 					Class("mt-12").
 					HideDetails(true),
 			),
@@ -368,20 +368,20 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
-	return v.VDialog(
-		v.VCard(
+	return VDialog(
+		VCard(
 			content,
-			v.VCardActions(
-				v.VSpacer(),
-				v.VBtn(pmsgr.Cancel).
-					Depressed(true).
+			VCardActions(
+				VSpacer(),
+				VBtn(pmsgr.Cancel).
+					Variant(VariantFlat).
 					Class("ml-2").
 					On("click", fmt.Sprintf("vars.%s = false", showVar)),
 
-				v.VBtn(pmsgr.OK).
+				VBtn(pmsgr.OK).
 					Color("primary").
-					Depressed(true).
-					Dark(true).
+					Variant(VariantFlat).
+					Theme(ThemeDark).
 					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
 			),
 		),
@@ -394,32 +394,28 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builde
 	return func(ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(
-			v.VCardTitle(Text(msgr.ChangePasswordTitle)),
-			v.VCardText(
+			VCardTitle(Text(msgr.ChangePasswordTitle)),
+			VCardText(
 				Div(
 					DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
-						Outlined(false).
 						Label(msgr.ChangePasswordOldLabel).
 						FieldName("old_password"),
 				),
 				Div(
 					DefaultViewCommon.PasswordInputWithStrengthMeter(
 						DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
-							Outlined(false).
 							Label(msgr.ChangePasswordNewLabel).
 							FieldName("password"),
 						"password", ""),
 				).Class("mt-12"),
 				Div(
 					DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
-						Outlined(false).
 						Label(msgr.ChangePasswordNewConfirmLabel).
 						FieldName("confirm_password"),
 				).Class("mt-12"),
 				If(vh.TOTPEnabled(),
 					Div(
 						DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
-							Outlined(false).
 							Label(msgr.TOTPValidateCodeLabel).
 							FieldName("otp"),
 					).Class("mt-12"),
