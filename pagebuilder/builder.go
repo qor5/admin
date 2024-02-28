@@ -930,7 +930,7 @@ const (
 func selectTemplate(db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		defer func() {
-			web.AppendVarsScripts(&er, "vars.showTemplateDialog=false")
+			web.AppendRunScripts(&er, "vars.showTemplateDialog=false")
 		}()
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -1084,7 +1084,7 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 				Attr(web.InitContextVars, fmt.Sprintf(`{showTemplateDialog: false}`)),
 		})
 
-		er.VarsScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
+		er.RunScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
 		return
 	}
 }
@@ -1430,7 +1430,7 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		delete(qs, "version_name")
 		delete(qs, "rename_id")
 
-		r.VarsScript = web.Plaid().URL(ctx.R.RequestURI).Queries(qs).EventFunc(actions.UpdateListingDialog).Go()
+		r.RunScript = web.Plaid().URL(ctx.R.RequestURI).Queries(qs).EventFunc(actions.UpdateListingDialog).Go()
 		return
 	}
 }
@@ -1468,7 +1468,7 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 				Attr(web.InitContextVars, `{deleteConfirmation: false}`),
 		})
 
-		r.VarsScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
+		r.RunScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
 		return
 	}
 }
@@ -1950,7 +1950,7 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 		ids := strings.Split(ctx.R.FormValue("ids"), ",")
 		for _, id := range ids {
 			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
-			web.AppendVarsScripts(&r,
+			web.AppendRunScripts(&r,
 				web.Plaid().
 					URL(pageURL).
 					EventFunc(views.RepublishEvent).

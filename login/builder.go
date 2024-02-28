@@ -41,8 +41,8 @@ func registerChangePasswordEvents(b *login.Builder, pb *presets.Builder) {
 			Body: changePasswordDialog(vh, ctx, showVar, defaultChangePasswordDialogContent(vh, pb)(ctx)),
 		})
 
-		web.AppendVarsScripts(&r, fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar))
-		web.AppendVarsScripts(&r, fmt.Sprintf(`
+		web.AppendRunScripts(&r, fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar))
+		web.AppendRunScripts(&r, fmt.Sprintf(`
 (function(){
 var tag = document.createElement("script");
 tag.src = "%s";
@@ -95,7 +95,7 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 		}
 
 		presets.ShowMessage(&r, msgr.InfoPasswordSuccessfullyChanged, "info")
-		web.AppendVarsScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
+		web.AppendRunScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
 		return r, nil
 	})
 }

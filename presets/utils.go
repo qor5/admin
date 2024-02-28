@@ -22,7 +22,7 @@ func ShowMessage(r *web.EventResponse, msg string, color string) {
 		color = "success"
 	}
 
-	web.AppendVarsScripts(r, fmt.Sprintf(
+	web.AppendRunScripts(r, fmt.Sprintf(
 		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
 		h.JSONString(msg), h.JSONString(color)))
 }

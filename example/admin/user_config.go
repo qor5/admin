@@ -92,7 +92,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if err != nil {
 			return r, err
 		}
-		r.VarsScript = fmt.Sprintf(`alert("http://localhost:9500/auth/reset-password?id=%s&token=%s")`, uid, token)
+		r.RunScript = fmt.Sprintf(`alert("http://localhost:9500/auth/reset-password?id=%s&token=%s")`, uid, token)
 		return r, nil
 	})
 
@@ -516,7 +516,7 @@ func registerSelectFavorPostEvent(b *presets.Builder) {
 			Name: "favorPostSelector",
 			Body: favorPostSelector(id),
 		})
-		web.AppendVarsScripts(&r, presets.CloseListingDialogVarScript)
+		web.AppendRunScripts(&r, presets.CloseListingDialogVarScript)
 		return
 	})
 }

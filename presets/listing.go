@@ -488,7 +488,7 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 			Attr(web.InitContextVars, `{deleteConfirmation: false}`),
 	})
 
-	r.VarsScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
 	return
 }
 
@@ -598,7 +598,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 		qs := ctx.Queries()
 		qs.Del(bulkPanelOpenParamName)
 		qs.Del(ParamBulkActionName)
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			closeDialogVarScript,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
@@ -647,7 +647,7 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		qs := ctx.Queries()
 		qs.Del(actionPanelOpenParamName)
 		qs.Del(ParamListingActionName)
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			closeDialogVarScript,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
@@ -1491,7 +1491,7 @@ func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventRe
 		Name: ListingDialogPortalName,
 		Body: web.Scope(dialog).VSlot("{ plaidForm }"),
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
 	return
 }
 
@@ -1501,7 +1501,7 @@ func (b *ListingBuilder) updateListingDialog(ctx *web.EventContext) (r web.Event
 		Body: b.listingComponent(ctx, true),
 	})
 
-	web.AppendVarsScripts(&r, `
+	web.AppendRunScripts(&r, `
 var listingDialogElem = document.getElementById('listingDialog'); 
 if (listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
     listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';

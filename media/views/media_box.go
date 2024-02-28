@@ -240,7 +240,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 				Attr(web.InitContextVars, `{mediaLibrary_deleteConfirmation: false}`),
 		})
 
-		r.VarsScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
+		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
 		return
 	}
 }
@@ -261,7 +261,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 					db,
 					stringToCfg(cfg),
 				)
-				r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
+				r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
 				return r, nil
 			}
 			panic(err)
@@ -282,7 +282,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 			db,
 			stringToCfg(cfg),
 		)
-		r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
+		r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
 		return
 	}
 }
@@ -454,7 +454,7 @@ func updateDescription(db *gorm.DB) web.EventFunc {
 			return
 		}
 
-		r.VarsScript = `vars.snackbarShow = true;`
+		r.RunScript = `vars.snackbarShow = true;`
 		return
 	}
 }

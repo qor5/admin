@@ -793,7 +793,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 		// Floating(true).
 
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
 }
 
 // 				Attr("@input", "alert(plaidForm.dirty) && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsDialog = true : vars.presetsDialog = $event").
@@ -812,7 +812,7 @@ func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width strin
 				Width(width),
 		).VSlot("{ plaidForm }"),
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
 }
 
 type LayoutConfig struct {
@@ -889,7 +889,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar)),
 	})
 
-	er.VarsScript = fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar)
+	er.RunScript = fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar)
 	return
 }
 

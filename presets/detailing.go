@@ -219,7 +219,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 	}
 
 	r.PushState = web.Location(url.Values{})
-	r.VarsScript = closeRightDrawerVarScript
+	r.RunScript = closeRightDrawerVarScript
 
 	return
 }

@@ -65,7 +65,7 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 		}
 
 		if script := ctx.R.FormValue(ParamScriptAfterPublish); script != "" {
-			web.AppendVarsScripts(&r, script)
+			web.AppendRunScripts(&r, script)
 		} else {
 			presets.ShowMessage(&r, "success", "")
 			r.Reload = true
@@ -184,7 +184,7 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 			switchingVersion = version.(presets.SlugEncoder).PrimarySlug()
 		}
 
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			web.Plaid().
 				EventFunc(switchVersionEvent).
 				Query(presets.ParamID, switchingVersion).

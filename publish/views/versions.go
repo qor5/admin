@@ -284,7 +284,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
 		if ctx.R.URL.Query().Get(presets.ParamInDialog) == "true" {
-			web.AppendVarsScripts(&r,
+			web.AppendRunScripts(&r,
 				"vars.presetsDialog = false",
 				web.Plaid().
 					URL(ctx.R.RequestURI).

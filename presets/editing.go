@@ -362,7 +362,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	}
 
 	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			"vars.deleteConfirmation = false",
 			web.Plaid().
 				EventFunc(event).
@@ -373,7 +373,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
 		if isInDialogFromQuery(ctx) {
 			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
-			web.AppendVarsScripts(&r,
+			web.AppendRunScripts(&r,
 				"vars.deleteConfirmation = false",
 				web.Plaid().
 					URL(u).
@@ -390,7 +390,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 			// r.PushState = web.Location(nil).
 			// 	MergeQuery(true).
 			//  Query(ParamSelectedIds, removeSelectQuery)
-			web.AppendVarsScripts(&r,
+			web.AppendRunScripts(&r,
 				web.Plaid().
 					PushState(true).
 					MergeQuery(true).
@@ -472,7 +472,7 @@ func (b *EditingBuilder) doUpdate(
 
 	afterUpdateScript := ctx.R.FormValue(ParamOverlayAfterUpdateScript)
 	if afterUpdateScript != "" {
-		web.AppendVarsScripts(r, script, strings.NewReplacer(".go()",
+		web.AppendRunScripts(r, script, strings.NewReplacer(".go()",
 			fmt.Sprintf(".query(%s, %s).go()",
 				h.JSONString(ParamOverlayUpdateID),
 				h.JSONString(vx.ObjectID(obj)),
@@ -483,7 +483,7 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	if isInDialogFromQuery(ctx) {
-		web.AppendVarsScripts(r,
+		web.AppendRunScripts(r,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
 				EventFunc(actions.UpdateListingDialog).
@@ -493,7 +493,7 @@ func (b *EditingBuilder) doUpdate(
 	} else {
 		r.PushState = web.Location(nil)
 	}
-	web.AppendVarsScripts(r, script)
+	web.AppendRunScripts(r, script)
 	return
 }
 

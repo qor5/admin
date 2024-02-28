@@ -534,7 +534,7 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		r.PushState = web.Location(url.Values{})
 	} else {
 		newModelID, err = b.AddContainerToPage(pageID, pageVersion, locale, containerName)
-		r.VarsScript = web.Plaid().
+		r.RunScript = web.Plaid().
 			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 			EventFunc(actions.Edit).
 			Query(presets.ParamOverlay, actions.Drawer).
@@ -612,7 +612,7 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 			Attr(web.InitContextVars, `{deleteConfirmation: false}`),
 	})
 
-	r.VarsScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
 	return
 }
 

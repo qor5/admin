@@ -70,7 +70,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 				// Scrollable(true).
 				Attr("v-model", "vars.showFileChooser"),
 		})
-		r.VarsScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
+		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
 		return
 	}
 }
@@ -477,7 +477,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false),
 		})
-		r.VarsScript = `vars.showFileChooser = false`
+		r.RunScript = `vars.showFileChooser = false`
 		return
 	}
 }

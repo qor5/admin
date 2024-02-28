@@ -116,7 +116,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 				Attr(web.InitContextVars, `{localizeConfirmation: false}`),
 		})
 
-		r.VarsScript = "setTimeout(function(){ vars.localizeConfirmation = true }, 100)"
+		r.RunScript = "setTimeout(function(){ vars.localizeConfirmation = true }, 100)"
 		return
 	}
 }
@@ -138,7 +138,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *a
 			}
 		}
 		if len(to) == 0 {
-			web.AppendVarsScripts(&r, "vars.localizeConfirmation = false")
+			web.AppendRunScripts(&r, "vars.localizeConfirmation = false")
 			return
 		}
 

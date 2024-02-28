@@ -125,7 +125,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), job)
 	}
 
-	r.VarsScript = web.Plaid().
+	r.RunScript = web.Plaid().
 		URL(b.mb.Info().ListingHref()).
 		EventFunc(ActionJobResponse).
 		Query(presets.ParamID, fmt.Sprint(job.ID)).
@@ -182,7 +182,7 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 				Width("600").Persistent(true),
 		).VSlot("{ plaidForm }"),
 	})
-	r.VarsScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
+	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
 }
 
@@ -230,7 +230,7 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 				Width("600").Persistent(true),
 		).VSlot("{ plaidForm }"),
 	})
-	r.VarsScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
+	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
 }
 
@@ -240,7 +240,7 @@ func (b *Builder) eventActionJobClose(ctx *web.EventContext) (er web.EventRespon
 		qorJobName = ctx.R.FormValue("jobName")
 	)
 
-	er.VarsScript = "vars.presetsDialog = false;vars.actionJobProgressingInterval = 0;"
+	er.RunScript = "vars.presetsDialog = false;vars.actionJobProgressingInterval = 0;"
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
 		return er, pErr
 	}
@@ -290,9 +290,9 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	)
 
 	if inst.Status == JobStatusDone || inst.Status == JobStatusException {
-		er.VarsScript = "vars.actionJobProgressingInterval = 0;"
+		er.RunScript = "vars.actionJobProgressingInterval = 0;"
 	} else {
-		er.VarsScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
+		er.RunScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
 	}
 	return er, nil
 }

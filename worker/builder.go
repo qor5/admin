@@ -497,7 +497,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		action := "Abort"
@@ -566,7 +566,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		b.ab.AddCustomizedRecord("Rerun", false, ctx.R.Context(), &QorJob{
@@ -635,7 +635,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	if b.ab != nil {
 		b.ab.AddEditRecordWithOldAndContext(
 			ctx.R.Context(),
@@ -699,9 +699,9 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, logs, hasMoreLogs, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning && inst.Status != JobStatusKilled {
-		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
+		er.RunScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
-		er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+		er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	}
 	return er, nil
 }
