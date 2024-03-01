@@ -1,6 +1,6 @@
 module github.com/qor5/admin
 
-go 1.19
+go 1.22
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -104,5 +104,7 @@ require (
 )
 
 replace github.com/qor5/web => ../../qor5/web
+
 replace github.com/qor5/ui => ../../qor5/ui
+
 //replace github.com/qor5/x => ../../qor5/x
