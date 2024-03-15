@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
@@ -231,19 +230,19 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			}
 		}
 		if text != "" {
-			showVar := fmt.Sprintf("id%d", uuid.New().ID())
-			notice = VSnackbar().Location("top").Timeout(-1).Color(color).
-				Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
-				Attr(web.InitContextVars, fmt.Sprintf(`{%s: true}`, showVar)).
-				Children(
+			notice = web.Scope(
+				VSnackbar(
 					h.Text(text),
-					h.Template().Attr("v-slot:action", "{ attrs }").Children(
+					web.Slot(
 						VBtn("").Variant("text").
-							Attr("v-bind", "attrs").
-							Attr("@click", fmt.Sprintf("vars.%s = false", showVar)).
-							Children(VIcon("close")),
-					),
-				)
+							Attr("@click", "locals.show = false").
+							Children(VIcon("mdi-close")),
+					).Name("actions"),
+				).Location("top").
+					Timeout(-1).
+					Color(color).
+					Attr("v-model", "locals.show"),
+			).VSlot("{ locals }").Init(`{ show: true }`)
 		}
 	}
 
