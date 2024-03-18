@@ -877,15 +877,13 @@ func (b *ModifiedIndexesBuilder) ToFormHidden() h.HTMLComponent {
 	var hidden []h.HTMLComponent
 	for sliceFormKey, values := range b.deletedValues {
 		hidden = append(hidden, h.Input("").Type("hidden").
-			Attr(web.VFieldName(deleteHiddenSliceFormKey(sliceFormKey))...).
-			Value(strings.Join(values, ",")))
+			Attr(web.VField(deleteHiddenSliceFormKey(sliceFormKey), strings.Join(values, ","))...))
 
 	}
 
 	for sliceFormKey, values := range b.sortedValues {
 		hidden = append(hidden, h.Input("").Type("hidden").
-			Attr(web.VFieldName(sortedHiddenSliceFormKey(sliceFormKey))...).
-			Value(strings.Join(values, ",")))
+			Attr(web.VField(sortedHiddenSliceFormKey(sliceFormKey), strings.Join(values, ","))...))
 	}
 	return h.Components(hidden...)
 }

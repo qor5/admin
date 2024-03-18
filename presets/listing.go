@@ -263,7 +263,7 @@ func (b *ListingBuilder) listingComponent(
 				PrependInnerIcon("search").
 				Placeholder(msgr.Search).
 				HideDetails(true).
-				Value(ctx.R.URL.Query().Get("keyword")).
+				ModelValue(ctx.R.URL.Query().Get("keyword")).
 				Attr("@keyup.enter", web.Plaid().
 					URL(ctx.R.RequestURI).
 					Query("keyword", web.Var("[$event.target.value]")).
@@ -290,7 +290,7 @@ func (b *ListingBuilder) listingComponent(
 		).Color("white").Elevation(0).Density(DensityCompact)
 	}
 
-	return VContainer(
+	return web.Scope(VContainer(
 		dialogHeaderBar,
 		tabsAndActionsBar,
 		h.Div(
@@ -304,8 +304,8 @@ func (b *ListingBuilder) listingComponent(
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 		).Class("mt-2"),
 	).Fluid(true).
-		Class("white").
-		Attr(web.InitContextVars, `{currEditingListItemID: ''}`)
+		Class("white"),
+	).VSlot("{ locals }").Init(`{currEditingListItemID: ''}`)
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
@@ -462,7 +462,7 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
-		Body: VDialog(
+		Body: web.Scope(VDialog(
 			VCard(
 				VCardTitle(h.Text(msgr.DeleteConfirmationText(promptID))),
 				VCardActions(
@@ -484,11 +484,11 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 				),
 			),
 		).MaxWidth("600px").
-			Attr("v-model", "vars.deleteConfirmation").
-			Attr(web.InitContextVars, `{deleteConfirmation: false}`),
+			Attr("v-model", "locals.deleteConfirmation"),
+		).VSlot("{ locals }").Init(`{deleteConfirmation: false}`),
 	})
 
-	r.RunScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
+	r.RunScript = "setTimeout(function(){ locals.deleteConfirmation = true }, 100)"
 	return
 }
 
@@ -878,38 +878,35 @@ func (b *ListingBuilder) selectColumnsBtn(
 			EventFunc(actions.UpdateListingDialog)
 	}
 	// add the HTML component of columns setting into toolbar
-	btn = VMenu(
+	btn = web.Scope(VMenu(
 		web.Slot(
 			VBtn("").Children(VIcon("settings")).Attr("v-on", "on").Variant(VariantText).Size(SizeSmall),
 		).Name("activator").Scope("{ on }"),
 
-		web.Scope(VList(
+		VList(
 			h.Tag("vx-draggable").Attr("v-model", "locals.sortedColumns", "draggable", ".vx_column_item", "animation", "300").Children(
 				h.Div(
 					VListItem(
-						VListItemContent(
-							VListItemTitle(
-								VSwitch().Density(DensityCompact).Attr("v-model", "locals.displayColumns", ":value",
-									"column.name",
-									":label", "column.label", "@click", "event.preventDefault()"),
-							),
+						VListItemTitle(
+							VSwitch().Density(DensityCompact).Attr("v-model", "locals.displayColumns", ":value",
+								"column.name",
+								":label", "column.label", "@click", "event.preventDefault()"),
 						),
-						VListItemIcon(
+						web.Slot(
 							VIcon("reorder"),
-						).Attr("style", "margin-top: 28px"),
+						).Name("prepend"),
 					),
 					VDivider(),
 				).Attr("v-for", "(column, index) in locals.sortedColumns", ":key", "column.name", "class", "vx_column_item"),
 			),
 			VListItem(
-				VListItemAction(VBtn(msgr.Cancel).Elevation(0).Attr("@click", `vars.selectColumnsMenu = false`)),
-				VListItemAction(VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `vars.selectColumnsMenu = false;`+onOK.Go()))),
-		).Density(DensityCompact)).
-			Init(h.JSONString(selectColumns)).
-			VSlot("{ locals }"),
+				VListItemAction(VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`)),
+				VListItemAction(VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `locals.selectColumnsMenu = false;`+onOK.Go()))),
+		).Density(DensityCompact),
 	).CloseOnContentClick(false).
-		Attr(web.InitContextVars, `{selectColumnsMenu: false}`).
-		Attr("v-model", "vars.selectColumnsMenu")
+		Attr("v-model", "locals.selectColumnsMenu")).
+		Init(h.JSONString(selectColumns)).
+		VSlot("{ locals }").Init(`{selectColumnsMenu: false}`)
 	return
 }
 
@@ -1208,7 +1205,7 @@ func (b *ListingBuilder) getTableComponents(
 					Query(ParamListingQueries, ctx.Queries().Encode())
 			}
 			tdbind.SetAttr("@click.self",
-				onclick.Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, id))
+				onclick.Go()+fmt.Sprintf(`; locals.currEditingListItemID="%s-%s"`, dataTableID, id))
 		}
 		return tdbind
 	}
@@ -1271,7 +1268,7 @@ func (b *ListingBuilder) getTableComponents(
 			return cell
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-			row.SetAttr(":class", fmt.Sprintf(`{"vx-list-item--active primary--text": vars.presetsRightDrawer && vars.currEditingListItemID==="%s-%s"}`, dataTableID, id))
+			row.SetAttr(":class", fmt.Sprintf(`{"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.currEditingListItemID==="%s-%s"}`, dataTableID, id))
 			return row
 		}).
 		RowMenuItemFuncs(b.RowMenu().listingItemFuncs(ctx)...).

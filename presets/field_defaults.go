@@ -176,9 +176,8 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VCheckbox().
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
 		Label(field.Label).
-		Value(reflectutils.MustGet(obj, field.Name).(bool)).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
@@ -186,9 +185,8 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("number").
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
-		Value(fmt.Sprint(reflectutils.MustGet(obj, field.Name))).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
@@ -208,7 +206,7 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 	}
 	return vuetifyx.VXDateTimePicker().
 		Label(field.Label).
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, val)...).
 		Value(val).
 		TimePickerProps(vuetifyx.TimePickerProps{
 			Format:     "24hr",
@@ -233,9 +231,8 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("text").
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
-		Value(fmt.Sprint(reflectutils.MustGet(obj, field.Name))).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
