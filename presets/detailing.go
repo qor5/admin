@@ -17,7 +17,7 @@ type DetailingBuilder struct {
 	actions   []*ActionBuilder
 	pageFunc  web.PageFunc
 	fetcher   FetchFunc
-	tabPanels []ObjectComponentFunc
+	tabPanels []TabComponentFunc
 	drawer    bool
 	FieldsBuilder
 }
@@ -77,12 +77,12 @@ func (b *DetailingBuilder) GetPageFunc() web.PageFunc {
 	return b.defaultPageFunc
 }
 
-func (b *DetailingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
+func (b *DetailingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *DetailingBuilder) {
 	b.tabPanels = append(b.tabPanels, v)
 	return b
 }
 
-func (b *DetailingBuilder) TabsPanelFunc() (r []ObjectComponentFunc) {
+func (b *DetailingBuilder) TabsPanelFunc() (r []TabComponentFunc) {
 	return b.tabPanels
 }
 
@@ -134,19 +134,28 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	if len(b.tabPanels) != 0 {
 		var tabs []h.HTMLComponent
+		var contents []h.HTMLComponent
 		for _, panelFunc := range b.tabPanels {
-			value := panelFunc(obj, ctx)
-			if value != nil {
-				tabs = append(tabs, value)
+			tab, content := panelFunc(obj, ctx)
+			if tab != nil {
+				tabs = append(tabs, tab)
+				contents = append(contents, content)
 			}
+
 		}
 
 		if len(tabs) != 0 {
-			tabsContent = VTabs(
-				VTab(h.Text(msgr.FormTitle)),
-				VTabItem(web.Scope(comp).VSlot("{plaidForm}")),
-				h.Components(tabs...),
-			).Class("v-tabs--fixed-tabs")
+			tabsContent = web.Scope(
+				VTabs(
+					VTab(h.Text(msgr.FormTitle)).Value("default"),
+					h.Components(tabs...),
+				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
+
+				VWindow(
+					web.Scope(comp).VSlot("{ form }"),
+					h.Components(contents...),
+				).Attr("v-model", "tab"),
+			).VSlot("{ locals }").Init(`{tab: 'default'}`)
 		}
 	}
 

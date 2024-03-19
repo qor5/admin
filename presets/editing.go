@@ -21,7 +21,7 @@ type EditingBuilder struct {
 	Saver            SaveFunc
 	Deleter          DeleteFunc
 	Validator        ValidateFunc
-	tabPanels        []ObjectComponentFunc
+	tabPanels        []TabComponentFunc
 	hiddenFuncs      []ObjectComponentFunc
 	sidePanel        ComponentFunc
 	actionsFunc      ObjectComponentFunc
@@ -96,7 +96,7 @@ func (b *EditingBuilder) SetterFunc(v SetterFunc) (r *EditingBuilder) {
 	return b
 }
 
-func (b *EditingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *EditingBuilder) {
+func (b *EditingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *EditingBuilder) {
 	b.tabPanels = append(b.tabPanels, v)
 	return b
 }
@@ -288,20 +288,30 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	var asideContent h.HTMLComponent = formContent
 	if len(b.tabPanels) != 0 {
 		var tabs []h.HTMLComponent
+		var contents []h.HTMLComponent
 
 		for _, panelFunc := range b.tabPanels {
-			value := panelFunc(obj, ctx)
-			if value != nil {
-				tabs = append(tabs, value)
+			tab, content := panelFunc(obj, ctx)
+			if tab != nil {
+				tabs = append(tabs, tab)
+				contents = append(contents, content)
+
 			}
+
 		}
 
 		if len(tabs) != 0 {
-			asideContent = VTabs(
-				VTab(h.Text(msgr.FormTitle)),
-				VTabItem(web.Scope(formContent).VSlot("{plaidForm}")),
-				h.Components(tabs...),
-			).Class("v-tabs--fixed-tabs")
+			asideContent = web.Scope(
+				VTabs(
+					VTab(h.Text(msgr.FormTitle)).Value("default"),
+					h.Components(tabs...),
+				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
+
+				VWindow(
+					web.Scope(formContent).VSlot("{ form }"),
+					h.Components(contents...),
+				).Attr("v-model", "tab"),
+			).VSlot("{ locals }").Init(`{tab: 'default'}`)
 		}
 	} else {
 		asideContent = web.Scope(formContent).VSlot("{plaidForm}")
