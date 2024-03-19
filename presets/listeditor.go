@@ -135,10 +135,10 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 			h.Tag("vx-draggable").Attr("v-model", "locals.items", "draggable", ".item", "animation", "300").Children(
 				h.Div(
 					VListItem(
-						VListItemIcon(VIcon("drag_handle")),
-						VListItemContent(
-							VListItemTitle(h.Text("{{item.label}}")),
-						),
+						web.Slot(
+							VIcon("drag_handle"),
+						).Name("prepend"),
+						VListItemTitle(h.Text("{{item.label}}")),
 					),
 					VDivider().Attr("v-if", "index < locals.items.length - 1", ":key", "index"),
 				).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),

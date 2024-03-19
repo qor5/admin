@@ -453,11 +453,9 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		VListItemAction(
 			VIcon(menuIcon),
 		).Attr("style", "margin-right: 16px"),
-		VListItemContent(
-			VListItemTitle(
-				h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
-			).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
-		),
+		VListItemTitle(
+			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+		).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
 	)
 
 	item.Href(href)
@@ -524,10 +522,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 					VListItemAction(
 						VIcon(groupIcon),
 					).Attr("style", "margin-right: 16px;"),
-					VListItemContent(
-						VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-					),
+					VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+						Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
 				).Slot("activator").Class("pa-0"),
 			}
 			subCount := 0
@@ -635,13 +631,11 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 			h.Div(
 				VList(
 					VListItem(
-						VListItemIcon(
-							VIcon("translate").Size(SizeSmall).Class("ml-1"),
-						).Attr("style", "margin-right: 16px"),
-						VListItemContent(
-							VListItemTitle(
-								h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
-							),
+						web.Slot(
+							VIcon("translate").Size(SizeSmall).Class("mr-4 ml-1"),
+						).Name("prepend"),
+						VListItemTitle(
+							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
 						),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
@@ -667,10 +661,8 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		languages = append(languages,
 			h.Div(
 				VListItem(
-					VListItemContent(
-						VListItemTitle(
-							h.Div(h.Text(display.Self.Name(tag))),
-						),
+					VListItemTitle(
+						h.Div(h.Text(display.Self.Name(tag))),
 					),
 				).Attr("@click", web.Plaid().Query(queryName, tag.String()).Go()),
 			),
@@ -682,17 +674,15 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 			h.Div(
 				VList(
 					VListItem(
-						VListItemIcon(
-							VIcon("translate").Size(SizeSmall).Class("ml-1"),
-						).Attr("style", "margin-right: 16px"),
-						VListItemContent(
-							VListItemTitle(
-								h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
-							),
+						web.Slot(
+							VIcon("translate").Size(SizeSmall).Class(" mr-4 ml-1"),
+						).Name("prepend"),
+						VListItemTitle(
+							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
 						),
-						VListItemIcon(
-							VIcon("arrow_drop_down").Class("mr-1"),
-						),
+						web.Slot(
+							VIcon("arrow_drop_down").Size(SizeSmall).Class(" ml-1"),
+						).Name("append"),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
 			).Attr("v-bind", "attrs").Attr("v-on", "on"),
@@ -863,11 +853,10 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
-	showVar := fmt.Sprintf("show_%s", portal)
 
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 		Name: portal,
-		Body: VDialog(
+		Body: web.Scope(VDialog(
 			VCard(
 				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
@@ -875,21 +864,20 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 					VBtn(msgr.Cancel).
 						Variant(VariantFlat).
 						Class("ml-2").
-						On("click", fmt.Sprintf("vars.%s = false", showVar)),
+						On("click", "vars.show = false"),
 
 					VBtn(msgr.OK).
 						Color("primary").
 						Variant(VariantFlat).
 						Theme(ThemeDark).
-						Attr("@click", fmt.Sprintf("%s;vars.%s = false", confirmEvent, showVar)),
+						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
 				),
 			),
 		).MaxWidth("600px").
-			Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar)),
+			Attr("v-model", "locals.show"),
+		).VSlot("{ locals }").Init("{show: true}"),
 	})
 
-	er.RunScript = fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar)
 	return
 }
 
@@ -936,8 +924,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// Clipped(true).
 				// Fixed(true).
 				ModelValue(true).
-				Attr("v-model", "vars.navDrawer").
-				Attr(web.InitContextVars, `{navDrawer: null}`),
+				Attr("v-model", "vars.navDrawer"),
 
 			VAppBar(
 				VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
@@ -953,7 +940,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							Flat(true).
 							Clearable(true).
 							HideDetails(true).
-							Value(ctx.R.URL.Query().Get("keyword")).
+							ModelValue(ctx.R.URL.Query().Get("keyword")).
 							Attr("@keyup.enter", web.Plaid().
 								ClearMergeQuery("page").
 								Query("keyword", web.Var("[$event.target.value]")).
@@ -1001,7 +988,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				innerPr.Body.(h.HTMLComponent),
 			),
 		).Attr("id", "vt-app").
-			Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
+			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
+presetsMessage: {show: false, color: "success", message: ""}}`)...)
 
 		return
 	}
@@ -1046,7 +1034,8 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 			),
 		).
 			Attr("id", "vt-app").
-			Attr(web.InitContextVars, `{presetsDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
+			Attr(web.ObjectAssign("vars", `{presetsDialog: false, presetsMessage: {show: false, color: "success", 
+message: ""}}`)...)
 
 		return
 	}

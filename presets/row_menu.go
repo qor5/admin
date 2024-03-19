@@ -134,7 +134,10 @@ func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuI
 			return nil
 		}
 		return VListItem(
-			VListItemIcon(VIcon(b.icon)),
+			web.Slot(
+				VIcon(b.icon),
+			).Name("prepend"),
+
 			VListItemTitle(h.Text(i18n.PT(ctx.R, ModelsI18nModuleKey, strcase.ToCamel(b.rmb.lb.mb.label+" RowMenuItem"), b.name))),
 		).Attr("@click", web.Plaid().
 			EventFunc(b.eventID).

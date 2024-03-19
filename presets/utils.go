@@ -53,7 +53,10 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 				Query(ParamListingQueries, ctx.Queries().Encode())
 		}
 		return VListItem(
-			VListItemIcon(VIcon("edit")),
+			web.Slot(
+				VIcon("edit"),
+			).Name("prepend"),
+
 			VListItemTitle(h.Text(msgr.Edit)),
 		).Attr("@click", onclick.Go())
 	}
@@ -78,7 +81,10 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 				Query(ParamListingQueries, ctx.Queries().Encode())
 		}
 		return VListItem(
-			VListItemIcon(VIcon("delete")),
+			web.Slot(
+				VIcon("delete"),
+			).Name("prepend"),
+
 			VListItemTitle(h.Text(msgr.Delete)),
 		).Attr("@click", onclick.Go())
 	}
@@ -114,23 +120,6 @@ var (
 // For now, input must be h.Input, v.VSelect or v.VTextField.
 // This function will be implemented using the FieldContext method
 // when golang supports generic method and the current function will be deprecated.
-func InputWithDefaults[T inputElem](input T, obj any, field *FieldContext) T {
-	rv := reflect.ValueOf(input)
-	rt := rv.Type()
-	if rt == htmlTagBuilderType {
-		kvs := web.VFieldName(field.FormKey)
-		in := make([]reflect.Value, 0, len(kvs))
-		for i, _ := range kvs {
-			v := kvs[i]
-			in = append(in, reflect.ValueOf(v))
-		}
-		rv.MethodByName("Attr").Call(in)
-		rv.MethodByName("Value").Call([]reflect.Value{reflect.ValueOf(field.StringValue(obj))})
-	} else {
-		rv.MethodByName("FieldName").Call([]reflect.Value{reflect.ValueOf(field.FormKey)})
-		rv.MethodByName("Value").Call([]reflect.Value{reflect.ValueOf(field.Value(obj))})
-		rv.MethodByName("Label").Call([]reflect.Value{reflect.ValueOf(field.Label)})
-	}
-
-	return input
+func InputWithDefaults(input *h.HTMLTagBuilder, obj any, field *FieldContext) *h.HTMLTagBuilder {
+	return input.Attr(web.VField(field.FormKey, field.StringValue(obj))...).Attr(":label", field.Label)
 }
