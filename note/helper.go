@@ -53,7 +53,7 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 						Go(),
 					),
 			)),
-		).VSlot("{plaidForm}"),
+		).VSlot("{form}"),
 	)
 
 	var notes []QorNote

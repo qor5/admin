@@ -1486,7 +1486,7 @@ func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventRe
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: ListingDialogPortalName,
-		Body: web.Scope(dialog).VSlot("{ plaidForm }"),
+		Body: web.Scope(dialog).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
 	return

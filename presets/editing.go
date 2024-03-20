@@ -314,7 +314,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			).VSlot("{ locals }").Init(`{tab: 'default'}`)
 		}
 	} else {
-		asideContent = web.Scope(formContent).VSlot("{plaidForm}")
+		asideContent = web.Scope(formContent).VSlot("{ form }")
 	}
 
 	if b.sidePanel != nil {
@@ -351,7 +351,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		VSheet(
 			VCard(asideContent).Flat(true),
 		).Class("pa-2"),
-	).VSlot("{ plaidForm }")
+	).VSlot("{ form }")
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

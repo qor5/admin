@@ -180,7 +180,7 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 				)).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
@@ -228,7 +228,7 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return

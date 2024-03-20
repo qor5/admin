@@ -195,7 +195,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		VSheet(
 			VCard(pr.Body).Flat(true).Class("pa-1"),
 		).Class("pa-2"),
-	).VSlot("{ plaidForm }")
+	).VSlot("{ form }")
 
 	b.mb.p.overlay(overlayType, &r, comp, b.mb.rightDrawerWidth)
 	return

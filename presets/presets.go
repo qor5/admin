@@ -800,7 +800,7 @@ func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width strin
 			).
 				Attr("v-model", "vars.presetsDialog").
 				Width(width),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
 }
