@@ -54,7 +54,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 		}
 		return VListItem(
 			web.Slot(
-				VIcon("edit"),
+				VIcon("mdi-pencil"),
 			).Name("prepend"),
 
 			VListItemTitle(h.Text(msgr.Edit)),
@@ -82,7 +82,7 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 		}
 		return VListItem(
 			web.Slot(
-				VIcon("delete"),
+				VIcon("mdi-delete"),
 			).Name("prepend"),
 
 			VListItemTitle(h.Text(msgr.Delete)),

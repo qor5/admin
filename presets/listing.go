@@ -241,7 +241,7 @@ func (b *ListingBuilder) listingComponent(
 				filterTabs,
 				VSpacer(),
 				actionsComponent,
-			).Flat(true)
+			).Flat(true).Color("white")
 		}
 	}
 
@@ -284,7 +284,7 @@ func (b *ListingBuilder) listingComponent(
 			VSpacer(),
 			searchBox,
 			VBtn("").Icon(true).
-				Children(VIcon("close")).
+				Children(VIcon("mdi-close")).
 				Size(SizeLarge).
 				Attr("@click.stop", CloseListingDialogVarScript),
 		).Color("white").Elevation(0).Density(DensityCompact)
