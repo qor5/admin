@@ -931,11 +931,12 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						// h.Form(
 						VTextField().
 							Variant(FieldVariantSoloInverted).
-							PrependIcon("search").
+							PrependIcon("mdi-magnify").
 							Label(msgr.Search).
 							Flat(true).
 							Clearable(true).
 							HideDetails(true).
+							SingleLine(true).
 							ModelValue(ctx.R.URL.Query().Get("keyword")).
 							Attr("@keyup.enter", web.Plaid().
 								ClearMergeQuery("page").
