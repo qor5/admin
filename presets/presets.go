@@ -929,28 +929,34 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				h.If(showSearchBox,
 					VLayout(
 						// h.Form(
-						VTextField().
-							Variant(FieldVariantSoloInverted).
-							PrependIcon("mdi-magnify").
-							Label(msgr.Search).
-							Flat(true).
-							Clearable(true).
-							HideDetails(true).
-							SingleLine(true).
-							ModelValue(ctx.R.URL.Query().Get("keyword")).
-							Attr("@keyup.enter", web.Plaid().
-								ClearMergeQuery("page").
-								Query("keyword", web.Var("[$event.target.value]")).
-								MergeQuery(true).
-								PushState(true).
-								Go()).
-							Attr("@click:clear", web.Plaid().
-								Query("keyword", "").
-								PushState(true).
-								Go()),
-						// ).Method("GET"),
+						web.Scope(
+							VTextField().
+								Variant(FieldVariantOutlined).
+								PrependIcon("mdi-magnify").
+								Label(msgr.Search).
+								Flat(true).
+								Clearable(true).
+								HideDetails(true).
+								SingleLine(true).
+								ModelValue(ctx.R.URL.Query().Get("keyword")).
+								Attr(":prepend-icon", "locals.isFocus?null:'mdi-magnify'").
+								Attr(":bg-color", "locals.isFocus?'white':'primary'").
+								Attr("@update:focused", "locals.isFocus=!locals.isFocus").
+								Attr("@keyup.enter", web.Plaid().
+									ClearMergeQuery("page").
+									Query("keyword", web.Var("[$event.target.value]")).
+									MergeQuery(true).
+									PushState(true).
+									Go()).
+								Attr("@click:clear", web.Plaid().
+									Query("keyword", "").
+									PushState(true).
+									Go()).Class("mr-4"),
+							// ).Method("GET"),
+						).VSlot("{ locals }").Init(`{isFocus: false}`),
 					).
-						// AlignCenter(true).
+						// AlignCenter(true)
+
 						Attr("style", "max-width: 650px"),
 				),
 				h.If(showNotificationCenter,
@@ -1046,7 +1052,6 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 			<link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet" async>
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
-			<script src='{{prefix}}/assets/vuetify.js'></script>
 			<style>
 				[v-cloak] {
 					display: none;
