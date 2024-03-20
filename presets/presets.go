@@ -86,7 +86,7 @@ func New() *Builder {
 	r := &Builder{
 		logger:  l,
 		builder: web.New(),
-		i18nBuilder: i18n.New().
+		i18nBuilder: i18n.New().SupportLanguages(language.English, language.SimplifiedChinese).
 			RegisterForModule(language.English, CoreI18nModuleKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN).
 			RegisterForModule(language.Japanese, CoreI18nModuleKey, Messages_ja_JP),
@@ -105,7 +105,6 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
-
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
@@ -424,7 +423,7 @@ func defaultMenuIcon(mLabel string) string {
 		}
 	}
 
-	return "widgets"
+	return "mdi-widgets"
 }
 
 const menuFontWeight = "500"
@@ -450,13 +449,11 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
 	}
 	item := VListItem(
-		VListItemAction(
-			VIcon(menuIcon),
-		).Attr("style", "margin-right: 16px"),
+		web.Slot(VIcon(menuIcon)).Name("prepend"),
 		VListItemTitle(
 			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
 		).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
-	)
+	).Attr("color", "primary")
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
@@ -471,7 +468,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 	}
 
 	if b.isMenuItemActive(ctx, m) {
-		item = item.Class("v-list-item--active")
+		item = item.Class("v-list-item--active text-primary")
 	}
 	return item
 }
@@ -519,12 +516,15 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			}
 			var subMenus = []h.HTMLComponent{
 				VListItem(
-					VListItemAction(
+					web.Slot(
 						VIcon(groupIcon),
-					).Attr("style", "margin-right: 16px;"),
+					).Name("prepend"),
+					//VListItemAction(
+					//	VIcon(groupIcon),
+					//).Attr("style", "margin-right: 16px;"),
 					VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 						Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-				).Slot("activator").Class("pa-0"),
+				).Class("pa-0"),
 			}
 			subCount := 0
 			hasActiveMenuItem := false
@@ -622,17 +622,15 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	if len(b.I18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
 		return nil
 	}
-
 	queryName := b.I18n().GetQueryName()
 	msgr := MustGetMessages(ctx.R)
-
 	if len(supportLanguages) == 1 {
 		return h.Template().Children(
 			h.Div(
 				VList(
 					VListItem(
 						web.Slot(
-							VIcon("translate").Size(SizeSmall).Class("mr-4 ml-1"),
+							VIcon("mdi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
 						).Name("prepend"),
 						VListItemTitle(
 							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
@@ -670,22 +668,20 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	}
 
 	return VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VList(
 					VListItem(
-						web.Slot(
-							VIcon("translate").Size(SizeSmall).Class(" mr-4 ml-1"),
-						).Name("prepend"),
 						VListItemTitle(
+							VIcon("mdi-translate").Size(SizeSmall).Class(" mr-4 ml-1"),
 							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
-						),
+						).Class("text-subtitle-2 font-weight-regular"),
 						web.Slot(
-							VIcon("arrow_drop_down").Size(SizeSmall).Class(" ml-1"),
+							VIcon("mdi-menu-down").Size(SizeSmall).Class(" ml-1"),
 						).Name("append"),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("v-bind", "attrs").Attr("v-on", "on"),
+			).Attr("v-bind", "props"),
 		),
 
 		VList(
@@ -1046,6 +1042,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
 			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
 			<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+			<link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet" async>
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
