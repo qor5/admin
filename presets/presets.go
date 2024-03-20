@@ -86,7 +86,7 @@ func New() *Builder {
 	r := &Builder{
 		logger:  l,
 		builder: web.New(),
-		i18nBuilder: i18n.New().SupportLanguages(language.English, language.SimplifiedChinese).
+		i18nBuilder: i18n.New().
 			RegisterForModule(language.English, CoreI18nModuleKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN).
 			RegisterForModule(language.Japanese, CoreI18nModuleKey, Messages_ja_JP),
@@ -1046,6 +1046,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 			<link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet" async>
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
+			<script src='{{prefix}}/assets/vuetify.js'></script>
 			<style>
 				[v-cloak] {
 					display: none;
