@@ -289,7 +289,6 @@ func (b *ListingBuilder) listingComponent(
 				Attr("@click.stop", CloseListingDialogVarScript),
 		).Color("white").Elevation(0).Density(DensityCompact)
 	}
-
 	return web.Scope(VContainer(
 		dialogHeaderBar,
 		tabsAndActionsBar,
@@ -305,7 +304,7 @@ func (b *ListingBuilder) listingComponent(
 		).Class("mt-2"),
 	).Fluid(true).
 		Class("white"),
-	).VSlot("{ locals }").Init(`{currEditingListItemID: ''}`)
+	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
