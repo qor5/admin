@@ -929,40 +929,35 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				h.If(showSearchBox,
 					VLayout(
 						// h.Form(
-						web.Scope(
-							VTextField().
-								Variant(FieldVariantOutlined).
-								PrependIcon("mdi-magnify").
-								Label(msgr.Search).
-								Flat(true).
-								Clearable(true).
-								HideDetails(true).
-								SingleLine(true).
-								ModelValue(ctx.R.URL.Query().Get("keyword")).
-								Attr(":prepend-icon", "locals.isFocus?null:'mdi-magnify'").
-								Attr(":bg-color", "locals.isFocus?'white':'primary'").
-								Attr("@update:focused", "locals.isFocus=!locals.isFocus").
-								Attr("@keyup.enter", web.Plaid().
-									ClearMergeQuery("page").
-									Query("keyword", web.Var("[$event.target.value]")).
-									MergeQuery(true).
-									PushState(true).
-									Go()).
-								Attr("@click:clear", web.Plaid().
-									Query("keyword", "").
-									PushState(true).
-									Go()).Class("mr-4"),
-							// ).Method("GET"),
-						).VSlot("{ locals }").Init(`{isFocus: false}`),
+						VTextField().
+							BgColor("blue").
+							Variant(VariantOutlined).
+							PrependIcon("mdi-magnify").
+							Label(msgr.Search).
+							Flat(true).
+							Clearable(true).
+							HideDetails(true).
+							SingleLine(true).
+							ModelValue(ctx.R.URL.Query().Get("keyword")).
+							Attr("@keyup.enter", web.Plaid().
+								ClearMergeQuery("page").
+								Query("keyword", web.Var("[$event.target.value]")).
+								MergeQuery(true).
+								PushState(true).
+								Go()).
+							Attr("@click:clear", web.Plaid().
+								Query("keyword", "").
+								PushState(true).
+								Go()),
+						// ).Method("GET"),
 					).
-						// AlignCenter(true)
-
+						//AlignCenter(true).
 						Attr("style", "max-width: 650px"),
 				),
 				h.If(showNotificationCenter,
 					notifier,
 				),
-			).Theme(ThemeDark).
+			).Theme(ThemeLight).
 				Color(ColorPrimary),
 			// App(true).
 			// Fixed(true),
