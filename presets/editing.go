@@ -372,7 +372,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 
 	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
 		web.AppendRunScripts(&r,
-			"vars.deleteConfirmation = false",
+			"locals.deleteConfirmation = false",
 			web.Plaid().
 				EventFunc(event).
 				Queries(ctx.Queries()).
@@ -383,7 +383,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		if isInDialogFromQuery(ctx) {
 			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
 			web.AppendRunScripts(&r,
-				"vars.deleteConfirmation = false",
+				"locals.deleteConfirmation = false",
 				web.Plaid().
 					URL(u).
 					EventFunc(actions.UpdateListingDialog).

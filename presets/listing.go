@@ -469,7 +469,7 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 					VBtn(msgr.Cancel).
 						Variant(VariantFlat).
 						Class("ml-2").
-						On("click", "vars.deleteConfirmation = false"),
+						On("click", "locals.deleteConfirmation = false"),
 
 					VBtn(msgr.Delete).
 						Color("primary").
@@ -484,10 +484,8 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 			),
 		).MaxWidth("600px").
 			Attr("v-model", "locals.deleteConfirmation"),
-		).VSlot("{ locals }").Init(`{deleteConfirmation: false}`),
+		).VSlot("{ locals }").Init(`{deleteConfirmation:true}`),
 	})
-
-	r.RunScript = "setTimeout(function(){ locals.deleteConfirmation = true }, 100)"
 	return
 }
 
@@ -955,7 +953,7 @@ func (b *ListingBuilder) filterBar(
 
 	filter := vx.VXFilter(fd).Translations(ft)
 	if inDialog {
-		filter.OnChange(web.Plaid().
+		filter.UpdateModelValue(web.Plaid().
 			URL(ctx.R.RequestURI).
 			StringQuery(web.Var("$event.encodedFilterData")).
 			Query("page", 1).
@@ -965,7 +963,7 @@ func (b *ListingBuilder) filterBar(
 	}
 	return VToolbar(
 		filter,
-	).Flat(true).AutoHeight(true).Class("py-2")
+	).Flat(true).Color("white").AutoHeight(true).Class("py-2")
 }
 
 func getLocalPerPage(
