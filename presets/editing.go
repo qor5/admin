@@ -305,12 +305,12 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				VTabs(
 					VTab(h.Text(msgr.FormTitle)).Value("default"),
 					h.Components(tabs...),
-				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
+				).Class("v-tabs--fixed-tabs").Attr("v-model", "locals.tab"),
 
 				VWindow(
 					web.Scope(formContent).VSlot("{ form }"),
 					h.Components(contents...),
-				).Attr("v-model", "tab"),
+				).Attr("v-model", "locals.tab"),
 			).VSlot("{ locals }").Init(`{tab: 'default'}`)
 		}
 	} else {
@@ -337,20 +337,23 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 
 	return web.Scope(
 		notice,
-		h.If(!b.mb.singleton,
-			VAppBar(
-				VToolbarTitle("").Class("pl-2").
-					Children(title),
-				VSpacer(),
-				VBtn("").Icon(true).Children(
-					VIcon("close"),
-				).Attr("@click.stop", closeBtnVarScript),
-			).Color("white").Elevation(0).Density("compact"),
+		VLayout(
+			h.If(!b.mb.singleton,
+				VAppBar(
+					VToolbarTitle("").Class("pl-2").
+						Children(title),
+					VSpacer(),
+					VBtn("").Icon(true).Children(
+						VIcon("mdi-close"),
+					).Attr("@click.stop", closeBtnVarScript),
+				).Color("white").Elevation(0).Density("compact"),
+			),
+			VMain(
+				VSheet(
+					VCard(asideContent).Variant(VariantFlat),
+				).Class("pa-2"),
+			),
 		),
-
-		VSheet(
-			VCard(asideContent).Flat(true),
-		).Class("pa-2"),
 	).VSlot("{ form }")
 }
 

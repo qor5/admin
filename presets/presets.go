@@ -449,7 +449,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
 	}
 	item := VListItem(
-		web.Slot(VIcon(menuIcon)).Name("prepend"),
+		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
 		VListItemTitle(
 			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
 		).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
@@ -515,16 +515,16 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				groupIcon = defaultMenuIcon(v.name)
 			}
 			var subMenus = []h.HTMLComponent{
-				VListItem(
-					web.Slot(
-						VIcon(groupIcon),
-					).Name("prepend"),
-					//VListItemAction(
-					//	VIcon(groupIcon),
-					//).Attr("style", "margin-right: 16px;"),
-					VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-						Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-				).Class("pa-0"),
+				h.Template(
+					VListItem(
+						web.Slot(
+							VIcon(groupIcon),
+						).Name("prepend"),
+						VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
+					).
+						Attr("v-bind", "props"),
+				).Attr("v-slot:activator", "{ props }"),
 			}
 			subCount := 0
 			hasActiveMenuItem := false
@@ -810,16 +810,16 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 	total := b.notificationCountFunc(ctx)
 	content := b.notificationContentFunc(ctx)
 
-	icon := VIcon("notifications").Color("white")
+	icon := VIcon("mdi-bell").Color("white")
 	er.Body = VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+		h.Template().Attr("v-slot:activator", "{ props}").Children(
 			VBtn("").Icon(true).Children(
 				h.If(total > 0,
 					VBadge(
 						icon,
 					).Content(total).Floating(true).Color("red"),
 				).Else(icon),
-			).Attr("v-bind", "attrs").Attr("v-on", "on").Class("ml-1"),
+			).Attr("v-bind", "props").Class("ml-1"),
 		),
 		VCard(content))
 
@@ -860,13 +860,13 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 					VBtn(msgr.Cancel).
 						Variant(VariantFlat).
 						Class("ml-2").
-						On("click", "vars.show = false"),
+						On("click", "locals.show = false"),
 
 					VBtn(msgr.OK).
 						Color("primary").
 						Variant(VariantFlat).
 						Theme(ThemeDark).
-						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
+						Attr("onclick", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
 				),
 			),
 		).MaxWidth("600px").
