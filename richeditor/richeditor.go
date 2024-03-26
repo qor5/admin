@@ -72,7 +72,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	if b.setPlugins {
 		p = b.plugins
 	}
-	redactorB := redactor.New().Value(b.value).Placeholder(b.placeholder).Attr(web.VFieldName(b.name)...)
+	redactorB := redactor.New().Placeholder(b.placeholder).Attr(web.VField(b.name, b.value)...)
 	if b.rawConfig != nil {
 		redactorB.RawConfig(b.rawConfig)
 	} else {

@@ -156,9 +156,8 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 					variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"))
 					for varName := range settingVars {
 						fieldComp := VTextField().
-							FieldName(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName)).
-							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName)).
-							Value(seoSetting.Variables[varName])
+							Attr(web.VField(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName), seoSetting.Variables[varName])).
+							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName))
 						variablesComps = append(variablesComps, fieldComp)
 					}
 				}
@@ -266,13 +265,13 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 			h.Label(msgr.Seo).Class("v-label theme--light"),
 			VExpansionPanels(
 				VExpansionPanel(
+
 					VExpansionPanelHeader(
-						h.HTMLComponents{
-							VSwitch().
-								Label(msgr.Customize).Attr("ref", "switchComp").
-								Bind("input-value", "locals.enabledCustomize").
-								FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")),
-						}).
+						VSwitch().
+							Label(msgr.Customize).Attr("ref", "switchComp").
+							Bind("input-value", "locals.enabledCustomize").
+							Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize"), setting.EnabledCustomize)...),
+					).
 						Attr("style", "padding: 0px 24px;").HideActions(hideActions).
 						Attr("@click", "locals.enabledCustomize=!locals.enabledCustomize;$refs.switchComp.$emit('change', locals.enabledCustomize)"),
 					VExpansionPanelContent(

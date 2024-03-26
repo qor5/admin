@@ -158,17 +158,19 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 					).Icon(true).Attr("@click", "window.history.back()"),
 					h.Text(msgr.DiffDetail),
 				),
-				VSimpleTable(
-					h.Tbody(
-						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
-						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
-						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
-						h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(record.GetModelLabel()))),
-						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.GetModelKeys()))),
-						h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
-					),
+				VTable(
+					h.Template(
+						h.Tbody(
+							h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
+							h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
+							h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
+							h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
+							h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(record.GetModelLabel()))),
+							h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.GetModelKeys()))),
+							h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
+							h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
+						),
+					).Attr("#default", true),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
 
@@ -232,9 +234,11 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		diffsElems = append(diffsElems,
 			VCard(
 				VCardTitle(h.Text(msgr.DiffNew)),
-				VSimpleTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-					h.Tbody(elems...),
+				VTable(
+					h.Template(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Tbody(elems...),
+					).Attr("#default", true),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
 	}
@@ -248,9 +252,11 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		diffsElems = append(diffsElems,
 			VCard(
 				VCardTitle(h.Text(msgr.DiffDelete)),
-				VSimpleTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-					h.Tbody(elems...),
+				VTable(
+					h.Template(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Tbody(elems...),
+					).Attr("#default", true),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
 	}
@@ -264,9 +270,11 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		diffsElems = append(diffsElems,
 			VCard(
 				VCardTitle(h.Text(msgr.DiffChanges)),
-				VSimpleTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
-					h.Tbody(elems...),
+				VTable(
+					h.Template(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
+						h.Tbody(elems...),
+					).Attr("#default", true),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
 	}

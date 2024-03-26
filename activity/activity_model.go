@@ -104,7 +104,6 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-
 // EnableActivityInfoTab enable activity info tab on the given model's editing page
 func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 	if mb.presetModel == nil {
@@ -112,7 +111,7 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 	}
 
 	editing := mb.presetModel.Editing()
-	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
+	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		logs := mb.activity.GetCustomizeActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 
@@ -129,17 +128,13 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 			}
 
 			panels = append(panels, vuetify.VExpansionPanel(
-				vuetify.VExpansionPanelHeader(h.Span(headerText)),
-				vuetify.VExpansionPanelContent(DiffComponent(log.GetModelDiffs(), ctx.R)),
+				web.Slot(h.Span(headerText)).Name("text"),
+				web.Slot(DiffComponent(log.GetModelDiffs(), ctx.R)).Name("title"),
 			))
 		}
-
-		return h.Components(
-			vuetify.VTab(h.Text(msgr.Activities)),
-			vuetify.VTabItem(
-				vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
-			),
-		)
+		tab = vuetify.VTab(h.Text(msgr.Activities)).Value("activityTab")
+		content = vuetify.VWindowItem(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
+		return
 	})
 
 	return mb

@@ -42,8 +42,8 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
 }
 
-func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFunc {
-	return func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
+func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		id := ctx.R.FormValue(presets.ParamID)
 		if len(id) == 0 {
 			return
@@ -74,12 +74,11 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 		if count == 0 {
 			clickEvent = ""
 		}
-		c = h.Components(
-			VTab(notesTab).
-				Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
-				Attr("@click", clickEvent),
-			VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
-		)
+		tab = VTab(notesTab).
+			Attr(web.ObjectAssign("locals", fmt.Sprintf("{unreadNotesCount:%v}", count))).
+			Attr("@click", clickEvent).Value("notesTab")
+
+		content = VWindowItem(web.Portal().Name("notes-section").Children(notesSection)).Value("notesTab")
 
 		return
 	}
