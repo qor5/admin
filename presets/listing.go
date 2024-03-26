@@ -299,7 +299,7 @@ func (b *ListingBuilder) listingComponent(
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
 				).Class("pa-0"),
-			),
+			).Variant("outlined").Color("blue-grey-lighten-4"),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 		).Class("mt-2"),
 	).Fluid(true).
