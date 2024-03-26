@@ -185,6 +185,7 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("number").
+		Variant(FieldVariantUnderlined).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -232,6 +233,7 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("text").
+		Variant(FieldVariantUnderlined).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).

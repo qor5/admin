@@ -877,33 +877,30 @@ func (b *ListingBuilder) selectColumnsBtn(
 	// add the HTML component of columns setting into toolbar
 	btn = web.Scope(VMenu(
 		web.Slot(
-			VBtn("").Children(VIcon("settings")).Attr("v-on", "on").Variant(VariantText).Size(SizeSmall),
-		).Name("activator").Scope("{ on }"),
-
+			VBtn("").Icon("mdi-cog").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+		).Name("activator").Scope("{ props }"),
 		VList(
-			h.Tag("vx-draggable").Attr("v-model", "locals.sortedColumns", "draggable", ".vx_column_item", "animation", "300").Children(
-				h.Div(
+			h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "locals.sortedColumns", "handle", ".handle", "animation", "300").Children(
+				h.Template(
 					VListItem(
 						VListItemTitle(
 							VSwitch().Density(DensityCompact).Attr("v-model", "locals.displayColumns", ":value",
-								"column.name",
-								":label", "column.label", "@click", "event.preventDefault()"),
-						),
-						web.Slot(
-							VIcon("reorder"),
-						).Name("prepend"),
+								"element.name",
+								":label", "element.label").Color("primary").Class(" mt-2 "),
+							VIcon("mdi-reorder-vertical").Class("handle cursor-grab mt-4"),
+						).Class("d-flex justify-space-between "),
+						VDivider(),
 					),
-					VDivider(),
-				).Attr("v-for", "(column, index) in locals.sortedColumns", ":key", "column.name", "class", "vx_column_item"),
+				).Attr("#item", " { element } "),
 			),
 			VListItem(
-				VListItemAction(VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`)),
-				VListItemAction(VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `locals.selectColumnsMenu = false;`+onOK.Go()))),
+				VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`),
+				VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `locals.selectColumnsMenu = false ; `+onOK.Go()),
+			).Class("d-flex justify-space-between"),
 		).Density(DensityCompact),
-	).CloseOnContentClick(false).
+	).CloseOnContentClick(false).Width(240).
 		Attr("v-model", "locals.selectColumnsMenu")).
-		Init(h.JSONString(selectColumns)).
-		VSlot("{ locals }").Init(`{selectColumnsMenu: false}`)
+		VSlot("{ locals }").Init(fmt.Sprintf(`{selectColumnsMenu: false,...%s}`, h.JSONString(selectColumns)))
 	return
 }
 

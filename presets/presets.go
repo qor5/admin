@@ -771,6 +771,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 			Class("v-navigation-drawer--temporary").
 			Attr("v-model", "vars.presetsRightDrawer").
 			Location(LocationRight).
+			Temporary(true).
 			// Fixed(true).
 			Attr("width", width).
 			Attr(":height", `"100%"`),
@@ -911,6 +912,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
+			web.Portal().Name(RightDrawerPortalName),
 			VNavigationDrawer(
 				b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 				VDivider(),
@@ -968,7 +970,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			// Fixed(true),
 			// ClippedLeft(true),
 
-			web.Portal().Name(RightDrawerPortalName),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
 			web.Portal().Name(DefaultConfirmDialogPortalName),
