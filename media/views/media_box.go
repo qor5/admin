@@ -160,7 +160,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 			web.Portal().Name(portalName),
 		).Class("pb-4").
 			Rounded(true).
-			Attr(web.InitContextVars, `{showFileChooser: false}`),
+			Attr(web.ObjectAssign("vars", `{showFileChooser: false}`)),
 	).MarshalHTML(c)
 }
 
@@ -237,7 +237,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 				),
 			).MaxWidth("600px").
 				Attr("v-model", "vars.mediaLibrary_deleteConfirmation").
-				Attr(web.InitContextVars, `{mediaLibrary_deleteConfirmation: false}`),
+				Attr(web.ObjectAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
@@ -327,8 +327,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			VRow(
 				VCol(
 					VTextField().
-						Value(value).
-						Attr(web.VFieldName(fieldName)...).
+						Attr(web.VField(fieldName, value)...).
 						Label(msgr.DescriptionForAccessibility).
 						Density(DensityCompact).
 						HideDetails(true).
@@ -348,8 +347,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		c,
 		web.Portal().Name(cropperPortalName(field)),
 		h.Input("").Type("hidden").
-			Value(mediaBoxValue).
-			Attr(web.VFieldName(fmt.Sprintf("%s.Values", field))...),
+			Attr(web.VField(fmt.Sprintf("%s.Values", field), mediaBoxValue)...),
 
 		VBtn(msgr.ChooseFile).
 			Variant(VariantFlat).

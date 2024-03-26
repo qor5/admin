@@ -46,7 +46,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 								Flat(true).
 								Clearable(true).
 								HideDetails(true).
-								Value("").
+								ModelValue("").
 								Attr("@keyup.enter", web.Plaid().
 									EventFunc(imageSearchEvent).
 									Query("field", field).
@@ -165,7 +165,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				h.Label("").Children(
 					VCard(
 						VCardTitle(h.Text(msgr.UploadFiles)),
-						VIcon("backup").XSize(SizeLarge),
+						VIcon("backup").Size(SizeLarge),
 						h.Input("").
 							Attr("accept", fileAccept).
 							Type("file").
@@ -225,7 +225,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 										Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
 										Attr("v-if", fmt.Sprintf("locals.%s", croppingVar)),
 								),
-							).Src(f.File.URL(media_library.QorPreviewSizeName)).Height(200).Contain(true),
+							).Src(f.File.URL(media_library.QorPreviewSizeName)).Height(200),
+							// .Contain(true),
 						).Else(
 							fileThumb(f.File.FileName),
 						),
@@ -280,7 +281,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	return h.Div(
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
 			Attr("v-model", "vars.snackbarShow").
-			Top(true).
+			Location("top").
 			Color("primary").
 			Timeout(5000),
 		web.Scope(
@@ -293,27 +294,27 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								{Text: msgr.Images, Value: typeImage},
 								{Text: msgr.Videos, Value: typeVideo},
 								{Text: msgr.Files, Value: typeFile},
-							}).ItemText("Text").ItemValue("Value").
-								FieldName(typeKey).Value(typeVal).
+							}).ItemTitle("Text").ItemValue("Value").
+								Attr(web.VField(typeKey, typeVal)...).
 								Attr("@change",
 									web.GET().PushState(true).
 										Query(typeKey, web.Var("$event")).
 										MergeQuery(true).Go(),
 								).
-								Density(DensityCompact).Solo(true).Class("mb-n8"),
+								Density(DensityCompact).Variant(FieldVariantSolo).Class("mb-n8"),
 						).Cols(3),
 						VCol(
 							VSelect().Items([]selectItem{
 								{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
 								{Text: msgr.UploadedAt, Value: orderByCreatedAt},
-							}).ItemText("Text").ItemValue("Value").
-								FieldName(orderByKey).Value(orderByVal).
+							}).ItemTitle("Text").ItemValue("Value").
+								Attr(web.VField(orderByKey, orderByVal)...).
 								Attr("@change",
 									web.GET().PushState(true).
 										Query(orderByKey, web.Var("$event")).
 										MergeQuery(true).Go(),
 								).
-								Density(DensityCompact).Solo(true).Class("mb-n8"),
+								Density(DensityCompact).Variant(FieldVariantSolo).Class("mb-n8"),
 						).Cols(3),
 					).Justify("end"),
 				),
@@ -323,7 +324,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					VCol(
 						VPagination().
 							Length(pagesCount).
-							Value(int(currentPageInt)).
+							ModelValue(int(currentPageInt)).
 							Attr("@input", web.Plaid().
 								FieldValue(currentPageName(field), web.Var("$event")).
 								EventFunc(imageJumpPageEvent).
@@ -346,7 +347,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					Class("white--text").Style("text-decoration: none;"),
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
-	).Attr(web.InitContextVars, `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)
+	).Attr(web.ObjectAssign("vars", `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)...)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
@@ -359,7 +360,7 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
 	}
 	g.AppendChildren(
-		VChip(h.Text(text)).XSize(SizeSmall),
+		VChip(h.Text(text)).Size(SizeSmall),
 	)
 	// if len(f.File.Sizes) == 0 {
 	//	return g

@@ -24,8 +24,7 @@ func configList(b *presets.Builder, db *gorm.DB) {
 			web.Portal(
 				h.Input("").
 					Type("hidden").
-					Value(keyword).
-					Attr(web.VFieldName(searchKeywordName(mediaLibraryListField))...),
+					Attr(web.VField(searchKeywordName(mediaLibraryListField), keyword)...),
 				fileChooserDialogContent(db, mediaLibraryListField, ctx, &media_library.MediaBoxConfig{}),
 			).Name(dialogContentPortalName(mediaLibraryListField)),
 		)
