@@ -71,7 +71,7 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 
 				VExpansionPanels(
 					VExpansionPanel(
-						VExpansionPanelHeader(
+						VExpansionPanelTitle(
 							VRow(
 								VCol(
 									h.Text(msgr.SchedulePublishTime),
@@ -91,16 +91,16 @@ func ScheduleEditFunc() presets.FieldComponentFunc {
 								).Cols(8).Class("text--secondary"),
 							).NoGutters(true),
 						).Attr("v-slot", "{ open }"),
-						VExpansionPanelContent(
+						VExpansionPanelText(
 							VRow(
 								VCol(
-									vx.VXDateTimePicker().FieldName("ScheduledStartAt").Label(msgr.ScheduledStartAt).Value(start).
+									vx.VXDateTimePicker().Attr(web.VField("ScheduledStartAt", start)...).Label(msgr.ScheduledStartAt).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
 									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
 								).Cols(6),
 								VCol(
-									vx.VXDateTimePicker().FieldName("ScheduledEndAt").Label(msgr.ScheduledEndAt).Value(end).
+									vx.VXDateTimePicker().Attr(web.VField("ScheduledEndAt", end)...).Label(msgr.ScheduledEndAt).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
 									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),

@@ -97,7 +97,9 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 							Query(presets.ParamListingQueries, ctx.Queries().Encode())
 					}
 					return VListItem(
-						VListItemIcon(VIcon("delete")),
+						web.Slot(
+							VIcon("delete"),
+						).Name("prepend"),
 						VListItemTitle(h.Text(msgr.Delete)),
 					).Attr("@click", onclick.Go())
 				})

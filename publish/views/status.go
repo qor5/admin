@@ -87,9 +87,9 @@ func StatusEditFunc() presets.FieldComponentFunc {
 		return web.Scope(
 			VStepper(
 				VStepperHeader(
-					VStepperStep(h.Text(msgr.StatusDraft)).Step(0).Complete(s.GetStatus() == publish.StatusDraft),
+					VStepperItem().Title(msgr.StatusDraft).Value(1).Complete(s.GetStatus() == publish.StatusDraft),
 					VDivider(),
-					VStepperStep(h.Text(msgr.StatusOnline)).Step(0).Complete(s.GetStatus() == publish.StatusOnline),
+					VStepperItem().Title(msgr.StatusOnline).Value(2).Complete(s.GetStatus() == publish.StatusOnline),
 				),
 			),
 			h.Br(),

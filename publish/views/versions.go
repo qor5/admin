@@ -42,7 +42,7 @@ func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 
 		var onlineVersionComp h.HTMLComponent
 		if currentVersion != nil {
-			onlineVersionComp = VSimpleTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass)))
+			onlineVersionComp = VTable(h.Tbody(h.Tr(h.Td(h.Text(currentVersion.VersionName)), h.Td(h.Text(currentVersion.Status))).Class(activeClass)))
 		}
 
 		return h.Div(
@@ -182,12 +182,12 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	table = web.Scope(
 		VDataTable(
 			web.Slot(
-				VEditDialog(
+				VDialog(
 					VIcon("edit").Size(SizeSmall).Class("mr-2").Attr(":class", "props.item.ItemClass"),
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
-				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Size(SizeLarge).Transition("slide-x-reverse-transition"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Transition("slide-x-reverse-transition"),
 			).Name("item.Edit").Scope("props"),
 			web.Slot(
 				VIcon("delete").Size(SizeSmall).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
@@ -201,19 +201,19 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 					{"text": "Edit", "value": "Edit", "width": "10%"},
 					{"text": "Delete", "value": "Delete", "width": "10%"},
 				}).
-			DisableSort(true).
-			HideDefaultFooter(len(versions) <= 10).
-			On("click:row", switchVersionEvent).
-			On("pagination", "locals.versionPage = $event.page").
-			ItemClass("ItemClass").
-			FooterProps(
-				map[string]interface{}{
-					"items-per-page-options": []int{5, 10, 20},
-					"show-first-last-page":   true,
-					"items-per-page-text":    "",
-					"page-text":              "",
-				},
-			).
+			// DisableSort(true).
+			// HideDefaultFooter(len(versions) <= 10).
+			On("update:modelValue", switchVersionEvent).
+			On("update:page", "locals.versionPage = $event.page").
+			// ItemClass("ItemClass").
+			// FooterProps(
+			// 	map[string]interface{}{
+			// 		"items-per-page-options": []int{5, 10, 20},
+			// 		"show-first-last-page":   true,
+			// 		"items-per-page-text":    "",
+			// 		"page-text":              "",
+			// 	},
+			// ).
 			Page(currentPage),
 	).Init(fmt.Sprintf(`{versionPage: %d}`, currentPage)).
 		VSlot("{ locals }")

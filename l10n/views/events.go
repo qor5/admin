@@ -84,7 +84,8 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 								).Class("v-text-field__slot"),
 							).Class("v-input__slot"),
 						).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
-						VSelect().FieldName("localize_to").
+						VSelect().
+							Attr(web.VField("localize_to", selectLocales)...).
 							Label(MustGetTranslation(ctx.R, "LocalizeTo")).
 							Multiple(true).Chips(true).
 							Items(selectLocales).

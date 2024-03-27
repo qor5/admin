@@ -101,7 +101,7 @@ func Configure(b *presets.Builder, db *gorm.DB, lb *l10n.Builder, ab *activity.A
 				value = lb.GetCorrectLocaleCode(ctx.R)
 			}
 
-			return h.Input("").Type("hidden").Value(value).Attr(web.VFieldName("LocaleCode")...)
+			return h.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := field.Value(obj).(l10n.Locale).GetLocale()
@@ -174,13 +174,11 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 				h.Div(
 					VList(
 						VListItem(
-							VListItemIcon(
-								VIcon("language").Size(SizeSmall).Class("ml-1"),
-							).Attr("style", "margin-right: 16px"),
-							VListItemContent(
-								VListItemTitle(
-									h.Div(h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
-								),
+							web.Slot(
+								VIcon("language").Size(SizeSmall).Class("ml-1").Attr("style", "margin-right: 16px"),
+							).Name("prepend"),
+							VListItemTitle(
+								h.Div(h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
 							),
 						).Class("pa-0").Density(DensityCompact),
 					).Class("pa-0 ma-n4 mt-n6"),
@@ -195,10 +193,8 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 			locales = append(locales,
 				h.Div(
 					VListItem(
-						VListItemContent(
-							VListItemTitle(
-								h.Div(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(contry)))),
-							),
+						VListItemTitle(
+							h.Div(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(contry)))),
 						),
 					).Attr("@click", web.Plaid().Query(localeQueryName, contry).Go()),
 				),
@@ -210,17 +206,15 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 				h.Div(
 					VList(
 						VListItem(
-							VListItemIcon(
-								VIcon("language").Size(SizeSmall).Class("ml-1"),
-							).Attr("style", "margin-right: 16px"),
-							VListItemContent(
-								VListItemTitle(
-									h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))),
-								),
+							web.Slot(
+								VIcon("language").Size(SizeSmall).Class("ml-1").Attr("style", "margin-right: 16px"),
+							).Name("prepend"),
+							VListItemTitle(
+								h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))),
 							),
-							VListItemIcon(
+							web.Slot(
 								VIcon("arrow_drop_down").Class("mr-1"),
-							),
+							).Name("append"),
 						).Class("pa-0").Density(DensityCompact),
 					).Class("pa-0 ma-n4 mt-n6"),
 				).Attr("v-bind", "attrs").Attr("v-on", "on"),
@@ -240,7 +234,9 @@ func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams 
 		}
 
 		return VListItem(
-			VListItemIcon(VIcon("language")),
+			web.Slot(
+				VIcon("language"),
+			).Name("prepend"),
 			VListItemTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
 		).Attr("@click", web.Plaid().
 			EventFunc(Localize).
