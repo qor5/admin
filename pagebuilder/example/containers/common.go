@@ -28,7 +28,7 @@ const LINK_ARROW_SVG = RawHTML(`<svg height=".7em" viewBox="0 0 10 12" fill="non
 </svg>`)
 
 var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-	return v.VTextarea().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+	return v.VTextarea().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label)
 }
 
 func ContainerWrapper(containerID, anchorID, classes,

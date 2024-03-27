@@ -40,16 +40,14 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"white", "blue", "grey"}).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	eb.Field("TransitionBackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"white", "blue", "grey"}).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 
 }

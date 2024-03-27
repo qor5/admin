@@ -33,9 +33,8 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"black", "white"}).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 }
 

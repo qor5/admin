@@ -98,7 +98,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 					}
 					return VListItem(
 						web.Slot(
-							VIcon("delete"),
+							VIcon("mdi-delete"),
 						).Name("prepend"),
 						VListItemTitle(h.Text(msgr.Delete)),
 					).Attr("@click", onclick.Go())

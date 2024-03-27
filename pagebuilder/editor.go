@@ -112,45 +112,35 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r.Body = h.Components(
-		VAppBar(
-			VSpacer(),
+		web.Scope(
+			VAppBar(
+				VSpacer(),
+				// icon was phone_iphone
+				VBtn("").Icon("mdi-phone").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
+					Class("mr-10").Active(device == "phone"),
 
-			VBtn("").Icon(true).Children(
-				VIcon("phone_iphone"),
-			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
-				Class("mr-10").InputValue(device == "phone"),
+				// icon was tablet_mac
+				VBtn("").Icon("mdi-tablet").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "tablet").PushState(true).Go()).
+					Class("mr-10").Active(device == "tablet"),
+				// icon was laptop_mac
+				VBtn("").Icon("mdi-laptop").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "laptop").PushState(true).Go()).
+					Active(device == "laptop"),
 
-			VBtn("").Icon(true).Children(
-				VIcon("tablet_mac"),
-			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "tablet").PushState(true).Go()).
-				Class("mr-10").InputValue(device == "tablet"),
+				VSpacer(),
 
-			VBtn("").Icon(true).Children(
-				VIcon("laptop_mac"),
-			).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "laptop").PushState(true).Go()).
-				InputValue(device == "laptop"),
-
-			VSpacer(),
-
-			VBtn(msgr.Preview).Variant(VariantText).Href(b.prefix+previewHref).Target("_blank"),
-			VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-		).Theme(ThemeDark).
-			Color("primary").
-			App(true),
-
-		VMain(
-			VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
-				Class("mt-6").
-				Fluid(true),
-			VNavigationDrawer(containerList).
-				App(true).
-				Location(LocationRight).
-				Fixed(true).
-				Value(true).
-				Width(420).
-				Attr("v-model", "vars.navDrawer").
-				Attr(web.InitContextVars, `{navDrawer: null}`),
-		),
+				VBtn(msgr.Preview).Variant(VariantText).Href(b.prefix+previewHref).To("_blank"),
+				VAppBarNavIcon().On("click.stop", "drawerLocals.navDrawer = !drawerLocals.navDrawer"),
+			).Theme(ThemeDark).
+				Color("primary"),
+			VMain(
+				VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
+					Class("mt-6").
+					Fluid(true),
+				VNavigationDrawer(containerList).
+					Width(420).
+					Attr("v-model", "drawerLocals.navDrawer"),
+			),
+		).VSlot(" { locals : drawerLocals } ").Init(`{navDrawer: null}`),
 	)
 
 	return
@@ -428,42 +418,47 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 					// VList(
 					h.Div(
 						VListItem(
-							h.If(!isReadonly,
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("drag_indicator"))).Class("handle my-2 ml-1 mr-1"),
-							).Else(
-								VListItemIcon().Class("my-2 ml-1 mr-1"),
-							),
-							VListItemContent(
-								VListItemTitle(h.Text("{{item.label}}")).Attr(":style", "[item.shared ? {'color':'green'}:{}]"),
-							),
-							h.If(!isReadonly,
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("edit").Size(SizeSmall))).Attr("@click",
-									web.Plaid().
-										URL(web.Var("item.url")).
-										EventFunc(actions.Edit).
-										Query(presets.ParamOverlay, actions.Drawer).
-										Query(presets.ParamID, web.Var("item.model_id")).
-										Go(),
-								).Class("my-2"),
-								VListItemIcon(VBtn("").Icon(true).Children(VIcon("{{item.visibility_icon}}").Size(SizeSmall))).Attr("@click",
-									web.Plaid().
-										URL(web.Var("item.url")).
-										EventFunc(ToggleContainerVisibilityEvent).
-										Query(paramContainerID, web.Var("item.param_id")).
-										Go(),
-								).Class("my-2"),
-							),
+							web.Slot(
+								h.If(!isReadonly,
+									VBtn("").Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
+								),
+								VListItem(
+									VListItemTitle(h.Text("{{item.label}}")).Attr(":style", "[item.shared ? {'color':'green'}:{}]"),
+								),
+								h.If(!isReadonly,
+									VBtn("").Icon(
+										VIcon("mdi-pencil").Size(SizeSmall),
+									).Attr("@click",
+										web.Plaid().
+											URL(web.Var("item.url")).
+											EventFunc(actions.Edit).
+											Query(presets.ParamOverlay, actions.Drawer).
+											Query(presets.ParamID, web.Var("item.model_id")).
+											Go(),
+									).Class("my-2"),
+									VBtn("").Icon(
+										VIcon("{{item.visibility_icon}}").Size(SizeSmall),
+									).Attr("@click",
+										web.Plaid().
+											URL(web.Var("item.url")).
+											EventFunc(ToggleContainerVisibilityEvent).
+											Query(paramContainerID, web.Var("item.param_id")).
+											Go(),
+									).Class("my-2"),
+								),
+							).Name("prepend"),
+
 							h.If(!isReadonly,
 								VMenu(
 									web.Slot(
-										VBtn("").Children(
-											VIcon("more_horiz"),
-										).Attr("v-on", "on").Variant(VariantText).Fab(true).Size(SizeSmall),
-									).Name("activator").Scope("{ on }"),
+										VBtn("").Icon("mdi-dots-horizontal").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+									).Name("activator").Scope("{ props }"),
 
 									VList(
 										VListItem(
-											VListItemIcon(VIcon("edit_note")).Class("pl-0 mr-2"),
+											web.Slot(
+												VIcon("mdi-pencil"),
+											).Name("prepend"),
 											VListItemTitle(h.Text("Rename")),
 										).Attr("@click",
 											web.Plaid().
@@ -474,7 +469,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 												Go(),
 										),
 										VListItem(
-											VListItemIcon(VIcon("delete")).Class("pl-0 mr-2"),
+											web.Slot(
+												VIcon("mdi-delete"),
+											).Name("prepend"),
 											VListItemTitle(h.Text("Delete")),
 										).Attr("@click", web.Plaid().
 											URL(web.Var("item.url")).
@@ -484,7 +481,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											Go(),
 										),
 										VListItem(
-											VListItemIcon(VIcon("share")).Class("pl-1 mr-2"),
+											web.Slot(
+												VIcon("mdi-share"),
+											).Name("prepend"),
 											VListItemTitle(h.Text("Mark As Shared Container")),
 										).Attr("@click",
 											web.Plaid().
@@ -494,14 +493,16 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 												Go(),
 										).Attr("v-if", "!item.shared"),
 									).Density(DensityCompact),
-								).Left(true),
+								).Attr("transition", "fab-transition"),
 							),
 						).Class("pl-0").Attr("@click", fmt.Sprintf(`document.querySelector("iframe").contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("item.model_name"), web.Var("item.model_id"))),
 						VDivider().Attr("v-if", "index < locals.items.length "),
 					).Attr("v-for", "(item, index) in locals.items", ":key", "item.index"),
 					h.If(!isReadonly,
 						VListItem(
-							VListItemIcon(VIcon("add").Color("primary")).Class("ma-4"),
+							web.Slot(
+								VIcon("mdi-plus").Color("primary"),
+							).Name("prepend"),
 							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Variant(VariantText)),
 						).Attr("@click",
 							web.Plaid().
@@ -586,33 +587,34 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: presets.DeleteConfirmPortalName,
-		Body: VDialog(
-			VCard(
-				VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", containerName))),
-				VCardActions(
-					VSpacer(),
-					VBtn("Cancel").
-						Variant(VariantFlat).
-						Class("ml-2").
-						On("click", "vars.deleteConfirmation = false"),
+		Body: web.Scope(
+			VDialog(
+				VCard(
+					VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", containerName))),
+					VCardActions(
+						VSpacer(),
+						VBtn("Cancel").
+							Variant(VariantFlat).
+							Class("ml-2").
+							On("click", "dialogLocals.deleteConfirmation = false"),
 
-					VBtn("Delete").
-						Color("primary").
-						Variant(VariantFlat).
-						Theme(ThemeDark).
-						Attr("@click", web.Plaid().
-							URL(fmt.Sprintf("%s/editors", b.prefix)).
-							EventFunc(DeleteContainerEvent).
-							Query(paramContainerID, paramID).
-							Go()),
+						VBtn("Delete").
+							Color("primary").
+							Variant(VariantFlat).
+							Theme(ThemeDark).
+							Attr("@click", web.Plaid().
+								URL(fmt.Sprintf("%s/editors", b.prefix)).
+								EventFunc(DeleteContainerEvent).
+								Query(paramContainerID, paramID).
+								Go()),
+					),
 				),
-			),
-		).MaxWidth("600px").
-			Attr("v-model", "vars.deleteConfirmation").
-			Attr(web.InitContextVars, `{deleteConfirmation: false}`),
+			).MaxWidth("600px").
+				Attr("v-model", "dialogLocals.deleteConfirmation"),
+		).Init(" { locals : dialogLocals } ", `{deleteConfirmation: false}`),
 	})
 
-	r.RunScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
+	r.RunScript = "setTimeout(function(){ dialogLocals.deleteConfirmation = true }, 100)"
 	return
 }
 
@@ -914,7 +916,7 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 				VCard(
 					VCardTitle(h.Text("Rename")),
 					VCardText(
-						VTextField().FieldName("DisplayName").Value(name),
+						VTextField().Attr(web.VField("DisplayName", name)...),
 					),
 					VCardActions(
 						VSpacer(),
@@ -1020,8 +1022,11 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 		Body: web.Scope(
 			VDialog(
 				VTabs(
-					VTab(h.Text(msgr.New)),
-					VTabItem(
+					VTab(h.Text(msgr.New)).Value(msgr.New),
+					VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
+				).Attr("v-model", "dialogLocals.tab"),
+				VWindow(
+					VWindowItem(
 						VSheet(
 							VContainer(
 								VRow(
@@ -1029,9 +1034,8 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 								),
 							),
 						),
-					).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-					VTab(h.Text(msgr.Shared)),
-					VTabItem(
+					).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+					VWindowItem(
 						VSheet(
 							VContainer(
 								VRow(
@@ -1039,10 +1043,10 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 								),
 							),
 						),
-					).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-				),
-			).Width("1200px").Attr("v-model", "locals.addContainerDialog"),
-		).Init("{addContainerDialog:true}").VSlot("{locals}"),
+					).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+				).Attr("v-model", "dialogLocals.tab"),
+			).Width("1200px").Attr("v-model", "dialogLocals.addContainerDialog"),
+		).Init(fmt.Sprintf(`{addContainerDialog:true , tab : %s } `, msgr.New)).VSlot("{locals:dialogLocals}"),
 	})
 
 	return
@@ -1184,8 +1188,8 @@ function(e){
 }`, action)),
 
 			innerPr.Body.(h.HTMLComponent),
-		).Id("vt-app").Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)
-
+		).Attr("id", "vt-app").
+			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
 		return
 	}
 }

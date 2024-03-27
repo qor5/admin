@@ -38,20 +38,23 @@ func SetTagComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 		Only("Text", "FontColor", "BackgroundColor", "Icon", "Link")
 
 	fb.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return v.VAutocomplete().FieldName(field.FormKey).
-			Label(field.Label).Value(field.Value(obj)).
+		return v.VAutocomplete().
+			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Label(field.Label).
 			Items(TagFontColors)
 	})
 
 	fb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return v.VAutocomplete().FieldName(field.FormKey).
-			Label(field.Label).Value(field.Value(obj)).
+		return v.VAutocomplete().
+			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Label(field.Label).
 			Items(TagBackgroundColors)
 	})
 
 	fb.Field("Icon").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return v.VAutocomplete().FieldName(field.FormKey).
-			Label(field.Label).Value(field.Value(obj)).
+		return v.VAutocomplete().
+			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Label(field.Label).
 			Items(TagIcons)
 	})
 

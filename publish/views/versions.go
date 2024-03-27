@@ -187,7 +187,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 					web.Slot(
 						VTextField().Attr("v-model", "props.item.VersionName").Label(msgr.RenameVersion),
 					).Name("input"),
-				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Transition("slide-x-reverse-transition"),
+				).Bind("return-value.sync", "props.item.VersionName").On("save", renameVersionEvent).Width(600).Transition("slide-x-reverse-transition"),
 			).Name("item.Edit").Scope("props"),
 			web.Slot(
 				VIcon("delete").Size(SizeSmall).Class("mr-2").Attr("@click", deleteVersionEvent).Attr(":class", "props.item.ItemClass"),
@@ -196,24 +196,17 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 			Items(versions).
 			Headers(
 				[]map[string]interface{}{
-					{"text": "VersionName", "value": "VersionName", "width": "60%"},
-					{"text": "Status", "value": "Status", "width": "20%"},
-					{"text": "Edit", "value": "Edit", "width": "10%"},
-					{"text": "Delete", "value": "Delete", "width": "10%"},
+					{"title": "VersionName", "value": "VersionName", "width": "60%", "sortable": false},
+					{"title": "Status", "value": "Status", "width": "20%", "sortable": false},
+					{"title": "Edit", "value": "Edit", "width": "10%", "sortable": false},
+					{"title": "Delete", "value": "Delete", "width": "10%", "sortable": false},
 				}).
-			// DisableSort(true).
-			// HideDefaultFooter(len(versions) <= 10).
-			On("update:modelValue", switchVersionEvent).
-			On("update:page", "locals.versionPage = $event.page").
-			// ItemClass("ItemClass").
-			// FooterProps(
-			// 	map[string]interface{}{
-			// 		"items-per-page-options": []int{5, 10, 20},
-			// 		"show-first-last-page":   true,
-			// 		"items-per-page-text":    "",
-			// 		"page-text":              "",
-			// 	},
-			// ).
+			//HideDefaultFooter(len(versions) <= 10).
+			On("click:row", switchVersionEvent).
+			On("pagination", "locals.versionPage = $event.page").
+			ReturnObject(true).
+			ItemsPerPageOptions([]int{5, 10, 20}).
+			PageText("").ItemsPerPageText("").
 			Page(currentPage),
 	).Init(fmt.Sprintf(`{versionPage: %d}`, currentPage)).
 		VSlot("{ locals }")

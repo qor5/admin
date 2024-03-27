@@ -175,7 +175,8 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 					VList(
 						VListItem(
 							web.Slot(
-								VIcon("language").Size(SizeSmall).Class("ml-1").Attr("style", "margin-right: 16px"),
+								// icon was language
+								VIcon("mdi-translate").Size(SizeSmall).Class("ml-1").Attr("style", "margin-right: 16px"),
 							).Name("prepend"),
 							VListItemTitle(
 								h.Div(h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(supportLocales[0]))))).Role("button"),
@@ -202,22 +203,24 @@ func runSwitchLocaleFunc(lb *l10n.Builder) func(ctx *web.EventContext) (r h.HTML
 		}
 
 		return VMenu().Children(
-			h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+			h.Template().Attr("v-slot:activator", "{props}").Children(
 				h.Div(
 					VList(
 						VListItem(
 							web.Slot(
-								VIcon("language").Size(SizeSmall).Class("ml-1").Attr("style", "margin-right: 16px"),
+								// icon was language
+								VIcon("mdi-translate").Size(SizeSmall).Class("ml-1"),
 							).Name("prepend"),
 							VListItemTitle(
 								h.Text(fmt.Sprintf("%s%s %s", MustGetTranslation(ctx.R, "Location"), MustGetTranslation(ctx.R, "Colon"), MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))),
 							),
 							web.Slot(
-								VIcon("arrow_drop_down").Class("mr-1"),
+								// icon was arrow_drop_down
+								VIcon("mdi-arrow-down").Class("mr-1"),
 							).Name("append"),
 						).Class("pa-0").Density(DensityCompact),
 					).Class("pa-0 ma-n4 mt-n6"),
-				).Attr("v-bind", "attrs").Attr("v-on", "on"),
+				).Attr("v-bind", "props"),
 			),
 
 			VList(
@@ -235,7 +238,8 @@ func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams 
 
 		return VListItem(
 			web.Slot(
-				VIcon("language"),
+				// icon was language
+				VIcon("mdi-translate"),
 			).Name("prepend"),
 			VListItemTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
 		).Attr("@click", web.Plaid().

@@ -31,7 +31,9 @@ div {
 	background-color:orange;
 }
 `)))
+	mux.Handle("/admin", p)
 	mux.Handle("/admin/", p)
+	mux.Handle("/page_builder", pb)
 	mux.Handle("/page_builder/", pb)
 	log.Println("Listen on http://localhost:9600")
 	log.Fatal(http.ListenAndServe(":9600", mux))

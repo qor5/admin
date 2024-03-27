@@ -62,40 +62,35 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
-		VNavigationDrawer(
-			VContainer(
-				VRow(
-					VCol(
-						VBtnToggle(
-							VBtn("").Icon(true).Children(
-								VIcon("laptop_mac").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
-							VBtn("").Icon(true).Children(
-								VIcon("tablet_mac").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
-							VBtn("").Icon(true).Children(
-								VIcon("phone_iphone").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
-						).Class("pa-2 rounded-lg").Attr("v-model", "locals.activeDevice").
-							Attr(web.InitContextLocals, fmt.Sprintf(`{activeDevice: %d}`, activeDevice)).Density(DensityCompact),
-					).Cols(9).Class("pa-2"),
-					VCol(
-						VBtn("").Icon(true).Children(
-							VIcon("visibility"),
-						).Class("pa-6").Href(b.prefix+previewHref).Target("_blank"),
-					).Cols(3).Class("pa-2 d-flex justify-center"),
+		web.Scope(
+			VNavigationDrawer(
+				VContainer(
+					VRow(
+						VCol(
+							web.Scope(
+								VBtnToggle(
+									VBtn("").Icon(true).Children(
+										VIcon("laptop_mac").Size(SizeSmall),
+									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
+									VBtn("").Icon(true).Children(
+										VIcon("tablet_mac").Size(SizeSmall),
+									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
+									VBtn("").Icon(true).Children(
+										VIcon("phone_iphone").Size(SizeSmall),
+									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
+								).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+							).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
+						).Cols(9).Class("pa-2"),
+						VCol(
+							VBtn("").Icon("mdi-eye").Class("pa-6").Href(b.prefix+previewHref).To("_blank"),
+						).Cols(3).Class("pa-2 d-flex justify-center"),
+					),
 				),
-			),
-			containerList,
-		).
-			App(true).
-			Location(LocationRight).
-			Clipped(true).
-			Fixed(true).
-			Value(true).
-			Width(420).
-			Attr("v-model", "vars.pbEditorDrawer").
-			Attr(web.InitContextVars, `{pbEditorDrawer: null}`),
+				containerList,
+			).
+				Width(420).
+				Attr("v-model", "drawerLocals.pbEditorDrawer"),
+		).VSlot("{ locals: drawerLocals } ").Init(`{pbEditorDrawer: null}`),
 	)
 
 	return
