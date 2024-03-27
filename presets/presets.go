@@ -925,6 +925,12 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				Attr("v-model", "vars.navDrawer"),
 
 			VAppBar(
+				VProgressLinear().
+					Attr(":active", "isFetching").
+					Attr("style", "position: fixed; z-index: 99").
+					Indeterminate(true).
+					Height(2).
+					Color(b.progressBarColor),
 				VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 				h.Span(innerPr.PageTitle).Class("text-h6 font-weight-regular"),
 				VSpacer(),
@@ -941,8 +947,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 								HideDetails(true).
 								SingleLine(true).
 								ModelValue(ctx.R.URL.Query().Get("keyword")).
-								Attr(":prepend-icon", "locals.isFocus?null:'mdi-magnify'").
-								Attr(":bg-color", "locals.isFocus?'white':'primary'").
+								Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
+								Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
 								Attr("@update:focused", "locals.isFocus=!locals.isFocus").
 								Attr("@keyup.enter", web.Plaid().
 									ClearMergeQuery("page").
@@ -975,12 +981,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			web.Portal().Name(DefaultConfirmDialogPortalName),
 			web.Portal().Name(ListingDialogPortalName),
 
-			VProgressLinear().
-				Attr(":active", "isFetching").
-				Attr("style", "position: fixed; z-index: 99").
-				Indeterminate(true).
-				Height(2).
-				Color(b.progressBarColor),
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
 					Attr("v-model", "vars.presetsMessage.show").
@@ -992,8 +992,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				innerPr.Body.(h.HTMLComponent),
 			),
 		).Attr("id", "vt-app").
-			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
-presetsMessage: {show: false, color: "success", message: ""}}`)...)
+			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
 
 		return
 	}
