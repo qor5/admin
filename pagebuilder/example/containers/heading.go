@@ -56,18 +56,21 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		return vuetify.VSelect().
 			Items(FontColors).
 			Label(field.Label).
+			Variant(vuetify.FieldVariantUnderlined).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(BackgroundColors).
 			Label(field.Label).
+			Variant(vuetify.FieldVariantUnderlined).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(LinkDisplayOptions).
 			Label(field.Label).
+			Variant(vuetify.FieldVariantUnderlined).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 }

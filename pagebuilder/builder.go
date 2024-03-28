@@ -250,7 +250,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
-			pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
+			pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, pv.Messages_en_US).(*pv.Messages)
 			id := pat.Param(ctx.R, "id")
 
 			if id == "" {
@@ -381,17 +381,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 			pr.Body = web.Scope(
 				VApp(
-					web.Scope(
-						VNavigationDrawer(
-							pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
-							VDivider(),
-							menu,
-						).
-							// App(true).
-							// Fixed(true).
-							ModelValue(true).
-							Attr("v-model", "drawerLocals.navDrawer"),
-					).VSlot(" { locals : drawerLocals}").Init(`{navDrawer: null}`),
+					VNavigationDrawer(
+						pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
+						VDivider(),
+						menu,
+					).
+						// App(true).
+						// Fixed(true).
+						ModelValue(true).
+						Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
 					VAppBar(
 						VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 						VTabs(
@@ -504,6 +502,7 @@ function(e){
 		}
 
 		return VTextField().
+			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
@@ -555,7 +554,7 @@ function(e){
 					body,
 				).Name(selectedTemplatePortal),
 			).Class("my-2").
-				Attr(web.ObjectAssign("vars", `{showTemplateDialog: false}`))
+				Attr(web.ObjectAssign("vars", `{showTemplateDialog: false}`)...)
 		}
 		return nil
 	})
@@ -871,6 +870,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 		}
 
 		return VTextField().Label("Path").
+			Variant(FieldVariantUnderlined).
 			Attr(web.VField("Path", strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
@@ -1013,6 +1013,9 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		selectedID := ctx.R.FormValue(templateSelectedID)
+		if selectedID == "" {
+			selectedID = templateBlankVal
+		}
 
 		tpls := []*Template{}
 		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
@@ -1033,7 +1036,8 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 					VCardSubtitle(h.Text("")),
 					h.Div(
 						h.Input(templateID).Type("radio").
-							Attr(web.VField(templateID, templateBlankVal)...).
+							Value(templateBlankVal).
+							Attr(web.VField(templateID, selectedID)...).
 							AttrIf("checked", "checked", selectedID == "").
 							Style("width: 18px; height: 18px"),
 					).Class("mr-4 float-right"),
@@ -1053,35 +1057,32 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: templateSelectPortal,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(
-							h.Text(msgrPb.CreateFromTemplate),
-							VSpacer(),
-							VBtn("").Icon(true).
-								Children(VIcon("close")).
-								Size(SizeLarge).
-								On("click", fmt.Sprintf("dialogLocals.showTemplateDialog=false")),
-						),
-						VCardActions(
-							VRow(tplHTMLComponents...),
-						),
-						VCardActions(
-							VSpacer(),
-							VBtn(gmsgr.Cancel).Attr("@click", "dialogLocals.showTemplateDialog=false"),
-							VBtn(gmsgr.OK).Color("primary").
-								Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
-									Go(),
-								),
-						).Class("pb-4"),
-					).Tile(true),
-				).MaxWidth("80%").
-					Attr("v-model", fmt.Sprintf("dialogLocals.showTemplateDialog")),
-			).VSlot(" { locals: dialogLocals } ").Init(`{showTemplateDialog: false}`),
+			Body: VDialog(
+				VCard(
+					VCardTitle(
+						h.Text(msgrPb.CreateFromTemplate),
+						VSpacer(),
+						VBtn("").Icon("mdi-close").
+							Size(SizeLarge).
+							On("click", fmt.Sprintf("vars.showTemplateDialog=false")),
+					),
+					VCardActions(
+						VRow(tplHTMLComponents...),
+					),
+					VCardActions(
+						VSpacer(),
+						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
+						VBtn(gmsgr.OK).Color("primary").
+							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
+								Go(),
+							),
+					).Class("pb-4"),
+				).Tile(true),
+			).MaxWidth("80%").
+				Attr(web.ObjectAssign("vars", `{showTemplateDialog: false}`)...).
+				Attr("v-model", fmt.Sprintf("vars.showTemplateDialog")),
 		})
-
-		er.RunScript = `setTimeout(function(){ dialogLocals.showTemplateDialog = true }, 100)`
+		er.RunScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
 		return
 	}
 }
@@ -1120,7 +1121,8 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 				Attr("target", "_blank").Color("primary"),
 			h.Div(
 				h.Input(templateID).Type("radio").
-					Attr(web.VField(templateID, id)...).
+					Value(id).
+					Attr(web.VField(templateID, selectedID)...).
 					AttrIf("checked", "checked", selectedID == id).
 					Style("width: 18px; height: 18px"),
 			).Class("mr-4 float-right"),
@@ -1737,6 +1739,7 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 		}
 
 		wh := db.Model(obj)
+		wh.Delete(&obj).Where("id>0")
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
