@@ -1739,7 +1739,6 @@ func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.Sear
 		}
 
 		wh := db.Model(obj)
-		wh.Delete(&obj).Where("id>0")
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
