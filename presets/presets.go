@@ -609,7 +609,7 @@ func (b *Builder) RunBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 		return b.brandFunc(ctx)
 	}
 
-	return VRow(h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))).Class("text-button")
+	return h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle)).Class("text-h6")
 }
 
 func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponent) {
@@ -630,7 +630,8 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				VList(
 					VListItem(
 						web.Slot(
-							VIcon("mdi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
+							VIcon("xxx"),
+							//VIcon("mdi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
 						).Name("prepend"),
 						VListItemTitle(
 							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
@@ -673,11 +674,11 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				VList(
 					VListItem(
 						VListItemTitle(
-							VIcon("mdi-translate").Size(SizeSmall).Class(" mr-4 ml-1"),
+
 							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
 						).Class("text-subtitle-2 font-weight-regular"),
 						web.Slot(
-							VIcon("mdi-menu-down").Size(SizeSmall).Class(" ml-1"),
+							VIcon("mdi-translate-variant").Size(SizeSmall).Class(""),
 						).Name("append"),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
@@ -884,6 +885,26 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 		menu := b.CreateMenus(ctx)
+		toolbar := VContainer(
+			VRow(
+				VCol(b.RunBrandFunc(ctx)).Cols("4"),
+				VCol(
+					b.RunSwitchLanguageFunc(ctx),
+					//VBtn("").Children(
+					//	languageSwitchIcon,
+					//	VIcon("mdi-menu-down"),
+					//).Attr("variant", "plain").
+					//	Attr("icon", ""),
+				).Cols("4"),
+				//VDivider().Vertical(true).Class("my-6"),
+				VCol(
+					VAppBarNavIcon().Attr("icon", "mdi-menu").
+						Class("text-grey-darken-1").
+						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+				).Attr("cols", "2"),
+			).Attr("align", "center").
+				Attr("justify", "center"),
+		)
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
@@ -914,15 +935,24 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
 			VNavigationDrawer(
-				b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-				VDivider(),
+				//b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+				//b.RunBrandFunc(ctx),
+				//profile,
+				toolbar,
+				//VDivider(),
 				menu,
+				profile,
 			).
+				Width(320).
 				// App(true).
 				// Clipped(true).
 				// Fixed(true).
 				ModelValue(true).
-				Attr("v-model", "vars.navDrawer"),
+				Attr("v-model", "vars.navDrawer").
+				Class("rounded-lg my-2 ma-1").
+				Temporary(true).
+				Floating(true).
+				Elevation(2),
 
 			VAppBar(
 				VProgressLinear().
