@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/jinzhu/inflection"
@@ -109,7 +110,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	obj, err = b.fetcher(obj, id, ctx)
 	if err != nil {
-		if err == ErrRecordNotFound {
+		if errors.Is(err, ErrRecordNotFound) {
 			return b.mb.p.DefaultNotFoundPageFunc(ctx)
 		}
 		return

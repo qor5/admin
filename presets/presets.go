@@ -773,7 +773,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 			Location(LocationRight).
 			Temporary(true).
 			// Fixed(true).
-			Attr("width", width).
+			Width(width).
 			Attr(":height", `"100%"`),
 		// Temporary(true),
 		// HideOverlay(true).
