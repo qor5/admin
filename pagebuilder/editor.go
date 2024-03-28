@@ -916,7 +916,7 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 				VCard(
 					VCardTitle(h.Text("Rename")),
 					VCardText(
-						VTextField().Attr(web.VField("DisplayName", name)...),
+						VTextField().Attr(web.VField("DisplayName", name)...).Variant(FieldVariantUnderlined),
 					),
 					VCardActions(
 						VSpacer(),
