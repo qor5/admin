@@ -177,7 +177,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return presets.InputWithDefaults(VTextField(), obj, field).ErrorMessages(field.Errors...)
+		return presets.InputWithDefaults(h.Tag("v-text-field"), obj, field)
+		// TODO fix it .ErrorMessages(field.Errors...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
@@ -191,8 +192,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if !u.IsOAuthUser() && u.ID != 0 {
 			return nil
 		} else {
-			return VSelect().FieldName(field.Name).
-				Label(field.Label).Value(field.Value(obj)).
+			return VSelect().Attr(web.VField(field.Name, field.Value(obj))...).
+				Label(field.Label).
 				Items(models.OAuthProviders)
 		}
 	})
@@ -202,7 +203,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if !u.IsOAuthUser() {
 			return nil
 		} else {
-			return presets.InputWithDefaults(VTextField(), obj, field).Disabled(true).ErrorMessages(field.Errors...)
+			return presets.InputWithDefaults(h.Tag("v-text-field"), obj, field).Disabled(true)
+			//TODO fix it .ErrorMessages(field.Errors...)
 		}
 	})
 
@@ -235,9 +237,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 			return vx.VXAutocomplete().Label(field.Label).
 				// ItemText("text").ItemValue("value").
-				FieldName(field.Name).
+				Attr(web.VField(field.Name, values)...).
 				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
-				Value(values).
 				SelectedItems(selectedItems).
 				Items(allRoleItems).
 				CacheItems(true)
@@ -275,8 +276,8 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("Status").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VSelect().FieldName(field.Name).
-				Label(field.Label).Value(field.Value(obj)).
+			return VSelect().Attr(web.VField(field.Name, field.Value(obj))...).
+				Label(field.Label).
 				Items([]string{"active", "inactive"})
 		})
 
@@ -380,11 +381,10 @@ func favorPostSelector(id uint) h.HTMLComponent {
 	return h.Div(
 		VAutocomplete().
 			Label("Favorite Post").
-			FieldName("FavorPostID").
+			Attr(web.VField("FavorPostID", id)...).
 			Items(items).
-			ItemText("Title").
+			ItemTitle("Title").
 			ItemValue("ID").
-			Value(id).
 			Readonly(true).
 			Clearable(true),
 	).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).

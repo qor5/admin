@@ -2,10 +2,6 @@ package richeditor
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
 	"github.com/qor5/ui/redactor"
 	v "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
@@ -82,12 +78,12 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 		v.VSheet(
 			h.Label(b.label).Class("v-label theme--light"),
 			redactorB,
-			h.Div(
-				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
-					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
-					AllowType: "image",
-				}),
-			).Class("hidden-screen-only"),
+			//h.Div(
+			//	media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
+			//		Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
+			//		AllowType: "image",
+			//	}),
+			//).Class("hidden-screen-only"),
 		).Class("pb-4").Rounded(true).Attr("data-type", "redactor").Attr("style", "position: relative; z-index:1;"),
 	)
 	return r.MarshalHTML(ctx)

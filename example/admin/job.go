@@ -46,7 +46,7 @@ func addJobs(w *worker.Builder) {
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
-		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
+		return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		v := ctx.R.FormValue("F1")
 		obj.(*ArgJobResource).F1 = v

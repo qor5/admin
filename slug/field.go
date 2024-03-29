@@ -64,9 +64,8 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 	return VSheet(
 		VTextField().
 			Type("text").
-			FieldName(field.Name).
+			Attr(web.VField(field.Name, field.Value(obj))...).
 			Label(field.Label).
-			Value(field.Value(obj)).
 			Attr("v-debounce:input", "300").
 			Attr("@input:debounced", web.Plaid().
 				EventFunc(syncEvent).Query("field_name", field.Name).Query("slug_label", slugLabel).Go()),
@@ -76,12 +75,12 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 				web.Portal(
 					VTextField().
 						Type("text").
-						FieldName(slugFieldName).
-						Label(slugLabel).
-						Value(reflectutils.MustGet(obj, slugFieldName).(Slug))).Name(portalName(slugFieldName)),
+						Attr(web.VField(slugFieldName, reflectutils.MustGet(obj, slugFieldName).(Slug))...).
+						Label(slugLabel).Name(portalName(slugFieldName)),
+				),
 			).Cols(8),
 			VCol(
-				VCheckbox().FieldName(checkBoxName(slugFieldName)).InputValue(true).Label(fmt.Sprintf(msgr.Sync,
+				VCheckbox().Attr(web.VField(checkBoxName(slugFieldName), "")...).Value(true).Label(fmt.Sprintf(msgr.Sync,
 					strings.ToLower(field.Label))),
 			).Cols(4),
 		),
@@ -112,9 +111,8 @@ func sync(ctx *web.EventContext) (r web.EventResponse, err error) {
 		Name: portalName(slugFieldName),
 		Body: VTextField().
 			Type("text").
-			FieldName(slugFieldName).
-			Label(ctx.R.FormValue("slug_label")).
-			Value(slug(ctx.R.FormValue(fieldName))),
+			Attr(web.VField(slugFieldName, slug(ctx.R.FormValue(fieldName)))...).
+			Label(ctx.R.FormValue("slug_label")),
 	})
 	return
 }

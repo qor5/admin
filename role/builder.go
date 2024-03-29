@@ -98,10 +98,11 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 
 	permFb.Field("Effect").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VSelect().
+			Variant(FieldVariantUnderlined).
 			Items([]string{perm.Allowed, perm.Denied}).
 			Value(field.StringValue(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)
 		p.Effect = ctx.R.FormValue(field.FormKey)
@@ -109,9 +110,9 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	})
 	permFb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VAutocomplete().
-			Value(field.Value(obj)).
+			Variant(FieldVariantUnderlined).
 			Label(field.Label).
-			FieldName(field.FormKey).
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
 			Multiple(true).
 			Chips(true).
 			ClosableChips(true).
@@ -120,9 +121,9 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 
 	permFb.Field("Resources").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return VAutocomplete().
-			Value(field.Value(obj)).
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
 			Label(field.Label).
-			FieldName(field.FormKey).
 			Multiple(true).
 			Chips(true).
 			ClosableChips(true).

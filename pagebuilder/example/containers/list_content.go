@@ -69,6 +69,7 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "Items", "Link", "LinkText", "LinkDisplayOption")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
+			Variant(vuetify.FieldVariantUnderlined).
 			Items([]string{"white", "grey"}).
 			Label(field.Label).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)

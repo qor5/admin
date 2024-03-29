@@ -216,14 +216,14 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 
 				VCard(
 					VCardText(
-						h.Div(
+						web.Scope(
 							web.Portal().Loader(
 								web.Plaid().EventFunc(ActionJobProgressing).
 									URL(b.mb.Info().ListingHref()).
 									Query("jobID", jobID).
 									Query("jobName", jobName),
-							).AutoReloadInterval("vars.actionJobProgressingInterval"),
-						).Attr(web.InitContextVars, fmt.Sprintf("{actionJobProgressingInterval: %d}", config.progressingInterval)),
+							).AutoReloadInterval("loaderLocals.actionJobProgressingInterval"),
+						).VSlot("{ locals: loaderLocals }").Init(fmt.Sprintf("{actionJobProgressingInterval: %d}", config.progressingInterval)),
 					),
 				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
@@ -280,7 +280,7 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	er.Body = h.Div(
 		h.Div(VProgressLinear(
 			h.Strong(fmt.Sprintf("%d%%", inst.Progress)),
-		).Value(int(inst.Progress)).Height(20)).Class("mb-5"),
+		).ModelValue(int(inst.Progress)).Height(20)).Class("mb-5"),
 		h.If(config.displayLog, actionJobLog(*config.b, inst)),
 		h.If(inst.ProgressText != "",
 			h.Div().Class("mb-3").Children(

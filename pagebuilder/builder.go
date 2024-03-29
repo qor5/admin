@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
+	"github.com/qor5/admin/richeditor"
 	"net/http"
 	"net/url"
 	"path"
@@ -209,6 +210,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
+
+	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
+	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pm = pb.Model(&Page{})
 	b.seoBuilder = seoBuilder
 

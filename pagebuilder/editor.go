@@ -381,9 +381,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 
 	var sorterData ContainerSorter
 	for i, c := range cons {
-		vicon := "visibility"
+		vicon := "mdi-eye"
 		if c.Hidden {
-			vicon = "visibility_off"
+			vicon = "mdi-eye-off"
 		}
 		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
 
@@ -409,21 +409,21 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 		VSheet(
 			VCard(
 				h.Tag("vx-draggable").
+					Attr("item-key", "model_id").
 					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
 					Attr("@end", web.Plaid().
 						URL(fmt.Sprintf("%s/editors", b.prefix)).
 						EventFunc(MoveContainerEvent).
 						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
 						Go()).Children(
-					// VList(
-					h.Div(
+					h.Template(
 						VListItem(
 							web.Slot(
 								h.If(!isReadonly,
 									VBtn("").Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
 								),
 								VListItem(
-									VListItemTitle(h.Text("{{item.label}}")).Attr(":style", "[item.shared ? {'color':'green'}:{}]"),
+									VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
 								),
 								h.If(!isReadonly,
 									VBtn("").Icon(
@@ -433,16 +433,16 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											URL(web.Var("item.url")).
 											EventFunc(actions.Edit).
 											Query(presets.ParamOverlay, actions.Drawer).
-											Query(presets.ParamID, web.Var("item.model_id")).
+											Query(presets.ParamID, web.Var("element.model_id")).
 											Go(),
 									).Class("my-2"),
 									VBtn("").Icon(
-										VIcon("{{item.visibility_icon}}").Size(SizeSmall),
+										VIcon("{{element.visibility_icon}}").Size(SizeSmall),
 									).Attr("@click",
 										web.Plaid().
-											URL(web.Var("item.url")).
+											URL(web.Var("element.url")).
 											EventFunc(ToggleContainerVisibilityEvent).
-											Query(paramContainerID, web.Var("item.param_id")).
+											Query(paramContainerID, web.Var("element.param_id")).
 											Go(),
 									).Class("my-2"),
 								),
@@ -462,10 +462,10 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											VListItemTitle(h.Text("Rename")),
 										).Attr("@click",
 											web.Plaid().
-												URL(web.Var("item.url")).
+												URL(web.Var("element.url")).
 												EventFunc(RenameContainerDialogEvent).
-												Query(paramContainerID, web.Var("item.param_id")).
-												Query(paramContainerName, web.Var("item.display_name")).
+												Query(paramContainerID, web.Var("element.param_id")).
+												Query(paramContainerName, web.Var("element.display_name")).
 												Go(),
 										),
 										VListItem(
@@ -474,10 +474,10 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											).Name("prepend"),
 											VListItemTitle(h.Text("Delete")),
 										).Attr("@click", web.Plaid().
-											URL(web.Var("item.url")).
+											URL(web.Var("element.url")).
 											EventFunc(DeleteContainerConfirmationEvent).
-											Query(paramContainerID, web.Var("item.param_id")).
-											Query(paramContainerName, web.Var("item.display_name")).
+											Query(paramContainerID, web.Var("element.param_id")).
+											Query(paramContainerName, web.Var("element.display_name")).
 											Go(),
 										),
 										VListItem(
@@ -487,17 +487,19 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											VListItemTitle(h.Text("Mark As Shared Container")),
 										).Attr("@click",
 											web.Plaid().
-												URL(web.Var("item.url")).
+												URL(web.Var("element.url")).
 												EventFunc(MarkAsSharedContainerEvent).
-												Query(paramContainerID, web.Var("item.param_id")).
+												Query(paramContainerID, web.Var("element.param_id")).
 												Go(),
-										).Attr("v-if", "!item.shared"),
+										).Attr("v-if", "!element.shared"),
 									).Density(DensityCompact),
 								).Attr("transition", "fab-transition"),
 							),
-						).Class("pl-0").Attr("@click", fmt.Sprintf(`document.querySelector("iframe").contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("item.model_name"), web.Var("item.model_id"))),
+						).Class("pl-0").Attr("@click", fmt.Sprintf(`document.querySelector("iframe").contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("element.model_name"), web.Var("element.model_id"))),
 						VDivider().Attr("v-if", "index < locals.items.length "),
-					).Attr("v-for", "(item, index) in locals.items", ":key", "item.index"),
+					).Attr("#item", " { element } "),
+					// VList(
+
 					h.If(!isReadonly,
 						VListItem(
 							web.Slot(

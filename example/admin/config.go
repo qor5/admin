@@ -119,11 +119,13 @@ func NewConfig() Config {
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
 				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
-			).Density(DensityCompact),
+			),
+			//).Density(DensityCompact),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
 					h.Span(msgr.DBResetTipLabel),
-					v.VIcon("schedule").XSize(SizeSmall).Left(true),
+					v.VIcon("schedule").Size(v.SizeXSmall),
+					//.Left(true),
 					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
 				v.VDivider(),
@@ -567,28 +569,20 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 
 		return v.VList(
 			v.VListItem(
-				v.VListItemContent(
-					v.VListItemTitle(h.Text("Pages")),
-					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
-				),
-			).TwoLine(true).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+				v.VListItemTitle(h.Text("Pages")),
+				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
+			).Lines(2).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			v.VListItem(
-				v.VListItemContent(
-					v.VListItemTitle(h.Text("Posts")),
-					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
-				),
-			).TwoLine(true).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+				v.VListItemTitle(h.Text("Posts")),
+				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
+			).Lines(2).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			v.VListItem(
-				v.VListItemContent(
-					v.VListItemTitle(h.Text("Users")),
-					v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
-				),
-			).TwoLine(true).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
+				v.VListItemTitle(h.Text("Users")),
+				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
+			).Lines(2).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
 			h.If(a+b+c > 0,
 				v.VListItem(
-					v.VListItemContent(
-						v.VListItemSubtitle(h.Text("Mark all as read")),
-					),
+					v.VListItemSubtitle(h.Text("Mark all as read")),
 				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
 			),
 		).Class("mx-auto").Attr("max-width", "140")

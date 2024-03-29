@@ -122,17 +122,18 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
-				VSelect().
-					Items(langs).
-					ItemTitle("Label").
-					ItemValue("Value").
-					Attr(web.InitContextVars, fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).
-					Attr("v-model", `vars.currLangVal`).
-					Attr("@change", `window.location.href=vars.currLangVal`).
-					Variant(VariantOutlined).
-					Density(DensityCompact).
-					Class("mt-12").
-					HideDetails(true),
+				web.Scope(
+					VSelect().
+						Items(langs).
+						ItemTitle("Label").
+						ItemValue("Value").
+						Attr("v-model", `selectLocals.currLangVal`).
+						Attr("@change", `window.location.href=selectLocals.currLangVal`).
+						Variant(VariantOutlined).
+						Density(DensityCompact).
+						Class("mt-12").
+						HideDetails(true),
+				).VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)),
 			),
 		).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle)
 
@@ -368,7 +369,7 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
-	return VDialog(
+	return web.Scope(VDialog(
 		VCard(
 			content,
 			VCardActions(
@@ -376,7 +377,7 @@ func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar s
 				VBtn(pmsgr.Cancel).
 					Variant(VariantFlat).
 					Class("ml-2").
-					On("click", fmt.Sprintf("vars.%s = false", showVar)),
+					On("click", fmt.Sprintf("dialogLocals.%s = false", showVar)),
 
 				VBtn(pmsgr.OK).
 					Color("primary").
@@ -386,8 +387,8 @@ func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar s
 			),
 		),
 	).MaxWidth("600px").
-		Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
-		Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar))
+		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)),
+	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: false}`, showVar))
 }
 
 func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builder) func(ctx *web.EventContext) HTMLComponent {
@@ -399,25 +400,25 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builde
 				Div(
 					DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
 						Label(msgr.ChangePasswordOldLabel).
-						FieldName("old_password"),
+						Attr(web.VField("old_password", "")...),
 				),
 				Div(
 					DefaultViewCommon.PasswordInputWithStrengthMeter(
 						DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
 							Label(msgr.ChangePasswordNewLabel).
-							FieldName("password"),
+							Attr(web.VField("password", "")...),
 						"password", ""),
 				).Class("mt-12"),
 				Div(
 					DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
 						Label(msgr.ChangePasswordNewConfirmLabel).
-						FieldName("confirm_password"),
+						Attr(web.VField("confirm_password", "")...),
 				).Class("mt-12"),
 				If(vh.TOTPEnabled(),
 					Div(
 						DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
 							Label(msgr.TOTPValidateCodeLabel).
-							FieldName("otp"),
+							Attr(web.VField("otp", "")...),
 					).Class("mt-12"),
 				),
 			),

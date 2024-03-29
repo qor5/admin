@@ -84,7 +84,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	lb.Action("Export").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return vuetify.VBtn("Export").
 			Color("primary").
-			Variant(VariantFlat).
+			Variant(vuetify.VariantFlat).
 			Class("ml-2").
 			Href(exportOrdersURL)
 	})
@@ -98,9 +98,10 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 		return h.Div(
 			vuetify.VCardText(
 				vuetify.VAutocomplete().Label("Status").
-					FieldName("status").
+					Attr(web.VField("status", "")...).
 					Items(models.OrderStatuses).
-					Attach(false).ErrorMessages(vErr.GetFieldErrors("status")...),
+					// TODO fix it Attach(false).
+					ErrorMessages(vErr.GetFieldErrors("status")...),
 			),
 		)
 	}).UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
@@ -181,5 +182,5 @@ func GetColoredStatus(status models.OrderStatus) h.HTMLComponent {
 		return h.Text(string(status))
 	}
 
-	return vuetify.VChip(h.Text(string(status))).Color(color).Theme(ThemeDark)
+	return vuetify.VChip(h.Text(string(status))).Color(color).Theme(vuetify.ThemeDark)
 }

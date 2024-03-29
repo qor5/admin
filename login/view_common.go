@@ -95,7 +95,7 @@ func (vc *ViewCommon) Input(
 		Attr("name", id).
 		Id(id).
 		Placeholder(placeholder).
-		Value(val).
+		ModelValue(val).
 		Variant(VariantOutlined).
 		HideDetails(true).
 		Density(DensityCompact)
@@ -113,7 +113,7 @@ func (vc *ViewCommon) PasswordInput(
 		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "visibility_off" : "visibility"`, varName)).
 			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
 			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, varName))
+			Attr(web.ObjectAssign("var", fmt.Sprintf(`{%s: false}`, varName))...)
 	}
 
 	return in
@@ -145,16 +145,16 @@ func (vc *ViewCommon) PasswordInput(
 func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *VTextFieldBuilder, id string, val string) HTMLComponent {
 	passVar := fmt.Sprintf(`password_%s`, id)
 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-	return Div(
+	in.Attr("v-model", fmt.Sprintf(`progressLocals.%s`, passVar)).
+		On("input", fmt.Sprintf(`progressLocals.%s = progressLocals.%s ? zxcvbn(progressLocals.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
+	return web.Scope(
 		in,
 		VProgressLinear().
 			Class("mt-2").
-			Attr(":value", fmt.Sprintf(`vars.%s * 20`, meterScoreVar)).
-			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][vars.%s]`, meterScoreVar)).
-			Attr("v-show", fmt.Sprintf(`!!vars.%s`, passVar)),
-	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
+			Attr(":value", fmt.Sprintf(`progressLocals.%s * 20`, meterScoreVar)).
+			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][progressLocals.%s]`, meterScoreVar)).
+			Attr("v-show", fmt.Sprintf(`!!progressLocals.%s`, passVar)),
+	).VSlot(" { locals : progressLocals } ").Init(fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
 }
 
 func (vc *ViewCommon) FormSubmitBtn(

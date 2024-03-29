@@ -51,7 +51,7 @@ func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 
 			return v.VXSelectMany().Label(field.Label).AddItemLabel("add").
 				ItemText("name").
-				FieldName(field.Name).
+				// TODO (fix it ) FieldName(field.Name).
 				SelectedItems(selectedItems).
 				SearchItemsFunc("products_selector")
 		})

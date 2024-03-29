@@ -70,19 +70,19 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 							web.Scope(
 								VBtnToggle(
 									VBtn("").Icon(true).Children(
-										VIcon("laptop_mac").Size(SizeSmall),
+										VIcon("mdi-laptop").Size(SizeSmall),
 									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
 									VBtn("").Icon(true).Children(
-										VIcon("tablet_mac").Size(SizeSmall),
+										VIcon("mdi-tablet").Size(SizeSmall),
 									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
 									VBtn("").Icon(true).Children(
-										VIcon("phone_iphone").Size(SizeSmall),
+										VIcon("mdi-phone").Size(SizeSmall),
 									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
 								).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
 							).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
 						).Cols(9).Class("pa-2"),
 						VCol(
-							VBtn("").Icon("mdi-eye").Class("pa-6").Href(b.prefix+previewHref).To("_blank"),
+							VBtn("").Icon("mdi-eye").Href(b.prefix+previewHref).To("_blank"),
 						).Cols(3).Class("pa-2 d-flex justify-center"),
 					),
 				),

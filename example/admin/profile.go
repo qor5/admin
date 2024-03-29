@@ -47,7 +47,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
 			VList(
 				VListItem(
-					VListItemAvatar(
+					web.Slot(
 						VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
 							h.If(u.OAuthAvatar == "",
 								h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
@@ -55,20 +55,16 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 								h.Img(u.OAuthAvatar).Alt(u.Name),
 							),
 						),
-					),
-					VListItemContent(
-						VListItemTitle(h.Text(u.Name)),
-						h.Br(),
-						VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
-					),
+					).Name("prepend"),
+					VListItemTitle(h.Text(u.Name)),
+					h.Br(),
+					VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
 				).Class("pa-0 mb-2"),
 				VListItem(
-					VListItemContent(
-						VListItemTitle(h.Text(account)),
-					),
-					VListItemIcon(
+					VListItemTitle(h.Text(account)),
+					web.Slot(
 						VIcon("logout").Size(SizeSmall).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
-					),
+					).Name("append"),
 				).Class("pa-0 my-n4 ml-1").Density(DensityCompact),
 			).Class("pa-0 ma-n4"),
 		),
@@ -127,7 +123,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		return h.Div(
 			VRow(
 				VCol(
-					VTextField().Label(msgr.Name).Value(u.Name).FieldName("name"),
+					VTextField().Label(msgr.Name).Attr(web.VField("name", u.Name)...),
 				),
 			).Class("my-n6"),
 			VRow(
@@ -276,8 +272,8 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 				),
 				VDataTable().Headers(sessionTableHeaders).
 					Items(items).
-					ItemsPerPage(-1).
-					HideDefaultFooter(true),
+					ItemsPerPage(-1),
+				//TODO fix it .HideDefaultFooter(true),
 			),
 		).Class("mx-2 mt-12 mb-4")
 	})

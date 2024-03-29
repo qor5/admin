@@ -326,15 +326,15 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 			If(inst.Status == JobStatusScheduled,
 				scheduledJobDetailing...,
 			).Else(
-				Div(
+				web.Scope(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
 							URL(eURL).
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 							Query("job", qorJob.Job),
 						).
-						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
-				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
+						AutoReloadInterval("loaderLocals.worker_updateJobProgressingInterval"),
+				).VSlot(" { locals : loaderLocals }").Init("{worker_updateJobProgressingInterval: 2000}"),
 			),
 			web.Portal().Name("worker_snackbar"),
 		)
@@ -490,7 +490,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		}
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
-			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+			Body: VSnackbar().ModelValue(true).Timeout(3000).Color("warning").Children(
 				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
@@ -617,7 +617,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		}
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
-			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+			Body: VSnackbar().ModelValue(true).Timeout(3000).Color("warning").Children(
 				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
@@ -782,7 +782,7 @@ func (b *Builder) jobProgressing(
 			Div().Style("width: 120px").Children(
 				Text(fmt.Sprintf("%s (%d%%)", getTStatus(msgr, status), progress)),
 			),
-			VProgressLinear().Value(int(progress)),
+			VProgressLinear().ModelValue(int(progress)),
 		),
 
 		Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
@@ -853,19 +853,20 @@ func (b *Builder) jobSelectList(
 		label := getTJob(ctx.R, jb.name)
 		if editIsAllowed(ctx.R, jb.name) == nil {
 			items = append(items,
-				VListItem(VListItemContent(VListItemTitle(
-					A(Text(label)).Attr("@click",
-						web.Plaid().EventFunc("worker_selectJob").
-							Query("jobName", jb.name).
-							Go(),
-					),
-				))),
+				VListItem(
+					VListItemTitle(
+						A(Text(label)).Attr("@click",
+							web.Plaid().EventFunc("worker_selectJob").
+								Query("jobName", jb.name).
+								Go(),
+						),
+					)),
 			)
 		}
 	}
 
 	return Div(
-		Input("").Type("hidden").Value(job).Attr(web.VFieldName("Job")...),
+		Input("").Type("hidden").Attr(web.VField("Job", job)...),
 		If(job == "",
 			alert,
 			VList(items...).Nav(true).Density(DensityCompact),

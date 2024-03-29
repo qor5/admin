@@ -61,9 +61,9 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 				ul.AppendChildren(
 					v.VBtn("").
 						Block(true).
-						Size(SizeLarge).
+						Size(v.SizeLarge).
 						Class("mt-4").
-						Variant(VariantOutlined).
+						Variant(v.VariantOutlined).
 						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
 						Children(
 							Div(
@@ -128,17 +128,18 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
-				v.VSelect().
-					Items(langs).
-					ItemText("Label").
-					ItemValue("Value").
-					Attr(web.InitContextVars, fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).
-					Attr("v-model", `vars.currLangVal`).
-					Attr("@change", `window.location.href=vars.currLangVal`).
-					Variant(VariantOutlined).
-					Density(DensityCompact).
-					Class("mt-12").
-					HideDetails(true),
+				web.Scope(
+					v.VSelect().
+						Items(langs).
+						ItemTitle("Label").
+						ItemValue("Value").
+						Attr("v-model", `selectLocals.currLangVal`).
+						Attr("@change", `window.location.href=selectLocals.currLangVal`).
+						Variant(v.VariantOutlined).
+						Density(v.DensityCompact).
+						Class("mt-12").
+						HideDetails(true),
+				).VSlot("{locals:selectLocals}").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)),
 			),
 		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 

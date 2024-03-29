@@ -83,29 +83,29 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("TextField1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return VTextField().Label(field.Label).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 
 	ed.Field("TextArea1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VTextarea().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return VTextarea().Label(field.Label).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 
 	ed.Field("Switch1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VSwitch().FieldName(field.Name).Label(field.Label).InputValue(field.Value(obj)).Value(field.Value(obj))
+			return VSwitch().Label(field.Label).Value(field.Value(obj)).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 
 	ed.Field("Slider1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VSlider().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return VSlider().Label(field.Label).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 
 	ed.Field("Select1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VSelect().FieldName(field.Name).
-				Label(field.Label).Value(field.Value(obj)).
-				Items([]string{"Tokyo", "Canberra", "Hangzhou"})
+			return VSelect().
+				Label(field.Label).
+				Items([]string{"Tokyo", "Canberra", "Hangzhou"}).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 
 	// ed.Field("RangeSlider1").
@@ -120,11 +120,11 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 				VRadio().Value("1").Label("Tokyo"),
 				VRadio().Value("2").Label("Canberra"),
 				VRadio().Value("3").Label("Hangzhou"),
-			).Label(field.Label).Value(field.Value(obj)).FieldName(field.Name)
+			).Label(field.Label).Attr(web.VField(field.Name, field.Value(obj))...)
 		})
 	ed.Field("FileInput1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VFileInput().Label(field.Label).Value(field.Value(obj)).FieldName(field.Name)
+			return VFileInput().Label(field.Label).Attr(web.VField(field.Name, field.Value(obj))...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			fs := ctx.R.MultipartForm.File[field.Name]
@@ -146,25 +146,25 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("Combobox1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VCombobox().Label(field.Label).Value(field.Value(obj)).
-				Attr(web.VFieldName(field.Name)...).
+			return VCombobox().Label(field.Label).
+				Attr(web.VField(field.Name, field.Value(obj))...).
 				Items([]string{"Tokyo", "Canberra", "Hangzhou"})
 		})
 
 	ed.Field("Checkbox1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return VCheckbox().Label(field.Label).
-				InputValue(field.Value(obj)).
-				FieldName(field.Name)
+				ModelValue(field.Value(obj)).
+				Attr(web.VField(field.Name, field.Value(obj))...)
+
 		})
 
 	ed.Field("Autocomplete1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return VAutocomplete().Label(field.Label).
-				Value(field.Value(obj)).
-				Items([]string{"Tokyo", "Canberra", "Hangzhou"}).
-				// Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
-				FieldName(field.Name)
+				Attr(web.VField(field.Name, field.Value(obj))...).
+				Items([]string{"Tokyo", "Canberra", "Hangzhou"})
+			// Attr("@change", web.Plaid().FieldValue(field.Name, web.Var("$event")).String()).
 		})
 
 	ed.Field("ButtonGroup1").
@@ -172,14 +172,13 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 			return VInput(
 
 				VBtnToggle(
-					VBtn("Left").Value("left").ActiveClass("deep-purple white--text"),
-					VBtn("Center").Value("center").ActiveClass("deep-purple white--text"),
-					VBtn("Right").Value("right").ActiveClass("deep-purple white--text"),
-					VBtn("Justify").Value("justify").ActiveClass("deep-purple white--text"),
+					VBtn("Left").Value("left").Attr(true).Class("deep-purple white--text"),
+					VBtn("Center").Value("center").Attr(true).Class("deep-purple white--text"),
+					VBtn("Right").Value("right").Attr(true).Class("deep-purple white--text"),
+					VBtn("Justify").Value("justify").Attr(true).Class("deep-purple white--text"),
 				).
-					Value(field.Value(obj)).
 					Class("pl-4").
-					Attr(web.VFieldName(field.Name)...),
+					Attr(web.VField(field.Name, field.Value(obj))...),
 			).Label(field.Label)
 		})
 
@@ -193,9 +192,8 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 					VChip(h.Text("Right")).Filter(true).Value("right").ActiveClass("deep-purple white--text"),
 					VChip(h.Text("Justify")).Filter(true).Value("justify").ActiveClass("deep-purple white--text"),
 				).
-					Value(field.Value(obj)).
 					Class("pl-4").
-					Attr(web.VFieldName(field.Name)...),
+					Attr(web.VField(field.Name, field.Value(obj))...),
 			).Label(field.Label)
 		})
 
@@ -206,7 +204,7 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("DatePickerMonth1").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return vx.Picker(VDatePicker().Type("month")).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+			return vx.Picker(VDatePicker().Month(true)).FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
 		})
 
 	ed.Field("TimePicker1").

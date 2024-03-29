@@ -33,9 +33,8 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 			this := obj.(microsite.MicroSiteInterface)
 
 			if this.GetPackage().FileName == "" {
-				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
-					On("change", web.Plaid().
-						FieldValue("PackageChanged", "true").String())
+				return vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
+					On("change", fmt.Sprintf("form..%s = $event.target.files[0]", field.Name))
 			}
 			return web.Scope(
 				h.Div(
@@ -47,9 +46,8 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, st
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
 
-				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).FieldName(field.Name).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
-					Attr("v-model", "locals.file").On("change", web.Plaid().
-					FieldValue("PackageChanged", "true").String()),
+				vuetify.VFileInput().Chips(true).ErrorMessages(field.Errors...).Label(field.Label).Attr("accept", ".rar,.zip,.7z,.tar").Clearable(false).
+					Attr("v-model", "locals.file").On("change", fmt.Sprintf("form.%s = $event.target.files[0]", field.Name)),
 			).Init(fmt.Sprintf(`{ file: new File([""], "%v", {
                   lastModified: 0,
                 }) , change: false}`, this.GetPackage().FileName)).
