@@ -630,8 +630,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				VList(
 					VListItem(
 						web.Slot(
-							VIcon("xxx"),
-							//VIcon("mdi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
+							VIcon("mdi-widgetsi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
 						).Name("prepend"),
 						VListItemTitle(
 							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
@@ -668,13 +667,12 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		)
 	}
 
-	return VMenu().Children(
+	oldIcon := VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VList(
 					VListItem(
 						VListItemTitle(
-
 							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
 						).Class("text-subtitle-2 font-weight-regular"),
 						web.Slot(
@@ -684,7 +682,19 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				).Class("pa-0 ma-n4 mt-n6"),
 			).Attr("v-bind", "props"),
 		),
-
+		VList(
+			languages...,
+		).Density(DensityCompact),
+	)
+	_ = oldIcon
+	return VMenu().Children(
+		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
+			VRow(
+				VCol(
+					VIcon("mdi-translate")).Cols(1),
+				VCol(VIcon("mdi-menu-down")).Cols(1),
+			).Attr("v-bind", "props"),
+		),
 		VList(
 			languages...,
 		).Density(DensityCompact),
@@ -887,7 +897,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		menu := b.CreateMenus(ctx)
 		toolbar := VContainer(
 			VRow(
-				VCol(b.RunBrandFunc(ctx)).Cols("4"),
+				VCol(b.RunBrandFunc(ctx)).Cols("8"),
 				VCol(
 					b.RunSwitchLanguageFunc(ctx),
 					//VBtn("").Children(
@@ -895,15 +905,14 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					//	VIcon("mdi-menu-down"),
 					//).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols("4"),
+				).Cols("2"),
 				//VDivider().Vertical(true).Class("my-6"),
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
 						Class("text-grey-darken-1").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
-				).Attr("cols", "2"),
-			).Attr("align", "center").
-				Attr("justify", "center"),
+				).Cols("2"),
+			).Attr("align", "center").Attr("justify", "center"),
 		)
 
 		var innerPr web.PageResponse
@@ -950,7 +959,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
 				Class("rounded-lg my-2 ma-1").
-				Temporary(true).
+				Permanent(true).
 				Floating(true).
 				Elevation(2),
 
