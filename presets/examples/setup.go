@@ -131,10 +131,11 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 	p.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return h.Components(
-			VIcon("directions_boat").Class("pr-2"),
+			VIcon("mdi-directions-boat").Class("pr-2"),
 			VToolbarTitle("My Admin"),
 		)
-	}).BrandTitle("My Admin")
+	})
+	//.BrandTitle("My Admin")
 
 	writeFieldDefaults := p.FieldDefaults(presets.WRITE)
 	writeFieldDefaults.FieldType(&Thumb{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
