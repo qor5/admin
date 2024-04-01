@@ -423,7 +423,7 @@ func defaultMenuIcon(mLabel string) string {
 		}
 	}
 
-	return "mdi-widgets"
+	return "mdi-information-outline"
 }
 
 const menuFontWeight = "500"
@@ -440,7 +440,6 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 			menuIcon = defaultMenuIcon(m.label)
 		}
 	}
-
 	href := m.Info().ListingHref()
 	if m.link != "" {
 		href = m.link
@@ -449,10 +448,14 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
 	}
 	item := VListItem(
-		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
-		VListItemTitle(
-			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
-		).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
+		VRow(
+			VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
+			VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+
+		//h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
+		//VListItemTitle(
+		//	h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+		//).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
 	).Attr("color", "primary")
 
 	item.Href(href)
@@ -576,8 +579,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if m.notInMenu {
 				continue
 			}
-
-			menus = append(menus, b.menuItem(ctx, m, false))
+			menuItem := b.menuItem(ctx, m, false)
+			menus = append(menus, menuItem)
 			inOrderMap[m.uriName] = struct{}{}
 		}
 	}
@@ -630,7 +633,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 				VList(
 					VListItem(
 						web.Slot(
-							VIcon("mdi-widgetsi-translate").Size(SizeSmall).Class("mr-4 ml-1"),
+							VIcon("mdi-widget-translate").Size(SizeSmall).Class("mr-4 ml-1"),
 						).Name("prepend"),
 						VListItemTitle(
 							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
@@ -897,7 +900,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		menu := b.CreateMenus(ctx)
 		toolbar := VContainer(
 			VRow(
-				VCol(b.RunBrandFunc(ctx)).Cols("8"),
+				VCol(b.RunBrandFunc(ctx)).Cols(8),
 				VCol(
 					b.RunSwitchLanguageFunc(ctx),
 					//VBtn("").Children(
@@ -905,13 +908,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					//	VIcon("mdi-menu-down"),
 					//).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols("2"),
-				//VDivider().Vertical(true).Class("my-6"),
+				).Cols(2),
+
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
 						Class("text-grey-darken-1").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
-				).Cols("2"),
+				).Cols(2),
 			).Attr("align", "center").Attr("justify", "center"),
 		)
 
@@ -950,6 +953,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				toolbar,
 				//VDivider(),
 				menu,
+
 				profile,
 			).
 				Width(320).
