@@ -148,7 +148,7 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 		}
 
 		var chips []h.HTMLComponent
-		chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("green").Color("white").Label(true).Size(SizeSmall))
+		chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("green").Variant(VariantFlat).Label(true).Size(SizeSmall))
 
 		for _, locale := range otherLocales {
 			chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))).Label(true).Size(SizeSmall))

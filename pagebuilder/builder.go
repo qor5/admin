@@ -852,9 +852,9 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		cat := obj.(*Category)
 
-		icon := "folder"
+		icon := "mdi-folder"
 		if cat.IndentLevel != 0 {
-			icon = "insert_drive_file"
+			icon = "mdi-file"
 		}
 
 		return h.Td(

@@ -76,16 +76,13 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 
 					VCardText(
 						h.Div(
-							h.Div(
-								h.Div(
-									h.Label(MustGetTranslation(ctx.R, "LocalizeFrom")).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
-									// h.Br(),
-									h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale))),
-								).Class("v-text-field__slot"),
-							).Class("v-input__slot"),
-						).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted"),
+							h.Label(MustGetTranslation(ctx.R, "LocalizeFrom")).Class("v-label v-field-label v-field-label--floating"),
+							// h.Br(),
+							h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale))),
+						).Class("v-field v-field--active v-field--appended v-field--dirty v-field--variant-underlined v-theme--light v-locale--is-ltr "),
 						VSelect().
-							Attr(web.VField("localize_to", selectLocales)...).
+							Attr(web.VField("localize_to", nil)...).
+							Variant(FieldVariantUnderlined).
 							Label(MustGetTranslation(ctx.R, "LocalizeTo")).
 							Multiple(true).Chips(true).
 							Items(selectLocales).
@@ -114,7 +111,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 				),
 			).MaxWidth("600px").
 				Attr("v-model", "vars.localizeConfirmation").
-				Attr(web.ObjectAssign("vars", `{localizeConfirmation: false}`)),
+				Attr(web.ObjectAssign("vars", `{localizeConfirmation: false}`)...),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.localizeConfirmation = true }, 100)"

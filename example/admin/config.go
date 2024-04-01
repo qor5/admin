@@ -194,13 +194,13 @@ func NewConfig() Config {
 			"demo_containers",
 			"page_templates",
 			"page_categories",
-		).Icon("view_quilt"),
+		).Icon("mdi-view-quilt"),
 		b.MenuGroup("EC Management").SubItems(
 			"ec-dashboard",
 			"Order",
 			"Product",
 			"Category",
-		).Icon("shopping_cart"),
+		).Icon("mdi-cart"),
 		// b.MenuGroup("Site Management").SubItems(
 		// 	"Setting",
 		// 	"QorSEOSetting",
@@ -208,7 +208,7 @@ func NewConfig() Config {
 		b.MenuGroup("User Management").SubItems(
 			"User",
 			"Role",
-		).Icon("group"),
+		).Icon("mdi-account-multiple"),
 		b.MenuGroup("Featured Models Management").SubItems(
 			"InputDemo",
 			"Post",

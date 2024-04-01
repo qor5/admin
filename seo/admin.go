@@ -68,7 +68,6 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSeoKey, Messages_zh_CN)
 
-	pb.ExtraAsset("/vue-seo.js", "text/javascript", SeoJSComponentsPack())
 	permVerifier = perm.NewVerifier("seo", pb.GetPermission())
 	return
 }
