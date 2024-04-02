@@ -423,7 +423,7 @@ func defaultMenuIcon(mLabel string) string {
 		}
 	}
 
-	return "mdi-information-outline"
+	return "mdi-alert-octagon-outline"
 }
 
 const menuFontWeight = "500"
@@ -939,10 +939,37 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
 		}
 
-		showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
+		//showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
-
+		searchBox := VLayout(
+			// h.Form(
+			web.Scope(
+				VTextField().
+					Variant(FieldVariantOutlined).
+					PrependIcon("mdi-magnify").
+					Label(msgr.Search).
+					Flat(true).
+					Clearable(true).
+					HideDetails(true).
+					SingleLine(true).
+					ModelValue(ctx.R.URL.Query().Get("keyword")).
+					Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
+					Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
+					Attr("@update:focused", "locals.isFocus=!locals.isFocus").
+					Attr("@keyup.enter", web.Plaid().
+						ClearMergeQuery("page").
+						Query("keyword", web.Var("[$event.target.value]")).
+						MergeQuery(true).
+						PushState(true).
+						Go()).
+					Attr("@click:clear", web.Plaid().
+						Query("keyword", "").
+						PushState(true).
+						Go()).Class("mr-4"), // ).Method("GET"),
+			).VSlot("{ locals }").Init(`{isFocus: false}`),
+		).Attr("style", "max-width: 650px") // AlignCenter(true)
+		_ = searchBox
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
@@ -953,7 +980,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				toolbar,
 				//VDivider(),
 				menu,
-
 				profile,
 			).
 				Width(320).
@@ -962,7 +988,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// Fixed(true).
 				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
-				Class("rounded-lg my-2 ma-1").
+				Class("rounded-lg ma-1").
 				Permanent(true).
 				Floating(true).
 				Elevation(2),
@@ -977,39 +1003,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 				h.Span(innerPr.PageTitle).Class("text-h6 font-weight-regular"),
 				VSpacer(),
-				h.If(showSearchBox,
-					VLayout(
-						// h.Form(
-						web.Scope(
-							VTextField().
-								Variant(FieldVariantOutlined).
-								PrependIcon("mdi-magnify").
-								Label(msgr.Search).
-								Flat(true).
-								Clearable(true).
-								HideDetails(true).
-								SingleLine(true).
-								ModelValue(ctx.R.URL.Query().Get("keyword")).
-								Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
-								Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
-								Attr("@update:focused", "locals.isFocus=!locals.isFocus").
-								Attr("@keyup.enter", web.Plaid().
-									ClearMergeQuery("page").
-									Query("keyword", web.Var("[$event.target.value]")).
-									MergeQuery(true).
-									PushState(true).
-									Go()).
-								Attr("@click:clear", web.Plaid().
-									Query("keyword", "").
-									PushState(true).
-									Go()).Class("mr-4"),
-							// ).Method("GET"),
-						).VSlot("{ locals }").Init(`{isFocus: false}`),
-					).
-						// AlignCenter(true)
-
-						Attr("style", "max-width: 650px"),
-				),
+				//h.If(showSearchBox,
+				//	searchBox,
+				//),
 				h.If(showNotificationCenter,
 					notifier,
 				),
@@ -1034,7 +1030,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			VMain(
 				innerPr.Body.(h.HTMLComponent),
 			),
-		).Attr("id", "vt-app").
+		).Attr("id", "vt-app").Class("my-2").
 			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
 
 		return
