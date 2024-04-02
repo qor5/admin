@@ -1009,7 +1009,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				h.If(showNotificationCenter,
 					notifier,
 				),
-			).Theme(ThemeLight).
+			).Theme(ThemeQor5).
 				Color(ColorPrimary),
 			// App(true).
 			// Fixed(true),
