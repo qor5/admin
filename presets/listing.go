@@ -230,7 +230,37 @@ func (b *ListingBuilder) listingComponent(
 		fd.SetByQueryString(ctx.R.URL.RawQuery)
 		filterBar = b.filterBar(ctx, msgr, fd, inDialog)
 	}
-
+	searchBoxDefault := VResponsive(
+		web.Scope(
+			VTextField(
+				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+			).Density("compact").
+				Variant(FieldVariantOutlined).
+				//PrependIcon("mdi-magnify").
+				Label(msgr.Search).
+				Flat(true).
+				Clearable(true).
+				HideDetails(true).
+				SingleLine(true).
+				ModelValue(ctx.R.URL.Query().Get("keyword")).
+				Color("grey-lighten-2").
+				//Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
+				//Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
+				//Attr("@update:focused", "locals.isFocus=!locals.isFocus").
+				Attr("@keyup.enter", web.Plaid().
+					ClearMergeQuery("page").
+					Query("keyword", web.Var("[$event.target.value]")).
+					MergeQuery(true).
+					PushState(true).
+					Go()).
+				Attr("@click:clear", web.Plaid().
+					Query("keyword", "").
+					PushState(true).
+					Go()).
+				Class("mr-4"),
+			//Attr("style", "width: 200px"), // ).Method("GET"),
+		).VSlot("{ locals }").Init(`{isFocus: false}`),
+	).MaxWidth(200)
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
 	var dialogHeaderBar h.HTMLComponent
@@ -273,8 +303,11 @@ func (b *ListingBuilder) listingComponent(
 		tabsAndActionsBar,
 		h.Div(
 			VCard(
-				filterBar,
-				VDivider(),
+				VToolbar(
+					searchBoxDefault,
+					filterBar,
+				).Flat(true).Color("white").AutoHeight(true).Class("pa-2"),
+				//VDivider(),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
 				).Class("pa-0"),
@@ -937,9 +970,7 @@ func (b *ListingBuilder) filterBar(
 			EventFunc(actions.UpdateListingDialog).
 			Go())
 	}
-	return VToolbar(
-		filter,
-	).Flat(true).Color("white").AutoHeight(true).Class("py-2")
+	return filter
 }
 
 func getLocalPerPage(

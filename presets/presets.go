@@ -941,38 +941,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		//showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+		//_ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
-		searchBox := VLayout(
-			// h.Form(
-			web.Scope(
-				VTextField(
-					web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-				).Density("compact").
-					Variant(FieldVariantOutlined).
-					//PrependIcon("mdi-magnify").
-					Label(msgr.Search).
-					Flat(true).
-					Clearable(true).
-					HideDetails(true).
-					SingleLine(true).
-					ModelValue(ctx.R.URL.Query().Get("keyword")).
-					//Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
-					//Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
-					//Attr("@update:focused", "locals.isFocus=!locals.isFocus").
-					Attr("@keyup.enter", web.Plaid().
-						ClearMergeQuery("page").
-						Query("keyword", web.Var("[$event.target.value]")).
-						MergeQuery(true).
-						PushState(true).
-						Go()).
-					Attr("@click:clear", web.Plaid().
-						Query("keyword", "").
-						PushState(true).
-						Go()).Class("mr-4"), // ).Method("GET"),
-			).VSlot("{ locals }").Init(`{isFocus: false}`),
-		).Attr("style", "max-width: 650px") // AlignCenter(true)
-		_ = searchBox
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
@@ -991,7 +961,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// Fixed(true).
 				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
-				Class("").
+				//Class("pa-2").
 				//Attr("style", "border-right: 1px solid grey ").
 				Permanent(true).
 				Floating(true).
@@ -1004,9 +974,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Indeterminate(true).
 					Height(2).
 					Color(b.progressBarColor),
-				VAppBarNavIcon().Attr("v-if", "!vars.navDrawer").On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+				VAppBarNavIcon().Density("compact").Attr("v-if", "!vars.navDrawer").On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 				VAppBarTitle(h.Text(innerPr.PageTitle)), //Class("text-h6 font-weight-regular"),
-
 				VSpacer(),
 				GetActionsComponent(ctx.R.Context()),
 
@@ -1038,10 +1007,10 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
-				VRow(
-					VCol(searchBox).Cols(3),
-					//Class("mx-2"),
-				).Class("d-flex align-center mx-2"),
+				//VRow(
+				//	VCol(searchBox).Cols(3),
+				//	//Class("mx-2"),
+				//).Class("d-flex align-center mx-2"),
 				innerPr.Body.(h.HTMLComponent),
 			),
 		).Attr("id", "vt-app").Class("my-2").
