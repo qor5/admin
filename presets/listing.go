@@ -209,40 +209,19 @@ func (b *ListingBuilder) listingComponent(
 	{
 		filterTabs := b.filterTabs(ctx, inDialog)
 
-		var actionsComponent h.HTMLComponents
-		if v := b.actionsComponent(msgr, ctx, inDialog); v != nil {
-			actionsComponent = append(actionsComponent, v)
-		}
-		if b.newBtnFunc != nil {
-			if btn := b.newBtnFunc(ctx); btn != nil {
-				actionsComponent = append(actionsComponent, b.newBtnFunc(ctx))
-			}
-		} else {
-			disableNewBtn := b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil
-			if !disableNewBtn {
-				onclick := web.Plaid().EventFunc(actions.New)
-				if inDialog {
-					onclick.URL(ctx.R.RequestURI).
-						Query(ParamOverlay, actions.Dialog).
-						Query(ParamInDialog, true).
-						Query(ParamListingQueries, ctx.Queries().Encode())
-				}
-				actionsComponent = append(actionsComponent, VBtn(msgr.New).
-					Color("primary").
-					Variant(VariantFlat).
-					Theme("dark").Class("ml-2").
-					Disabled(disableNewBtn).
-					Attr("@click", onclick.Go()))
-			}
-		}
-
-		if filterTabs != nil || len(actionsComponent) > 0 {
+		actionsComponent := b.actionsComponent(msgr, ctx, inDialog)
+		//if v := ; v != nil {
+		//	actionsComponent = append(actionsComponent, v)
+		//}
+		//|| len(actionsComponent) > 0
+		if filterTabs != nil {
 			tabsAndActionsBar = VToolbar(
 				filterTabs,
-				VSpacer(),
-				actionsComponent,
+				//VSpacer(),
+				//actionsComponent,
 			).Flat(true).Color("white")
 		}
+		ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxActionsComponent, actionsComponent))
 	}
 
 	var filterBar h.HTMLComponent
@@ -1462,6 +1441,28 @@ func (b *ListingBuilder) actionsComponent(
 		).OpenOnHover(true))
 	}
 
+	if b.newBtnFunc != nil {
+		if btn := b.newBtnFunc(ctx); btn != nil {
+			actionBtns = append(actionBtns, b.newBtnFunc(ctx))
+		}
+	} else {
+		disableNewBtn := b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil
+		if !disableNewBtn {
+			onclick := web.Plaid().EventFunc(actions.New)
+			if inDialog {
+				onclick.URL(ctx.R.RequestURI).
+					Query(ParamOverlay, actions.Dialog).
+					Query(ParamInDialog, true).
+					Query(ParamListingQueries, ctx.Queries().Encode())
+			}
+			actionBtns = append(actionBtns, VBtn(msgr.New).
+				Color("primary").
+				Variant(VariantFlat).
+				Theme("dark").Class("ml-2").
+				Disabled(disableNewBtn).
+				Attr("@click", onclick.Go()))
+		}
+	}
 	return h.Components(actionBtns...)
 }
 
