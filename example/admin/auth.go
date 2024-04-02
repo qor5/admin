@@ -65,7 +65,8 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBui
 			return "/"
 		}).
 		MaxRetryCount(5).
-		Recaptcha(true, login.RecaptchaConfig{
+		// TODO online  to set  true
+		Recaptcha(false, login.RecaptchaConfig{
 			SiteKey:   os.Getenv("RECAPTCHA_SITE_KEY"),
 			SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
 		}).

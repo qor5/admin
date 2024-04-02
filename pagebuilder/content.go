@@ -76,7 +76,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 										VIcon("mdi-tablet").Size(SizeSmall),
 									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
 									VBtn("").Icon(true).Children(
-										VIcon("mdi-phone").Size(SizeSmall),
+										VIcon("mdi-cellphone").Size(SizeSmall),
 									).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
 								).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
 							).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),

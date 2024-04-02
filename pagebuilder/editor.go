@@ -116,7 +116,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 			VAppBar(
 				VSpacer(),
 				// icon was phone_iphone
-				VBtn("").Icon("mdi-phone").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
+				VBtn("").Icon("mdi-cellphone").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
 					Class("mr-10").Active(device == "phone"),
 
 				// icon was tablet_mac

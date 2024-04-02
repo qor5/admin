@@ -698,7 +698,7 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		versionName := obj.(publish.VersionInterface).GetVersionName()
 		return h.Td(
 			h.Text(versionName),
-			VBtn("").Icon(true).Children(VIcon("edit")).Attr("@click", web.Plaid().
+			VBtn("").Icon("mdi-pencil").Variant(VariantText).Attr("@click", web.Plaid().
 				URL(pb.GetURIPrefix()+"/version-list-dialog").
 				EventFunc(renameVersionDialogEvent).
 				Queries(ctx.Queries()).
@@ -1388,7 +1388,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 					VCard(
 						VCardTitle(h.Text("Version")),
 						VCardText(
-							VTextField().Attr(web.VField("VersionName", versionName)...),
+							VTextField().Attr(web.VField("VersionName", versionName)...).Variant(FieldVariantUnderlined),
 						),
 						VCardActions(
 							VSpacer(),

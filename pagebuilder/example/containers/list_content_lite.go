@@ -69,6 +69,7 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return v.VAutocomplete().
 			Attr(web.VField(field.Name, field.Value(obj))...).
+			Variant(v.FieldVariantUnderlined).
 			Label(field.Label).
 			Items([]string{White, Grey})
 	})

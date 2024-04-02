@@ -90,17 +90,15 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
 				h.If(!b.fieldContext.Disabled,
-					VBtn("Delete").Icon(true).Class("float-right ma-2").
-						Children(
-							VIcon("delete"),
-						).Attr("@click", web.Plaid().
-						URL(b.fieldContext.ModelInfo.ListingHref()).
-						EventFunc(b.removeListItemRowEvent).
-						Queries(ctx.Queries()).
-						Query(ParamID, ctx.R.FormValue(ParamID)).
-						Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-						Query(ParamRemoveRowFormKey, formKey).
-						Go()),
+					VBtn("").Icon("mdi-delete").Class("float-right ma-2").
+						Attr("@click", web.Plaid().
+							URL(b.fieldContext.ModelInfo.ListingHref()).
+							EventFunc(b.removeListItemRowEvent).
+							Queries(ctx.Queries()).
+							Query(ParamID, ctx.R.FormValue(ParamID)).
+							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+							Query(ParamRemoveRowFormKey, formKey).
+							Go()),
 				),
 				content,
 			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
@@ -131,21 +129,21 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		haveSorterIcon = false
 	}
 	if haveSorterIcon && isSortStart {
-		sorter = VCard(VList(
-			h.Tag("vx-draggable").Attr("v-model", "locals.items", "draggable", ".item", "animation", "300").Children(
-				h.Div(
-					VListItem(
-						web.Slot(
-							VIcon("drag_handle"),
-						).Name("prepend"),
-						VListItemTitle(h.Text("{{item.label}}")),
+		sorter = VCard(
+			VList(
+				h.Tag("vx-draggable").Attr("v-model", "locals.items", "handle", ".handle", "animation", "300", "item-key", "index").Children(
+					h.Template().Attr("#item", " { element } ").Children(
+						VListItem(
+							web.Slot(
+								VIcon("mdi-drag").Class("handle mx-2 cursor-grab"),
+							).Name("prepend"),
+							VListItemTitle(h.Text("{{element.label}}")),
+							VDivider(),
+						),
 					),
-					VDivider().Attr("v-if", "index < locals.items.length - 1", ":key", "index"),
-				).Attr("v-for", "(item, index) in locals.items", ":key", "item.index", "class", "item"),
-			),
-		).Class("pa-0")).Variant(VariantOutlined).Class("mx-0 mt-1 mb-4")
+				),
+			).Class("pa-0")).Variant(VariantOutlined).Class("mx-0 mt-1 mb-4")
 	}
-
 	return h.Div(
 		web.Scope(
 			h.If(!b.fieldContext.Disabled,
@@ -154,9 +152,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 					VSpacer(),
 					h.If(haveSorterIcon,
 						h.If(!isSortStart,
-							VBtn("SortStart").Icon(true).Children(
-								VIcon("sort"),
-							).
+							VBtn("").Icon("mdi-sort-variant").
 								Class("mt-n4").
 								Attr("@click",
 									web.Plaid().
@@ -170,9 +166,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 										Go(),
 								),
 						).Else(
-							VBtn("SortDone").Icon(true).Children(
-								VIcon("done"),
-							).
+							VBtn("").Icon("mdi-check").
 								Class("mt-n4").
 								Attr("@click",
 									web.Plaid().
@@ -209,7 +203,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				),
 			).Attr("v-show", h.JSONString(!isSortStart)).
 				Class("mt-1 mb-4"),
-		).Init(h.JSONString(sorterData)).VSlot("{ locals }"),
+		).Init(h.JSONString(sorterData)).VSlot("{ locals,form }").FormInit(fmt.Sprintf("{ Items:%s }", h.JSONString(b.value))),
 	).MarshalHTML(c)
 }
 
