@@ -503,7 +503,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, m := range b.models {
 		mMap[m.uriName] = m
 	}
-
+	var activeMenuItem string
 	inOrderMap := make(map[string]struct{})
 	var menus []h.HTMLComponent
 	for _, om := range b.menuOrder {
@@ -523,14 +523,14 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 						web.Slot(
 							VIcon(groupIcon),
 						).Name("prepend"),
-						VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+						VListItemTitle().
+							//VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-					).
-						Attr("v-bind", "props"),
+					).Attr("v-bind", "props").Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+					//Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 				).Attr("v-slot:activator", "{ props }"),
 			}
 			subCount := 0
-			hasActiveMenuItem := false
 			for _, subOm := range v.subMenuItems {
 				m, ok := mMap[subOm]
 				if !ok {
@@ -550,7 +550,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
 				if b.isMenuItemActive(ctx, m) {
-					hasActiveMenuItem = true
+					//activeMenuItem = m.label
+					activeMenuItem = v.name
 				}
 			}
 			if subCount == 0 {
@@ -562,7 +563,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 
 			menus = append(menus, VListGroup(
 				subMenus...).
-				Value(hasActiveMenuItem),
+				Value(v.name),
 			)
 		case string:
 			m, ok := mMap[v]
@@ -602,7 +603,9 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	}
 
 	r = h.Div(
-		VList(menus...).Class("primary--text").Density(DensityCompact),
+		web.Scope(
+			VList(menus...).Class("primary--text").Density(DensityCompact).Attr("v-model:opened", "locals.menuOpened"),
+		).VSlot("{ locals }").Init(fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem)),
 	)
 	return
 }
