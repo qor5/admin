@@ -1,32 +1,32 @@
-TZ="Asia/Tokyo"
-DB_PARAMS="user=zhangshanwen  dbname=example_dev sslmode=disable host=localhost"
-PORT="9500"
-AWS_SDK_LOAD_CONFIG=1
-S3_Bucket=""
-S3_Region=""
-S3_Publish_Bucket=""
-S3_Publish_Region=""
+export TZ="Asia/Tokyo"
+export DB_PARAMS="user=example password=123 dbname=example_dev sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo"
+export PORT="9500"
+export AWS_SDK_LOAD_CONFIG=1
+export S3_Bucket=""
+export S3_Region=""
+export S3_Publish_Bucket=""
+export S3_Publish_Region=""
 
-BASE_URL="http://localhost:9500"
-LOGIN_SECRET="test"
-LOGIN_GOOGLE_KEY=""
-LOGIN_GOOGLE_SECRET=""
-PORT="9500"
-LOGIN_INITIAL_USER_EMAIL="qor@theplant.jp"
-LOGIN_INITIAL_USER_PASSWORD="123"
+export BASE_URL="http://localhost:9500"
+export LOGIN_SECRET="test"
+export LOGIN_GOOGLE_KEY=""
+export LOGIN_GOOGLE_SECRET=""
+export PORT="9500"
+export LOGIN_INITIAL_USER_EMAIL="qor@theplant.jp"
+export LOGIN_INITIAL_USER_PASSWORD="123"
 
-LOGIN_MICROSOFTONLINE_KEY=
-LOGIN_MICROSOFTONLINE_SECRET="ts"
-LOGIN_GITHUB_KEY=
-LOGIN_GITHUB_SECRET="ts"
+export LOGIN_MICROSOFTONLINE_KEY=
+export LOGIN_MICROSOFTONLINE_SECRET="ts"
+export LOGIN_GITHUB_KEY=
+export LOGIN_GITHUB_SECRET="ts"
 
 
 
-CGO_CFLAGS_ALLOW="-Xpreprocessor"
+export CGO_CFLAGS_ALLOW="-Xpreprocessor"
 
-Site_Domain=""
+export Site_Domain=""
 
-RECAPTCHA_SITE_KEY=""
-RECAPTCHA_SECRET_KEY=""
+export RECAPTCHA_SITE_KEY=""
+export RECAPTCHA_SECRET_KEY=""
 
-RESET_AND_IMPORT_INITIAL_DATA=false
+export RESET_AND_IMPORT_INITIAL_DATA=false
