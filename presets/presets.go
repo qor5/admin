@@ -1011,7 +1011,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				//	VCol(searchBox).Cols(3),
 				//	//Class("mx-2"),
 				//).Class("d-flex align-center mx-2"),
-				innerPr.Body.(h.HTMLComponent),
+				//innerPr.Body.(h.HTMLComponent),
+				innerPr.Body,
 			),
 		).Attr("id", "vt-app").Class("my-2").
 			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)

@@ -221,6 +221,7 @@ func (b *ListingBuilder) listingComponent(
 				//actionsComponent,
 			).Flat(true).Color("white")
 		}
+
 		ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxActionsComponent, actionsComponent))
 	}
 
@@ -1419,7 +1420,7 @@ func (b *ListingBuilder) actionsComponent(
 
 		actionBtns = append(actionBtns, btn)
 	}
-
+	b.newBtnFunc = nil
 	// Render actions
 	for _, ba := range b.actions {
 		if b.mb.Info().Verifier().SnakeDo(PermActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
@@ -1453,9 +1454,9 @@ func (b *ListingBuilder) actionsComponent(
 		actionBtns = append(actionBtns, btn)
 	}
 
-	if len(actionBtns) == 0 {
-		return nil
-	}
+	//if len(actionBtns) == 0 {
+	//	return nil
+	//}
 
 	if b.actionsAsMenu {
 		var listItems []h.HTMLComponent
