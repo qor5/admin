@@ -74,7 +74,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 			VCol(
 				VCard().Class("text-grey-darken-1").Variant("text").Title(u.Name).Subtitle(roles[0]).Children(
 					web.Slot(
-						VAvatar().Class("ml-1 rounded-lg").Color("blue").Size(48).Children(
+						VAvatar().Class("ml-1 rounded-lg").Color("secondary").Size(48).Children(
 							h.Span(getAvatarShortName(u)).Class("text-white text-h5")),
 					).Name("prepend"),
 				),
