@@ -833,10 +833,10 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 }
 
 func deleteHiddenSliceFormKey(sliceFormKey string) string {
-	return deletedHiddenNamePrefix + "." + sliceFormKey
+	return deletedHiddenNamePrefix + "_" + sliceFormKey
 }
 func sortedHiddenSliceFormKey(sliceFormKey string) string {
-	return sortedHiddenNamePrefix + "." + sliceFormKey
+	return sortedHiddenNamePrefix + "_" + sliceFormKey
 }
 
 func (b *ModifiedIndexesBuilder) FromHidden(req *http.Request) (r *ModifiedIndexesBuilder) {

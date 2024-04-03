@@ -203,8 +203,8 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				),
 			).Attr("v-show", h.JSONString(!isSortStart)).
 				Class("mt-1 mb-4"),
-		).Init(h.JSONString(sorterData)).VSlot("{ locals,form }").FormInit(fmt.Sprintf("{ Items:%s }", h.JSONString(b.value))),
-	).MarshalHTML(c)
+		).Init(h.JSONString(sorterData)).VSlot("{ locals }"),
+	).Attr(web.ObjectAssign("form", fmt.Sprintf("{Items:%s }", h.JSONString(b.value)))...).MarshalHTML(c)
 }
 
 func addListItemRow(mb *ModelBuilder) web.EventFunc {
