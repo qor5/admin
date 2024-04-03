@@ -36,39 +36,66 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		roles = append(roles, role.Name)
 	}
 
-	var account string
-	if u.Account != "" {
-		account = u.Account
-	} else {
-		account = u.OAuthIdentifier
-	}
+	//var account string
+	//if u.Account != "" {
+	//	account = u.Account
+	//} else {
+	//	account = u.OAuthIdentifier
+	//}
+	//web.Slot(VMenu().Children(
+	//	h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+	//		VList(
+	//			VListItem(
+	//				web.Slot(
+	//					VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
+	//						h.If(u.OAuthAvatar == "",
+	//							h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
+	//						).Else(
+	//							h.Img(u.OAuthAvatar).Alt(u.Name),
+	//						),
+	//					),
+	//				).Name("prepend"),
+	//				VListItemTitle(h.Text(u.Name)),
+	//				h.Br(),
+	//				VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
+	//			).Class("pa-0 mb-2"),
+	//			VListItem(
+	//				VListItemTitle(h.Text(account)),
+	//				web.Slot(
+	//					VIcon("logout").Size(SizeSmall).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
+	//				).Name("append"),
+	//			).Class("pa-0 my-n4 ml-1").Density(DensityCompact),
+	//		).Class("pa-0 ma-n4"),
+	//	),
+	//)).Name("append")
 
-	return VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
-			VList(
-				VListItem(
+	profileNewLook := web.Slot(
+		VRow(
+			VCol(
+				VCard().Class("text-grey-darken-1").Variant("text").Title(u.Name).Subtitle(roles[0]).Children(
 					web.Slot(
-						VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
-							h.If(u.OAuthAvatar == "",
-								h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
-							).Else(
-								h.Img(u.OAuthAvatar).Alt(u.Name),
-							),
-						),
+						VAvatar().Class("ml-1 rounded-lg").Color("blue").Size(48).Children(
+							h.Span(getAvatarShortName(u)).Class("text-white text-h5")),
 					).Name("prepend"),
-					VListItemTitle(h.Text(u.Name)),
-					h.Br(),
-					VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
-				).Class("pa-0 mb-2"),
-				VListItem(
-					VListItemTitle(h.Text(account)),
-					web.Slot(
-						VIcon("logout").Size(SizeSmall).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
-					).Name("append"),
-				).Class("pa-0 my-n4 ml-1").Density(DensityCompact),
-			).Class("pa-0 ma-n4"),
-		),
-	)
+				),
+			).Attr("cols", "8"),
+			VCol(
+				VBtn("").Attr("density", "compact").
+					Attr("variant", "text").
+					Attr("icon", "mdi-chevron-right").
+					Class("text-grey-darken-1"),
+			).Attr("cols", "2").Class("d-flex justify-center align-center").Attr("@click", web.Plaid().URL(logoutURL).Go()),
+			VCol(
+				VBtn("").Attr("density", "compact").
+					Attr("variant", "text").
+					Attr("icon", "mdi-bell-outline").
+					Class("text-grey-darken-1"),
+			).Attr("cols", "2").Class("d-flex align-center justify-center"),
+		).Attr("align", "center", "justify", "center").Class("pa-4"),
+	).Name("append")
+
+	return profileNewLook
+
 }
 
 type Profile struct{}
@@ -288,5 +315,5 @@ func getAvatarShortName(u *models.User) string {
 		name = string(rs[:1])
 	}
 
-	return name
+	return strings.ToUpper(name)
 }
