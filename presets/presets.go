@@ -452,10 +452,10 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 			VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
 			VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
 
-		//h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
-		//VListItemTitle(
+		// h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
+		// VListItemTitle(
 		//	h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
-		//).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
+		// ).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
 	).Attr("color", "primary")
 
 	item.Href(href)
@@ -524,10 +524,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 							VIcon(groupIcon),
 						).Name("prepend"),
 						VListItemTitle().
-							//VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+							// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
 					).Attr("v-bind", "props").Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
-					//Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 				).Attr("v-slot:activator", "{ props }"),
 			}
 			subCount := 0
@@ -550,7 +550,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
 				if b.isMenuItemActive(ctx, m) {
-					//activeMenuItem = m.label
+					// activeMenuItem = m.label
 					activeMenuItem = v.name
 				}
 			}
@@ -906,15 +906,16 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				VCol(b.RunBrandFunc(ctx)).Cols(8),
 				VCol(
 					b.RunSwitchLanguageFunc(ctx),
-					//VBtn("").Children(
+					// VBtn("").Children(
 					//	languageSwitchIcon,
 					//	VIcon("mdi-menu-down"),
-					//).Attr("variant", "plain").
+					// ).Attr("variant", "plain").
 					//	Attr("icon", ""),
 				).Cols(2),
 
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
+						Density("compact").
 						Class("text-grey-darken-1").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
 				).Cols(2),
@@ -942,19 +943,19 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
 		}
 
-		//showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
+		// showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
-		//_ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
 			VNavigationDrawer(
-				//b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-				//b.RunBrandFunc(ctx),
-				//profile,
+				// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+				// b.RunBrandFunc(ctx),
+				// profile,
 				toolbar,
-				//VDivider(),
+				// VDivider(),
 				menu,
 				profile,
 			).
@@ -964,8 +965,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// Fixed(true).
 				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
-				//Class("pa-2").
-				//Attr("style", "border-right: 1px solid grey ").
+				// Class("pa-2").
+				// Attr("style", "border-right: 1px solid grey ").
 				Permanent(true).
 				Floating(true).
 				Elevation(1),
@@ -977,21 +978,26 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Indeterminate(true).
 					Height(2).
 					Color(b.progressBarColor),
-				VAppBarNavIcon().Density("compact").Attr("v-if", "!vars.navDrawer").On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				VAppBarTitle(h.Text(innerPr.PageTitle)), //Class("text-h6 font-weight-regular"),
+				VAppBarNavIcon().
+					Density("compact").
+					Class("ml-4").
+					Attr("v-if", "!vars.navDrawer").
+					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+				VAppBarTitle(h.Text(innerPr.PageTitle)), // Class("text-h6 font-weight-regular"),
 				VSpacer(),
 				GetActionsComponent(ctx.R.Context()),
 
-				//h.If(showSearchBox,
+				// h.If(showSearchBox,
 				//	searchBox,
-				//),
+				// ),
 				h.If(showNotificationCenter,
 					notifier,
 				),
 			).
 				Elevation(0).
-				//Border("grey").
-				//Theme(ThemeQor5).
+				Density("compact").
+				// Border("grey").
+				// Theme(ThemeQor5).
 				Class("border-b"),
 			// App(true).
 			// Fixed(true),
@@ -1010,14 +1016,14 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
-				//VRow(
+				// VRow(
 				//	VCol(searchBox).Cols(3),
 				//	//Class("mx-2"),
-				//).Class("d-flex align-center mx-2"),
-				//innerPr.Body.(h.HTMLComponent),
+				// ).Class("d-flex align-center mx-2"),
+				// innerPr.Body.(h.HTMLComponent),
 				innerPr.Body,
-			),
-		).Attr("id", "vt-app").Class("my-2").
+			).Class(""),
+		).Attr("id", "vt-app").
 			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
 
 		return

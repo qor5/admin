@@ -210,15 +210,15 @@ func (b *ListingBuilder) listingComponent(
 		filterTabs := b.filterTabs(ctx, inDialog)
 
 		actionsComponent := b.actionsComponent(msgr, ctx, inDialog)
-		//if v := ; v != nil {
+		// if v := ; v != nil {
 		//	actionsComponent = append(actionsComponent, v)
-		//}
-		//|| len(actionsComponent) > 0
+		// }
+		// || len(actionsComponent) > 0
 		if filterTabs != nil {
 			tabsAndActionsBar = VToolbar(
 				filterTabs,
-				//VSpacer(),
-				//actionsComponent,
+				// VSpacer(),
+				// actionsComponent,
 			).Flat(true).Color("white")
 		}
 
@@ -237,7 +237,7 @@ func (b *ListingBuilder) listingComponent(
 				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
 			).Density("compact").
 				Variant(FieldVariantOutlined).
-				//PrependIcon("mdi-magnify").
+				// PrependIcon("mdi-magnify").
 				Label(msgr.Search).
 				Flat(true).
 				Clearable(true).
@@ -259,7 +259,7 @@ func (b *ListingBuilder) listingComponent(
 					PushState(true).
 					Go()).
 				Class("mr-4"),
-			//Attr("style", "width: 200px"), // ).Method("GET"),
+			// Attr("style", "width: 200px"), // ).Method("GET"),
 		).VSlot("{ locals }").Init(`{isFocus: false}`),
 	).MaxWidth(200)
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
@@ -308,13 +308,13 @@ func (b *ListingBuilder) listingComponent(
 					searchBoxDefault,
 					filterBar,
 				).Flat(true).Color("white").AutoHeight(true).Class("pa-2"),
-				//VDivider(),
+				// VDivider(),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
 				).Class("pa-0"),
 			).Variant("outlined").Color("blue-grey-lighten-4"),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
-		).Class("mt-2"),
+		),
 	).Fluid(true).
 		Class("white"),
 	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
@@ -1358,7 +1358,7 @@ func (b *ListingBuilder) getTableComponents(
 				Go())
 		}
 
-		datatableAdditions = tpb
+		datatableAdditions = h.Div(tpb).Class("mt-2")
 	} else {
 		datatableAdditions = h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("mt-10 text-center grey--text text--darken-2")
 	}
@@ -1454,9 +1454,9 @@ func (b *ListingBuilder) actionsComponent(
 		actionBtns = append(actionBtns, btn)
 	}
 
-	//if len(actionBtns) == 0 {
+	// if len(actionBtns) == 0 {
 	//	return nil
-	//}
+	// }
 
 	if b.actionsAsMenu {
 		var listItems []h.HTMLComponent
@@ -1495,7 +1495,7 @@ func (b *ListingBuilder) actionsComponent(
 				Attr("@click", onclick.Go()))
 		}
 	}
-	return h.Components(actionBtns...)
+	return h.Div(actionBtns...).Class("mr-4")
 }
 
 func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
