@@ -184,18 +184,21 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		closeBtnVarScript = closeDialogVarScript
 	}
 	comp := web.Scope(
-		VAppBar(
-			VToolbarTitle("").Class("pl-2").
-				Children(h.Text(pr.PageTitle)),
-			VSpacer(),
-			VBtn("").Icon(true).Children(
-				VIcon("close"),
-			).Attr("@click.stop", closeBtnVarScript),
-		).Color("white").Elevation(0).Density("compact"),
+		VLayout(
+			VAppBar(
+				VAppBarTitle(h.Text(pr.PageTitle)).Class("pl-2"),
+				VSpacer(),
+				VBtn("").Icon(true).Children(
+					VIcon("close"),
+				).Attr("@click.stop", closeBtnVarScript),
+			).Color("white").Elevation(0).Density("compact"),
 
-		VSheet(
-			VCard(pr.Body).Flat(true).Class("pa-1"),
-		).Class("pa-2"),
+			VMain(
+				VSheet(
+					VCard(pr.Body).Flat(true).Class("pa-1"),
+				).Class("pa-2"),
+			),
+		),
 	).VSlot("{ form }")
 
 	b.mb.p.overlay(overlayType, &r, comp, b.mb.rightDrawerWidth)
