@@ -69,30 +69,28 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 	//	),
 	//)).Name("append")
 
-	profileNewLook := web.Slot(
-		VRow(
-			VCol(
-				VCard().Class("text-grey-darken-1").Variant("text").Title(u.Name).Subtitle(roles[0]).Children(
-					web.Slot(
-						VAvatar().Class("ml-1 rounded-lg").Color("secondary").Size(48).Children(
-							h.Span(getAvatarShortName(u)).Class("text-white text-h5")),
-					).Name("prepend"),
-				),
-			).Attr("cols", "8"),
-			VCol(
-				VBtn("").Attr("density", "compact").
-					Attr("variant", "text").
-					Attr("icon", "mdi-chevron-right").
-					Class("text-grey-darken-1"),
-			).Attr("cols", "2").Class("d-flex justify-center align-center").Attr("@click", web.Plaid().URL(logoutURL).Go()),
-			VCol(
-				VBtn("").Attr("density", "compact").
-					Attr("variant", "text").
-					Attr("icon", "mdi-bell-outline").
-					Class("text-grey-darken-1"),
-			).Attr("cols", "2").Class("d-flex align-center justify-center"),
-		).Attr("align", "center", "justify", "center").Class("pa-4"),
-	).Name("append")
+	profileNewLook := VRow(
+		VCol(
+			VCard().Class("text-grey-darken-1").Variant("text").Title(u.Name).Subtitle(roles[0]).Children(
+				web.Slot(
+					VAvatar().Class("ml-1 rounded-lg").Color("secondary").Size(48).Children(
+						h.Span(getAvatarShortName(u)).Class("text-white text-h5")),
+				).Name("prepend"),
+			),
+		).Attr("cols", "8"),
+		VCol(
+			VBtn("").Attr("density", "compact").
+				Attr("variant", "text").
+				Attr("icon", "mdi-chevron-right").
+				Class("text-grey-darken-1"),
+		).Attr("cols", "2").Class("d-flex justify-center align-center").Attr("@click", web.Plaid().URL(logoutURL).Go()),
+		VCol(
+			VBtn("").Attr("density", "compact").
+				Attr("variant", "text").
+				Attr("icon", "mdi-bell-outline").
+				Class("text-grey-darken-1"),
+		).Attr("cols", "2").Class("d-flex align-center justify-center"),
+	).Attr("align", "center", "justify", "center")
 
 	return profileNewLook
 
