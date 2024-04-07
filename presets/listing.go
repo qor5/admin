@@ -215,11 +215,7 @@ func (b *ListingBuilder) listingComponent(
 		// }
 		// || len(actionsComponent) > 0
 		if filterTabs != nil {
-			tabsAndActionsBar = VToolbar(
-				filterTabs,
-				// VSpacer(),
-				// actionsComponent,
-			).Flat(true).Color("white")
+			tabsAndActionsBar = filterTabs
 		}
 
 		ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxActionsComponent, actionsComponent))
@@ -684,7 +680,12 @@ func (b *ListingBuilder) filterTabs(
 
 	qs := ctx.R.URL.Query()
 
-	tabs := VTabs().ShowArrows(true)
+	tabs := VTabs().
+		Class("mb-2").
+		ShowArrows(true).
+		Color("primary").
+		Density(DensityCompact)
+
 	tabsData := b.filterTabsFunc(ctx)
 	for i, tab := range tabsData {
 		if tab.ID == "" {
@@ -1413,7 +1414,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Theme(ThemeDark).
+				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1446,7 +1447,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Theme(ThemeDark).
+				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1467,7 +1468,8 @@ func (b *ListingBuilder) actionsComponent(
 			web.Slot(
 				VBtn("Actions").
 					Attr("v-bind", "attrs").
-					Attr("v-on", "on"),
+					Attr("v-on", "on").
+					Size(SizeSmall),
 			).Name("activator").Scope("{ on, attrs }"),
 			VList(listItems...),
 		).OpenOnHover(true))
@@ -1491,11 +1493,12 @@ func (b *ListingBuilder) actionsComponent(
 				Color("primary").
 				Variant(VariantFlat).
 				Theme("dark").Class("ml-2").
+				Size(SizeSmall).
 				Disabled(disableNewBtn).
 				Attr("@click", onclick.Go()))
 		}
 	}
-	return h.Div(actionBtns...).Class("mr-4")
+	return h.Div(actionBtns...)
 }
 
 func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventResponse, err error) {

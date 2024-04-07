@@ -954,10 +954,23 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 				// b.RunBrandFunc(ctx),
 				// profile,
-				toolbar,
-				// VDivider(),
-				menu,
-				profile,
+				VLayout(
+					VMain(
+						toolbar,
+						menu,
+					),
+					// VDivider(),
+					VAppBar(
+						profile,
+
+						h.If(showNotificationCenter,
+							notifier,
+						),
+					).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
+				).Class("ma-2 border-sm rounded elevation-1").Attr("style",
+					"height: calc(100% - 16px);"),
+				// ).Class("ma-2").
+				// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
 			).
 				Width(320).
 				// App(true).
@@ -965,44 +978,39 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				// Fixed(true).
 				ModelValue(true).
 				Attr("v-model", "vars.navDrawer").
-				// Class("pa-2").
 				// Attr("style", "border-right: 1px solid grey ").
 				Permanent(true).
 				Floating(true).
-				Elevation(1),
+				Elevation(0),
 
 			VAppBar(
-				VProgressLinear().
-					Attr(":active", "isFetching").
-					Attr("style", "position: fixed; z-index: 99").
-					Indeterminate(true).
-					Height(2).
-					Color(b.progressBarColor),
-				VAppBarNavIcon().
-					Density("compact").
-					Class("ml-4").
-					Attr("v-if", "!vars.navDrawer").
-					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				VAppBarTitle(h.Text(innerPr.PageTitle)), // Class("text-h6 font-weight-regular"),
-				VSpacer(),
-				GetActionsComponent(ctx.R.Context()),
 
-				// h.If(showSearchBox,
-				//	searchBox,
-				// ),
-				h.If(showNotificationCenter,
-					notifier,
-				),
+				h.Div(
+					VProgressLinear().
+						Attr(":active", "isFetching").
+						Class("ml-4").
+						Attr("style", "position: fixed; z-index: 99;").
+						Indeterminate(true).
+						Height(2).
+						Color(b.progressBarColor),
+
+					VAppBarNavIcon().
+						Density("compact").
+						Class("mr-2").
+						Attr("v-if", "!vars.navDrawer").
+						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+					h.Div(
+						VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+					).Class("mr-auto"),
+					GetActionsComponent(ctx.R.Context()),
+				).Class("d-flex align-center mx-4 border-b w-100").Style("height: 48px"),
 			).
 				Elevation(0).
-				Density("compact").
-				// Border("grey").
-				// Theme(ThemeQor5).
-				Class("border-b"),
+				Density("compact"),
+
 			// App(true).
 			// Fixed(true),
 			// ClippedLeft(true),
-
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
 			web.Portal().Name(DefaultConfirmDialogPortalName),
