@@ -257,7 +257,7 @@ func (b *ListingBuilder) listingComponent(
 				Class("mr-4"),
 			// Attr("style", "width: 200px"), // ).Method("GET"),
 		).VSlot("{ locals }").Init(`{isFocus: false}`),
-	).MaxWidth(200)
+	).MaxWidth(200).MinWidth(200)
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
 	var dialogHeaderBar h.HTMLComponent
