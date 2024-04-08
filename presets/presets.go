@@ -456,7 +456,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		// VListItemTitle(
 		//	h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
 		// ).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
-	).Attr("color", "primary")
+	).Attr("color", "primary").Class("rounded-lg")
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
@@ -523,10 +523,11 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 						web.Slot(
 							VIcon(groupIcon),
 						).Name("prepend"),
-						VListItemTitle().
-							// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-					).Attr("v-bind", "props").Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+						VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
+						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+					).Attr("v-bind", "props").
+						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
+						Class("rounded-lg"),
 					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 				).Attr("v-slot:activator", "{ props }"),
 			}
@@ -957,7 +958,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				VLayout(
 					VMain(
 						toolbar,
-						menu,
+						VCard(
+							menu,
+						).Class("ma-2").Variant(VariantText),
 					),
 					// VDivider(),
 					VAppBar(
