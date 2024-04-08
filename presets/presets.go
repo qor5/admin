@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 
@@ -1104,7 +1103,6 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(strings.Replace(`
 			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
 			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 			<link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet" async>
 			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
 			<script src='{{prefix}}/assets/vue.js'></script>
@@ -1136,19 +1134,9 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 	b.InjectExtraAssets(ctx)
 
-	if len(os.Getenv("DEV_PRESETS")) > 0 {
-		ctx.Injector.TailHTML(`
-<script src='http://localhost:3080/js/chunk-vendors.js'></script>
-<script src='http://localhost:3080/js/app.js'></script>
-<script src='http://localhost:3100/js/chunk-vendors.js'></script>
-<script src='http://localhost:3100/js/app.js'></script>
-			`)
-
-	} else {
-		ctx.Injector.TailHTML(strings.Replace(`
+	ctx.Injector.TailHTML(strings.Replace(`
 			<script src='{{prefix}}/assets/main.js'></script>
 			`, "{{prefix}}", b.prefix, -1))
-	}
 
 	if b.assetFunc != nil {
 		b.assetFunc(ctx)
