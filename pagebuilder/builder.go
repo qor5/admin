@@ -356,9 +356,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				versionCount := versionCount(db, p)
 				switch p.GetStatus() {
 				case publish.StatusDraft, publish.StatusOffline:
-					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Variant(VariantElevated).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
 				case publish.StatusOnline:
-					publishBtn = VBtn(pvMsgr.Republish).Size(SizeSmall).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
+					publishBtn = VBtn(pvMsgr.Republish).Size(SizeSmall).Variant(VariantElevated).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.RepublishEvent))
 				}
 				duplicateBtn = VBtn(msgr.Duplicate).
 					Size(SizeSmall).Color(b.duplicateBtnColor).Height(40).Class("rounded-l-0 mr-3").
@@ -1246,7 +1246,7 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 					VCard(
 						VCardTitle(h.Text("Note")),
 						VCardText(
-							VTextField().Attr(web.VField("Content", "")...),
+							VTextField().Variant(FieldVariantUnderlined).Attr(web.VField("Content", "")...),
 						),
 						VCardActions(
 							VSpacer(),

@@ -30,18 +30,15 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 				VCard(
 					VToolbar(
 						VBtn("").
-							Icon(true).
+							Icon("mdi-close").
 							Theme(ThemeDark).
-							Attr("@click", "vars.showFileChooser = false").
-							Children(
-								VIcon("close"),
-							),
+							Attr("@click", "vars.showFileChooser = false"),
 						VToolbarTitle(msgr.ChooseAFile),
 						VSpacer(),
 						VLayout(
 							VTextField().
 								Variant(FieldVariantSoloInverted).
-								PrependIcon("search").
+								PrependIcon("mdi-magnify").
 								Label(msgr.Search).
 								Flat(true).
 								Clearable(true).
@@ -165,20 +162,20 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 				h.Label("").Children(
 					VCard(
 						VCardTitle(h.Text(msgr.UploadFiles)),
-						VIcon("backup").Size(SizeLarge),
+						VIcon("mdi-cloud-upload").Size(SizeLarge),
 						h.Input("").
 							Attr("accept", fileAccept).
 							Type("file").
 							Attr("multiple", true).
 							Style("display:none").
 							Attr("@change",
-								web.Plaid().
-									BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
-									FieldValue("NewFiles", web.Var("$event")).
-									EventFunc(uploadFileEvent).
-									Query("field", field).
-									FieldValue("cfg", h.JSONString(cfg)).
-									Go()),
+								"form.NewFiles = [...$event.target.files];"+
+									web.Plaid().
+										BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
+										EventFunc(uploadFileEvent).
+										Query("field", field).
+										FieldValue("cfg", h.JSONString(cfg)).
+										Go()),
 					).
 						Height(200).
 						Class("d-flex align-center justify-center pa-6").

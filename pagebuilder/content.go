@@ -87,10 +87,10 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 					),
 				),
 				containerList,
-			).
-				Width(420).
-				Attr("v-model", "drawerLocals.pbEditorDrawer"),
-		).VSlot("{ locals: drawerLocals } ").Init(`{pbEditorDrawer: null}`),
+			).Location(LocationRight).
+				Permanent(true).
+				Width(420),
+		),
 	)
 
 	return
