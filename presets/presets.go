@@ -611,6 +611,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	r = h.Div(
 		web.Scope(
 			VList(menus...).
+				OpenStrategy("single").
 				Class("primary--text").
 				Density(DensityCompact).
 				Attr("v-model:opened", "locals.menuOpened").
