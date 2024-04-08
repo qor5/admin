@@ -456,7 +456,10 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		// VListItemTitle(
 		//	h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
 		// ).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
-	).Attr("color", "primary").Class("rounded-lg")
+	).Class("rounded-lg").
+		Value(m.label)
+	//.ActiveClass("bg-red")
+	//Attr("color", "primary")
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
@@ -469,10 +472,9 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 `, web.Plaid().PushStateURL(href).Go())
 		item.Attr("@click", funcStr)
 	}
-
-	if b.isMenuItemActive(ctx, m) {
-		item = item.Class("v-list-item--active text-primary")
-	}
+	//if b.isMenuItemActive(ctx, m) {
+	//	item = item.Class("v-list-item--active text-primary")
+	//}
 	return item
 }
 
@@ -503,7 +505,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, m := range b.models {
 		mMap[m.uriName] = m
 	}
-	var activeMenuItem string
+	var (
+		activeMenuItem string
+		selection      string
+	)
 	inOrderMap := make(map[string]struct{})
 	var menus []h.HTMLComponent
 	for _, om := range b.menuOrder {
@@ -527,7 +532,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 					).Attr("v-bind", "props").
 						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
-						Class("rounded-lg"),
+						Class("rounded-lg bg-test"),
 					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 				).Attr("v-slot:activator", "{ props }"),
 			}
@@ -553,6 +558,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				if b.isMenuItemActive(ctx, m) {
 					// activeMenuItem = m.label
 					activeMenuItem = v.name
+					selection = m.label
 				}
 			}
 			if subCount == 0 {
@@ -562,9 +568,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				continue
 			}
 
-			menus = append(menus, VListGroup(
-				subMenus...).
-				Value(v.name),
+			menus = append(menus,
+				VListGroup(subMenus...).Value(v.name),
 			)
 		case string:
 			m, ok := mMap[v]
@@ -605,9 +610,16 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 
 	r = h.Div(
 		web.Scope(
-			VList(menus...).Class("primary--text").Density(DensityCompact).Attr("v-model:opened", "locals.menuOpened"),
-		).VSlot("{ locals }").Init(fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem)),
-	)
+			VList(menus...).
+				Class("primary--text").
+				Density(DensityCompact).
+				Attr("v-model:opened", "locals.menuOpened").
+				Attr("v-model:selected", "locals.selection"),
+			//.Attr("v-model:selected", h.JSONString([]string{"Pages"})),
+		).VSlot("{ locals }").Init(
+			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
+			fmt.Sprintf(`{ selection:  ["%s"]}`, selection),
+		))
 	return
 }
 
@@ -960,7 +972,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						toolbar,
 						VCard(
 							menu,
-						).Class("ma-2").Variant(VariantText),
+						).Class("ma-4").Variant(VariantText),
 					),
 					// VDivider(),
 					VAppBar(

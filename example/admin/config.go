@@ -86,13 +86,13 @@ func NewConfig() Config {
   theme: {
     themes: {
       light: {
-		  primary: "#673ab7",
-		  secondary: "#009688",
-		  accent: "#ff5722",
-		  error: "#f44336",
-		  warning: "#ff9800",
-		  info: "#8bc34a",
-		  success: "#4caf50"
+		  primary:   "#3E63DD",
+		  secondary: "#5B6471",
+		  accent:    "#82B1FF",
+		  error:     "#82B1FF",
+		  info:      "#0091FF",
+		  success:   "#30A46C",
+		  warning:   "#F76808",
       },
     },
   },
