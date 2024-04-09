@@ -110,9 +110,9 @@ func (vc *ViewCommon) PasswordInput(
 	in := vc.Input(id, placeholder, val)
 	if canReveal {
 		varName := fmt.Sprintf(`show_%s`, id)
-		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "mdi-eye-off" : "mdi-eye"`, varName)).
+		in.Attr(":append-inner-icon", fmt.Sprintf(`vars.%s ? "mdi-eye-off" : "mdi-eye"`, varName)).
 			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
-			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
+			Attr("@click:append-inner", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
 			Attr(web.ObjectAssign("vars", fmt.Sprintf(`{%s: false}`, varName))...)
 	}
 

@@ -531,7 +531,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 					).Attr("v-bind", "props").
 						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
-						Class("rounded-lg bg-test"),
+						Class("rounded-lg"),
 					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 				).Attr("v-slot:activator", "{ props }"),
 			}
