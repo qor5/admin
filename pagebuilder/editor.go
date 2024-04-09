@@ -231,30 +231,6 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		cursor: pointer;
 		opacity: 1;
     }`))
-			input.FreeStyleBottomJs = []string{`
-	function scrolltoCurrentContainer(event) {
-		const current = document.querySelector("div[data-container-id='"+event.data+"']");
-		if (!current) {
-			return;
-		}
-		const hover = document.querySelector(".wrapper-shadow.hover")
-		if (hover) {
-			hover.classList.remove('hover');
-		}
-		window.parent.scroll({top: current.offsetTop, behavior: "smooth"});
-		current.querySelector(".wrapper-shadow").classList.add('hover');
-	}
-	document.querySelectorAll('.wrapper-shadow').forEach(shadow => {
-		shadow.addEventListener('mouseover', event => {
-			document.querySelectorAll(".wrapper-shadow.hover").forEach(item => {
-				item.classList.remove('hover');
-			})
-			shadow.classList.add('hover');
-		})
-	})
-
-	window.addEventListener("message", scrolltoCurrentContainer, false);
-`}
 		}
 		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
 			pl, ok := f.(*PageLayoutInput)
@@ -296,15 +272,10 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 				iframeValue = iframeHeightCookie.Value
 			}
 			r = h.Div(
-				h.RawHTML(fmt.Sprintf(`
-						<iframe frameborder='0' scrolling='no' srcdoc="%s"
-							style='width:100%%; display:block; border:none; padding:0; margin:0; height:%s;'></iframe>`,
-					strings.ReplaceAll(
-						h.MustString(r, ctx.R.Context()),
-						"\"",
-						"&quot;"),
-					iframeValue,
-				)),
+				h.Tag("vx-scroll-iframe").Attr(
+					":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context()))).
+					Attr(":iframe-height-name", h.JSONString(iframeHeightName)).
+					Attr(":iframe-value", h.JSONString(iframeValue)).Attr("ref", "scrollIframe"),
 			).Class("page-builder-container mx-auto").Attr("style", width)
 
 		} else {
@@ -432,7 +403,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 													Query(presets.ParamID, web.Var("element.model_id")).
 													Go(),
 											).Class("my-2"),
-											VBtn("").Variant(VariantText).Icon("mdi-eye").Size(SizeSmall).Attr("@click",
+											VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 												web.Plaid().
 													URL(web.Var("element.url")).
 													EventFunc(ToggleContainerVisibilityEvent).
@@ -488,7 +459,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 											).Attr("transition", "fab-transition"),
 										),
 									).Name("append"),
-								).Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.iframe.contentWindow.postMessage(%s+"_"+%s,"*");`, web.Var("element.model_name"), web.Var("element.model_id"))),
+								).Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
 								VDivider(),
 							),
 						).Attr("#item", " { element } "),
@@ -1133,52 +1104,19 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
-			h.Script(`
-(function(){
-
-	let scrollLeft = 0;
-	let scrollTop = 0;
-	
-	function pause(duration) {
-		return new Promise(res => setTimeout(res, duration));
-	}
-	function backoff(retries, fn, delay = 100) {
-		fn().catch(err => retries > 1
-			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
-			: Promise.reject(err));
-	}
-
-	function restoreScroll() {
-		window.scroll({left: scrollLeft, top: scrollTop, behavior: "auto"});
-		if (window.scrollX == scrollLeft && window.scrollY == scrollTop) {
-			return Promise.resolve();
-		}
-		return Promise.reject();
-	}
-
-	window.addEventListener('fetchStart', (event) => {
-		scrollLeft = window.scrollX;
-		scrollTop = window.scrollY;
-	});
-	
-	window.addEventListener('fetchEnd', (event) => {
-		backoff(5, restoreScroll, 100);
-	});
-})()
-
-`),
+			h.Tag("vx-restore-scroll-listener"),
 			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
-function(e){
-	if (!e.data.split) {
-		return
-	}
-	let arr = e.data.split("_");
-	if (arr.length != 2) {
-		console.log(arr);
-		return
-	}
-	%s
-}`, action)),
+				function(e){
+					if (!e.data.split) {
+						return
+					}
+					let arr = e.data.split("_");
+					if (arr.length != 2) {
+						console.log(arr);
+						return
+					}
+					%s
+				}`, action)),
 
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").

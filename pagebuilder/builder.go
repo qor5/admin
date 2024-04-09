@@ -414,51 +414,20 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 						Query(presets.ParamID, primarySlug).Go(),
 						utilsMsgr),
-					h.If(isContent, h.Script(`
-(function(){
-	let scrollLeft = 0;
-	let scrollTop = 0;
-	
-	function pause(duration) {
-		return new Promise(res => setTimeout(res, duration));
-	}
-	function backoff(retries, fn, delay = 100) {
-		fn().catch(err => retries > 1
-			? pause(delay).then(() => backoff(retries - 1, fn, delay * 2)) 
-			: Promise.reject(err));
-	}
-
-	function restoreScroll() {
-		window.scroll({left: scrollLeft, top: scrollTop, behavior: "auto"});
-		if (window.scrollX == scrollLeft && window.scrollY == scrollTop) {
-			return Promise.resolve();
-		}
-		return Promise.reject();
-	}
-
-	window.addEventListener('fetchStart', (event) => {
-		scrollLeft = window.scrollX;
-		scrollTop = window.scrollY;
-	});
-	
-	window.addEventListener('fetchEnd', (event) => {
-		backoff(5, restoreScroll, 100);
-	});
-})()
-
-`),
+					h.If(isContent,
+						h.Tag("vx-restore-scroll-listener"),
 						vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
-function(e){
-	if (!e.data.split) {
-		return
-	}
-	let arr = e.data.split("_");
-	if (arr.length != 2) {
-		console.log(arr);
-		return
-	}
-	%s
-}`, editAction))),
+							function(e){
+								if (!e.data.split) {
+									return
+								}
+								let arr = e.data.split("_");
+								if (arr.length != 2) {
+									console.log(arr);
+									return
+								}
+								%s
+							}`, editAction))),
 					VProgressLinear().
 						Attr(":active", "isFetching").
 						Attr("style", "position: fixed; z-index: 99").
