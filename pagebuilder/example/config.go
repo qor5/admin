@@ -7,13 +7,14 @@ import (
 	"os"
 	"path"
 
+	"github.com/qor5/admin/pagebuilder/example/layouts"
+
 	"github.com/qor5/x/i18n"
 	h "github.com/theplant/htmlgo"
 
 	media_view "github.com/qor5/admin/media/views"
 	"github.com/qor5/admin/pagebuilder"
 	"github.com/qor5/admin/pagebuilder/example/containers"
-	"github.com/qor5/admin/pagebuilder/example/layouts"
 	"github.com/qor5/admin/richeditor"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -62,6 +63,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+
 	pb.PageLayout(layouts.DefaultPageLayoutFunc)
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"

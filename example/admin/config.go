@@ -93,7 +93,6 @@ func NewConfig() Config {
 		  info:      "#0091FF",
 		  success:   "#30A46C",
 		  warning:   "#F76808",
-		  test: 'red',
       },
     },
   },

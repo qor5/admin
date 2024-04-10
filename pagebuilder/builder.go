@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"github.com/qor5/admin/richeditor"
 	"net/http"
 	"net/url"
 	"path"
@@ -11,6 +10,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/qor5/admin/richeditor"
 
 	"github.com/qor5/admin/activity"
 	"github.com/qor5/admin/l10n"
@@ -383,28 +384,83 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go())
 			}
 
+			var innerPr web.PageResponse
+			innerPr, err = in(ctx)
+			if err == perm.PermissionDenied {
+				pr.Body = h.Text(perm.PermissionDenied.Error())
+				return pr, nil
+			}
+			if err != nil {
+				panic(err)
+			}
+
+			toolbar := VContainer(
+				VRow(
+					VCol(pb.RunBrandFunc(ctx)).Cols(8),
+					VCol(
+						pb.RunSwitchLanguageFunc(ctx),
+					).Cols(2),
+
+					VCol(
+						VAppBarNavIcon().Attr("icon", "mdi-menu").
+							Density("compact").
+							Class("text-grey-darken-1").
+							Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+					).Cols(2),
+				).Attr("align", "center").Attr("justify", "center"),
+			)
+			//todo page builder's layout will be fixed
 			pr.Body = web.Scope(
 				VApp(
 					VNavigationDrawer(
-						pb.RunBrandProfileSwitchLanguageDisplayFunc(pb.RunBrandFunc(ctx), profile, pb.RunSwitchLanguageFunc(ctx), ctx),
-						VDivider(),
-						menu,
-					).
-						// App(true).
-						// Fixed(true).
+						VLayout(
+							VMain(
+								toolbar,
+								VCard(
+									menu,
+								).Class("ma-4").Variant(VariantText),
+							),
+							//ModelValue(true).
+							//	Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
+							VAppBar(
+								profile,
+								VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
+						).Class("ma-2 border-sm rounded elevation-1").Attr("style", "height: calc(100% - 16px);"),
+					).Width(320).
 						ModelValue(true).
-						Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
-					VAppBar(
-						VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-						VTabs(
-							VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
-								Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
-						).CenterActive(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
-						// h.If(isContent, VAppBarNavIcon().On("click.stop", "vars.pbEditorDrawer = !vars.pbEditorDrawer")),
-						h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
-					).Theme(ThemeDark).
-						Color(presets.ColorPrimary),
+						Attr("v-model", "vars.navDrawer").
+						Permanent(true).
+						Floating(true).
+						Elevation(0),
 
+					VAppBar(
+						h.Div(
+							VProgressLinear().
+								Attr(":active", "isFetching").
+								Class("ml-4").
+								Attr("style", "position: fixed; z-index: 99;").
+								Indeterminate(true).
+								Height(2).
+								Color(pb.GetProgressBarColor()),
+
+							VAppBarNavIcon().
+								Density("compact").
+								Class("mr-2").
+								Attr("v-if", "!vars.navDrawer").
+								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+							h.Div(
+								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+							).Class("mr-auto"),
+							VTabs(
+								VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
+									Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
+							).CenterActive(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
+							h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
+						).Class("d-flex align-center mx-4 border-b w-100").Style("height: 48px"),
+					).
+						Elevation(0).
+						Density("compact"),
 					web.Portal().Name(presets.RightDrawerPortalName),
 					web.Portal().Name(presets.DialogPortalName),
 					web.Portal().Name(presets.DeleteConfirmPortalName),
