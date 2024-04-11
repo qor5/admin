@@ -234,7 +234,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	})
 
 	dp := pm.Detailing("Overview")
-	dp.Field("Overview").ComponentFunc(settings(db, pm))
+	dp.Field("Overview").ComponentFunc(settings(db, pm, b, seoBuilder))
 
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
