@@ -69,31 +69,33 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 	//	),
 	//)).Name("append")
 
-	profileNewLook := VRow(
-		VCol(
-			VCard().Class("text-grey-darken-1").Variant("text").Title(u.Name).Subtitle(roles[0]).Children(
-				web.Slot(
-					VAvatar().Class("ml-1 rounded-lg").Color("secondary").Size(48).Children(
-						h.Span(getAvatarShortName(u)).Class("text-white text-h5")),
-				).Name("prepend"),
+	profileNewLook := VCard(
+		web.Slot(
+			VAvatar().Text(getAvatarShortName(u)).Color("secondary").Class("text-h6 rounded-lg").Size(48),
+		).Name(VSlotPrepend),
+		web.Slot(
+			VRow(
+				VCol(h.Text(u.Name)).Class("font-weight-light text-grey-darken-1 d-inline-block text-truncate"),
+				VCol(
+					VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
+						Icon(true).Density(DensityCompact).Variant(VariantText).Children(
+						VIcon("mdi-chevron-right").Class("font-weight-light text-grey-darken-1").Size(20),
+					),
+				),
 			),
-		).Attr("cols", "8"),
-		VCol(
-			VBtn("").Attr("density", "compact").
-				Attr("variant", "text").
-				Attr("icon", "mdi-chevron-right").
-				Class("text-grey-darken-1"),
-		).Attr("cols", "2").Class("d-flex justify-center align-center").Attr("@click", web.Plaid().URL(logoutURL).Go()),
-		VCol(
-			VBtn("").Attr("density", "compact").
-				Attr("variant", "text").
-				Attr("icon", "mdi-bell-outline").
-				Class("text-grey-darken-1"),
-		).Attr("cols", "2").Class("d-flex align-center justify-center"),
-	).Attr("align", "center", "justify", "center")
-
+		).Name(VSlotTitle),
+		web.Slot(
+			h.Div(h.Text(roles[0])),
+		).Name(VSlotSubtitle),
+		web.Slot(
+			VRow(
+				VCol(
+					VIcon("mdi-bell-outline").Size(20),
+				),
+			).Class("border-s "),
+		).Name(VSlotAppend),
+	).Class(WAuto)
 	return profileNewLook
-
 }
 
 type Profile struct{}

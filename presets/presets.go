@@ -840,17 +840,19 @@ type LayoutConfig struct {
 func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventResponse, err error) {
 	total := b.notificationCountFunc(ctx)
 	content := b.notificationContentFunc(ctx)
-
-	icon := VIcon("mdi-bell").Color("white")
+	icon := VIcon("mdi-bell-outline").Color("grey-darken-1")
 	er.Body = VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{ props}").Children(
+		h.Template().Attr("v-slot:activator", "{ props }").Children(
 			VBtn("").Icon(true).Children(
 				h.If(total > 0,
 					VBadge(
 						icon,
 					).Content(total).Floating(true).Color("red"),
 				).Else(icon),
-			).Attr("v-bind", "props").Class("ml-1"),
+			).Attr("v-bind", "props").
+				Density(DensityCompact).
+				Variant(VariantText),
+			//.Class("ml-1")
 		),
 		VCard(content))
 
@@ -955,7 +957,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
 			notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
 		}
-
+		_ = showNotificationCenter
+		_ = notifier
 		// showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
@@ -975,12 +978,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						).Class("ma-4").Variant(VariantText),
 					),
 					// VDivider(),
-					VAppBar(
-						profile,
 
-						h.If(showNotificationCenter,
-							notifier,
-						),
+					VAppBar(
+
+						profile,
+						//h.If(showNotificationCenter,
+						//	notifier,
+						//),
 					).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
 				).Class("ma-2 border-sm rounded elevation-1").Attr("style",
 					"height: calc(100% - 16px);"),

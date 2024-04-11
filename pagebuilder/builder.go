@@ -424,7 +424,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 							//	Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
 							VAppBar(
 								profile,
-								VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+								//VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
 						).Class("ma-2 border-sm rounded elevation-1").Attr("style", "height: calc(100% - 16px);"),
 					).Width(320).
