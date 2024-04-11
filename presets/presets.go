@@ -982,7 +982,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					VAppBar(
 						profile,
 					).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
-				).Class("ma-2 border-sm rounded elevation-1").Attr("style",
+				).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style",
 					"height: calc(100% - 16px);"),
 				// ).Class("ma-2").
 				// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
