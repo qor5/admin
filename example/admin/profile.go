@@ -36,39 +36,23 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		roles = append(roles, role.Name)
 	}
 
-	//var account string
-	//if u.Account != "" {
-	//	account = u.Account
-	//} else {
-	//	account = u.OAuthIdentifier
-	//}
-	//web.Slot(VMenu().Children(
-	//	h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
-	//		VList(
-	//			VListItem(
-	//				web.Slot(
-	//					VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
-	//						h.If(u.OAuthAvatar == "",
-	//							h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
-	//						).Else(
-	//							h.Img(u.OAuthAvatar).Alt(u.Name),
-	//						),
-	//					),
-	//				).Name("prepend"),
-	//				VListItemTitle(h.Text(u.Name)),
-	//				h.Br(),
-	//				VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
-	//			).Class("pa-0 mb-2"),
-	//			VListItem(
-	//				VListItemTitle(h.Text(account)),
-	//				web.Slot(
-	//					VIcon("logout").Size(SizeSmall).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
-	//				).Name("append"),
-	//			).Class("pa-0 my-n4 ml-1").Density(DensityCompact),
-	//		).Class("pa-0 ma-n4"),
-	//	),
-	//)).Name("append")
-
+	total := notifierCount(db)(ctx)
+	content := notifierComponent(db)(ctx)
+	icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
+	notification := VMenu().Children(
+		h.Template().Attr("v-slot:activator", "{ props }").Children(
+			VBtn("").Icon(true).Children(
+				h.If(total > 0,
+					VBadge(
+						icon,
+					).Content(total).Dot(true).Color("error"),
+				).Else(icon),
+			).Attr("v-bind", "props").
+				Density(DensityCompact).
+				Variant(VariantText),
+		),
+		VCard(content),
+	)
 	profileNewLook := VCard(
 		web.Slot(
 			VAvatar().Text(getAvatarShortName(u)).Color("secondary").Class("text-h6 rounded-lg").Size(48),
@@ -90,9 +74,9 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		web.Slot(
 			VRow(
 				VCol(
-					VIcon("mdi-bell-outline").Size(20),
+					notification,
 				),
-			).Class("border-s "),
+			).Class("border-s"),
 		).Name(VSlotAppend),
 	).Class(WAuto)
 	return profileNewLook

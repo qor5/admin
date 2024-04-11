@@ -409,7 +409,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					).Cols(2),
 				).Attr("align", "center").Attr("justify", "center"),
 			)
-			//todo page builder's layout will be fixed
+
 			pr.Body = web.Scope(
 				VApp(
 					VNavigationDrawer(

@@ -840,7 +840,7 @@ type LayoutConfig struct {
 func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventResponse, err error) {
 	total := b.notificationCountFunc(ctx)
 	content := b.notificationContentFunc(ctx)
-	icon := VIcon("mdi-bell-outline").Color("grey-darken-1")
+	icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
 	er.Body = VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{ props }").Children(
 			VBtn("").Icon(true).Children(
@@ -854,8 +854,8 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 				Variant(VariantText),
 			//.Class("ml-1")
 		),
-		VCard(content))
-
+		VCard(content),
+	)
 	return
 }
 
@@ -952,13 +952,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			profile = b.profileFunc(ctx)
 		}
 
-		showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
-		var notifier h.HTMLComponent
-		if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
-			notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
-		}
-		_ = showNotificationCenter
-		_ = notifier
+		//showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
+		//var notifier h.HTMLComponent
+		//if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
+		//	notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
+		//}
+		//ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxNotifyCenter, notifier))
+
 		// showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
@@ -980,11 +980,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					// VDivider(),
 
 					VAppBar(
-
 						profile,
-						//h.If(showNotificationCenter,
-						//	notifier,
-						//),
 					).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
 				).Class("ma-2 border-sm rounded elevation-1").Attr("style",
 					"height: calc(100% - 16px);"),

@@ -585,6 +585,8 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 					v.VListItemSubtitle(h.Text("Mark all as read")),
 				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
 			),
-		).Class("mx-auto").Attr("max-width", "140")
+		)
+		//.Class("mx-auto")
+		//.Attr("max-width", "140")
 	}
 }
