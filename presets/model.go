@@ -80,9 +80,17 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoListingAction, mb.listing.doListingAction)
 	mb.RegisterEventFunc(actions.OpenBulkActionDialog, mb.listing.openBulkActionDialog)
 	mb.RegisterEventFunc(actions.OpenActionDialog, mb.listing.openActionDialog)
+
 	mb.RegisterEventFunc(actions.Action, mb.detailing.formDrawerAction)
 	mb.RegisterEventFunc(actions.DoAction, mb.detailing.doAction)
 	mb.RegisterEventFunc(actions.DetailingDrawer, mb.detailing.showInDrawer)
+	mb.RegisterEventFunc(actions.DoSaveDetailingField, mb.detailing.SaveDetailField)
+	mb.RegisterEventFunc(actions.DoEditDetailingField, mb.detailing.EditDetailField)
+	mb.RegisterEventFunc(actions.DoEditDetailingListField, mb.detailing.EditDetailListField)
+	mb.RegisterEventFunc(actions.DoSaveDetailingListField, mb.detailing.SaveDetailListField)
+	mb.RegisterEventFunc(actions.DoDeleteDetailingListField, mb.detailing.DeleteDetailListField)
+	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
+
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
 	mb.RegisterEventFunc(actions.UpdateListingDialog, mb.listing.updateListingDialog)
@@ -129,7 +137,7 @@ func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 }
 
 func (mb *ModelBuilder) newDetailing() (r *DetailingBuilder) {
-	mb.detailing = &DetailingBuilder{mb: mb, FieldsBuilder: *mb.p.detailFieldDefaults.InspectFields(mb.model)}
+	mb.detailing = &DetailingBuilder{mb: mb, DetailFieldsBuilder: DetailFieldsBuilder{mb: mb, FieldsBuilder: *mb.p.detailFieldDefaults.InspectFields(mb.model)}}
 	if mb.p.dataOperator != nil {
 		mb.detailing.FetchFunc(mb.p.dataOperator.Fetch)
 	}
