@@ -2,10 +2,11 @@ package pagebuilder
 
 import (
 	"fmt"
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/seo"
 	"net/url"
 	"os"
+
+	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/seo"
 
 	"github.com/qor5/admin/note"
 	"github.com/qor5/admin/presets"

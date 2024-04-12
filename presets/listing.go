@@ -1191,7 +1191,7 @@ func (b *ListingBuilder) getTableComponents(
 
 	haveCheckboxes := len(b.bulkActions) > 0
 
-	var cellWraperFunc = func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+	var cellWrapperFunc = func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		if b.mb.hasDetailing && !b.mb.detailing.drawer {
 			tdbind.SetAttr("@click.self", web.Plaid().
@@ -1216,7 +1216,7 @@ func (b *ListingBuilder) getTableComponents(
 		return tdbind
 	}
 	if b.cellWrapperFunc != nil {
-		cellWraperFunc = b.cellWrapperFunc
+		cellWrapperFunc = b.cellWrapperFunc
 	}
 
 	var displayFields = b.fields
@@ -1226,7 +1226,7 @@ func (b *ListingBuilder) getTableComponents(
 	}
 
 	sDataTable := vx.DataTable(objs).
-		CellWrapperFunc(cellWraperFunc).
+		CellWrapperFunc(cellWrapperFunc).
 		HeadCellWrapperFunc(func(cell h.MutableAttrHTMLComponent, field string, title string) h.HTMLComponent {
 			if _, ok := orderableFieldMap[field]; ok {
 				var orderBy string

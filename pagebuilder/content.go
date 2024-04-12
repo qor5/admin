@@ -21,6 +21,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	var device string
 	var p *Page
 	var previewHref string
+	_ = previewHref
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
 	if isTpl {
@@ -46,6 +47,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 	device, _ = b.getDevice(ctx)
 	activeDevice := 0
+	_ = activeDevice
 	switch device {
 	case DeviceTablet:
 		activeDevice = 1
@@ -92,6 +94,5 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 				Width(420),
 		),
 	)
-
 	return
 }

@@ -345,9 +345,39 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				Query(presets.ParamID, web.Var("arr[1]")).
 				Go()
 
-			var publishBtn h.HTMLComponent
-			var duplicateBtn h.HTMLComponent
-			var versionSwitch h.HTMLComponent
+			var (
+				publishBtn    h.HTMLComponent
+				duplicateBtn  h.HTMLComponent
+				versionSwitch h.HTMLComponent
+				deviceToggler h.HTMLComponent
+				deviceQueries url.Values
+				activeDevice  int
+			)
+			switch device {
+			case DeviceTablet:
+				activeDevice = 1
+			case DevicePhone:
+				activeDevice = 2
+			}
+
+			deviceToggler = VRow(
+				VCol(
+					web.Scope(
+						VBtnToggle(
+							VBtn("").Icon(true).Children(
+								VIcon("mdi-laptop").Size(SizeSmall),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
+							VBtn("").Icon(true).Children(
+								VIcon("mdi-tablet").Size(SizeSmall),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
+							VBtn("").Icon(true).Children(
+								VIcon("mdi-cellphone").Size(SizeSmall),
+							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
+						).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+					).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
+				).Cols(9).Class("pa-2"),
+			)
+
 			primarySlug := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
 				primarySlug = v.PrimarySlug()
@@ -452,6 +482,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 							h.Div(
 								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 							).Class("mr-auto"),
+							deviceToggler,
 							VTabs(
 								VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
 									Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
