@@ -3,12 +3,15 @@ package presets
 import (
 	"errors"
 	"net/url"
+	"reflect"
+	"strconv"
 
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/presets/actions"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/perm"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/pat"
 )
@@ -20,7 +23,7 @@ type DetailingBuilder struct {
 	fetcher   FetchFunc
 	tabPanels []TabComponentFunc
 	drawer    bool
-	FieldsBuilder
+	DetailFieldsBuilder
 }
 
 type pageTitle interface {
@@ -92,8 +95,17 @@ func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
 	return b
 }
 
-func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+func (b *DetailingBuilder) Field(name string) (r *DetailFieldBuilder) {
+	r = b.GetDetailField(name)
+	if r != nil {
+		return
+	}
 
+	r = b.appendNewDetailFieldWithName(name)
+	return r
+}
+
+func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var id string
 	if b.drawer {
 		id = ctx.R.FormValue(ParamID)
@@ -274,4 +286,222 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 			),
 		).Flat(true),
 	).Fluid(true)
+}
+
+// EditDetailField EventFunc: click detail field component edit button
+func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	key := ctx.Queries().Get(detailFieldName)
+
+	f := b.GetDetailField(key)
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.editComponent(obj, &FieldContext{
+			FormKey: f.name,
+			Name:    f.name,
+		}, ctx),
+	})
+	return r, nil
+}
+
+// SaveDetailField EventFunc: click save button
+func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	key := ctx.Queries().Get(detailFieldName)
+
+	f := b.GetDetailField(key)
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.showComponent(obj, &FieldContext{
+			FormKey: f.name,
+			Name:    f.name,
+		}, ctx),
+	})
+	return r, nil
+}
+
+// EditDetailListField Event: click detail list field element edit button
+func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName          string
+		index, deleteIndex int64
+	)
+
+	fieldName = ctx.Queries().Get(detailFieldName)
+	f := b.GetDetailField(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+	deleteIndex = -1
+	if ctx.Queries().Get(f.DeleteBtnKey()) != "" {
+		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
+		if err != nil {
+			return
+		}
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, int(deleteIndex), int(index), -1),
+	})
+
+	return
+
+}
+
+// SaveDetailListField Event: click detail list field element Save button
+func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName string
+		index     int64
+	)
+
+	fieldName = ctx.Queries().Get(detailFieldName)
+	f := b.GetDetailField(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.SaveBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, -1, -1, int(index)),
+	})
+
+	return
+}
+
+// DeleteDetailListField Event: click detail list field element Delete button
+func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName string
+		index     int64
+	)
+
+	fieldName = ctx.Queries().Get(detailFieldName)
+	f := b.GetDetailField(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	// delete from slice
+	var list any
+	if list, err = reflectutils.Get(obj, f.name); err != nil {
+		return
+	}
+	listValue := reflect.ValueOf(list)
+	if listValue.Kind() != reflect.Slice {
+		err = errors.New("field is not a slice")
+		return
+	}
+	newList := reflect.MakeSlice(reflect.TypeOf(list), 0, 0)
+	for i := 0; i < listValue.Len(); i++ {
+		if i != int(index) {
+			newList = reflect.Append(newList, listValue.Index(i))
+		}
+	}
+	if err = reflectutils.Set(obj, f.name, newList.Interface()); err != nil {
+		return
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, int(index), -1, -1),
+	})
+
+	return
+}
+
+// CreateDetailListField Event: click detail list field element Add row button
+func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	fieldName := ctx.Queries().Get(detailFieldName)
+	f := b.GetDetailField(fieldName)
+
+	obj := b.mb.NewModel()
+	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	var list any
+	if list, err = reflectutils.Get(obj, f.name); err != nil {
+		return
+	}
+	listValue := reflect.ValueOf(list)
+	if listValue.Kind() != reflect.Slice {
+		err = errors.New("field is not a slice")
+		return
+	}
+
+	reflectutils.Set(obj, f.name+"[]", f.model)
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, -1, listValue.Len(), -1),
+	})
+
+	return
 }
