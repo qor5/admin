@@ -5,8 +5,8 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 

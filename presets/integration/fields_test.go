@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/qor5/admin/presets"
-	"github.com/qor5/web"
-	"github.com/qor5/web/multipartestutils"
+	. "github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"
@@ -43,8 +43,7 @@ func TestFields(t *testing.T) {
 	ft := NewFieldDefaults(WRITE).Exclude("ID")
 	ft.FieldType(time.Time{}).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div().Class("time-control").
-			Text(field.Value(obj).(time.Time).Format("2006-01-02")).
-			Attr(web.VFieldName(field.Name)...)
+			Attr(web.VField(field.Name, field.Value(obj).(time.Time).Format("2006-01-02"))...)
 	})
 
 	ft.FieldType(Media("")).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -93,19 +92,19 @@ func TestFields(t *testing.T) {
 						ctx)
 			},
 			expect: `
-<v-text-field type='number' v-field-name='[plaidForm, "Int1"]' label='整数1' :value='"2"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :disabled='false'></v-text-field>
 
-<v-text-field type='number' v-field-name='[plaidForm, "Float1"]' label='Float1' :value='"23.1"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
 
-<v-text-field type='text' v-field-name='[plaidForm, "String1"]' label='String1' :value='"hello"' :error-messages='["too small"]' :disabled='false'></v-text-field>
+<v-text-field type='text' :variant='"underlined"' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' label='String1' :error-messages='["too small"]' :disabled='false'></v-text-field>
 
-<v-checkbox v-field-name='[plaidForm, "Bool1"]' label='Bool1' :input-value='true' :disabled='false'></v-checkbox>
+<v-checkbox v-model='form["Bool1"]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></v-checkbox>
 
-<div v-field-name='[plaidForm, "Time1"]' class='time-control'>2019-08-29</div>
+<div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 
-<v-text-field type='text' v-field-name='[plaidForm, "Company.Name"]' label='公司名' :value='"Company1"' :disabled='false'></v-text-field>
+<v-text-field type='text' :variant='"underlined"' v-model='form["Company.Name"]' v-assign='[form, {"Company.Name":"Company1"}]' label='公司名' :disabled='false'></v-text-field>
 
-<div v-field-name='[plaidForm, "Company.FoundedAt"]' class='time-control'>2019-08-29</div>
+<div v-model='form["Company.FoundedAt"]' v-assign='[form, {"Company.FoundedAt":"2019-08-29"}]' class='time-control'></div>
 `,
 		},
 
@@ -117,13 +116,13 @@ func TestFields(t *testing.T) {
 					ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<v-text-field type='number' v-field-name='[plaidForm, "Int1"]' label='Int1' :value='"2"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :disabled='false'></v-text-field>
 
-<v-text-field type='number' v-field-name='[plaidForm, "Float1"]' label='Float1' :value='"23.1"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
 
-<v-text-field type='text' v-field-name='[plaidForm, "String1"]' label='String1' :value='"hello"' :error-messages='["too small"]' :disabled='false'></v-text-field>
+<v-text-field type='text' :variant='"underlined"' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' label='String1' :error-messages='["too small"]' :disabled='false'></v-text-field>
 
-<div v-field-name='[plaidForm, "Time1"]' class='time-control'>2019-08-29</div>
+<div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 `,
 		},
 
@@ -219,23 +218,23 @@ func addressHTML(v Address, formKeyPrefix string) string {
 	return fmt.Sprintf(`<div>
 <label class='v-label theme--light text-caption'>Address</label>
 
-<v-card :outlined='true' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.City"]' label='City' :value='"%s"' :disabled='false'></v-text-field>
+<v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-text-field type='text' :variant='"underlined"' v-model='form["%sAddress.City"]' v-assign='[form, {"%sAddress.City":"%s"}]' label='City' :disabled='false'></v-text-field>
 
 <div>
 <label class='v-label theme--light text-caption'>Detail</label>
 
-<v-card :outlined='true' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address1"]' label='Address1' :value='"%s"' :disabled='false'></v-text-field>
+<v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
+<v-text-field type='text' :variant='"underlined"' v-model='form["%sAddress.Detail.Address1"]' v-assign='[form, {"%sAddress.Detail.Address1":"%s"}]' label='Address1' :disabled='false'></v-text-field>
 
-<v-text-field type='text' v-field-name='[plaidForm, "%sAddress.Detail.Address2"]' label='Address2' :value='"%s"' :disabled='false'></v-text-field>
+<v-text-field type='text' :variant='"underlined"' v-model='form["%sAddress.Detail.Address2"]' v-assign='[form, {"%sAddress.Detail.Address2":"%s"}]' label='Address2' :disabled='false'></v-text-field>
 </v-card>
 </div>
 </v-card>
 </div>`,
-		formKeyPrefix, v.City,
-		formKeyPrefix, v.Detail.Address1,
-		formKeyPrefix, v.Detail.Address2,
+		formKeyPrefix, formKeyPrefix, v.City,
+		formKeyPrefix, formKeyPrefix, v.Detail.Address1,
+		formKeyPrefix, formKeyPrefix, v.Detail.Address2,
 	)
 }
 
@@ -349,7 +348,7 @@ func TestFieldsBuilder(t *testing.T) {
 			},
 
 			expectedHTML: fmt.Sprintf(`
-<input type='hidden' v-field-name='[plaidForm, "__Deleted.Departments[0].Employees"]' value='1,5'>
+<input type='hidden' v-model='form["__Deleted.Departments[0].Employees"]' v-assign='[form, {"__Deleted.Departments[0].Employees":"1,5"}]'>
 
 <input name='Name' type='text' value='Name 1'>
 
@@ -395,7 +394,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' v-field-name='[plaidForm, "PeopleCount"]' label='People Count' :value='"0"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
@@ -441,9 +440,9 @@ func TestFieldsBuilder(t *testing.T) {
 			},
 
 			expectedHTML: fmt.Sprintf(`
-<input type='hidden' v-field-name='[plaidForm, "__Deleted.Departments[0].Employees"]' value='1'>
+<input type='hidden' v-model='form["__Deleted.Departments[0].Employees"]' v-assign='[form, {"__Deleted.Departments[0].Employees":"1"}]'>
 
-<input type='hidden' v-field-name='[plaidForm, "__Sorted.Departments[0].Employees"]' value='2,0,3,6'>
+<input type='hidden' v-model='form["__Sorted.Departments[0].Employees"]' v-assign='[form, {"__Sorted.Departments[0].Employees":"2,0,3,6"}]'>
 
 <input name='Name' type='text' value='Name 1'>
 
@@ -501,7 +500,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' v-field-name='[plaidForm, "PeopleCount"]' label='People Count' :value='"0"' :disabled='false'></v-text-field>
+<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
 				addressHTML(Address{}, "Departments[0].Employees[0]."),

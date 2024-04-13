@@ -3,7 +3,7 @@ package views
 import (
 	"net/http"
 
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/v3/i18n"
 )
 
 const I18nLocalizeKey i18n.ModuleKey = "I18nLocalizeKey"

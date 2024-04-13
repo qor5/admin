@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -34,7 +34,7 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 		Link("").Rel("stylesheet").Type("text/css").Href(css),
 		If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
-		//RawHTML(dataLayer),
+		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
 	)
@@ -42,7 +42,7 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 	ctx.Injector.HeadHTML(MustString(head, nil))
 
 	return Body(
-		//It's required as the body first element!
+		// It's required as the body first element!
 		If(input.Header != nil, input.Header),
 		body,
 		If(input.Footer != nil, input.Footer),

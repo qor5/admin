@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/qor5/admin/example/admin"
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/publish"
 )
 
 func main() {

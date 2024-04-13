@@ -1,7 +1,7 @@
 package views
 
 import (
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/publish"
 )
 
 type Messages struct {

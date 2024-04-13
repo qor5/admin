@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/role"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/x/v3/login"
 	"gorm.io/gorm"
 )
 

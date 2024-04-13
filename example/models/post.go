@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/admin/seo"
-	"github.com/qor5/admin/slug"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/slug"
 	"gorm.io/gorm"
 )
 

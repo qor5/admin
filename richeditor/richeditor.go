@@ -3,11 +3,11 @@ package richeditor
 import (
 	"context"
 	"fmt"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/ui/redactor"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media/media_library"
+	media_view "github.com/qor5/admin/v3/media/views"
+	"github.com/qor5/ui/v3/redactor"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

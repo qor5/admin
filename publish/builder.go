@@ -9,7 +9,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
-	"github.com/qor5/admin/utils"
+	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )

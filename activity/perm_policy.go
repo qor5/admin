@@ -1,8 +1,8 @@
 package activity
 
 import (
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/x/v3/perm"
 )
 
 var permPolicy = perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).

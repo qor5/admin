@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/admin/worker"
-	integration "github.com/qor5/admin/worker/integration_test"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/worker"
+	integration "github.com/qor5/admin/v3/worker/integration_test"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -81,7 +81,7 @@ func addJobs(w *worker.Builder) {
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
-		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
+		return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		v := ctx.R.FormValue("F1")
 		obj.(*ArgJobResource).F1 = v

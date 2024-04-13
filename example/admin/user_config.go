@@ -8,21 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/admin/publish"
-	publish_view "github.com/qor5/admin/publish/views"
-	"github.com/qor5/admin/role"
-	"github.com/qor5/admin/utils"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
+	publish_view "github.com/qor5/admin/v3/publish/views"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/utils"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -177,8 +177,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 	})
 
 	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return presets.InputWithDefaults(h.Tag("v-text-field"), obj, field)
-		// TODO fix it .ErrorMessages(field.Errors...)
+		return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(field.Errors...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
@@ -203,8 +202,7 @@ func configUser(b *presets.Builder, db *gorm.DB) {
 		if !u.IsOAuthUser() {
 			return nil
 		} else {
-			return presets.InputWithDefaults(h.Tag("v-text-field"), obj, field).Disabled(true)
-			//TODO fix it .ErrorMessages(field.Errors...)
+			return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(field.Errors...).Disabled(true)
 		}
 	})
 

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/admin/seo"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/seo"
 	"gorm.io/gorm"
 )
 

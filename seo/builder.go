@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/v3/l10n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

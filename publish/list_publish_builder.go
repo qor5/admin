@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/utils"
+	"github.com/qor5/admin/v3/utils"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
 )
@@ -97,8 +97,8 @@ type ListPublisher interface {
 // model is a empty struct
 // example: Product{}
 func (b *ListPublishBuilder) Run(model interface{}) (err error) {
-	//If model is Product{}
-	//Generate a records: []*Product{}
+	// If model is Product{}
+	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
 
 	addItems, err := getAddItems(b.db, records)
@@ -233,9 +233,9 @@ type OnePageItems struct {
 	PageNumber int
 }
 
-//Repaginate completely
-//Regardless of the PageNumber and Position of the old data
-//Resort and repaginate all data
+// Repaginate completely
+// Regardless of the PageNumber and Position of the old data
+// Resort and repaginate all data
 func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc func(itemsCountInOnePage, currentPageNumber, allItemsCount int) bool) (result []*OnePageItems) {
 	var pageNumber int
 	for i := 1; needNextPageFunc(totalNumberPerPage, i, len(array)); i++ {
@@ -270,9 +270,9 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 	return
 }
 
-//For old data
-//Old data has PageNumber and Position
-//Sort pages according to the PageNumber and position
+// For old data
+// Old data has PageNumber and Position
+// Sort pages according to the PageNumber and position
 func paginate(array []interface{}) (result []*OnePageItems) {
 	lp := array[0].(ListPublisher)
 	lp.Sort(array)
@@ -287,8 +287,8 @@ func paginate(array []interface{}) (result []*OnePageItems) {
 	return
 }
 
-//Compare new pages and old pages
-//Pick out the pages which are needed to republish
+// Compare new pages and old pages
+// Pick out the pages which are needed to republish
 func getNeedPublishResultsAndIndexResult(oldResults, newResults, republishResults []*OnePageItems) (needPublishResults []*OnePageItems, indexResult *OnePageItems) {
 	if len(oldResults) == 0 {
 		return newResults, newResults[len(newResults)-1]

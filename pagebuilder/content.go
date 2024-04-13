@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/qor5/admin/publish"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/publish"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 )
 

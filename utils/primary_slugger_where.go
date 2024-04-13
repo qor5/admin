@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/v3/presets"
 	"gorm.io/gorm"
 )
 

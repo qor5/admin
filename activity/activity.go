@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 

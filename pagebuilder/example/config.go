@@ -7,15 +7,15 @@ import (
 	"os"
 	"path"
 
-	"github.com/qor5/admin/pagebuilder/example/layouts"
+	"github.com/qor5/admin/v3/pagebuilder/example/layouts"
 
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/pagebuilder/example/containers"
-	"github.com/qor5/admin/richeditor"
+	media_view "github.com/qor5/admin/v3/media/views"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers"
+	"github.com/qor5/admin/v3/richeditor"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

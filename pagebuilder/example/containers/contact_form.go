@@ -5,8 +5,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

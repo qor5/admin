@@ -12,12 +12,12 @@ import (
 	"time"
 	"unicode"
 
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	funk "github.com/thoas/go-funk"
+	"github.com/thoas/go-funk"
 )
 
 type FieldContext struct {
@@ -805,11 +805,11 @@ func (b *ModifiedIndexesBuilder) DeletedContains(sliceFormKey string, index int)
 func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey string, f func(obj interface{}, i int)) {
 	sortedIndexes, ok := b.sortedValues[sliceFormKey]
 	if !ok {
-		i := 0
-		funk.ForEach(slice, func(obj interface{}) {
-			defer func() { i++ }()
+		sliceVal := reflect.ValueOf(slice)
+		for i := 0; i < sliceVal.Len(); i++ {
+			obj := sliceVal.Index(i).Interface()
 			f(obj, i)
-		})
+		}
 		return
 	}
 

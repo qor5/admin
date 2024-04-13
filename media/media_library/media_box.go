@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/v3/media"
 )
 
 const (

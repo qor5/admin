@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/qor5/admin/utils"
+	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
 )
 

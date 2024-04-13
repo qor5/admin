@@ -3,13 +3,12 @@ package presets
 import (
 	"fmt"
 	"net/url"
-	"reflect"
 	"time"
 
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -106,20 +105,4 @@ func isInDialogFromQuery(ctx *web.EventContext) bool {
 
 func ptrTime(t time.Time) *time.Time {
 	return &t
-}
-
-type inputElem interface {
-	*h.HTMLTagBuilder | *VSelectBuilder | *VTextFieldBuilder
-}
-
-var (
-	htmlTagBuilderType = reflect.TypeOf(&h.HTMLTagBuilder{})
-)
-
-// InputWithDefaults fills input element with name, value and label.
-// For now, input must be h.Input, v.VSelect or v.VTextField.
-// This function will be implemented using the FieldContext method
-// when golang supports generic method and the current function will be deprecated.
-func InputWithDefaults(input *h.HTMLTagBuilder, obj any, field *FieldContext) *h.HTMLTagBuilder {
-	return input.Attr(web.VField(field.FormKey, field.StringValue(obj))...).Attr(":label", field.Label)
 }

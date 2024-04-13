@@ -15,33 +15,33 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/l10n"
-	l10n_view "github.com/qor5/admin/l10n/views"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	media_oss "github.com/qor5/admin/media/oss"
-	media_view "github.com/qor5/admin/media/views"
-	microsite_utils "github.com/qor5/admin/microsite/utils"
-	microsite_views "github.com/qor5/admin/microsite/views"
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/pagebuilder/example"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/admin/publish"
-	publish_view "github.com/qor5/admin/publish/views"
-	"github.com/qor5/admin/richeditor"
-	"github.com/qor5/admin/role"
-	"github.com/qor5/admin/slug"
-	"github.com/qor5/admin/utils"
-	"github.com/qor5/admin/worker"
-	v "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/l10n"
+	l10n_view "github.com/qor5/admin/v3/l10n/views"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	media_oss "github.com/qor5/admin/v3/media/oss"
+	media_view "github.com/qor5/admin/v3/media/views"
+	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
+	microsite_views "github.com/qor5/admin/v3/microsite/views"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
+	publish_view "github.com/qor5/admin/v3/publish/views"
+	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/slug"
+	"github.com/qor5/admin/v3/utils"
+	"github.com/qor5/admin/v3/worker"
+	v "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -120,12 +120,12 @@ func NewConfig() Config {
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
 				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
-			//).Density(DensityCompact),
+			// ).Density(DensityCompact),
 			h.If(os.Getenv("AWS_REGION") != "",
 				h.Div(
 					h.Span(msgr.DBResetTipLabel),
 					v.VIcon("schedule").Size(v.SizeXSmall),
-					//.Left(true),
+					// .Left(true),
 					h.Span(countdown).Id("countdown"),
 				).Class("pt-1 pb-2"),
 				v.VDivider(),
@@ -586,7 +586,7 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
 			),
 		)
-		//.Class("mx-auto")
-		//.Attr("max-width", "140")
+		// .Class("mx-auto")
+		// .Attr("max-width", "140")
 	}
 }

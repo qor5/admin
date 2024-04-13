@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/thoas/go-funk"
@@ -442,10 +442,10 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
-	//div := h.Div(
+	// div := h.Div(
 	//	h.Div().Style("width:90%"),
 	//	h.Div().Style("display:flex; "),
-	//).Style("display:flex;")
+	// ).Style("display:flex;")
 
 	return web.Portal(
 		web.Scope(

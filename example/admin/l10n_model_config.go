@@ -1,8 +1,8 @@
 package admin
 
 import (
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/presets"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
 )
 
 func configL10nModel(b *presets.Builder) (*presets.ModelBuilder, *presets.ModelBuilder) {

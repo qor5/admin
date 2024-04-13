@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/publish"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
 )

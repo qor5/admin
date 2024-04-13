@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )

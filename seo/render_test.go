@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/seo"
-	adminUser "github.com/qor5/admin/seo/testdata/admin"
-	customerUser "github.com/qor5/admin/seo/testdata/customer"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/seo"
+	adminUser "github.com/qor5/admin/v3/seo/testdata/admin"
+	customerUser "github.com/qor5/admin/v3/seo/testdata/customer"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

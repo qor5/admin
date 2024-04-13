@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
-	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/theplant/testingutils"
 )
 

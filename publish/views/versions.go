@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/admin/utils"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -201,7 +201,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 					{"title": "Edit", "value": "Edit", "width": "10%", "sortable": false},
 					{"title": "Delete", "value": "Delete", "width": "10%", "sortable": false},
 				}).
-			//HideDefaultFooter(len(versions) <= 10).
+			// HideDefaultFooter(len(versions) <= 10).
 			On("click:row", switchVersionEvent).
 			On("pagination", "locals.versionPage = $event.page").
 			ReturnObject(true).

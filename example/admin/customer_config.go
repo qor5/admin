@@ -1,13 +1,13 @@
 package admin
 
 import (
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	media_view "github.com/qor5/admin/v3/media/views"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 

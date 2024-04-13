@@ -1,7 +1,7 @@
 package role
 
 import (
-	"github.com/qor5/x/perm"
+	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 )
 

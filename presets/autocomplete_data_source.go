@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 )
 
 const autocompleteDataSourceEvent = "autocomplete-data-source-event"
@@ -27,7 +27,7 @@ type OptionItem struct {
 
 type AutocompleteDataSourceConfig struct {
 	OptionValue string
-	OptionText  interface{} //func(interface{}) string or string
+	OptionText  interface{} // func(interface{}) string or string
 	OptionIcon  func(interface{}) string
 
 	IsPaging bool

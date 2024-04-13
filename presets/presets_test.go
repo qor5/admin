@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
-	
-	"github.com/qor5/web"
+
+	"github.com/qor5/web/v3"
 )
 
 func TestIsMenuItemActive(t *testing.T) {

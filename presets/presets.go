@@ -9,17 +9,17 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
-	goji "goji.io"
-	"goji.io/middleware"
-	"goji.io/pat"
+	"goji.io/v3"
+	"goji.io/v3/middleware"
+	"goji.io/v3/pat"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -457,8 +457,8 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		// ).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
 	).Class("rounded-lg").
 		Value(m.label)
-	//.ActiveClass("bg-red")
-	//Attr("color", "primary")
+	// .ActiveClass("bg-red")
+	// Attr("color", "primary")
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
@@ -471,9 +471,9 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 `, web.Plaid().PushStateURL(href).Go())
 		item.Attr("@click", funcStr)
 	}
-	//if b.isMenuItemActive(ctx, m) {
+	// if b.isMenuItemActive(ctx, m) {
 	//	item = item.Class("v-list-item--active text-primary")
-	//}
+	// }
 	return item
 }
 
@@ -615,7 +615,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				Density(DensityCompact).
 				Attr("v-model:opened", "locals.menuOpened").
 				Attr("v-model:selected", "locals.selection"),
-			//.Attr("v-model:selected", h.JSONString([]string{"Pages"})),
+			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
 		).VSlot("{ locals }").Init(
 			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
 			fmt.Sprintf(`{ selection:  ["%s"]}`, selection),
@@ -852,7 +852,7 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 			).Attr("v-bind", "props").
 				Density(DensityCompact).
 				Variant(VariantText),
-			//.Class("ml-1")
+			// .Class("ml-1")
 		),
 		VCard(content),
 	)
@@ -952,12 +952,12 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			profile = b.profileFunc(ctx)
 		}
 
-		//showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
-		//var notifier h.HTMLComponent
-		//if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
+		// showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
+		// var notifier h.HTMLComponent
+		// if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
 		//	notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
-		//}
-		//ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxNotifyCenter, notifier))
+		// }
+		// ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxNotifyCenter, notifier))
 
 		// showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 

@@ -11,29 +11,29 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/richeditor"
+	"github.com/qor5/admin/v3/richeditor"
+	"goji.io/v3/pat"
 
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/l10n"
-	l10n_view "github.com/qor5/admin/l10n/views"
-	mediav "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/admin/publish/views"
-	pv "github.com/qor5/admin/publish/views"
-	"github.com/qor5/admin/seo"
-	"github.com/qor5/admin/utils"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/l10n"
+	l10n_view "github.com/qor5/admin/v3/l10n/views"
+	mediav "github.com/qor5/admin/v3/media/views"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/publish/views"
+	pv "github.com/qor5/admin/v3/publish/views"
+	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/utils"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"goji.io/pat"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -450,11 +450,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 									menu,
 								).Class("ma-4").Variant(VariantText),
 							),
-							//ModelValue(true).
+							// ModelValue(true).
 							//	Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
 							VAppBar(
 								profile,
-								//VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+								// VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
 						).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
 					).Width(320).

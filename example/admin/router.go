@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/x/sitemap"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/x/v3/sitemap"
 )
 
 //go:embed assets/favicon.ico

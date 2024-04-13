@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/oss"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/oss"
 	"gorm.io/gorm"
 )
 

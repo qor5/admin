@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	examples2 "github.com/qor5/admin/presets/examples"
-	"github.com/qor5/web/multipartestutils"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	examples2 "github.com/qor5/admin/v3/presets/examples"
+	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -103,8 +103,8 @@ var cases = []reqCase{
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
 			partial := er.UpdatePortals[0].Body
-			if strings.Index(partial, `field-name='[plaidForm, "Number"]'`) < 0 {
-				t.Error(`can't find field-name='[plaidForm, "Number"]'`, partial)
+			if strings.Index(partial, `v-model='form["Number"]' v-assign='[form, {"Number":""}]'`) < 0 {
+				t.Error(`v-model='form["Number"]' v-assign='[form, {"Number":""}]'`, partial)
 			}
 			return
 		},
@@ -148,8 +148,8 @@ var cases = []reqCase{
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
 			partial := er.UpdatePortals[0].Body
-			if strings.Index(partial, `field-name='[plaidForm, "OwnerName"]'`) < 0 {
-				t.Error(`can't find field-name='[plaidForm, "OwnerName"]'`, partial)
+			if strings.Index(partial, `v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`) < 0 {
+				t.Error(`can't find v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`, partial)
 			}
 			return
 		},
@@ -194,8 +194,8 @@ var cases = []reqCase{
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
 			partial := er.UpdatePortals[0].Body
-			if strings.Index(partial, `v-field-name='[plaidForm, "Agree"]'`) < 0 {
-				t.Error(`can't find v-field-name='[plaidForm, "Agree"]'`, partial)
+			if strings.Index(partial, `v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`) < 0 {
+				t.Error(`can't find v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`, partial)
 			}
 			return
 		},

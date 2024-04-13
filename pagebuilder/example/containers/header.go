@@ -6,10 +6,10 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -40,11 +40,11 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 }
 
 func HeaderTemplate(data *WebHeader, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	//bc := data.Color
+	// bc := data.Color
 	style := "color: #fff;background: #000;"
-	//if input.IsEditor && (input.Device == "phone" || input.Device == "tablet") {
+	// if input.IsEditor && (input.Device == "phone" || input.Device == "tablet") {
 	//	bc = "black"
-	//}
+	// }
 	if data.Color == "white" {
 		style = "color: #000;background: #fff;"
 	}

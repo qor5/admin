@@ -14,8 +14,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	archiver "github.com/mholt/archiver/v4"
 	"github.com/qor/oss"
-	"github.com/qor5/admin/microsite/utils"
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/microsite/utils"
+	"github.com/qor5/admin/v3/publish"
 	"gorm.io/gorm"
 )
 

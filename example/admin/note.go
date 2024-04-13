@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/qor5/web"
-	"github.com/qor5/admin/note"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 

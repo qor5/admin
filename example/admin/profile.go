@@ -8,15 +8,15 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
-	"github.com/qor5/admin/example/models"
-	plogin "github.com/qor5/admin/login"
-	"github.com/qor5/admin/presets"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/example/models"
+	plogin "github.com/qor5/admin/v3/login"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -284,7 +284,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 				VDataTable().Headers(sessionTableHeaders).
 					Items(items).
 					ItemsPerPage(-1),
-				//TODO fix it .HideDefaultFooter(true),
+				// TODO fix it .HideDefaultFooter(true),
 			),
 		).Class("mx-2 mt-12 mb-4")
 	})

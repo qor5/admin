@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/ory/ladon"
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 )
 

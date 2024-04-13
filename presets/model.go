@@ -9,9 +9,9 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
 )
 
 type ModelBuilder struct {

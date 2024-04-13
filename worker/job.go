@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -27,7 +27,7 @@ type JobBuilder struct {
 	r              interface{}
 	rmb            *presets.ModelBuilder
 	h              JobHandler
-	contextHandler func(*web.EventContext) map[string]interface{} //optional
+	contextHandler func(*web.EventContext) map[string]interface{} // optional
 	global         bool
 }
 

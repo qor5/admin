@@ -3,10 +3,10 @@ package login
 import (
 	"fmt"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
 )
 
 const (

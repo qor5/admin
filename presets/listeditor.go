@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )

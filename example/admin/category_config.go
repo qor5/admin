@@ -3,10 +3,10 @@ package admin
 import (
 	"strconv"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/presets"
-	v "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	v "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )

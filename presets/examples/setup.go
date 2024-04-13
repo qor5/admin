@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/presets/gorm2op"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -135,7 +135,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			VToolbarTitle("My Admin"),
 		)
 	})
-	//.BrandTitle("My Admin")
+	// .BrandTitle("My Admin")
 
 	writeFieldDefaults := p.FieldDefaults(presets.WRITE)
 	writeFieldDefaults.FieldType(&Thumb{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -238,8 +238,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			errorMessage = ctx.Flash.(string)
 		}
 		return VTextField().
-			FieldName("ApprovalComment").
-			Value(comment).
+			Attr(web.VField("ApprovalComment", comment)...).
 			Label("Comment").
 			ErrorMessages(errorMessage)
 	})
@@ -329,13 +328,12 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 		return VAutocomplete().
-			FieldName(field.Name).
+			Attr(web.VField(field.Name, u.LanguageCode)...).
 			Label(field.Label).
 			Items(langs).
-			ItemText("Name").
+			ItemTitle("Name").
 			ItemValue("Code").
-			Multiple(false).
-			Value(u.LanguageCode)
+			Multiple(false)
 	})
 
 	ef.Field("CompanyID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -346,13 +344,12 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 		return VSelect().
-			FieldName("CompanyID").
+			Attr(web.VField("CompanyID", u.CompanyID)...).
 			Label(field.Label).
 			Items(companies).
-			ItemText("Name").
+			ItemTitle("Name").
 			ItemValue("ID").
-			Multiple(false).
-			Value(u.CompanyID)
+			Multiple(false)
 	})
 
 	dp := m.Detailing("MainInfo", "Details", "Cards", "Events")
@@ -535,13 +532,14 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			alert = VAlert(h.Text(ve.GetGlobalError())).Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 
 		return h.Components(
 			alert,
-			VCheckbox().FieldName("Agree").Value(ctx.R.FormValue("Agree")).Label("Agree the terms"),
+			VCheckbox().
+				Attr(web.VField("Agree", ctx.R.FormValue("Agree"))...).
+				Label("Agree the terms"),
 		)
 	})
 

@@ -3,9 +3,9 @@ package admin
 import (
 	"os"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/role"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/x/v3/perm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
