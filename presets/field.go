@@ -17,7 +17,6 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/thoas/go-funk"
 )
 
 type FieldContext struct {
@@ -382,7 +381,7 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 	}
 
 	var i = 0
-	funk.ForEach(childFromObjs, func(childFromObj interface{}) {
+	reflectutils.ForEach(childFromObjs, func(childFromObj interface{}) {
 		defer func() { i++ }()
 		if childFromObj == nil {
 			return
@@ -815,8 +814,10 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 
 	sliceLen := reflect.ValueOf(slice).Len()
 	for j1 := 0; j1 < sliceLen; j1++ {
-		if funk.Contains(sortedIndexes, fmt.Sprint(j1)) {
-			continue
+		for _, j2 := range sortedIndexes {
+			if j2 == fmt.Sprint(j1) {
+				continue
+			}
 		}
 		sortedIndexes = append(sortedIndexes, fmt.Sprint(j1))
 	}

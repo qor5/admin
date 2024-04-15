@@ -25,13 +25,12 @@ require (
 	github.com/qor5/ui/v3 v3.0.0
 	github.com/qor5/web/v3 v3.0.0
 	github.com/qor5/x/v3 v3.0.0
-	github.com/sunfmin/reflectutils v1.0.3
+	github.com/sunfmin/reflectutils v1.0.4
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testingutils v0.0.0-20240326065615-ab2586803ce4
-	github.com/thoas/go-funk v0.9.3
 	github.com/tnclong/go-que v0.0.0-20240226030728-4e1f3c8ec781
 	github.com/ua-parser/uap-go v0.0.0-20240113215029-33f8e6d47f38
 	github.com/wcharczuk/go-chart/v2 v2.1.1

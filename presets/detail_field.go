@@ -14,7 +14,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/thoas/go-funk"
 )
 
 const (
@@ -367,7 +366,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	}
 
 	i := 0
-	funk.ForEach(list, func(elementObj interface{}) {
+	reflectutils.ForEach(list, func(elementObj interface{}) {
 		defer func() { i++ }()
 		// set fieldSetting to ctx.R.Form by sortIndex
 		sortIndex := i

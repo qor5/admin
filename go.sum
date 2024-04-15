@@ -240,8 +240,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/sunfmin/reflectutils v1.0.3 h1:9crqUv4CdmvPDF4ymxG6sb6EVualibt9pYkTacrP1OM=
-github.com/sunfmin/reflectutils v1.0.3/go.mod h1:ckN+r+oXS4OXFEVU+CCRuXBujUPCGlV86oCh/QsS3h4=
+github.com/sunfmin/reflectutils v1.0.4 h1:H3Py82ZE/XW4fi2/nXObxuNv4jkvd3lfz6ZZT30jw4I=
+github.com/sunfmin/reflectutils v1.0.4/go.mod h1:ao2bbF4RZrTe2PboJKdZoC3BA71gdU6rFkCuUjoeqMw=
 github.com/theplant/bimg v1.1.1 h1:97KW0oDbGt8d3K7vu2rgM88gT/+beWzTu0ZwtlqcxwE=
 github.com/theplant/bimg v1.1.1/go.mod h1:H0qlp9lKZoOO4akI0VxEtxO8lgLBLNuhF/+2U00LSPg=
 github.com/theplant/gofixtures v1.1.0 h1:gooxE6aXGn06UnibuUfBYKYiSLEEyk1dOki3MINPfyg=
@@ -256,8 +256,6 @@ github.com/theplant/testingutils v0.0.0-20240326065615-ab2586803ce4 h1:3c6o1DpsF
 github.com/theplant/testingutils v0.0.0-20240326065615-ab2586803ce4/go.mod h1:nh7wj3YTJehg0PBHnPXtvqIqdnBUn0Gqb79JHnblFuc=
 github.com/therootcompany/xz v1.0.1 h1:CmOtsn1CbtmyYiusbfmhmkpAAETj0wBIH6kCYaX+xzw=
 github.com/therootcompany/xz v1.0.1/go.mod h1:3K3UH1yCKgBneZYhuQUvJ9HPD19UEXEI0BWbMn8qNMY=
-github.com/thoas/go-funk v0.9.3 h1:7+nAEx3kn5ZJcnDm2Bh23N2yOtweO14bi//dvRtgLpw=
-github.com/thoas/go-funk v0.9.3/go.mod h1:+IWnUfUmFO1+WVYQWQtIJHeRRdaIyyYglZN7xzUPe4Q=
 github.com/tnclong/go-que v0.0.0-20240226030728-4e1f3c8ec781 h1:Ac5cfBvNehOu4koOGOqNer4uMDCjWcfmLWZxUvmqyr4=
 github.com/tnclong/go-que v0.0.0-20240226030728-4e1f3c8ec781/go.mod h1:j+L/Ih47BU2nmiEW1m5zS2gjxB6xqGyxzHfdXLg/3Ho=
 github.com/ua-parser/uap-go v0.0.0-20240113215029-33f8e6d47f38 h1:F04Na0QJP9GJrwmK3vQDuDrCuGllrrfngW8CIeF1aag=
