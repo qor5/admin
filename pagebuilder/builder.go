@@ -225,8 +225,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	b.mb = pm
 	lb := pm.Listing("ID", "Online", "Title", "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		pagePtr := obj.(**Page)
-		page := *pagePtr
+		page := obj.(*Page)
 		category, err := page.GetCategory(db)
 		if err != nil {
 			panic(err)
