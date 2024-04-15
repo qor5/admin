@@ -136,7 +136,9 @@ func localeListFunc(db *gorm.DB, lb *l10n.Builder) func(obj interface{}, field *
 		vo := reflect.ValueOf(objs).Elem()
 		var existLocales []string
 		for i := 0; i < vo.Len(); i++ {
-			existLocales = append(existLocales, vo.Index(i).FieldByName("LocaleCode").String())
+			//existLocales = append(existLocales, vo.Index(i).FieldByName("LocaleCode").String())
+			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
+
 		}
 
 		allLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
