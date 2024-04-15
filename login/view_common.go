@@ -113,7 +113,7 @@ func (vc *ViewCommon) PasswordInput(
 		in.Attr(":append-inner-icon", fmt.Sprintf(`vars.%s ? "mdi-eye-off" : "mdi-eye"`, varName)).
 			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
 			Attr("@click:append-inner", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
-			Attr(web.ObjectAssign("vars", fmt.Sprintf(`{%s: false}`, varName))...)
+			Attr(web.VAssign("vars", fmt.Sprintf(`{%s: false}`, varName))...)
 	}
 
 	return in

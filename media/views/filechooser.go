@@ -344,7 +344,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					Class("white--text").Style("text-decoration: none;"),
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
-	).Attr(web.ObjectAssign("vars", `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)...)
+	).Attr(web.VAssign("vars", `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)...)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {

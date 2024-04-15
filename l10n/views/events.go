@@ -111,7 +111,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 				),
 			).MaxWidth("600px").
 				Attr("v-model", "vars.localizeConfirmation").
-				Attr(web.ObjectAssign("vars", `{localizeConfirmation: false}`)...),
+				Attr(web.VAssign("vars", `{localizeConfirmation: false}`)...),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.localizeConfirmation = true }, 100)"

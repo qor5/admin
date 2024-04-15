@@ -75,7 +75,7 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
 			clickEvent = ""
 		}
 		tab = VTab(notesTab).
-			Attr(web.ObjectAssign("locals", fmt.Sprintf("{unreadNotesCount:%v}", count))).
+			Attr(web.VAssign("locals", fmt.Sprintf("{unreadNotesCount:%v}", count))).
 			Attr("@click", clickEvent).Value("notesTab")
 
 		content = VWindowItem(web.Portal().Name("notes-section").Children(notesSection)).Value("notesTab")

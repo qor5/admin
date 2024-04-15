@@ -160,7 +160,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 			web.Portal().Name(portalName),
 		).Class("pb-4").
 			Rounded(true).
-			Attr(web.ObjectAssign("vars", `{showFileChooser: false}`)...),
+			Attr(web.VAssign("vars", `{showFileChooser: false}`)...),
 	).MarshalHTML(c)
 }
 
@@ -237,7 +237,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 				),
 			).MaxWidth("600px").
 				Attr("v-model", "vars.mediaLibrary_deleteConfirmation").
-				Attr(web.ObjectAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...),
+				Attr(web.VAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"

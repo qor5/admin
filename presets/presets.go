@@ -1047,7 +1047,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				innerPr.Body,
 			).Class(""),
 		).Attr("id", "vt-app").
-			Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
+			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
 
 		return
 	}
@@ -1092,7 +1092,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 			),
 		).
 			Attr("id", "vt-app").
-			Attr(web.ObjectAssign("vars", `{presetsDialog: false, presetsMessage: {show: false, color: "success", 
+			Attr(web.VAssign("vars", `{presetsDialog: false, presetsMessage: {show: false, color: "success", 
 message: ""}}`)...)
 
 		return

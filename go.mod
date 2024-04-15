@@ -94,8 +94,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/qor5/web/v3 => ../../qor5/web
+replace github.com/qor5/web/v3 => ../web
 
-replace github.com/qor5/ui/v3 => ../../qor5/ui
+replace github.com/qor5/ui/v3 => ../ui
 
-replace github.com/qor5/x/v3 => ../../qor5/x
+replace github.com/qor5/x/v3 => ../x

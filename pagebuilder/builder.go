@@ -451,7 +451,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 								).Class("ma-4").Variant(VariantText),
 							),
 							// ModelValue(true).
-							//	Attr("v-model", "vars.navDrawer").Attr(web.ObjectAssign("vars", `{navDrawer: null}`)...),
+							//	Attr("v-model", "vars.navDrawer").Attr(web.VAssign("vars", `{navDrawer: null}`)...),
 							VAppBar(
 								profile,
 								// VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
@@ -530,7 +530,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					VMain(
 						tabContent.Body.(h.HTMLComponent),
 					),
-				).Attr("id", "vt-app").Attr(web.ObjectAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)...),
+				).Attr("id", "vt-app").Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)...),
 			).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false, activeTab:%d, tabs: [{label:"SETTINGS",query:"settings"},{label:"CONTENT",query:"content"}]}`, activeTabIndex))
 			return
 		}
@@ -614,7 +614,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					body,
 				).Name(selectedTemplatePortal),
 			).Class("my-2").
-				Attr(web.ObjectAssign("vars", `{showTemplateDialog: false}`)...)
+				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...)
 		}
 		return nil
 	})
@@ -1139,7 +1139,7 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 					).Class("pb-4"),
 				).Tile(true),
 			).MaxWidth("80%").
-				Attr(web.ObjectAssign("vars", `{showTemplateDialog: false}`)...).
+				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...).
 				Attr("v-model", fmt.Sprintf("vars.showTemplateDialog")),
 		})
 		er.RunScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
