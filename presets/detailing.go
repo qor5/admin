@@ -2,6 +2,7 @@ package presets
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -120,7 +121,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		panic("not found")
 	}
 
-	obj, err = b.fetcher(obj, id, ctx)
+	obj, err = b.GetFetchFunc()(obj, id, ctx)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
 			return b.mb.p.DefaultNotFoundPageFunc(ctx)
@@ -290,12 +291,12 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 
 // EditDetailField EventFunc: click detail field component edit button
 func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(detailFieldName)
+	key := ctx.Queries().Get(DetailFieldName)
 
 	f := b.GetDetailField(key)
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -315,12 +316,12 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 
 // SaveDetailField EventFunc: click save button
 func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(detailFieldName)
+	key := ctx.Queries().Get(DetailFieldName)
 
 	f := b.GetDetailField(key)
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -350,7 +351,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 		index, deleteIndex int64
 	)
 
-	fieldName = ctx.Queries().Get(detailFieldName)
+	fieldName = ctx.Queries().Get(DetailFieldName)
 	f := b.GetDetailField(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
@@ -366,7 +367,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -390,7 +391,7 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 		index     int64
 	)
 
-	fieldName = ctx.Queries().Get(detailFieldName)
+	fieldName = ctx.Queries().Get(DetailFieldName)
 	f := b.GetDetailField(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.SaveBtnKey()), 10, 64)
@@ -399,7 +400,7 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -424,7 +425,7 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		index     int64
 	)
 
-	fieldName = ctx.Queries().Get(detailFieldName)
+	fieldName = ctx.Queries().Get(DetailFieldName)
 	f := b.GetDetailField(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
@@ -433,7 +434,7 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -473,11 +474,11 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 
 // CreateDetailListField Event: click detail list field element Add row button
 func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	fieldName := ctx.Queries().Get(detailFieldName)
+	fieldName := ctx.Queries().Get(DetailFieldName)
 	f := b.GetDetailField(fieldName)
 
 	obj := b.mb.NewModel()
-	obj, err = b.fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
@@ -491,7 +492,7 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 	}
 	listValue := reflect.ValueOf(list)
 	if listValue.Kind() != reflect.Slice {
-		err = errors.New("field is not a slice")
+		err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
 		return
 	}
 

@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	detailFieldName = "detailField"
+	DetailFieldName = "detailField"
 
 	detailListFieldEditBtnKey   = "detailListFieldEditBtn"
 	detailListFieldSaveBtnKey   = "detailListFieldSaveBtn"
@@ -246,7 +246,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 	btn := VBtn("Edit").
 		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Go())
 
@@ -258,15 +258,15 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentShowFunc(obj, field, ctx)),
+								h.Div(b.componentShowFunc(obj, field, ctx)).Style("display:flex;"),
 								// edit btn
-								h.Div(btn),
+								h.Div(btn).Style("display:flex; width:32px;"),
 							),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
 						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)), h.Br(),
-				),
+				).Style("display:flex; width:561px;"),
 			).VSlot("{ locals }").Init(`{ showBtn:false }`),
 		).VSlot("{ form }"),
 	).Name(b.FieldPortalName())
@@ -275,7 +275,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	btn := VBtn("Save").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Go())
 
@@ -397,7 +397,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 
 	addBtn := VBtn("Add row").
 		Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Go())
 
@@ -437,7 +437,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 		Icon("mdi-square-edit-outline").Size(SizeXSmall).
 		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
@@ -468,13 +468,13 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	saveBtn := VBtn("Save").Size(SizeSmall).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingListField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.SaveBtnKey(), strconv.Itoa(index)).
 			Go())
 	deleteBtn := VBtn("").Icon("mdi-delete").Size(SizeSmall).Rounded("0").
 		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
-			Query(detailFieldName, b.name).
+			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.DeleteBtnKey(), index).
 			Go())
