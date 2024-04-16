@@ -21,7 +21,6 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	var device string
 	var p *Page
 	var previewHref string
-	_ = previewHref
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
 	if isTpl {
@@ -95,4 +94,8 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 		),
 	)
 	return
+}
+
+func (b *Builder) previewHref(id, version, locale string) string {
+	return b.prefix + fmt.Sprintf("/preview?id=%s&version=%s&locale=%s", id, version, locale)
 }

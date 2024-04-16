@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/seo"
@@ -28,7 +29,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 		p := obj.(*Page)
 		c := &Category{}
 		db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
-		var previewDevelopUrl = "http://localhost:9500/page_builder/preview?id=2&version=2024-04-11-v01&locale=International"
+		var previewDevelopUrl = b.previewHref(strconv.Itoa(int(p.GetID())), p.GetVersion(), p.GetLocale())
 		overview := vx.DetailInfo(
 			vx.DetailColumn(
 				vx.DetailField(vx.OptionalText(p.Title).ZeroLabel("No Title")).Label("Title"),
