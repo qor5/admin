@@ -8,11 +8,8 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -306,8 +303,9 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 				h.Tag("vx-scroll-iframe").Attr(
 					":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context()))).
 					Attr(":iframe-height-name", h.JSONString(iframeHeightName)).
-					Attr(":iframe-value", h.JSONString(iframeValue)).Attr("ref", "scrollIframe"),
-			).Class("page-builder-container mx-auto").Attr("style", width)
+					Attr(":iframe-value", h.JSONString(iframeValue)).
+					Attr("ref", "scrollIframe"),
+			).Id("vx-drag-target-area").Class("page-builder-container mx-auto").Attr("style", width)
 
 		} else {
 			r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -327,7 +325,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 	cbs := b.getContainerBuilders(cons)
 
 	device, _ := b.getDevice(ctx)
-	for _, ec := range cbs {
+	for i, ec := range cbs {
 		if ec.container.Hidden {
 			continue
 		}
@@ -344,6 +342,8 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			Device:      device,
 			ContainerId: ec.container.PrimarySlug(),
 			DisplayName: displayName,
+			IsFirst:     i == 0,
+			IsEnd:       i == len(cbs)-1,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 		r = append(r, pure)
@@ -371,160 +371,12 @@ type ContainerSorter struct {
 }
 
 func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageVersion, locale string, isReadonly bool) (r h.HTMLComponent, err error) {
-	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
-	if err != nil {
-		return
-	}
-
-	var sorterData ContainerSorter
-	sorterData.Items = []ContainerSorterItem{}
-	for i, c := range cons {
-		vicon := "mdi-eye"
-		if c.Hidden {
-			vicon = "mdi-eye-off"
-		}
-		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
-
-		sorterData.Items = append(sorterData.Items,
-			ContainerSorterItem{
-				Index:          i,
-				Label:          displayName,
-				ModelName:      inflection.Plural(strcase.ToKebab(c.ModelName)),
-				ModelID:        strconv.Itoa(int(c.ModelID)),
-				DisplayName:    displayName,
-				ContainerID:    strconv.Itoa(int(c.ID)),
-				URL:            b.ContainerByName(c.ModelName).mb.Info().ListingHref(),
-				Shared:         c.Shared,
-				VisibilityIcon: vicon,
-				ParamID:        c.PrimarySlug(),
-				Locale:         locale,
-			},
-		)
-	}
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-	r = web.Scope(
-		VLayout(
-			VAppBar().Title("Elements"),
-			VMain(
-				b.ContainerComponent(ctx),
-			),
+	r = VLayout(
+		VAppBar().Title("Elements"),
+		VMain(
+			b.ContainerComponent(ctx, isReadonly),
 		),
-
-		VSheet(
-			VCard(
-				VList(
-					h.Tag("vx-draggable").
-						Attr("item-key", "model_id").
-						Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
-						Attr("@end", web.Plaid().
-							URL(fmt.Sprintf("%s/editors", b.prefix)).
-							EventFunc(MoveContainerEvent).
-							FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
-							Go()).Children(
-						h.Template(
-							h.Div(
-								VListItem(
-									web.Slot(
-										h.If(!isReadonly,
-											VBtn("").Variant(VariantText).Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
-										),
-										VListItem(
-											VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
-										),
-									).Name("prepend"),
-									web.Slot(
-										h.If(!isReadonly,
-											VBtn("").Variant(VariantText).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
-												web.Plaid().
-													URL(web.Var("element.url")).
-													EventFunc(actions.Edit).
-													Query(presets.ParamOverlay, actions.Drawer).
-													Query(presets.ParamID, web.Var("element.model_id")).
-													Go(),
-											).Class("my-2"),
-											VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
-												web.Plaid().
-													URL(web.Var("element.url")).
-													EventFunc(ToggleContainerVisibilityEvent).
-													Query(paramContainerID, web.Var("element.param_id")).
-													Go(),
-											).Class("my-2"),
-										),
-										h.If(!isReadonly,
-											VMenu(
-												web.Slot(
-													VBtn("").Icon("mdi-dots-horizontal").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
-												).Name("activator").Scope("{ props }"),
-
-												VList(
-													VListItem(
-														web.Slot(
-															VIcon("mdi-pencil"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Rename")),
-													).Attr("@click",
-														web.Plaid().
-															URL(web.Var("element.url")).
-															EventFunc(RenameContainerDialogEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
-															Query(paramContainerName, web.Var("element.display_name")).
-															Go(),
-													),
-													VListItem(
-														web.Slot(
-															VIcon("mdi-delete"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Delete")),
-													).Attr("@click", web.Plaid().
-														URL(web.Var("element.url")).
-														EventFunc(DeleteContainerConfirmationEvent).
-														Query(paramContainerID, web.Var("element.param_id")).
-														Query(paramContainerName, web.Var("element.display_name")).
-														Go(),
-													),
-													VListItem(
-														web.Slot(
-															VIcon("mdi-share"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Mark As Shared Container")),
-													).Attr("@click",
-														web.Plaid().
-															URL(web.Var("element.url")).
-															EventFunc(MarkAsSharedContainerEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
-															Go(),
-													).Attr("v-if", "!element.shared"),
-												).Density(DensityCompact),
-											).Attr("transition", "fab-transition"),
-										),
-									).Name("append"),
-								).Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
-								VDivider(),
-							),
-						).Attr("#item", " { element } "),
-					),
-					h.If(!isReadonly,
-						VListItem(
-							web.Slot(
-								VIcon("mdi-plus").Color("primary"),
-							).Name("prepend"),
-							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Variant(VariantText)),
-						).Attr("@click",
-							web.Plaid().
-								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-								EventFunc(AddContainerDialogEvent).
-								Query(paramPageID, pageID).
-								Query(paramPageVersion, pageVersion).
-								Query(paramLocale, locale).
-								Go(),
-						),
-					),
-				),
-			).Variant(VariantOutlined),
-		).Class("pa-4 pt-2"),
-	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
+	)
 	return
 }
 
@@ -535,19 +387,19 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	containerName := ctx.R.FormValue(paramContainerName)
 	sharedContainer := ctx.R.FormValue(paramSharedContainer)
 	modelID := ctx.QueryAsInt(paramModelID)
-	var newModelID uint
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, pageVersion, locale, containerName, uint(modelID))
-		r.PushState = web.Location(url.Values{})
 	} else {
-		newModelID, err = b.AddContainerToPage(pageID, pageVersion, locale, containerName)
-		r.RunScript = web.Plaid().
-			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-			EventFunc(actions.Edit).
-			Query(presets.ParamOverlay, actions.Drawer).
-			Query(presets.ParamID, fmt.Sprint(newModelID)).
-			Go()
+		_, err = b.AddContainerToPage(pageID, pageVersion, locale, containerName)
+		//r.RunScript = web.Plaid().
+		//	URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		//	EventFunc(actions.Edit).
+		//	Query(presets.ParamOverlay, actions.Drawer).
+		//	Query(presets.ParamID, fmt.Sprint(newModelID)).
+		//	Go()
+
 	}
+	r.PushState = web.Location(url.Values{})
 
 	return
 }
@@ -982,25 +834,12 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	return
 }
 
-type (
-	draggableContainerItem struct {
-		Name  string `json:"name"`
-		Cover string `json:"cover"`
-	}
-	draggableContainerGroup struct {
-		Name  string                   `json:"name"`
-		Items []draggableContainerItem `json:"items"`
-	}
-)
+func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (component h.HTMLComponent) {
 
-func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
-
-	//pageID := ctx.QueryAsInt(paramPageID)
-	//pageVersion := ctx.R.FormValue(paramPageVersion)
 	locale := ctx.R.FormValue(paramLocale)
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-	var groups []draggableContainerGroup
+	var groups []h.HTMLComponent
 
 	for _, builder := range b.containerBuilders {
 		cover := builder.cover
@@ -1008,14 +847,23 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
 		}
 		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
-		group := draggableContainerGroup{Name: containerName}
-		group.Items = append(group.Items, draggableContainerItem{containerName, cover})
-		groups = append(groups, group)
-
+		groups = append(groups, VListGroup(
+			web.Slot(
+				VListItem(
+					VListItemTitle(h.Text(containerName)),
+				).Attr("v-bind", "props"),
+			).Name("activator").Scope(" {  props }"),
+			VListItem(
+				h.Div(
+					VListItemTitle(h.Text(containerName)),
+					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
+				).Attr("draggable", h.JSONString(!isReadonly), "v-bind", `{ shared : "false", modelid :0 }`).Id(builder.name),
+			).Value(containerName)),
+		)
 	}
 
 	var cons []*Container
-	var sharedGroups []draggableContainerGroup
+	var sharedGroups []h.HTMLComponent
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
 	for _, sharedC := range cons {
@@ -1025,9 +873,19 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
 		}
 		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
-		group := draggableContainerGroup{Name: containerName}
-		group.Items = append(group.Items, draggableContainerItem{containerName, cover})
-		sharedGroups = append(sharedGroups, group)
+		sharedGroups = append(sharedGroups, VListGroup(
+			web.Slot(
+				VListItem(
+					VListItemTitle(h.Text(containerName)),
+				).Attr("v-bind", "props"),
+			).Name("activator").Scope(" {  props }"),
+			VListItem(
+				h.Div(
+					VListItemTitle(h.Text(containerName)),
+					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
+				).Attr("draggable", "true", "v-bind", fmt.Sprintf(`{ shared : "true",modelid: %v}`, sharedC.ModelID)).Id(c.name),
+			).Value(containerName)),
+		)
 	}
 	component = web.Scope(
 		VTabs(
@@ -1036,10 +894,10 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 		).Attr("v-model", "tabLocals.tab"),
 		VWindow(
 			VWindowItem(
-				b.draggableContainerList(groups),
+				VList(groups...),
 			).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 			VWindowItem(
-				b.draggableContainerList(sharedGroups),
+				VList(sharedGroups...),
 			).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 		).Attr("v-model", "tabLocals.tab"),
 	).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}")
@@ -1266,28 +1124,4 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
 		return
 	}
-}
-
-func (b *Builder) draggableContainerList(containerGroups []draggableContainerGroup) h.HTMLComponent {
-
-	return web.Scope(
-		VList(
-			h.Tag("vx-draggable").Class("dragArea").Attr("v-model", "draggableLocals.items", "handle", ".handle", "animation", "300").Children(
-				h.Template(
-					VListGroup(
-						web.Slot(
-							VListItem(
-								VListItemTitle(h.Text("{{element.name}}")),
-							).Attr("v-bind", "props"),
-						).Name("activator").Scope(" {  props }"),
-						VListItem(
-							VListItemTitle(h.Text("{{item.name}}")),
-							VListItemSubtitle(VImg().Attr(":src", "item.cover").Height(100)),
-						).Class(".handle").Attr("v-for", "(item, index) in element.items"),
-					).Attr(":value", "element.name"),
-				).Attr("#item", " { element } "),
-			),
-		),
-	).VSlot(`{ locals : draggableLocals } `).Init(fmt.Sprintf(`{ items: %v }`, h.JSONString(containerGroups)))
-
 }

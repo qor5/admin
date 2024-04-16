@@ -45,6 +45,8 @@ type RenderInput struct {
 	Device      string
 	ContainerId string
 	DisplayName string
+	IsFirst     bool
+	IsEnd       bool
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent

@@ -80,6 +80,12 @@ type (
 )
 
 func postMessage(msgType, modelId string, input *pagebuilder.RenderInput) string {
+	if msgType == pagebuilder.EventUp && input.IsFirst {
+		return ""
+	}
+	if msgType == pagebuilder.EventDown && input.IsEnd {
+		return ""
+	}
 	body := postMessageBody{
 		msgType, modelId, input.ContainerId, input.DisplayName,
 	}

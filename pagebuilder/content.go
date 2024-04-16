@@ -58,8 +58,18 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	if err != nil {
 		return
 	}
+	action := web.Plaid().
+		URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)).
+		EventFunc(AddContainerEvent).
+		Query(paramPageID, p.ID).
+		Query(paramPageVersion, p.GetVersion()).
+		Query(paramLocale, locale).
+		Query(paramContainerName, web.Var("$event.start.id")).
+		Query(paramSharedContainer, web.Var(`$event.start.getAttribute("shared")`)).
+		Query(paramModelID, web.Var(`$event.start.getAttribute("modelid")`)).
+		Go()
 	// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	r.Body = h.Components(
+	r.Body = h.Tag("vx-drag-listener").Attr("@drop", action).Children(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
