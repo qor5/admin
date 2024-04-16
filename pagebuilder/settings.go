@@ -259,6 +259,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 				).Class("d-inline-flex w-100"),
 			).VSlot(" { locals : editLocals }").Init(`{ infoTab:"Page",detailTab:"Notes" } `),
 
+			//todo schedule button will move into the top bar
 			h.If(false, VRow(
 				VCol(
 					vx.Card(overview).HeaderTitle("Overview").

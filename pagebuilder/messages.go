@@ -26,6 +26,7 @@ type Messages struct {
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
 	Rename                         string
+	PageOverView                   string
 }
 
 var Messages_en_US = &Messages{
@@ -50,6 +51,7 @@ var Messages_en_US = &Messages{
 	FilterTabOnlineVersion:         "Online Version",
 	FilterTabNamedVersions:         "Named Versions",
 	Rename:                         "Rename",
+	PageOverView:                   "Page OverView",
 }
 
 var Messages_zh_CN = &Messages{
@@ -74,6 +76,7 @@ var Messages_zh_CN = &Messages{
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
 	Rename:                         "重命名",
+	PageOverView:                   "页面概览",
 }
 
 var Messages_ja_JP = &Messages{

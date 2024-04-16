@@ -51,6 +51,8 @@ type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext)
 
 type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent
 
+type SubPageTitleFunc func(ctx *web.EventContext) string
+
 type PageLayoutInput struct {
 	Page              *Page
 	SeoTags           h.HTMLComponent
@@ -76,6 +78,7 @@ type Builder struct {
 	mb                *presets.ModelBuilder
 	pageStyle         h.HTMLComponent
 	pageLayoutFunc    PageLayoutFunc
+	subPageTitleFunc  SubPageTitleFunc
 	preview           http.Handler
 	images            http.Handler
 	seoBuilder        *seo.Builder
@@ -177,6 +180,18 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	b.pageLayoutFunc = v
 	return b
+}
+
+func (b *Builder) SubPageTitle(v SubPageTitleFunc) (r *Builder) {
+	b.subPageTitleFunc = v
+	return b
+}
+
+func (b *Builder) GetPageTitle() SubPageTitleFunc {
+	if b.subPageTitleFunc == nil {
+		b.subPageTitleFunc = defaultSubPageTitle
+	}
+	return b.subPageTitleFunc
 }
 
 func (b *Builder) Images(v http.Handler, imagesPrefix string) (r *Builder) {
@@ -410,15 +425,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go())
 			}
 
-			var innerPr web.PageResponse
-			innerPr, err = in(ctx)
-			if errors.Is(err, perm.PermissionDenied) {
-				pr.Body = h.Text(perm.PermissionDenied.Error())
-				return pr, nil
-			}
-			if err != nil {
-				panic(err)
-			}
+			//var innerPr web.PageResponse
+			//innerPr, err = in(ctx)
+			//if errors.Is(err, perm.PermissionDenied) {
+			//	pr.Body = h.Text(perm.PermissionDenied.Error())
+			//	return pr, nil
+			//}
+			//if err != nil {
+			//	panic(err)
+			//}
 
 			toolbar := VContainer(
 				VRow(
@@ -476,7 +491,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 								Attr("v-if", "!vars.navDrawer").
 								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 							h.Div(
-								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+
+								VToolbarTitle(b.GetPageTitle()(ctx)),
+								//VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 							).Class("mr-auto"),
 							deviceToggler,
 							VTabs(
@@ -2068,4 +2085,8 @@ function(e){
 		EventDelete, deleteAction,
 		EventUp, EventDown, moveAction,
 	)
+}
+
+func defaultSubPageTitle(ctx *web.EventContext) string {
+	return i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages).PageOverView
 }
