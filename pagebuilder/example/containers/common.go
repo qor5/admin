@@ -2,6 +2,7 @@ package containers
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/pagebuilder"
 	"strings"
 
 	"github.com/qor5/admin/v3/media/media_library"
@@ -34,7 +35,7 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 func ContainerWrapper(containerID, anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
-	isEditor bool, isReadonly bool, style string, comp ...HTMLComponent) HTMLComponent {
+	isEditor bool, isReadonly bool, style string, input *pagebuilder.RenderInput, comp ...HTMLComponent) HTMLComponent {
 	r := Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
@@ -50,11 +51,39 @@ func ContainerWrapper(containerID, anchorID, classes,
 		if isReadonly {
 			r.AppendChildren(RawHTML(`<div class="wrapper-shadow"></div>`))
 		} else {
-			r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
+			//r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
+			r.AppendChildren(
+				Div(
+					Div(
+						H6(input.DisplayName).Class("title"),
+						Button("").Children(I("arrow_upward").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventUp, containerID, input)),
+						Button("").Children(I("arrow_downward").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventDown, containerID, input)),
+						Button("").Children(I("delete").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventDelete, containerID, input)),
+					).Class("editor-bar"),
+					Div(
+						Button("").Children(I("add").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventAdd, containerID, input)),
+					).Class("editor-add"),
+				).Class("wrapper-shadow").Attr("onclick", postMessage(pagebuilder.EventEdit, containerID, input)))
 		}
 	}
 	return r
 
+}
+
+type (
+	postMessageBody struct {
+		MsgType     string `json:"msg_type"`
+		ModelId     string `json:"model_id"`
+		ContainerId string `json:"container_id"`
+		DisplayName string `json:"display_name"`
+	}
+)
+
+func postMessage(msgType, modelId string, input *pagebuilder.RenderInput) string {
+	body := postMessageBody{
+		msgType, modelId, input.ContainerId, input.DisplayName,
+	}
+	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, JSONString(body))
 }
 
 func LinkTextWithArrow(text, link string, class ...string) HTMLComponent {

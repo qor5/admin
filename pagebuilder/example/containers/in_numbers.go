@@ -72,7 +72,7 @@ func InNumbersBody(data *InNumbers, input *pagebuilder.RenderInput) (body HTMLCo
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("InNumbers"))+"_%v", data.ID), data.AnchorID, "container-in_numbers container-corner",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div(
 			H2(data.Heading).Class("container-in_numbers-heading"),
 			InNumbersItemsBody(data.Items),

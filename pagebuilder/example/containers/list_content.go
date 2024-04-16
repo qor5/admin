@@ -92,7 +92,7 @@ func ListContentBody(data *ListContent, input *pagebuilder.RenderInput) (body HT
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContent"))+"_%v", data.ID), data.AnchorID, "container-list_content container-lottie",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div(
 			ListItemsBody(data.Items, input),
 			If(data.LinkText != "" && data.Link != "",

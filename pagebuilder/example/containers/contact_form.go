@@ -86,11 +86,10 @@ func ContactFormBody(data *ContactForm, input *pagebuilder.RenderInput) (body HT
 			).Class("container-contact_form-submit"),
 		).Class("container-contact_form-form").Action(data.ActionUrl).Method("POST"),
 	).Class("container-contact_form-inner")
-
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ContactForm"))+"_%v", data.ID), data.AnchorID, "container-contact_form container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div(
 			n,
 		).Class("container-wrapper"),

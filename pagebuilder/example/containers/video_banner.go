@@ -48,7 +48,7 @@ func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HT
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div().Class("container-video_banner-mask"), VideoBannerHeadBody(data), VideoBannerFootBody(data),
 		// If(data.PopupText != "", VideoBannerPopupBody(data)),
 	)

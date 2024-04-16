@@ -73,7 +73,7 @@ func ListContentWithImageBody(data *ListContentWithImage, input *pagebuilder.Ren
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContentWithImage"))+"_%v", data.ID), data.AnchorID, "container-list_content_with_image",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div(
 			ImageListItemsBody(data.Items),
 		).Class("container-wrapper"),

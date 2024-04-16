@@ -33,6 +33,7 @@ const (
 	DeleteContainerConfirmationEvent = "page_builder_DeleteContainerConfirmationEvent"
 	DeleteContainerEvent             = "page_builder_DeleteContainerEvent"
 	MoveContainerEvent               = "page_builder_MoveContainerEvent"
+	MoveUpDownContainerEvent         = "page_builder_MoveUpDownContainerEvent"
 	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
 	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
@@ -46,10 +47,17 @@ const (
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
+	paramMoveDirection   = "paramMoveDirection"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
+
+	EventUp     = "up"
+	EventDown   = "down"
+	EventDelete = "delete"
+	EventAdd    = "add"
+	EventEdit   = "edit"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -218,15 +226,38 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		top: 0;
 		left: 0;
 	}
-	.wrapper-shadow button{
+	.wrapper-shadow .editor-bar{
 		position:absolute;
-		top: 0;
-		right: 0;
+		bottom: 0;
+		left: 0;
     	line-height: 1;
 		font-size: 0;
-		border: 2px outset #767676;
+		//border: 2px outset #767676;
 		cursor: pointer;
+        background-color: #3E63DD;
+        display: flex;
+        align-items:center;
 	}
+	.wrapper-shadow .editor-add{
+		position:absolute;
+		bottom: 0;
+		left: 50%;
+    	line-height: 1;
+		font-size: 0;
+		//border: 2px outset #767676;
+		cursor: pointer;
+        background-color: #3E63DD;
+	}
+    .wrapper-shadow .bar {
+      color: #FFFFFF;
+      background-color: #3E63DD;
+      display:inline;
+     }
+	 .wrapper-shadow .title{
+      color: #FFFFFF;
+      background-color: #3E63DD;
+     margin-right:10px;
+     }
 	.wrapper-shadow.hover {
 		cursor: pointer;
 		opacity: 1;
@@ -305,12 +336,14 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 		if err != nil {
 			return
 		}
-
+		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
-			Page:       p,
-			IsEditor:   isEditor,
-			IsReadonly: isReadonly,
-			Device:     device,
+			Page:        p,
+			IsEditor:    isEditor,
+			IsReadonly:  isReadonly,
+			Device:      device,
+			ContainerId: ec.container.PrimarySlug(),
+			DisplayName: displayName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 		r = append(r, pure)
@@ -370,7 +403,15 @@ func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageV
 		)
 	}
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 	r = web.Scope(
+		VLayout(
+			VAppBar().Title("Elements"),
+			VMain(
+				b.ContainerComponent(ctx),
+			),
+		),
+
 		VSheet(
 			VCard(
 				VList(
@@ -524,6 +565,44 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 			if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", r.ContainerID, r.Locale).Update("display_order", i+1).Error; inerr != nil {
 				return
 			}
+		}
+		return
+	})
+
+	r.PushState = web.Location(url.Values{})
+	return
+}
+
+func (b *Builder) MoveUpDownContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		container    Container
+		preContainer Container
+	)
+	paramID := ctx.R.FormValue(paramContainerID)
+	direction := ctx.R.FormValue(paramMoveDirection)
+	cs := container.PrimaryColumnValuesBySlug(paramID)
+	containerID := cs["id"]
+	locale := cs["locale_code"]
+
+	err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
+		if inerr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; inerr != nil {
+			return
+		}
+		g := tx.Model(&Container{}).Where("page_id = ? AND page_version = ? AND locale_code = ? ", container.PageID, container.PageVersion, container.LocaleCode)
+		if direction == EventUp {
+			g = g.Where("display_order < ? ", container.DisplayOrder).Order(" display_order desc ")
+		} else {
+			g = g.Where("display_order > ? ", container.DisplayOrder).Order(" display_order asc ")
+		}
+		g.First(&preContainer)
+		if preContainer.ID <= 0 {
+			return
+		}
+		if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("display_order", preContainer.DisplayOrder).Error; inerr != nil {
+			return
+		}
+		if inerr = tx.Model(&Container{}).Where("id = ? AND locale_code = ?", preContainer.ID, preContainer.LocaleCode).Update("display_order", container.DisplayOrder).Error; inerr != nil {
+			return
 		}
 		return
 	})
@@ -903,6 +982,70 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	return
 }
 
+type (
+	draggableContainerItem struct {
+		Name  string `json:"name"`
+		Cover string `json:"cover"`
+	}
+	draggableContainerGroup struct {
+		Name  string                   `json:"name"`
+		Items []draggableContainerItem `json:"items"`
+	}
+)
+
+func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
+
+	//pageID := ctx.QueryAsInt(paramPageID)
+	//pageVersion := ctx.R.FormValue(paramPageVersion)
+	locale := ctx.R.FormValue(paramLocale)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+	var groups []draggableContainerGroup
+
+	for _, builder := range b.containerBuilders {
+		cover := builder.cover
+		if cover == "" {
+			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+		}
+		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+		group := draggableContainerGroup{Name: containerName}
+		group.Items = append(group.Items, draggableContainerItem{containerName, cover})
+		groups = append(groups, group)
+
+	}
+
+	var cons []*Container
+	var sharedGroups []draggableContainerGroup
+
+	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
+	for _, sharedC := range cons {
+		c := b.ContainerByName(sharedC.ModelName)
+		cover := c.cover
+		if cover == "" {
+			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+		}
+		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+		group := draggableContainerGroup{Name: containerName}
+		group.Items = append(group.Items, draggableContainerItem{containerName, cover})
+		sharedGroups = append(sharedGroups, group)
+	}
+	component = web.Scope(
+		VTabs(
+			VTab(h.Text(msgr.New)).Value(msgr.New),
+			VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
+		).Attr("v-model", "tabLocals.tab"),
+		VWindow(
+			VWindowItem(
+				b.draggableContainerList(groups),
+			).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+			VWindowItem(
+				b.draggableContainerList(sharedGroups),
+			).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+		).Attr("v-model", "tabLocals.tab"),
+	).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}")
+	return
+}
+
 func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	pageID := ctx.QueryAsInt(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
@@ -1123,4 +1266,28 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
 		return
 	}
+}
+
+func (b *Builder) draggableContainerList(containerGroups []draggableContainerGroup) h.HTMLComponent {
+
+	return web.Scope(
+		VList(
+			h.Tag("vx-draggable").Class("dragArea").Attr("v-model", "draggableLocals.items", "handle", ".handle", "animation", "300").Children(
+				h.Template(
+					VListGroup(
+						web.Slot(
+							VListItem(
+								VListItemTitle(h.Text("{{element.name}}")),
+							).Attr("v-bind", "props"),
+						).Name("activator").Scope(" {  props }"),
+						VListItem(
+							VListItemTitle(h.Text("{{item.name}}")),
+							VListItemSubtitle(VImg().Attr(":src", "item.cover").Height(100)),
+						).Class(".handle").Attr("v-for", "(item, index) in element.items"),
+					).Attr(":value", "element.name"),
+				).Attr("#item", " { element } "),
+			),
+		),
+	).VSlot(`{ locals : draggableLocals } `).Init(fmt.Sprintf(`{ items: %v }`, h.JSONString(containerGroups)))
+
 }

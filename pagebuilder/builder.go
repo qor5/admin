@@ -39,10 +39,12 @@ import (
 )
 
 type RenderInput struct {
-	Page       *Page
-	IsEditor   bool
-	IsReadonly bool
-	Device     string
+	Page        *Page
+	IsEditor    bool
+	IsReadonly  bool
+	Device      string
+	ContainerId string
+	DisplayName string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -152,6 +154,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(MoveUpDownContainerEvent, r.MoveUpDownContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
 	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
@@ -338,13 +341,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				panic(err)
 			}
 			device := ctx.R.FormValue("device")
-			editAction := web.POST().
-				EventFunc(actions.Edit).
-				URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-				Query(presets.ParamOverlay, actions.Drawer).
-				Query(presets.ParamID, web.Var("arr[1]")).
-				Go()
-
 			var (
 				publishBtn    h.HTMLComponent
 				duplicateBtn  h.HTMLComponent
@@ -416,7 +412,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 			var innerPr web.PageResponse
 			innerPr, err = in(ctx)
-			if err == perm.PermissionDenied {
+			if errors.Is(err, perm.PermissionDenied) {
 				pr.Body = h.Text(perm.PermissionDenied.Error())
 				return pr, nil
 			}
@@ -503,18 +499,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						utilsMsgr),
 					h.If(isContent,
 						h.Tag("vx-restore-scroll-listener"),
-						vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
-							function(e){
-								if (!e.data.split) {
-									return
-								}
-								let arr = e.data.split("_");
-								if (arr.length != 2) {
-									console.log(arr);
-									return
-								}
-								%s
-							}`, editAction))),
+						vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction())),
 					VProgressLinear().
 						Attr(":active", "isFetching").
 						Attr("style", "position: fixed; z-index: 99").
@@ -795,7 +780,7 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 			return h.Td()
 		}
 
-		return h.Td(VBtn("").Icon(true).Children(VIcon("delete")).Attr("@click", web.Plaid().
+		return h.Td(VBtn("").Icon("mdi-delete").Variant(VariantText).Attr("@click", web.Plaid().
 			URL(pb.GetURIPrefix()+"/version-list-dialog").
 			EventFunc(deleteVersionDialogEvent).
 			Queries(ctx.Queries()).
@@ -2033,4 +2018,54 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	b.ps.ServeHTTP(w, r)
+}
+
+func (b *Builder) generateEditorBarJsFunction() string {
+	editAction := web.POST().
+		EventFunc(actions.Edit).
+		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+		Query(presets.ParamOverlay, actions.Drawer).
+		Query(presets.ParamID, web.Var("arr[1]")).
+		Go()
+	deleteAction := web.POST().
+		EventFunc(DeleteContainerConfirmationEvent).
+		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+		Query(paramContainerID, web.Var("container_id")).
+		Query(paramContainerName, web.Var("display_name")).
+		Go()
+	moveAction := web.Plaid().
+		URL(fmt.Sprintf("%s/editors", b.prefix)).
+		EventFunc(MoveUpDownContainerEvent).
+		Query(paramContainerID, web.Var("container_id")).
+		Query(paramMoveDirection, web.Var("msg_type")).
+		Go()
+	return fmt.Sprintf(`
+function(e){
+	const { msg_type,model_id ,container_id ,display_name } = e.data
+	if (!msg_type && model_id.split) {
+		return
+	} 
+	let arr = model_id.split("_");
+	if (arr.length != 2) {
+		console.log(arr);
+		return
+	}
+    switch (msg_type) {
+	  case '%s':
+		%s;
+		break
+      case '%s':
+        %s;
+        break
+	  case '%s':
+	  case '%s':
+		%s;
+		break
+    }
+	
+}`,
+		EventEdit, editAction,
+		EventDelete, deleteAction,
+		EventUp, EventDown, moveAction,
+	)
 }

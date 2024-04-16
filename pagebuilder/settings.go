@@ -207,15 +207,16 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 			).Class("mt-5").Value("Activity"),
 		).Attr("v-model", "editLocals.detailTab")
 		versionSwitch := VChip(
-			VChip(h.Text(fmt.Sprintf("%d", versionCount(db, p)))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
-			h.Text(p.GetVersionName()+" | "),
-			VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black").Attr("style", "height:20px"),
+			h.Text(p.GetVersionName()),
+			VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black ml-2").Attr("style", "height:20px"),
 			VIcon("chevron_right"),
 		).Label(true).Variant(VariantOutlined).Class("px-1 ml-8 rounded-r-0 text-black").Attr("style", "height:40px;background-color:#FFFFFF!important;").
 			Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 				URL(b.prefix+"/version-list-dialog").
 				Query("select_id", p.PrimarySlug()).
 				Go())
+
+		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
 
 		return VContainer(
 			web.Scope(
@@ -238,6 +239,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 									VBtn("").Icon("mdi-file-document-multiple").Color("white").Class("text-none rounded-sm").Size(SizeSmall).Variant(VariantFlat),
 									VBtn("").Icon("mdi-pencil").Color("black").Class("text-none rounded-sm ml-2").Size(SizeSmall).Variant(VariantFlat),
 								).Class("w-100 d-inline-flex").Style(`position:absolute;bottom:24px;left:24px`),
+								h.Div(versionBadge).Style(`position:absolute;top:24px;left:60px`),
 							).Style(`position:relative`).Class("w-100"),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),

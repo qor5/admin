@@ -87,7 +87,7 @@ func ListContentLiteBody(data *ListContentLite, input *pagebuilder.RenderInput) 
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContentLite"))+"_%v", data.ID), data.AnchorID, "container-list_content_lite",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
 		Div(LiteItemsBody(data.Items)).Class("container-wrapper"),
 	)
 	return
