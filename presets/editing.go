@@ -346,7 +346,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					VBtn("").Icon(true).Children(
 						VIcon("mdi-close"),
 					).Attr("@click.stop", closeBtnVarScript),
-				).Color("white").Elevation(0).Density("compact"),
+				).Color("white").Elevation(0),
 			),
 			VMain(
 				VSheet(

@@ -229,18 +229,18 @@ func (b *ListingBuilder) listingComponent(
 	}
 	searchBoxDefault := VResponsive(
 		web.Scope(
-			VTextField(
-				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-			).Density("compact").
+			VTextField().
+				AppendInnerIcon("mdi-magnify").
 				Variant(FieldVariantOutlined).
 				// PrependIcon("mdi-magnify").
 				Label(msgr.Search).
-				Flat(true).
+				Density(DensityCompact).
+				// Flat(true).
 				Clearable(true).
 				HideDetails(true).
 				SingleLine(true).
 				ModelValue(ctx.R.URL.Query().Get("keyword")).
-				Color("grey-lighten-2").
+				// Color("grey-lighten-2").
 				//Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
 				//Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
 				//Attr("@update:focused", "locals.isFocus=!locals.isFocus").
@@ -299,11 +299,12 @@ func (b *ListingBuilder) listingComponent(
 		dialogHeaderBar,
 		tabsAndActionsBar,
 		h.Div(
+			VToolbar(
+				searchBoxDefault,
+				filterBar,
+			).Flat(true).Color("white").Class("pb-2"),
+
 			VCard(
-				VToolbar(
-					searchBoxDefault,
-					filterBar,
-				).Flat(true).Color("white").AutoHeight(true).Class("pa-2"),
 				// VDivider(),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
@@ -312,7 +313,7 @@ func (b *ListingBuilder) listingComponent(
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 		),
 	).Fluid(true).
-		Class("white"),
+		Class("white py-0"),
 	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
 }
 
@@ -1414,7 +1415,6 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1447,7 +1447,6 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1468,8 +1467,7 @@ func (b *ListingBuilder) actionsComponent(
 			web.Slot(
 				VBtn("Actions").
 					Attr("v-bind", "attrs").
-					Attr("v-on", "on").
-					Size(SizeSmall),
+					Attr("v-on", "on"),
 			).Name("activator").Scope("{ on, attrs }"),
 			VList(listItems...),
 		).OpenOnHover(true))
@@ -1493,7 +1491,6 @@ func (b *ListingBuilder) actionsComponent(
 				Color("primary").
 				Variant(VariantFlat).
 				Theme("dark").Class("ml-2").
-				Size(SizeSmall).
 				Disabled(disableNewBtn).
 				Attr("@click", onclick.Go()))
 		}

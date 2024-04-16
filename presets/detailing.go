@@ -204,7 +204,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 				VBtn("").Icon(true).Children(
 					VIcon("close"),
 				).Attr("@click.stop", closeBtnVarScript),
-			).Color("white").Elevation(0).Density("compact"),
+			).Color("white").Elevation(0),
 
 			VMain(
 				VSheet(

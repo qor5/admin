@@ -930,7 +930,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
-						Density("compact").
 						Class("text-grey-darken-1").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
 				).Cols(2),
@@ -1020,8 +1019,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					GetActionsComponent(ctx.R.Context()),
 				).Class("d-flex align-center mx-4 border-b w-100").Style("height: 48px"),
 			).
-				Elevation(0).
-				Density("compact"),
+				Elevation(0),
 
 			// App(true).
 			// Fixed(true),
