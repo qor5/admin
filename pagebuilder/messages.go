@@ -51,7 +51,7 @@ var Messages_en_US = &Messages{
 	FilterTabOnlineVersion:         "Online Version",
 	FilterTabNamedVersions:         "Named Versions",
 	Rename:                         "Rename",
-	PageOverView:                   "Page OverView",
+	PageOverView:                   "Page Overview",
 }
 
 var Messages_zh_CN = &Messages{
@@ -100,4 +100,5 @@ var Messages_ja_JP = &Messages{
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名付け済みバージョン",
 	Rename:                         "名前の変更",
+	PageOverView:                   "ページ概要",
 }
