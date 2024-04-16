@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -814,10 +815,8 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 
 	sliceLen := reflect.ValueOf(slice).Len()
 	for j1 := 0; j1 < sliceLen; j1++ {
-		for _, j2 := range sortedIndexes {
-			if j2 == fmt.Sprint(j1) {
-				continue
-			}
+		if slices.Contains(sortedIndexes, fmt.Sprint(j1)) {
+			continue
 		}
 		sortedIndexes = append(sortedIndexes, fmt.Sprint(j1))
 	}
