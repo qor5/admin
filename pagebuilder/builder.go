@@ -360,42 +360,42 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				publishBtn    h.HTMLComponent
 				duplicateBtn  h.HTMLComponent
 				versionSwitch h.HTMLComponent
-				deviceToggler h.HTMLComponent
-				deviceQueries url.Values
-				activeDevice  int
+				//deviceToggler h.HTMLComponent
+				//deviceQueries url.Values
+				//activeDevice  int
 			)
-			switch device {
-			case DeviceTablet:
-				activeDevice = 1
-			case DevicePhone:
-				activeDevice = 2
-			}
+			//switch device {
+			//case DeviceTablet:
+			//	activeDevice = 1
+			//case DevicePhone:
+			//	activeDevice = 2
+			//}
 
-			deviceToggler = VRow(
-				VCol(
-					web.Scope(
-						VBtnToggle(
-							VBtn("").Icon(true).Children(
-								VIcon("mdi-laptop").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
-							VBtn("").Icon(true).Children(
-								VIcon("mdi-tablet").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
-							VBtn("").Icon(true).Children(
-								VIcon("mdi-cellphone").Size(SizeSmall),
-							).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
-						).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
-					).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
-				).Cols(9).Class("pa-2"),
-			)
+			//deviceToggler = VRow(
+			//	VCol(
+			//		web.Scope(
+			//			VBtnToggle(
+			//				VBtn("").Icon(true).Children(
+			//					VIcon("mdi-laptop").Size(SizeSmall),
+			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
+			//				VBtn("").Icon(true).Children(
+			//					VIcon("mdi-tablet").Size(SizeSmall),
+			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
+			//				VBtn("").Icon(true).Children(
+			//					VIcon("mdi-cellphone").Size(SizeSmall),
+			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
+			//			).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+			//		).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
+			//	).Cols(9).Class("pa-2"),
+			//)
 
 			primarySlug := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
 				primarySlug = v.PrimarySlug()
 			}
+			p := obj.(*Page)
+			vCount := versionCount(db, p)
 			if isVersion {
-				p := obj.(*Page)
-				versionCount := versionCount(db, p)
 				switch p.GetStatus() {
 				case publish.StatusDraft, publish.StatusOffline:
 					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Variant(VariantElevated).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
@@ -414,7 +414,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go(),
 					)
 				versionSwitch = VChip(
-					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
+					VChip(h.Text(fmt.Sprintf("%d", vCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
 					h.Text(p.GetVersionName()+" | "),
 					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black").Attr("style", "height:20px"),
 					VIcon("chevron_right"),
@@ -477,6 +477,14 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 					VAppBar(
 						h.Div(
+							//todo style of title slot will be fixed
+							VAppBarTitle(
+								VCard(
+									h.Text(b.GetPageTitle()(ctx)),
+									h.Text(strconv.Itoa(int(vCount))),
+									h.Text(p.GetVersionName()),
+								),
+							),
 							VProgressLinear().
 								Attr(":active", "isFetching").
 								Class("ml-4").
@@ -490,12 +498,15 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 								Class("mr-2").
 								Attr("v-if", "!vars.navDrawer").
 								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-							h.Div(
 
-								VToolbarTitle(b.GetPageTitle()(ctx)),
-								//VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
-							).Class("mr-auto"),
-							deviceToggler,
+							//h.Div(
+							//
+							//	VToolbarTitle(
+							//
+							//	),
+							//	//VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+							//).Class("mr-auto"),
+							//deviceToggler,
 							VTabs(
 								VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
 									Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
