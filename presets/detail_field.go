@@ -242,7 +242,9 @@ func (b *DetailFieldBuilder) ListFieldPrefix(index int) string {
 }
 
 func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	btn := VBtn("Edit").
+	btn := VBtn("").Size(SizeXSmall).Variant("text").
+		Rounded("0").
+		Icon("mdi-square-edit-outline").
 		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
 			Query(DetailFieldName, b.name).
@@ -257,16 +259,16 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentShowFunc(obj, field, ctx)).Style("display:flex;"),
+								h.Div(b.componentShowFunc(obj, field, ctx)),
 								// edit btn
-								h.Div(btn).Style("display:flex; width:32px;"),
-							),
+								h.Div(btn).Class("ms-auto"),
+							).Class("d-flex"),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)), h.Br(),
-				).Style("display:flex; width:561px;"),
-			).VSlot("{ locals }").Init(`{ showBtn:false }`),
+						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
+				),
+			).VSlot("{ locals }").Init(`{ showBtn:false,color:blue }`),
 		).VSlot("{ form }"),
 	).Name(b.FieldPortalName())
 }
@@ -288,8 +290,8 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 								// detailFields
 								h.Div(b.componentEditFunc(obj, field, ctx)),
 								// edit btn
-								h.Div(btn),
-							),
+								h.Div(btn).Class("ms-auto"),
+							).Class("d-flex flex-column ").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
@@ -301,28 +303,10 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 }
 
 func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
-	t := reflect.TypeOf(obj)
-	if t.Kind() != reflect.Ptr {
-		panic("obj must be pointer")
-	}
+	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
-	var formObj = reflect.New(t.Elem()).Interface()
-	_ = ctx.UnmarshalForm(formObj)
-
-	for _, f := range b.fields {
-		name := f.name
-		info := b.father.mb.modelInfo
-		if info != nil {
-			if info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(obj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil {
-				continue
-			}
-		}
-
-		val, err1 := reflectutils.Get(formObj, name)
-		if err1 == nil {
-			reflectutils.Set(obj, name, val)
-		}
-
+	if err = b.UnmarshalElement(obj, formObj, b.name, ctx); err != nil {
+		return
 	}
 
 	err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
@@ -344,7 +328,8 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
-	if err = b.UnmarshalElement(elementObj, int(index), ctx); err != nil {
+	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+	if err = b.UnmarshalElement(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
 	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
@@ -365,34 +350,37 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		rows = append(rows, h.Div(h.Span(b.label).Style("color:black; fontSize:16px; font-weight:500;")).Style("margin-bottom:8px;"))
 	}
 
-	i := 0
-	reflectutils.ForEach(list, func(elementObj interface{}) {
-		defer func() { i++ }()
-		// set fieldSetting to ctx.R.Form by sortIndex
-		sortIndex := i
-		// find fieldSetting from ctx.R.Form by fromIndex
-		fromIndex := i
-		if deletedID != -1 && i >= deletedID {
-			// if last event is click deleteBtn, fromIndex should add one
-			fromIndex++
-		}
-		if editID == sortIndex {
-			// if click edit
-			rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
-		} else if saveID == sortIndex {
-			// if click save
-			rows = append(rows, b.showElement(elementObj, sortIndex, ctx))
-		} else {
-			// default
-			isEditing := ctx.R.FormValue(b.ListElementIsEditing(fromIndex)) != ""
-			if !isEditing {
+	if list != nil {
+		i := 0
+		reflectutils.ForEach(list, func(elementObj interface{}) {
+			defer func() { i++ }()
+			// set fieldSetting to ctx.R.Form by sortIndex
+			sortIndex := i
+			// find fieldSetting from ctx.R.Form by fromIndex
+			fromIndex := i
+			if deletedID != -1 && i >= deletedID {
+				// if last event is click deleteBtn, fromIndex should add one
+				fromIndex++
+			}
+			if editID == sortIndex {
+				// if click edit
+				rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
+			} else if saveID == sortIndex {
+				// if click save
 				rows = append(rows, b.showElement(elementObj, sortIndex, ctx))
 			} else {
-				b.UnmarshalElement(elementObj, fromIndex, ctx)
-				rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
+				// default
+				isEditing := ctx.R.FormValue(b.ListElementIsEditing(fromIndex)) != ""
+				if !isEditing {
+					rows = append(rows, b.showElement(elementObj, sortIndex, ctx))
+				} else {
+					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+					b.UnmarshalElement(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
+					rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
+				}
 			}
-		}
-	})
+		})
+	}
 
 	addBtn := VBtn("Add row").
 		Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
@@ -441,20 +429,17 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
-	// div := h.Div(
-	//	h.Div().Style("width:90%"),
-	//	h.Div().Style("display:flex; "),
-	// ).Style("display:flex;")
-
 	return web.Portal(
 		web.Scope(
 			VCard(
 				editBtn,
-				b.elementShowFunc(obj, &FieldContext{
-					Name:    b.name,
-					FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-					Label:   b.label,
-				}, ctx),
+				VCardText(
+					b.elementShowFunc(obj, &FieldContext{
+						Name:    b.name,
+						FormKey: fmt.Sprintf("%s[%b]", b.name, index),
+						Label:   b.label,
+					}, ctx),
+				),
 			).Variant(VariantOutlined).
 				Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
 				Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
@@ -480,11 +465,13 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 
 	card := VCard(
 		saveBtn, deleteBtn,
-		b.elementEditFunc(obj, &FieldContext{
-			Name:    fmt.Sprintf("%s[%b]", b.name, index),
-			FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-			Label:   fmt.Sprintf("%s[%b]", b.label, index),
-		}, ctx),
+		VCardText(
+			b.elementEditFunc(obj, &FieldContext{
+				Name:    fmt.Sprintf("%s[%b]", b.name, index),
+				FormKey: fmt.Sprintf("%s[%b]", b.name, index),
+				Label:   fmt.Sprintf("%s[%b]", b.label, index),
+			}, ctx),
+		),
 		h.Input("").Type("hidden").Attr(web.VField(b.ListElementIsEditing(index), true)...),
 	).Variant(VariantOutlined).
 		Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
@@ -498,7 +485,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *DetailFieldBuilder) UnmarshalElement(toObj any, index int, ctx *web.EventContext) error {
+func (b *DetailFieldBuilder) UnmarshalElement(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
 		return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
 	}
@@ -508,18 +495,24 @@ func (b *DetailFieldBuilder) UnmarshalElement(toObj any, index int, ctx *web.Eve
 	newForm := &multipart.Form{
 		Value: make(map[string][]string),
 	}
-	// name[index].key => key
+	// prefix.key => key
 	for k, v := range oldForm.Value {
-		if strings.HasPrefix(k, b.ListFieldPrefix(index)+".") {
-			newForm.Value[strings.TrimPrefix(k, b.ListFieldPrefix(index)+".")] = v
+		if strings.HasPrefix(k, prefix+".") {
+			newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
 		}
 	}
 	ctx2 := &web.EventContext{R: new(http.Request)}
 	ctx2.R.MultipartForm = newForm
 
-	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
 	_ = ctx2.UnmarshalForm(formObj)
 	for _, f := range b.fields {
+		name := f.name
+		info := b.father.mb.modelInfo
+		if info != nil {
+			if info.Verifier().Do(PermCreate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil {
+				continue
+			}
+		}
 		if v, err := reflectutils.Get(formObj, f.name); err == nil {
 			reflectutils.Set(toObj, f.name, v)
 		}

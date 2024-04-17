@@ -490,18 +490,28 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 	if list, err = reflectutils.Get(obj, f.name); err != nil {
 		return
 	}
-	listValue := reflect.ValueOf(list)
-	if listValue.Kind() != reflect.Slice {
-		err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
+
+	listLen := 0
+	if list != nil {
+		listValue := reflect.ValueOf(list)
+		if listValue.Kind() != reflect.Slice {
+			err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
+			return
+		}
+		listLen = listValue.Len()
+	}
+
+	if err = reflectutils.Set(obj, f.name+"[]", f.model); err != nil {
 		return
 	}
 
-	reflectutils.Set(obj, f.name+"[]", f.model)
-	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err = f.saver(obj, ctx.Queries().Get(ParamID), ctx); err != nil {
+		return
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, -1, listValue.Len(), -1),
+		Body: f.listComponent(obj, nil, ctx, -1, listLen, -1),
 	})
 
 	return
