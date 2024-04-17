@@ -262,7 +262,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 								h.Div(b.componentShowFunc(obj, field, ctx)),
 								// edit btn
 								h.Div(btn).Class("ms-auto"),
-							).Class("d-flex"),
+							).Class("d-flex").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
