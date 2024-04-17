@@ -238,7 +238,10 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 								h.Div(
 									versionSwitch.Class("w-75"),
 									VBtn("").Icon("mdi-file-document-multiple").Color("white").Class("text-none rounded-sm").Size(SizeSmall).Variant(VariantFlat),
-									VBtn("").Icon("mdi-pencil").Color("black").Class("text-none rounded-sm ml-2").Size(SizeSmall).Variant(VariantFlat),
+									VBtn("").Icon("mdi-pencil").Color("black").
+										Class("text-none rounded-sm ml-2").
+										Size(SizeSmall).Variant(VariantFlat).
+										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
 								).Class("w-100 d-inline-flex").Style(`position:absolute;bottom:24px;left:24px`),
 								h.Div(versionBadge).Style(`position:absolute;top:24px;left:60px`),
 							).Style(`position:relative`).Class("w-100"),

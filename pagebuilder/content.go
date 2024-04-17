@@ -75,7 +75,8 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 			Fluid(true),
 		web.Scope(
 			VNavigationDrawer(
-				VContainer(
+				// TODO delete this
+				h.If(false, VContainer(
 					VRow(
 						VCol(
 							web.Scope(
@@ -96,6 +97,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 							VBtn("").Icon("mdi-eye").Href(b.prefix+previewHref).To("_blank"),
 						).Cols(3).Class("pa-2 d-flex justify-center"),
 					),
+				),
 				),
 				containerList,
 			).Location(LocationRight).

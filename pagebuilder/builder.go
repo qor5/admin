@@ -347,6 +347,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					ctx.R.Form.Set("tpl", "1")
 				}
 				tabContent, err = b.PageContent(ctx)
+
 			} else {
 				tabContent, err = in(ctx)
 			}
@@ -362,42 +363,37 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				publishBtn    h.HTMLComponent
 				duplicateBtn  h.HTMLComponent
 				versionSwitch h.HTMLComponent
-				//deviceToggler h.HTMLComponent
-				//deviceQueries url.Values
-				//activeDevice  int
+				deviceToggler h.HTMLComponent
+				deviceQueries url.Values
+				activeDevice  int
 			)
-			//switch device {
-			//case DeviceTablet:
-			//	activeDevice = 1
-			//case DevicePhone:
-			//	activeDevice = 2
-			//}
-
-			//deviceToggler = VRow(
-			//	VCol(
-			//		web.Scope(
-			//			VBtnToggle(
-			//				VBtn("").Icon(true).Children(
-			//					VIcon("mdi-laptop").Size(SizeSmall),
-			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceComputer).PushState(true).Go()),
-			//				VBtn("").Icon(true).Children(
-			//					VIcon("mdi-tablet").Size(SizeSmall),
-			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DeviceTablet).PushState(true).Go()),
-			//				VBtn("").Icon(true).Children(
-			//					VIcon("mdi-cellphone").Size(SizeSmall),
-			//				).Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", DevicePhone).PushState(true).Go()),
-			//			).Class("pa-2 rounded-lg").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
-			//		).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice)),
-			//	).Cols(9).Class("pa-2"),
-			//)
+			switch device {
+			case DeviceTablet:
+				activeDevice = 1
+			case DevicePhone:
+				activeDevice = 2
+			}
+			deviceToggler = web.Scope(
+				VBtnToggle(
+					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+						VIcon("mdi-laptop").Size(SizeSmall),
+					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceComputer).PushState(true).Go()),
+					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+						VIcon("mdi-tablet").Size(SizeSmall),
+					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceTablet).PushState(true).Go()),
+					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+						VIcon("mdi-cellphone").Size(SizeSmall),
+					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DevicePhone).PushState(true).Go()),
+				).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+			).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
 
 			primarySlug := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
 				primarySlug = v.PrimarySlug()
 			}
-			p := obj.(*Page)
-			vCount := versionCount(db, p)
 			if isVersion {
+				p := obj.(*Page)
+				versionCount := versionCount(db, p)
 				switch p.GetStatus() {
 				case publish.StatusDraft, publish.StatusOffline:
 					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Variant(VariantElevated).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
@@ -416,7 +412,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go(),
 					)
 				versionSwitch = VChip(
-					VChip(h.Text(fmt.Sprintf("%d", vCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
+					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
 					h.Text(p.GetVersionName()+" | "),
 					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black").Attr("style", "height:20px"),
 					VIcon("chevron_right"),
@@ -427,15 +423,41 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go())
 			}
 
-			//var innerPr web.PageResponse
-			//innerPr, err = in(ctx)
-			//if errors.Is(err, perm.PermissionDenied) {
-			//	pr.Body = h.Text(perm.PermissionDenied.Error())
-			//	return pr, nil
-			//}
-			//if err != nil {
-			//	panic(err)
-			//}
+			var pageAppbarContent []h.HTMLComponent
+			pageAppbarContent = append(pageAppbarContent,
+				VProgressLinear().
+					Attr(":active", "isFetching").
+					Class("ml-4").
+					Attr("style", "position: fixed; z-index: 99;").
+					Indeterminate(true).
+					Height(2).
+					Color(pb.GetProgressBarColor()),
+			)
+			if isContent {
+				pageAppbarContent = h.Components(
+					h.Div(
+						VIcon("mdi-exit-to-app").Class("mr-4").
+							Attr("@click", web.Plaid().Query("tab", "settings").PushState(true).Go()),
+						VToolbarTitle(b.GetPageTitle()(ctx)),
+						versionSwitch,
+					).Class("d-inline-flex align-center"),
+					h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between"),
+					h.Div(duplicateBtn, publishBtn),
+				)
+			} else {
+				pageAppbarContent = h.Components(
+					VAppBarNavIcon().
+						Density("compact").
+						Class("mr-2").
+						Attr("v-if", "!vars.navDrawer").
+						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+					h.Div(
+						VToolbarTitle(
+							b.GetPageTitle()(ctx)),
+					).Class("mr-auto"),
+					VSpacer(),
+				)
+			}
 
 			toolbar := VContainer(
 				VRow(
@@ -455,69 +477,55 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 			pr.Body = web.Scope(
 				VApp(
-					VNavigationDrawer(
-						VLayout(
-							VMain(
-								toolbar,
-								VCard(
-									menu,
-								).Class("ma-4").Variant(VariantText),
-							),
-							// ModelValue(true).
-							//	Attr("v-model", "vars.navDrawer").Attr(web.VAssign("vars", `{navDrawer: null}`)...),
-							VAppBar(
-								profile,
-								// VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
-						).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
-					).Width(320).
-						ModelValue(true).
-						Attr("v-model", "vars.navDrawer").
-						Permanent(true).
-						Floating(true).
-						Elevation(0),
+					h.If(!isContent,
+						VNavigationDrawer(
+							VLayout(
+								VMain(
+									toolbar,
+									VCard(
+										menu,
+									).Class("ma-4").Variant(VariantText),
+								),
+								// ModelValue(true).
+								//	Attr("v-model", "vars.navDrawer").Attr(web.VAssign("vars", `{navDrawer: null}`)...),
+								VAppBar(
+									profile,
+									// VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+								).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
+							).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
+						).Width(320).
+							ModelValue(true).
+							Attr("v-model", "vars.navDrawer").
+							Permanent(true).
+							Floating(true).
+							Elevation(0),
+					),
 
 					VAppBar(
 						h.Div(
-							//todo style of title slot will be fixed
-							VAppBarTitle(
-								VCard(
-									h.Text(b.GetPageTitle()(ctx)),
-									h.Text(strconv.Itoa(int(vCount))),
-									h.Text(p.GetVersionName()),
-								),
-							),
-							VProgressLinear().
-								Attr(":active", "isFetching").
-								Class("ml-4").
-								Attr("style", "position: fixed; z-index: 99;").
-								Indeterminate(true).
-								Height(2).
-								Color(pb.GetProgressBarColor()),
+							pageAppbarContent...,
 
-							VAppBarNavIcon().
-								Density("compact").
-								Class("mr-2").
-								Attr("v-if", "!vars.navDrawer").
-								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-
-							//h.Div(
-							//
-							//	VToolbarTitle(
-							//
-							//	),
-							//	//VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
-							//).Class("mr-auto"),
-							//deviceToggler,
-							VTabs(
-								VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
-									Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
-							).CenterActive(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
-							h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
-						).Class("d-flex align-center mx-4 border-b w-100").Style("height: 48px"),
+						//VAppBarNavIcon().
+						//	Density("compact").
+						//	Class("mr-2").
+						//	Attr("v-if", "!vars.navDrawer").
+						//	On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+						//VIcon("mdi-exit-to-app").Class("mr-4"),
+						//h.Div(
+						//	VToolbarTitle(
+						//		b.GetPageTitle()(ctx)),
+						//	//VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+						//).Class("mr-auto"),
+						//deviceToggler,
+						//VTabs(
+						//	VTab(h.Text("{{item.label}}")).Attr("@click", web.Plaid().Query("tab", web.Var("item.query")).PushState(true).Go()).
+						//		Attr("v-for", "(item, index) in locals.tabs", ":key", "index"),
+						//).CenterActive(true).FixedTabs(true).Attr("v-model", `locals.activeTab`).Attr("style", "width:400px"),
+						//h.If(isVersion, versionSwitch, duplicateBtn, publishBtn),
+						).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
 					).
 						Elevation(0).
-						Density("compact"),
+						Density("compact").Class("px-6"),
 					web.Portal().Name(presets.RightDrawerPortalName),
 					web.Portal().Name(presets.DialogPortalName),
 					web.Portal().Name(presets.DeleteConfirmPortalName),
@@ -551,7 +559,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		}
 	})
 
-	configureVersionListDialog(db, b.ps, pm)
+	configureVersionListDialog(db, b, b.ps, pm)
 
 	if b.templateEnabled {
 		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
@@ -740,12 +748,12 @@ func versionCount(db *gorm.DB, p *Page) (count int64) {
 	return
 }
 
-func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.ModelBuilder) {
+func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm *presets.ModelBuilder) {
 	mb := pb.Model(&Page{}).
 		URIName("version-list-dialog").
 		InMenu(false)
 	searcher := mb.Listing().Searcher
-	lb := mb.Listing("Version", "State", "Notes", "Option").
+	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -767,19 +775,50 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		versionName := obj.(publish.VersionInterface).GetVersionName()
+		p := obj.(*Page)
+		id := ctx.R.FormValue("select_id")
+		if id == "" {
+			id = ctx.R.FormValue("f_select_id")
+		}
 		return h.Td(
-			h.Text(versionName),
-			VBtn("").Icon("mdi-pencil").Variant(VariantText).Attr("@click", web.Plaid().
-				URL(pb.GetURIPrefix()+"/version-list-dialog").
-				EventFunc(renameVersionDialogEvent).
-				Queries(ctx.Queries()).
-				Query(presets.ParamOverlay, actions.Dialog).
-				Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
-				Query("version_name", versionName).
+			VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", web.Plaid().EventFunc(actions.UpdateListingDialog).
+				URL(b.prefix+"/version-list-dialog").
+				Query("select_id", p.PrimarySlug()).
 				Go()),
-		)
+			h.Text(versionName),
+			//VBtn("").Icon("mdi-pencil").Variant(VariantText).Attr("@click", web.Plaid().
+			//	URL(pb.GetURIPrefix()+"/version-list-dialog").
+			//	EventFunc(renameVersionDialogEvent).
+			//	Queries(ctx.Queries()).
+			//	Query(presets.ParamOverlay, actions.Dialog).
+			//	Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
+			//	Query("version_name", versionName).
+			//	Go()),
+		).Class("d-inline-flex align-center")
 	})
 	lb.Field("State").ComponentFunc(pv.StatusListFunc())
+	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		var showTime string
+		if p.GetScheduledStartAt() != nil {
+			showTime = p.GetScheduledStartAt().Format("2006-01-02 15:04")
+		}
+
+		return h.Td(
+			h.Text(showTime),
+		)
+	}).Label("Start at")
+	lb.Field("EndAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		var showTime string
+		if p.GetScheduledEndAt() != nil {
+			showTime = p.GetScheduledEndAt().Format("2006-01-02 15:04")
+		}
+		return h.Td(
+			h.Text(showTime),
+		)
+	}).Label("End at")
+
 	lb.Field("Notes").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		rt := pm.Info().Label()
@@ -801,16 +840,13 @@ func configureVersionListDialog(db *gorm.DB, pb *presets.Builder, pm *presets.Mo
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
-
 		versionName := p.GetVersionName()
-		if p.PrimarySlug() == id {
-			return h.Td(h.Text("current"))
-		}
-		if p.GetStatus() != publish.StatusDraft {
-			return h.Td()
+		var disable bool
+		if p.GetStatus() == publish.StatusOnline || p.GetStatus() == publish.StatusOffline {
+			disable = true
 		}
 
-		return h.Td(VBtn("").Icon("mdi-delete").Variant(VariantText).Attr("@click", web.Plaid().
+		return h.Td(VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(SizeXSmall).Color("primary").Variant(VariantText).Attr("@click", web.Plaid().
 			URL(pb.GetURIPrefix()+"/version-list-dialog").
 			EventFunc(deleteVersionDialogEvent).
 			Queries(ctx.Queries()).
@@ -1539,10 +1575,8 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 					),
 				).MaxWidth("580px").
 					Attr("v-model", "dialogLocals.deleteConfirmation"),
-			).VSlot(" { locals: dialogLocals }").Init(`{deleteConfirmation: false}`),
+			).VSlot(" { locals: dialogLocals }").Init(`{deleteConfirmation: true}`),
 		})
-
-		r.RunScript = "setTimeout(function(){ dialogLocals.deleteConfirmation = true }, 100)"
 		return
 	}
 }

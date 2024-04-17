@@ -229,18 +229,18 @@ func (b *ListingBuilder) listingComponent(
 	}
 	searchBoxDefault := VResponsive(
 		web.Scope(
-			VTextField().
-				AppendInnerIcon("mdi-magnify").
+			VTextField(
+				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+			).Density("compact").
 				Variant(FieldVariantOutlined).
 				// PrependIcon("mdi-magnify").
 				Label(msgr.Search).
-				Density(DensityCompact).
-				// Flat(true).
+				Flat(true).
 				Clearable(true).
 				HideDetails(true).
 				SingleLine(true).
 				ModelValue(ctx.R.URL.Query().Get("keyword")).
-				// Color("grey-lighten-2").
+				Color("grey-lighten-2").
 				//Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
 				//Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
 				//Attr("@update:focused", "locals.isFocus=!locals.isFocus").
@@ -263,48 +263,56 @@ func (b *ListingBuilder) listingComponent(
 	var dialogHeaderBar h.HTMLComponent
 	if inDialog {
 		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
-		var searchBox h.HTMLComponent
 		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
-			searchBox = VTextField().
-				PrependInnerIcon("search").
-				Placeholder(msgr.Search).
-				HideDetails(true).
-				ModelValue(ctx.R.URL.Query().Get("keyword")).
-				Attr("@keyup.enter", web.Plaid().
-					URL(ctx.R.RequestURI).
-					Query("keyword", web.Var("[$event.target.value]")).
-					MergeQuery(true).
-					EventFunc(actions.UpdateListingDialog).
-					Go()).
-				Attr("@click:clear", web.Plaid().
-					URL(ctx.R.RequestURI).
-					Query("keyword", "").
-					MergeQuery(true).
-					EventFunc(actions.UpdateListingDialog).
-					Go()).
-				Class("ma-0 pa-0 mr-6")
+			searchBoxDefault = VResponsive(
+				web.Scope(
+					VTextField(
+						web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+					).Density("compact").
+						Variant(FieldVariantOutlined).
+						Label(msgr.Search).
+						Flat(true).
+						Clearable(true).
+						HideDetails(true).
+						SingleLine(true).
+						ModelValue(ctx.R.URL.Query().Get("keyword")).
+						Color("grey-lighten-2").
+						ModelValue(ctx.R.URL.Query().Get("keyword")).
+						Attr("@keyup.enter", web.Plaid().
+							URL(ctx.R.RequestURI).
+							Query("keyword", web.Var("[$event.target.value]")).
+							MergeQuery(true).
+							EventFunc(actions.UpdateListingDialog).
+							Go()).
+						Attr("@click:clear", web.Plaid().
+							URL(ctx.R.RequestURI).
+							Query("keyword", "").
+							MergeQuery(true).
+							EventFunc(actions.UpdateListingDialog).
+							Go()).
+						Class("ma-0 pa-0 mr-6"),
+				).VSlot("{ locals }").Init(`{isFocus: false}`),
+			).Width(100)
 		}
 		dialogHeaderBar = VAppBar(
 			VToolbarTitle("").
 				Children(h.Text(title)),
 			VSpacer(),
-			searchBox,
 			VBtn("").Icon(true).
 				Children(VIcon("mdi-close")).
 				Size(SizeLarge).
 				Attr("@click.stop", CloseListingDialogVarScript),
 		).Color("white").Elevation(0).Density(DensityCompact)
 	}
-	return web.Scope(VContainer(
+	return web.Scope(VLayout(
 		dialogHeaderBar,
-		tabsAndActionsBar,
-		h.Div(
-			VToolbar(
-				searchBoxDefault,
-				filterBar,
-			).Flat(true).Color("white").Class("pb-2"),
-
+		VMain(
+			tabsAndActionsBar,
 			VCard(
+				VToolbar(
+					searchBoxDefault,
+					filterBar,
+				).Flat(true).Color("white").AutoHeight(true).Class("pa-2"),
 				// VDivider(),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
@@ -312,8 +320,7 @@ func (b *ListingBuilder) listingComponent(
 			).Variant("outlined").Color("blue-grey-lighten-4"),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 		),
-	).Fluid(true).
-		Class("white py-0"),
+	).Class("white"),
 	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
 }
 
@@ -1415,6 +1422,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
+				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1447,6 +1455,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
+				Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1467,7 +1476,8 @@ func (b *ListingBuilder) actionsComponent(
 			web.Slot(
 				VBtn("Actions").
 					Attr("v-bind", "attrs").
-					Attr("v-on", "on"),
+					Attr("v-on", "on").
+					Size(SizeSmall),
 			).Name("activator").Scope("{ on, attrs }"),
 			VList(listItems...),
 		).OpenOnHover(true))
@@ -1491,6 +1501,7 @@ func (b *ListingBuilder) actionsComponent(
 				Color("primary").
 				Variant(VariantFlat).
 				Theme("dark").Class("ml-2").
+				Size(SizeSmall).
 				Disabled(disableNewBtn).
 				Attr("@click", onclick.Go()))
 		}
