@@ -259,10 +259,11 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentShowFunc(obj, field, ctx)).Style("width:100%;"),
+								h.Div(b.componentShowFunc(obj, field, ctx)).
+									Class("flex-grow-1").Style("max-width:465px;"),
 								// edit btn
 								h.Div(btn).Class("ms-auto").Style("width:32px;"),
-							).Class("d-flex").Style("color:initial;"),
+							).Class("d-flex justify-space-between").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
@@ -274,7 +275,8 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 }
 
 func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	btn := VBtn("Save").
+	btn := VBtn("Save").Size(SizeSmall).
+		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
@@ -288,10 +290,11 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentEditFunc(obj, field, ctx)),
-								// edit btn
-								h.Div(btn).Class("ms-auto"),
-							).Class("d-flex flex-column ").Style("color:initial;"),
+								h.Div(b.componentEditFunc(obj, field, ctx)).
+									Class("flex-grow-1").Style("max-width:465px;"),
+								// save btn
+								h.Div(btn).Class("align-self-end"),
+							).Class("d-flex flex-column").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
@@ -424,8 +427,9 @@ func (b *DetailFieldBuilder) FieldPortalName() string {
 }
 
 func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
-	editBtn := VBtn("").
-		Icon("mdi-square-edit-outline").Size(SizeXSmall).
+	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
+		Rounded("0").
+		Icon("mdi-square-edit-outline").
 		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
 			Query(DetailFieldName, b.name).
@@ -436,13 +440,16 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 	return web.Portal(
 		web.Scope(
 			VCard(
-				editBtn,
 				VCardText(
-					b.elementShowFunc(obj, &FieldContext{
-						Name:    b.name,
-						FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-						Label:   b.label,
-					}, ctx),
+					h.Div(
+						h.Div(b.elementShowFunc(obj, &FieldContext{
+							Name:    b.name,
+							FormKey: fmt.Sprintf("%s[%b]", b.name, index),
+							Label:   b.label,
+						}, ctx)).
+							Class("flex-grow-1").Style("max-width:465px;"),
+						h.Div(editBtn),
+					).Class("d-flex justify-space-between"),
 				),
 			).Variant(VariantOutlined).
 				Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
@@ -453,6 +460,28 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 }
 
 func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web.EventContext) h.HTMLComponent {
+	contentDiv := h.Div(
+		h.Div(
+			b.elementEditFunc(obj, &FieldContext{
+				Name:    fmt.Sprintf("%s[%b]", b.name, index),
+				FormKey: fmt.Sprintf("%s[%b]", b.name, index),
+				Label:   fmt.Sprintf("%s[%b]", b.label, index),
+			}, ctx),
+		).Class("flex-grow-1").Style("max-width:465px;"),
+	).Class("d-flex justify-space-between")
+
+	if !b.design.disableElementDeleteBtn {
+		deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
+			Rounded("0").
+			Icon("mdi-delete-outline").
+			Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
+				Query(DetailFieldName, b.name).
+				Query(ParamID, ctx.Queries().Get(ParamID)).
+				Query(b.DeleteBtnKey(), index).
+				Go())
+		contentDiv.AppendChildren(h.Div(deleteBtn).Class("d-flex pl-3"))
+	}
+
 	saveBtn := VBtn("Save").Size(SizeSmall).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingListField).
@@ -461,24 +490,12 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 			Query(b.SaveBtnKey(), strconv.Itoa(index)).
 			Go())
 
-	btnDiv := h.Div(saveBtn)
-	if !b.design.disableElementDeleteBtn {
-		deleteBtn := VBtn("").Icon("mdi-delete").Size(SizeSmall).Rounded("0").
-			Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
-				Query(DetailFieldName, b.name).
-				Query(ParamID, ctx.Queries().Get(ParamID)).
-				Query(b.DeleteBtnKey(), index).
-				Go())
-		btnDiv.AppendChildren(deleteBtn)
-	}
 	card := VCard(
-		btnDiv,
 		VCardText(
-			b.elementEditFunc(obj, &FieldContext{
-				Name:    fmt.Sprintf("%s[%b]", b.name, index),
-				FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-				Label:   fmt.Sprintf("%s[%b]", b.label, index),
-			}, ctx),
+			h.Div(
+				contentDiv,
+				h.Div(saveBtn).Class("ms-auto"),
+			).Class("d-flex flex-column"),
 		),
 		h.Input("").Type("hidden").Attr(web.VField(b.ListElementIsEditing(index), true)...),
 	).Variant(VariantOutlined).
