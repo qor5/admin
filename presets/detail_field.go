@@ -259,9 +259,9 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentShowFunc(obj, field, ctx)),
+								h.Div(b.componentShowFunc(obj, field, ctx)).Style("width:100%;"),
 								// edit btn
-								h.Div(btn).Class("ms-auto"),
+								h.Div(btn).Class("ms-auto").Style("width:32px;"),
 							).Class("d-flex").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
@@ -303,6 +303,9 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 }
 
 func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
+		return errors.New(fmt.Sprintf("model %#+v must be pointer", obj))
+	}
 	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
 	if err = b.UnmarshalElement(obj, formObj, b.name, ctx); err != nil {
@@ -344,10 +347,10 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		panic(err)
 	}
 
-	var rows []h.HTMLComponent
+	rows := h.Div()
 
 	if b.label != "" {
-		rows = append(rows, h.Div(h.Span(b.label).Style("color:black; fontSize:16px; font-weight:500;")).Style("margin-bottom:8px;"))
+		rows.AppendChildren(h.Div(h.Span(b.label).Style("color:black; fontSize:16px; font-weight:500;")).Style("margin-bottom:8px;"))
 	}
 
 	if list != nil {
@@ -364,34 +367,35 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 			}
 			if editID == sortIndex {
 				// if click edit
-				rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
+				rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
 			} else if saveID == sortIndex {
 				// if click save
-				rows = append(rows, b.showElement(elementObj, sortIndex, ctx))
+				rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 			} else {
 				// default
 				isEditing := ctx.R.FormValue(b.ListElementIsEditing(fromIndex)) != ""
 				if !isEditing {
-					rows = append(rows, b.showElement(elementObj, sortIndex, ctx))
+					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
 					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
 					b.UnmarshalElement(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
-					rows = append(rows, b.editElement(elementObj, sortIndex, fromIndex, ctx))
+					rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
 				}
 			}
 		})
 	}
 
-	addBtn := VBtn("Add row").
-		Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
-			Query(DetailFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
-			Go())
+	if !b.design.disableElementCreateBtn {
+		addBtn := VBtn("Add row").
+			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
+				Query(DetailFieldName, b.name).
+				Query(ParamID, ctx.Queries().Get(ParamID)).
+				Go())
+		rows.AppendChildren(addBtn)
+	}
 
 	return web.Portal(
-		web.Scope(
-			h.Div(rows...),
-			addBtn).VSlot("{ form }"),
+		web.Scope(rows).VSlot("{ form }"),
 	).Name(b.FieldPortalName())
 }
 
@@ -456,15 +460,19 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.SaveBtnKey(), strconv.Itoa(index)).
 			Go())
-	deleteBtn := VBtn("").Icon("mdi-delete").Size(SizeSmall).Rounded("0").
-		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
-			Query(DetailFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
-			Query(b.DeleteBtnKey(), index).
-			Go())
 
+	btnDiv := h.Div(saveBtn)
+	if !b.design.disableElementDeleteBtn {
+		deleteBtn := VBtn("").Icon("mdi-delete").Size(SizeSmall).Rounded("0").
+			Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
+				Query(DetailFieldName, b.name).
+				Query(ParamID, ctx.Queries().Get(ParamID)).
+				Query(b.DeleteBtnKey(), index).
+				Go())
+		btnDiv.AppendChildren(deleteBtn)
+	}
 	card := VCard(
-		saveBtn, deleteBtn,
+		btnDiv,
 		VCardText(
 			b.elementEditFunc(obj, &FieldContext{
 				Name:    fmt.Sprintf("%s[%b]", b.name, index),
