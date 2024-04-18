@@ -524,6 +524,19 @@ func (b *DetailFieldBuilder) UnmarshalElement(toObj, formObj any, prefix string,
 		if v, err := reflectutils.Get(formObj, f.name); err == nil {
 			reflectutils.Set(toObj, f.name, v)
 		}
+		if f.setterFunc == nil {
+			continue
+		}
+		keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
+		err := f.setterFunc(toObj, &FieldContext{
+			ModelInfo: info,
+			FormKey:   keyPath,
+			Name:      f.name,
+			Label:     b.getLabel(f.NameLabel),
+		}, ctx)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
