@@ -391,9 +391,8 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			if v, ok := obj.(presets.SlugEncoder); ok {
 				primarySlug = v.PrimarySlug()
 			}
+			p := obj.(*Page)
 			if isVersion {
-				p := obj.(*Page)
-				versionCount := versionCount(db, p)
 				switch p.GetStatus() {
 				case publish.StatusDraft, publish.StatusOffline:
 					publishBtn = VBtn(pvMsgr.Publish).Size(SizeSmall).Variant(VariantElevated).Color(b.publishBtnColor).Height(40).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
@@ -412,7 +411,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						Go(),
 					)
 				versionSwitch = VChip(
-					VChip(h.Text(fmt.Sprintf("%d", versionCount))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
+					VChip(h.Text(fmt.Sprintf("%d", versionCount(db, p)))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px"),
 					h.Text(p.GetVersionName()+" | "),
 					VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black").Attr("style", "height:20px"),
 					VIcon("chevron_right"),
@@ -453,9 +452,11 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 					h.Div(
 						VToolbarTitle(
-							b.GetPageTitle()(ctx)),
+							b.GetPageTitle()(ctx),
+						),
 					).Class("mr-auto"),
 					VSpacer(),
+					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class("text-caption bg-success"),
 				)
 			}
 
@@ -773,6 +774,9 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 
 			return searcher(model, params, ctx)
 		})
+	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		return cell
+	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		versionName := obj.(publish.VersionInterface).GetVersionName()
 		p := obj.(*Page)
@@ -856,6 +860,20 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 			Go()))
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
+	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return VBtn("Cancel").Variant(VariantElevated).Attr("@click", "vars.presetsListingDialog=false")
+	})
+	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		id := ctx.R.FormValue("select_id")
+		if id == "" {
+			id = ctx.R.FormValue("f_select_id")
+		}
+		return VBtn("Save").Variant(VariantElevated).Color("secondary").Attr("@click", web.Plaid().
+			Query("select_id", id).
+			URL(pb.GetURIPrefix()+"/version-list-dialog").
+			EventFunc(selectVersionEvent).
+			Go())
+	})
 	lb.RowMenu().Empty()
 	mb.RegisterEventFunc(selectVersionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue("select_id")
@@ -868,15 +886,6 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 	mb.RegisterEventFunc(renameVersionEvent, renameVersion(mb))
 	mb.RegisterEventFunc(deleteVersionDialogEvent, deleteVersionDialog(mb))
 
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		cell.SetAttr("@click.self", web.Plaid().
-			Query("select_id", obj.(*Page).PrimarySlug()).
-			URL(pb.GetURIPrefix()+"/version-list-dialog").
-			EventFunc(selectVersionEvent).
-			Go(),
-		)
-		return cell
-	})
 	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		return []*vx.FilterItem{
 			{

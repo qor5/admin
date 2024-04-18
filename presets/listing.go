@@ -22,6 +22,7 @@ import (
 type ListingBuilder struct {
 	mb              *ModelBuilder
 	bulkActions     []*BulkActionBuilder
+	footerActions   []*FooterActionBuilder
 	actions         []*ActionBuilder
 	actionsAsMenu   bool
 	rowMenu         *RowMenuBuilder
@@ -260,7 +261,18 @@ func (b *ListingBuilder) listingComponent(
 	).MaxWidth(200).MinWidth(200)
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
-	var dialogHeaderBar h.HTMLComponent
+	var (
+		dialogHeaderBar  h.HTMLComponent
+		footerCardAction h.HTMLComponent
+	)
+	if len(b.footerActions) > 0 {
+		var footerActions []h.HTMLComponent
+		footerActions = append(footerActions, VSpacer())
+		for _, action := range b.footerActions {
+			footerActions = append(footerActions, action.buttonCompFunc(ctx))
+		}
+		footerCardAction = VCardActions(footerActions...)
+	}
 	if inDialog {
 		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
@@ -319,6 +331,7 @@ func (b *ListingBuilder) listingComponent(
 				).Class("pa-0"),
 			).Variant("outlined").Color("blue-grey-lighten-4"),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
+			footerCardAction,
 		),
 	).Class("white"),
 	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)

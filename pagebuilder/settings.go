@@ -47,7 +47,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 			end = p.GetScheduledEndAt().Format("2006-01-02 15:04")
 		}
 		if start != "" || end != "" {
-			se = start + " ~ " + end
+			se = "Scheduled at: " + start + " ~ " + end
 		}
 		var publishURL string
 		if p.GetStatus() == publish.StatusOnline {
@@ -90,6 +90,8 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 		}
 		var editBtn h.HTMLComponent
 		var pageStateBtn h.HTMLComponent
+		var publishBtn h.HTMLComponent
+		var scheduleBtn h.HTMLComponent
 		var seoBtn h.HTMLComponent
 		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
 		if p.GetStatus() == publish.StatusDraft {
@@ -107,6 +109,17 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 					Query(presets.ParamID, p.PrimarySlug()).
 					URL(mi.PresetsPrefix()+"/pages").Go(),
 				)
+			publishBtn = VBtn("Publish").Class("rounded-sm ml-2").
+				Variant(VariantFlat).Color("primary").Height(40).
+				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
+
+			scheduleBtn = VBtn("").Icon("mdi-alarm").Class("rounded-sm ml-1").
+				Variant(VariantFlat).Color("primary").Height(40).Attr("@click", web.POST().
+				EventFunc(schedulePublishDialogEvent).
+				Query(presets.ParamOverlay, actions.Dialog).
+				Query(presets.ParamID, p.PrimarySlug()).
+				URL(mi.PresetsPrefix()+"/pages").Go(),
+			)
 		}
 		if p.GetStatus() == publish.StatusOnline {
 			pageStateBtn = VBtn(pvMsgr.Unpublish).Variant(VariantFlat).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
@@ -142,7 +155,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 				VTab(h.Text("Seo")).Size(SizeXSmall).Value("Seo"),
 			).Attr("v-model", "editLocals.infoTab"),
 			h.Div(
-				VBtn("Save").AppendIcon("mdi-check").Color("black").Class("text-none").Size(SizeSmall).Variant(VariantFlat).
+				VBtn("Save").AppendIcon("mdi-check").Color("black").Size(SizeSmall).Variant(VariantFlat).
 					Attr("@click", web.POST().
 						EventFunc(actions.Update).
 						Queries(ctx.Queries()).
@@ -150,7 +163,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 						URL(mi.PresetsPrefix()+"/pages").
 						Go(),
 					),
-				VBtn("").AppendIcon("mdi-plus").Color("black").Class("text-none").Size(SizeSmall).Variant(VariantFlat),
+				VBtn("").AppendIcon("mdi-plus").Color("black").Size(SizeSmall).Variant(VariantFlat),
 			),
 		).Class("d-flex justify-space-between align-center")
 
@@ -209,16 +222,15 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 		).Attr("v-model", "editLocals.detailTab")
 		versionSwitch := VChip(
 			h.Text(p.GetVersionName()),
-			VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black ml-2").Attr("style", "height:20px"),
+			VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black ml-2"),
 			VIcon("chevron_right"),
-		).Label(true).Variant(VariantOutlined).Class("px-1 ml-8 rounded-r-0 text-black").Attr("style", "height:40px;background-color:#FFFFFF!important;").
+		).Label(true).Variant(VariantOutlined).Class("rounded-r-0 text-black").Attr("style", "height:40px;background-color:#FFFFFF!important;").
 			Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 				URL(b.prefix+"/version-list-dialog").
 				Query("select_id", p.PrimarySlug()).
 				Go())
 
-		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("#E0E0E0").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
-
+		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("primary").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
 		return VContainer(
 			web.Scope(
 				VLayout(
@@ -228,22 +240,23 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 								web.GET().URL(mi.PresetsPrefix()+"/pages").PushState(true).Go(),
 							),
 						).Name("prepend"),
-						web.Slot(h.Text("Heading"),
-							VChip(h.Text(p.GetStatus())).Color("warning").Class("ml-2"),
+						web.Slot(h.Text(p.Title),
+							versionBadge,
 						).Name("title"),
 
 						VCardText(
 							h.Div(
 								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
 								h.Div(
-									versionSwitch.Class("w-75"),
-									VBtn("").Icon("mdi-file-document-multiple").Color("white").Class("text-none rounded-sm").Size(SizeSmall).Variant(VariantFlat),
-									VBtn("").Icon("mdi-pencil").Color("black").
-										Class("text-none rounded-sm ml-2").
-										Size(SizeSmall).Variant(VariantFlat).
+									versionSwitch.Class("w-100"),
+									VBtn("").Icon("mdi-file-document-multiple").Height(40).Color("white").Class("rounded-sm").Variant(VariantFlat),
+									VBtn("").Icon("mdi-pencil").Color("secondary").
+										Class("rounded-sm ml-2").Height(40).Variant(VariantFlat).
 										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
-								).Class("w-100 d-inline-flex").Style(`position:absolute;bottom:24px;left:24px`),
-								h.Div(versionBadge).Style(`position:absolute;top:24px;left:60px`),
+									publishBtn,
+									scheduleBtn,
+								).Class("w-100 d-inline-flex pa-6 pb-6").Style(`position:absolute;bottom:0;left:0`),
+								h.Div(h.Text(se)).Class("bg-secondary ml-6 mt-6").Style(`position:absolute;top:0;left:0`),
 							).Style(`position:relative`).Class("w-100"),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
