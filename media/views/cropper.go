@@ -47,7 +47,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
 			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			AutoCropArea(1).
-			Attr("@input", web.Plaid().
+			Attr("@update:model-value", web.Plaid().
 				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
 				String())
 		if size != nil {
@@ -57,7 +57,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 
 		cropOption := moption.CropOptions[thumb]
 		if cropOption != nil {
-			c.Value(cropper.Value{
+			c.ModelValue(cropper.Value{
 				X:      float64(cropOption.X),
 				Y:      float64(cropOption.Y),
 				Width:  float64(cropOption.Width),
