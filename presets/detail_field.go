@@ -104,9 +104,10 @@ type DetailFieldBuilder struct {
 	FieldsBuilder
 
 	// only used if isList = true
-	isList          bool
-	elementShowFunc FieldComponentFunc
-	elementEditFunc FieldComponentFunc
+	isList             bool
+	elementShowFunc    FieldComponentFunc
+	elementEditFunc    FieldComponentFunc
+	elementUnmarshaler func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 }
 
 func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
@@ -155,6 +156,14 @@ func (b *DetailFieldBuilder) SetterFunc(v SetterFunc) (r *DetailFieldBuilder) {
 		panic("value required")
 	}
 	b.setter = v
+	return b
+}
+
+func (b *DetailFieldBuilder) ElementUnmarshalFunc(v func(toObj, formObj any, prefix string, ctx *web.EventContext) error) (r *DetailFieldBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.elementUnmarshaler = v
 	return b
 }
 
@@ -311,7 +320,7 @@ func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *we
 	}
 	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
-	if err = b.UnmarshalElement(obj, formObj, b.name, ctx); err != nil {
+	if err = b.DefaultElementUnmarshal(obj, formObj, b.name, ctx); err != nil {
 		return
 	}
 
@@ -335,7 +344,7 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
 	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
-	if err = b.UnmarshalElement(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
+	if err = b.DefaultElementUnmarshal(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
 	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
@@ -381,7 +390,14 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
 					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
-					b.UnmarshalElement(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
+					if b.elementUnmarshaler != nil {
+						err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
+					} else {
+						err = b.DefaultElementUnmarshal(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
+					}
+					if err != nil {
+						panic(err)
+					}
 					rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
 				}
 			}
@@ -510,7 +526,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *DetailFieldBuilder) UnmarshalElement(toObj, formObj any, prefix string, ctx *web.EventContext) error {
+func (b *DetailFieldBuilder) DefaultElementUnmarshal(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
 		return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
 	}
