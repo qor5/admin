@@ -1914,12 +1914,17 @@ type ContainerBuilder struct {
 	modelType  reflect.Type
 	renderFunc RenderFunc
 	cover      string
+	group      string
 }
 
-func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
+func (b *Builder) RegisterContainer(name, group string) (r *ContainerBuilder) {
+	if group == "" {
+		group = "Default"
+	}
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
+		group:   group,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return

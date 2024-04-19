@@ -52,7 +52,7 @@ func (*PageTitle) TableName() string {
 }
 
 func RegisterPageTitleContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("PageTitle").
+	vb := pb.RegisterContainer("PageTitle", "Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*PageTitle)
 			return PageTitleBody(v, input)

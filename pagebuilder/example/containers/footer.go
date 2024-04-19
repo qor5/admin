@@ -22,7 +22,7 @@ func (*WebFooter) TableName() string {
 }
 
 func RegisterFooter(pb *pagebuilder.Builder) {
-	footer := pb.RegisterContainer("Footer").
+	footer := pb.RegisterContainer("Footer", "").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			footer := obj.(*WebFooter)
 			return FooterTemplate(footer, input)

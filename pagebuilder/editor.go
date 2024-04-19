@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/qor5/admin/v3/utils"
 	"net/url"
 	"os"
 	"path"
@@ -838,52 +839,80 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	var groups []h.HTMLComponent
-
-	for _, builder := range b.containerBuilders {
-		cover := builder.cover
-		if cover == "" {
-			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+	var groupsNames []string
+	for _, group := range utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
+		return builder.group
+	}) {
+		if len(group) == 0 {
+			break
 		}
-		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
-		groups = append(groups, VListGroup(
-			web.Slot(
-				VListItem(
-					VListItemTitle(h.Text(containerName)),
-				).Attr("v-bind", "props"),
-			).Name("activator").Scope(" {  props }"),
-			VListItem(
+		var groupName = group[0].group
+		groupsNames = append(groupsNames, groupName)
+		var listItems []h.HTMLComponent
+		for _, builder := range group {
+			cover := builder.cover
+			if cover == "" {
+				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+			}
+			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			listItems = append(listItems, VListItem(
 				h.Div(
 					VListItemTitle(h.Text(containerName)),
 					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
-				).Attr("draggable", h.JSONString(!isReadonly), "v-bind", `{ shared : "false", modelid :0 }`).Id(builder.name),
-			).Value(containerName)),
-		)
+				).Attr("draggable", h.JSONString(!isReadonly), "v-bind", `{ shared : "false", modelid :0 }`).Id(builder.name)),
+			)
+		}
+		groups = append(groups, VListGroup(
+			web.Slot(
+				VListItem(
+					VListItemTitle(h.Text(groupName)),
+					// TODO temp bg-color
+				).Attr("v-bind", "props").Class("bg-primary"),
+			).Name("activator").Scope(" {  props }"),
+			h.Components(listItems...),
+		).Value(groupName))
 	}
 
 	var cons []*Container
 	var sharedGroups []h.HTMLComponent
+	var sharedGroupNames []string
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
-	for _, sharedC := range cons {
-		c := b.ContainerByName(sharedC.ModelName)
-		cover := c.cover
-		if cover == "" {
-			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+
+	for _, group := range utils.GroupBySlice[*Container, string](cons, func(builder *Container) string {
+		return b.ContainerByName(builder.ModelName).group
+	}) {
+		if len(group) == 0 {
+			break
 		}
-		containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
-		sharedGroups = append(sharedGroups, VListGroup(
-			web.Slot(
-				VListItem(
-					VListItemTitle(h.Text(containerName)),
-				).Attr("v-bind", "props"),
-			).Name("activator").Scope(" {  props }"),
-			VListItem(
+		var groupName = b.ContainerByName(group[0].ModelName).group
+		sharedGroupNames = append(sharedGroupNames, groupName)
+		var listItems []h.HTMLComponent
+		for _, builder := range group {
+			c := b.ContainerByName(builder.ModelName)
+			cover := c.cover
+			if cover == "" {
+				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+			}
+			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+			listItems = append(listItems, VListItem(
 				h.Div(
 					VListItemTitle(h.Text(containerName)),
 					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
-				).Attr("draggable", "true", "v-bind", fmt.Sprintf(`{ shared : "true",modelid: %v}`, sharedC.ModelID)).Id(c.name),
-			).Value(containerName)),
-		)
+				).Attr("draggable", "true", "v-bind", fmt.Sprintf(`{ shared : "true",modelid: %v}`, builder.ModelID)).Id(c.name),
+			).Value(containerName))
+		}
+
+		sharedGroups = append(sharedGroups, VListGroup(
+			web.Slot(
+				VListItem(
+					VListItemTitle(h.Text(groupName)),
+					// TODO temp bg-color
+				).Attr("v-bind", "props").Class("bg-primary"),
+			).Name("activator").Scope(" {  props }"),
+			h.Components(listItems...),
+		).Value(groupName))
+
 	}
 	component = web.Scope(
 		VTabs(
@@ -892,10 +921,10 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 		).Attr("v-model", "tabLocals.tab"),
 		VWindow(
 			VWindowItem(
-				VList(groups...),
+				VList(groups...).Opened(groupsNames),
 			).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 			VWindowItem(
-				VList(sharedGroups...),
+				VList(sharedGroups...).Opened(sharedGroupNames),
 			).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 		).Attr("v-model", "tabLocals.tab"),
 	).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}")

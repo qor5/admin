@@ -54,7 +54,7 @@ func (this *InNumbersItems) Scan(value interface{}) error {
 }
 
 func RegisterInNumbersContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("InNumbers").
+	vb := pb.RegisterContainer("InNumbers", "").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*InNumbers)
 			return InNumbersBody(v, input)

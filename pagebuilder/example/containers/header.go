@@ -23,7 +23,7 @@ func (*WebHeader) TableName() string {
 }
 
 func RegisterHeader(pb *pagebuilder.Builder) {
-	header := pb.RegisterContainer("Header").
+	header := pb.RegisterContainer("Header", "Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			header := obj.(*WebHeader)
 			return HeaderTemplate(header, input)

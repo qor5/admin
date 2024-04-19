@@ -30,7 +30,7 @@ func (*ImageContainer) TableName() string {
 }
 
 func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("Image").
+	vb := pb.RegisterContainer("Image", "Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ImageContainer)
 			return ImageContainerBody(v, input)
