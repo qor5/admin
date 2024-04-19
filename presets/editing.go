@@ -557,7 +557,7 @@ func (b *EditingBuilder) UpdateOverlayContent(
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	p := rightDrawerContentPortalName
+	p := RightDrawerContentPortalName
 
 	if overlayType == actions.Dialog {
 		p = dialogContentPortalName

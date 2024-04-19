@@ -238,7 +238,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: rightDrawerContentPortalName,
+			Name: RightDrawerContentPortalName,
 			Body: b.actionForm(action, ctx),
 		})
 		return r, nil

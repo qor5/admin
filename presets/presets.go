@@ -767,7 +767,7 @@ func MustGetMessages(r *http.Request) *Messages {
 }
 
 const RightDrawerPortalName = "presets_RightDrawerPortalName"
-const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
+const RightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
 const DialogPortalName = "presets_DialogPortalName"
 const dialogContentPortalName = "presets_DialogContentPortalName"
 const NotificationCenterPortalName = "notification-center"
@@ -783,6 +783,9 @@ func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLC
 	if overlayType == actions.Dialog {
 		b.dialog(r, comp, width)
 		return
+	} else if overlayType == actions.FixedDrawer {
+		b.fixedDrawer(r, comp, width)
+		return
 	}
 	b.rightDrawer(r, comp, width)
 }
@@ -795,7 +798,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
 			web.GlobalEvents().Attr("@keyup.esc", "vars.presetsRightDrawer = false"),
-			web.Portal(comp).Name(rightDrawerContentPortalName),
+			web.Portal(comp).Name(RightDrawerContentPortalName),
 		).
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
 			Class("v-navigation-drawer--temporary").
@@ -811,6 +814,15 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
+}
+func (b *Builder) fixedDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
+	if width == "" {
+		width = b.rightDrawerWidth
+	}
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: RightDrawerContentPortalName,
+		Body: comp,
+	})
 }
 
 // 				Attr("@input", "alert(plaidForm.dirty) && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsDialog = true : vars.presetsDialog = $event").

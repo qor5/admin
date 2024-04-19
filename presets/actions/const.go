@@ -32,6 +32,7 @@ const (
 )
 
 const (
-	Dialog = "dialog"
-	Drawer = "drawer"
+	Dialog      = "dialog"
+	Drawer      = "drawer"
+	FixedDrawer = "fixed_drawer"
 )

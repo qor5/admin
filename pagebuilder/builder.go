@@ -155,6 +155,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		Detailing().
 		PageFunc(r.Editor)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
+	r.ps.GetWebBuilder().RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
@@ -2097,7 +2098,12 @@ func (b *Builder) generateEditorBarJsFunction() string {
 	editAction := web.POST().
 		EventFunc(actions.Edit).
 		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-		Query(presets.ParamOverlay, actions.Drawer).
+		Query(presets.ParamOverlay, actions.FixedDrawer).
+		Query(presets.ParamID, web.Var("arr[1]")).
+		Go()
+
+	addAction := web.POST().EventFunc(ShowAddContainerDrawerEvent).
+		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 		Query(presets.ParamID, web.Var("arr[1]")).
 		Go()
 	deleteAction := web.POST().
@@ -2134,12 +2140,15 @@ function(e){
 	  case '%s':
 		%s;
 		break
+	  case '%s':
+        %s;
+        break
     }
 	
 }`,
 		EventEdit, editAction,
 		EventDelete, deleteAction,
-		EventUp, EventDown, moveAction,
+		EventUp, EventDown, moveAction, EventAdd, addAction,
 	)
 }
 

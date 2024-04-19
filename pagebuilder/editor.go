@@ -35,6 +35,7 @@ const (
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
 	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
+	ShowAddContainerDrawerEvent      = "page_builder_ShowAddContainerDrawerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -110,10 +111,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 	device, _ = b.getDevice(ctx)
 
-	containerList, err = b.renderContainersList(ctx, p.ID, p.GetVersion(), p.GetLocale(), p.GetStatus() != publish.StatusDraft)
-	if err != nil {
-		return
-	}
+	containerList = b.renderContainersList(ctx, p.GetStatus() != publish.StatusDraft)
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r.Body = h.Components(
@@ -370,7 +368,7 @@ type ContainerSorter struct {
 	Items []ContainerSorterItem `json:"items"`
 }
 
-func (b *Builder) renderContainersList(ctx *web.EventContext, pageID uint, pageVersion, locale string, isReadonly bool) (r h.HTMLComponent, err error) {
+func (b *Builder) renderContainersList(ctx *web.EventContext, isReadonly bool) (r h.HTMLComponent) {
 	r = VLayout(
 		VAppBar().Title("Elements"),
 		VMain(
@@ -1124,4 +1122,10 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
 		return
 	}
+}
+
+func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	// TODO get status
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: b.renderContainersList(ctx, false)})
+	return
 }
