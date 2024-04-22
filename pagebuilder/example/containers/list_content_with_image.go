@@ -55,7 +55,7 @@ func (this *ImageListItems) Scan(value interface{}) error {
 }
 
 func RegisterListContentWithImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("ListContentWithImage", "").
+	vb := pb.RegisterContainer("ListContentWithImage").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ListContentWithImage)
 			return ListContentWithImageBody(v, input)

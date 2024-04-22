@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/qor5/admin/v3/l10n"
@@ -838,16 +839,27 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 	locale := ctx.R.FormValue(paramLocale)
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-	var groups []h.HTMLComponent
-	var groupsNames []string
-	for _, group := range utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
+	var (
+		containers  []h.HTMLComponent
+		groupsNames []string
+	)
+	sort.Slice(b.containerBuilders, func(i, j int) bool {
+		return b.containerBuilders[j].group == ""
+	})
+	var groupContainers = utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
 		return builder.group
-	}) {
+	})
+	for _, group := range groupContainers {
 		if len(group) == 0 {
 			break
 		}
 		var groupName = group[0].group
-		groupsNames = append(groupsNames, groupName)
+		if groupName == "" {
+			groupName = "Others"
+		}
+		if b.expendContainers {
+			groupsNames = append(groupsNames, groupName)
+		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			cover := builder.cover
@@ -862,12 +874,11 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 				).Attr("draggable", h.JSONString(!isReadonly), "v-bind", `{ shared : "false", modelid :0 }`).Id(builder.name)),
 			)
 		}
-		groups = append(groups, VListGroup(
+		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-					// TODO temp bg-color
-				).Attr("v-bind", "props").Class("bg-primary"),
+				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
@@ -878,7 +889,9 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 	var sharedGroupNames []string
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
-
+	sort.Slice(cons, func(i, j int) bool {
+		return b.ContainerByName(cons[j].ModelName).group == ""
+	})
 	for _, group := range utils.GroupBySlice[*Container, string](cons, func(builder *Container) string {
 		return b.ContainerByName(builder.ModelName).group
 	}) {
@@ -886,7 +899,12 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 			break
 		}
 		var groupName = b.ContainerByName(group[0].ModelName).group
-		sharedGroupNames = append(sharedGroupNames, groupName)
+		if groupName == "" {
+			groupName = "Others"
+		}
+		if b.expendContainers {
+			sharedGroupNames = append(sharedGroupNames, groupName)
+		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			c := b.ContainerByName(builder.ModelName)
@@ -907,8 +925,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-					// TODO temp bg-color
-				).Attr("v-bind", "props").Class("bg-primary"),
+				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
@@ -921,7 +938,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 		).Attr("v-model", "tabLocals.tab"),
 		VWindow(
 			VWindowItem(
-				VList(groups...).Opened(groupsNames),
+				VList(containers...).Opened(groupsNames),
 			).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 			VWindowItem(
 				VList(sharedGroups...).Opened(sharedGroupNames),

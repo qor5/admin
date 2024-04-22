@@ -42,7 +42,7 @@ func (*Heading) TableName() string {
 }
 
 func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("Heading", "Navigation").
+	vb := pb.RegisterContainer("Heading").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*Heading)
 			return HeadingBody(v, input)

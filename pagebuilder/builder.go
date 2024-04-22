@@ -89,6 +89,7 @@ type Builder struct {
 	publishBtnColor   string
 	duplicateBtnColor string
 	templateEnabled   bool
+	expendContainers  bool
 }
 
 const (
@@ -142,6 +143,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		publishBtnColor:   "primary",
 		duplicateBtnColor: "primary",
 		templateEnabled:   true,
+		expendContainers:  true,
 	}
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
@@ -224,6 +226,10 @@ func (b *Builder) DuplicateBtnColor(v string) (r *Builder) {
 
 func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 	b.templateEnabled = v
+	return b
+}
+func (b *Builder) ExpendContainers(v bool) (r *Builder) {
+	b.expendContainers = v
 	return b
 }
 
@@ -1917,14 +1923,10 @@ type ContainerBuilder struct {
 	group      string
 }
 
-func (b *Builder) RegisterContainer(name, group string) (r *ContainerBuilder) {
-	if group == "" {
-		group = "Default"
-	}
+func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
-		group:   group,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return
@@ -1964,6 +1966,10 @@ func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
 
 func (b *ContainerBuilder) Cover(v string) *ContainerBuilder {
 	b.cover = v
+	return b
+}
+func (b *ContainerBuilder) Group(v string) *ContainerBuilder {
+	b.group = v
 	return b
 }
 

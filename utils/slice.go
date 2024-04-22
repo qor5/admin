@@ -9,9 +9,9 @@ func GroupBySlice[T comparable, Kt comparable](slices []T, f func(T) Kt) (v [][]
 		if !ok {
 			v = append(v, []T{})
 			index = len(v) - 1
+			indexMap[key] = index
 		}
 		v[index] = append(v[index], s)
-		indexMap[key] = index
 	}
 	return
 }

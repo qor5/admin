@@ -54,7 +54,7 @@ func (*ListContentLite) TableName() string {
 }
 
 func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("ListContentLite", "").
+	vb := pb.RegisterContainer("ListContentLite").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ListContentLite)
 			return ListContentLiteBody(v, input)

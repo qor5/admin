@@ -34,7 +34,7 @@ func (*ContactForm) TableName() string {
 }
 
 func RegisterContactFormContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("ContactForm", "").
+	vb := pb.RegisterContainer("ContactForm").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ContactForm)
 			return ContactFormBody(v, input)

@@ -52,7 +52,7 @@ func (this *Brands) Scan(value interface{}) error {
 }
 
 func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("BrandGrid", "Content").
+	vb := pb.RegisterContainer("BrandGrid").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*BrandGrid)
 			return BrandGridBody(v, input)

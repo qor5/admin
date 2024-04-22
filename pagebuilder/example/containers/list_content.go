@@ -60,7 +60,7 @@ func (this *ListItems) Scan(value interface{}) error {
 }
 
 func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("ListContent", "Content").
+	vb := pb.RegisterContainer("ListContent").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ListContent)
 			return ListContentBody(v, input)
