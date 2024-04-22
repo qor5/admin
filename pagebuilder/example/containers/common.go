@@ -51,19 +51,21 @@ func ContainerWrapper(containerID, anchorID, classes,
 		if isReadonly {
 			r.AppendChildren(RawHTML(`<div class="wrapper-shadow"></div>`))
 		} else {
-			//r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
-			r.AppendChildren(
+			r = Div(
+				r.Attr("onclick", postMessage(pagebuilder.EventEdit, containerID, input)),
 				Div(
+					H6(input.DisplayName).Class("title"),
 					Div(
-						H6(input.DisplayName).Class("title"),
-						Button("").Children(I("arrow_upward").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventUp, containerID, input)),
-						Button("").Children(I("arrow_downward").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventDown, containerID, input)),
-						Button("").Children(I("delete").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventDelete, containerID, input)),
-					).Class("editor-bar"),
-					Div(
-						Button("").Children(I("add").Class("material-icons bar")).Attr("onclick", `event.stopPropagation();`+postMessage(pagebuilder.EventAdd, containerID, input)),
-					).Class("editor-add"),
-				).Class("wrapper-shadow").Attr("onclick", postMessage(pagebuilder.EventEdit, containerID, input)))
+						Button("").Children(I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventUp, containerID, input)),
+						Button("").Children(I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDown, containerID, input)),
+						Button("").Children(I("delete").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDelete, containerID, input)),
+					),
+				).Class("editor-bar"),
+				Div(
+					Div().Class("add"),
+					Button("").Children(I("add").Class("material-icons add")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
+				).Class("editor-add"),
+			).Class("wrapper-shadow").Attr("onclick", "document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.classList.add('highlight');")
 		}
 	}
 	return r

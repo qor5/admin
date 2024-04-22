@@ -213,52 +213,54 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		if isEditor {
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
-	.wrapper-shadow {
-		position:absolute;
-		width: 100%; 
-		height: 100%;
-		z-index:9999; 
-		background: rgba(81, 193, 226, 0.25);
+	 .editor-add{
+        width:100%;
+		position: absolute;
+		z-index:9998;
 		opacity: 0;
-		top: 0;
-		left: 0;
-	}
-	.wrapper-shadow .editor-bar{
+		transition: opacity .5s ease-in-out;
+		text-align:center;
+	}		
+	 .editor-add div{
+        width:100%;
+		background-color: #3E63DD;
+        height:2px;
+      }
+	  .editor-add button{
+        color:#FFFFFF;
+		background-color: #3E63DD;
+		pointer-event: none;
+      }
+	 .wrapper-shadow:hover{
+        cursor: pointer;
+     }	
+	 .wrapper-shadow:hover .editor-add{
+       opacity: 1;
+     }	 
+	 .editor-bar{
 		position:absolute;
-		bottom: 0;
-		left: 0;
-    	line-height: 1;
-		font-size: 0;
-		//border: 2px outset #767676;
-		cursor: pointer;
+		z-index:9999;
+		width:30%;
+		opacity: 0;
+		display:flex;
         background-color: #3E63DD;
-        display: flex;
-        align-items:center;
+		justify-content: space-between;	
 	}
-	.wrapper-shadow .editor-add{
-		position:absolute;
-		bottom: 0;
-		left: 50%;
-    	line-height: 1;
-		font-size: 0;
-		//border: 2px outset #767676;
-		cursor: pointer;
-        background-color: #3E63DD;
-	}
-    .wrapper-shadow .bar {
+    .editor-bar button {
       color: #FFFFFF;
-      background-color: #3E63DD;
-      display:inline;
+	  background-color: #3E63DD;
      }
-	 .wrapper-shadow .title{
+	 .editor-bar h6{
       color: #FFFFFF;
-      background-color: #3E63DD;
-     margin-right:10px;
      }
-	.wrapper-shadow.hover {
-		cursor: pointer;
+	.highlight {
+    	border: solid 2px #3E63DD;
+     }	
+	.highlight .editor-bar{
 		opacity: 1;
-    }`))
+	}
+
+`))
 		}
 		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
 			pl, ok := f.(*PageLayoutInput)
