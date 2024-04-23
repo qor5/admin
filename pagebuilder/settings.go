@@ -24,7 +24,13 @@ import (
 )
 
 func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo.Builder) presets.FieldComponentFunc {
+	// TODO: refactor versionDialog to use publish/views
+	pv.ConfigureVersionListDialog(db, b.ps, pm)
+
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// TODO: init default VersionComponent
+		versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
+
 		mi := field.ModelInfo
 		p := obj.(*Page)
 		c := &Category{}
@@ -245,6 +251,9 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 						).Name("title"),
 
 						VCardText(
+							// TODO use versionComponent
+							h.Div(versionComponent),
+
 							h.Div(
 								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
 								h.Div(

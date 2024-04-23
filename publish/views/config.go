@@ -148,6 +148,12 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			if m.Editing().GetField("StatusBar") != nil {
 				m.Editing().Field("StatusBar").ComponentFunc(StatusEditFunc())
 			}
+			// Version V2
+			{
+				m.Detailing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+				m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+				ConfigureVersionListDialog(db, b, m)
+			}
 		} else {
 			if schedulePublishModel, ok := obj.(publish.ScheduleInterface); ok {
 				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()

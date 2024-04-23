@@ -32,6 +32,12 @@ type Messages struct {
 	AllVersions             string
 	NamedVersions           string
 	RenameVersion           string
+
+	FilterTabAllVersions   string
+	FilterTabOnlineVersion string
+	FilterTabNamedVersions string
+	Rename                 string
+	PageOverView           string
 }
 
 var Messages_en_US = &Messages{
@@ -62,6 +68,12 @@ var Messages_en_US = &Messages{
 	AllVersions:             "All versions",
 	NamedVersions:           "Named versions",
 	RenameVersion:           "Rename Version",
+
+	FilterTabAllVersions:   "All Versions",
+	FilterTabOnlineVersion: "Online Version",
+	FilterTabNamedVersions: "Named Versions",
+	Rename:                 "Rename",
+	PageOverView:           "Page Overview",
 }
 
 var Messages_zh_CN = &Messages{
@@ -92,6 +104,12 @@ var Messages_zh_CN = &Messages{
 	AllVersions:             "所有版本",
 	NamedVersions:           "已命名版本",
 	RenameVersion:           "命名版本",
+
+	FilterTabAllVersions:   "所有版本",
+	FilterTabOnlineVersion: "在线版本",
+	FilterTabNamedVersions: "已命名版本",
+	Rename:                 "重命名",
+	PageOverView:           "页面概览",
 }
 
 var Messages_ja_JP = &Messages{
@@ -122,6 +140,12 @@ var Messages_ja_JP = &Messages{
 	AllVersions:             "全てのバージョン",
 	NamedVersions:           "名付け済みバージョン",
 	RenameVersion:           "バージョンの名前を変更する",
+
+	FilterTabAllVersions:   "全てのバージョン",
+	FilterTabOnlineVersion: "オンラインバージョン",
+	FilterTabNamedVersions: "名付け済みバージョン",
+	Rename:                 "名前の変更",
+	PageOverView:           "ページ概要",
 }
 
 func GetStatusText(status string, msgr *Messages) string {
