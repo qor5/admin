@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/utils"
 	"net/url"
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/qor5/admin/v3/l10n"
@@ -38,10 +41,13 @@ const (
 	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
 	ShowAddContainerDrawerEvent      = "page_builder_ShowAddContainerDrawerEvent"
+	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
+	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplate"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
 	paramLocale          = "locale"
+	paramStatus          = "status"
 	paramContainerID     = "containerID"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
@@ -112,8 +118,11 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
 	device, _ = b.getDevice(ctx)
-
-	containerList = b.renderContainersList(ctx, p.GetStatus() != publish.StatusDraft)
+	ctx.R.Form.Set(paramPageID, strconv.Itoa(int(p.ID)))
+	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
+	ctx.R.Form.Set(paramLocale, p.GetLocale())
+	ctx.R.Form.Set(paramStatus, p.GetStatus())
+	containerList = b.renderContainersList(ctx)
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r.Body = h.Components(
@@ -213,53 +222,80 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 		if isEditor {
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
-	 .editor-add{
-        width:100%;
-		position: absolute;
-		z-index:9998;
-		opacity: 0;
-		transition: opacity .5s ease-in-out;
-		text-align:center;
-	}		
-	 .editor-add div{
-        width:100%;
-		background-color: #3E63DD;
-        height:2px;
-      }
-	  .editor-add button{
-        color:#FFFFFF;
-		background-color: #3E63DD;
-		pointer-event: none;
-      }
-	 .wrapper-shadow:hover{
-        cursor: pointer;
-     }	
-	 .wrapper-shadow:hover .editor-add{
-       opacity: 1;
-     }	 
-	 .editor-bar{
-		position:absolute;
-		z-index:9999;
-		width:30%;
-		opacity: 0;
-		display:flex;
-        background-color: #3E63DD;
-		justify-content: space-between;	
-	}
-    .editor-bar button {
-      color: #FFFFFF;
-	  background-color: #3E63DD;
-     }
-	 .editor-bar h6{
-      color: #FFFFFF;
-     }
-	.highlight {
-    	border: solid 2px #3E63DD;
-     }	
-	.highlight .editor-bar{
-		opacity: 1;
-	}
-
+			.inner-shadow {
+			  position: absolute;
+			  width: 100%;
+			  height: 100%;
+			  opacity: 0;
+			  top: 0;
+			  left: 0;
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
+			}
+			
+			.editor-add {
+			  width: 100%;
+			  position: absolute;
+			  z-index: 9998;
+			  opacity: 0;
+			  transition: opacity .5s ease-in-out;
+			  text-align: center;
+			}
+			
+			.editor-add div {
+			  width: 100%;
+			  background-color: #3E63DD;
+			  transition: height .5s ease-in-out;
+			  height: 3px;
+			}
+			
+			.editor-add button {
+			  color: #FFFFFF;
+			  background-color: #3E63DD;
+			  pointer-event: none;
+			}
+			
+			.wrapper-shadow:hover {
+			  cursor: pointer;
+			}
+			
+			.wrapper-shadow:hover .editor-add {
+			  opacity: 1;
+			}
+			
+			.wrapper-shadow:hover .editor-add div {
+			  height: 6px;
+			}
+			
+			.editor-bar {
+			  position: absolute;
+			  z-index: 9999;
+			  width: 30%;
+			  opacity: 0;
+			  display: flex;
+			  background-color: #3E63DD;
+			  justify-content: space-between;
+			}
+			
+			.editor-bar button {
+			  color: #FFFFFF;
+			  background-color: #3E63DD;
+			}
+			
+			.editor-bar h6 {
+			  color: #FFFFFF;
+			}
+			
+			.highlight .editor-bar {
+			  opacity: 1;
+			}
+			
+			.highlight .editor-add {
+			  opacity: 1;
+			}
+			
+			.highlight .inner-shadow {
+			  opacity: 1;
+			}
 `))
 		}
 		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
@@ -307,7 +343,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 					Attr(":iframe-height-name", h.JSONString(iframeHeightName)).
 					Attr(":iframe-value", h.JSONString(iframeValue)).
 					Attr("ref", "scrollIframe"),
-			).Id("vx-drag-target-area").Class("page-builder-container mx-auto").Attr("style", width)
+			).Class("page-builder-container mx-auto").Attr("style", width)
 
 		} else {
 			r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -372,13 +408,178 @@ type ContainerSorter struct {
 	Items []ContainerSorterItem `json:"items"`
 }
 
-func (b *Builder) renderContainersList(ctx *web.EventContext, isReadonly bool) (r h.HTMLComponent) {
+func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent) {
 	r = VLayout(
-		VAppBar().Title("Elements"),
 		VMain(
-			b.ContainerComponent(ctx, isReadonly),
+			b.ContainerComponent(ctx),
 		),
 	)
+	return
+}
+func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
+	var cons []*Container
+	pageID := ctx.R.FormValue(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
+	locale := ctx.R.FormValue(paramLocale)
+	status := ctx.R.FormValue(paramStatus)
+	var isReadonly = status != publish.StatusDraft
+
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
+	if err != nil {
+		return
+	}
+	var sorterData ContainerSorter
+	sorterData.Items = []ContainerSorterItem{}
+	for i, c := range cons {
+		vicon := "mdi-eye"
+		if c.Hidden {
+			vicon = "mdi-eye-off"
+		}
+		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
+
+		sorterData.Items = append(sorterData.Items,
+			ContainerSorterItem{
+				Index:          i,
+				Label:          displayName,
+				ModelName:      inflection.Plural(strcase.ToKebab(c.ModelName)),
+				ModelID:        strconv.Itoa(int(c.ModelID)),
+				DisplayName:    displayName,
+				ContainerID:    strconv.Itoa(int(c.ID)),
+				URL:            b.ContainerByName(c.ModelName).mb.Info().ListingHref(),
+				Shared:         c.Shared,
+				VisibilityIcon: vicon,
+				ParamID:        c.PrimarySlug(),
+				Locale:         locale,
+			},
+		)
+	}
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+	r = web.Scope(
+		VSheet(
+			VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
+				Attr("@click",
+					web.Plaid().
+						URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+						EventFunc(ShowAddContainerDrawerEvent).
+						Query(paramPageID, pageID).
+						Query(paramPageVersion, pageVersion).
+						Query(paramLocale, locale).
+						Query(paramStatus, status).
+						Go(),
+				),
+			VCard(
+				VList(
+					h.Tag("vx-draggable").
+						Attr("item-key", "model_id").
+						Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
+						Attr("@end", web.Plaid().
+							URL(fmt.Sprintf("%s/editors", b.prefix)).
+							EventFunc(MoveContainerEvent).
+							FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
+							Go()).Children(
+						h.Template(
+							h.Div(
+								VListItem(
+									web.Slot(
+										h.If(!isReadonly,
+											VBtn("").Variant(VariantText).Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
+										),
+										VListItem(
+											VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
+										),
+									).Name("prepend"),
+									web.Slot(
+										h.If(!isReadonly,
+											VBtn("").Variant(VariantText).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
+												web.Plaid().
+													URL(web.Var("element.url")).
+													EventFunc(actions.Edit).
+													Query(presets.ParamOverlay, actions.Drawer).
+													Query(presets.ParamID, web.Var("element.model_id")).
+													Go(),
+											).Class("my-2"),
+											VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
+												web.Plaid().
+													URL(web.Var("element.url")).
+													EventFunc(ToggleContainerVisibilityEvent).
+													Query(paramContainerID, web.Var("element.param_id")).
+													Go(),
+											).Class("my-2"),
+										),
+										h.If(!isReadonly,
+											VMenu(
+												web.Slot(
+													VBtn("").Icon("mdi-dots-horizontal").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+												).Name("activator").Scope("{ props }"),
+
+												VList(
+													VListItem(
+														web.Slot(
+															VIcon("mdi-pencil"),
+														).Name("prepend"),
+														VListItemTitle(h.Text("Rename")),
+													).Attr("@click",
+														web.Plaid().
+															URL(web.Var("element.url")).
+															EventFunc(RenameContainerDialogEvent).
+															Query(paramContainerID, web.Var("element.param_id")).
+															Query(paramContainerName, web.Var("element.display_name")).
+															Go(),
+													),
+													VListItem(
+														web.Slot(
+															VIcon("mdi-delete"),
+														).Name("prepend"),
+														VListItemTitle(h.Text("Delete")),
+													).Attr("@click", web.Plaid().
+														URL(web.Var("element.url")).
+														EventFunc(DeleteContainerConfirmationEvent).
+														Query(paramContainerID, web.Var("element.param_id")).
+														Query(paramContainerName, web.Var("element.display_name")).
+														Go(),
+													),
+													VListItem(
+														web.Slot(
+															VIcon("mdi-share"),
+														).Name("prepend"),
+														VListItemTitle(h.Text("Mark As Shared Container")),
+													).Attr("@click",
+														web.Plaid().
+															URL(web.Var("element.url")).
+															EventFunc(MarkAsSharedContainerEvent).
+															Query(paramContainerID, web.Var("element.param_id")).
+															Go(),
+													).Attr("v-if", "!element.shared"),
+												).Density(DensityCompact),
+											).Attr("transition", "fab-transition"),
+										),
+									).Name("append"),
+								).Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+								VDivider(),
+							),
+						).Attr("#item", " { element } "),
+					),
+					h.If(!isReadonly,
+						VListItem(
+							web.Slot(
+								VIcon("mdi-plus").Color("primary"),
+							).Name("prepend"),
+							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Variant(VariantText)),
+						).Attr("@click",
+							web.Plaid().
+								URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+								EventFunc(AddContainerDialogEvent).
+								Query(paramPageID, pageID).
+								Query(paramPageVersion, pageVersion).
+								Query(paramLocale, locale).
+								Go(),
+						),
+					),
+				),
+			).Variant(VariantOutlined),
+		).Class("pa-4 pt-2"),
+	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
 	return
 }
 
@@ -392,17 +593,23 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, pageVersion, locale, containerName, uint(modelID))
 	} else {
-		_, err = b.AddContainerToPage(pageID, pageVersion, locale, containerName)
-		//r.RunScript = web.Plaid().
-		//	URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-		//	EventFunc(actions.Edit).
-		//	Query(presets.ParamOverlay, actions.Drawer).
-		//	Query(presets.ParamID, fmt.Sprint(newModelID)).
-		//	Go()
-
+		var newModelId uint
+		newModelId, err = b.AddContainerToPage(pageID, pageVersion, locale, containerName)
+		modelID = int(newModelId)
 	}
-	r.PushState = web.Location(url.Values{})
-
+	r.RunScript = web.Plaid().
+		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		EventFunc(ReloadRenderPageOrTemplateEvent).
+		Query(presets.ParamID, pageID).
+		Query("version", pageVersion).
+		Query(paramLocale, locale).
+		Go() + ";" +
+		web.Plaid().
+			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+			EventFunc(actions.Edit).
+			Query(presets.ParamOverlay, actions.FixedDrawer).
+			Query(presets.ParamID, modelID).
+			Go()
 	return
 }
 
@@ -836,8 +1043,10 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	return
 }
 
-func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (component h.HTMLComponent) {
-
+func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
+	pageID := ctx.R.FormValue(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
+	status := ctx.R.FormValue(paramStatus)
 	locale := ctx.R.FormValue(paramLocale)
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
@@ -846,7 +1055,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 		groupsNames []string
 	)
 	sort.Slice(b.containerBuilders, func(i, j int) bool {
-		return b.containerBuilders[j].group == ""
+		return b.containerBuilders[i].group != "" && b.containerBuilders[j].group == ""
 	})
 	var groupContainers = utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
 		return builder.group
@@ -870,11 +1079,18 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
 			listItems = append(listItems, VListItem(
-				h.Div(
-					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
-				).Attr("draggable", h.JSONString(!isReadonly), "v-bind", `{ shared : "false", modelid :0 }`).Id(builder.name)),
-			)
+				VListItemTitle(h.Text(containerName)),
+				VListItemSubtitle(VImg().Src(cover).Height(100)),
+			).Attr("@click",
+				web.Plaid().
+					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+					EventFunc(AddContainerEvent).
+					Query(paramPageID, pageID).
+					Query(paramPageVersion, pageVersion).
+					Query(paramLocale, locale).
+					Query(paramContainerName, builder.name).
+					Go(),
+			))
 		}
 		containers = append(containers, VListGroup(
 			web.Slot(
@@ -892,7 +1108,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
 	sort.Slice(cons, func(i, j int) bool {
-		return b.ContainerByName(cons[j].ModelName).group == ""
+		return b.ContainerByName(cons[i].ModelName).group != "" && b.ContainerByName(cons[j].ModelName).group == ""
 	})
 	for _, group := range utils.GroupBySlice[*Container, string](cons, func(builder *Container) string {
 		return b.ContainerByName(builder.ModelName).group
@@ -918,8 +1134,17 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 			listItems = append(listItems, VListItem(
 				h.Div(
 					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100).Draggable(false)),
-				).Attr("draggable", "true", "v-bind", fmt.Sprintf(`{ shared : "true",modelid: %v}`, builder.ModelID)).Id(c.name),
+					VListItemSubtitle(VImg().Src(cover).Height(100)),
+				).Attr("@click", web.Plaid().
+					URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+					EventFunc(AddContainerEvent).
+					Query(paramPageID, pageID).
+					Query(paramPageVersion, pageVersion).
+					Query(paramLocale, locale).
+					Query(paramContainerName, builder.ModelName).
+					Query(paramModelID, builder.ModelID).
+					Query(paramSharedContainer, "true").
+					Go()),
 			).Value(containerName))
 		}
 
@@ -933,20 +1158,34 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext, isReadonly bool) (co
 		).Value(groupName))
 
 	}
-	component = web.Scope(
-		VTabs(
-			VTab(h.Text(msgr.New)).Value(msgr.New),
-			VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
-		).Attr("v-model", "tabLocals.tab"),
-		VWindow(
-			VWindowItem(
-				VList(containers...).Opened(groupsNames),
-			).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-			VWindowItem(
-				VList(sharedGroups...).Opened(sharedGroupNames),
-			).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-		).Attr("v-model", "tabLocals.tab"),
-	).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}")
+	component = h.Components(h.Div(
+		VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
+			Attr("@click",
+				web.Plaid().
+					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+					EventFunc(ShowSortedContainerDrawerEvent).
+					Query(paramPageID, pageID).
+					Query(paramPageVersion, pageVersion).
+					Query(paramLocale, locale).
+					Query(paramStatus, status).
+					Go(),
+			),
+		h.Span("Elements").Class("text-subtitle-1"),
+	).Class("d-inline-flex pa-6 align-center"),
+		VDivider(), web.Scope(
+			VTabs(
+				VTab(h.Text(msgr.New)).Value(msgr.New),
+				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
+			).Attr("v-model", "tabLocals.tab").Class("px-6"),
+			VWindow(
+				VWindowItem(
+					VList(containers...).Opened(groupsNames),
+				).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+				VWindowItem(
+					VList(sharedGroups...).Opened(sharedGroupNames),
+				).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
+			).Attr("v-model", "tabLocals.tab").Class("pa-6"),
+		).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}"))
 	return
 }
 
@@ -1173,7 +1412,26 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 }
 
 func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	// TODO get status
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: b.renderContainersList(ctx, false)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: b.renderContainersList(ctx)})
+	return
+}
+
+func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var body h.HTMLComponent
+	if body, err = b.renderContainersSortedList(ctx); err != nil {
+		return
+	}
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: body})
+	return
+}
+
+func (b *Builder) ReloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var body h.HTMLComponent
+	isTpl := ctx.R.FormValue("tpl") != ""
+	id := ctx.R.FormValue("id")
+	version := ctx.R.FormValue("version")
+	locale := ctx.R.Form.Get("locale")
+	body, _, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
 	return
 }

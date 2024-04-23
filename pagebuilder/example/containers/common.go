@@ -51,8 +51,9 @@ func ContainerWrapper(containerID, anchorID, classes,
 		if isReadonly {
 			r.AppendChildren(RawHTML(`<div class="wrapper-shadow"></div>`))
 		} else {
+			r.AppendChildren(Div().Class("inner-shadow"))
 			r = Div(
-				r.Attr("onclick", postMessage(pagebuilder.EventEdit, containerID, input)),
+				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+postMessage(pagebuilder.EventEdit, containerID, input)),
 				Div(
 					H6(input.DisplayName).Class("title"),
 					Div(
@@ -65,7 +66,7 @@ func ContainerWrapper(containerID, anchorID, classes,
 					Div().Class("add"),
 					Button("").Children(I("add").Class("material-icons add")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
 				).Class("editor-add"),
-			).Class("wrapper-shadow").Attr("onclick", "document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.classList.add('highlight');")
+			).Class("wrapper-shadow")
 		}
 	}
 	return r

@@ -158,6 +158,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		PageFunc(r.Editor)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
 	r.ps.GetWebBuilder().RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
+	r.ps.GetWebBuilder().RegisterEventFunc(ShowSortedContainerDrawerEvent, r.ShowSortedContainerDrawer)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
@@ -167,6 +168,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
 	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
+	r.ps.GetWebBuilder().RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.ReloadRenderPageOrTemplate)
 	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
 	return r
 }

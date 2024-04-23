@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/qor5/admin/v3/presets"
 	"net/url"
+	"strconv"
 
-	"github.com/qor5/admin/v3/publish"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
@@ -36,19 +36,11 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	case DevicePhone:
 		activeDevice = 2
 	}
-
-	containerList = b.renderContainersList(ctx, p.GetStatus() != publish.StatusDraft)
-	action := web.Plaid().
-		URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, p.ID, p.GetVersion(), locale)).
-		EventFunc(AddContainerEvent).
-		Query(paramPageID, p.ID).
-		Query(paramPageVersion, p.GetVersion()).
-		Query(paramLocale, locale).
-		Query(paramContainerName, web.Var("$event.start.id")).
-		Query(paramSharedContainer, web.Var(`$event.start.getAttribute("shared")`)).
-		Query(paramModelID, web.Var(`$event.start.getAttribute("modelid")`)).
-		Go()
-	r.Body = h.Tag("vx-drag-listener").Attr("@drop", action).Children(
+	ctx.R.Form.Set(paramPageID, strconv.Itoa(int(p.ID)))
+	ctx.R.Form.Set(paramStatus, p.GetStatus())
+	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
+	containerList = b.renderContainersList(ctx)
+	r.Body = h.Components(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
