@@ -430,11 +430,11 @@ const subMenuFontWeight = "400"
 
 func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (r h.HTMLComponent) {
 	menuIcon := m.menuIcon
-	fontWeight := subMenuFontWeight
+	// fontWeight := subMenuFontWeight
 	if isSub {
 		// menuIcon = ""
 	} else {
-		fontWeight = menuFontWeight
+		// fontWeight = menuFontWeight
 		if menuIcon == "" {
 			menuIcon = defaultMenuIcon(m.label)
 		}
@@ -447,14 +447,14 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
 	}
 	item := VListItem(
-		VRow(
-			VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
-			VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+		// VRow(
+		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
+		// 	VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
 
-		// h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
-		// VListItemTitle(
-		//	h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
-		// ).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
+		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
+		VListItemTitle(
+			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+		),
 	).Class("rounded-lg").
 		Value(m.label)
 	// .ActiveClass("bg-red")
