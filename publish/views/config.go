@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -187,4 +188,6 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPublishKey, Messages_ja_JP)
+
+	utils.Configure(b)
 }

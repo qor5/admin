@@ -8,6 +8,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
 	v "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
@@ -379,33 +380,22 @@ func deleteVersionDialogV2(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue("delete_id")
 		versionName := ctx.R.FormValue("version_name")
+
+		utilMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,
 			Body: web.Scope(
-				v.VDialog(
-					v.VCard(
-						v.VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", versionName))),
-						v.VCardActions(
-							v.VSpacer(),
-							v.VBtn("Cancel").
-								Variant(v.VariantFlat).
-								Class("ml-2").
-								On("click", "locals.deleteConfirmation = false"),
-
-							v.VBtn("Delete").
-								Color("primary").
-								Variant(v.VariantFlat).
-								Theme(v.ThemeDark).
-								Attr("@click", web.Plaid().
-									URL(mb.Info().ListingHref()).
-									EventFunc(actions.DoDelete).
-									Queries(ctx.Queries()).
-									Query(presets.ParamInDialog, "true").
-									Query(presets.ParamID, id).Go()),
-						),
-					),
-				).MaxWidth("580px").
-					Attr("v-model", "locals.deleteConfirmation"),
+				// TODO i18
+				utils.DeleteDialog(fmt.Sprintf("Are you sure you want to delete %s?", versionName),
+					web.Plaid().
+						URL(mb.Info().ListingHref()).
+						EventFunc(actions.DoDelete).
+						Queries(ctx.Queries()).
+						Query(presets.ParamInDialog, "true").
+						Query(presets.ParamID, id).Go(),
+					utilMsgr),
 			).VSlot(" { locals }").Init(`{deleteConfirmation: true}`),
 		})
 		return
