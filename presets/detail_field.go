@@ -269,9 +269,9 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 							h.Div(
 								// detailFields
 								h.Div(b.componentShowFunc(obj, field, ctx)).
-									Class("flex-grow-1").Style("max-width:465px;"),
+									Class("flex-grow-1 pr-3"),
 								// edit btn
-								h.Div(btn).Class("ms-auto").Style("width:32px;"),
+								h.Div(btn).Style("width:32px;"),
 							).Class("d-flex justify-space-between").Style("color:initial;"),
 						),
 					).Variant(VariantOutlined).Color("grey").
@@ -300,7 +300,7 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 							h.Div(
 								// detailFields
 								h.Div(b.componentEditFunc(obj, field, ctx)).
-									Class("flex-grow-1").Style("max-width:465px;"),
+									Class("flex-grow-1"),
 								// save btn
 								h.Div(btn).Class("align-self-end"),
 							).Class("d-flex flex-column").Style("color:initial;"),
@@ -463,7 +463,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 							FormKey: fmt.Sprintf("%s[%b]", b.name, index),
 							Label:   b.label,
 						}, ctx)).
-							Class("flex-grow-1").Style("max-width:465px;"),
+							Class("flex-grow-1 pr-3"),
 						h.Div(editBtn),
 					).Class("d-flex justify-space-between"),
 				),
@@ -483,7 +483,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 				FormKey: fmt.Sprintf("%s[%b]", b.name, index),
 				Label:   fmt.Sprintf("%s[%b]", b.label, index),
 			}, ctx),
-		).Class("flex-grow-1").Style("max-width:465px;"),
+		).Class("flex-grow-1"),
 	).Class("d-flex justify-space-between")
 
 	if !b.design.disableElementDeleteBtn {
