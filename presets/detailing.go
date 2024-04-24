@@ -43,6 +43,10 @@ func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	return r
 }
 
+func (b *DetailingBuilder) GetDrawer() bool {
+	return b.drawer
+}
+
 // string / []string / *FieldsSection
 func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	r = b

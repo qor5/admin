@@ -649,6 +649,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			),
 		)
 	}).Label("Unread Notes")
+
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		versionIf := obj.(publish.VersionInterface)
 		statusIf := obj.(publish.StatusInterface)
@@ -680,6 +681,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
+
 		return VBtn("Save").Variant(VariantElevated).Color("secondary").Attr("@click", web.Plaid().
 			Query("select_id", id).
 			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
@@ -687,11 +689,29 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			Go())
 	})
 	lb.RowMenu().Empty()
+
 	mb.RegisterEventFunc(selectVersionEventV2, func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("select_id")
 		refer, _ := url.Parse(ctx.R.Referer())
 		newQueries := refer.Query()
-		r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
+		id := ctx.R.FormValue("select_id")
+
+		if !pm.GetHasDetailing() {
+			// close dialog and open editing
+			newQueries.Add(presets.ParamID, id)
+			r.RunScript = presets.CloseListingDialogVarScript + ";" +
+				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go()
+			return
+		}
+		if !pm.GetDetailing().GetDrawer() {
+			// open detailing without drawer
+			// jump URL to support referer
+			r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
+			return
+		}
+		newQueries.Add(presets.ParamID, id)
+		// close dialog and open detailingDrawer
+		r.RunScript = presets.CloseListingDialogVarScript + ";" +
+			web.Plaid().EventFunc(actions.DetailingDrawer).Queries(newQueries).Go()
 		return
 	})
 

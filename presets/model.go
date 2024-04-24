@@ -60,6 +60,18 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	return
 }
 
+func (mb *ModelBuilder) GetHasDetailing() bool {
+	return mb.hasDetailing
+}
+
+func (mb *ModelBuilder) GetSingleton() bool {
+	return mb.singleton
+}
+
+func (mb *ModelBuilder) GetDetailing() *DetailingBuilder {
+	return mb.detailing
+}
+
 func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {
 	mb.rightDrawerWidth = v
 	return mb
