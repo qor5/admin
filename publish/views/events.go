@@ -390,7 +390,7 @@ func deleteVersionDialogV2(mb *presets.ModelBuilder) web.EventFunc {
 							v.VBtn("Cancel").
 								Variant(v.VariantFlat).
 								Class("ml-2").
-								On("click", "dialogLocals.deleteConfirmation = false"),
+								On("click", "locals.deleteConfirmation = false"),
 
 							v.VBtn("Delete").
 								Color("primary").
@@ -400,13 +400,13 @@ func deleteVersionDialogV2(mb *presets.ModelBuilder) web.EventFunc {
 									URL(mb.Info().ListingHref()).
 									EventFunc(actions.DoDelete).
 									Queries(ctx.Queries()).
-									Query(presets.ParamInDialog, true).
+									Query(presets.ParamInDialog, "true").
 									Query(presets.ParamID, id).Go()),
 						),
 					),
 				).MaxWidth("580px").
-					Attr("v-model", "dialogLocals.deleteConfirmation"),
-			).VSlot(" { locals: dialogLocals }").Init(`{deleteConfirmation: true}`),
+					Attr("v-model", "locals.deleteConfirmation"),
+			).VSlot(" { locals }").Init(`{deleteConfirmation: true}`),
 		})
 		return
 	}
