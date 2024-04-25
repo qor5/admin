@@ -386,17 +386,16 @@ func deleteVersionDialogV2(mb *presets.ModelBuilder) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,
-			Body: web.Scope(
+			Body: utils.DeleteDialog(
 				// TODO i18
-				utils.DeleteDialog(fmt.Sprintf("Are you sure you want to delete %s?", versionName),
-					web.Plaid().
-						URL(mb.Info().ListingHref()).
-						EventFunc(actions.DoDelete).
-						Queries(ctx.Queries()).
-						Query(presets.ParamInDialog, "true").
-						Query(presets.ParamID, id).Go(),
-					utilMsgr),
-			).VSlot(" { locals }").Init(`{deleteConfirmation: true}`),
+				fmt.Sprintf("Are you sure you want to delete %s?", versionName),
+				web.Plaid().
+					URL(mb.Info().ListingHref()).
+					EventFunc(actions.DoDelete).
+					Queries(ctx.Queries()).
+					Query(presets.ParamInDialog, "true").
+					Query(presets.ParamID, id).Go(),
+				utilMsgr),
 		})
 		return
 	}

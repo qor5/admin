@@ -1,10 +1,9 @@
 package utils
 
 import (
-	"fmt"
-
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -42,28 +41,30 @@ func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent 
 }
 
 func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
-	return VDialog(
-		VCard(
-			VCardTitle(h.Text(msg)),
-			VCardActions(
-				VSpacer(),
-				VBtn(msgr.Cancel).
-					Variant(VariantFlat).
-					Class("ml-2").
-					On("click", "locals.deleteConfirmation = false"),
+	return web.Scope(
+		VDialog(
+			VCard(
+				VCardTitle(h.Text(msg)),
+				VCardActions(
+					VSpacer(),
+					VBtn(msgr.Cancel).
+						Variant(VariantFlat).
+						Class("ml-2").
+						On("click", "locals.deleteConfirmation = false"),
 
-				VBtn(msgr.OK).
-					Color("primary").
-					Variant(VariantFlat).
-					Theme(ThemeDark).
-					Attr("@click", okAction),
+					VBtn(msgr.OK).
+						Color("primary").
+						Variant(VariantFlat).
+						Theme(ThemeDark).
+						Attr("@click", okAction),
+				),
 			),
-		),
-	).MaxWidth("600px").
-		Attr("v-model", "locals.deleteConfirmation")
+		).MaxWidth("600px").
+			Attr("v-model", "locals.deleteConfirmation"),
+	).VSlot(" { locals }").Init(`{deleteConfirmation: true}`)
 }
 
-func CustomDialog(msg string, content h.HTMLComponent, okAction, VModelKey string, msgr *Messages) h.HTMLComponent {
+func CustomDialog(msg string, content h.HTMLComponent, okAction string, msgr *Messages) h.HTMLComponent {
 	Vcard := VCard()
 	if msg != "" {
 		Vcard.AppendChildren(VCardTitle(h.Text(msg)))
@@ -77,7 +78,7 @@ func CustomDialog(msg string, content h.HTMLComponent, okAction, VModelKey strin
 			VBtn(msgr.Cancel).
 				Variant(VariantFlat).
 				Class("ml-2").
-				On("click", fmt.Sprintf("locals.%s = false", VModelKey)),
+				On("click", "locals.customConfirmationDialog = false"),
 
 			VBtn(msgr.OK).
 				Color("primary").
@@ -86,8 +87,10 @@ func CustomDialog(msg string, content h.HTMLComponent, okAction, VModelKey strin
 				Attr("@click", okAction),
 		),
 	)
-	return VDialog(
-		Vcard,
-	).MaxWidth("600px").
-		Attr("v-model", fmt.Sprintf("locals.%s", VModelKey))
+	return web.Scope(
+		VDialog(
+			Vcard,
+		).MaxWidth("600px").
+			Attr("v-model", "locals.customConfirmationDialog"),
+	).VSlot(" { locals }").Init(`{ customConfirmationDialog: true }`)
 }
