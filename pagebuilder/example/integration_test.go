@@ -54,7 +54,7 @@ INSERT INTO container_headers (color) VALUES ('black');
 		t.Error(w.Body.String())
 	}
 
-	_, err := pb.AddContainerToPage(1, "v1", "International", "Header")
+	_, err := pb.AddContainerToPage(1, "", "v1", "International", "Header")
 	if err != nil {
 		t.Error(err)
 	}

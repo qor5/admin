@@ -159,6 +159,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
 	r.ps.GetWebBuilder().RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
 	r.ps.GetWebBuilder().RegisterEventFunc(ShowSortedContainerDrawerEvent, r.ShowSortedContainerDrawer)
+	r.ps.GetWebBuilder().RegisterEventFunc(ShowEditContainerDrawerEvent, r.ShowEditContainerDrawer)
 	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
 	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
@@ -547,7 +548,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						utilsMsgr),
 					h.If(isContent,
 						h.Tag("vx-restore-scroll-listener"),
-						vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction())),
+						vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx))),
 					VProgressLinear().
 						Attr(":active", "isFetching").
 						Attr("style", "position: fixed; z-index: 99").
@@ -2107,17 +2108,20 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction() string {
+func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	editAction := web.POST().
-		EventFunc(actions.Edit).
+		EventFunc(ShowEditContainerDrawerEvent).
 		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-		Query(presets.ParamOverlay, actions.FixedDrawer).
+		Queries(ctx.R.Form).
 		Query(presets.ParamID, web.Var("arr[1]")).
+		Query(paramContainerName, web.Var("display_name")).
 		Go()
 
 	addAction := web.POST().EventFunc(ShowAddContainerDrawerEvent).
+		Queries(ctx.R.Form).
 		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 		Query(presets.ParamID, web.Var("arr[1]")).
+		Query(paramContainerID, web.Var("container_id")).
 		Go()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
@@ -2134,7 +2138,7 @@ func (b *Builder) generateEditorBarJsFunction() string {
 	return fmt.Sprintf(`
 function(e){
 	const { msg_type,model_id ,container_id ,display_name } = e.data
-	if (!msg_type && model_id.split) {
+	if (!msg_type || !model_id.split) {
 		return
 	} 
 	let arr = model_id.split("_");

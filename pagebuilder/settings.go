@@ -2,8 +2,6 @@ package pagebuilder
 
 import (
 	"fmt"
-	"net/url"
-	"os"
 	"strconv"
 
 	"github.com/qor5/admin/v3/l10n"
@@ -12,9 +10,7 @@ import (
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
 	pv "github.com/qor5/admin/v3/publish/views"
-	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
@@ -25,7 +21,7 @@ import (
 
 func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo.Builder) presets.FieldComponentFunc {
 	// TODO: refactor versionDialog to use publish/views
-	pv.ConfigureVersionListDialog(db, b.ps, pm)
+	//pv.ConfigureVersionListDialog(db, b.ps, pm)
 
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
@@ -36,15 +32,6 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 		c := &Category{}
 		db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
 		var previewDevelopUrl = b.previewHref(strconv.Itoa(int(p.GetID())), p.GetVersion(), p.GetLocale())
-		overview := vx.DetailInfo(
-			vx.DetailColumn(
-				vx.DetailField(vx.OptionalText(p.Title).ZeroLabel("No Title")).Label("Title"),
-				vx.DetailField(vx.OptionalText(c.Path).ZeroLabel("No Category")).Label("Category"),
-			),
-			vx.DetailColumn(
-				vx.DetailField(vx.OptionalText(p.Slug).ZeroLabel("No Slug")).Label("Slug"),
-			),
-		)
 		var start, end, se string
 		if p.GetScheduledStartAt() != nil {
 			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
@@ -55,21 +42,6 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 		if start != "" || end != "" {
 			se = "Scheduled at: " + start + " ~ " + end
 		}
-		var publishURL string
-		if p.GetStatus() == publish.StatusOnline {
-			var err error
-			publishURL, err = url.JoinPath(os.Getenv("PUBLISH_URL"), p.getAccessUrl(p.GetOnlineUrl()))
-			if err != nil {
-				panic(err)
-			}
-		}
-		pageState := vx.DetailInfo(
-			vx.DetailColumn(
-				vx.DetailField(vx.OptionalText(p.GetStatus()).ZeroLabel("No State")).Label("State"),
-				vx.DetailField(h.A(h.Text(publishURL)).Href(publishURL).Target("_blank").Class("text-truncate")).Label("URL"),
-				vx.DetailField(vx.OptionalText(se).ZeroLabel("No Set")).Label("SchedulePublishTime"),
-			),
-		)
 		var notes []note.QorNote
 		ri := p.PrimarySlug()
 		rt := pm.Info().Label()
@@ -94,60 +66,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 			}
 			notesSetcion = s
 		}
-		var editBtn h.HTMLComponent
-		var pageStateBtn h.HTMLComponent
-		var publishBtn h.HTMLComponent
-		var scheduleBtn h.HTMLComponent
-		var seoBtn h.HTMLComponent
-		pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, utils.Messages_en_US).(*pv.Messages)
-		if p.GetStatus() == publish.StatusDraft {
-			editBtn = VBtn("Edit").Variant(VariantFlat).
-				Attr("@click", web.POST().
-					EventFunc(actions.Edit).
-					Query(presets.ParamOverlay, actions.Dialog).
-					Query(presets.ParamID, p.PrimarySlug()).
-					URL(mi.PresetsPrefix()+"/pages").Go(),
-				)
-			seoBtn = VBtn("Edit").Variant(VariantFlat).
-				Attr("@click", web.POST().
-					EventFunc(editSEODialogEvent).
-					Query(presets.ParamOverlay, actions.Drawer).
-					Query(presets.ParamID, p.PrimarySlug()).
-					URL(mi.PresetsPrefix()+"/pages").Go(),
-				)
-			publishBtn = VBtn("Publish").Class("rounded-sm ml-2").
-				Variant(VariantFlat).Color("primary").Height(40).
-				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.PublishEvent))
 
-			scheduleBtn = VBtn("").Icon("mdi-alarm").Class("rounded-sm ml-1").
-				Variant(VariantFlat).Color("primary").Height(40).Attr("@click", web.POST().
-				EventFunc(schedulePublishDialogEvent).
-				Query(presets.ParamOverlay, actions.Dialog).
-				Query(presets.ParamID, p.PrimarySlug()).
-				URL(mi.PresetsPrefix()+"/pages").Go(),
-			)
-		}
-		if p.GetStatus() == publish.StatusOnline {
-			pageStateBtn = VBtn(pvMsgr.Unpublish).Variant(VariantFlat).Class("mr-2").Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, pv.UnpublishEvent))
-		} else {
-			pageStateBtn = VBtn("Schedule Publish").Variant(VariantFlat).
-				Attr("@click", web.POST().
-					EventFunc(schedulePublishDialogEvent).
-					Query(presets.ParamOverlay, actions.Dialog).
-					Query(presets.ParamID, p.PrimarySlug()).
-					URL(mi.PresetsPrefix()+"/pages").Go(),
-				)
-		}
-
-		seoState := "Default"
-		if p.SEO.EnabledCustomize {
-			seoState = "Customized"
-		}
-		seo := vx.DetailInfo(
-			vx.DetailColumn(
-				vx.DetailField(vx.OptionalText(seoState)).Label("State"),
-			),
-		)
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		var categories []*Category
@@ -226,16 +145,6 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-16 mr-4"),
 			).Class("mt-5").Value("Activity"),
 		).Attr("v-model", "editLocals.detailTab")
-		versionSwitch := VChip(
-			h.Text(p.GetVersionName()),
-			VChip(h.Text(pv.GetStatusText(p.GetStatus(), pvMsgr))).Label(true).Color(pv.GetStatusColor(p.GetStatus())).Size(SizeSmall).Class("px-1  mx-1 text-black ml-2"),
-			VIcon("chevron_right"),
-		).Label(true).Variant(VariantOutlined).Class("rounded-r-0 text-black").Attr("style", "height:40px;background-color:#FFFFFF!important;").
-			Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-				URL(b.prefix+"/version-list-dialog").
-				Query("select_id", p.PrimarySlug()).
-				Go())
-
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("primary").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
 		return VContainer(
 			web.Scope(
@@ -251,21 +160,17 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 						).Name("title"),
 
 						VCardText(
-							// TODO use versionComponent
-							h.Div(versionComponent),
-
 							h.Div(
 								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
+								h.Div(versionComponent).Class("w-100 d-inline-flex px-4 pt-4").Style(`position:absolute;top:0;left:0`),
 								h.Div(
-									versionSwitch.Class("w-100"),
-									VBtn("").Icon("mdi-file-document-multiple").Height(40).Color("white").Class("rounded-sm").Variant(VariantFlat),
-									VBtn("").Icon("mdi-pencil").Color("secondary").
+									h.Div(
+										h.Text(se),
+									).Class("bg-secondary"),
+									VBtn("Page Builder").PrependIcon("mdi-pencil").Color("secondary").
 										Class("rounded-sm ml-2").Height(40).Variant(VariantFlat).
 										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
-									publishBtn,
-									scheduleBtn,
-								).Class("w-100 d-inline-flex pa-6 pb-6").Style(`position:absolute;bottom:0;left:0`),
-								h.Div(h.Text(se)).Class("bg-secondary ml-6 mt-6").Style(`position:absolute;top:0;left:0`),
+								).Class("px-6 pb-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 							).Style(`position:relative`).Class("w-100"),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
@@ -283,36 +188,6 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 					).Class("w-25").Class("ml-5"),
 				).Class("d-inline-flex w-100"),
 			).VSlot(" { locals : editLocals }").Init(`{ infoTab:"Page",detailTab:"Notes" } `),
-
-			//todo schedule button will move into the top bar
-			h.If(false, VRow(
-				VCol(
-					vx.Card(overview).HeaderTitle("Overview").
-						Actions(
-							h.If(editBtn != nil, editBtn),
-						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
-					vx.Card(pageState).HeaderTitle("Page State").
-						Actions(
-							h.If(pageStateBtn != nil, pageStateBtn),
-						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
-					vx.Card(seo).HeaderTitle("SEO").
-						Actions(
-							h.If(seoBtn != nil, seoBtn),
-						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
-				).Cols(8),
-				VCol(
-					vx.Card(notesSetcion).HeaderTitle("Notes").
-						Actions(
-							VBtn("Create").Variant(VariantFlat).
-								Attr("@click", web.POST().
-									EventFunc(createNoteDialogEvent).
-									Query(presets.ParamOverlay, actions.Dialog).
-									Query(presets.ParamID, p.PrimarySlug()).
-									URL(mi.PresetsPrefix()+"/pages").Go(),
-								),
-						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
-				).Cols(4),
-			)),
 		)
 	}
 }

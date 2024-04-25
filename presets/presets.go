@@ -783,8 +783,8 @@ func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLC
 	if overlayType == actions.Dialog {
 		b.dialog(r, comp, width)
 		return
-	} else if overlayType == actions.FixedDrawer {
-		b.fixedDrawer(r, comp, width)
+	} else if overlayType == actions.Content {
+		b.contentDrawer(r, comp, width)
 		return
 	}
 	b.rightDrawer(r, comp, width)
@@ -815,7 +815,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
 }
-func (b *Builder) fixedDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) contentDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
 	}

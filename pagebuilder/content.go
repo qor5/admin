@@ -45,7 +45,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 			Class("mt-6").
 			Fluid(true),
 		VNavigationDrawer(
-			web.Portal(containerList).Name(presets.RightDrawerContentPortalName),
+			web.Portal(containerList).Name(presets.RightDrawerPortalName),
 		).Location(LocationRight).
 			Permanent(true).
 			Width(420),

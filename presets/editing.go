@@ -177,6 +177,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	msgr := MustGetMessages(ctx.R)
 
 	id := ctx.R.FormValue(ParamID)
+	overlayType := ctx.R.FormValue(ParamOverlay)
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
@@ -282,7 +283,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			h.Components(hiddenComps...),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
-		VCardActions(actionButtons),
+		h.If(overlayType != actions.Content, VCardActions(actionButtons)),
 	)
 
 	var asideContent h.HTMLComponent = formContent
@@ -329,10 +330,19 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		}
 	}
 
-	overlayType := ctx.R.FormValue(ParamOverlay)
 	closeBtnVarScript := closeRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
+	}
+
+	if overlayType == actions.Content {
+		return VLayout(
+			VMain(
+				VSheet(
+					VCard(asideContent).Variant(VariantFlat),
+				).Class("pa-2"),
+			),
+		)
 	}
 
 	return web.Scope(
