@@ -2,11 +2,11 @@ package pagebuilder
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/activity"
 	"strconv"
+	"strings"
 
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/qor5/admin/v3/seo"
-
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -19,10 +19,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo.Builder) presets.FieldComponentFunc {
+func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
 	// TODO: refactor versionDialog to use publish/views
-	//pv.ConfigureVersionListDialog(db, b.ps, pm)
-
+	pm := b.mb
+	seoBuilder := b.seoBuilder
+	pv.ConfigureVersionListDialog(db, b.ps, pm)
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
 		versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
@@ -113,6 +114,22 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 				VTab(h.Text("Activity")).Size(SizeXSmall).Value("Activity"),
 				VTab(h.Text("Notes")).Size(SizeXSmall).Value("Notes"),
 			).Attr("v-model", "editLocals.detailTab").AlignTabs(Center).FixedTabs(true)
+		var timelineItems []h.HTMLComponent
+		if activityB != nil {
+			for _, i := range activityB.GetActivityLogs(p, db) {
+				timelineItems = append(timelineItems,
+					VTimelineItem(
+						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05"))).Class("text-caption"),
+						h.Div(
+							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color("secondary").Class("text-h6 rounded-lg").Size(SizeXSmall),
+							h.Strong(i.GetCreator()).Class("ml-1"),
+						),
+						h.Div(h.Text(i.GetAction())).Class("text-caption"),
+					).DotColor("success").Size(SizeXSmall),
+				)
+			}
+
+		}
 		detailComponentContent := VWindow(
 			VWindowItem(
 				VBtn("New note").PrependIcon("mdi-plus").Variant(VariantOutlined).Color("blue").Class("w-100").
@@ -126,24 +143,9 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 			).Class("pa-5").Value("Notes"),
 			VWindowItem(
 				VTimeline(
-					VTimelineItem(
-						h.Div(h.Text("2 hours ago")).Class("text-caption"),
-						h.Div(
-							VAvatar().Size(SizeXSmall).Image("https://cdn.vuetifyjs.com/images/lists/1.jpg"),
-							h.Strong("Peterson  Lee").Class("ml-1"),
-						),
-						h.Div(h.Text("Edited the page")).Class("text-caption"),
-					).DotColor("success").Size(SizeXSmall),
-					VTimelineItem(
-						h.Div(h.Text("3 hours ago")).Class("text-caption"),
-						h.Div(
-							VAvatar().Size(SizeXSmall).Image("https://cdn.vuetifyjs.com/images/lists/2.jpg"),
-							h.Strong("Peterson  Lee").Class("ml-1"),
-						),
-						h.Div(h.Text("Edited the page")).Class("text-caption"),
-					).DotColor("success").Size(SizeXSmall),
-				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-16 mr-4"),
-			).Class("mt-5").Value("Activity"),
+					timelineItems...,
+				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
+			).Class("pa-5").Value("Activity"),
 		).Attr("v-model", "editLocals.detailTab")
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("primary").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
 		return VContainer(
@@ -187,7 +189,7 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 							detailComponentContent),
 					).Class("w-25").Class("ml-5"),
 				).Class("d-inline-flex w-100"),
-			).VSlot(" { locals : editLocals }").Init(`{ infoTab:"Page",detailTab:"Notes" } `),
+			).VSlot(" { locals : editLocals }").Init(`{ infoTab:"Page",detailTab:"Activity" } `),
 		)
 	}
 }

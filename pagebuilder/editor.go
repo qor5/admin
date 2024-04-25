@@ -43,7 +43,7 @@ const (
 	ShowAddContainerDrawerEvent      = "page_builder_ShowAddContainerDrawerEvent"
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ShowEditContainerDrawerEvent     = "page_builder_ShowEditContainerDrawerEvent"
-	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplate"
+	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
