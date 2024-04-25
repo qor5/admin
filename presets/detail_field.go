@@ -97,6 +97,7 @@ type DetailFieldBuilder struct {
 	switchable        bool
 	saver             SaveFunc
 	setter            SetterFunc
+	hiddenFuncs       []ObjectComponentFunc
 	componentShowFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
 	father            *DetailFieldsBuilder
@@ -156,6 +157,16 @@ func (b *DetailFieldBuilder) SetterFunc(v SetterFunc) (r *DetailFieldBuilder) {
 		panic("value required")
 	}
 	b.setter = v
+	return b
+}
+
+func (b *DetailFieldBuilder) HiddenFuncs(funcs ...ObjectComponentFunc) (r *DetailFieldBuilder) {
+	for _, f := range funcs {
+		if f == nil {
+			panic("value required")
+		}
+		b.hiddenFuncs = append(b.hiddenFuncs, f)
+	}
 	return b
 }
 
@@ -260,6 +271,13 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Go())
 
+	hiddenComp := h.Div()
+	if len(b.hiddenFuncs) > 0 {
+		for _, f := range b.hiddenFuncs {
+			hiddenComp.AppendChildren(f(obj, ctx))
+		}
+	}
+
 	return web.Portal(
 		web.Scope(
 			web.Scope(
@@ -280,6 +298,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 				),
 			).VSlot("{ locals }").Init(`{ showBtn:false,color:blue }`),
 		).VSlot("{ form }"),
+		hiddenComp,
 	).Name(b.FieldPortalName())
 }
 
@@ -290,6 +309,13 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Go())
+
+	hiddenComp := h.Div()
+	if len(b.hiddenFuncs) > 0 {
+		for _, f := range b.hiddenFuncs {
+			hiddenComp.AppendChildren(f(obj, ctx))
+		}
+	}
 
 	return web.Portal(
 		web.Scope(
@@ -307,10 +333,12 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 						),
 					).Variant(VariantOutlined).Color("grey").
 						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)), h.Br(),
+						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
+					h.Br(),
 				),
 			).VSlot("{ locals }").Init(`{ showBtn:false }`),
 		).VSlot("{ form }"),
+		hiddenComp,
 	).Name(b.FieldPortalName())
 }
 
@@ -413,8 +441,16 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		rows.AppendChildren(addBtn)
 	}
 
+	hiddenComp := h.Div()
+	if len(b.hiddenFuncs) > 0 {
+		for _, f := range b.hiddenFuncs {
+			hiddenComp.AppendChildren(f(obj, ctx))
+		}
+	}
+
 	return web.Portal(
 		web.Scope(rows).VSlot("{ form }"),
+		hiddenComp,
 	).Name(b.FieldPortalName())
 }
 
