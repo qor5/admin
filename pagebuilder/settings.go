@@ -162,15 +162,15 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder, b *Builder, seoBuilder *seo
 						VCardText(
 							h.Div(
 								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
-								h.Div(versionComponent).Class("w-100 d-inline-flex px-4 pt-4").Style(`position:absolute;top:0;left:0`),
+								h.Div(versionComponent).Class("w-100 pa-6").Style(`position:absolute;top:0;left:0`),
 								h.Div(
 									h.Div(
 										h.Text(se),
 									).Class("bg-secondary"),
 									VBtn("Page Builder").PrependIcon("mdi-pencil").Color("secondary").
-										Class("rounded-sm ml-2").Height(40).Variant(VariantFlat).
+										Class("rounded-sm").Height(40).Variant(VariantFlat).
 										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
-								).Class("px-6 pb-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
+								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 							).Style(`position:relative`).Class("w-100"),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),

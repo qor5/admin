@@ -46,7 +46,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder) presets.FieldComponent
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
 				utilsMsgr),
-		).Class("w-100 d-inline-flex pa-6 pb-6")
+		).Class("w-100 d-inline-flex")
 
 		if version, ok = obj.(publish.VersionInterface); ok {
 			versionSwitch = v.VChip(
