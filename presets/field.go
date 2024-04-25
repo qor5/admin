@@ -100,6 +100,10 @@ func emptyComponentFunc(obj interface{}, field *FieldContext, ctx *web.EventCont
 	return
 }
 
+func (b *FieldBuilder) GetCompFunc() FieldComponentFunc {
+	return b.compFunc
+}
+
 func (b *FieldBuilder) Label(v string) (r *FieldBuilder) {
 	b.label = v
 	return b
