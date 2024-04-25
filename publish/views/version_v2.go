@@ -18,9 +18,10 @@ import (
 )
 
 type VersionComponentConfig struct {
-	PublishEvent   string
-	UnPublishEvent string
-	RePublishEvent string
+	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
+	PublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	UnPublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	RePublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 }
 
 func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
@@ -37,7 +38,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			versionSwitch  *v.VChipBuilder
 			publishBtn     h.HTMLComponent
 		)
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, utils.Messages_en_US).(*Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
 
 		primarySlugger, ok = obj.(presets.SlugEncoder)
@@ -72,8 +73,8 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			switch status.GetStatus() {
 			case publish.StatusDraft, publish.StatusOffline:
 				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)
-				if config.PublishEvent != "" {
-					publishEvent = config.PublishEvent
+				if config.PublishEvent != nil {
+					publishEvent = config.PublishEvent(obj, field, ctx)
 				}
 				publishBtn = h.Div(
 					v.VBtn(msgr.Publish).Attr("@click", publishEvent).
@@ -81,12 +82,12 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				)
 			case publish.StatusOnline:
 				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
-				if config.UnPublishEvent != "" {
-					unPublishEvent = config.UnPublishEvent
+				if config.UnPublishEvent != nil {
+					unPublishEvent = config.UnPublishEvent(obj, field, ctx)
 				}
 				rePublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)
-				if config.RePublishEvent != "" {
-					rePublishEvent = config.RePublishEvent
+				if config.RePublishEvent != nil {
+					rePublishEvent = config.RePublishEvent(obj, field, ctx)
 				}
 				publishBtn = h.Div(
 					v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
@@ -103,7 +104,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					utilsMsgr),
 			)
 			// Publish/Unpublish/Republish CustomDialog
-			if config.UnPublishEvent != "" || config.RePublishEvent != "" || config.PublishEvent != "" {
+			if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
 				div.AppendChildren(web.Portal().Name(PublishCustomDialogPortalName))
 			}
 		}

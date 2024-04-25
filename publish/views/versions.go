@@ -20,7 +20,7 @@ import (
 
 const (
 	SchedulePublishDialogPortalName = "publish_SchedulePublishDialogPortalName"
-	PublishCustomDialogPortalName   = "publish_SchedulePublishDialogPortalName"
+	PublishCustomDialogPortalName   = "publish_PublishCustomDialogPortalName"
 )
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"net/http"
+
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -16,6 +18,10 @@ func Configure(b *presets.Builder) {
 		RegisterForModule(language.English, I18nUtilsKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nUtilsKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nUtilsKey, Messages_ja_JP)
+}
+
+func MustGetMessages(r *http.Request) *Messages {
+	return i18n.MustGetModuleMessages(r, I18nUtilsKey, Messages_en_US).(*Messages)
 }
 
 func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
@@ -64,6 +70,8 @@ func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
 	).VSlot(" { locals }").Init(`{deleteConfirmation: true}`)
 }
 
+const CloseCustomDialog = "locals.customConfirmationDialog = false"
+
 func CustomDialog(msg string, content h.HTMLComponent, okAction string, msgr *Messages) h.HTMLComponent {
 	Vcard := VCard()
 	if msg != "" {
@@ -78,7 +86,7 @@ func CustomDialog(msg string, content h.HTMLComponent, okAction string, msgr *Me
 			VBtn(msgr.Cancel).
 				Variant(VariantFlat).
 				Class("ml-2").
-				On("click", "locals.customConfirmationDialog = false"),
+				On("click", CloseCustomDialog),
 
 			VBtn(msgr.OK).
 				Color("primary").
