@@ -18,7 +18,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const SchedulePublishDialogPortalName = "SchedulePublishDialogPortalName"
+const (
+	SchedulePublishDialogPortalName = "publish_SchedulePublishDialogPortalName"
+	PublishCustomDialogPortalName   = "publish_SchedulePublishDialogPortalName"
+)
 
 func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {

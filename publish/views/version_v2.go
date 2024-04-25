@@ -17,11 +17,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type VersionComponentDesign struct {
-	PublishDiglogContent h.HTMLComponent
+type VersionComponentConfig struct {
+	PublishEvent   string
+	UnPublishEvent string
+	RePublishEvent string
 }
 
-func DefaultVersionComponentFunc(b *presets.ModelBuilder) presets.FieldComponentFunc {
+func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
+	var config VersionComponentConfig
+	if len(cfg) > 0 {
+		config = cfg[0]
+	}
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			version        publish.VersionInterface
@@ -39,14 +45,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder) presets.FieldComponent
 			panic("obj should be SlugEncoder")
 		}
 
-		div := h.Div(
-			// SchedulePublishDialog
-			web.Portal().Name(SchedulePublishDialogPortalName),
-			// Publish/Unpublish/Republish ConfirmDialog
-			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
-				utilsMsgr),
-		).Class("w-100 d-inline-flex")
+		div := h.Div().Class("w-100 d-inline-flex")
 
 		if version, ok = obj.(publish.VersionInterface); ok {
 			versionSwitch = v.VChip(
@@ -72,19 +71,41 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder) presets.FieldComponent
 		if status, ok = obj.(publish.StatusInterface); ok {
 			switch status.GetStatus() {
 			case publish.StatusDraft, publish.StatusOffline:
+				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)
+				if config.PublishEvent != "" {
+					publishEvent = config.PublishEvent
+				}
 				publishBtn = h.Div(
-					v.VBtn(msgr.Publish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)).
+					v.VBtn(msgr.Publish).Attr("@click", publishEvent).
 						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color("primary").Height(40),
 				)
 			case publish.StatusOnline:
+				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
+				if config.UnPublishEvent != "" {
+					unPublishEvent = config.UnPublishEvent
+				}
+				rePublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)
+				if config.RePublishEvent != "" {
+					rePublishEvent = config.RePublishEvent
+				}
 				publishBtn = h.Div(
-					v.VBtn(msgr.Unpublish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)).
+					v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
 						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
-					v.VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)).
+					v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
 						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
 				).Class("d-inline-flex")
 			}
 			div.AppendChildren(publishBtn)
+			// Publish/Unpublish/Republish ConfirmDialog
+			div.AppendChildren(
+				utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
+					Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
+					utilsMsgr),
+			)
+			// Publish/Unpublish/Republish CustomDialog
+			if config.UnPublishEvent != "" || config.RePublishEvent != "" || config.PublishEvent != "" {
+				div.AppendChildren(web.Portal().Name(PublishCustomDialogPortalName))
+			}
 		}
 
 		if _, ok = obj.(publish.ScheduleInterface); ok {
@@ -96,6 +117,8 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder) presets.FieldComponent
 				URL(fmt.Sprintf("%s/%s-version-list-dialog", b.Info().PresetsPrefix(), b.Info().URIName())).Go(),
 			)
 			div.AppendChildren(scheduleBtn)
+			// SchedulePublishDialog
+			div.AppendChildren(web.Portal().Name(SchedulePublishDialogPortalName))
 		}
 
 		return web.Scope(div).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
