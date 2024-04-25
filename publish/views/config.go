@@ -156,7 +156,9 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 						m.Detailing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
 					}
 				}
-				m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+				if m.Editing().GetField("defaultVersion") != nil {
+					m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+				}
 				ConfigureVersionListDialog(db, b, m)
 			}
 		} else {
