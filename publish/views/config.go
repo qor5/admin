@@ -151,13 +151,15 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 			}
 			// Version V2
 			{
-				if m.GetHasDetailing() {
-					if m.Detailing().GetField("defaultVersion") != nil {
+				if m.GetHasDetailing() && m.Detailing().GetField("defaultVersion") != nil {
+					if m.Detailing().GetField("defaultVersion").GetCompFunc() == nil {
 						m.Detailing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
 					}
 				}
 				if m.Editing().GetField("defaultVersion") != nil {
-					m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+					if m.Editing().GetField("defaultVersion").GetCompFunc() == nil {
+						m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
+					}
 				}
 				ConfigureVersionListDialog(db, b, m)
 			}
