@@ -283,7 +283,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			h.Components(hiddenComps...),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
-		h.If(overlayType != actions.Content, VCardActions(actionButtons)),
+		VCardActions(actionButtons),
 	)
 
 	var asideContent h.HTMLComponent = formContent
@@ -333,16 +333,6 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	closeBtnVarScript := closeRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
-	}
-
-	if overlayType == actions.Content {
-		return VLayout(
-			VMain(
-				VSheet(
-					VCard(asideContent).Variant(VariantFlat),
-				).Class("pa-2"),
-			),
-		)
 	}
 
 	return web.Scope(

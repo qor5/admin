@@ -419,11 +419,20 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent
 	return
 }
 func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
-	containerName := ctx.R.FormValue(paramContainerName)
-	pageID := ctx.R.FormValue(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.FormValue(paramLocale)
-	status := ctx.R.FormValue(paramStatus)
+
+	var (
+		containerName = ctx.R.FormValue(paramContainerName)
+		pageID        = ctx.R.FormValue(paramPageID)
+		pageVersion   = ctx.R.FormValue(paramPageVersion)
+		locale        = ctx.R.FormValue(paramLocale)
+		status        = ctx.R.FormValue(paramStatus)
+		paramID       = ctx.R.FormValue(presets.ParamID)
+	)
+	builder := b.ContainerByName(containerName).GetModelBuilder()
+	element := builder.NewModel()
+	if err = b.db.First(element, paramID).Error; err != nil {
+		return
+	}
 	r = web.Scope(
 		VLayout(
 			VMain(
@@ -450,7 +459,9 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 					),
 				).Class("d-flex  pa-6 align-center justify-space-between"),
 				VDivider(),
-				web.Portal().Name(presets.RightDrawerContentPortalName),
+				h.Div(
+					builder.Editing().ToComponent(builder.Info(), element, ctx),
+				).Class("pa-6"),
 			),
 		),
 	).VSlot("{ form }")
@@ -644,13 +655,16 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		Query(presets.ParamID, pageID).
 		Query("version", pageVersion).
 		Query(paramLocale, locale).
-		Go() + ";" +
-		web.Plaid().
+		Go()
+	if containerID != "" {
+		r.RunScript += ";" + web.Plaid().
 			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 			EventFunc(ShowEditContainerDrawerEvent).
-			Query(presets.ParamOverlay, actions.Content).
+			Queries(ctx.R.Form).
 			Query(presets.ParamID, modelID).
+			Query(paramContainerID, containerID).
 			Go()
+	}
 	return
 }
 
@@ -1502,19 +1516,10 @@ func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 
 func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	var (
-		id = ctx.R.FormValue(presets.ParamID)
-	)
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: body})
-	r.RunScript = web.POST().
-		URL(ctx.R.URL.Path).
-		EventFunc(actions.Edit).
-		Query(presets.ParamOverlay, actions.Content).
-		Query(presets.ParamID, id).
-		Go()
 	return
 }
 

@@ -783,9 +783,6 @@ func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLC
 	if overlayType == actions.Dialog {
 		b.dialog(r, comp, width)
 		return
-	} else if overlayType == actions.Content {
-		b.contentDrawer(r, comp, width)
-		return
 	}
 	b.rightDrawer(r, comp, width)
 }

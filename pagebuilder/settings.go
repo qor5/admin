@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func settings(db *gorm.DB, eb *presets.EditingBuilder, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
+func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
 	// TODO: refactor versionDialog to use publish/views
 	pm := b.mb
 	seoBuilder := b.seoBuilder
@@ -26,7 +26,6 @@ func settings(db *gorm.DB, eb *presets.EditingBuilder, b *Builder, activityB *ac
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
 		versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		edit := eb.ToComponent(pm.Info(), obj, ctx)
 		mi := field.ModelInfo
 		p := obj.(*Page)
 		c := &Category{}
@@ -99,7 +98,7 @@ func settings(db *gorm.DB, eb *presets.EditingBuilder, b *Builder, activityB *ac
 
 		infoComponentContent := VWindow(
 			VWindowItem(
-				edit,
+				b.mb.Editing().ToComponent(pm.Info(), obj, ctx),
 			).Value("Page").Class("mt-9"),
 			VWindowItem(
 				seoForm,
