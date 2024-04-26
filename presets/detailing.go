@@ -18,12 +18,13 @@ import (
 )
 
 type DetailingBuilder struct {
-	mb        *ModelBuilder
-	actions   []*ActionBuilder
-	pageFunc  web.PageFunc
-	fetcher   FetchFunc
-	tabPanels []TabComponentFunc
-	drawer    bool
+	mb                 *ModelBuilder
+	actions            []*ActionBuilder
+	pageFunc           web.PageFunc
+	fetcher            FetchFunc
+	tabPanels          []TabComponentFunc
+	afterTitleCompFunc ObjectComponentFunc
+	drawer             bool
 	DetailFieldsBuilder
 }
 
@@ -76,6 +77,14 @@ func (b *DetailingBuilder) GetFetchFunc() FetchFunc {
 
 func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 	b.drawer = v
+	return b
+}
+
+func (b *DetailingBuilder) AfterTitleCompFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.afterTitleCompFunc = v
 	return b
 }
 
@@ -140,6 +149,9 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	msgr := MustGetMessages(ctx.R)
 	r.PageTitle = msgr.DetailingObjectTitle(inflection.Singular(b.mb.label), getPageTitle(obj, id))
+	if b.afterTitleCompFunc != nil {
+		r.AfterTitleComp = b.afterTitleCompFunc(obj, ctx)
+	}
 
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
@@ -200,11 +212,17 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
+
+	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
+	if pr.AfterTitleComp != nil {
+		title.AppendChildren(VSpacer(), pr.AfterTitleComp)
+	}
+
 	comp := web.Scope(
 		VLayout(
 			VAppBar(
-				VAppBarTitle(h.Text(pr.PageTitle)).Class("pl-2"),
-				VSpacer(),
+				VAppBarTitle(title).Class("pl-2"),
+				//VSpacer(),
 				VBtn("").Icon(true).Children(
 					VIcon("close"),
 				).Attr("@click.stop", closeBtnVarScript),

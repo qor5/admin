@@ -2,8 +2,6 @@ package views
 
 import (
 	"fmt"
-	"net/url"
-
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -15,6 +13,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+	"net/url"
 )
 
 type VersionComponentConfig struct {
@@ -327,4 +326,52 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			},
 		}
 	})
+}
+
+func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		res := h.Div()
+
+		slugEncoderIf := obj.(presets.SlugEncoder)
+		slugDncoderIf := obj.(presets.SlugDecoder)
+		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
+		err := db.Where("id = ?", mp["id"]).Where("status = ?", publish.StatusOnline).First(&obj).Error
+		if err != nil {
+			return res
+		}
+		versionIf := obj.(publish.VersionInterface)
+
+		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Color("green"))
+
+		if _, ok := obj.(publish.ScheduleInterface); !ok {
+			return res
+		}
+
+		flagTime := db.NowFunc()
+		count := int64(0)
+		err = db.Model(obj).Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Count(&count).Error
+		if err != nil {
+			return res
+		}
+
+		if count == 0 {
+			return res
+		}
+
+		err = db.Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Order("scheduled_start_at ASC").First(&obj).Error
+		if err != nil {
+			return res
+		}
+
+		versionIf = obj.(publish.VersionInterface)
+		// TODO use nextVersion I18n
+		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		if count >= 2 {
+			nextText = nextText + fmt.Sprintf(" +%d", count)
+		}
+		res.AppendChildren(v.VChip(h.Span(nextText)).Color("grey"))
+		return res
+	}
 }
