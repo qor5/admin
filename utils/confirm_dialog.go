@@ -72,10 +72,10 @@ func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
 
 const CloseCustomDialog = "locals.customConfirmationDialog = false"
 
-func CustomDialog(msg string, content h.HTMLComponent, okAction string, msgr *Messages) h.HTMLComponent {
+func CustomDialog(title h.HTMLComponent, content h.HTMLComponent, okAction string, msgr *Messages) h.HTMLComponent {
 	Vcard := VCard()
-	if msg != "" {
-		Vcard.AppendChildren(VCardTitle(h.Text(msg)))
+	if title != nil {
+		Vcard.AppendChildren(VCardTitle(title))
 	}
 	if content != nil {
 		Vcard.AppendChildren(VCardText(content))
