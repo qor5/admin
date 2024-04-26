@@ -14,12 +14,11 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
+func settings(db *gorm.DB, eb *presets.EditingBuilder, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
 	// TODO: refactor versionDialog to use publish/views
 	pm := b.mb
 	seoBuilder := b.seoBuilder
@@ -27,7 +26,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
 		versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-
+		edit := eb.ToComponent(pm.Info(), obj, ctx)
 		mi := field.ModelInfo
 		p := obj.(*Page)
 		c := &Category{}
@@ -69,7 +68,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 		}
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		var categories []*Category
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
@@ -82,12 +81,15 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 			).Attr("v-model", "editLocals.infoTab"),
 			h.Div(
 				VBtn("Save").AppendIcon("mdi-check").Color("black").Size(SizeSmall).Variant(VariantFlat).
-					Attr("@click", web.POST().
+					Attr("@click", fmt.Sprintf(`editLocals.infoTab=="Page"?%s:%s`, web.POST().
 						EventFunc(actions.Update).
-						Queries(ctx.Queries()).
 						Query(presets.ParamID, p.PrimarySlug()).
 						URL(mi.PresetsPrefix()+"/pages").
-						Go(),
+						Go(), web.Plaid().
+						EventFunc(updateSEOEvent).
+						Query(presets.ParamID, p.PrimarySlug()).
+						URL(mi.PresetsPrefix()+"/pages").
+						Go()),
 					),
 				VBtn("").AppendIcon("mdi-plus").Color("black").Size(SizeSmall).Variant(VariantFlat),
 			),
@@ -97,12 +99,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 
 		infoComponentContent := VWindow(
 			VWindowItem(
-				VTextField().Label("Title").Variant(VariantOutlined).Attr(web.VField("Title", p.Title)...),
-				VTextField().Label("Slug").Variant(VariantOutlined).Attr(web.VField("Slug", p.Slug)...),
-				VAutocomplete().Label(msgr.Category).Variant(VariantOutlined).
-					Attr(web.VField("CategoryID", p.CategoryID)...).
-					Multiple(false).Chips(false).
-					Items(categories).ItemTitle("Path").ItemValue("ID"),
+				edit,
 			).Value("Page").Class("mt-9"),
 			VWindowItem(
 				seoForm,
@@ -179,8 +176,10 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 								VBtn("").Icon("mdi-file-document-multiple").Color("accent").Variant(VariantText).Size(SizeXSmall).Class("ml-1"),
 							).Class("d-inline-flex align-center"),
 
-							infoComponentTab.Class("mt-7"),
-							infoComponentContent,
+							web.Scope(
+								infoComponentTab.Class("mt-7"),
+								infoComponentContent,
+							).VSlot("{form}"),
 						),
 					).Class("w-75"),
 					VCard(

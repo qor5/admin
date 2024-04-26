@@ -255,6 +255,8 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 	b.mb = pm
 	lb := pm.Listing("ID", "Online", "Title", "Path")
+	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
+
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -265,7 +267,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	})
 	dp := pm.Detailing("Overview")
 
-	dp.Field("Overview").ComponentFunc(settings(db, b, activityB))
+	dp.Field("Overview").ComponentFunc(settings(db, eb, b, activityB))
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
@@ -522,7 +524,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoBuilder))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(ctx.R.Context(), c, db, l10nB)
