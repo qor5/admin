@@ -383,6 +383,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			DisplayName: displayName,
 			IsFirst:     i == 0,
 			IsEnd:       i == len(cbs)-1,
+			ModelId:     ctx.R.FormValue(paramModelID),
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 		r = append(r, pure)
@@ -707,8 +708,7 @@ func (b *Builder) MoveUpDownContainer(ctx *web.EventContext) (r web.EventRespons
 		}
 		return
 	})
-
-	r.PushState = web.Location(url.Values{})
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Queries(ctx.R.Form).Go()
 	return
 }
 
@@ -1502,7 +1502,9 @@ func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 
 func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	var id = ctx.R.FormValue(presets.ParamID)
+	var (
+		id = ctx.R.FormValue(presets.ParamID)
+	)
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
 	}

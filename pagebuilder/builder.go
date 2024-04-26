@@ -47,6 +47,7 @@ type RenderInput struct {
 	DisplayName string
 	IsFirst     bool
 	IsEnd       bool
+	ModelId     string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -2062,8 +2063,10 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	moveAction := web.Plaid().
 		URL(fmt.Sprintf("%s/editors", b.prefix)).
 		EventFunc(MoveUpDownContainerEvent).
+		Queries(ctx.R.Form).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramMoveDirection, web.Var("msg_type")).
+		Query(paramModelID, web.Var("model_id")).
 		Go()
 	return fmt.Sprintf(`
 function(e){

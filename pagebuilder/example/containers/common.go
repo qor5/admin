@@ -66,7 +66,7 @@ func ContainerWrapper(containerID, anchorID, classes,
 					Div().Class("add"),
 					Button("").Children(I("add").Class("material-icons add")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
 				).Class("editor-add"),
-			).Class("wrapper-shadow")
+			).Class("wrapper-shadow").Id(containerID).ClassIf("highlight", input.ModelId == containerID)
 		}
 	}
 	return r
