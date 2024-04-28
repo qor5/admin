@@ -79,6 +79,7 @@ type (
 		ModelId     string `json:"model_id"`
 		ContainerId string `json:"container_id"`
 		DisplayName string `json:"display_name"`
+		ModelName   string `json:"model_name"`
 	}
 )
 
@@ -90,7 +91,7 @@ func postMessage(msgType, modelId string, input *pagebuilder.RenderInput) string
 		return ""
 	}
 	body := postMessageBody{
-		msgType, modelId, input.ContainerId, input.DisplayName,
+		msgType, modelId, input.ContainerId, input.DisplayName, input.ModelName,
 	}
 	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, JSONString(body))
 }

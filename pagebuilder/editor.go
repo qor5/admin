@@ -54,6 +54,7 @@ const (
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
+	paramModelName       = "modelName"
 	paramMoveDirection   = "paramMoveDirection"
 	paramsIsNotEmpty     = "isNotEmpty"
 
@@ -385,6 +386,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			IsFirst:     i == 0,
 			IsEnd:       i == len(cbs)-1,
 			ModelId:     ctx.R.FormValue(paramModelID),
+			ModelName:   ec.container.ModelName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 		r = append(r, pure)
@@ -422,6 +424,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent
 func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 
 	var (
+		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
 		pageID        = ctx.R.FormValue(paramPageID)
 		pageVersion   = ctx.R.FormValue(paramPageVersion)
@@ -429,7 +432,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 		status        = ctx.R.FormValue(paramStatus)
 		paramID       = ctx.R.FormValue(presets.ParamID)
 	)
-	builder := b.ContainerByName(containerName).GetModelBuilder()
+	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
 	if err = b.db.First(element, paramID).Error; err != nil {
 		return

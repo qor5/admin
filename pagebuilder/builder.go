@@ -48,6 +48,7 @@ type RenderInput struct {
 	IsFirst     bool
 	IsEnd       bool
 	ModelId     string
+	ModelName   string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -2070,6 +2071,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Queries(ctx.R.Form).
 		Query(presets.ParamID, web.Var("arr[1]")).
 		Query(paramContainerName, web.Var("display_name")).
+		Query(paramModelName, web.Var("model_name")).
 		Query(paramContainerID, web.Var("container_id")).
 		Go()
 
@@ -2095,7 +2097,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Go()
 	return fmt.Sprintf(`
 function(e){
-	const { msg_type,model_id ,container_id ,display_name } = e.data
+	const { msg_type,model_id ,container_id ,display_name,model_name } = e.data
 	if (!msg_type || !model_id.split) {
 		return
 	} 
