@@ -55,6 +55,7 @@ const (
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
 	paramMoveDirection   = "paramMoveDirection"
+	paramsIsNotEmpty     = "isNotEmpty"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -468,13 +469,15 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	).VSlot("{ form }")
 	return
 }
-func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
-	var cons []*Container
-	pageID := ctx.R.FormValue(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.FormValue(paramLocale)
-	status := ctx.R.FormValue(paramStatus)
-	var isReadonly = status != publish.StatusDraft
+func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, isEmpty bool, err error) {
+	var (
+		cons        []*Container
+		pageID      = ctx.R.FormValue(paramPageID)
+		pageVersion = ctx.R.FormValue(paramPageVersion)
+		locale      = ctx.R.FormValue(paramLocale)
+		status      = ctx.R.FormValue(paramStatus)
+		isReadonly  = status != publish.StatusDraft
+	)
 
 	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
 	if err != nil {
@@ -482,6 +485,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 	}
 	var sorterData ContainerSorter
 	sorterData.Items = []ContainerSorterItem{}
+	isEmpty = len(cons) == 0
 	for i, c := range cons {
 		vicon := "mdi-eye"
 		if c.Hidden {
@@ -505,73 +509,50 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 			},
 		)
 	}
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	r = web.Scope(
 		VSheet(
-			VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
-				Attr("@click",
-					web.Plaid().
-						URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-						EventFunc(ShowAddContainerDrawerEvent).
-						Query(paramPageID, pageID).
-						Query(paramPageVersion, pageVersion).
-						Query(paramLocale, locale).
-						Query(paramStatus, status).
-						Go(),
-				),
-			VCard(
-				VList(
-					h.Tag("vx-draggable").
-						Attr("item-key", "model_id").
-						Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
-						Attr("@end", web.Plaid().
-							URL(fmt.Sprintf("%s/editors", b.prefix)).
-							EventFunc(MoveContainerEvent).
-							FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
-							Go()).Children(
-						h.Template(
-							h.Div(
-								VListItem(
-									web.Slot(
-										h.If(!isReadonly,
-											VBtn("").Variant(VariantText).Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
-										),
-										VListItem(
-											VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
-										),
-									).Name("prepend"),
-									web.Slot(
-										h.If(!isReadonly,
-											VBtn("").Variant(VariantText).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
-												web.Plaid().
-													URL(web.Var("element.url")).
-													EventFunc(actions.Edit).
-													Query(presets.ParamOverlay, actions.Drawer).
-													Query(presets.ParamID, web.Var("element.model_id")).
-													Go(),
-											).Class("my-2"),
-											VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
-												web.Plaid().
-													URL(web.Var("element.url")).
-													EventFunc(ToggleContainerVisibilityEvent).
-													Query(paramContainerID, web.Var("element.param_id")).
-													Go(),
-											).Class("my-2"),
-										),
-										h.If(!isReadonly,
-											VMenu(
-												web.Slot(
-													VBtn("").Icon("mdi-dots-horizontal").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
-												).Name("activator").Scope("{ props }"),
 
-												VList(
-													VListItem(
-														web.Slot(
-															VIcon("mdi-pencil"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Rename")),
-													).Attr("@click",
+			h.Div(
+				h.Div(h.Span("Elements").Class("text-subtitle-1")),
+				VBtn("ADD").Size(SizeSmall).Variant(VariantFlat).Color("primary").
+					Attr("@click",
+						web.Plaid().
+							URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+							EventFunc(ShowAddContainerDrawerEvent).
+							Queries(ctx.R.Form).
+							Form(nil).
+							Go(),
+					),
+			).Class("d-flex justify-space-between pa-6 align-center "),
+
+			VList(
+				h.Tag("vx-draggable").
+					Attr("item-key", "model_id").
+					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
+					Attr("@end", web.Plaid().
+						URL(fmt.Sprintf("%s/editors", b.prefix)).
+						EventFunc(MoveContainerEvent).
+						Queries(ctx.R.Form).
+						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
+						Go()).Children(
+					h.Template(
+						h.Div(
+							VHover(
+								web.Slot(
+									VListItem(
+										web.Slot(
+											h.If(!isReadonly,
+												VBtn("").Variant(VariantText).Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
+											),
+											VListItem(
+												VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
+											),
+										).Name("prepend"),
+										web.Slot(
+											h.If(!isReadonly,
+												h.Div(
+													VBtn("").Variant(VariantText).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
 															EventFunc(RenameContainerDialogEvent).
@@ -579,59 +560,35 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															Query(paramContainerName, web.Var("element.display_name")).
 															Go(),
 													),
-													VListItem(
-														web.Slot(
-															VIcon("mdi-delete"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Delete")),
-													).Attr("@click", web.Plaid().
-														URL(web.Var("element.url")).
-														EventFunc(DeleteContainerConfirmationEvent).
-														Query(paramContainerID, web.Var("element.param_id")).
-														Query(paramContainerName, web.Var("element.display_name")).
-														Go(),
-													),
-													VListItem(
-														web.Slot(
-															VIcon("mdi-share"),
-														).Name("prepend"),
-														VListItemTitle(h.Text("Mark As Shared Container")),
-													).Attr("@click",
+													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
-															EventFunc(MarkAsSharedContainerEvent).
+															EventFunc(ToggleContainerVisibilityEvent).
+															Queries(ctx.R.Form).
 															Query(paramContainerID, web.Var("element.param_id")).
 															Go(),
-													).Attr("v-if", "!element.shared"),
-												).Density(DensityCompact),
-											).Attr("transition", "fab-transition"),
-										),
-									).Name("append"),
-								).Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
-								VDivider(),
+													),
+													VBtn("").Variant(VariantText).Icon("mdi-delete").Size(SizeSmall).Attr("@click",
+														web.Plaid().
+															URL(web.Var("element.url")).
+															EventFunc(DeleteContainerConfirmationEvent).
+															Query(paramContainerID, web.Var("element.param_id")).
+															Query(paramContainerName, web.Var("element.display_name")).
+															Go(),
+													),
+												).Attr("v-show", "isHovering"),
+											),
+										).Name("append"),
+									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`console.log($);$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+								).Name("default").Scope("{ isHovering, props }"),
 							),
-						).Attr("#item", " { element } "),
-					),
-					h.If(!isReadonly,
-						VListItem(
-							web.Slot(
-								VIcon("mdi-plus").Color("primary"),
-							).Name("prepend"),
-							VListItemTitle(VBtn(msgr.AddContainers).Color("primary").Variant(VariantText)),
-						).Attr("@click",
-							web.Plaid().
-								URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-								EventFunc(AddContainerDialogEvent).
-								Query(paramPageID, pageID).
-								Query(paramPageVersion, pageVersion).
-								Query(paramLocale, locale).
-								Go(),
+							VDivider(),
 						),
-					),
+					).Attr("#item", " { element } "),
 				),
-			).Variant(VariantOutlined),
+			),
 		).Class("pa-4 pt-2"),
-	).Init(h.JSONString(sorterData)).VSlot("{ locals }")
+	).Init(h.JSONString(sorterData)).VSlot("{ locals,form }")
 	return
 }
 
@@ -685,8 +642,8 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 		}
 		return
 	})
-
-	r.PushState = web.Location(url.Values{})
+	ctx.R.Form.Del(paramMoveResult)
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Form(nil).Queries(ctx.R.Form).Go()
 	return
 }
 
@@ -730,13 +687,20 @@ func (b *Builder) MoveUpDownContainer(ctx *web.EventContext) (r web.EventRespons
 func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
+	pageID := ctx.R.FormValue(paramPageID)
+	pageVersion := ctx.R.FormValue(paramPageVersion)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
 	containerID := cs["id"]
 	locale := cs["locale_code"]
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-
-	r.PushState = web.Location(url.Values{})
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Queries(ctx.R.Form).Go() +
+		";" +
+		web.Plaid().
+			URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+			EventFunc(ShowSortedContainerDrawerEvent).
+			Queries(ctx.R.Form).
+			Go()
 	return
 }
 
@@ -1133,9 +1097,9 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
 	pageID := ctx.R.FormValue(paramPageID)
 	pageVersion := ctx.R.FormValue(paramPageVersion)
-	status := ctx.R.FormValue(paramStatus)
 	locale := ctx.R.FormValue(paramLocale)
 	containerId := ctx.R.FormValue(paramContainerID)
+	isNotEmpty := ctx.R.FormValue(paramsIsNotEmpty) != ""
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	var (
@@ -1248,18 +1212,24 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 		).Value(groupName))
 
 	}
+
+	var backPlaid string
+	if isNotEmpty {
+		backPlaid = web.Plaid().
+			URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+			EventFunc(ShowSortedContainerDrawerEvent).
+			Queries(ctx.R.Form).
+			Go()
+	} else {
+		backPlaid = web.Plaid().
+			Query("tab", "content").
+			PushState(true).
+			Go()
+	}
+
 	component = h.Components(h.Div(
 		VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
-			Attr("@click",
-				web.Plaid().
-					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-					EventFunc(ShowSortedContainerDrawerEvent).
-					Query(paramPageID, pageID).
-					Query(paramPageVersion, pageVersion).
-					Query(paramLocale, locale).
-					Query(paramStatus, status).
-					Go(),
-			),
+			Attr("@click", backPlaid),
 		h.Span("Elements").Class("text-subtitle-1"),
 	).Class("d-inline-flex pa-6 align-center"),
 		VDivider(), web.Scope(
@@ -1508,7 +1478,7 @@ func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResp
 
 func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	if body, err = b.renderContainersSortedList(ctx); err != nil {
+	if body, _, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: body})

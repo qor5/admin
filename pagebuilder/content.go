@@ -16,10 +16,13 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	id := ctx.R.FormValue("id")
 	version := ctx.R.FormValue("version")
 	locale := ctx.R.Form.Get("locale")
-	var body h.HTMLComponent
-	var containerList h.HTMLComponent
-	var device string
-	var p *Page
+	var (
+		body          h.HTMLComponent
+		containerList h.HTMLComponent
+		device        string
+		p             *Page
+		isEmpty       bool
+	)
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
 	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
@@ -39,7 +42,13 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	ctx.R.Form.Set(paramPageID, strconv.Itoa(int(p.ID)))
 	ctx.R.Form.Set(paramStatus, p.GetStatus())
 	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
-	containerList = b.renderContainersList(ctx)
+	if containerList, isEmpty, err = b.renderContainersSortedList(ctx); err != nil {
+		return
+	}
+	if isEmpty {
+		ctx.R.Form.Set(paramsIsNotEmpty, "1")
+		containerList = b.renderContainersList(ctx)
+	}
 	r.Body = h.Components(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
