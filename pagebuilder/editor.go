@@ -433,6 +433,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	if err = b.db.First(element, paramID).Error; err != nil {
 		return
 	}
+
 	r = web.Scope(
 		VLayout(
 			VMain(
@@ -451,7 +452,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 					),
 					h.Div(
 						VBtn("Cancel").Variant(VariantOutlined).Size(SizeSmall).Class("mr-2"),
-						VBtn("Save").Variant(VariantOutlined).Color("secondary").Size(SizeSmall).Attr("@click", web.Plaid().
+						VBtn("Save").Variant(VariantFlat).Color("secondary").Size(SizeSmall).Attr("@click", web.Plaid().
 							EventFunc(actions.Update).
 							URL(ctx.R.URL.Path).
 							Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
@@ -1265,7 +1266,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			VTabs(
 				VTab(h.Text(msgr.New)).Value(msgr.New),
 				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
-			).Attr("v-model", "tabLocals.tab").Class("px-6"),
+			).Attr("v-model", "locals.tab").Class("px-6"),
 			VWindow(
 				VWindowItem(
 					VList(containers...).Opened(groupsNames),
@@ -1273,8 +1274,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				VWindowItem(
 					VList(sharedGroups...).Opened(sharedGroupNames),
 				).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-			).Attr("v-model", "tabLocals.tab").Class("pa-6"),
-		).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals: tabLocals}"))
+			).Attr("v-model", "locals.tab").Class("pa-6"),
+		).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals}"))
 	return
 }
 

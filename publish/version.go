@@ -3,6 +3,7 @@ package publish
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
@@ -31,6 +32,13 @@ func (version Version) GetVersionName() string {
 
 func (version *Version) SetVersionName(v string) {
 	version.VersionName = v
+}
+func (version *Version) GetNextVersion(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	date := t.Format("2006-01-02")
+	return fmt.Sprintf("%s-v%02v", date, 1)
 }
 
 func (version *Version) CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error) {

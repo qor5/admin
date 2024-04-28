@@ -415,6 +415,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					versionComponent,
 				)
 			} else {
+				sc := scheduleCount(db, p)
 				pageAppbarContent = h.Components(
 					VAppBarNavIcon().
 						Density("compact").
@@ -427,7 +428,25 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						),
 					).Class("mr-auto"),
 					VSpacer(),
-					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class("text-caption bg-success"),
+					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class("text-caption bg-success-lighten-1"),
+					h.If(
+						p.ScheduledStartAt != nil,
+						h.Div(
+							h.Div().Class("w-100 bg-success-lighten-1").Style("height:4px"),
+							VIcon("mdi-circle").Size(SizeXSmall).Color("success-lighten-1").Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
+						).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
+						h.Div(
+							h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
+						).Class("text-caption bg-secondary-lighten-1"),
+					),
+					h.If(sc > 0,
+						h.Div(
+							h.Div().Class("w-100 bg-secondary-lighten-1").Style("height:4px"),
+						).Class("h-100 d-flex align-center").Style("width:40px"),
+						h.Div(
+							h.Text(fmt.Sprintf(`+%v`, sc)),
+						).Class("text-caption bg-secondary-lighten-1"),
+					),
 				)
 			}
 
@@ -696,6 +715,10 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 
 func versionCount(db *gorm.DB, p *Page) (count int64) {
 	db.Model(&Page{}).Where("id = ? and locale_code = ?", p.ID, p.LocaleCode).Count(&count)
+	return
+}
+func scheduleCount(db *gorm.DB, p *Page) (count int64) {
+	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.GetVersion(), publish.StatusDraft).Count(&count)
 	return
 }
 

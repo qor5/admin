@@ -112,7 +112,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 			).Attr("v-model", "editLocals.detailTab").AlignTabs(Center).FixedTabs(true)
 		var timelineItems []h.HTMLComponent
 		if activityB != nil {
-			for _, i := range activityB.GetActivityLogs(p, db) {
+			for _, i := range activityB.GetActivityLogs(p, db.Order("created_at desc")) {
 				timelineItems = append(timelineItems,
 					VTimelineItem(
 						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05"))).Class("text-caption"),
