@@ -14,6 +14,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"net/url"
+	"reflect"
 )
 
 type VersionComponentConfig struct {
@@ -336,22 +337,24 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		slugEncoderIf := obj.(presets.SlugEncoder)
 		slugDncoderIf := obj.(presets.SlugDecoder)
 		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
-		err := db.Where("id = ?", mp["id"]).Where("status = ?", publish.StatusOnline).First(&obj).Error
+
+		currentObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+		err := db.Where("id = ?", mp["id"]).Where("status = ?", publish.StatusOnline).First(&currentObj).Error
 		if err != nil {
 			return res
 		}
-		versionIf := obj.(publish.VersionInterface)
-
+		versionIf := currentObj.(publish.VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
 		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Color("green"))
 
-		if _, ok := obj.(publish.ScheduleInterface); !ok {
+		if _, ok := currentObj.(publish.ScheduleInterface); !ok {
 			return res
 		}
 
+		nextObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 		flagTime := db.NowFunc()
 		count := int64(0)
-		err = db.Model(obj).Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Count(&count).Error
+		err = db.Model(nextObj).Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Count(&count).Error
 		if err != nil {
 			return res
 		}
@@ -360,16 +363,16 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 			return res
 		}
 
-		err = db.Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Order("scheduled_start_at ASC").First(&obj).Error
+		err = db.Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Order("scheduled_start_at ASC").First(&nextObj).Error
 		if err != nil {
 			return res
 		}
 
-		versionIf = obj.(publish.VersionInterface)
+		versionIf = nextObj.(publish.VersionInterface)
 		// TODO use nextVersion I18n
 		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
 		if count >= 2 {
-			nextText = nextText + fmt.Sprintf(" +%d", count)
+			nextText = nextText + fmt.Sprintf(" +%d", count-1)
 		}
 		res.AppendChildren(v.VChip(h.Span(nextText)).Color("grey"))
 		return res
