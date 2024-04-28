@@ -154,9 +154,7 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 					VCardTitle(
 						h.Text(config.shortname),
 						VSpacer(),
-						VBtn("").Icon(true).Children(
-							VIcon("close"),
-						).Attr("@click.stop", "vars.presetsDialog=false"),
+						VBtn("").Icon("mdi-close").Attr("@click.stop", "vars.presetsDialog=false"),
 					),
 
 					h.If(config.description != "", VCardSubtitle(
@@ -204,9 +202,7 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 				VAppBar(
 					VToolbarTitle(config.shortname).Class("pl-2"),
 					VSpacer(),
-					VBtn("").Icon(true).Children(
-						VIcon("close"),
-					).Attr("@click.stop", web.Plaid().
+					VBtn("").Icon("mdi-close").Attr("@click.stop", web.Plaid().
 						URL(b.mb.Info().ListingHref()).
 						EventFunc(ActionJobClose).
 						Query("jobID", jobID).
