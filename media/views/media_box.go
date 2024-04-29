@@ -172,7 +172,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	if thumb == media.DefaultSizeKey {
 		url = f.URL()
 	}
-	return VCard(
+	card := VCard(
 		h.If(media.IsImageFormat(f.FileName),
 			VImg().Src(fmt.Sprintf("%s?%d", url, time.Now().UnixNano())).Height(150),
 		).Else(
@@ -183,18 +183,20 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		),
 		h.If(media.IsImageFormat(f.FileName) && (size != nil || thumb == media.DefaultSizeKey),
 			VCardActions(
-				VChip(
-					thumbName(thumb, size, fileSize, f),
-				).Size(SizeSmall).Disabled(disabled).Attr("@click", web.Plaid().
-					EventFunc(loadImageCropperEvent).
-					Query("field", field).
-					Query("id", fmt.Sprint(f.ID)).
-					Query("thumb", thumb).
-					FieldValue("cfg", h.JSONString(cfg)).
-					Go()),
+				thumbName(thumb, size, fileSize, f),
 			),
 		),
 	)
+	if media.IsImageFormat(f.FileName) && (size != nil || thumb == media.DefaultSizeKey) && !disabled {
+		card.Attr("@click", web.Plaid().
+			EventFunc(loadImageCropperEvent).
+			Query("field", field).
+			Query("id", fmt.Sprint(f.ID)).
+			Query("thumb", thumb).
+			FieldValue("cfg", h.JSONString(cfg)).
+			Go())
+	}
+	return card
 }
 
 func fileThumb(filename string) h.HTMLComponent {
@@ -291,6 +293,33 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 
+	// button
+	btnRow := VRow(
+		VBtn(msgr.ChooseFile).
+			Variant(VariantFlat).Color("wight").Size(SizeXSmall).PrependIcon("mdi-upload-outline").
+			Class("rounded-sm").
+			Attr("style", "text-transform: none").
+			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
+				Query("field", field).
+				FieldValue("cfg", h.JSONString(cfg)).
+				Go(),
+			).Disabled(disabled),
+	)
+	if mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
+		btnRow.AppendChildren(
+			VBtn(msgr.Delete).
+				Variant(VariantFlat).Color("red").Size(SizeXSmall).PrependIcon("mdi-delete-outline").
+				Class("rounded-sm ml-2").
+				Attr("style", "text-transform: none").
+				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
+					Query("field", field).
+					FieldValue("cfg", h.JSONString(cfg)).
+					Go(),
+				).Disabled(disabled),
+		)
+	}
+	c.AppendChildren(btnRow)
+
 	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		row := VRow()
 		if len(cfg.Sizes) == 0 {
@@ -324,11 +353,12 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			value = mediaBox.Description
 		}
 		c.AppendChildren(
+			VRow(h.Text(msgr.DescriptionForAccessibility)),
 			VRow(
 				VCol(
 					VTextField().
 						Attr(web.VField(fieldName, value)...).
-						Label(msgr.DescriptionForAccessibility).
+						Placeholder(msgr.DescriptionForAccessibility).
 						Density(DensityCompact).
 						HideDetails(true).
 						Variant(VariantOutlined).
@@ -348,24 +378,6 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		web.Portal().Name(cropperPortalName(field)),
 		h.Input("").Type("hidden").
 			Attr(web.VField(fmt.Sprintf("%s.Values", field), mediaBoxValue)...),
-
-		VBtn(msgr.ChooseFile).
-			Variant(VariantFlat).
-			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
-				Query("field", field).
-				FieldValue("cfg", h.JSONString(cfg)).
-				Go(),
-			).Disabled(disabled),
-
-		h.If(mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0",
-			VBtn(msgr.Delete).
-				Variant(VariantFlat).
-				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
-					Query("field", field).
-					FieldValue("cfg", h.JSONString(cfg)).
-					Go(),
-				).Disabled(disabled),
-		),
 	)
 }
 
@@ -403,17 +415,23 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 }
 
 func thumbName(name string, size *media.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
-	text := name
+	div := h.Div().Class("pl-1")
+	text := ""
 	if size != nil {
-		text = fmt.Sprintf("%s(%dx%d)", text, size.Width, size.Height)
+		div.AppendChildren(h.Span(name).Style("color:#212121;"))
+		text = fmt.Sprintf("%d X %d", size.Width, size.Height)
 	}
 	if name == media.DefaultSizeKey {
-		text = fmt.Sprintf("%s(%dx%d)", text, f.Width, f.Height)
+		div.AppendChildren(h.Span(name).Style("color:#212121;"))
+		text = fmt.Sprintf("%d X %d", f.Width, f.Height)
 	}
-	if fileSize != 0 {
-		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))
+	//if fileSize != 0 {
+	//	text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))
+	//}
+	if text != "" {
+		div.AppendChildren(h.Br(), h.Span(text).Style("color:#757575;"))
 	}
-	return h.Text(text)
+	return div
 }
 
 func updateDescription(db *gorm.DB) web.EventFunc {
