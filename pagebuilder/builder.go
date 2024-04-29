@@ -339,16 +339,16 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				if v, ok := obj.(interface {
 					GetID() uint
 				}); ok {
-					ctx.R.Form.Set("id", strconv.Itoa(int(v.GetID())))
+					ctx.R.Form.Set(paramPageID, strconv.Itoa(int(v.GetID())))
 				}
 				if v, ok := obj.(publish.VersionInterface); ok {
-					ctx.R.Form.Set("version", v.GetVersion())
+					ctx.R.Form.Set(paramPageVersion, v.GetVersion())
 				}
 				if l, ok := obj.(l10n.L10nInterface); ok {
-					ctx.R.Form.Set("locale", l.GetLocale())
+					ctx.R.Form.Set(paramLocale, l.GetLocale())
 				}
 				if isTemplate {
-					ctx.R.Form.Set("tpl", "1")
+					ctx.R.Form.Set(paramsTpl, "1")
 				}
 				tabContent, err = b.PageContent(ctx)
 

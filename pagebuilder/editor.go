@@ -57,6 +57,7 @@ const (
 	paramModelName       = "modelName"
 	paramMoveDirection   = "paramMoveDirection"
 	paramsIsNotEmpty     = "isNotEmpty"
+	paramsTpl            = "tpl"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -67,16 +68,13 @@ const (
 	EventDelete = "delete"
 	EventAdd    = "add"
 	EventEdit   = "edit"
+
+	iframeHeightName = "_iframeHeight"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
-	isTpl := ctx.R.FormValue("tpl") != ""
-	id := ctx.R.FormValue("id")
-	version := ctx.R.FormValue("version")
-	locale := ctx.R.FormValue("locale")
-
 	var p *Page
-	r.Body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, false)
+	r.Body, p, err = b.renderPageOrTemplate(ctx, false)
 	if err != nil {
 		return
 	}
@@ -87,11 +85,11 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 const editorPreviewContentPortal = "editorPreviewContentPortal"
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
-	isTpl := ctx.R.FormValue("tpl") != ""
-	id := pat.Param(ctx.R, "id")
-	version := ctx.R.FormValue("version")
-	locale := ctx.R.Form.Get("locale")
-	isLocalizable := ctx.R.Form.Has("locale")
+	isTpl := ctx.R.FormValue(paramsTpl) != ""
+	id := pat.Param(ctx.R, presets.ParamID)
+	version := ctx.R.FormValue(paramPageVersion)
+	locale := ctx.R.Form.Get(paramLocale)
+	isLocalizable := ctx.R.Form.Has(paramLocale)
 	var body h.HTMLComponent
 	var containerList h.HTMLComponent
 	var device string
@@ -115,7 +113,7 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 		}
 	}
 
-	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
+	body, p, err = b.renderPageOrTemplate(ctx, true)
 	if err != nil {
 		return
 	}
@@ -183,7 +181,13 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 
 const ContainerToPageLayoutKey = "ContainerToPageLayout"
 
-func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOrTemplateID string, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
+func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
+	var (
+		isTpl            = ctx.R.FormValue(paramsTpl) != ""
+		pageOrTemplateID = ctx.R.FormValue(paramPageID)
+		version          = ctx.R.FormValue(paramPageVersion)
+		locale           = ctx.R.Form.Get(paramLocale)
+	)
 	if isTpl {
 		tpl := &Template{}
 		err = b.db.First(tpl, "id = ? and locale_code = ?", pageOrTemplateID, locale).Error
@@ -334,7 +338,6 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isTpl bool, pageOr
 				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
 			}
 			_, width := b.getDevice(ctx)
-			iframeHeightName := "_iframeHeight"
 			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
 			iframeValue := "1000px"
 			if iframeHeightCookie != nil {
@@ -429,7 +432,6 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 		pageID        = ctx.R.FormValue(paramPageID)
 		pageVersion   = ctx.R.FormValue(paramPageVersion)
 		locale        = ctx.R.FormValue(paramLocale)
-		status        = ctx.R.FormValue(paramStatus)
 		paramID       = ctx.R.FormValue(presets.ParamID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
@@ -437,7 +439,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	if err = b.db.First(element, paramID).Error; err != nil {
 		return
 	}
-
+	ctx.R.Form.Del(paramsIsNotEmpty)
 	r = web.Scope(
 		VLayout(
 			VMain(
@@ -446,10 +448,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 						Attr("@click", web.Plaid().
 							URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 							EventFunc(ShowAddContainerDrawerEvent).
-							Query(paramPageID, pageID).
-							Query(paramPageVersion, pageVersion).
-							Query(paramLocale, locale).
-							Query(paramStatus, status).
+							Queries(ctx.R.Form).
 							Go(),
 						),
 						h.Span(containerName).Class("text-subtitle-1"),
@@ -472,7 +471,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	).VSlot("{ form }")
 	return
 }
-func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, isEmpty bool, err error) {
+func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons        []*Container
 		pageID      = ctx.R.FormValue(paramPageID)
@@ -488,7 +487,9 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 	}
 	var sorterData ContainerSorter
 	sorterData.Items = []ContainerSorterItem{}
-	isEmpty = len(cons) == 0
+	if len(cons) > 0 {
+		ctx.R.Form.Set(paramsIsNotEmpty, "1")
+	}
 	for i, c := range cons {
 		vicon := "mdi-eye"
 		if c.Hidden {
@@ -582,7 +583,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 												).Attr("v-show", "isHovering"),
 											),
 										).Name("append"),
-									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`console.log($);$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -596,13 +597,16 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 }
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.QueryAsInt(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.FormValue(paramLocale)
-	containerName := ctx.R.FormValue(paramContainerName)
-	sharedContainer := ctx.R.FormValue(paramSharedContainer)
-	modelID := ctx.QueryAsInt(paramModelID)
-	containerID := ctx.R.FormValue(paramContainerID)
+	var (
+		pageID          = ctx.QueryAsInt(paramPageID)
+		pageVersion     = ctx.R.FormValue(paramPageVersion)
+		locale          = ctx.R.FormValue(paramLocale)
+		containerName   = ctx.R.FormValue(paramContainerName)
+		sharedContainer = ctx.R.FormValue(paramSharedContainer)
+		modelID         = ctx.QueryAsInt(paramModelID)
+		containerID     = ctx.R.FormValue(paramContainerID)
+	)
+	ctx.R.Form.Set(paramsIsNotEmpty, "1")
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, containerName, uint(modelID))
 	} else {
@@ -613,19 +617,11 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	r.RunScript = web.Plaid().
 		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 		EventFunc(ReloadRenderPageOrTemplateEvent).
-		Query(presets.ParamID, pageID).
-		Query("version", pageVersion).
-		Query(paramLocale, locale).
+		Queries(ctx.R.Form).Go() + ";" + web.Plaid().
+		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		EventFunc(ShowEditContainerDrawerEvent).
+		Queries(ctx.R.Form).
 		Go()
-	if containerID != "" {
-		r.RunScript += ";" + web.Plaid().
-			URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
-			EventFunc(ShowEditContainerDrawerEvent).
-			Queries(ctx.R.Form).
-			Query(presets.ParamID, modelID).
-			Query(paramContainerID, containerID).
-			Go()
-	}
 	return
 }
 
@@ -1140,7 +1136,10 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				web.Plaid().
 					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 					EventFunc(AddContainerEvent).
+					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 					Query(paramPageID, pageID).
+					Query(paramStatus, ctx.R.FormValue(paramStatus)).
+					Query(paramModelName, builder.name).
 					Query(paramPageVersion, pageVersion).
 					Query(paramLocale, locale).
 					Query(paramContainerName, builder.name).
@@ -1194,10 +1193,13 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				).Attr("@click", web.Plaid().
 					URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 					EventFunc(AddContainerEvent).
+					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 					Query(paramPageID, pageID).
+					Query(paramStatus, ctx.R.FormValue(paramStatus)).
 					Query(paramPageVersion, pageVersion).
 					Query(paramLocale, locale).
 					Query(paramContainerName, builder.ModelName).
+					Query(paramModelName, builder.ModelName).
 					Query(paramModelID, builder.ModelID).
 					Query(paramSharedContainer, "true").
 					Query(paramContainerID, containerId).
@@ -1221,7 +1223,11 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 		backPlaid = web.Plaid().
 			URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 			EventFunc(ShowSortedContainerDrawerEvent).
-			Queries(ctx.R.Form).
+			Query(paramPageID, pageID).
+			Query(paramPageVersion, pageVersion).
+			Query(paramLocale, locale).
+			Query(paramStatus, ctx.R.FormValue(paramStatus)).
+			Query(paramsIsNotEmpty, ctx.R.FormValue(paramsIsNotEmpty)).
 			Go()
 	} else {
 		backPlaid = web.Plaid().
@@ -1481,7 +1487,7 @@ func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResp
 
 func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	if body, _, err = b.renderContainersSortedList(ctx); err != nil {
+	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: body})
@@ -1499,11 +1505,7 @@ func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 
 func (b *Builder) ReloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	isTpl := ctx.R.FormValue("tpl") != ""
-	id := ctx.R.FormValue("id")
-	version := ctx.R.FormValue("version")
-	locale := ctx.R.Form.Get("locale")
-	body, _, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
+	body, _, err = b.renderPageOrTemplate(ctx, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
 	return
 }

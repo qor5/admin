@@ -12,24 +12,20 @@ import (
 )
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err error) {
-	isTpl := ctx.R.FormValue("tpl") != ""
-	id := ctx.R.FormValue("id")
-	version := ctx.R.FormValue("version")
-	locale := ctx.R.Form.Get("locale")
+	pageID := ctx.R.FormValue(paramPageID)
 	var (
 		body          h.HTMLComponent
 		containerList h.HTMLComponent
 		device        string
 		p             *Page
-		isEmpty       bool
 	)
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
-	body, p, err = b.renderPageOrTemplate(ctx, isTpl, id, version, locale, true)
+	body, p, err = b.renderPageOrTemplate(ctx, true)
 	if err != nil {
 		return
 	}
-	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
+	r.PageTitle = fmt.Sprintf("Editor for %s: %s", pageID, p.Title)
 	device, _ = b.getDevice(ctx)
 	activeDevice := 0
 	_ = activeDevice
@@ -42,11 +38,10 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	ctx.R.Form.Set(paramPageID, strconv.Itoa(int(p.ID)))
 	ctx.R.Form.Set(paramStatus, p.GetStatus())
 	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
-	if containerList, isEmpty, err = b.renderContainersSortedList(ctx); err != nil {
+	if containerList, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	if isEmpty {
-		ctx.R.Form.Set(paramsIsNotEmpty, "1")
+	if ctx.R.FormValue(paramsIsNotEmpty) == "" {
 		containerList = b.renderContainersList(ctx)
 	}
 	r.Body = h.Components(
@@ -63,5 +58,9 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 }
 
 func (b *Builder) previewHref(id, version, locale string) string {
-	return b.prefix + fmt.Sprintf("/preview?id=%s&version=%s&locale=%s", id, version, locale)
+	uv := url.Values{}
+	uv.Add(paramPageID, id)
+	uv.Add(paramPageVersion, version)
+	uv.Add(paramLocale, locale)
+	return b.prefix + "/preview?" + uv.Encode()
 }
