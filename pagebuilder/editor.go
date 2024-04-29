@@ -70,6 +70,8 @@ const (
 	EventEdit   = "edit"
 
 	iframeHeightName = "_iframeHeight"
+
+	PageBuilderRightContentPortal = "PageBuilderRightContentPortal"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -356,6 +358,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r 
 			ctx.Injector.HeadHTMLComponent("style", b.pageStyle, true)
 		}
 	}
+
 	return
 }
 
@@ -439,7 +442,6 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	if err = b.db.First(element, paramID).Error; err != nil {
 		return
 	}
-	ctx.R.Form.Del(paramsIsNotEmpty)
 	r = web.Scope(
 		VLayout(
 			VMain(
@@ -533,12 +535,12 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 			VList(
 				h.Tag("vx-draggable").
 					Attr("item-key", "model_id").
-					Attr("v-model", "locals.items", "handle", ".handle", "animation", "300").
+					Attr("v-model", "sortLocals.items", "handle", ".handle", "animation", "300").
 					Attr("@end", web.Plaid().
 						URL(fmt.Sprintf("%s/editors", b.prefix)).
 						EventFunc(MoveContainerEvent).
 						Queries(ctx.R.Form).
-						FieldValue(paramMoveResult, web.Var("JSON.stringify(locals.items)")).
+						FieldValue(paramMoveResult, web.Var("JSON.stringify(sortLocals.items)")).
 						Go()).Children(
 					h.Template(
 						h.Div(
@@ -583,7 +585,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 												).Attr("v-show", "isHovering"),
 											),
 										).Name("append"),
-									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`$refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -592,7 +594,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 				),
 			),
 		).Class("pa-4 pt-2"),
-	).Init(h.JSONString(sorterData)).VSlot("{ locals,form }")
+	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
 
@@ -606,7 +608,6 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		modelID         = ctx.QueryAsInt(paramModelID)
 		containerID     = ctx.R.FormValue(paramContainerID)
 	)
-	ctx.R.Form.Set(paramsIsNotEmpty, "1")
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, containerName, uint(modelID))
 	} else {
@@ -1098,7 +1099,6 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	pageVersion := ctx.R.FormValue(paramPageVersion)
 	locale := ctx.R.FormValue(paramLocale)
 	containerId := ctx.R.FormValue(paramContainerID)
-	isNotEmpty := ctx.R.FormValue(paramsIsNotEmpty) != ""
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	var (
@@ -1218,23 +1218,14 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 
 	}
 
-	var backPlaid string
-	if isNotEmpty {
-		backPlaid = web.Plaid().
-			URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-			EventFunc(ShowSortedContainerDrawerEvent).
-			Query(paramPageID, pageID).
-			Query(paramPageVersion, pageVersion).
-			Query(paramLocale, locale).
-			Query(paramStatus, ctx.R.FormValue(paramStatus)).
-			Query(paramsIsNotEmpty, ctx.R.FormValue(paramsIsNotEmpty)).
-			Go()
-	} else {
-		backPlaid = web.Plaid().
-			Query("tab", "content").
-			PushState(true).
-			Go()
-	}
+	var backPlaid = web.Plaid().
+		URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+		EventFunc(ShowSortedContainerDrawerEvent).
+		Query(paramPageID, pageID).
+		Query(paramPageVersion, pageVersion).
+		Query(paramLocale, locale).
+		Query(paramStatus, ctx.R.FormValue(paramStatus)).
+		Go()
 
 	component = h.Components(h.Div(
 		VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
@@ -1481,7 +1472,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 }
 
 func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: b.renderContainersList(ctx)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: b.renderContainersList(ctx)})
 	return
 }
 
@@ -1490,7 +1481,7 @@ func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: body})
 	return
 }
 
@@ -1499,7 +1490,7 @@ func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerPortalName, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: body})
 	return
 }
 

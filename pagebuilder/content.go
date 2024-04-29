@@ -2,7 +2,6 @@ package pagebuilder
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/presets"
 	"net/url"
 	"strconv"
 
@@ -44,16 +43,16 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, err er
 	if ctx.R.FormValue(paramsIsNotEmpty) == "" {
 		containerList = b.renderContainersList(ctx)
 	}
-	r.Body = h.Components(
+	r.Body = web.Scope(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
 		VNavigationDrawer(
-			web.Portal(containerList).Name(presets.RightDrawerPortalName),
+			web.Portal(containerList).Name(PageBuilderRightContentPortal),
 		).Location(LocationRight).
 			Permanent(true).
 			Width(420),
-	)
+	).VSlot("{ locals }").Init(` { el : $ }`)
 	return
 }
 
