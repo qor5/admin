@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/utils"
 	"net/url"
 	"os"
 	"path"
@@ -15,18 +12,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/l10n"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
-	. "github.com/qor5/ui/v3/vuetify"
-	vx "github.com/qor5/ui/v3/vuetifyx"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"goji.io/v3/pat"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 )
 
 const (
@@ -71,7 +72,7 @@ const (
 
 	iframeHeightName = "_iframeHeight"
 
-	PageBuilderRightContentPortal = "PageBuilderRightContentPortal"
+	pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -410,6 +411,7 @@ type ContainerSorterItem struct {
 	ContainerID    string `json:"container_id"`
 	URL            string `json:"url"`
 	Shared         bool   `json:"shared"`
+	Hidden         bool   `json:"hidden"`
 	VisibilityIcon string `json:"visibility_icon"`
 	ParamID        string `json:"param_id"`
 	Locale         string `json:"locale"`
@@ -435,11 +437,11 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 		pageID        = ctx.R.FormValue(paramPageID)
 		pageVersion   = ctx.R.FormValue(paramPageVersion)
 		locale        = ctx.R.FormValue(paramLocale)
-		paramID       = ctx.R.FormValue(presets.ParamID)
+		modelID       = ctx.R.FormValue(paramModelID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
-	if err = b.db.First(element, paramID).Error; err != nil {
+	if err = b.db.First(element, modelID).Error; err != nil {
 		return
 	}
 	r = web.Scope(
@@ -460,7 +462,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 						VBtn("Save").Variant(VariantFlat).Color("secondary").Size(SizeSmall).Attr("@click", web.Plaid().
 							EventFunc(actions.Update).
 							URL(ctx.R.URL.Path).
-							Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+							Query(presets.ParamID, modelID).
 							Go()),
 					),
 				).Class("d-flex  pa-6 align-center justify-space-between"),
@@ -512,6 +514,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 				VisibilityIcon: vicon,
 				ParamID:        c.PrimarySlug(),
 				Locale:         locale,
+				Hidden:         c.Hidden,
 			},
 		)
 	}
@@ -549,7 +552,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 									VListItem(
 										web.Slot(
 											h.If(!isReadonly,
-												VBtn("").Variant(VariantText).Icon("mdi-drag").Class("handle my-2 ml-1 mr-1"),
+												VBtn("").Variant(VariantText).Icon("mdi-drag").Class("my-2 ml-1 mr-1").Attr(":class", `element.hidden?"":"handle"`),
 											),
 											VListItem(
 												VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
@@ -565,7 +568,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															Query(paramContainerID, web.Var("element.param_id")).
 															Query(paramContainerName, web.Var("element.display_name")).
 															Go(),
-													),
+													).Attr("v-show", "isHovering"),
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
@@ -573,7 +576,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															Queries(ctx.R.Form).
 															Query(paramContainerID, web.Var("element.param_id")).
 															Go(),
-													),
+													).Attr("v-show", "element.hidden || isHovering"),
 													VBtn("").Variant(VariantText).Icon("mdi-delete").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
@@ -581,11 +584,11 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															Query(paramContainerID, web.Var("element.param_id")).
 															Query(paramContainerName, web.Var("element.display_name")).
 															Go(),
-													),
-												).Attr("v-show", "isHovering"),
+													).Attr("v-show", "isHovering"),
+												),
 											),
 										).Name("append"),
-									).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+									).Attr(":variant", fmt.Sprintf(`element.hidden &&!isHovering?"%s":"%s"`, VariantPlain, VariantText)).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -618,10 +621,13 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	r.RunScript = web.Plaid().
 		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 		EventFunc(ReloadRenderPageOrTemplateEvent).
-		Queries(ctx.R.Form).Go() + ";" + web.Plaid().
+		Queries(ctx.R.Form).
+		Query(paramModelID, modelID).
+		Go() + ";" + web.Plaid().
 		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
 		EventFunc(ShowEditContainerDrawerEvent).
 		Queries(ctx.R.Form).
+		Query(paramModelID, modelID).
 		Go()
 	return
 }
@@ -804,9 +810,6 @@ func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, local
 			LocaleCode: locale,
 		},
 	}).Error
-	if err != nil {
-		return
-	}
 	return
 }
 
@@ -1472,7 +1475,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 }
 
 func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: b.renderContainersList(ctx)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: b.renderContainersList(ctx)})
 	return
 }
 
@@ -1481,7 +1484,7 @@ func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: body})
 	return
 }
 
@@ -1490,13 +1493,13 @@ func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: PageBuilderRightContentPortal, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: body})
 	return
 }
 
 func (b *Builder) ReloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	body, _, err = b.renderPageOrTemplate(ctx, true)
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: h.Div(body).Attr(web.VAssign("locals", "{el:$}")...)})
 	return
 }

@@ -158,18 +158,18 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 						).Name("title"),
 
 						VCardText(
+							versionComponent,
 							h.Div(
 								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
-								h.Div(versionComponent).Class("w-100 pa-6").Style(`position:absolute;top:0;left:0`),
 								h.Div(
 									h.Div(
 										h.Text(se),
-									).Class("bg-secondary"),
+									).Class("bg-secondary-lighten-2"),
 									VBtn("Page Builder").PrependIcon("mdi-pencil").Color("secondary").
 										Class("rounded-sm").Height(40).Variant(VariantFlat).
 										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
-								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
-							).Style(`position:relative`).Class("w-100"),
+								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
+							).Style(`position:relative`).Class("w-100 mt-4"),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
 								VBtn("").Icon("mdi-file-document-multiple").Color("accent").Variant(VariantText).Size(SizeXSmall).Class("ml-1"),
