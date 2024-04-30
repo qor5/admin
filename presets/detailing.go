@@ -150,7 +150,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	msgr := MustGetMessages(ctx.R)
 	r.PageTitle = msgr.DetailingObjectTitle(inflection.Singular(b.mb.label), getPageTitle(obj, id))
 	if b.afterTitleCompFunc != nil {
-		r.AfterTitleComp = b.afterTitleCompFunc(obj, ctx)
+		ctx.WithContextValue(ctxDetailingAfterTitleComponent, b.afterTitleCompFunc(obj, ctx))
 	}
 
 	var notice h.HTMLComponent
@@ -214,15 +214,14 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	}
 
 	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
-	if pr.AfterTitleComp != nil {
-		title.AppendChildren(VSpacer(), pr.AfterTitleComp)
+	if v, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
+		title.AppendChildren(VSpacer(), v)
 	}
 
 	comp := web.Scope(
 		VLayout(
 			VAppBar(
 				VAppBarTitle(title).Class("pl-2"),
-				//VSpacer(),
 				VBtn("").Icon("mdi-close").
 					Attr("@click.stop", closeBtnVarScript),
 			).Color("white").Elevation(0),

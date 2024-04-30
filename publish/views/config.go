@@ -91,7 +91,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, pu
 						Query(presets.ParamID, id).
 						Query("all_versions", true).
 						Query("prompt_id", promptID)
-					if presets.IsInDialog(ctx.R.Context()) {
+					if presets.IsInDialog(ctx) {
 						onclick.URL(ctx.R.RequestURI).
 							Query(presets.ParamOverlay, actions.Dialog).
 							Query(presets.ParamInDialog, true).

@@ -1025,7 +1025,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					h.Div(
 						VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 					).Class("mr-auto"),
-					GetActionsComponent(ctx.R.Context()),
+					GetActionsComponent(ctx),
 				).Class("d-flex align-center mx-4 border-b w-100").Style("height: 48px"),
 			).
 				Elevation(0),

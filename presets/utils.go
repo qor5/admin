@@ -45,7 +45,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 			Queries(editExtraParams).
 			Query(ParamID, id).
 			URL(url)
-		if IsInDialog(ctx.R.Context()) {
+		if IsInDialog(ctx) {
 			onclick.URL(ctx.R.RequestURI).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamInDialog, true).
@@ -73,7 +73,7 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			Queries(editExtraParams).
 			Query(ParamID, id).
 			URL(url)
-		if IsInDialog(ctx.R.Context()) {
+		if IsInDialog(ctx) {
 			onclick.URL(ctx.R.RequestURI).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamInDialog, true).

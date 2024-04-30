@@ -1,7 +1,6 @@
 package presets
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -202,7 +201,7 @@ func (b *ListingBuilder) listingComponent(
 	ctx *web.EventContext,
 	inDialog bool,
 ) h.HTMLComponent {
-	ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxInDialog, inDialog))
+	ctx.WithContextValue(ctxInDialog, inDialog)
 
 	msgr := MustGetMessages(ctx.R)
 
@@ -218,8 +217,7 @@ func (b *ListingBuilder) listingComponent(
 		if filterTabs != nil {
 			tabsAndActionsBar = filterTabs
 		}
-
-		ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxActionsComponent, actionsComponent))
+		ctx.WithContextValue(ctxActionsComponent, actionsComponent)
 	}
 
 	var filterBar h.HTMLComponent
