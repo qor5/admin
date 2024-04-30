@@ -127,6 +127,7 @@ func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
 	r.FieldsBuilder.Model(v)
 	r.isList = true
 	r.saver = r.DefaultListElementSaveFunc
+	r.elementUnmarshaler = r.DefaultElementUnmarshal()
 
 	return
 }
@@ -348,7 +349,7 @@ func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *we
 	}
 	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
-	if err = b.DefaultElementUnmarshal(obj, formObj, b.name, ctx); err != nil {
+	if err = b.elementUnmarshaler(obj, formObj, b.name, ctx); err != nil {
 		return
 	}
 
@@ -372,7 +373,7 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
 	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
-	if err = b.DefaultElementUnmarshal(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
+	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
 	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
@@ -418,11 +419,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
 					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
-					if b.elementUnmarshaler != nil {
-						err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
-					} else {
-						err = b.DefaultElementUnmarshal(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
-					}
+					err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
 					}
@@ -562,50 +559,52 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *DetailFieldBuilder) DefaultElementUnmarshal(toObj, formObj any, prefix string, ctx *web.EventContext) error {
-	if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
-		return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
-	}
-	oldForm := &multipart.Form{
-		Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
-	}
-	newForm := &multipart.Form{
-		Value: make(map[string][]string),
-	}
-	// prefix.key => key
-	for k, v := range oldForm.Value {
-		if strings.HasPrefix(k, prefix+".") {
-			newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
+func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
+	return func(toObj, formObj any, prefix string, ctx *web.EventContext) (err error) {
+		if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
+			return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
 		}
-	}
-	ctx2 := &web.EventContext{R: new(http.Request)}
-	ctx2.R.MultipartForm = newForm
-
-	_ = ctx2.UnmarshalForm(formObj)
-	for _, f := range b.fields {
-		name := f.name
-		info := b.father.mb.modelInfo
-		if info != nil {
-			if info.Verifier().Do(PermCreate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil {
-				continue
+		oldForm := &multipart.Form{
+			Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
+		}
+		newForm := &multipart.Form{
+			Value: make(map[string][]string),
+		}
+		// prefix.key => key
+		for k, v := range oldForm.Value {
+			if strings.HasPrefix(k, prefix+".") {
+				newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
 			}
 		}
-		if v, err := reflectutils.Get(formObj, f.name); err == nil {
-			reflectutils.Set(toObj, f.name, v)
+		ctx2 := &web.EventContext{R: new(http.Request)}
+		ctx2.R.MultipartForm = newForm
+
+		_ = ctx2.UnmarshalForm(formObj)
+		for _, f := range b.fields {
+			name := f.name
+			info := b.father.mb.modelInfo
+			if info != nil {
+				if info.Verifier().Do(PermCreate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil {
+					continue
+				}
+			}
+			if v, err := reflectutils.Get(formObj, f.name); err == nil {
+				reflectutils.Set(toObj, f.name, v)
+			}
+			if f.setterFunc == nil {
+				continue
+			}
+			keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
+			err := f.setterFunc(toObj, &FieldContext{
+				ModelInfo: info,
+				FormKey:   keyPath,
+				Name:      f.name,
+				Label:     b.getLabel(f.NameLabel),
+			}, ctx)
+			if err != nil {
+				return err
+			}
 		}
-		if f.setterFunc == nil {
-			continue
-		}
-		keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
-		err := f.setterFunc(toObj, &FieldContext{
-			ModelInfo: info,
-			FormKey:   keyPath,
-			Name:      f.name,
-			Label:     b.getLabel(f.NameLabel),
-		}, ctx)
-		if err != nil {
-			return err
-		}
+		return nil
 	}
-	return nil
 }
