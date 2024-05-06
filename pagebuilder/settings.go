@@ -2,9 +2,14 @@ package pagebuilder
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/activity"
 	"strconv"
 	"strings"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/publish"
+
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/note"
@@ -14,8 +19,6 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
@@ -25,13 +28,22 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 	pv.ConfigureVersionListDialog(db, b.ps, pm)
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
-		versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		mi := field.ModelInfo
-		p := obj.(*Page)
-		c := &Category{}
+		var (
+			versionComponent  = pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
+			mi                = field.ModelInfo
+			p                 = obj.(*Page)
+			c                 = &Category{}
+			previewDevelopUrl = b.previewHref(strconv.Itoa(int(p.GetID())), p.GetVersion(), p.GetLocale())
+		)
+		var (
+			start, end, se string
+			notes          []note.QorNote
+			categories     []*Category
+			notesSetcion   h.HTMLComponent
+			timelineItems  []h.HTMLComponent
+			onlineHint     h.HTMLComponent
+		)
 		db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
-		var previewDevelopUrl = b.previewHref(strconv.Itoa(int(p.GetID())), p.GetVersion(), p.GetLocale())
-		var start, end, se string
 		if p.GetScheduledStartAt() != nil {
 			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
 		}
@@ -41,7 +53,6 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 		if start != "" || end != "" {
 			se = "Scheduled at: " + start + " ~ " + end
 		}
-		var notes []note.QorNote
 		ri := p.PrimarySlug()
 		rt := pm.Info().Label()
 		db.Where("resource_type = ? and resource_id = ?", rt, ri).
@@ -56,7 +67,6 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 				db.Save(&userNote)
 			}
 		}
-		var notesSetcion h.HTMLComponent
 		if len(notes) > 0 {
 			s := VContainer()
 			for _, n := range notes {
@@ -67,8 +77,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 		}
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		var categories []*Category
+		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
@@ -90,7 +99,6 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 						URL(mi.PresetsPrefix()+"/pages").
 						Go()),
 					),
-				VBtn("").AppendIcon("mdi-plus").Color("black").Size(SizeSmall).Variant(VariantFlat),
 			),
 		).Class("d-flex justify-space-between align-center")
 
@@ -110,7 +118,6 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 				VTab(h.Text("Activity")).Size(SizeXSmall).Value("Activity"),
 				VTab(h.Text("Notes")).Size(SizeXSmall).Value("Notes"),
 			).Attr("v-model", "editLocals.detailTab").AlignTabs(Center).FixedTabs(true)
-		var timelineItems []h.HTMLComponent
 		if activityB != nil {
 			for _, i := range activityB.GetActivityLogs(p, db.Order("created_at desc")) {
 				timelineItems = append(timelineItems,
@@ -144,6 +151,9 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 			).Class("pa-5").Value("Activity"),
 		).Attr("v-model", "editLocals.detailTab")
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("primary").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
+		if p.GetStatus() == publish.StatusOnline {
+			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+		}
 		return VContainer(
 			web.Scope(
 				VLayout(
@@ -158,21 +168,23 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 						).Name("title"),
 
 						VCardText(
+							onlineHint,
 							versionComponent,
 							h.Div(
-								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;`),
+								h.Iframe().Src(previewDevelopUrl).Style(`height:320px;width:100%;pointer-events: none;`),
 								h.Div(
 									h.Div(
 										h.Text(se),
 									).Class("bg-secondary-lighten-2"),
 									VBtn("Page Builder").PrependIcon("mdi-pencil").Color("secondary").
-										Class("rounded-sm").Height(40).Variant(VariantFlat).
-										Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
+										Class("rounded-sm").Height(40).Variant(VariantFlat),
 								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
-							).Style(`position:relative`).Class("w-100 mt-4"),
+							).Style(`position:relative`).Class("w-100 mt-4").
+								Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
-								VBtn("").Icon("mdi-file-document-multiple").Color("accent").Variant(VariantText).Size(SizeXSmall).Class("ml-1"),
+								VBtn("").Icon("mdi-file-document-multiple").Color("accent").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
+									Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "success"}`, previewDevelopUrl)),
 							).Class("d-inline-flex align-center"),
 
 							web.Scope(

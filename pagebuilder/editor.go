@@ -554,20 +554,25 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 											h.If(!isReadonly,
 												VBtn("").Variant(VariantText).Icon("mdi-drag").Class("my-2 ml-1 mr-1").Attr(":class", `element.hidden?"":"handle"`),
 											),
-											VListItem(
-												VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]"),
-											),
 										).Name("prepend"),
+										VListItemTitle(
+											VListItem(
+												web.Scope(
+													VTextField().HideDetails(true).Autofocus(true).Variant(FieldVariantSolo).
+														Attr("v-model", "form.DisplayName").
+														Attr("v-if", "element.editShow").
+														Attr("@keyup.enter", web.Plaid().
+															URL(fmt.Sprintf("%s/editors", b.prefix)).
+															EventFunc(RenameContainerEvent).Query(paramContainerID, web.Var("element.param_id")).Go()),
+													VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
+												).VSlot("{form}").FormInit("{ DisplayName:element.label }"),
+											),
+										),
 										web.Slot(
 											h.If(!isReadonly,
 												h.Div(
-													VBtn("").Variant(VariantText).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
-														web.Plaid().
-															URL(web.Var("element.url")).
-															EventFunc(RenameContainerDialogEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
-															Query(paramContainerName, web.Var("element.display_name")).
-															Go(),
+													VBtn("").Variant(VariantText).Attr(":color", `element.editShow?"primary":""`).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
+														"element.editShow=!element.editShow",
 													).Attr("v-show", "isHovering"),
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
@@ -588,7 +593,9 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 												),
 											),
 										).Name("append"),
-									).Attr(":variant", fmt.Sprintf(`element.hidden &&!isHovering?"%s":"%s"`, VariantPlain, VariantText)).Attr("v-bind", "props").Class("pl-0").Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+									).Attr(":variant", fmt.Sprintf(`element.hidden &&!isHovering?"%s":"%s"`, VariantPlain, VariantText)).
+										Attr("v-bind", "props").
+										Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -1500,6 +1507,6 @@ func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 func (b *Builder) ReloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	body, _, err = b.renderPageOrTemplate(ctx, true)
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: h.Div(body).Attr(web.VAssign("locals", "{el:$}")...)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("locals", "{el:$}")...)})
 	return
 }
