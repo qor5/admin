@@ -349,7 +349,7 @@ func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *we
 	}
 	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
-	if err = b.elementUnmarshaler(obj, formObj, b.name, ctx); err != nil {
+	if err = b.DefaultElementUnmarshal()(obj, formObj, b.name, ctx); err != nil {
 		return
 	}
 
