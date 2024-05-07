@@ -1249,11 +1249,11 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				VTab(h.Text(msgr.New)).Value(msgr.New),
 				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
 			).Attr("v-model", "locals.tab").Class("px-6"),
-			VWindow(
-				VWindowItem(
+			VTabsWindow(
+				VTabsWindowItem(
 					VList(containers...).Opened(groupsNames),
 				).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-				VWindowItem(
+				VTabsWindowItem(
 					VList(sharedGroups...).Opened(sharedGroupNames),
 				).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
 			).Attr("v-model", "locals.tab").Class("pa-6"),

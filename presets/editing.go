@@ -5,13 +5,14 @@ import (
 	"strings"
 
 	"github.com/jinzhu/inflection"
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/admin/v3/presets/actions"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	h "github.com/theplant/htmlgo"
 )
 
 type EditingBuilder struct {
@@ -308,7 +309,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					h.Components(tabs...),
 				).Class("v-tabs--fixed-tabs").Attr("v-model", "locals.tab"),
 
-				VWindow(
+				VTabsWindow(
 					web.Scope(formContent).VSlot("{ form }"),
 					h.Components(contents...),
 				).Attr("v-model", "locals.tab"),

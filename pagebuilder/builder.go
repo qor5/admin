@@ -11,6 +11,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -29,11 +35,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 type RenderInput struct {
@@ -377,13 +378,13 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			}
 			deviceToggler = web.Scope(
 				VBtnToggle(
-					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
 						VIcon("mdi-laptop").Size(SizeSmall),
 					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceComputer).PushState(true).Go()),
-					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
 						VIcon("mdi-tablet").Size(SizeSmall),
 					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceTablet).PushState(true).Go()),
-					VBtn("").Icon(true).Color("primary").Variant(VariantText).Class("mr-4").Children(
+					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
 						VIcon("mdi-cellphone").Size(SizeSmall),
 					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DevicePhone).PushState(true).Go()),
 				).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
@@ -420,7 +421,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				sc := scheduleCount(db, p)
 				pageAppbarContent = h.Components(
 					VAppBarNavIcon().
-						Density("compact").
+						Density(DensityCompact).
 						Class("mr-2").
 						Attr("v-if", "!vars.navDrawer").
 						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
@@ -430,24 +431,24 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 						),
 					).Class("mr-auto"),
 					VSpacer(),
-					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class("text-caption bg-success-lighten-1"),
+					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
 					h.If(
 						p.ScheduledStartAt != nil,
 						h.Div(
-							h.Div().Class("w-100 bg-success-lighten-1").Style("height:4px"),
-							VIcon("mdi-circle").Size(SizeXSmall).Color("success-lighten-1").Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
+							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
+							VIcon("mdi-circle").Size(SizeXSmall).Color(ColorSuccessLighten1).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
 						).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
 						h.Div(
 							h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
-						).Class("text-caption bg-secondary-lighten-1"),
+						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
 					),
 					h.If(sc > 0,
 						h.Div(
-							h.Div().Class("w-100 bg-secondary-lighten-1").Style("height:4px"),
+							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
 						).Class("h-100 d-flex align-center").Style("width:40px"),
 						h.Div(
 							h.Text(fmt.Sprintf(`+%v`, sc)),
-						).Class("text-caption bg-secondary-lighten-1"),
+						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
 					),
 				)
 			}
@@ -460,14 +461,12 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					).Cols(2),
 
 					VCol(
-						VAppBarNavIcon().Attr("icon", "mdi-menu").
-							Density("compact").
-							Class("text-grey-darken-1").
-							Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+						VAppBarNavIcon().Icon("mdi-menu").
+							Density(DensityCompact).
+							Attr("@click", "vars.navDrawer = !vars.navDrawer"),
 					).Cols(2),
 				).Attr("align", "center").Attr("justify", "center"),
 			)
-
 			pr.Body = web.Scope(
 				VApp(
 					h.If(!isContent,
@@ -819,7 +818,7 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 			disable = true
 		}
 
-		return h.Td(VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(SizeXSmall).Color("primary").Variant(VariantText).Attr("@click", web.Plaid().
+		return h.Td(VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(SizeXSmall).Color(ColorPrimary).Variant(VariantText).Attr("@click", web.Plaid().
 			URL(pb.GetURIPrefix()+"/version-list-dialog").
 			EventFunc(deleteVersionDialogEvent).
 			Queries(ctx.Queries()).
@@ -1031,7 +1030,7 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
 					).Cols(5),
 					VCol(
-						VBtn(msgr.ChangeTemplate).Color("primary").
+						VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
 							Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
 					).Cols(5),
 				),
@@ -1070,7 +1069,7 @@ func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.
 			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(name).Density(DensityCompact).Variant(VariantOutlined),
 		).Cols(5),
 		VCol(
-			VBtn(msgr.ChangeTemplate).Color("primary").
+			VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
 				Attr("@click", web.Plaid().Query(templateSelectedID, selectedID).EventFunc(openTemplateDialogEvent).Go()),
 		).Cols(5),
 	), nil
@@ -1088,7 +1087,7 @@ func clearTemplate(db *gorm.DB) web.EventFunc {
 					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
 				).Cols(5),
 				VCol(
-					VBtn(msgr.ChangeTemplate).Color("primary").
+					VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
 						Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
 				).Cols(5),
 			),
@@ -1161,7 +1160,7 @@ func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 					VCardActions(
 						VSpacer(),
 						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
-						VBtn(gmsgr.OK).Color("primary").
+						VBtn(gmsgr.OK).Color(ColorPrimary).
 							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
 								Go(),
 							),
@@ -1207,7 +1206,7 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 			VCardSubtitle(h.Text(desc)),
 			VBtn(msgr.Preview).Variant(VariantText).Size(SizeSmall).Class("ml-2 mb-4").
 				Href(src).
-				Attr("target", "_blank").Color("primary"),
+				Attr("target", "_blank").Color(ColorPrimary),
 			h.Div(
 				h.Input(templateID).Type("radio").
 					Value(id).
@@ -1244,7 +1243,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 		msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		updateBtn := VBtn(cmsgr.Update).
-			Color("primary").
+			Color(ColorPrimary).
 			Attr(":disabled", "isFetching").
 			Attr(":loading", "isFetching").
 			Attr("@click", web.Plaid().
@@ -1341,7 +1340,7 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 								On("click", "locals.createNoteDialog = false"),
 
 							VBtn("OK").
-								Color("primary").
+								Color(ColorPrimary).
 								Variant(VariantFlat).
 								Theme(ThemeDark).
 								Attr("@click", okAction),
@@ -1398,7 +1397,7 @@ func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoBuilder *seo.Builde
 		// msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		updateBtn := VBtn(cmsgr.Update).
-			Color("primary").
+			Color(ColorPrimary).
 			Attr(":disabled", "isFetching").
 			Attr(":loading", "isFetching").
 			Attr("@click", web.Plaid().
@@ -1483,7 +1482,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 								On("click", "locals.renameVersionDialog = false"),
 
 							VBtn("OK").
-								Color("primary").
+								Color(ColorPrimary).
 								Variant(VariantFlat).
 								Theme(ThemeDark).
 								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
@@ -1540,7 +1539,7 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 								On("click", "dialogLocals.deleteConfirmation = false"),
 
 							VBtn("Delete").
-								Color("primary").
+								Color(ColorPrimary).
 								Variant(VariantFlat).
 								Theme(ThemeDark).
 								Attr("@click", web.Plaid().
@@ -1596,7 +1595,7 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	//						VSpacer(),
 	//						VBtn("Select").
 	//							Variant(VariantText).
-	//							Color("primary").Attr("@click",
+	//							Color(ColorPrimary).Attr("@click",
 	//							web.Plaid().
 	//								EventFunc(actions.New).
 	//								URL(builder.GetModelBuilder().Info().ListingHref()).
@@ -1688,7 +1687,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 						VSpacer(),
 						VBtn("Select").
 							Variant(VariantText).
-							Color("primary").Attr("@click",
+							Color(ColorPrimary).Attr("@click",
 							web.Plaid().
 								EventFunc(actions.New).
 								URL(builder.GetModelBuilder().Info().ListingHref()).
@@ -1719,7 +1718,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 							VSpacer(),
 							VBtn("Edit").
 								Variant(VariantText).
-								Color("primary").Attr("@click",
+								Color(ColorPrimary).Attr("@click",
 								web.Plaid().
 									EventFunc(actions.Edit).
 									URL(builder.GetModelBuilder().Info().ListingHref()).
@@ -2012,7 +2011,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 					h.Div(
 						VSpacer(),
 						VBtn(msgr.RepublishAllRelatedOnlinePages).
-							Color("primary").
+							Color(ColorPrimary).
 							Attr("@click",
 								web.Plaid().
 									EventFunc(presets.OpenConfirmDialog).

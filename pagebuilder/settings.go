@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/x/v3/i18n"
 
 	h "github.com/theplant/htmlgo"
@@ -73,18 +74,18 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 				notesItems = append(notesItems, VTimelineItem(
 					h.Div(h.Text(n.CreatedAt.Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
 					h.Div(
-						VAvatar().Text(strings.ToUpper(string(n.Creator[0]))).Color("secondary").Class("text-h6 rounded-lg").Size(SizeXSmall),
+						VAvatar().Text(strings.ToUpper(string(n.Creator[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
 						h.Strong(n.Creator).Class("ml-1"),
 					),
 					h.Div(h.Text(n.Content)).Class("text-caption"),
-				).DotColor("success").Size(SizeXSmall),
+				).DotColor(ColorSuccess).Size(SizeXSmall),
 				)
 			}
 		}
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		noteMsgr := i18n.MustGetModuleMessages(ctx.R, note.I18nNoteKey, note.Messages_en_US).(*note.Messages)
+		seoMsgr := i18n.MustGetModuleMessages(ctx.R, seo.I18nSeoKey, seo.Messages_en_US).(*seo.Messages)
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
@@ -92,10 +93,10 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 		infoComponentTab := h.Div(
 			VTabs(
 				VTab(h.Text("Page")).Size(SizeXSmall).Value("Page"),
-				VTab(h.Text("Seo")).Size(SizeXSmall).Value("Seo"),
+				VTab(h.Text(seoMsgr.Seo)).Size(SizeXSmall).Value("Seo"),
 			).Attr("v-model", "editLocals.infoTab"),
 			h.Div(
-				VBtn("Save").AppendIcon("mdi-check").Color("secondary").Size(SizeSmall).Variant(VariantFlat).
+				VBtn("Save").AppendIcon("mdi-check").Color(ColorSecondary).Size(SizeSmall).Variant(VariantFlat).
 					Attr("@click", fmt.Sprintf(`editLocals.infoTab=="Page"?%s:%s`, web.POST().
 						EventFunc(actions.Update).
 						Query(presets.ParamID, p.PrimarySlug()).
@@ -111,13 +112,13 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 
 		seoForm := seoBuilder.EditingComponentFunc(obj, nil, ctx)
 
-		infoComponentContent := VWindow(
-			VWindowItem(
+		infoComponentContent := VTabsWindow(
+			VTabsWindowItem(
 				b.mb.Editing().ToComponent(pm.Info(), obj, ctx),
-			).Value("Page").Class("mt-9"),
-			VWindowItem(
+			).Value("Page").Class("pt-8"),
+			VTabsWindowItem(
 				seoForm,
-			).Value("Seo"),
+			).Value("Seo").Class("pt-8"),
 		).Attr("v-model", "editLocals.infoTab")
 
 		detailComponentTab :=
@@ -131,17 +132,17 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 					VTimelineItem(
 						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
 						h.Div(
-							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color("secondary").Class("text-h6 rounded-lg").Size(SizeXSmall),
+							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
 							h.Strong(i.GetCreator()).Class("ml-1"),
 						),
 						h.Div(h.Text(i.GetAction())).Class("text-caption"),
-					).DotColor("success").Size(SizeXSmall),
+					).DotColor(ColorSuccess).Size(SizeXSmall),
 				)
 			}
 
 		}
-		detailComponentContent := VWindow(
-			VWindowItem(
+		detailComponentContent := VTabsWindow(
+			VTabsWindowItem(
 				VBtn(noteMsgr.NewNote).PrependIcon("mdi-plus").Variant(VariantTonal).Class("w-100").
 					Attr("@click", web.POST().
 						EventFunc(createNoteDialogEvent).
@@ -152,14 +153,14 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 				VTimeline(
 					notesItems...,
 				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-5"),
-			).Value("Notes"),
-			VWindowItem(
+			).Value("Notes").Class("pa-5"),
+			VTabsWindowItem(
 				VTimeline(
 					timelineItems...,
 				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
-			).Value("Activity"),
-		).Attr("v-model", "editLocals.detailTab").Class("pa-5")
-		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Color("primary").Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
+			).Value("Activity").Class("pa-5"),
+		).Attr("v-model", "editLocals.detailTab")
+		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		if p.GetStatus() == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 		}
@@ -171,11 +172,10 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 							VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).Attr("@click",
 								web.GET().URL(mi.PresetsPrefix()+"/pages").PushState(true).Go(),
 							),
-						).Name("prepend"),
+						).Name(VSlotPrepend),
 						web.Slot(h.Text(p.Title),
 							versionBadge,
-						).Name("title"),
-
+						).Name(VSlotTitle),
 						VCardText(
 							onlineHint,
 							versionComponent,
@@ -184,16 +184,16 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 								h.Div(
 									h.Div(
 										h.Text(se),
-									).Class("bg-secondary-lighten-2"),
-									VBtn("Page Builder").PrependIcon("mdi-pencil").Color("secondary").
+									).Class(fmt.Sprintf("bg-%s", ColorSecondaryLighten2)),
+									VBtn("Page Builder").PrependIcon("mdi-pencil").Color(ColorSecondary).
 										Class("rounded-sm").Height(40).Variant(VariantFlat),
 								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
 							).Style(`position:relative`).Class("w-100 mt-4").
 								Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
-								VBtn("").Icon("mdi-file-document-multiple").Color("accent").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
-									Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "success"}`, previewDevelopUrl)),
+								VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
+									Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "%s"}`, previewDevelopUrl, ColorSuccess)),
 							).Class("d-inline-flex align-center"),
 
 							web.Scope(

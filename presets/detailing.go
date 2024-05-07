@@ -8,13 +8,14 @@ import (
 	"strconv"
 
 	"github.com/jinzhu/inflection"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
+
 	"github.com/qor5/admin/v3/presets/actions"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
 )
 
 type DetailingBuilder struct {
@@ -181,7 +182,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 					h.Components(tabs...),
 				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
 
-				VWindow(
+				VTabsWindow(
 					web.Scope(comp).VSlot("{ form }"),
 					h.Components(contents...),
 				).Attr("v-model", "tab"),
