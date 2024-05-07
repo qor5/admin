@@ -3,21 +3,21 @@ package media
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/admin/v3/presets"
 	"mime/multipart"
 	"strconv"
 	"strings"
+
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/presets"
 
 	"github.com/qor5/admin/v3/media/media_library"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
-func fileChooser(db *gorm.DB) web.EventFunc {
+func fileChooser(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field := ctx.R.FormValue("field")
@@ -57,7 +57,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 						Theme(ThemeDark),
 					web.Portal().Name(deleteConfirmPortalName(field)),
 					web.Portal(
-						fileChooserDialogContent(db, field, ctx, cfg),
+						fileChooserDialogContent(mb, field, ctx, cfg),
 					).Name(dialogContentPortalName(field)),
 				),
 			).
@@ -72,7 +72,9 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
+	cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+	db := mb.db
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
@@ -139,7 +141,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	if err != nil {
 		panic(err)
 	}
-	perPage := MediaLibraryPerPage
+	perPage := mb.mediaLibraryPerPage
 	pagesCount := int(count/int64(perPage) + 1)
 	if count%int64(perPage) == 0 {
 		pagesCount--
@@ -157,7 +159,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 	}
 
 	row := VRow(
-		h.If(uploadIsAllowed(ctx.R) == nil,
+		h.If(mb.uploadIsAllowed(ctx.R) == nil,
 			VCol(
 				h.Label("").Children(
 					VCard(
@@ -250,12 +252,12 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								FieldValue("cfg", h.JSONString(cfg)).
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
-							).Readonly(updateDescIsAllowed(ctx.R, files[i]) != nil),
+							).Readonly(mb.updateDescIsAllowed(ctx.R, files[i]) != nil),
 						h.If(base.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
 					),
-					h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+					h.If(mb.deleteIsAllowed(ctx.R, files[i]) == nil,
 						VCardActions(
 							VSpacer(),
 							VBtn(msgr.Delete).
@@ -376,12 +378,12 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB) web.EventFunc {
+func uploadFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
-		if err = uploadIsAllowed(ctx.R); err != nil {
+		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
 		}
 
@@ -402,14 +404,14 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 				panic(err)
 			}
 
-			err = base.SaveUploadAndCropImage(db, &m)
+			err = base.SaveUploadAndCropImage(mb.db, &m)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
 			}
 		}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
 		return
 	}
 }
@@ -427,8 +429,9 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 	return
 }
 
-func chooseFile(db *gorm.DB) web.EventFunc {
+func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := mb.db
 		field := ctx.R.FormValue("field")
 		id := ctx.QueryAsInt("id")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
@@ -480,30 +483,30 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func searchFile(db *gorm.DB) web.EventFunc {
+func searchFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		ctx.R.Form[currentPageName(field)] = []string{"1"}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
 		return
 	}
 }
 
-func jumpPage(db *gorm.DB) web.EventFunc {
+func jumpPage(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
 		return
 	}
 }
 
-func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig) {
+func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, mb *Builder, cfg *media_library.MediaBoxConfig) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: dialogContentPortalName(field),
-		Body: fileChooserDialogContent(db, field, ctx, cfg),
+		Body: fileChooserDialogContent(mb, field, ctx, cfg),
 	})
 }

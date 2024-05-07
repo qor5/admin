@@ -336,7 +336,6 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL"), setting.OpenGraphImageURL)...).Label(msgr.OpenGraphImageURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix))).Cols(12),
 				),
 				VRow(
-					VCol(views.QMediaBox(db).Label(msgr.OpenGraphImage).
 					VCol(media.QMediaBox(db).Label(msgr.OpenGraphImage).
 						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
 						Value(image).

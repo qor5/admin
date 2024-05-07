@@ -13,14 +13,14 @@ const (
 	PermUpdateDesc = "perm_media_library_update_desc"
 )
 
-func uploadIsAllowed(r *http.Request) error {
-	return permVerifier.Do(PermUpload).On("media_libraries").WithReq(r).IsAllowed()
+func (mb *Builder) uploadIsAllowed(r *http.Request) error {
+	return mb.permVerifier.Do(PermUpload).On("media_libraries").WithReq(r).IsAllowed()
 }
 
-func deleteIsAllowed(r *http.Request, obj interface{}) error {
-	return permVerifier.Do(PermDelete).ObjectOn(obj).WithReq(r).IsAllowed()
+func (mb *Builder) deleteIsAllowed(r *http.Request, obj interface{}) error {
+	return mb.permVerifier.Do(PermDelete).ObjectOn(obj).WithReq(r).IsAllowed()
 }
 
-func updateDescIsAllowed(r *http.Request, obj interface{}) error {
-	return permVerifier.Do(PermUpdateDesc).ObjectOn(obj).WithReq(r).IsAllowed()
+func (mb *Builder) updateDescIsAllowed(r *http.Request, obj interface{}) error {
+	return mb.permVerifier.Do(PermUpdateDesc).ObjectOn(obj).WithReq(r).IsAllowed()
 }

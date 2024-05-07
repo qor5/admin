@@ -2,7 +2,6 @@ package media
 
 import (
 	"github.com/qor5/web/v3"
-	"gorm.io/gorm"
 )
 
 const (
@@ -19,16 +18,16 @@ const (
 	doDeleteEvent           = "mediaLibrary_DoDelete"
 )
 
-func registerEventFuncs(hub web.EventFuncHub, db *gorm.DB) {
-	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(db))
+func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
+	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(mb))
 	hub.RegisterEventFunc(deleteFileEvent, deleteFileField())
-	hub.RegisterEventFunc(cropImageEvent, cropImage(db))
-	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(db))
-	hub.RegisterEventFunc(imageSearchEvent, searchFile(db))
-	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(db))
-	hub.RegisterEventFunc(uploadFileEvent, uploadFile(db))
-	hub.RegisterEventFunc(chooseFileEvent, chooseFile(db))
-	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(db))
-	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(db))
-	hub.RegisterEventFunc(doDeleteEvent, doDelete(db))
+	hub.RegisterEventFunc(cropImageEvent, cropImage(mb))
+	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(mb))
+	hub.RegisterEventFunc(imageSearchEvent, searchFile(mb))
+	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(mb))
+	hub.RegisterEventFunc(uploadFileEvent, uploadFile(mb))
+	hub.RegisterEventFunc(chooseFileEvent, chooseFile(mb))
+	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(mb))
+	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(mb))
+	hub.RegisterEventFunc(doDeleteEvent, doDelete(mb))
 }

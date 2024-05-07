@@ -3,8 +3,9 @@ package media
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/v3/media/base"
 	"time"
+
+	"github.com/qor5/admin/v3/media/base"
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
@@ -13,7 +14,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *media_library.MediaBoxConfig) {
@@ -25,8 +25,9 @@ func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *
 	return
 }
 
-func loadImageCropper(db *gorm.DB) web.EventFunc {
+func loadImageCropper(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := mb.db
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field, id, thumb, cfg := getParams(ctx)
 
@@ -97,8 +98,9 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 	}
 
 }
-func cropImage(db *gorm.DB) web.EventFunc {
+func cropImage(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := mb.db
 		cropOption := ctx.R.FormValue("CropOption")
 		// log.Println(cropOption, ctx.Event.Params)
 		field, id, thumb, cfg := getParams(ctx)

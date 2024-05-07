@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/x/v3/perm"
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
@@ -17,7 +18,6 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -29,20 +29,15 @@ type MediaBoxConfigKey int
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
-var MediaLibraryPerPage int = 39
-
-var permVerifier *perm.Verifier
-
-func configure(b *presets.Builder, db *gorm.DB) {
+func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 	err := db.AutoMigrate(&media_library.MediaLibrary{})
 	if err != nil {
 		panic(err)
 	}
+	mb.permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
-
-	permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).
@@ -53,14 +48,14 @@ func configure(b *presets.Builder, db *gorm.DB) {
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxListFunc())
 
-	registerEventFuncs(b.GetWebBuilder(), db)
+	registerEventFuncs(b.GetWebBuilder(), mb)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)
 
-	configList(b, db)
+	configList(b, mb)
 }
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
@@ -207,7 +202,7 @@ func fileThumb(filename string) h.HTMLComponent {
 	).Class("d-flex align-center justify-center")
 }
 
-func deleteConfirmation(db *gorm.DB) web.EventFunc {
+func deleteConfirmation(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		field := ctx.R.FormValue("field")
@@ -247,8 +242,9 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-func doDelete(db *gorm.DB) web.EventFunc {
+func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := mb.db
 		field := ctx.R.FormValue("field")
 		id := ctx.R.FormValue("id")
 		cfg := ctx.R.FormValue("cfg")
@@ -261,7 +257,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 					ctx,
 					&r,
 					field,
-					db,
+					mb,
 					stringToCfg(cfg),
 				)
 				r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
@@ -269,7 +265,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 			}
 			panic(err)
 		}
-		if err = deleteIsAllowed(ctx.R, &obj); err != nil {
+		if err = mb.deleteIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 
@@ -282,7 +278,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 			ctx,
 			&r,
 			field,
-			db,
+			mb,
 			stringToCfg(cfg),
 		)
 		r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
@@ -435,8 +431,9 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 	return div
 }
 
-func updateDescription(db *gorm.DB) web.EventFunc {
+func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := mb.db
 		field := ctx.R.FormValue("field")
 		id := ctx.R.FormValue("id")
 		cfg := ctx.R.FormValue("cfg")
@@ -449,7 +446,7 @@ func updateDescription(db *gorm.DB) web.EventFunc {
 					ctx,
 					&r,
 					field,
-					db,
+					mb,
 					stringToCfg(cfg),
 				)
 				// TODO: prompt that the record has been deleted?
@@ -457,7 +454,7 @@ func updateDescription(db *gorm.DB) web.EventFunc {
 			}
 			panic(err)
 		}
-		if err = updateDescIsAllowed(ctx.R, &obj); err != nil {
+		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 
