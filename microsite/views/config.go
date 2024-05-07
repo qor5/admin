@@ -11,7 +11,6 @@ import (
 	"github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
-	publish_view "github.com/qor5/admin/v3/publish/views"
 	"github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -27,7 +26,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, storage os
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
 
-	publish_view.Configure(b, db, ab, publisher, models...)
+	publisher.Models(models...)
 	for _, model := range models {
 		model.Editing().Field("Package").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			this := obj.(microsite.MicroSiteInterface)

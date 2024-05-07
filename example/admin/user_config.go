@@ -14,7 +14,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	publish_view "github.com/qor5/admin/v3/publish/views"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
@@ -28,7 +27,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB) {
+func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
 	nb.Models(user)
@@ -279,7 +278,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB) {
 				Items([]string{"active", "inactive"})
 		})
 
-	configureFavorPostSelectDialog(b)
+	configureFavorPostSelectDialog(b, publisher)
 	ed.Field("FavorPostID").Label("Favorite Post").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		id := field.Value(obj).(uint)
 		return web.Portal(favorPostSelector(id)).Name("favorPostSelector")
@@ -390,11 +389,11 @@ func favorPostSelector(id uint) h.HTMLComponent {
 		Go())
 }
 
-func configureFavorPostSelectDialog(pb *presets.Builder) {
+func configureFavorPostSelectDialog(pb *presets.Builder, publisher *publish.Builder) {
 	b := pb.Model(&models.Post{}).
 		URIName("dialog-select-favor-posts").
 		InMenu(false)
-	publish_view.Configure(pb, db, nil, nil, b)
+	publisher.Models(b)
 	lb := b.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10).

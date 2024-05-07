@@ -25,8 +25,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/admin/v3/publish/views"
-	pv "github.com/qor5/admin/v3/publish/views"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
@@ -285,7 +283,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				profile = pb.GetProfileFunc()(ctx)
 			}
 			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
-			pvMsgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, pv.Messages_en_US).(*pv.Messages)
+			pvMsgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, publish.Messages_en_US).(*publish.Messages)
 			id := pat.Param(ctx.R, "id")
 
 			if id == "" {
@@ -406,7 +404,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					Color(pb.GetProgressBarColor()),
 			)
 			if isContent {
-				versionComponent := pv.DefaultVersionComponentFunc(pm)(obj, &presets.FieldContext{ModelInfo: pm.Info()}, ctx)
+				versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, &presets.FieldContext{ModelInfo: pm.Info()}, ctx)
 
 				pageAppbarContent = h.Components(
 					h.Div(
@@ -620,7 +618,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			p.Slug = path.Clean(p.Slug)
 		}
 		funcName := ctx.R.FormValue(web.EventFuncIDName)
-		if funcName == pv.DuplicateVersionEvent {
+		if funcName == publish.DuplicateVersionEvent {
 			id := ctx.R.FormValue(presets.ParamID)
 			var fromPage Page
 			eb.Fetcher(&fromPage, id, ctx)
@@ -632,7 +630,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 				return
 			}
 
-			if strings.Contains(ctx.R.RequestURI, pv.SaveNewVersionEvent) || strings.Contains(ctx.R.RequestURI, pv.DuplicateVersionEvent) {
+			if strings.Contains(ctx.R.RequestURI, publish.SaveNewVersionEvent) || strings.Contains(ctx.R.RequestURI, publish.DuplicateVersionEvent) {
 				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}
@@ -692,8 +690,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		l10nB.Models(pm, sharedContainerM, demoContainerM, templateM, categoryM).Activity(activityB)
 	}
 	if publisher != nil {
-		publisher.WithPageBuilder(b)
-		pv.Configure(pb, db, activityB, publisher, pm)
+		publisher.WithPageBuilder(b).Models(pm).Activity(activityB)
 		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
 	}
 	if seoBuilder != nil {
@@ -768,7 +765,7 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 			h.Text(versionName),
 		).Class("d-inline-flex align-center")
 	})
-	lb.Field("State").ComponentFunc(pv.StatusListFunc())
+	lb.Field("State").ComponentFunc(publish.StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		var showTime string
@@ -1240,7 +1237,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
 		}
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		updateBtn := VBtn(cmsgr.Update).
 			Color(ColorPrimary).
@@ -1297,7 +1294,7 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		if err != nil {
 			return
 		}
-		err = pv.ScheduleEditSetterFunc(obj, nil, ctx)
+		err = publish.ScheduleEditSetterFunc(obj, nil, ctx)
 		if err != nil {
 			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
 			return
@@ -2041,9 +2038,9 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 			web.AppendRunScripts(&r,
 				web.Plaid().
 					URL(pageURL).
-					EventFunc(views.RepublishEvent).
+					EventFunc(publish.RepublishEvent).
 					Query("id", id).
-					Query(views.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
+					Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
 					Query("status_var", statusVar).
 					Go(),
 				fmt.Sprintf(`vars.%s = "pending"`, statusVar),

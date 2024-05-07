@@ -9,6 +9,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -18,6 +20,8 @@ type Builder struct {
 	db      *gorm.DB
 	storage oss.StorageInterface
 	context context.Context
+	models  []*presets.ModelBuilder
+	ab      *activity.Builder
 }
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
@@ -26,6 +30,21 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 		storage: storage,
 		context: context.Background(),
 	}
+}
+
+func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
+	b.models = append(b.models, vs...)
+	return b
+}
+
+func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
+	b.ab = v
+	return b
+}
+
+func (b *Builder) Install(pb *presets.Builder) {
+	configure(pb, b)
+	return
 }
 
 func (b *Builder) WithValue(key, val interface{}) *Builder {

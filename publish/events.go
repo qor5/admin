@@ -1,4 +1,4 @@
-package views
+package publish
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	v "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
@@ -43,7 +42,7 @@ const (
 	ParamScriptAfterPublish = "publish_param_script_after_publish"
 )
 
-func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.Builder) {
+func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder) {
 	mb.RegisterEventFunc(PublishEvent, publishAction(db, mb, publisher, ab, ActivityPublish))
 	mb.RegisterEventFunc(RepublishEvent, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(UnpublishEvent, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
@@ -56,7 +55,7 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *publis
 
 }
 
-func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.Builder, actionName string) web.EventFunc {
+func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
 
@@ -86,7 +85,7 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Bui
 	}
 }
 
-func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.Builder, actionName string) web.EventFunc {
+func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
 
@@ -112,7 +111,7 @@ func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.B
 	}
 }
 
-func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.Builder, actionName string) web.EventFunc {
+func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.R.FormValue(presets.ParamID)
 
@@ -138,7 +137,7 @@ func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 	}
 }
 
-func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder, ab *activity.Builder, actionName string) web.EventFunc {
+func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -157,7 +156,7 @@ func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 	}
 }
 
-func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		qs := ctx.Queries()
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(ctx.R.FormValue("id"))
@@ -182,7 +181,7 @@ func afterDeleteVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *
 				hasOlderVersion := false
 				for i := 0; i < vO.Len(); i++ {
 					v := vO.Index(i).Interface()
-					if v.(publish.VersionInterface).GetVersion() < deletedVersion {
+					if v.(VersionInterface).GetVersion() < deletedVersion {
 						hasOlderVersion = true
 						version = v
 						break
@@ -222,7 +221,7 @@ func schedulePublishDialogV2(db *gorm.DB, mb *presets.ModelBuilder) web.EventFun
 			return
 		}
 
-		s, ok := obj.(publish.ScheduleInterface)
+		s, ok := obj.(ScheduleInterface)
 		if !ok {
 			return
 		}

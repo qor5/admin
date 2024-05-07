@@ -1,14 +1,12 @@
-package views
+package publish
 
 import (
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -21,14 +19,18 @@ import (
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func configure(b *presets.Builder, publisher *Builder) {
+	db := publisher.db
+	ab := publisher.ab
+	models := publisher.models
+
 	for _, m := range models {
 		obj := m.NewModel()
 		_ = obj.(presets.SlugEncoder)
 		_ = obj.(presets.SlugDecoder)
-		if model, ok := obj.(publish.VersionInterface); ok {
-			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+		if model, ok := obj.(VersionInterface); ok {
+			if schedulePublishModel, ok := model.(ScheduleInterface); ok {
+				VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 
 			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
@@ -161,23 +163,23 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, publisher 
 						m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
 					}
 				}
-				ConfigureVersionListDialog(db, b, m)
+				configureVersionListDialog(db, b, m)
 			}
 		} else {
-			if schedulePublishModel, ok := obj.(publish.ScheduleInterface); ok {
-				publish.NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
+				NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
-		if _, ok := obj.(publish.ScheduleInterface); ok {
+		if _, ok := obj.(ScheduleInterface); ok {
 			if m.Editing().GetField("ScheduleBar") != nil {
 				m.Editing().Field("ScheduleBar").ComponentFunc(ScheduleEditFunc()).SetterFunc(ScheduleEditSetterFunc)
 			}
 		}
 
-		if model, ok := obj.(publish.ListInterface); ok {
-			if schedulePublishModel, ok := model.(publish.ScheduleInterface); ok {
-				publish.ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+		if model, ok := obj.(ListInterface); ok {
+			if schedulePublishModel, ok := model.(ScheduleInterface); ok {
+				ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 		}
 
@@ -185,7 +187,7 @@ func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, publisher 
 	}
 
 	b.FieldDefaults(presets.LIST).
-		FieldType(publish.Status{}).
+		FieldType(Status{}).
 		ComponentFunc(StatusListFunc())
 
 	b.I18n().

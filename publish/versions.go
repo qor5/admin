@@ -1,4 +1,4 @@
-package views
+package publish
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -144,11 +143,11 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		version := &versionListTableItem{}
 		ID, _ := reflectutils.Get(v, "ID")
 		version.ID = fmt.Sprintf("%v", ID)
-		version.Version = v.(publish.VersionInterface).GetVersion()
-		version.VersionName = v.(publish.VersionInterface).GetVersionName()
-		version.Status = v.(publish.StatusInterface).GetStatus()
+		version.Version = v.(VersionInterface).GetVersion()
+		version.VersionName = v.(VersionInterface).GetVersionName()
+		version.Status = v.(StatusInterface).GetStatus()
 
-		if version.Status == publish.StatusOnline {
+		if version.Status == StatusOnline {
 			currentVersion = version
 		}
 
@@ -219,7 +218,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 	return table, currentVersion, nil
 }
 
-func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramId := ctx.R.FormValue(presets.ParamID)
 
@@ -241,7 +240,7 @@ func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publi
 	}
 }
 
-func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var toObj = mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)
@@ -298,7 +297,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publ
 	}
 }
 
-func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *publish.Builder) web.EventFunc {
+func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var toObj = mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)

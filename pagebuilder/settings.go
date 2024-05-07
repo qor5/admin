@@ -17,7 +17,6 @@ import (
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	pv "github.com/qor5/admin/v3/publish/views"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
@@ -27,11 +26,11 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 	// TODO: refactor versionDialog to use publish/views
 	pm := b.mb
 	seoBuilder := b.seoBuilder
-	pv.ConfigureVersionListDialog(db, b.ps, pm)
+	// publish.ConfigureVersionListDialog(db, b.ps, pm)
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
 		var (
-			versionComponent  = pv.DefaultVersionComponentFunc(pm)(obj, field, ctx)
+			versionComponent  = publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
 			mi                = field.ModelInfo
 			p                 = obj.(*Page)
 			c                 = &Category{}

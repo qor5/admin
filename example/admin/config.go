@@ -31,7 +31,6 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	publish_view "github.com/qor5/admin/v3/publish/views"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/slug"
@@ -589,7 +588,9 @@ func NewConfig() Config {
 	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
-	publish_view.Configure(b, db, ab, publisher, m, l, product, category, l10nVM)
+
+	publisher.Models(m, l, product, category, mm).
+		Activity(ab)
 
 	initLoginBuilder(db, b, ab)
 
@@ -598,10 +599,11 @@ func NewConfig() Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, nb, db)
+	configUser(b, nb, db, publisher)
 	configProfile(b, db)
 
 	nb.Install(b)
+	publisher.Install(b)
 
 	l10nBuilder.Activity(ab).
 		Models(l10nM, l10nVM)

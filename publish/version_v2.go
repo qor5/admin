@@ -1,4 +1,4 @@
-package views
+package publish
 
 import (
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	v "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
@@ -33,8 +32,8 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 	}
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
-			version        publish.VersionInterface
-			status         publish.StatusInterface
+			version        VersionInterface
+			status         StatusInterface
 			primarySlugger presets.SlugEncoder
 			ok             bool
 			versionSwitch  *v.VChipBuilder
@@ -50,7 +49,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 
 		div := h.Div().Class("w-100 d-inline-flex")
 
-		if version, ok = obj.(publish.VersionInterface); ok {
+		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.GetVersionName()),
 			).Label(true).Variant(v.VariantOutlined).
@@ -60,7 +59,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					Query("select_id", primarySlugger.PrimarySlug()).
 					Go()).
 				Class(v.W100)
-			if status, ok = obj.(publish.StatusInterface); ok {
+			if status, ok = obj.(StatusInterface); ok {
 				versionSwitch.AppendChildren(v.VChip(h.Text(GetStatusText(status.GetStatus(), msgr))).Label(true).Color(GetStatusColor(status.GetStatus())).Size(v.SizeSmall).Class("px-1 mx-1 ml-2"))
 			}
 			versionSwitch.AppendIcon("mdi-chevron-down")
@@ -71,9 +70,9 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, SaveNewVersionEvent)))
 		}
 
-		if status, ok = obj.(publish.StatusInterface); ok {
+		if status, ok = obj.(StatusInterface); ok {
 			switch status.GetStatus() {
-			case publish.StatusDraft, publish.StatusOffline:
+			case StatusDraft, StatusOffline:
 				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)
 				if config.PublishEvent != nil {
 					publishEvent = config.PublishEvent(obj, field, ctx)
@@ -82,7 +81,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
 						Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
 				)
-			case publish.StatusOnline:
+			case StatusOnline:
 				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
 				if config.UnPublishEvent != nil {
 					unPublishEvent = config.UnPublishEvent(obj, field, ctx)
@@ -111,7 +110,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			}
 		}
 
-		if _, ok = obj.(publish.ScheduleInterface); ok && status.GetStatus() == publish.StatusDraft {
+		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
 			scheduleBtn := v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
 				Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", web.POST().
 				EventFunc(schedulePublishDialogEventV2).
@@ -128,7 +127,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 	}
 }
 
-func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder) {
+func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder) {
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
@@ -166,7 +165,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return cell
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(publish.VersionInterface).GetVersionName()
+		versionName := obj.(VersionInterface).GetVersionName()
 		p := obj.(presets.SlugEncoder)
 		id := ctx.R.FormValue("select_id")
 		if id == "" {
@@ -182,7 +181,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	})
 	lb.Field("State").ComponentFunc(StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(publish.ScheduleInterface)
+		p := obj.(ScheduleInterface)
 		var showTime string
 		if p.GetScheduledStartAt() != nil {
 			showTime = p.GetScheduledStartAt().Format("2006-01-02 15:04")
@@ -193,7 +192,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		)
 	}).Label("Start at")
 	lb.Field("EndAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(publish.ScheduleInterface)
+		p := obj.(ScheduleInterface)
 		var showTime string
 		if p.GetScheduledEndAt() != nil {
 			showTime = p.GetScheduledEndAt().Format("2006-01-02 15:04")
@@ -220,15 +219,15 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	}).Label("Unread Notes")
 
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionIf := obj.(publish.VersionInterface)
-		statusIf := obj.(publish.StatusInterface)
+		versionIf := obj.(VersionInterface)
+		statusIf := obj.(StatusInterface)
 		id := ctx.R.FormValue("select_id")
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
 		versionName := versionIf.GetVersionName()
 		var disable bool
-		if statusIf.GetStatus() == publish.StatusOnline || statusIf.GetStatus() == publish.StatusOffline {
+		if statusIf.GetStatus() == StatusOnline || statusIf.GetStatus() == StatusOffline {
 			disable = true
 		}
 
@@ -341,15 +340,15 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
 
 		currentObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
-		err := db.Where("id = ?", mp["id"]).Where("status = ?", publish.StatusOnline).First(&currentObj).Error
+		err := db.Where("id = ?", mp["id"]).Where("status = ?", StatusOnline).First(&currentObj).Error
 		if err != nil {
 			return res
 		}
-		versionIf := currentObj.(publish.VersionInterface)
+		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
 		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Color("green"))
 
-		if _, ok := currentObj.(publish.ScheduleInterface); !ok {
+		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res
 		}
 
@@ -370,7 +369,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 			return res
 		}
 
-		versionIf = nextObj.(publish.VersionInterface)
+		versionIf = nextObj.(VersionInterface)
 		// TODO use nextVersion I18n
 		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
 		if count >= 2 {

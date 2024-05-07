@@ -41,7 +41,7 @@ func (b *ListingBuilder) RowMenu(listings ...string) *RowMenuBuilder {
 
 func (b *RowMenuBuilder) Empty() {
 	b.listings = nil
-	b.items = nil
+	b.items = make(map[string]*RowMenuItemBuilder)
 }
 
 func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []vx.RowMenuItemFunc) {

@@ -1,8 +1,4 @@
-package views
-
-import (
-	"github.com/qor5/admin/v3/publish"
-)
+package publish
 
 type Messages struct {
 	StatusDraft             string
@@ -153,11 +149,11 @@ var Messages_ja_JP = &Messages{
 
 func GetStatusText(status string, msgr *Messages) string {
 	switch status {
-	case publish.StatusDraft:
+	case StatusDraft:
 		return msgr.StatusDraft
-	case publish.StatusOnline:
+	case StatusOnline:
 		return msgr.StatusOnline
-	case publish.StatusOffline:
+	case StatusOffline:
 		return msgr.StatusOffline
 	}
 	return ""

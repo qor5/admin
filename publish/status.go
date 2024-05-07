@@ -1,31 +1,115 @@
 package publish
 
-// @snippet_begin(PublishStatus)
-const (
-	StatusDraft   = "draft"
-	StatusOnline  = "online"
-	StatusOffline = "offline"
+import (
+	"fmt"
+	"reflect"
+	"sync"
+
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 )
 
-type Status struct {
-	Status    string `gorm:"default:'draft'"`
-	OnlineUrl string
+func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
+		if err != nil {
+			return h.Td(h.Text("0"))
+		}
+		SetPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
+			Where("status = ?", StatusDraft).Count(&count)
+
+		return h.Td(h.Text(fmt.Sprint(count)))
+	}
 }
 
-// @snippet_end
+func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var count int64
+		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
+		if err != nil {
+			return h.Td(h.Text("0"))
+		}
+		SetPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
+			Where("status = ?", StatusOnline).Count(&count)
 
-func (status Status) GetStatus() string {
-	return status.Status
+		c := h.Text("-")
+		if count > 0 {
+			c = VBadge().Color("success").OffsetX(-10)
+		}
+		return h.Td(c)
+	}
 }
 
-func (status Status) GetOnlineUrl() string {
-	return status.OnlineUrl
+func StatusListFunc() presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
+		if s, ok := obj.(StatusInterface); ok {
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Label(true).Color(GetStatusColor(s.GetStatus())).Theme(ThemeDark))
+		}
+		return nil
+	}
 }
 
-func (status *Status) SetStatus(s string) {
-	status.Status = s
+func StatusEditFunc() presets.FieldComponentFunc {
+	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		s, ok := obj.(StatusInterface)
+		if !ok || s.GetStatus() == "" {
+			return nil
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
+		var btn h.HTMLComponent
+		switch s.GetStatus() {
+		case StatusDraft, StatusOffline:
+			btn = h.Div(
+				VBtn(msgr.Publish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)),
+			)
+		case StatusOnline:
+			btn = h.Div(
+				VBtn(msgr.Unpublish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)),
+				VBtn(msgr.Republish).Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)),
+			)
+		}
+
+		paramID := obj.(presets.SlugEncoder).PrimarySlug()
+
+		return web.Scope(
+			VStepper(
+				VStepperHeader(
+					VStepperItem().Title(msgr.StatusDraft).Value(1).Complete(s.GetStatus() == StatusDraft),
+					VDivider(),
+					VStepperItem().Title(msgr.StatusOnline).Value(2).Complete(s.GetStatus() == StatusOnline),
+				),
+			),
+			h.Br(),
+			btn,
+			h.Br(),
+			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
+				Query(presets.ParamID, paramID).Go(),
+				utilsMsgr),
+		).Init(`{ action: "", commonConfirmDialog: false}`).VSlot("{ locals }")
+	}
 }
 
-func (status *Status) SetOnlineUrl(onlineUrl string) {
-	status.OnlineUrl = onlineUrl
+func GetStatusColor(status string) string {
+	switch status {
+	case StatusDraft:
+		return "warning"
+	case StatusOnline:
+		return "success"
+	case StatusOffline:
+		return "secondary"
+	}
+	return ""
 }

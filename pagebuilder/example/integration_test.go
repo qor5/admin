@@ -18,7 +18,6 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	publish_view "github.com/qor5/admin/v3/publish/views"
 	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
 	"gorm.io/driver/postgres"
@@ -73,8 +72,8 @@ func TestUpdatePage(t *testing.T) {
 		)
 	pageBuilder := example.ConfigPageBuilder(db, "", "", pb.I18n())
 	publisher := publish.New(db, oss.Storage)
-	mb := pageBuilder.Configure(pb, db, nil, nil, publisher, seo.New(db))
-	publish_view.Configure(pb, db, nil, publisher, mb)
+	pageBuilder.Configure(pb, db, nil, nil, publisher, seo.New(db))
+	publisher.Install(pb)
 
 	// _ = publisher
 	pb.Model(&pagebuilder.Page{})
