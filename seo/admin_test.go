@@ -40,7 +40,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := NewBuilder(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en"))
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder
@@ -77,7 +77,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := NewBuilder(dbForTest)
+				builder := New(dbForTest)
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder
@@ -117,7 +117,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := NewBuilder(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en"))
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder
@@ -154,10 +154,10 @@ func TestUpdate(t *testing.T) {
 			admin := presets.New().URIPrefix("/admin").DataOperator(gorm2op.DataOperator(dbForTest))
 			server := httptest.NewServer(admin)
 
-			l10nBuilder := l10n.New()
+			l10nBuilder := l10n.New(dbForTest)
 			l10nBuilder.RegisterLocales(c.locale, c.locale, c.locale)
 			builder := c.builder()
-			builder.Configure(admin)
+			builder.Install(admin)
 
 			form, mwriter := c.form()
 			req, err := http.DefaultClient.Post(

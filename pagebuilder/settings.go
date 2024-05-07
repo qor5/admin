@@ -22,7 +22,7 @@ import (
 	"github.com/qor5/web/v3"
 )
 
-func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) presets.FieldComponentFunc {
+func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.FieldComponentFunc {
 	// TODO: refactor versionDialog to use publish/views
 	pm := b.mb
 	seoBuilder := b.seoBuilder

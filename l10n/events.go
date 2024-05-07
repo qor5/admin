@@ -26,7 +26,7 @@ const (
 	LocalizeTo   = "Localize To"
 )
 
-func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.ActivityBuilder) {
+func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.Builder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
 	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
 }
@@ -118,7 +118,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.ActivityBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		fromParamID := ctx.R.FormValue(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)

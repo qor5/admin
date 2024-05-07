@@ -85,7 +85,7 @@ func TestRenderSameType(t *testing.T) {
 				}
 			},
 			builder: func() *seo.Builder {
-				builder := seo.NewBuilder(dbForTest, seo.WithLocales("en"))
+				builder := seo.New(dbForTest, seo.WithLocales("en"))
 				builder.RegisterSEO("Customer", customerUser.User{Name: "CustomerA"}).
 					RegisterContextVariable("UserName",
 						func(obj interface{}, _ *seo.Setting, _ *http.Request) string {

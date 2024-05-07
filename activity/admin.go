@@ -21,13 +21,13 @@ const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
 )
 
-func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
+func (ab *Builder) Install(b *presets.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
 	if permB := b.GetPermission(); permB != nil {
-		permB.CreatePolicies(permPolicy)
+		permB.CreatePolicies(ab.permPolicy)
 	}
 
 	var (

@@ -35,7 +35,7 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.ActivityBuilder) {
+func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 	ab.RegisterModel(&models.User{})
 	loginBuilder = plogin.New(pb).
 		DB(db).

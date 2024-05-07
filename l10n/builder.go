@@ -14,7 +14,7 @@ import (
 
 type Builder struct {
 	db                                   *gorm.DB
-	ab                                   *activity.ActivityBuilder
+	ab                                   *activity.Builder
 	models                               []*presets.ModelBuilder
 	supportLocaleCodes                   []string
 	localesPaths                         map[string]string
@@ -50,7 +50,7 @@ func (b *Builder) GetQueryName() string {
 	return b.queryName
 }
 
-func (b *Builder) Activity(v *activity.ActivityBuilder) (r *Builder) {
+func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
 }

@@ -21,7 +21,7 @@ import (
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	for _, m := range models {
 		obj := m.NewModel()
 		_ = obj.(presets.SlugEncoder)

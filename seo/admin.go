@@ -43,7 +43,7 @@ func (mtd *myTd) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return mtd.td.MarshalHTML(ctx)
 }
 
-func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder) {
+func (b *Builder) Install(pb *presets.Builder) (seoModel *presets.ModelBuilder) {
 	// The registration of FieldDefaults for writing Setting here
 	// must be executed before `pb.Model(&QorSEOSetting{})...`,
 	pb.FieldDefaults(presets.WRITE).

@@ -66,7 +66,8 @@ func resetDB() {
 }
 
 func TestModelKeys(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -91,7 +92,8 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
 	builder.RegisterModel(pageModel).SetLink(func(v interface{}) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
@@ -109,7 +111,8 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
 		nowWidgets := now.(Widgets)
@@ -186,7 +189,9 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestCreator(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel)
 	resetDB()
 	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -209,7 +214,9 @@ func (u user) GetName() string {
 	return "user a"
 }
 func TestCreatorInferface(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel)
 	resetDB()
 
@@ -227,7 +234,9 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
 
@@ -261,7 +270,8 @@ func TestGetActivityLogs(t *testing.T) {
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{}).SetCreatorContextKey("creator")
+	builder := New(db, &TestActivityLog{}).CreatorContextKey("creator")
+	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 
 	pageModel2 := pb.Model(&TestActivityModel{}).URIName("page-02").Label("Page-02")

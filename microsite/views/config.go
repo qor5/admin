@@ -22,7 +22,7 @@ import (
 
 const I18nMicrositeKey i18n.ModuleKey = "I18nMicrositeKey"
 
-func Configure(b *presets.Builder, db *gorm.DB, ab *activity.ActivityBuilder, storage oss.StorageInterface, publisher *publish.Builder, models ...*presets.ModelBuilder) {
+func Configure(b *presets.Builder, db *gorm.DB, ab *activity.Builder, storage oss.StorageInterface, publisher *publish.Builder, models ...*presets.ModelBuilder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)

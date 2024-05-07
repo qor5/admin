@@ -32,7 +32,7 @@ type Builder struct {
 	jbs                  []*JobBuilder
 	mb                   *presets.ModelBuilder
 	getCurrentUserIDFunc func(r *http.Request) string
-	ab                   *activity.ActivityBuilder
+	ab                   *activity.Builder
 }
 
 func New(db *gorm.DB) *Builder {
@@ -74,7 +74,7 @@ func (b *Builder) GetCurrentUserIDFunc(f func(r *http.Request) string) *Builder 
 }
 
 // Activity sets Activity Builder to log activities
-func (b *Builder) Activity(ab *activity.ActivityBuilder) *Builder {
+func (b *Builder) Activity(ab *activity.Builder) *Builder {
 	b.ab = ab
 	return b
 }
@@ -132,7 +132,7 @@ func (b *Builder) setStatus(id uint, status string) error {
 
 var permVerifier *perm.Verifier
 
-func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
 	b.pb = pb
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 	pb.I18n().

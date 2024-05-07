@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 		DataOperator(gorm2op.DataOperator(db))
 
 	wb := worker.NewWithQueue(db, integration.Que)
-	wb.Configure(pb)
+	wb.Install(pb)
 	addJobs(wb)
 	wb.Listen()
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
-	vuetify "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
@@ -20,8 +20,8 @@ import (
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
-	typ      reflect.Type     // model type
-	activity *ActivityBuilder // activity builder
+	typ      reflect.Type // model type
+	activity *Builder     // activity builder
 
 	presetModel *presets.ModelBuilder // preset model builder
 	skip        uint8                 // skip the prefined data operator of the presetModel
