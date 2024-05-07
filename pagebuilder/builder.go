@@ -79,12 +79,14 @@ type Builder struct {
 	mb                *presets.ModelBuilder
 	l10n              *l10n.Builder
 	note              *note.Builder
+	ab                *activity.Builder
+	publisher         *publish.Builder
+	seoBuilder        *seo.Builder
 	pageStyle         h.HTMLComponent
 	pageLayoutFunc    PageLayoutFunc
 	subPageTitleFunc  SubPageTitleFunc
 	preview           http.Handler
 	images            http.Handler
-	seoBuilder        *seo.Builder
 	imagesPrefix      string
 	defaultDevice     string
 	publishBtnColor   string
@@ -197,6 +199,31 @@ func (b *Builder) SubPageTitle(v SubPageTitleFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) L10n(v *l10n.Builder) (r *Builder) {
+	b.l10n = v
+	return b
+}
+
+func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
+	b.ab = v
+	return b
+}
+
+func (b *Builder) SEO(v *seo.Builder) (r *Builder) {
+	b.seoBuilder = v
+	return b
+}
+
+func (b *Builder) Note(v *note.Builder) (r *Builder) {
+	b.note = v
+	return b
+}
+
+func (b *Builder) Publisher(v *publish.Builder) (r *Builder) {
+	b.publisher = v
+	return b
+}
+
 func (b *Builder) GetPageTitle() SubPageTitleFunc {
 	if b.subPageTitleFunc == nil {
 		b.subPageTitleFunc = defaultSubPageTitle
@@ -238,7 +265,13 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	return b
 }
 
-func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder, activityB *activity.Builder, publisher *publish.Builder, seoBuilder *seo.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
+	db := b.db
+	l10nB := b.l10n
+	activityB := b.ab
+	publisher := b.publisher
+	seoBuilder := b.seoBuilder
+
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -247,7 +280,6 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pm = pb.Model(&Page{})
-	b.seoBuilder = seoBuilder
 
 	templateM := presets.NewModelBuilder(pb, &Template{})
 	if b.templateEnabled {
@@ -539,7 +571,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
-	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoBuilder))
+	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -1382,8 +1414,9 @@ func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func editSEODialog(db *gorm.DB, mb *presets.ModelBuilder, seoBuilder *seo.Builder) web.EventFunc {
+func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		seoBuilder := b.seoBuilder
 		paramID := ctx.R.FormValue(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)

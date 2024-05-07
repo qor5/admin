@@ -72,7 +72,8 @@ func TestUpdatePage(t *testing.T) {
 		)
 	pageBuilder := example.ConfigPageBuilder(db, "", "", pb.I18n())
 	publisher := publish.New(db, oss.Storage)
-	pageBuilder.Configure(pb, db, nil, nil, publisher, seo.New(db))
+	pageBuilder.SEO(seo.New(db)).Publisher(publisher)
+	pageBuilder.Install(pb)
 	publisher.Install(pb)
 
 	// _ = publisher
