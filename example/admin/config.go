@@ -134,20 +134,6 @@ func NewConfig() Config {
 		  // surface
 		  'surface': '#fff',
 		  'on-surface': '#424242',
-		  // grey
-		  'grey-50': '#FAFAFA',
-		  'grey-100': '#F5F5F5',
-		  'grey-200': '#EEEEEE',
-		  'grey-300': '#E0E0E0',
-		  'grey-400': '#BDBDBD',
-		  'grey-500': '#9E9E9E',
-		  'grey-600': '#757575',
-		  'grey-700': '#616161',
-		  'grey-800': '#424242',
-		  'grey-900': '#212121',
-			// shades
-			'black': '#000000',
-			'white': '#FFFFFF',
 		},
 		variables: {
 		  'border-color': '#000000',
