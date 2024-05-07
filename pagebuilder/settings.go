@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/x/v3/i18n"
 
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 			start, end, se string
 			notes          []note.QorNote
 			categories     []*Category
-			notesSetcion   h.HTMLComponent
+			notesItems     []h.HTMLComponent
 			timelineItems  []h.HTMLComponent
 			onlineHint     h.HTMLComponent
 		)
@@ -68,16 +69,22 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 			}
 		}
 		if len(notes) > 0 {
-			s := VContainer()
 			for _, n := range notes {
-				s.AppendChildren(VRow(VCardText(h.Text(n.Content)).Class("pb-0")))
-				s.AppendChildren(VRow(VCardText(h.Text(fmt.Sprintf("%v - %v", n.Creator, n.CreatedAt.Format("2006-01-02 15:04:05 MST")))).Class("pt-0")))
+				notesItems = append(notesItems, VTimelineItem(
+					h.Div(h.Text(n.CreatedAt.Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
+					h.Div(
+						VAvatar().Text(strings.ToUpper(string(n.Creator[0]))).Color("secondary").Class("text-h6 rounded-lg").Size(SizeXSmall),
+						h.Strong(n.Creator).Class("ml-1"),
+					),
+					h.Div(h.Text(n.Content)).Class("text-caption"),
+				).DotColor("success").Size(SizeXSmall),
+				)
 			}
-			notesSetcion = s
 		}
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		noteMsgr := i18n.MustGetModuleMessages(ctx.R, note.I18nNoteKey, note.Messages_en_US).(*note.Messages)
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
@@ -88,7 +95,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 				VTab(h.Text("Seo")).Size(SizeXSmall).Value("Seo"),
 			).Attr("v-model", "editLocals.infoTab"),
 			h.Div(
-				VBtn("Save").AppendIcon("mdi-check").Color("black").Size(SizeSmall).Variant(VariantFlat).
+				VBtn("Save").AppendIcon("mdi-check").Color("secondary").Size(SizeSmall).Variant(VariantFlat).
 					Attr("@click", fmt.Sprintf(`editLocals.infoTab=="Page"?%s:%s`, web.POST().
 						EventFunc(actions.Update).
 						Query(presets.ParamID, p.PrimarySlug()).
@@ -116,13 +123,13 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 		detailComponentTab :=
 			VTabs(
 				VTab(h.Text("Activity")).Size(SizeXSmall).Value("Activity"),
-				VTab(h.Text("Notes")).Size(SizeXSmall).Value("Notes"),
+				VTab(h.Text(noteMsgr.Notes)).Size(SizeXSmall).Value("Notes"),
 			).Attr("v-model", "editLocals.detailTab").AlignTabs(Center).FixedTabs(true)
 		if activityB != nil {
 			for _, i := range activityB.GetActivityLogs(p, db.Order("created_at desc")) {
 				timelineItems = append(timelineItems,
 					VTimelineItem(
-						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05"))).Class("text-caption"),
+						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
 						h.Div(
 							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color("secondary").Class("text-h6 rounded-lg").Size(SizeXSmall),
 							h.Strong(i.GetCreator()).Class("ml-1"),
@@ -135,21 +142,23 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 		}
 		detailComponentContent := VWindow(
 			VWindowItem(
-				VBtn("New note").PrependIcon("mdi-plus").Variant(VariantOutlined).Color("blue").Class("w-100").
+				VBtn(noteMsgr.NewNote).PrependIcon("mdi-plus").Variant(VariantTonal).Class("w-100").
 					Attr("@click", web.POST().
 						EventFunc(createNoteDialogEvent).
 						Query(presets.ParamOverlay, actions.Dialog).
 						Query(presets.ParamID, p.PrimarySlug()).
 						URL(mi.PresetsPrefix()+"/pages").Go(),
 					),
-				notesSetcion,
-			).Class("pa-5").Value("Notes"),
+				VTimeline(
+					notesItems...,
+				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-5"),
+			).Value("Notes"),
 			VWindowItem(
 				VTimeline(
 					timelineItems...,
 				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
-			).Class("pa-5").Value("Activity"),
-		).Attr("v-model", "editLocals.detailTab")
+			).Value("Activity"),
+		).Attr("v-model", "editLocals.detailTab").Class("pa-5")
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Color("primary").Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		if p.GetStatus() == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")

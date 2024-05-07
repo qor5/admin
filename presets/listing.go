@@ -232,7 +232,7 @@ func (b *ListingBuilder) listingComponent(
 			VTextField(
 				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
 			).Density(DensityCompact).
-				Variant(VariantOutlined).
+				Variant(FieldVariantOutlined).
 				Label(msgr.Search).
 				Flat(true).
 				Clearable(true).

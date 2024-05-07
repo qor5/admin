@@ -524,15 +524,17 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 
 			h.Div(
 				h.Div(h.Span("Elements").Class("text-subtitle-1")),
-				VBtn("ADD").Size(SizeSmall).Variant(VariantFlat).Color("primary").
-					Attr("@click",
-						web.Plaid().
-							URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
-							EventFunc(ShowAddContainerDrawerEvent).
-							Queries(ctx.R.Form).
-							Form(nil).
-							Go(),
-					),
+				h.If(!isReadonly,
+					VBtn("ADD").Size(SizeSmall).Variant(VariantFlat).Color("primary").
+						Attr("@click",
+							web.Plaid().
+								URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+								EventFunc(ShowAddContainerDrawerEvent).
+								Queries(ctx.R.Form).
+								Form(nil).
+								Go(),
+						),
+				),
 			).Class("d-flex justify-space-between pa-6 align-center "),
 
 			VList(
