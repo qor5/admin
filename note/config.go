@@ -21,7 +21,9 @@ const (
 	updateUserNoteEvent = "note_UpdateUserNoteEvent"
 )
 
-func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder) {
+func configure(b *Builder, pb *presets.Builder) {
+	db := b.db
+	models := b.models
 	if err := db.AutoMigrate(QorNote{}, UserNote{}); err != nil {
 		panic(err)
 	}
@@ -31,8 +33,8 @@ func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder
 			m.Detailing().AppendTabsPanelFunc(tabsPanel(db, m))
 		}
 		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
-		m.RegisterEventFunc(createNoteEvent, createNoteAction(db, m))
-		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db, m))
+		m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
+		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
 		m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
 	}
 

@@ -78,6 +78,8 @@ type Builder struct {
 	containerBuilders []*ContainerBuilder
 	ps                *presets.Builder
 	mb                *presets.ModelBuilder
+	l10n              *l10n.Builder
+	note              *note.Builder
 	pageStyle         h.HTMLComponent
 	pageLayoutFunc    PageLayoutFunc
 	subPageTitleFunc  SubPageTitleFunc
@@ -156,21 +158,22 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.ps.Model(&Editor{}).
 		Detailing().
 		PageFunc(r.Editor)
-	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
-	r.ps.GetWebBuilder().RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
-	r.ps.GetWebBuilder().RegisterEventFunc(ShowSortedContainerDrawerEvent, r.ShowSortedContainerDrawer)
-	r.ps.GetWebBuilder().RegisterEventFunc(ShowEditContainerDrawerEvent, r.ShowEditContainerDrawer)
-	r.ps.GetWebBuilder().RegisterEventFunc(AddContainerEvent, r.AddContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
-	r.ps.GetWebBuilder().RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(MoveUpDownContainerEvent, r.MoveUpDownContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
-	r.ps.GetWebBuilder().RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
-	r.ps.GetWebBuilder().RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
-	r.ps.GetWebBuilder().RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.ReloadRenderPageOrTemplate)
-	r.preview = r.ps.GetWebBuilder().Page(r.Preview)
+	wb := r.ps.GetWebBuilder()
+	wb.RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
+	wb.RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
+	wb.RegisterEventFunc(ShowSortedContainerDrawerEvent, r.ShowSortedContainerDrawer)
+	wb.RegisterEventFunc(ShowEditContainerDrawerEvent, r.ShowEditContainerDrawer)
+	wb.RegisterEventFunc(AddContainerEvent, r.AddContainer)
+	wb.RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
+	wb.RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
+	wb.RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
+	wb.RegisterEventFunc(MoveUpDownContainerEvent, r.MoveUpDownContainer)
+	wb.RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
+	wb.RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
+	wb.RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
+	wb.RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
+	wb.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.ReloadRenderPageOrTemplate)
+	r.preview = wb.Page(r.Preview)
 	return r
 }
 
@@ -705,7 +708,9 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 			},
 		)
 	}
-	note.Configure(db, pb, pm)
+	if b.note != nil {
+		b.note.Models(pm)
+	}
 	eb.CleanTabsPanels()
 	dp.CleanTabsPanels()
 	media.New(db).Install(b.GetPresetsBuilder())

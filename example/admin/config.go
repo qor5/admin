@@ -571,12 +571,12 @@ func NewConfig() Config {
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
-	note.Configure(db, b, m)
+	nb := note.New(db)
+	nb.Models(m).AfterCreate(NoteAfterCreateFunc)
 
 	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
 		panic(err)
 	}
-	note.AfterCreateFunc = NoteAfterCreateFunc
 
 	ab.RegisterModel(m).EnableActivityInfoTab()
 	ab.RegisterModels(l)
@@ -597,8 +597,10 @@ func NewConfig() Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, db)
+	configUser(b, nb, db)
 	configProfile(b, db)
+
+	nb.Install(b)
 
 	l10nBuilder.Activity(ab).
 		Models(l10nM, l10nVM)

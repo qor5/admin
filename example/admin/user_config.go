@@ -28,10 +28,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func configUser(b *presets.Builder, db *gorm.DB) {
+func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	note.Configure(db, b, user)
+	nb.Models(user)
 
 	user.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)

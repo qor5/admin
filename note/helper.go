@@ -2,6 +2,7 @@ package note
 
 import (
 	"fmt"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/ui/v3/vuetify"
@@ -70,8 +71,4 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 	}
 	c.AppendChildren(panels...).Class("p-2")
 	return c
-}
-
-var AfterCreateFunc = func(db *gorm.DB) (err error) {
-	return
 }
