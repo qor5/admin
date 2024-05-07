@@ -145,6 +145,9 @@ func NewConfig() Config {
 		  'grey-700': '#616161',
 		  'grey-800': '#424242',
 		  'grey-900': '#212121',
+			// shades
+			'black': '#000000',
+			'white': '#FFFFFF',
 		},
 		variables: {
 		  'border-color': '#000000',
