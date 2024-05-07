@@ -1,4 +1,4 @@
-package views
+package l10n
 
 import (
 	"net/http"

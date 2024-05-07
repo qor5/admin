@@ -6,10 +6,16 @@ import (
 	"path"
 	"time"
 
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
+	"gorm.io/gorm"
 )
 
 type Builder struct {
+	db                                   *gorm.DB
+	ab                                   *activity.ActivityBuilder
+	models                               []*presets.ModelBuilder
 	supportLocaleCodes                   []string
 	localesPaths                         map[string]string
 	paths                                []string
@@ -19,8 +25,9 @@ type Builder struct {
 	queryName                            string
 }
 
-func New() *Builder {
+func New(db *gorm.DB) *Builder {
 	b := &Builder{
+		db:                 db,
 		supportLocaleCodes: []string{},
 		localesPaths:       make(map[string]string),
 		paths:              []string{},
@@ -41,6 +48,16 @@ func (b *Builder) GetCookieName() string {
 
 func (b *Builder) GetQueryName() string {
 	return b.queryName
+}
+
+func (b *Builder) Activity(v *activity.ActivityBuilder) (r *Builder) {
+	b.ab = v
+	return b
+}
+
+func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
+	b.models = append(b.models, vs...)
+	return b
 }
 
 func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r *Builder) {
@@ -138,4 +155,8 @@ func (b *Builder) EnsureLocale(in http.Handler) (out http.Handler) {
 
 		in.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (b *Builder) Install(pb *presets.Builder) {
+	configure(pb, b)
 }

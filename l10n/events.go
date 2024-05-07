@@ -1,11 +1,10 @@
-package views
+package l10n
 
 import (
 	"context"
 	"reflect"
 
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
@@ -27,7 +26,7 @@ const (
 	LocalizeTo   = "Localize To"
 )
 
-func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) {
+func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.ActivityBuilder) {
 	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
 	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
 }
@@ -37,7 +36,7 @@ type SelectLocale struct {
 	Code  string
 }
 
-func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuilder) web.EventFunc {
+func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
@@ -119,7 +118,7 @@ func localizeToConfirmation(db *gorm.DB, lb *l10n.Builder, mb *presets.ModelBuil
 	}
 }
 
-func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *l10n.Builder, ab *activity.ActivityBuilder) web.EventFunc {
+func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.ActivityBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		fromParamID := ctx.R.FormValue(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)

@@ -21,7 +21,6 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
-	l10n_view "github.com/qor5/admin/v3/l10n/views"
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
@@ -240,7 +239,7 @@ func NewConfig() Config {
 			return b.I18n().GetSupportLanguages()
 		})
 
-	l10nBuilder := l10n.New()
+	l10nBuilder := l10n.New(db)
 	l10nBuilder.
 		RegisterLocales("International", "international", "International").
 		RegisterLocales("China", "cn", "China").
@@ -249,7 +248,7 @@ func NewConfig() Config {
 			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
 
-	utils.Configure(b)
+	utils.Install(b)
 
 	media.New(db).Install(b)
 	// media_view.MediaLibraryPerPage = 3
@@ -601,7 +600,9 @@ func NewConfig() Config {
 	configUser(b, db)
 	configProfile(b, db)
 
-	l10n_view.Configure(b, db, l10nBuilder, ab, l10nM, l10nVM)
+	l10nBuilder.Activity(ab).
+		Models(l10nM, l10nVM)
+	l10nBuilder.Install(b)
 
 	if os.Getenv("RESET_AND_IMPORT_INITIAL_DATA") == "true" {
 		tbs := GetNonIgnoredTableNames()

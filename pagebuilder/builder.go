@@ -13,7 +13,6 @@ import (
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
-	l10n_view "github.com/qor5/admin/v3/l10n/views"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
@@ -652,10 +651,10 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 					return
 				}
 			}
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
-				fromVersion := ctx.R.Context().Value(l10n_view.FromVersion).(string)
-				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
 
 				var fromIDInt int
 				fromIDInt, err = strconv.Atoi(fromID)
@@ -688,7 +687,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
 	}
 	if l10nB != nil {
-		l10n_view.Configure(pb, db, l10nB, activityB, pm, demoContainerM, templateM, categoryM)
+		l10nB.Models(pm, sharedContainerM, demoContainerM, templateM, categoryM).Activity(activityB)
 	}
 	if publisher != nil {
 		publisher.WithPageBuilder(b)
@@ -1754,7 +1753,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*DemoContainer)
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
 					panic(inerr)
 					return
@@ -1789,9 +1788,9 @@ func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.
 				return
 			}
 
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n_view.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n_view.FromID).(string)
-				fromLocale := ctx.R.Context().Value(l10n_view.FromLocale).(string)
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
 
 				var fromIDInt int
 				fromIDInt, err = strconv.Atoi(fromID)

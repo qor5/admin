@@ -13,7 +13,7 @@ import (
 
 const I18nUtilsKey i18n.ModuleKey = "I18nUtilsKey"
 
-func Configure(b *presets.Builder) {
+func Install(b *presets.Builder) {
 	b.I18n().
 		RegisterForModule(language.English, I18nUtilsKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nUtilsKey, Messages_zh_CN).
