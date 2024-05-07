@@ -5,15 +5,16 @@ import (
 	"reflect"
 	"sync"
 
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
 
 func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
@@ -53,7 +54,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(publish.StatusInterface); ok {
-			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Color(GetStatusColor(s.GetStatus())).Theme(ThemeDark))
+			return h.Td(VChip(h.Text(GetStatusText(s.GetStatus(), msgr))).Label(true).Color(GetStatusColor(s.GetStatus())).Theme(ThemeDark))
 		}
 		return nil
 	}
@@ -105,11 +106,11 @@ func StatusEditFunc() presets.FieldComponentFunc {
 func GetStatusColor(status string) string {
 	switch status {
 	case publish.StatusDraft:
-		return "orange"
+		return "warning"
 	case publish.StatusOnline:
-		return "green"
+		return "success"
 	case publish.StatusOffline:
-		return "grey"
+		return "secondary"
 	}
 	return ""
 }

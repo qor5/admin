@@ -9,13 +9,14 @@ import (
 	"strconv"
 	"strings"
 
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/admin/v3/presets/actions"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	h "github.com/theplant/htmlgo"
 )
 
 type ListingBuilder struct {
@@ -230,19 +231,14 @@ func (b *ListingBuilder) listingComponent(
 		web.Scope(
 			VTextField(
 				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-			).Density("compact").
-				Variant(FieldVariantOutlined).
-				// PrependIcon("mdi-magnify").
+			).Density(DensityCompact).
+				Variant(VariantOutlined).
 				Label(msgr.Search).
 				Flat(true).
 				Clearable(true).
 				HideDetails(true).
 				SingleLine(true).
 				ModelValue(ctx.R.URL.Query().Get("keyword")).
-				Color("grey-lighten-2").
-				//Attr(":prepend-icon", `locals.isFocus?null:"mdi-magnify"`).
-				//Attr(":bg-color", `locals.isFocus?"white":"blue-darken-1"`).
-				//Attr("@update:focused", "locals.isFocus=!locals.isFocus").
 				Attr("@keyup.enter", web.Plaid().
 					ClearMergeQuery("page").
 					Query("keyword", web.Var("[$event.target.value]")).
@@ -254,7 +250,6 @@ func (b *ListingBuilder) listingComponent(
 					PushState(true).
 					Go()).
 				Class("mr-4"),
-			// Attr("style", "width: 200px"), // ).Method("GET"),
 		).VSlot("{ locals }").Init(`{isFocus: false}`),
 	).MaxWidth(200).MinWidth(200)
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
@@ -278,15 +273,13 @@ func (b *ListingBuilder) listingComponent(
 				web.Scope(
 					VTextField(
 						web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-					).Density("compact").
+					).Density(DensityCompact).
 						Variant(FieldVariantOutlined).
 						Label(msgr.Search).
 						Flat(true).
 						Clearable(true).
 						HideDetails(true).
 						SingleLine(true).
-						ModelValue(ctx.R.URL.Query().Get("keyword")).
-						Color("grey-lighten-2").
 						ModelValue(ctx.R.URL.Query().Get("keyword")).
 						Attr("@keyup.enter", web.Plaid().
 							URL(ctx.R.RequestURI).
@@ -322,16 +315,15 @@ func (b *ListingBuilder) listingComponent(
 				VToolbar(
 					searchBoxDefault,
 					filterBar,
-				).Flat(true).Color("white").AutoHeight(true).Class("pa-2"),
-				// VDivider(),
+				).Flat(true).Color("surface").AutoHeight(true).Class("pa-2"),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
 				).Class("pa-0"),
-			).Variant("outlined").Color("blue-grey-lighten-4"),
+			),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 			footerCardAction,
 		),
-	).Class("white"),
+	),
 	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
 }
 

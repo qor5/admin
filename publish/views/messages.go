@@ -38,6 +38,7 @@ type Messages struct {
 	FilterTabNamedVersions string
 	Rename                 string
 	PageOverView           string
+	Duplicate              string
 }
 
 var Messages_en_US = &Messages{
@@ -74,6 +75,7 @@ var Messages_en_US = &Messages{
 	FilterTabNamedVersions: "Named Versions",
 	Rename:                 "Rename",
 	PageOverView:           "Page Overview",
+	Duplicate:              "Duplicate",
 }
 
 var Messages_zh_CN = &Messages{
@@ -110,6 +112,7 @@ var Messages_zh_CN = &Messages{
 	FilterTabNamedVersions: "已命名版本",
 	Rename:                 "重命名",
 	PageOverView:           "页面概览",
+	Duplicate:              "复制",
 }
 
 var Messages_ja_JP = &Messages{

@@ -150,7 +150,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
 			).Class("pa-5").Value("Activity"),
 		).Attr("v-model", "editLocals.detailTab")
-		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Label(true).Color("primary").Size(SizeSmall).Class("px-1 mx-1 text-black").Attr("style", "height:20px")
+		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(db, p)))).Color("primary").Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		if p.GetStatus() == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 		}
@@ -159,7 +159,7 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.ActivityBuilder) pres
 				VLayout(
 					VCard(
 						web.Slot(
-							VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Color("neutral").Variant(VariantText).Attr("@click",
+							VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).Attr("@click",
 								web.GET().URL(mi.PresetsPrefix()+"/pages").PushState(true).Go(),
 							),
 						).Name("prepend"),

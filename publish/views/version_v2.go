@@ -2,6 +2,11 @@ package views
 
 import (
 	"fmt"
+	"net/url"
+	"reflect"
+
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
@@ -12,10 +17,6 @@ import (
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-	"net/url"
-	"reflect"
 )
 
 type VersionComponentConfig struct {
@@ -52,21 +53,21 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 		if version, ok = obj.(publish.VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.GetVersionName()),
-			).Label(true).Variant(v.VariantOutlined).Class("rounded-r-0 text-black").
-				Attr("style", "height:40px;background-color:#FFFFFF!important;").
+			).Label(true).Variant(v.VariantOutlined).
+				Attr("style", "height:40px;").
 				Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(b.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
 					Query("select_id", primarySlugger.PrimarySlug()).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(publish.StatusInterface); ok {
-				versionSwitch.AppendChildren(v.VChip(h.Text(GetStatusText(status.GetStatus(), msgr))).Label(true).Color(GetStatusColor(status.GetStatus())).Size(v.SizeSmall).Class("px-1  mx-1 text-black ml-2"))
+				versionSwitch.AppendChildren(v.VChip(h.Text(GetStatusText(status.GetStatus(), msgr))).Label(true).Color(GetStatusColor(status.GetStatus())).Size(v.SizeSmall).Class("px-1 mx-1 ml-2"))
 			}
 			versionSwitch.AppendIcon("mdi-chevron-down")
 
 			div.AppendChildren(versionSwitch)
-			div.AppendChildren(v.VBtn("").Icon("mdi-file-document-multiple").
-				Height(40).Color("white").Class("rounded-sm").Variant(v.VariantFlat).
+			div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
+				Height(40).Class("ml-2").Variant(v.VariantOutlined).
 				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, SaveNewVersionEvent)))
 		}
 
@@ -78,8 +79,8 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					publishEvent = config.PublishEvent(obj, field, ctx)
 				}
 				publishBtn = h.Div(
-					v.VBtn(msgr.Publish).Attr("@click", publishEvent).
-						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color("primary").Height(40),
+					v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
+						Class("rounded-s ml-2").Variant(v.VariantFlat).Color("primary").Height(40),
 				)
 			case publish.StatusOnline:
 				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
@@ -92,9 +93,9 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				}
 				publishBtn = h.Div(
 					v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
-						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
+						Class("ml-2").Variant(v.VariantFlat).Color("error").Height(40),
 					v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-						Class("rounded-sm ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
+						Class("ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
 				).Class("d-inline-flex")
 			}
 			div.AppendChildren(publishBtn)
@@ -110,8 +111,8 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			}
 		}
 
-		if _, ok = obj.(publish.ScheduleInterface); ok {
-			scheduleBtn := v.VBtn("").Icon("mdi-alarm").Class("rounded-sm ml-1").
+		if _, ok = obj.(publish.ScheduleInterface); ok && status.GetStatus() == publish.StatusDraft {
+			scheduleBtn := v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
 				Variant(v.VariantFlat).Color("primary").Height(40).Attr("@click", web.POST().
 				EventFunc(schedulePublishDialogEventV2).
 				Query(presets.ParamOverlay, actions.Dialog).

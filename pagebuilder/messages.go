@@ -21,7 +21,6 @@ type Messages struct {
 	NotDescribed                   string
 	Blank                          string
 	NewPage                        string
-	Duplicate                      string
 	FilterTabAllVersions           string
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
@@ -46,7 +45,6 @@ var Messages_en_US = &Messages{
 	NotDescribed:                   "Not Described",
 	Blank:                          "Blank",
 	NewPage:                        "New Page",
-	Duplicate:                      "Duplicate",
 	FilterTabAllVersions:           "All Versions",
 	FilterTabOnlineVersion:         "Online Version",
 	FilterTabNamedVersions:         "Named Versions",
@@ -71,7 +69,6 @@ var Messages_zh_CN = &Messages{
 	NotDescribed:                   "未描述",
 	Blank:                          "空白",
 	NewPage:                        "新页面",
-	Duplicate:                      "复制",
 	FilterTabAllVersions:           "所有版本",
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
