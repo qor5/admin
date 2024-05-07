@@ -80,7 +80,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				}
 				publishBtn = h.Div(
 					v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
-						Class("rounded-s ml-2").Variant(v.VariantFlat).Color("primary").Height(40),
+						Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
 				)
 			case publish.StatusOnline:
 				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
@@ -93,9 +93,9 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				}
 				publishBtn = h.Div(
 					v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
-						Class("ml-2").Variant(v.VariantFlat).Color("error").Height(40),
+						Class("ml-2").Variant(v.VariantFlat).Color(v.ColorError).Height(40),
 					v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-						Class("ml-2").Variant(v.VariantFlat).Color(presets.ColorPrimary).Height(40),
+						Class("ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
 				).Class("d-inline-flex")
 			}
 			div.AppendChildren(publishBtn)
@@ -113,7 +113,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 
 		if _, ok = obj.(publish.ScheduleInterface); ok && status.GetStatus() == publish.StatusDraft {
 			scheduleBtn := v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
-				Variant(v.VariantFlat).Color("primary").Height(40).Attr("@click", web.POST().
+				Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", web.POST().
 				EventFunc(schedulePublishDialogEventV2).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
@@ -232,7 +232,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			disable = true
 		}
 
-		return h.Td(v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color("primary").Variant(v.VariantText).Attr("@click", web.Plaid().
+		return h.Td(v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).Attr("@click", web.Plaid().
 			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
 			EventFunc(deleteVersionDialogEventV2).
 			Queries(ctx.Queries()).
@@ -251,7 +251,7 @@ func ConfigureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			id = ctx.R.FormValue("f_select_id")
 		}
 
-		return v.VBtn("Save").Variant(v.VariantElevated).Color("secondary").Attr("@click", web.Plaid().
+		return v.VBtn("Save").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
 			Query("select_id", id).
 			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
 			EventFunc(selectVersionEventV2).

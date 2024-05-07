@@ -38,8 +38,3 @@ const (
 	ParamSortSectionFormKey = "listEditor_SortSectionFormKey"
 	ParamSortResultFormKey  = "listEditor_SortResultFormKey"
 )
-
-const (
-	ColorPrimary   = "primary"
-	ColorSecondary = "secondary"
-)
