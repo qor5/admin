@@ -4,11 +4,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/v3/media/base"
 	"math"
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/oss"
 	"gorm.io/gorm"
 )
@@ -23,14 +23,14 @@ type MediaLibrary struct {
 }
 
 type MediaOption struct {
-	Video        string                       `json:",omitempty"`
-	FileName     string                       `json:",omitempty"`
-	URL          string                       `json:",omitempty"`
-	OriginalURL  string                       `json:",omitempty"`
-	CropOptions  map[string]*media.CropOption `json:",omitempty"`
-	Sizes        map[string]*media.Size       `json:",omitempty"`
-	SelectedType string                       `json:",omitempty"`
-	Description  string                       `json:",omitempty"`
+	Video        string                      `json:",omitempty"`
+	FileName     string                      `json:",omitempty"`
+	URL          string                      `json:",omitempty"`
+	OriginalURL  string                      `json:",omitempty"`
+	CropOptions  map[string]*base.CropOption `json:",omitempty"`
+	Sizes        map[string]*base.Size       `json:",omitempty"`
+	SelectedType string                      `json:",omitempty"`
+	Description  string                      `json:",omitempty"`
 	Crop         bool
 }
 
@@ -65,15 +65,15 @@ func (mediaLibrary *MediaLibrary) GetSelectedType() string {
 
 type MediaLibraryStorage struct {
 	oss.OSS
-	Sizes        map[string]*media.Size `json:",omitempty"`
+	Sizes        map[string]*base.Size `json:",omitempty"`
 	Video        string
 	SelectedType string
 	Description  string
 }
 
-func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size {
+func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*base.Size {
 	if len(mediaLibraryStorage.Sizes) == 0 && !(mediaLibraryStorage.GetFileHeader() != nil || mediaLibraryStorage.Crop) {
-		return map[string]*media.Size{}
+		return map[string]*base.Size{}
 	}
 
 	width := mediaLibraryStorage.Width
@@ -84,7 +84,7 @@ func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size
 		width = int(float64(width) * ratio)
 		height = int(float64(height) * ratio)
 	}
-	var sizes = map[string]*media.Size{
+	var sizes = map[string]*base.Size{
 		QorPreviewSizeName: {
 			Width:  width,
 			Height: height,
@@ -101,7 +101,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 	switch values := data.(type) {
 	case []byte:
 		if mediaLibraryStorage.Sizes == nil {
-			mediaLibraryStorage.Sizes = map[string]*media.Size{}
+			mediaLibraryStorage.Sizes = map[string]*base.Size{}
 		}
 		// cropOptions := mediaLibraryStorage.CropOptions
 		sizeOptions := mediaLibraryStorage.Sizes
@@ -110,7 +110,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 			mediaLibraryStorage.Base.Scan(values)
 			if err = json.Unmarshal(values, mediaLibraryStorage); err == nil {
 				if mediaLibraryStorage.CropOptions == nil {
-					mediaLibraryStorage.CropOptions = map[string]*media.CropOption{}
+					mediaLibraryStorage.CropOptions = map[string]*base.CropOption{}
 				}
 
 				// for key, value := range cropOptions {
@@ -120,7 +120,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 				// }
 
 				for key, value := range sizeOptions {
-					if key == media.DefaultSizeKey {
+					if key == base.DefaultSizeKey {
 						continue
 					}
 					if _, ok := mediaLibraryStorage.Sizes[key]; !ok {
@@ -130,11 +130,11 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 				}
 
 				for key, value := range mediaLibraryStorage.CropOptions {
-					if key == media.DefaultSizeKey {
+					if key == base.DefaultSizeKey {
 						continue
 					}
 					if _, ok := mediaLibraryStorage.Sizes[key]; !ok {
-						mediaLibraryStorage.Sizes[key] = &media.Size{Width: value.Width, Height: value.Height}
+						mediaLibraryStorage.Sizes[key] = &base.Size{Width: value.Width, Height: value.Height}
 					}
 
 				}

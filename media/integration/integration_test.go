@@ -2,13 +2,13 @@ package integration_test
 
 import (
 	"embed"
+	"github.com/qor5/admin/v3/media/base"
 	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/qor/oss/s3"
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/web/v3/multipartestutils"
@@ -62,7 +62,7 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = media.SaveUploadAndCropImage(db, &m)
+	err = base.SaveUploadAndCropImage(db, &m)
 	if err != nil {
 		t.Fatal(err)
 	}

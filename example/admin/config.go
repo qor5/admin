@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/qor/oss"
@@ -19,10 +22,8 @@ import (
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
 	l10n_view "github.com/qor5/admin/v3/l10n/views"
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
-	media_view "github.com/qor5/admin/v3/media/views"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
 	microsite_views "github.com/qor5/admin/v3/microsite/views"
 	"github.com/qor5/admin/v3/note"
@@ -250,7 +251,7 @@ func NewConfig() Config {
 
 	utils.Configure(b)
 
-	media_view.Configure(b, db)
+	media.New(db).Install(b)
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	ConfigureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
@@ -378,10 +379,10 @@ func NewConfig() Config {
 	ed := m.Editing("StatusBar", "ScheduleBar", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
 	ed.Field("HeroImage").
 		WithContextValue(
-			media_view.MediaBoxConfig,
+			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
-				Sizes: map[string]*media.Size{
+				Sizes: map[string]*base.Size{
 					"thumb": {
 						Width:  400,
 						Height: 300,
@@ -394,7 +395,7 @@ func NewConfig() Config {
 			})
 	ed.Field("BodyImage").
 		WithContextValue(
-			media_view.MediaBoxConfig,
+			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
 
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

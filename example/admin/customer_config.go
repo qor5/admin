@@ -3,8 +3,8 @@ package admin
 import (
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_view "github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
@@ -17,9 +17,9 @@ func configNestedFieldDemo(b *presets.Builder, db *gorm.DB) {
 
 	addFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.Address{}).Only("Street", "HomeImage", "Phones")
 
-	addFb.Field("HomeImage").WithContextValue(media_view.MediaBoxConfig, &media_library.MediaBoxConfig{
+	addFb.Field("HomeImage").WithContextValue(media.MediaBoxConfig, &media_library.MediaBoxConfig{
 		AllowType: "image",
-		Sizes: map[string]*media.Size{
+		Sizes: map[string]*base.Size{
 			"thumb": {
 				Width:  400,
 				Height: 300,

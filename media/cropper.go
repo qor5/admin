@@ -1,11 +1,11 @@
-package views
+package media
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/v3/media/base"
 	"time"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/ui/v3/cropper"
@@ -39,7 +39,7 @@ func loadImageCropper(db *gorm.DB) web.EventFunc {
 		moption := m.GetMediaOption()
 
 		size := moption.Sizes[thumb]
-		if size == nil && thumb != media.DefaultSizeKey {
+		if size == nil && thumb != base.DefaultSizeKey {
 			return
 		}
 
@@ -123,9 +123,9 @@ func cropImage(db *gorm.DB) web.EventFunc {
 
 			moption := m.GetMediaOption()
 			if moption.CropOptions == nil {
-				moption.CropOptions = make(map[string]*media.CropOption)
+				moption.CropOptions = make(map[string]*base.CropOption)
 			}
-			moption.CropOptions[thumb] = &media.CropOption{
+			moption.CropOptions[thumb] = &base.CropOption{
 				X:      int(cropValue.X),
 				Y:      int(cropValue.Y),
 				Width:  int(cropValue.Width),
@@ -137,7 +137,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 				return
 			}
 
-			err = media.SaveUploadAndCropImage(db, &m)
+			err = base.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
@@ -145,7 +145,7 @@ func cropImage(db *gorm.DB) web.EventFunc {
 
 			mb.Url = m.File.Url
 			mb.FileSizes = m.File.FileSizes
-			if thumb == media.DefaultSizeKey {
+			if thumb == base.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
 				mb.Height = int(cropValue.Height)
 			}

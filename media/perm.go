@@ -1,4 +1,4 @@
-package views
+package media
 
 import "net/http"
 

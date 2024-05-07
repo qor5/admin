@@ -1,14 +1,14 @@
-package views
+package media
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/presets"
 	"mime/multipart"
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -205,14 +205,14 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
-		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
+		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(base.IsImageFormat(f.File.FileName)))
 
 		row.AppendChildren(
 			VCol(
 				VCard(
 					h.Div(
 						h.If(
-							media.IsImageFormat(f.File.FileName),
+							base.IsImageFormat(f.File.FileName),
 							VImg(
 								h.If(needCrop,
 									h.Div(
@@ -251,7 +251,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
 							).Readonly(updateDescIsAllowed(ctx.R, files[i]) != nil),
-						h.If(media.IsImageFormat(f.File.FileName),
+						h.If(base.IsImageFormat(f.File.FileName),
 							fileChips(f),
 						),
 					),
@@ -354,7 +354,7 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
 	}
 	if f.File.FileSizes["original"] != 0 {
-		text = fmt.Sprintf("%s %s", text, media.ByteCountSI(f.File.FileSizes["original"]))
+		text = fmt.Sprintf("%s %s", text, base.ByteCountSI(f.File.FileSizes["original"]))
 	}
 	g.AppendChildren(
 		VChip(h.Text(text)).Size(SizeSmall),
@@ -390,9 +390,9 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 		for _, fh := range uf.NewFiles {
 			m := media_library.MediaLibrary{}
 
-			if media.IsImageFormat(fh.Filename) {
+			if base.IsImageFormat(fh.Filename) {
 				m.SelectedType = media_library.ALLOW_TYPE_IMAGE
-			} else if media.IsVideoFormat(fh.Filename) {
+			} else if base.IsVideoFormat(fh.Filename) {
 				m.SelectedType = media_library.ALLOW_TYPE_VIDEO
 			} else {
 				m.SelectedType = media_library.ALLOW_TYPE_FILE
@@ -402,7 +402,7 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 				panic(err)
 			}
 
-			err = media.SaveUploadAndCropImage(db, &m)
+			err = base.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
@@ -414,8 +414,8 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (sizes map[string]*media.Size, r bool) {
-	sizes = make(map[string]*media.Size)
+func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (sizes map[string]*base.Size, r bool) {
+	sizes = make(map[string]*base.Size)
 	for k, size := range cfg.Sizes {
 		if m.File.Sizes[k] != nil {
 			sizes[k] = m.File.Sizes[k]
@@ -453,7 +453,7 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 				return
 			}
 
-			err = media.SaveUploadAndCropImage(db, &m)
+			err = base.SaveUploadAndCropImage(db, &m)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil

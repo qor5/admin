@@ -8,7 +8,7 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
-	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 )
 
 var (
@@ -16,16 +16,16 @@ var (
 	URLTemplate = "/system/{{class}}/{{primary_key}}/{{column}}/{{filename_with_hash}}"
 	// Storage the storage used to save medias
 	Storage oss.StorageInterface = filesystem.New("public")
-	_       media.Media          = &OSS{}
+	_       base.Media           = &OSS{}
 )
 
 // OSS common storage interface
 type OSS struct {
-	media.Base
+	base.Base
 }
 
 // DefaultURLTemplateHandler used to generate URL and save into database
-var DefaultURLTemplateHandler = func(oss OSS, option *media.Option) (url string) {
+var DefaultURLTemplateHandler = func(oss OSS, option *base.Option) (url string) {
 	if url = option.Get("URL"); url == "" {
 		url = URLTemplate
 	}
@@ -44,25 +44,25 @@ var DefaultURLTemplateHandler = func(oss OSS, option *media.Option) (url string)
 }
 
 // GetURLTemplate URL's template
-func (o OSS) GetURLTemplate(option *media.Option) (url string) {
+func (o OSS) GetURLTemplate(option *base.Option) (url string) {
 	return DefaultURLTemplateHandler(o, option)
 }
 
 // DefaultStoreHandler used to store reader with default Storage
-var DefaultStoreHandler = func(oss OSS, path string, option *media.Option, reader io.Reader) error {
+var DefaultStoreHandler = func(oss OSS, path string, option *base.Option, reader io.Reader) error {
 	_, err := Storage.Put(path, reader)
 	return err
 }
 
 // Store save reader's content with path
-func (o OSS) Store(path string, option *media.Option, reader io.Reader) error {
+func (o OSS) Store(path string, option *base.Option, reader io.Reader) error {
 	return DefaultStoreHandler(o, path, option, reader)
 }
 
 // DefaultRetrieveHandler used to retrieve file
-var DefaultRetrieveHandler = func(oss OSS, path string) (media.FileInterface, error) {
+var DefaultRetrieveHandler = func(oss OSS, path string) (base.FileInterface, error) {
 	result, err := Storage.GetStream(path)
-	if f, ok := result.(media.FileInterface); ok {
+	if f, ok := result.(base.FileInterface); ok {
 		return f, err
 	}
 
@@ -78,7 +78,7 @@ var DefaultRetrieveHandler = func(oss OSS, path string) (media.FileInterface, er
 }
 
 // Retrieve retrieve file content with url
-func (o OSS) Retrieve(path string) (media.FileInterface, error) {
+func (o OSS) Retrieve(path string) (base.FileInterface, error) {
 	return DefaultRetrieveHandler(o, path)
 }
 

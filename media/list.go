@@ -1,4 +1,4 @@
-package views
+package media
 
 import (
 	"github.com/qor5/admin/v3/media/media_library"

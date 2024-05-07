@@ -1,4 +1,4 @@
-package views
+package media
 
 type Messages struct {
 	Crop                        string

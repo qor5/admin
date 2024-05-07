@@ -1,22 +1,21 @@
 package filesystem
 
 import (
+	"github.com/qor5/admin/v3/media/base"
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/qor5/admin/v3/media"
 )
 
-var _ media.Media = &FileSystem{}
+var _ base.Media = &FileSystem{}
 
 // FileSystem defined a media library storage using file system
 type FileSystem struct {
-	media.Base
+	base.Base
 }
 
 // GetFullPath return full file path from a relative file path
-func (f FileSystem) GetFullPath(url string, option *media.Option) (path string, err error) {
+func (f FileSystem) GetFullPath(url string, option *base.Option) (path string, err error) {
 	if option != nil && option.Get("path") != "" {
 		path = filepath.Join(option.Get("path"), url)
 	} else {
@@ -32,7 +31,7 @@ func (f FileSystem) GetFullPath(url string, option *media.Option) (path string, 
 }
 
 // Store save reader's context with name
-func (f FileSystem) Store(name string, option *media.Option, reader io.Reader) (err error) {
+func (f FileSystem) Store(name string, option *base.Option, reader io.Reader) (err error) {
 	if fullpath, err := f.GetFullPath(name, option); err == nil {
 		if dst, err := os.Create(fullpath); err == nil {
 			_, err = io.Copy(dst, reader)
@@ -42,7 +41,7 @@ func (f FileSystem) Store(name string, option *media.Option, reader io.Reader) (
 }
 
 // Retrieve retrieve file content with url
-func (f FileSystem) Retrieve(url string) (media.FileInterface, error) {
+func (f FileSystem) Retrieve(url string) (base.FileInterface, error) {
 	if fullpath, err := f.GetFullPath(url, nil); err == nil {
 		return os.Open(fullpath)
 	}

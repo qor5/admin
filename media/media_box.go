@@ -1,4 +1,4 @@
-package views
+package media
 
 import (
 	"context"
@@ -8,7 +8,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/ui/v3/cropper"
@@ -25,14 +26,14 @@ import (
 
 type MediaBoxConfigKey int
 
-var MediaLibraryPerPage int = 39
-
 const MediaBoxConfig MediaBoxConfigKey = iota
 const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
+var MediaLibraryPerPage int = 39
+
 var permVerifier *perm.Verifier
 
-func Configure(b *presets.Builder, db *gorm.DB) {
+func configure(b *presets.Builder, db *gorm.DB) {
 	err := db.AutoMigrate(&media_library.MediaLibrary{})
 	if err != nil {
 		panic(err)
@@ -169,11 +170,11 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
 	url := f.URL(thumb)
-	if thumb == media.DefaultSizeKey {
+	if thumb == base.DefaultSizeKey {
 		url = f.URL()
 	}
 	card := VCard(
-		h.If(media.IsImageFormat(f.FileName),
+		h.If(base.IsImageFormat(f.FileName),
 			VImg().Src(fmt.Sprintf("%s?%d", url, time.Now().UnixNano())).Height(150),
 		).Else(
 			h.Div(
@@ -181,13 +182,13 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				h.A().Text(f.FileName).Href(f.Url).Target("_blank"),
 			).Style("text-align:center"),
 		),
-		h.If(media.IsImageFormat(f.FileName) && (size != nil || thumb == media.DefaultSizeKey),
+		h.If(base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey),
 			VCardActions(
 				thumbName(thumb, size, fileSize, f),
 			),
 		),
 	)
-	if media.IsImageFormat(f.FileName) && (size != nil || thumb == media.DefaultSizeKey) && !disabled {
+	if base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey) && !disabled {
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
 			Query("field", field).
@@ -325,7 +326,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(cfg.Sizes) == 0 {
 			row.AppendChildren(
 				VCol(
-					mediaBoxThumb(msgr, cfg, mediaBox, field, media.DefaultSizeKey, disabled),
+					mediaBoxThumb(msgr, cfg, mediaBox, field, base.DefaultSizeKey, disabled),
 				).Cols(6).Sm(4).Class("pl-0"),
 			)
 		} else {
@@ -414,20 +415,20 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 	return &cfg
 }
 
-func thumbName(name string, size *media.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
+func thumbName(name string, size *base.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
 	div := h.Div().Class("pl-1")
 	text := ""
 	if size != nil {
 		div.AppendChildren(h.Span(name).Style("color:#212121;"))
 		text = fmt.Sprintf("%d X %d", size.Width, size.Height)
 	}
-	if name == media.DefaultSizeKey {
+	if name == base.DefaultSizeKey {
 		div.AppendChildren(h.Span(name).Style("color:#212121;"))
 		text = fmt.Sprintf("%d X %d", f.Width, f.Height)
 	}
-	//if fileSize != 0 {
+	// if fileSize != 0 {
 	//	text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))
-	//}
+	// }
 	if text != "" {
 		div.AppendChildren(h.Br(), h.Span(text).Style("color:#757575;"))
 	}

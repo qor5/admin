@@ -11,13 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/richeditor"
-	"goji.io/v3/pat"
-
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	l10n_view "github.com/qor5/admin/v3/l10n/views"
-	mediav "github.com/qor5/admin/v3/media/views"
+	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -25,6 +22,7 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/publish/views"
 	pv "github.com/qor5/admin/v3/publish/views"
+	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
@@ -34,6 +32,7 @@ import (
 	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -710,7 +709,7 @@ func (b *Builder) Configure(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builde
 	note.Configure(db, pb, pm)
 	eb.CleanTabsPanels()
 	dp.CleanTabsPanels()
-	mediav.Configure(b.GetPresetsBuilder(), db)
+	media.New(db).Install(b.GetPresetsBuilder())
 	return
 }
 

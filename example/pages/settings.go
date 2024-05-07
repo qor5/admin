@@ -1,11 +1,11 @@
 package pages
 
 import (
+	media_view "github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"log"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_view "github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/ui/v3/cropper"
 	. "github.com/qor5/ui/v3/vuetify"
@@ -29,7 +29,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 							Value(&media_library.MediaBox{}).
 							Config(&media_library.MediaBoxConfig{
 								AllowType: "image",
-								Sizes: map[string]*media.Size{
+								Sizes: map[string]*base.Size{
 									"thumb": {
 										Width:  400,
 										Height: 300,

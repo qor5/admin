@@ -10,8 +10,8 @@ import (
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -337,11 +337,12 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 				),
 				VRow(
 					VCol(views.QMediaBox(db).Label(msgr.OpenGraphImage).
+					VCol(media.QMediaBox(db).Label(msgr.OpenGraphImage).
 						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
 						Value(image).
 						Config(&media_library.MediaBoxConfig{
 							AllowType: "image",
-							Sizes: map[string]*media.Size{
+							Sizes: map[string]*base.Size{
 								"og": {
 									Width:  1200,
 									Height: 630,

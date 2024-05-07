@@ -2,12 +2,12 @@ package admin
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"io/ioutil"
 
 	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_view "github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
@@ -214,10 +214,10 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 
 	ed.Field("MediaLibrary1").
 		WithContextValue(
-			media_view.MediaBoxConfig,
+			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
-				Sizes: map[string]*media.Size{
+				Sizes: map[string]*base.Size{
 					"thumb": {
 						Width:  400,
 						Height: 300,

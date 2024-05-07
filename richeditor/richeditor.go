@@ -3,8 +3,9 @@ package richeditor
 import (
 	"context"
 	"fmt"
+
+	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_view "github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/ui/v3/redactor"
 	v "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -82,7 +83,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Label(b.label).Class("v-label theme--light"),
 			redactorB,
 			h.Div(
-				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
+				media.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),

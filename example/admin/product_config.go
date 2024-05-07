@@ -3,13 +3,13 @@ package admin
 import (
 	"context"
 	"fmt"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"strconv"
 	"time"
 
 	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_view "github.com/qor5/admin/v3/media/views"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
@@ -163,10 +163,10 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets
 
 	eb.Field("Image").
 		WithContextValue(
-			media_view.MediaBoxConfig,
+			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
-				Sizes: map[string]*media.Size{
+				Sizes: map[string]*base.Size{
 					"thumb": {
 						Width:  100,
 						Height: 100,
