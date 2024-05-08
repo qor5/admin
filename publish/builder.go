@@ -23,6 +23,7 @@ type Builder struct {
 	models            []*presets.ModelBuilder
 	ab                *activity.Builder
 	ctxValueProviders []ContextValueFunc
+	afterInstallFuncs []func()
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
@@ -44,8 +45,16 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	return b
 }
 
+func (b *Builder) AfterInstall(f func()) *Builder {
+	b.afterInstallFuncs = append(b.afterInstallFuncs, f)
+	return b
+}
+
 func (b *Builder) Install(pb *presets.Builder) {
 	configure(pb, b)
+	for _, f := range b.afterInstallFuncs {
+		f()
+	}
 	return
 }
 

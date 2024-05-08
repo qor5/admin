@@ -721,8 +721,9 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		l10nB.Models(pm, sharedContainerM, demoContainerM, templateM, categoryM).Activity(activityB)
 	}
 	if publisher != nil {
-		publisher.ContextValueFuncs(b.ContextValueProvider).Models(pm).Activity(activityB)
-		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+		publisher.ContextValueFuncs(b.ContextValueProvider).Models(pm).Activity(activityB).AfterInstall(func() {
+			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+		})
 	}
 	if seoBuilder != nil {
 		seoBuilder.RegisterSEO("Page", &Page{}).RegisterContextVariable(
