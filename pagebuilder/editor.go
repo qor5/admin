@@ -19,6 +19,7 @@ import (
 	"goji.io/v3/pat"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -477,18 +478,21 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 }
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
-		cons        []*Container
-		pageID      = ctx.R.FormValue(paramPageID)
-		pageVersion = ctx.R.FormValue(paramPageVersion)
-		locale      = ctx.R.FormValue(paramLocale)
-		status      = ctx.R.FormValue(paramStatus)
-		isReadonly  = status != publish.StatusDraft
+		cons         []*Container
+		pageID       = ctx.R.FormValue(paramPageID)
+		pageVersion  = ctx.R.FormValue(paramPageVersion)
+		locale       = ctx.R.FormValue(paramLocale)
+		status       = ctx.R.FormValue(paramStatus)
+		isReadonly   = status != publish.StatusDraft
+		msgr         = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		activityMsgr = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
 	)
 
 	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
 	if err != nil {
 		return
 	}
+
 	var sorterData ContainerSorter
 	sorterData.Items = []ContainerSorterItem{}
 	if len(cons) > 0 {
@@ -504,8 +508,8 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
 				Index:          i,
-				Label:          displayName,
-				ModelName:      inflection.Plural(strcase.ToKebab(c.ModelName)),
+				Label:          inflection.Plural(strcase.ToKebab(c.ModelName)),
+				ModelName:      c.ModelName,
 				ModelID:        strconv.Itoa(int(c.ModelID)),
 				DisplayName:    displayName,
 				ContainerID:    strconv.Itoa(int(c.ID)),
@@ -518,10 +522,33 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 			},
 		)
 	}
+	var (
+		menu = VMenu(
+			web.Slot(
+				VBtn("").Icon("mdi-dots-horizontal").Variant(VariantText).Size(SizeSmall).Attr("v-bind", "props").Attr("v-show", "element.editShow || (isActive || isHovering)"),
+			).Name("activator").Scope("{isActive,props}"),
+			VList(
+				VListItem(
+					VBtn(msgr.Rename).PrependIcon("mdi-pencil").Attr("@click",
+						"element.editShow=!element.editShow",
+					),
+				),
+				VListItem(
+					VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
+						web.Plaid().
+							URL(web.Var("element.url")).
+							EventFunc(DeleteContainerConfirmationEvent).
+							Query(paramContainerID, web.Var("element.param_id")).
+							Query(paramContainerName, web.Var("element.display_name")).
+							Go(),
+					),
+				),
+			),
+		)
+	)
 
 	r = web.Scope(
 		VSheet(
-
 			h.Div(
 				h.Div(h.Span("Elements").Class("text-subtitle-1")),
 				h.If(!isReadonly,
@@ -560,22 +587,20 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 										VListItemTitle(
 											VListItem(
 												web.Scope(
-													VTextField().HideDetails(true).Autofocus(true).Variant(FieldVariantSolo).
+													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
 														Attr("v-model", "form.DisplayName").
 														Attr("v-if", "element.editShow").
+														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
 															URL(fmt.Sprintf("%s/editors", b.prefix)).
 															EventFunc(RenameContainerEvent).Query(paramContainerID, web.Var("element.param_id")).Go()),
-													VListItemTitle(h.Text("{{element.label}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
-												).VSlot("{form}").FormInit("{ DisplayName:element.label }"),
+													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
+												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
 										),
 										web.Slot(
 											h.If(!isReadonly,
 												h.Div(
-													VBtn("").Variant(VariantText).Attr(":color", `element.editShow?"primary":""`).Icon("mdi-pencil").Size(SizeSmall).Attr("@click",
-														"element.editShow=!element.editShow",
-													).Attr("v-show", "isHovering"),
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
@@ -583,21 +608,25 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															Queries(ctx.R.Form).
 															Query(paramContainerID, web.Var("element.param_id")).
 															Go(),
-													).Attr("v-show", "element.hidden || isHovering"),
-													VBtn("").Variant(VariantText).Icon("mdi-delete").Size(SizeSmall).Attr("@click",
+													).Attr("v-show", "element.editShow || (element.hidden || isHovering)"),
+
+													VBtn("").Variant(VariantText).Icon("mdi-cog").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															URL(web.Var("element.url")).
-															EventFunc(DeleteContainerConfirmationEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
+															EventFunc(ShowEditContainerDrawerEvent).
+															Queries(ctx.R.Form).
+															Query(paramModelID, web.Var("element.model_id")).
 															Query(paramContainerName, web.Var("element.display_name")).
+															Query(paramModelName, web.Var("element.model_name")).
 															Go(),
-													).Attr("v-show", "isHovering"),
+													).Attr("v-show", "element.editShow || isHovering"),
+													menu,
 												),
 											),
 										).Name("append"),
-									).Attr(":variant", fmt.Sprintf(`element.hidden &&!isHovering?"%s":"%s"`, VariantPlain, VariantText)).
+									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
 										Attr("v-bind", "props").
-										Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.model_name"), web.Var("element.model_id"))),
+										Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.label"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),

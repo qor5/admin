@@ -470,15 +470,15 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 						).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
 						h.Div(
 							h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
-						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
+						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
 					),
 					h.If(sc > 0,
 						h.Div(
-							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
+							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSecondaryLighten1)).Style("height:4px"),
 						).Class("h-100 d-flex align-center").Style("width:40px"),
 						h.Div(
 							h.Text(fmt.Sprintf(`+%v`, sc)),
-						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
+						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
 					),
 				)
 			}
@@ -2101,7 +2101,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		EventFunc(ShowEditContainerDrawerEvent).
 		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 		Queries(ctx.R.Form).
-		Query(presets.ParamID, web.Var("arr[1]")).
+		Query(paramModelID, web.Var("arr[1]")).
 		Query(paramContainerName, web.Var("display_name")).
 		Query(paramModelName, web.Var("model_name")).
 		Query(paramContainerID, web.Var("container_id")).
