@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	archiver "github.com/mholt/archiver/v4"
+	"github.com/mholt/archiver/v4"
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/publish"
@@ -24,13 +24,12 @@ type MicroSite struct {
 	publish.Status
 	publish.Schedule
 	publish.Version
-
-	PrePath string
-
-	Package   FileSystem `gorm:"type:text"`
-	FilesList string     `gorm:"type:text"`
-
-	UnixKey string
+	Name        string
+	Description string
+	PrePath     string
+	Package     FileSystem `gorm:"type:text"`
+	FilesList   string     `gorm:"type:text"`
+	UnixKey     string
 }
 
 func (this *MicroSite) PermissionRN() []string {
@@ -64,18 +63,6 @@ func (this MicroSite) GetUnixKey() string {
 func (this *MicroSite) SetUnixKey() {
 	this.UnixKey = strconv.FormatInt(time.Now().UnixMilli(), 10)
 	return
-}
-
-func (this MicroSite) GetPackagePath(fileName string) string {
-	return strings.TrimPrefix(path.Join(PackageAndPreviewPrepath, "__package__", this.GetUnixKey(), fileName), "/")
-}
-
-func (this MicroSite) GetPreviewPath(fileName string) string {
-	return strings.TrimPrefix(path.Join(PackageAndPreviewPrepath, "__preview__", this.GetUnixKey(), fileName), "/")
-}
-
-func (this MicroSite) GetPreviewUrl(domain, fileName string) string {
-	return strings.TrimSuffix(domain, "/") + "/" + this.GetPreviewPath(fileName)
 }
 
 func (this MicroSite) GetPublishedPath(fileName string) string {
@@ -114,41 +101,61 @@ func (this *MicroSite) SetPackage(fileName, url string) {
 	return
 }
 
+type contextKeyType int
+
+const contextKey contextKeyType = iota
+
+func (b *Builder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, b)
+}
+
+func builderFromContext(c context.Context) (b *Builder, ok bool) {
+	b, ok = c.Value(contextKey).(*Builder)
+	return
+}
+
 func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	if len(this.GetFileList()) > 0 {
-		var previewPaths []string
-
-		var wg = sync.WaitGroup{}
-		var copyError error
-		var mutex sync.Mutex
-		for _, v := range this.GetFileList() {
-			wg.Add(1)
-			copySemaphore <- struct{}{}
-			go func(v string) {
-				defer func() {
-					wg.Done()
-					<-copySemaphore
-				}()
-				err = utils.Copy(storage, this.GetPreviewPath(v), this.GetPublishedPath(v))
-				if err != nil {
-					mutex.Lock()
-					copyError = multierror.Append(copyError, err).ErrorOrNil()
-					mutex.Unlock()
-					return
-				}
-				mutex.Lock()
-				previewPaths = append(previewPaths, this.GetPreviewPath(v))
-				mutex.Unlock()
-			}(v)
-		}
-
-		wg.Wait()
-
-		if len(previewPaths) > 0 {
-			err = utils.DeleteObjects(storage, previewPaths)
-		}
-		err = multierror.Append(err, copyError).ErrorOrNil()
+	if len(this.GetFileList()) == 0 {
+		return
 	}
+	mib, ok := builderFromContext(ctx)
+	if !ok {
+		panic("use publisher.ContextValueFuncs(micrositeBuilder.ContextValueFunc) to set up microsite builder into context")
+	}
+
+	var previewPaths []string
+
+	var wg = sync.WaitGroup{}
+	var copyError error
+	var mutex sync.Mutex
+	for _, v := range this.GetFileList() {
+		wg.Add(1)
+		copySemaphore <- struct{}{}
+		go func(v string) {
+			defer func() {
+				wg.Done()
+				<-copySemaphore
+			}()
+			err = utils.Copy(storage, getPreviewPath(this, v, mib), this.GetPublishedPath(v))
+			if err != nil {
+				mutex.Lock()
+				copyError = multierror.Append(copyError, err).ErrorOrNil()
+				mutex.Unlock()
+				return
+			}
+			mutex.Lock()
+			previewPaths = append(previewPaths, getPreviewPath(this, v, mib))
+			mutex.Unlock()
+		}(v)
+	}
+
+	wg.Wait()
+
+	if len(previewPaths) > 0 {
+		err = utils.DeleteObjects(storage, previewPaths)
+	}
+	err = multierror.Append(err, copyError).ErrorOrNil()
+
 	return
 }
 

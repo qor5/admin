@@ -23,7 +23,7 @@ func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
 		if err != nil {
 			return h.Td(h.Text("0"))
 		}
-		SetPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
+		setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
 			Where("status = ?", StatusDraft).Count(&count)
 
 		return h.Td(h.Text(fmt.Sprint(count)))
@@ -37,7 +37,7 @@ func onlineFunc(db *gorm.DB) presets.FieldComponentFunc {
 		if err != nil {
 			return h.Td(h.Text("0"))
 		}
-		SetPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
+		setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
 			Where("status = ?", StatusOnline).Count(&count)
 
 		c := h.Text("-")

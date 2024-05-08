@@ -2,9 +2,10 @@ package admin
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
-	"io/ioutil"
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/media/media_library"
@@ -172,10 +173,10 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 			return VInput(
 
 				VBtnToggle(
-					VBtn("Left").Value("left").Attr(true).Class("deep-purple white--text"),
-					VBtn("Center").Value("center").Attr(true).Class("deep-purple white--text"),
-					VBtn("Right").Value("right").Attr(true).Class("deep-purple white--text"),
-					VBtn("Justify").Value("justify").Attr(true).Class("deep-purple white--text"),
+					VBtn("Left").Value("left").Class("deep-purple white--text"),
+					VBtn("Center").Value("center").Class("deep-purple white--text"),
+					VBtn("Right").Value("right").Class("deep-purple white--text"),
+					VBtn("Justify").Value("justify").Class("deep-purple white--text"),
 				).
 					Class("pl-4").
 					Attr(web.VField(field.Name, field.Value(obj))...),

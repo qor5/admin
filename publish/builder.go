@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -17,23 +18,24 @@ import (
 )
 
 type Builder struct {
-	db      *gorm.DB
-	storage oss.StorageInterface
-	context context.Context
-	models  []*presets.ModelBuilder
-	ab      *activity.Builder
+	db                *gorm.DB
+	storage           oss.StorageInterface
+	models            []*presets.ModelBuilder
+	ab                *activity.Builder
+	ctxValueProviders []ContextValueFunc
 }
+
+type ContextValueFunc func(ctx context.Context) context.Context
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	return &Builder{
 		db:      db,
 		storage: storage,
-		context: context.Background(),
 	}
 }
 
 func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
-	b.models = append(b.models, vs...)
+	b.models = slices.Compact(append(b.models, vs...))
 	return b
 }
 
@@ -47,43 +49,25 @@ func (b *Builder) Install(pb *presets.Builder) {
 	return
 }
 
-func (b *Builder) WithValue(key, val interface{}) *Builder {
-	b.context = context.WithValue(b.context, key, val)
+func (b *Builder) ContextValueFuncs(vs ...ContextValueFunc) *Builder {
+	b.ctxValueProviders = append(b.ctxValueProviders, vs...)
 	return b
 }
 
-const (
-	PublishContextKeyPageBuilder  = "pagebuilder"
-	PublishContextKeyL10nBuilder  = "l10nbuilder"
-	PublishContextKeyEventContext = "eventcontext"
-)
-
-func (b *Builder) WithPageBuilder(val interface{}) *Builder {
-	b.context = context.WithValue(b.context, PublishContextKeyPageBuilder, val)
-	return b
-}
-
-func (b *Builder) WithL10nBuilder(val interface{}) *Builder {
-	b.context = context.WithValue(b.context, PublishContextKeyL10nBuilder, val)
-	return b
-}
-
-func (b *Builder) WithEventContext(val interface{}) *Builder {
-	b.context = context.WithValue(b.context, PublishContextKeyEventContext, val)
-	return b
-}
-
-func (b *Builder) Context() context.Context {
-	return b.context
+func (b *Builder) WithContextValues(ctx context.Context) context.Context {
+	for _, v := range b.ctxValueProviders {
+		ctx = v(ctx)
+	}
+	return ctx
 }
 
 // 幂等
-func (b *Builder) Publish(record interface{}) (err error) {
+func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
 		if r, ok := record.(PublishInterface); ok {
 			var objs []*PublishAction
-			objs, err = r.GetPublishActions(b.db, b.context, b.storage)
+			objs, err = r.GetPublishActions(b.db, ctx, b.storage)
 			if err != nil {
 				return
 			}
@@ -101,26 +85,19 @@ func (b *Builder) Publish(record interface{}) (err error) {
 				if err != nil {
 					return
 				}
-				scope := SetPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.GetVersion(), StatusOnline)
-				var count int64
-				if err = scope.Count(&count).Error; err != nil {
-					return
-				}
+				scope := setPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.GetVersion(), StatusOnline)
 
-				// update old version
-				if count > 0 {
-					var oldVersionUpdateMap = make(map[string]interface{})
-					if _, ok := record.(ScheduleInterface); ok {
-						oldVersionUpdateMap["scheduled_end_at"] = nil
-						oldVersionUpdateMap["actual_end_at"] = &now
-					}
-					if _, ok := record.(ListInterface); ok {
-						oldVersionUpdateMap["list_deleted"] = true
-					}
-					oldVersionUpdateMap["status"] = StatusOffline
-					if err = scope.Updates(oldVersionUpdateMap).Error; err != nil {
-						return
-					}
+				var oldVersionUpdateMap = make(map[string]interface{})
+				if _, ok := record.(ScheduleInterface); ok {
+					oldVersionUpdateMap["scheduled_end_at"] = nil
+					oldVersionUpdateMap["actual_end_at"] = &now
+				}
+				if _, ok := record.(ListInterface); ok {
+					oldVersionUpdateMap["list_deleted"] = true
+				}
+				oldVersionUpdateMap["status"] = StatusOffline
+				if err = scope.Updates(oldVersionUpdateMap).Error; err != nil {
+					return
 				}
 			}
 			var updateMap = make(map[string]interface{})
@@ -143,7 +120,7 @@ func (b *Builder) Publish(record interface{}) (err error) {
 
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
-			if err = r.AfterPublish(b.db, b.storage, b.context); err != nil {
+			if err = r.AfterPublish(b.db, b.storage, ctx); err != nil {
 				return
 			}
 		}
@@ -152,12 +129,12 @@ func (b *Builder) Publish(record interface{}) (err error) {
 	return
 }
 
-func (b *Builder) UnPublish(record interface{}) (err error) {
+func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
 		if r, ok := record.(UnPublishInterface); ok {
 			var objs []*PublishAction
-			objs, err = r.GetUnPublishActions(b.db, b.context, b.storage)
+			objs, err = r.GetUnPublishActions(b.db, ctx, b.storage)
 			if err != nil {
 				return
 			}
@@ -187,7 +164,7 @@ func (b *Builder) UnPublish(record interface{}) (err error) {
 
 		// unpublish callback
 		if r, ok := record.(AfterUnPublishInterface); ok {
-			if err = r.AfterUnPublish(b.db, b.storage, b.context); err != nil {
+			if err = r.AfterUnPublish(b.db, b.storage, ctx); err != nil {
 				return
 			}
 		}
@@ -216,7 +193,7 @@ func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err er
 	return nil
 }
 
-func SetPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
+func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
 	querys := []string{}
 	args := []interface{}{}
 	for _, p := range s.PrimaryFields {

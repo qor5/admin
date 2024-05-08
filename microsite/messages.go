@@ -1,4 +1,4 @@
-package views
+package microsite
 
 type Messages struct {
 	CurrentPackage string

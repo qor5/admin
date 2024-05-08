@@ -11,12 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
-
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -33,6 +27,11 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 type RenderInput struct {
@@ -283,7 +282,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 
 	templateM := presets.NewModelBuilder(pb, &Template{})
 	if b.templateEnabled {
-		templateM = b.ConfigTemplate(pb, db)
+		templateM = b.configTemplate(pb, db)
 	}
 
 	b.mb = pm
@@ -713,7 +712,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 
 	sharedContainerM := b.ConfigSharedContainer(pb, db)
 	demoContainerM := b.ConfigDemoContainer(pb, db)
-	categoryM := b.ConfigCategory(pb, db, l10nB)
+	categoryM := b.configCategory(pb, db, l10nB)
 
 	if activityB != nil {
 		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
@@ -722,7 +721,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		l10nB.Models(pm, sharedContainerM, demoContainerM, templateM, categoryM).Activity(activityB)
 	}
 	if publisher != nil {
-		publisher.WithPageBuilder(b).Models(pm).Activity(activityB)
+		publisher.ContextValueFuncs(b.ContextValueProvider).Models(pm).Activity(activityB)
 		pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
 	}
 	if seoBuilder != nil {
@@ -946,9 +945,8 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
-
 	lb := pm.Listing("Name", "Path", "Description")
 
 	oldSearcher := lb.Searcher
@@ -1028,6 +1026,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 		err = db.Save(c).Error
 		return
 	})
+	b.ab.RegisterModels(pm)
 
 	return
 }
@@ -1805,7 +1804,7 @@ func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	return
 }
 
-func (b *Builder) ConfigTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
 
 	pm.Listing("ID", "Name", "Description")

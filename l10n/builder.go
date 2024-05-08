@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
+	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
@@ -76,6 +77,36 @@ func (b *Builder) GetLocalePath(localeCode string) string {
 		return p
 	}
 	return ""
+}
+
+type contextKeyType int
+
+const contextKey contextKeyType = iota
+
+func (b *Builder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, b)
+}
+
+func builderFromContext(c context.Context) (b *Builder, ok bool) {
+	b, ok = c.Value(contextKey).(*Builder)
+	return
+}
+
+func LocalePathFromContext(m interface{}, ctx context.Context) (localePath string) {
+	l10nBuilder, ok := builderFromContext(ctx)
+	if !ok {
+		return
+	}
+
+	if locale, ok := IsLocalizableFromCtx(ctx); ok {
+		localePath = l10nBuilder.GetLocalePath(locale)
+	}
+
+	if localeCode, err := reflectutils.Get(m, "LocaleCode"); err == nil {
+		localePath = l10nBuilder.GetLocalePath(localeCode.(string))
+	}
+
+	return
 }
 
 func (b *Builder) GetAllLocalePaths() []string {

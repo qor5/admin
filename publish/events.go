@@ -64,8 +64,8 @@ func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab
 		if err != nil {
 			return
 		}
-		publisher.WithEventContext(ctx)
-		err = publisher.Publish(obj)
+		reqCtx := publisher.WithContextValues(ctx.R.Context())
+		err = publisher.Publish(obj, reqCtx)
 		if err != nil {
 			return
 		}
@@ -94,8 +94,8 @@ func unpublishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, 
 		if err != nil {
 			return
 		}
-
-		err = publisher.UnPublish(obj)
+		reqCtx := publisher.WithContextValues(ctx.R.Context())
+		err = publisher.UnPublish(obj, reqCtx)
 		if err != nil {
 			return
 		}

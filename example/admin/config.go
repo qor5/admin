@@ -10,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/v3/media"
-	"github.com/qor5/admin/v3/media/base"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
 	"github.com/qor/oss"
@@ -21,10 +18,12 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/admin/v3/microsite"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
-	microsite_views "github.com/qor5/admin/v3/microsite/views"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
@@ -468,7 +467,8 @@ func NewConfig() Config {
 	// @snippet_end
 
 	w.Activity(ab).Install(b)
-	publisher := publish.New(db, PublishStorage).WithL10nBuilder(l10nBuilder)
+	publisher := publish.New(db, PublishStorage).
+		ContextValueFuncs(l10nBuilder.ContextValueProvider)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pageBuilder.L10n(l10nBuilder).
@@ -584,16 +584,14 @@ func NewConfig() Config {
 
 	ab.RegisterModel(m).EnableActivityInfoTab()
 	ab.RegisterModels(l)
-	mm := b.Model(&models.MicrositeModel{})
-	mm.Listing("ID", "Name", "PrePath", "Status").
-		SearchColumns("ID::text", "Name").
-		PerPage(10)
-	mm.Editing("StatusBar", "ScheduleBar", "Name", "Description", "PrePath", "FilesList", "Package")
-	microsite_views.Configure(b, db, ab, PublishStorage, publisher, mm)
+
+	microb := microsite.New(db).Publisher(publisher)
+	microb.Install(b)
+
 	l10nM, l10nVM := configL10nModel(b)
 	_ = l10nM
 
-	publisher.Models(m, l, product, category, mm).
+	publisher.Models(m, l, product, category).
 		Activity(ab)
 
 	initLoginBuilder(db, b, ab)

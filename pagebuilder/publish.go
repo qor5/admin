@@ -10,31 +10,36 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/web/v3"
-	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
+
+type contextKeyType int
+
+const contextKey contextKeyType = iota
+
+func (pb *Builder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, pb)
+}
+
+func builderFromContext(c context.Context) (b *Builder, ok bool) {
+	b, ok = c.Value(contextKey).(*Builder)
+	return
+}
 
 func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	var b *Builder
 	var ok bool
-	if b, ok = ctx.Value(publish.PublishContextKeyPageBuilder).(*Builder); !ok || b == nil {
+	if b, ok = builderFromContext(ctx); !ok || b == nil {
 		return
 	}
 	content, err := p.getPublishContent(b, ctx)
 	if err != nil {
 		return
 	}
+
 	var localePath string
-	if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil && l10nON {
-		if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
-			if locale, ok := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); ok {
-				localePath = l10nBuilder.GetLocalePath(locale)
-			}
-		}
-		if localeCode, err := reflectutils.Get(p, "LocaleCode"); err == nil {
-			localePath = l10nBuilder.GetLocalePath(localeCode.(string))
-		}
+	if l10nON {
+		localePath = l10n.LocalePathFromContext(p, ctx)
 	}
 
 	var category Category

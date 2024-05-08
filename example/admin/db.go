@@ -37,7 +37,6 @@ func ConnectDB() *gorm.DB {
 		&models.Product{},
 		&models.Order{},
 		&models.Category{},
-		&models.MicrositeModel{},
 	); err != nil {
 		panic(err)
 	}
