@@ -24,6 +24,7 @@ type DetailingBuilder struct {
 	pageFunc           web.PageFunc
 	fetcher            FetchFunc
 	tabPanels          []TabComponentFunc
+	sidePanel          ComponentFunc
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
 	DetailFieldsBuilder
@@ -110,6 +111,11 @@ func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
 	return b
 }
 
+func (b *DetailingBuilder) SidePanelFunc(v ComponentFunc) (r *DetailingBuilder) {
+	b.sidePanel = v
+	return b
+}
+
 func (b *DetailingBuilder) Field(name string) (r *DetailFieldBuilder) {
 	r = b.GetDetailField(name)
 	if r != nil {
@@ -187,6 +193,18 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 					h.Components(contents...),
 				).Attr("v-model", "tab"),
 			).VSlot("{ locals }").Init(`{tab: 'default'}`)
+		}
+	}
+
+	if b.sidePanel != nil {
+		sidePanel := b.sidePanel(ctx)
+		if sidePanel != nil {
+			tabsContent = VContainer(
+				VRow(
+					VCol(tabsContent).Cols(8),
+					VCol(sidePanel).Cols(4),
+				),
+			)
 		}
 	}
 
