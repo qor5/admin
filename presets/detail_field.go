@@ -266,7 +266,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 	btn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
+		Attr("v-show", "isHovering").
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
@@ -278,33 +278,39 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 			hiddenComp.AppendChildren(f(obj, ctx))
 		}
 	}
-
-	return web.Portal(
-		web.Scope(
-			web.Scope(
-				h.Div(
+	content := h.Div()
+	showComponent := b.componentShowFunc(obj, field, ctx)
+	if showComponent != nil {
+		content.AppendChildren(
+			VHover(
+				web.Slot(
 					VCard(
 						VCardText(
 							h.Div(
 								// detailFields
-								h.Div(b.componentShowFunc(obj, field, ctx)).
+								h.Div(showComponent).
 									Class("flex-grow-1 pr-3"),
 								// edit btn
 								h.Div(btn).Style("width:32px;"),
-							).Class("d-flex justify-space-between").Style("color:initial;"),
+							).Class("d-flex justify-space-between"),
 						),
-					).Variant(VariantOutlined).Color("grey").
-						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
-				),
-			).VSlot("{ locals }").Init(`{ showBtn:false,color:blue }`),
+					).Class("mb-2").Hover(true).
+						Attr("v-bind", "props"),
+				).Name("default").Scope("{ isHovering, props }"),
+			),
+		)
+	}
+
+	return web.Portal(
+		web.Scope(
+			content,
 		).VSlot("{ form }"),
 		hiddenComp,
 	).Name(b.FieldPortalName())
 }
 
 func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	btn := VBtn("Save").Size(SizeSmall).
+	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
 			Query(DetailFieldName, b.name).
@@ -320,26 +326,21 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 
 	return web.Portal(
 		web.Scope(
-			web.Scope(
-				h.Div(
-					VCard(
-						VCardText(
-							h.Div(
-								// detailFields
-								h.Div(b.componentEditFunc(obj, field, ctx)).
-									Class("flex-grow-1"),
-								// save btn
-								h.Div(btn).Class("align-self-end"),
-							).Class("d-flex flex-column").Style("color:initial;"),
-						),
-					).Variant(VariantOutlined).Color("grey").
-						Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-						Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
-					h.Br(),
-				),
-			).VSlot("{ locals }").Init(`{ showBtn:false }`),
+			h.Div(
+				VCard(
+					VCardText(
+						h.Div(
+							// detailFields
+							h.Div(b.componentEditFunc(obj, field, ctx)).
+								Class("flex-grow-1"),
+							// save btn
+							h.Div(btn).Class("align-self-end"),
+						).Class("d-flex flex-column"),
+					),
+				).Class("mb-2"),
+			),
+			hiddenComp,
 		).VSlot("{ form }"),
-		hiddenComp,
 	).Name(b.FieldPortalName())
 }
 
@@ -391,7 +392,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	rows := h.Div()
 
 	if b.label != "" {
-		rows.AppendChildren(h.Div(h.Span(b.label).Style("color:black; fontSize:16px; font-weight:500;")).Style("margin-bottom:8px;"))
+		rows.AppendChildren(h.Div(h.Span(b.label).Style("fontSize:16px; font-weight:500;")).Class("mb-2"))
 	}
 
 	if list != nil {
@@ -430,7 +431,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	}
 
 	if !b.design.disableElementCreateBtn {
-		addBtn := VBtn("Add row").
+		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
 				Query(DetailFieldName, b.name).
 				Query(ParamID, ctx.Queries().Get(ParamID)).
@@ -479,32 +480,34 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-if", fmt.Sprintf(`locals.showBtn`)).
+		Attr("v-show", "isHovering").
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
+	content := b.elementShowFunc(obj, &FieldContext{
+		Name:    b.name,
+		FormKey: fmt.Sprintf("%s[%b]", b.name, index),
+		Label:   b.label,
+	}, ctx)
+
 	return web.Portal(
-		web.Scope(
-			VCard(
-				VCardText(
-					h.Div(
-						h.Div(b.elementShowFunc(obj, &FieldContext{
-							Name:    b.name,
-							FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-							Label:   b.label,
-						}, ctx)).
-							Class("flex-grow-1 pr-3"),
-						h.Div(editBtn),
-					).Class("d-flex justify-space-between"),
-				),
-			).Variant(VariantOutlined).
-				Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-				Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`)),
-		).VSlot("{ locals }").Init(`{ showBtn:false  }`),
-		h.Br(),
+		VHover(
+			web.Slot(
+				VCard(
+					VCardText(
+						h.Div(
+							h.Div(content).Class("flex-grow-1 pr-3"),
+							h.Div(editBtn),
+						).Class("d-flex justify-space-between"),
+					),
+				).Class("mb-2").Hover(true).
+					Attr("v-bind", "props").
+					Variant(VariantOutlined),
+			).Name("default").Scope("{ isHovering, props }"),
+		),
 	).Name(b.ListElementPortalName(index))
 }
 
@@ -531,7 +534,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 		contentDiv.AppendChildren(h.Div(deleteBtn).Class("d-flex pl-3"))
 	}
 
-	saveBtn := VBtn("Save").Size(SizeSmall).
+	saveBtn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingListField).
 			Query(DetailFieldName, b.name).
@@ -547,15 +550,10 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 			).Class("d-flex flex-column"),
 		),
 		h.Input("").Type("hidden").Attr(web.VField(b.ListElementIsEditing(index), true)...),
-	).Variant(VariantOutlined).
-		Attr("@mouseenter", fmt.Sprintf(`locals.showBtn = true`)).
-		Attr("@mouseleave", fmt.Sprintf(`locals.showBtn = false`))
+	).Variant(VariantOutlined).Class("mb-2")
 
 	return web.Portal(
-		web.Scope(
-			card,
-		).VSlot("{ locals }").Init(`{ showBtn:false  }`),
-		h.Br(),
+		card,
 	).Name(b.ListElementPortalName(index))
 }
 
