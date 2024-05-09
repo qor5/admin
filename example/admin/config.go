@@ -414,7 +414,7 @@ func NewConfig() Config {
 			{Text: "ActivityLogs", Value: "*:activity_logs:*"},
 			{Text: "Workers", Value: "*:workers:*"},
 		})
-	roleModelBuilder := roleBuilder.Configure(b)
+	roleModelBuilder := roleBuilder.Install(b)
 	roleModelBuilder.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db

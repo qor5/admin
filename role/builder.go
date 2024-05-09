@@ -52,7 +52,7 @@ func (b *Builder) EditorSubject(v string) *Builder {
 	return b
 }
 
-func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
 	if b.editorSubject != "" {
 		permB := pb.GetPermission()
 		if permB == nil {
