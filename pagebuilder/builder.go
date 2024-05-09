@@ -11,6 +11,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -27,11 +33,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 type RenderInput struct {
@@ -85,6 +86,7 @@ type Builder struct {
 	pageLayoutFunc    PageLayoutFunc
 	subPageTitleFunc  SubPageTitleFunc
 	preview           http.Handler
+	editor            http.Handler
 	images            http.Handler
 	imagesPrefix      string
 	defaultDevice     string
@@ -151,7 +153,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
-		LayoutFunc(r.pageEditorLayout).
+		DetailLayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
 	type Editor struct {
 	}
@@ -270,7 +272,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	activityB := b.ab
 	publisher := b.publisher
 	seoBuilder := b.seoBuilder
-
+	// b.ps.VuetifyOptions(pb.GetVuetifyOptions())
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -279,12 +281,10 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pm = pb.Model(&Page{})
-
 	templateM := presets.NewModelBuilder(pb, &Template{})
 	if b.templateEnabled {
 		templateM = b.configTemplate(pb, db)
 	}
-
 	b.mb = pm
 	lb := pm.Listing("ID", "Online", "Title", "Path")
 
@@ -297,7 +297,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
 	})
 	dp := pm.Detailing("Overview")
-
 	dp.Field("Overview").ComponentFunc(settings(db, b, activityB))
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
@@ -306,6 +305,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}
+
 			pb.InjectAssets(ctx)
 			// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 			menu := pb.CreateMenus(ctx)
@@ -323,6 +323,9 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 
 			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
 			isTemplate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			if isTemplate {
+				ctx.R.Form.Set(paramsTpl, "1")
+			}
 			var obj interface{}
 			var dmb *presets.ModelBuilder
 			if isPage {
@@ -360,32 +363,8 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 					return
 				}
 			}
-
 			var tabContent web.PageResponse
-			tab := ctx.R.FormValue("tab")
-			isContent := tab == "content"
-			activeTabIndex := 0
-			if isContent {
-				activeTabIndex = 1
-				if v, ok := obj.(interface {
-					GetID() uint
-				}); ok {
-					ctx.R.Form.Set(paramPageID, strconv.Itoa(int(v.GetID())))
-				}
-				if v, ok := obj.(publish.VersionInterface); ok {
-					ctx.R.Form.Set(paramPageVersion, v.GetVersion())
-				}
-				if l, ok := obj.(l10n.L10nInterface); ok {
-					ctx.R.Form.Set(paramLocale, l.GetLocale())
-				}
-				if isTemplate {
-					ctx.R.Form.Set(paramsTpl, "1")
-				}
-				tabContent, err = b.PageContent(ctx)
-
-			} else {
-				tabContent, err = in(ctx)
-			}
+			tabContent, err = in(ctx)
 			if errors.Is(err, perm.PermissionDenied) {
 				pr.Body = h.Text(perm.PermissionDenied.Error())
 				return pr, nil
@@ -393,31 +372,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 			if err != nil {
 				panic(err)
 			}
-			device := ctx.R.FormValue("device")
-			var (
-				deviceToggler h.HTMLComponent
-				deviceQueries url.Values
-				activeDevice  int
-			)
-			switch device {
-			case DeviceTablet:
-				activeDevice = 1
-			case DevicePhone:
-				activeDevice = 2
-			}
-			deviceToggler = web.Scope(
-				VBtnToggle(
-					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
-						VIcon("mdi-laptop").Size(SizeSmall),
-					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceComputer).PushState(true).Go()),
-					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
-						VIcon("mdi-tablet").Size(SizeSmall),
-					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DeviceTablet).PushState(true).Go()),
-					VBtn("").Icon(true).Color(ColorPrimary).Variant(VariantText).Class("mr-4").Children(
-						VIcon("mdi-cellphone").Size(SizeSmall),
-					).Attr("@click", web.Plaid().Queries(deviceQueries).Query("tab", "content").Query("device", DevicePhone).PushState(true).Go()),
-				).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
-			).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
 
 			primarySlug := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
@@ -434,53 +388,39 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 					Height(2).
 					Color(pb.GetProgressBarColor()),
 			)
-			if isContent {
-				versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, &presets.FieldContext{ModelInfo: pm.Info()}, ctx)
-
-				pageAppbarContent = h.Components(
-					h.Div(
-						VIcon("mdi-exit-to-app").Class("mr-4").
-							Attr("@click", web.Plaid().Query("tab", "settings").PushState(true).Go()),
-						VToolbarTitle(b.GetPageTitle()(ctx)),
-					).Class("d-inline-flex align-center"),
-					h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between"),
-					versionComponent,
-				)
-			} else {
-				sc := scheduleCount(db, p)
-				pageAppbarContent = h.Components(
-					VAppBarNavIcon().
-						Density(DensityCompact).
-						Class("mr-2").
-						Attr("v-if", "!vars.navDrawer").
-						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-					h.Div(
-						VToolbarTitle(
-							b.GetPageTitle()(ctx),
-						),
-					).Class("mr-auto"),
-					VSpacer(),
-					h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
-					h.If(
-						p.ScheduledStartAt != nil,
-						h.Div(
-							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
-							VIcon("mdi-circle").Size(SizeXSmall).Color(ColorSuccessLighten1).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
-						).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
-						h.Div(
-							h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
-						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
+			sc := scheduleCount(db, p)
+			pageAppbarContent = h.Components(
+				VAppBarNavIcon().
+					Density(DensityCompact).
+					Class("mr-2").
+					Attr("v-if", "!vars.navDrawer").
+					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+				h.Div(
+					VToolbarTitle(
+						b.GetPageTitle()(ctx),
 					),
-					h.If(sc > 0,
-						h.Div(
-							h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSecondaryLighten1)).Style("height:4px"),
-						).Class("h-100 d-flex align-center").Style("width:40px"),
-						h.Div(
-							h.Text(fmt.Sprintf(`+%v`, sc)),
-						).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
-					),
-				)
-			}
+				).Class("mr-auto"),
+				VSpacer(),
+				h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
+				h.If(
+					p.ScheduledStartAt != nil,
+					h.Div(
+						h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
+						VIcon("mdi-circle").Size(SizeXSmall).Color(ColorSuccessLighten1).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
+					).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
+					h.Div(
+						h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
+					).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
+				),
+				h.If(sc > 0,
+					h.Div(
+						h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSecondaryLighten1)).Style("height:4px"),
+					).Class("h-100 d-flex align-center").Style("width:40px"),
+					h.Div(
+						h.Text(fmt.Sprintf(`+%v`, sc)),
+					).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
+				),
+			)
 
 			toolbar := VContainer(
 				VRow(
@@ -498,26 +438,24 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 			)
 			pr.Body = web.Scope(
 				VApp(
-					h.If(!isContent,
-						VNavigationDrawer(
-							VLayout(
-								VMain(
-									toolbar,
-									VCard(
-										menu,
-									).Class("ma-4").Variant(VariantText),
-								),
-								VAppBar(
-									profile,
-								).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
-							).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
-						).Width(320).
-							ModelValue(true).
-							Attr("v-model", "vars.navDrawer").
-							Permanent(true).
-							Floating(true).
-							Elevation(0),
-					),
+					VNavigationDrawer(
+						VLayout(
+							VMain(
+								toolbar,
+								VCard(
+									menu,
+								).Class("ma-4").Variant(VariantText),
+							),
+							VAppBar(
+								profile,
+							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
+						).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
+					).Width(320).
+						ModelValue(true).
+						Attr("v-model", "vars.navDrawer").
+						Permanent(true).
+						Floating(true).
+						Elevation(0),
 
 					VAppBar(
 						h.Div(
@@ -535,9 +473,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 					utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 						Query(presets.ParamID, primarySlug).Go(),
 						utilsMsgr),
-					h.If(isContent,
-						h.Tag("vx-restore-scroll-listener"),
-						vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx))),
 					VProgressLinear().
 						Attr(":active", "isFetching").
 						Attr("style", "position: fixed; z-index: 99").
@@ -554,7 +489,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 						tabContent.Body.(h.HTMLComponent),
 					),
 				).Attr("id", "vt-app").Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)...),
-			).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false, activeTab:%d, tabs: [{label:"SETTINGS",query:"settings"},{label:"CONTENT",query:"content"}]}`, activeTabIndex))
+			).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
 			return
 		}
 	})
@@ -572,12 +507,14 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
+
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(ctx.R.Context(), c, db, l10nB)
 		return
 	})
+
 	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {

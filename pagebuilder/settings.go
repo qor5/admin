@@ -188,7 +188,13 @@ func settings(db *gorm.DB, b *Builder, activityB *activity.Builder) presets.Fiel
 										Class("rounded-sm").Height(40).Variant(VariantFlat),
 								).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
 							).Style(`position:relative`).Class("w-100 mt-4").
-								Attr("@click", web.Plaid().Query("tab", "content").PushState(true).Go()),
+								Attr("@click",
+									web.Plaid().URL(fmt.Sprintf("%s/editors/%v", b.prefix, p.ID)).
+										Query(paramPageVersion, p.GetVersion()).
+										Query(paramLocale, p.GetLocale()).
+										Query(paramPageID, p.PrimarySlug()).
+										PushState(true).Go(),
+								),
 							h.Div(
 								h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
 								VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").

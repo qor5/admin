@@ -12,6 +12,10 @@ import (
 
 	"github.com/qor5/admin/v3/seo"
 
+	"github.com/theplant/gofixtures"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
@@ -19,9 +23,6 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/perm"
-	"github.com/theplant/gofixtures"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func ConnectDB() *gorm.DB {
@@ -36,7 +37,6 @@ func TestEditor(t *testing.T) {
 	db := ConnectDB()
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
-
 	sdb, _ := db.DB()
 	gofixtures.Data(
 		gofixtures.Sql(`
@@ -46,7 +46,7 @@ INSERT INTO container_headers (color) VALUES ('black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
 
-	r := httptest.NewRequest("GET", "/page_builder/editors/1?version=v1&locale=International", nil)
+	r := httptest.NewRequest("GET", "/page_builder/editors/1?pageVersion=v1&locale=International", nil)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	if strings.Index(w.Body.String(), "headers") < 0 {

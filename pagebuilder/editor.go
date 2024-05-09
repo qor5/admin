@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"path"
 	"sort"
 	"strconv"
@@ -60,6 +59,7 @@ const (
 	paramMoveDirection   = "paramMoveDirection"
 	paramsIsNotEmpty     = "isNotEmpty"
 	paramsTpl            = "tpl"
+	paramsDevice         = "device"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -89,84 +89,73 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 const editorPreviewContentPortal = "editorPreviewContentPortal"
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
-	isTpl := ctx.R.FormValue(paramsTpl) != ""
-	id := pat.Param(ctx.R, presets.ParamID)
-	version := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.Form.Get(paramLocale)
-	isLocalizable := ctx.R.Form.Has(paramLocale)
-	var body h.HTMLComponent
-	var containerList h.HTMLComponent
-	var device string
-	var p *Page
-	var previewHref string
-	deviceQueries := url.Values{}
-	if isTpl {
-		previewHref = fmt.Sprintf("/preview?id=%s&tpl=1", id)
-		deviceQueries.Add("tpl", "1")
-		if isLocalizable && l10nON {
-			previewHref = fmt.Sprintf("/preview?id=%s&tpl=1&locale=%s", id, locale)
-			deviceQueries.Add("locale", locale)
-		}
-	} else {
-		previewHref = fmt.Sprintf("/preview?id=%s&version=%s", id, version)
-		deviceQueries.Add("version", version)
 
-		if isLocalizable && l10nON {
-			previewHref = fmt.Sprintf("/preview?id=%s&version=%s&locale=%s", id, version, locale)
-			deviceQueries.Add("locale", locale)
-		}
+	var (
+		deviceToggler     h.HTMLComponent
+		versionComponent  h.HTMLComponent
+		tabContent        web.PageResponse
+		activeDevice      int
+		pageAppbarContent []h.HTMLComponent
+		page              *Page
+		exitHref          string
+
+		device = ctx.R.FormValue(paramsDevice)
+	)
+	ctx.R.Form.Set(presets.ParamID, pat.Param(ctx.R, presets.ParamID))
+	switch device {
+	case DeviceTablet:
+		activeDevice = 1
+	case DevicePhone:
+		activeDevice = 2
 	}
+	deviceToggler = web.Scope(
+		VBtnToggle(
+			VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
+			VBtn("").Icon("mdi-tablet").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
+			VBtn("").Icon("mdi-cellphone").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
+		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
 
-	body, p, err = b.renderPageOrTemplate(ctx, true)
-	if err != nil {
+	if tabContent, page, err = b.PageContent(ctx); err != nil {
 		return
 	}
-	r.PageTitle = fmt.Sprintf("Editor for %s: %s", id, p.Title)
-	device, _ = b.getDevice(ctx)
-	ctx.R.Form.Set(paramPageID, strconv.Itoa(int(p.ID)))
-	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
-	ctx.R.Form.Set(paramLocale, p.GetLocale())
-	ctx.R.Form.Set(paramStatus, p.GetStatus())
-	containerList = b.renderContainersList(ctx)
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	if b.mb != nil {
+		versionComponent = publish.DefaultVersionComponentFunc(b.mb)(page, &presets.FieldContext{ModelInfo: b.mb.Info()}, ctx)
+		exitHref = b.mb.Info().DetailingHref(ctx.R.FormValue(paramPageID))
+	}
+	pageAppbarContent = h.Components(
+		h.Div(
+			VIcon("mdi-exit-to-app").Class("mr-4").
+				Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go()),
+			VToolbarTitle("Page Builder"),
+		).Class("d-inline-flex align-center"),
+		h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-2"),
+		versionComponent,
+	)
 
-	r.Body = h.Components(
-		web.Scope(
-			VAppBar(
-				VSpacer(),
-				// icon was phone_iphone
-				VBtn("").Icon("mdi-cellphone").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "phone").PushState(true).Go()).
-					Class("mr-10").Active(device == "phone"),
-
-				// icon was tablet_mac
-				VBtn("").Icon("mdi-tablet").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "tablet").PushState(true).Go()).
-					Class("mr-10").Active(device == "tablet"),
-				// icon was laptop_mac
-				VBtn("").Icon("mdi-laptop").Attr("@click", web.Plaid().Queries(deviceQueries).Query("device", "laptop").PushState(true).Go()).
-					Active(device == "laptop"),
-
-				VSpacer(),
-
-				VBtn(msgr.Preview).Variant(VariantText).Href(b.prefix+previewHref).To("_blank"),
-				VAppBarNavIcon().On("click.stop", "drawerLocals.navDrawer = !drawerLocals.navDrawer"),
-			).Theme(ThemeDark).
-				Color("primary"),
-			VMain(
-				VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
-					Class("mt-6").
-					Fluid(true),
-				VNavigationDrawer(containerList).
-					Width(420).
-					Attr("v-model", "drawerLocals.navDrawer"),
-			),
-		).VSlot(" { locals : drawerLocals } ").Init(`{navDrawer: null}`),
+	r.Body = VApp(
+		VAppBar(
+			h.Div(
+				pageAppbarContent...,
+			).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
+		).
+			Elevation(0).
+			Density("compact").Class("px-6"),
+		h.Tag("vx-restore-scroll-listener"),
+		vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+		VMain(
+			tabContent.Body.(h.HTMLComponent),
+		),
 	)
 
 	return
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
-	device = ctx.R.FormValue("device")
+	device = ctx.R.FormValue(paramsDevice)
 	if len(device) == 0 {
 		device = b.defaultDevice
 	}
@@ -188,10 +177,11 @@ const ContainerToPageLayoutKey = "ContainerToPageLayout"
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	var (
 		isTpl            = ctx.R.FormValue(paramsTpl) != ""
-		pageOrTemplateID = ctx.R.FormValue(paramPageID)
+		pageOrTemplateID = ctx.R.FormValue(presets.ParamID)
 		version          = ctx.R.FormValue(paramPageVersion)
-		locale           = ctx.R.Form.Get(paramLocale)
+		locale           = ctx.R.FormValue(paramLocale)
 	)
+
 	if isTpl {
 		tpl := &Template{}
 		err = b.db.First(tpl, "id = ? and locale_code = ?", pageOrTemplateID, locale).Error
@@ -341,8 +331,8 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r 
 					).Class("front"),
 				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
 			}
-			_, width := b.getDevice(ctx)
 			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+			_, width := b.getDevice(ctx)
 			iframeValue := "1000px"
 			if iframeHeightCookie != nil {
 				iframeValue = iframeHeightCookie.Value
@@ -370,10 +360,8 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 	if err != nil {
 		return
 	}
-
-	cbs := b.getContainerBuilders(cons)
-
 	device, _ := b.getDevice(ctx)
+	cbs := b.getContainerBuilders(cons)
 	for i, ec := range cbs {
 		if ec.container.Hidden {
 			continue
@@ -479,7 +467,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons         []*Container
-		pageID       = ctx.R.FormValue(paramPageID)
+		pageID       = pat.Param(ctx.R, presets.ParamID)
 		pageVersion  = ctx.R.FormValue(paramPageVersion)
 		locale       = ctx.R.FormValue(paramLocale)
 		status       = ctx.R.FormValue(paramStatus)
@@ -1136,12 +1124,13 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 }
 
 func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
-	pageID := ctx.R.FormValue(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.FormValue(paramLocale)
-	containerId := ctx.R.FormValue(paramContainerID)
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
+	var (
+		pageID      = ctx.R.FormValue(presets.ParamID)
+		pageVersion = ctx.R.FormValue(paramPageVersion)
+		locale      = ctx.R.FormValue(paramLocale)
+		containerId = ctx.R.FormValue(paramContainerID)
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	)
 	var (
 		containers  []h.HTMLComponent
 		groupsNames []string
@@ -1429,61 +1418,12 @@ const (
 func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 
-		ctx.Injector.HeadHTML(strings.Replace(`
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
-			<script src='{{prefix}}/assets/vue.js'></script>
-
-			<style>
-				.page-builder-container {
-					overflow: hidden;
-					box-shadow: -10px 0px 13px -7px rgba(0,0,0,.3), 10px 0px 13px -7px rgba(0,0,0,.18), 5px 0px 15px 5px rgba(0,0,0,.12);	
-				}
-				[v-cloak] {
-					display: none;
-				}
-			</style>
-		`, "{{prefix}}", b.prefix, -1))
-
-		b.ps.InjectExtraAssets(ctx)
-
-		if len(os.Getenv("DEV_PRESETS")) > 0 {
-			ctx.Injector.TailHTML(`
-<script src='http://localhost:3080/js/chunk-vendors.js'></script>
-<script src='http://localhost:3080/js/app.js'></script>
-<script src='http://localhost:3100/js/chunk-vendors.js'></script>
-<script src='http://localhost:3100/js/app.js'></script>
-			`)
-
-		} else {
-			ctx.Injector.TailHTML(strings.Replace(`
-			<script src='{{prefix}}/assets/main.js'></script>
-			`, "{{prefix}}", b.prefix, -1))
-		}
-
+		b.ps.InjectAssets(ctx)
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if err != nil {
 			panic(err)
 		}
-
-		action := web.POST().
-			EventFunc(actions.Edit).
-			URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-			Query(presets.ParamOverlay, actions.Drawer).
-			Query(presets.ParamID, web.Var("arr[1]")).
-			// Query(presets.ParamOverlayAfterUpdateScript,
-			// 	web.Var(
-			// 		h.JSONString(web.POST().
-			// 			PushState(web.Location(url.Values{})).
-			// 			MergeQuery(true).
-			// 			ThenScript(`setTimeout(function(){ window.scroll({left: __scrollLeft__, top: __scrollTop__, behavior: "auto"}) }, 50)`).
-			// 			Go())+".replace(\"__scrollLeft__\", scrollLeft).replace(\"__scrollTop__\", scrollTop)",
-			// 	),
-			// ).
-			Go()
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
 		pr.Body = VApp(
 
@@ -1491,20 +1431,6 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(dialogPortalName),
-			h.Tag("vx-restore-scroll-listener"),
-			vx.VXMessageListener().ListenFunc(fmt.Sprintf(`
-				function(e){
-					if (!e.data.split) {
-						return
-					}
-					let arr = e.data.split("_");
-					if (arr.length != 2) {
-						console.log(arr);
-						return
-					}
-					%s
-				}`, action)),
-
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
