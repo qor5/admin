@@ -462,7 +462,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
-		funcStr := fmt.Sprintf(`function(e) {
+		funcStr := fmt.Sprintf(`(e) => {
 	if (e.metaKey || e.ctrlKey) { return; }
 	e.stopPropagation();
 	e.preventDefault();

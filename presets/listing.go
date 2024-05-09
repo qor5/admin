@@ -1478,10 +1478,10 @@ func (b *ListingBuilder) actionsComponent(
 		return h.Components(VMenu(
 			web.Slot(
 				VBtn("Actions").
-					Attr("v-bind", "attrs").
+					Attr("v-bind", "props").
 					Attr("v-on", "on").
 					Size(SizeSmall),
-			).Name("activator").Scope("{ on, attrs }"),
+			).Name("activator").Scope("{ on, props }"),
 			VList(listItems...),
 		).OpenOnHover(true))
 	}
