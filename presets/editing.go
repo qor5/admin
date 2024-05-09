@@ -287,49 +287,11 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		VCardActions(actionButtons),
 	)
 
-	var asideContent h.HTMLComponent = formContent
-	if len(b.tabPanels) != 0 {
-		var tabs []h.HTMLComponent
-		var contents []h.HTMLComponent
-
-		for _, panelFunc := range b.tabPanels {
-			tab, content := panelFunc(obj, ctx)
-			if tab != nil {
-				tabs = append(tabs, tab)
-				contents = append(contents, content)
-
-			}
-
-		}
-
-		if len(tabs) != 0 {
-			asideContent = web.Scope(
-				VTabs(
-					VTab(h.Text(msgr.FormTitle)).Value("default"),
-					h.Components(tabs...),
-				).Class("v-tabs--fixed-tabs").Attr("v-model", "locals.tab"),
-
-				VTabsWindow(
-					web.Scope(formContent).VSlot("{ form }"),
-					h.Components(contents...),
-				).Attr("v-model", "locals.tab"),
-			).VSlot("{ locals }").Init(`{tab: 'default'}`)
-		}
-	} else {
-		asideContent = web.Scope(formContent).VSlot("{ form }")
-	}
-
-	if b.sidePanel != nil {
-		sidePanel := b.sidePanel(ctx)
-		if sidePanel != nil {
-			asideContent = VContainer(
-				VRow(
-					VCol(asideContent).Cols(8),
-					VCol(sidePanel).Cols(4),
-				),
-			)
-		}
-	}
+	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
+		formContent: formContent,
+		tabPanels:   b.tabPanels,
+		sidePanel:   b.sidePanel,
+	}, obj, ctx)
 
 	closeBtnVarScript := closeRightDrawerVarScript
 	if overlayType == actions.Dialog {

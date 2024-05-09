@@ -167,46 +167,11 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	comp := b.ToComponent(b.mb.Info(), obj, ctx)
 
-	var tabsContent h.HTMLComponent = comp
-
-	if len(b.tabPanels) != 0 {
-		var tabs []h.HTMLComponent
-		var contents []h.HTMLComponent
-		for _, panelFunc := range b.tabPanels {
-			tab, content := panelFunc(obj, ctx)
-			if tab != nil {
-				tabs = append(tabs, tab)
-				contents = append(contents, content)
-			}
-
-		}
-
-		if len(tabs) != 0 {
-			tabsContent = web.Scope(
-				VTabs(
-					VTab(h.Text(msgr.FormTitle)).Value("default"),
-					h.Components(tabs...),
-				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
-
-				VTabsWindow(
-					web.Scope(comp).VSlot("{ form }"),
-					h.Components(contents...),
-				).Attr("v-model", "tab"),
-			).VSlot("{ locals }").Init(`{tab: 'default'}`)
-		}
-	}
-
-	if b.sidePanel != nil {
-		sidePanel := b.sidePanel(ctx)
-		if sidePanel != nil {
-			tabsContent = VContainer(
-				VRow(
-					VCol(tabsContent).Cols(8),
-					VCol(sidePanel).Cols(4),
-				),
-			)
-		}
-	}
+	var tabsContent h.HTMLComponent = defaultToPage(commonPageConfig{
+		formContent: comp,
+		tabPanels:   b.tabPanels,
+		sidePanel:   b.sidePanel,
+	}, obj, ctx)
 
 	r.Body = VContainer(
 		notice,
