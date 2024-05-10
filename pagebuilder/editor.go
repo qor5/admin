@@ -56,10 +56,11 @@ const (
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
-	paramMoveDirection   = "paramMoveDirection"
+	paramMoveDirection   = "moveDirection"
 	paramsIsNotEmpty     = "isNotEmpty"
 	paramsTpl            = "tpl"
 	paramsDevice         = "device"
+	paramsDisplayName    = "DisplayName"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -576,7 +577,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 											VListItem(
 												web.Scope(
 													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
-														Attr("v-model", "form.DisplayName").
+														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
@@ -1056,19 +1057,22 @@ func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventRespo
 }
 
 func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
-	paramID := ctx.R.FormValue(paramContainerID)
-	cs := container.PrimaryColumnValuesBySlug(paramID)
-	containerID := cs["id"]
-	locale := cs["locale_code"]
-	name := ctx.R.FormValue("DisplayName")
-	var c Container
-	err = b.db.First(&c, "id = ? AND locale_code = ?  ", containerID, locale).Error
+	var (
+		container Container
+	)
+	var (
+		paramID     = ctx.R.FormValue(paramContainerID)
+		cs          = container.PrimaryColumnValuesBySlug(paramID)
+		containerID = cs["id"]
+		locale      = cs["locale_code"]
+		name        = ctx.R.FormValue(paramsDisplayName)
+	)
+	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error
 	if err != nil {
 		return
 	}
-	if c.Shared {
-		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", c.ModelName, c.ModelID, locale).Update("display_name", name).Error
+	if container.Shared {
+		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
 		if err != nil {
 			return
 		}
