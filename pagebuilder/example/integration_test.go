@@ -121,8 +121,8 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *web.EventContext) {
 	gofixtures.Data(
 		gofixtures.Sql(`
 INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
-INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, model_name, model_id, display_order) VALUES ( 1, 1, 'v1','International', 'Header', 1, 1);
-INSERT INTO container_headers (id,color) VALUES (1,'black');
+INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, model_name, model_id, display_order) VALUES ( 1, 1, 'v1','International', 'Header', 1, 1),( 2, 1, 'v1','International', 'Header', 1, 2);
+INSERT INTO container_headers (id,color) VALUES (1,'black'),(2,'black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
 	ctx := &web.EventContext{
@@ -134,29 +134,47 @@ INSERT INTO container_headers (id,color) VALUES (1,'black');
 	return db, pb, ctx
 }
 
+func TestAddContainer(t *testing.T) {
+	var (
+		err        error
+		_, pb, ctx = initPageBuilder()
+	)
+	ctx.R.Form.Set("id", "1")
+	ctx.R.Form.Set("pageVersion", "v1")
+	ctx.R.Form.Set("locale", "International")
+	ctx.R.Form.Set("modelName", "Header")
+	ctx.R.Form.Set("containerName", "Header")
+	ctx.R.Form.Set("modelID", "1")
+	if _, err = pb.AddContainer(ctx); err != nil {
+		t.Error(err)
+		return
+	}
+}
+
 func TestEditorDelete(t *testing.T) {
-	_, pb, ctx := initPageBuilder()
+	var (
+		err        error
+		_, pb, ctx = initPageBuilder()
+	)
 
 	ctx.R.Form.Set("containerID", "1_International")
-	if _, err := pb.DeleteContainer(ctx); err != nil {
+	if _, err = pb.DeleteContainer(ctx); err != nil {
+		t.Error(err)
 		return
 	}
 }
 
 func TestEditorMoveUpDown(t *testing.T) {
-	_, pb, ctx := initPageBuilder()
 	var (
-		err error
+		err        error
+		_, pb, ctx = initPageBuilder()
 	)
-	_, err = pb.AddContainerToPage(1, "", "v1", "International", "Header")
-	if err != nil {
-		t.Error(err)
-	}
+	TestAddContainer(t)
 	ctx.R.Form.Set("containerID", "1_International")
 	ctx.R.Form.Set("moveDirection", "down")
-	_, err = pb.MoveUpDownContainer(ctx)
-	if err != nil {
+	if _, err = pb.MoveUpDownContainer(ctx); err != nil {
 		t.Error(err)
+		return
 	}
 	ctx.R.Form.Set("moveDirection", "up")
 	if _, err = pb.MoveUpDownContainer(ctx); err != nil {
@@ -187,8 +205,6 @@ func TestShowEditContainerDrawer(t *testing.T) {
 	ctx.R.Form.Set("locale", "International")
 	ctx.R.Form.Set("modelName", "Header")
 	ctx.R.Form.Set("containerName", "Header")
-	ctx.R.Form.Set("pageVersion", "v1")
-	ctx.R.Form.Set("locale", "International")
 	ctx.R.Form.Set("modelID", "1")
 	if _, err = pb.ShowEditContainerDrawer(ctx); err != nil {
 		t.Error(err)
@@ -203,6 +219,31 @@ func TestRenameContainer(t *testing.T) {
 	ctx.R.Form.Set("containerID", "1_International")
 	ctx.R.Form.Set("DisplayName", "Header001")
 	if _, err = pb.RenameContainer(ctx); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestShowSortedContainerDrawer(t *testing.T) {
+	var (
+		err        error
+		_, pb, ctx = initPageBuilder()
+	)
+	ctx.R.Form.Set("id", "1")
+	ctx.R.Form.Set("pageVersion", "v1")
+	ctx.R.Form.Set("locale", "International")
+	ctx.R.Form.Set("status", "draft")
+	if _, err = pb.ShowSortedContainerDrawer(ctx); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestMoveContainerEvent(t *testing.T) {
+	var (
+		err        error
+		_, pb, ctx = initPageBuilder()
+	)
+	ctx.R.Form.Set("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`)
+	if _, err = pb.MoveContainer(ctx); err != nil {
 		t.Error(err)
 	}
 }
