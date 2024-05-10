@@ -381,7 +381,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			DisplayName: displayName,
 			IsFirst:     i == 0,
 			IsEnd:       i == len(cbs)-1,
-			ModelId:     ctx.R.FormValue(paramModelID),
+			HighLight:   ctx.R.FormValue(paramModelID) == strconv.Itoa(int(ec.container.ModelID)),
 			ModelName:   ec.container.ModelName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
@@ -421,9 +421,9 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent
 func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 
 	var (
+		pageID        = ctx.R.FormValue(presets.ParamID)
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		pageID        = ctx.R.FormValue(paramPageID)
 		pageVersion   = ctx.R.FormValue(paramPageVersion)
 		locale        = ctx.R.FormValue(paramLocale)
 		modelID       = ctx.R.FormValue(paramModelID)
@@ -629,7 +629,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 
 func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		pageID          = ctx.QueryAsInt(paramPageID)
+		pageID          = ctx.QueryAsInt(presets.ParamID)
 		pageVersion     = ctx.R.FormValue(paramPageVersion)
 		locale          = ctx.R.FormValue(paramLocale)
 		containerName   = ctx.R.FormValue(paramContainerName)
@@ -1167,7 +1167,6 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 					EventFunc(AddContainerEvent).
 					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
-					Query(paramPageID, pageID).
 					Query(paramStatus, ctx.R.FormValue(paramStatus)).
 					Query(paramModelName, builder.name).
 					Query(paramPageVersion, pageVersion).
@@ -1224,7 +1223,6 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 					URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 					EventFunc(AddContainerEvent).
 					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
-					Query(paramPageID, pageID).
 					Query(paramStatus, ctx.R.FormValue(paramStatus)).
 					Query(paramPageVersion, pageVersion).
 					Query(paramLocale, locale).
@@ -1305,7 +1303,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							"dialogLocals.addContainerDialog = false;"+web.Plaid().
 								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 								EventFunc(AddContainerEvent).
-								Query(paramPageID, pageID).
+								Query(presets.ParamID, pageID).
 								Query(paramPageVersion, pageVersion).
 								Query(paramLocale, locale).
 								Query(paramContainerName, builder.name).
@@ -1343,7 +1341,7 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							"dialogLocals.addContainerDialog = false;"+web.Plaid().
 								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 								EventFunc(AddContainerEvent).
-								Query(paramPageID, pageID).
+								Query(presets.ParamID, pageID).
 								Query(paramPageVersion, pageVersion).
 								Query(paramLocale, locale).
 								Query(paramContainerName, sharedC.ModelName).

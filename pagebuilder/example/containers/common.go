@@ -2,15 +2,17 @@ package containers
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/pagebuilder"
 	"strings"
 
+	"github.com/qor5/admin/v3/pagebuilder"
+
 	"github.com/qor5/admin/v3/media/media_library"
+
+	. "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
 	v "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
-	. "github.com/theplant/htmlgo"
 )
 
 const (
@@ -66,7 +68,7 @@ func ContainerWrapper(containerID, anchorID, classes,
 					Div().Class("add"),
 					Button("").Children(I("add").Class("material-icons add")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
 				).Class("editor-add"),
-			).Class("wrapper-shadow").Id(containerID).ClassIf("highlight", input.ModelId == containerID)
+			).Class("wrapper-shadow").ClassIf("highlight", input.HighLight)
 		}
 	}
 	return r

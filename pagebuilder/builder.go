@@ -44,7 +44,7 @@ type RenderInput struct {
 	DisplayName string
 	IsFirst     bool
 	IsEnd       bool
-	ModelId     string
+	HighLight   bool
 	ModelName   string
 }
 
@@ -2058,7 +2058,6 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	addAction := web.POST().EventFunc(ShowAddContainerDrawerEvent).
 		Queries(ctx.R.Form).
 		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
-		Query(presets.ParamID, web.Var("arr[1]")).
 		Query(paramContainerID, web.Var("container_id")).
 		Go()
 	deleteAction := web.POST().

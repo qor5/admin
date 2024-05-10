@@ -102,7 +102,7 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 
 }
 
-func TestEditorDelete(t *testing.T) {
+func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 	db := ConnectDB()
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
@@ -114,6 +114,11 @@ INSERT INTO page_builder_containers ( page_id, page_version,locale_code, model_n
 INSERT INTO container_headers (color) VALUES ('black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
+	return db, pb
+}
+
+func TestEditorDelete(t *testing.T) {
+	_, pb := initPageBuilder()
 	ctx := new(web.EventContext)
 	p := pagebuilder.Page{}
 	p.L10nON()
@@ -124,5 +129,4 @@ INSERT INTO container_headers (color) VALUES ('black');
 	if err != nil {
 		t.Error(err)
 	}
-
 }
