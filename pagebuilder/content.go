@@ -47,10 +47,26 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Pag
 	return
 }
 
-func (b *Builder) previewHref(id, version, locale string) string {
-	uv := url.Values{}
-	uv.Add(presets.ParamID, id)
-	uv.Add(paramPageVersion, version)
-	uv.Add(paramLocale, locale)
-	return b.prefix + "/preview?" + uv.Encode()
+func (b *Builder) previewHref(ctx *web.EventContext) string {
+	var (
+		isTpl         = ctx.R.FormValue(paramsTpl) != ""
+		id            = ctx.R.FormValue(paramPageID)
+		version       = ctx.R.FormValue(paramPageVersion)
+		locale        = ctx.R.Form.Get(paramLocale)
+		isLocalizable = ctx.R.Form.Has(paramLocale)
+		ur            = url.Values{}
+	)
+	ur.Add(presets.ParamID, id)
+	if isTpl {
+		if isLocalizable && l10nON {
+			ur.Add(paramsTpl, "1")
+			ur.Add(paramLocale, locale)
+		}
+	} else {
+		ur.Add(paramPageVersion, version)
+		if isLocalizable && l10nON {
+			ur.Add(paramLocale, locale)
+		}
+	}
+	return b.prefix + "/preview?" + ur.Encode()
 }

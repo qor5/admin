@@ -296,9 +296,20 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing("Overview")
-	dp.Field("Overview").ComponentFunc(settings(db, b, activityB))
+	dp := pm.Detailing("Iframe", "Editor")
+
+	// pm detailing iframe
+	b.installDetailingIframeField(templateM)
+
+	// pm detailing detail-field
+	b.installDetailingEditorField()
+
+	// pm detailing side panel
+	b.installDetailingSidePanel()
+
 	oldDetailLayout := pb.GetDetailLayoutFunc()
+
+	// change old detail layout
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && !strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/") {
@@ -2100,4 +2111,93 @@ function(e){
 
 func defaultSubPageTitle(ctx *web.EventContext) string {
 	return i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages).PageOverView
+}
+
+func (b *Builder) installDetailingSidePanel() {
+	b.mb.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		var (
+			detailComponentTab     h.HTMLComponent
+			detailComponentContent h.HTMLComponent
+			notesItems             []h.HTMLComponent
+			timelineItems          []h.HTMLComponent
+			notes                  []note.QorNote
+		)
+		var (
+			p        = obj.(*Page)
+			noteMsgr = i18n.MustGetModuleMessages(ctx.R, note.I18nNoteKey, note.Messages_en_US).(*note.Messages)
+			ri       = p.PrimarySlug()
+			rt       = b.mb.Info().Label()
+		)
+
+		b.db.Where("resource_type = ? and resource_id = ?", rt, ri).
+			Order("id DESC").Find(&notes)
+		if b.ab != nil {
+			for _, i := range b.ab.GetActivityLogs(p, b.db.Order("created_at desc")) {
+				timelineItems = append(timelineItems,
+					VTimelineItem(
+						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
+						h.Div(
+							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
+							h.Strong(i.GetCreator()).Class("ml-1"),
+						),
+						h.Div(h.Text(i.GetAction())).Class("text-caption"),
+					).DotColor(ColorSuccess).Size(SizeXSmall),
+				)
+			}
+
+		}
+		if len(notes) > 0 {
+			userID, _ := note.GetUserData(ctx)
+			userNote := note.UserNote{UserID: userID, ResourceType: rt, ResourceID: ri}
+			b.db.Where(userNote).FirstOrCreate(&userNote)
+			if userNote.Number != int64(len(notes)) {
+				userNote.Number = int64(len(notes))
+				b.db.Save(&userNote)
+			}
+			for _, n := range notes {
+				notesItems = append(notesItems, VTimelineItem(
+					h.Div(h.Text(n.CreatedAt.Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
+					h.Div(
+						VAvatar().Text(strings.ToUpper(string(n.Creator[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
+						h.Strong(n.Creator).Class("ml-1"),
+					),
+					h.Div(h.Text(n.Content)).Class("text-caption"),
+				).DotColor(ColorSuccess).Size(SizeXSmall),
+				)
+			}
+		}
+
+		detailComponentTab = VTabs(
+			VTab(h.Text("Activity")).Size(SizeXSmall).Value("Activity"),
+			VTab(h.Text(noteMsgr.Notes)).Size(SizeXSmall).Value("Notes"),
+		).Attr("v-model", "locals.tab").AlignTabs(Center).FixedTabs(true)
+
+		detailComponentContent = VTabsWindow(
+			VTabsWindowItem(
+				VBtn(noteMsgr.NewNote).PrependIcon("mdi-plus").Variant(VariantTonal).Class("w-100").
+					Attr("@click", web.POST().
+						EventFunc(createNoteDialogEvent).
+						Query(presets.ParamOverlay, actions.Dialog).
+						Query(presets.ParamID, p.PrimarySlug()).
+						URL(b.prefix+"/pages").Go(),
+					),
+				VTimeline(
+					notesItems...,
+				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-5"),
+			).Value("Notes").Class("pa-5"),
+			VTabsWindowItem(
+				VTimeline(
+					timelineItems...,
+				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
+			).Value("Activity").Class("pa-5"),
+		).Attr("v-model", "locals.tab")
+		return web.Scope(
+			VLayout(
+				VCardText(
+					detailComponentTab,
+					detailComponentContent,
+				),
+			).Class("h-100"),
+		).VSlot("{locals}").Init(`{tab:"Activity"}`)
+	})
 }

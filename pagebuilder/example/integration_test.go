@@ -6,11 +6,13 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/web/v3"
 
 	"github.com/theplant/gofixtures"
 	"gorm.io/driver/postgres"
@@ -97,5 +99,30 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
+
+}
+
+func TestEditorDelete(t *testing.T) {
+	db := ConnectDB()
+	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
+	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
+	sdb, _ := db.DB()
+	gofixtures.Data(
+		gofixtures.Sql(`
+INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
+INSERT INTO page_builder_containers ( page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (  1, 'v1','International', 'Header', 1, 1);
+INSERT INTO container_headers (color) VALUES ('black');
+`, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
+	).TruncatePut(sdb)
+	ctx := new(web.EventContext)
+	p := pagebuilder.Page{}
+	p.L10nON()
+	ctx.R = new(http.Request)
+	ctx.R.Form = url.Values{}
+	ctx.R.Form.Set("containerID", "1_International")
+	_, err := pb.DeleteContainer(ctx)
+	if err != nil {
+		t.Error(err)
+	}
 
 }

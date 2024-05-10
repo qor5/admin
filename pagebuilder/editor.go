@@ -467,7 +467,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons         []*Container
-		pageID       = pat.Param(ctx.R, presets.ParamID)
+		pageID       = ctx.R.FormValue(presets.ParamID)
 		pageVersion  = ctx.R.FormValue(paramPageVersion)
 		locale       = ctx.R.FormValue(paramLocale)
 		status       = ctx.R.FormValue(paramStatus)
@@ -1251,7 +1251,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	var backPlaid = web.Plaid().
 		URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
 		EventFunc(ShowSortedContainerDrawerEvent).
-		Query(paramPageID, pageID).
+		Query(presets.ParamID, pageID).
 		Query(paramPageVersion, pageVersion).
 		Query(paramLocale, locale).
 		Query(paramStatus, ctx.R.FormValue(paramStatus)).
