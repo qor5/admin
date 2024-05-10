@@ -55,9 +55,10 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		father:            d,
 		elementShowFunc:   nil,
 		elementEditFunc:   nil,
-		design: &DetailFieldDesign{
+		config: &DetailFieldConfig{
 			disableElementDeleteBtn: false,
 			disableElementCreateBtn: false,
+			alwaysShowListLabel:     false,
 		},
 		isList: false,
 	}
@@ -73,18 +74,31 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 	return
 }
 
-type DetailFieldDesign struct {
+type DetailFieldConfig struct {
+	// Only when isList is false, the following param will take effect
+
+	// Only when isList is true, the following param will take effect
+	// Disable Delete button in element
 	disableElementDeleteBtn bool
+	// Disable Create button in element
 	disableElementCreateBtn bool
+	// By default, the title will only be displayed if the list is not empty.
+	// If alwaysShowListLabel is true, the label will show anyway
+	alwaysShowListLabel bool
 }
 
-func (d *DetailFieldDesign) DisableElementDeleteBtn() *DetailFieldDesign {
+func (d *DetailFieldConfig) DisableElementDeleteBtn() *DetailFieldConfig {
 	d.disableElementDeleteBtn = true
 	return d
 }
 
-func (d *DetailFieldDesign) DisableElementCreateBtn() *DetailFieldDesign {
+func (d *DetailFieldConfig) DisableElementCreateBtn() *DetailFieldConfig {
 	d.disableElementCreateBtn = true
+	return d
+}
+
+func (d *DetailFieldConfig) AlwaysShowListLabel() *DetailFieldConfig {
+	d.alwaysShowListLabel = true
 	return d
 }
 
@@ -101,7 +115,7 @@ type DetailFieldBuilder struct {
 	componentShowFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
 	father            *DetailFieldsBuilder
-	design            *DetailFieldDesign
+	config            *DetailFieldConfig
 	FieldsBuilder
 
 	// only used if isList = true
@@ -216,8 +230,8 @@ func (b *DetailFieldBuilder) Label(label string) (r *DetailFieldBuilder) {
 	return b
 }
 
-func (b *DetailFieldBuilder) FieldDesign() (r *DetailFieldDesign) {
-	return b.design
+func (b *DetailFieldBuilder) FieldConfig() (r *DetailFieldConfig) {
+	return b.config
 }
 
 func (b *DetailFieldBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
@@ -389,16 +403,22 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		panic(err)
 	}
 
+	label := h.Div(h.Span(b.label).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 	rows := h.Div()
 
-	if b.label != "" {
-		rows.AppendChildren(h.Div(h.Span(b.label).Style("fontSize:16px; font-weight:500;")).Class("mb-2"))
+	if b.config.alwaysShowListLabel {
+		rows.AppendChildren(label)
 	}
 
 	if list != nil {
 		i := 0
 		reflectutils.ForEach(list, func(elementObj interface{}) {
 			defer func() { i++ }()
+			if i == 0 {
+				if b.label != "" && !b.config.alwaysShowListLabel {
+					rows.AppendChildren(label)
+				}
+			}
 			// set fieldSetting to ctx.R.Form by sortIndex
 			sortIndex := i
 			// find fieldSetting from ctx.R.Form by fromIndex
@@ -430,7 +450,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		})
 	}
 
-	if !b.design.disableElementCreateBtn {
+	if !b.config.disableElementCreateBtn {
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
 				Query(DetailFieldName, b.name).
@@ -522,7 +542,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 		).Class("flex-grow-1"),
 	).Class("d-flex justify-space-between")
 
-	if !b.design.disableElementDeleteBtn {
+	if !b.config.disableElementDeleteBtn {
 		deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 			Rounded("0").
 			Icon("mdi-delete-outline").
