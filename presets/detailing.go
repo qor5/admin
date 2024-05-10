@@ -24,7 +24,7 @@ type DetailingBuilder struct {
 	pageFunc           web.PageFunc
 	fetcher            FetchFunc
 	tabPanels          []TabComponentFunc
-	sidePanel          ComponentFunc
+	sidePanel          ObjectComponentFunc
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
 	DetailFieldsBuilder
@@ -111,7 +111,7 @@ func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
 	return b
 }
 
-func (b *DetailingBuilder) SidePanelFunc(v ComponentFunc) (r *DetailingBuilder) {
+func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
 	b.sidePanel = v
 	return b
 }

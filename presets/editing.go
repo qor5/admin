@@ -24,7 +24,7 @@ type EditingBuilder struct {
 	Validator        ValidateFunc
 	tabPanels        []TabComponentFunc
 	hiddenFuncs      []ObjectComponentFunc
-	sidePanel        ComponentFunc
+	sidePanel        ObjectComponentFunc
 	actionsFunc      ObjectComponentFunc
 	editingTitleFunc EditingTitleComponentFunc
 	FieldsBuilder
@@ -107,7 +107,7 @@ func (b *EditingBuilder) CleanTabsPanels() (r *EditingBuilder) {
 	return b
 }
 
-func (b *EditingBuilder) SidePanelFunc(v ComponentFunc) (r *EditingBuilder) {
+func (b *EditingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *EditingBuilder) {
 	b.sidePanel = v
 	return b
 }

@@ -11,7 +11,7 @@ type commonPageConfig struct {
 	formContent h.HTMLComponent
 
 	tabPanels []TabComponentFunc
-	sidePanel ComponentFunc
+	sidePanel ObjectComponentFunc
 }
 
 // TODO set common component which in editingBuilder or DetailingBuilder
@@ -49,7 +49,7 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 	}
 
 	if config.sidePanel != nil {
-		sidePanel := config.sidePanel(ctx)
+		sidePanel := config.sidePanel(obj, ctx)
 		if sidePanel != nil {
 			asideContent = VContainer(
 				VRow(

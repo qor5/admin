@@ -22,8 +22,8 @@ const (
 	PublishCustomDialogPortalName   = "publish_PublishCustomDialogPortalName"
 )
 
-func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ComponentFunc {
-	return func(ctx *web.EventContext) h.HTMLComponent {
+func sidePanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			msgr                = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			activeClass         = "primary white--text"
