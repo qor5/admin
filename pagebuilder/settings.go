@@ -196,3 +196,17 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 		)
 	}
 }
+
+func detailPageEditor(fb *presets.DetailFieldBuilder) {
+	fb.SetSwitchable(true).Editing("Title").
+		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			p := obj.(*Page)
+			return h.Div(h.Text(p.Title))
+		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		return VTextField().
+			Variant(VariantOutlined).Density(DensityCompact).
+			Attr(web.VField("Editor.Title", p.Title)...)
+	})
+	return
+}

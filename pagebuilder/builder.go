@@ -161,20 +161,20 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		Detailing().
 		PageFunc(r.Editor)
 	wb := r.ps.GetWebBuilder()
-	wb.RegisterEventFunc(AddContainerDialogEvent, r.AddContainerDialog)
-	wb.RegisterEventFunc(ShowAddContainerDrawerEvent, r.ShowAddContainerDrawer)
-	wb.RegisterEventFunc(ShowSortedContainerDrawerEvent, r.ShowSortedContainerDrawer)
-	wb.RegisterEventFunc(ShowEditContainerDrawerEvent, r.ShowEditContainerDrawer)
-	wb.RegisterEventFunc(AddContainerEvent, r.AddContainer)
-	wb.RegisterEventFunc(DeleteContainerConfirmationEvent, r.DeleteContainerConfirmation)
-	wb.RegisterEventFunc(DeleteContainerEvent, r.DeleteContainer)
-	wb.RegisterEventFunc(MoveContainerEvent, r.MoveContainer)
-	wb.RegisterEventFunc(MoveUpDownContainerEvent, r.MoveUpDownContainer)
-	wb.RegisterEventFunc(ToggleContainerVisibilityEvent, r.ToggleContainerVisibility)
-	wb.RegisterEventFunc(MarkAsSharedContainerEvent, r.MarkAsSharedContainer)
-	wb.RegisterEventFunc(RenameContainerDialogEvent, r.RenameContainerDialog)
-	wb.RegisterEventFunc(RenameContainerEvent, r.RenameContainer)
-	wb.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.ReloadRenderPageOrTemplate)
+	wb.RegisterEventFunc(AddContainerDialogEvent, r.addContainerDialog)
+	wb.RegisterEventFunc(ShowAddContainerDrawerEvent, r.showAddContainerDrawer)
+	wb.RegisterEventFunc(ShowSortedContainerDrawerEvent, r.showSortedContainerDrawer)
+	wb.RegisterEventFunc(ShowEditContainerDrawerEvent, r.showEditContainerDrawer)
+	wb.RegisterEventFunc(AddContainerEvent, r.addContainer)
+	wb.RegisterEventFunc(DeleteContainerConfirmationEvent, r.deleteContainerConfirmation)
+	wb.RegisterEventFunc(DeleteContainerEvent, r.deleteContainer)
+	wb.RegisterEventFunc(MoveContainerEvent, r.moveContainer)
+	wb.RegisterEventFunc(MoveUpDownContainerEvent, r.moveUpDownContainer)
+	wb.RegisterEventFunc(ToggleContainerVisibilityEvent, r.toggleContainerVisibility)
+	wb.RegisterEventFunc(MarkAsSharedContainerEvent, r.markAsSharedContainer)
+	wb.RegisterEventFunc(RenameContainerDialogEvent, r.renameContainerDialog)
+	wb.RegisterEventFunc(RenameContainerEvent, r.renameContainer)
+	wb.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.reloadRenderPageOrTemplate)
 	r.preview = wb.Page(r.Preview)
 	return r
 }
@@ -301,7 +301,8 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	// pm detailing overview
 	b.mb.Detailing().Field("Overview").ComponentFunc(overview(b, templateM))
 
-	// pm detailing detail-field
+	// pm detailing page  detail-field
+	detailPageEditor(b.mb.Detailing().Field("Editor"))
 
 	// pm detailing side panel
 	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
@@ -2046,7 +2047,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	editAction := web.POST().
 		EventFunc(ShowEditContainerDrawerEvent).
-		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+		URL(ctx.R.URL.Path).
 		Queries(ctx.R.Form).
 		Query(paramModelID, web.Var("arr[1]")).
 		Query(paramContainerName, web.Var("display_name")).
@@ -2054,19 +2055,20 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(paramContainerID, web.Var("container_id")).
 		Go()
 
-	addAction := web.POST().EventFunc(ShowAddContainerDrawerEvent).
+	addAction := web.POST().
+		EventFunc(ShowAddContainerDrawerEvent).
+		URL(ctx.R.URL.Path).
 		Queries(ctx.R.Form).
-		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
 		Query(paramContainerID, web.Var("container_id")).
 		Go()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
-		URL(web.Var("\""+b.prefix+"/\"+arr[0]")).
+		URL(ctx.R.URL.Path).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramContainerName, web.Var("display_name")).
 		Go()
 	moveAction := web.Plaid().
-		URL(fmt.Sprintf("%s/editors", b.prefix)).
+		URL(ctx.R.URL.Path).
 		EventFunc(MoveUpDownContainerEvent).
 		Queries(ctx.R.Form).
 		Query(paramContainerID, web.Var("container_id")).

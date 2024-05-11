@@ -2,16 +2,17 @@ package example_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"gorm.io/driver/postgres"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
 
 	"github.com/qor5/admin/v3/media/oss"
@@ -125,7 +125,7 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 
 }
 
-func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *web.EventContext) {
+func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
 	if err != nil {
 		panic(err)
@@ -142,125 +142,312 @@ INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, mode
 INSERT INTO container_headers (id,color) VALUES (1,'black'),(2,'black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
-	ctx := &web.EventContext{
-		R: &http.Request{
-			URL:  new(url.URL),
-			Form: url.Values{},
-		},
-	}
-	return db, pb, ctx
+	return db, pb
 }
 
 func TestAddContainer(t *testing.T) {
 	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
 	)
-	ctx.R.Form.Set("id", "1")
-	ctx.R.Form.Set("pageVersion", "v1")
-	ctx.R.Form.Set("locale", "International")
-	ctx.R.Form.Set("modelName", "Header")
-	ctx.R.Form.Set("containerName", "Header")
-	ctx.R.Form.Set("modelID", "1")
-	if _, err = pb.AddContainer(ctx); err != nil {
-		t.Error(err)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.AddContainerEvent).
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		AddField("containerName", "Header").
+		AddField("modelName", "Header").
+		AddField("modelID", "1").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "/page_builder/headers") < 0 {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorDeleteContainerConfirmationEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.DeleteContainerConfirmationEvent).
+		AddField("containerID", "1_International").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), presets.DeleteConfirmPortalName) < 0 {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorDeleteContainerEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.DeleteContainerEvent).
+		AddField("containerID", "1_International").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	var er web.EventResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
+	if er.PushState == nil {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorMoveUpDownContainerEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.MoveUpDownContainerEvent).
+		AddField("containerID", "1_International").
+		AddField("moveDirection", "down").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
+		t.Error(w.Body.String())
+	}
+
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.MoveUpDownContainerEvent).
+		AddField("containerID", "1_International").
+		AddField("moveDirection", "up").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+
+	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorReloadRenderPageOrTemplateEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.ReloadRenderPageOrTemplateEvent).
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "editorPreviewContentPortal") < 0 {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.ShowEditContainerDrawerEvent).
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		AddField("modelName", "Header").
+		AddField("containerName", "Header").
+		AddField("modelID", "1").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+		t.Error(w.Body.String())
+	}
+}
+
+func TestEditorRenameContainerEvent(t *testing.T) {
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.RenameContainerEvent).
+		AddField("containerID", "1_International").
+		AddField("DisplayName", "Header0000001").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	var er web.EventResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if er.PushState == nil {
+		t.Error(w.Body.String())
 		return
 	}
-}
-
-func TestEditorDelete(t *testing.T) {
-	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
-	)
-
-	ctx.R.Form.Set("containerID", "1_International")
-	if _, err = pb.DeleteContainer(ctx); err != nil {
-		t.Error(err)
-		return
+	r = httptest.NewRequest("GET", "/page_builder/editors/1?pageVersion=v1&locale=International", nil)
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	if strings.Index(w.Body.String(), "Header0000001") < 0 {
+		t.Error(w.Body.String())
 	}
 }
 
-func TestEditorMoveUpDown(t *testing.T) {
+func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
 	)
-	TestAddContainer(t)
-	ctx.R.Form.Set("containerID", "1_International")
-	ctx.R.Form.Set("moveDirection", "down")
-	if _, err = pb.MoveUpDownContainer(ctx); err != nil {
-		t.Error(err)
-		return
-	}
-	ctx.R.Form.Set("moveDirection", "up")
-	if _, err = pb.MoveUpDownContainer(ctx); err != nil {
-		t.Error(err)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		AddField("status", "draft").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+		t.Error(w.Body.String())
 	}
 }
 
-func TestReloadRenderPage(t *testing.T) {
+func TestEditorMoveContainerEvent(t *testing.T) {
+
 	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
 	)
-	ctx.R.Form.Set("id", "1")
-	ctx.R.Form.Set("pageVersion", "v1")
-	ctx.R.Form.Set("locale", "International")
-	if _, err = pb.ReloadRenderPageOrTemplate(ctx); err != nil {
-		t.Error(err)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.MoveContainerEvent).
+		AddField("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`).
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
+		t.Error(w.Body.String())
+	}
+}
+func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
+
+	var (
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
+	)
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
+		AddField("containerID", "1_International").
+		BuildEventFuncRequest()
+
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 && strings.Index(w.Body.String(), pagebuilder.ShowSortedContainerDrawerEvent) < 0 {
+		t.Error(w.Body.String())
 	}
 }
 
-func TestShowEditContainerDrawer(t *testing.T) {
-	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
-	)
-	ctx.R.Form.Set("id", "1")
-	ctx.R.Form.Set("pageVersion", "v1")
-	ctx.R.Form.Set("locale", "International")
-	ctx.R.Form.Set("modelName", "Header")
-	ctx.R.Form.Set("containerName", "Header")
-	ctx.R.Form.Set("modelID", "1")
-	if _, err = pb.ShowEditContainerDrawer(ctx); err != nil {
-		t.Error(err)
-	}
-}
+func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
 
-func TestRenameContainer(t *testing.T) {
 	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
+		_, pb = initPageBuilder()
+		r     *http.Request
+		w     *httptest.ResponseRecorder
 	)
-	ctx.R.Form.Set("containerID", "1_International")
-	ctx.R.Form.Set("DisplayName", "Header001")
-	if _, err = pb.RenameContainer(ctx); err != nil {
-		t.Error(err)
-	}
-}
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.ShowAddContainerDrawerEvent).
+		AddField("containerID", "1_International").
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		BuildEventFuncRequest()
 
-func TestShowSortedContainerDrawer(t *testing.T) {
-	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
-	)
-	ctx.R.Form.Set("id", "1")
-	ctx.R.Form.Set("pageVersion", "v1")
-	ctx.R.Form.Set("locale", "International")
-	ctx.R.Form.Set("status", "draft")
-	if _, err = pb.ShowSortedContainerDrawer(ctx); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestMoveContainerEvent(t *testing.T) {
-	var (
-		err        error
-		_, pb, ctx = initPageBuilder()
-	)
-	ctx.R.Form.Set("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`)
-	if _, err = pb.MoveContainer(ctx); err != nil {
-		t.Error(err)
+	//bs, _ := httputil.DumpRequest(r, true)
+	//fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+		t.Error(w.Body.String())
 	}
 }

@@ -102,7 +102,6 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 
 		device = ctx.R.FormValue(paramsDevice)
 	)
-	ctx.R.Form.Set(presets.ParamID, pat.Param(ctx.R, presets.ParamID))
 	switch device {
 	case DeviceTablet:
 		activeDevice = 1
@@ -112,11 +111,11 @@ func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) 
 	deviceToggler = web.Scope(
 		VBtnToggle(
 			VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
+				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
 			VBtn("").Icon("mdi-tablet").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
+				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
 			VBtn("").Icon("mdi-cellphone").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(b.prefix+"/editors").EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
+				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
 		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
 
@@ -178,7 +177,7 @@ const ContainerToPageLayoutKey = "ContainerToPageLayout"
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	var (
 		isTpl            = ctx.R.FormValue(paramsTpl) != ""
-		pageOrTemplateID = ctx.R.FormValue(presets.ParamID)
+		pageOrTemplateID = pat.Param(ctx.R, presets.ParamID)
 		version          = ctx.R.FormValue(paramPageVersion)
 		locale           = ctx.R.FormValue(paramLocale)
 	)
@@ -422,11 +421,8 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent
 func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 
 	var (
-		pageID        = ctx.R.FormValue(presets.ParamID)
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		pageVersion   = ctx.R.FormValue(paramPageVersion)
-		locale        = ctx.R.FormValue(paramLocale)
 		modelID       = ctx.R.FormValue(paramModelID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
@@ -440,7 +436,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 				h.Div(
 					h.Div(VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
 						Attr("@click", web.Plaid().
-							URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+							URL(ctx.R.URL.Path).
 							EventFunc(ShowAddContainerDrawerEvent).
 							Queries(ctx.R.Form).
 							Go(),
@@ -451,7 +447,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 						VBtn("Cancel").Variant(VariantOutlined).Size(SizeSmall).Class("mr-2"),
 						VBtn("Save").Variant(VariantFlat).Color("secondary").Size(SizeSmall).Attr("@click", web.Plaid().
 							EventFunc(actions.Update).
-							URL(ctx.R.URL.Path).
+							URL(b.ContainerByName(modelName).mb.Info().ListingHref()).
 							Query(presets.ParamID, modelID).
 							Go()),
 					),
@@ -468,7 +464,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons         []*Container
-		pageID       = ctx.R.FormValue(presets.ParamID)
+		pageID       = pat.Param(ctx.R, presets.ParamID)
 		pageVersion  = ctx.R.FormValue(paramPageVersion)
 		locale       = ctx.R.FormValue(paramLocale)
 		status       = ctx.R.FormValue(paramStatus)
@@ -525,7 +521,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 				VListItem(
 					VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
 						web.Plaid().
-							URL(web.Var("element.url")).
+							URL(ctx.R.URL.Path).
 							EventFunc(DeleteContainerConfirmationEvent).
 							Query(paramContainerID, web.Var("element.param_id")).
 							Query(paramContainerName, web.Var("element.display_name")).
@@ -544,7 +540,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 					VBtn("ADD").Size(SizeSmall).Variant(VariantFlat).Color("primary").
 						Attr("@click",
 							web.Plaid().
-								URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+								URL(ctx.R.URL.Path).
 								EventFunc(ShowAddContainerDrawerEvent).
 								Queries(ctx.R.Form).
 								Form(nil).
@@ -558,7 +554,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 					Attr("item-key", "model_id").
 					Attr("v-model", "sortLocals.items", "handle", ".handle", "animation", "300").
 					Attr("@end", web.Plaid().
-						URL(fmt.Sprintf("%s/editors", b.prefix)).
+						URL(ctx.R.URL.Path).
 						EventFunc(MoveContainerEvent).
 						Queries(ctx.R.Form).
 						FieldValue(paramMoveResult, web.Var("JSON.stringify(sortLocals.items)")).
@@ -592,7 +588,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 												h.Div(
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
-															URL(web.Var("element.url")).
+															URL(ctx.R.URL.Path).
 															EventFunc(ToggleContainerVisibilityEvent).
 															Queries(ctx.R.Form).
 															Query(paramContainerID, web.Var("element.param_id")).
@@ -601,7 +597,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 
 													VBtn("").Variant(VariantText).Icon("mdi-cog").Size(SizeSmall).Attr("@click",
 														web.Plaid().
-															URL(web.Var("element.url")).
+															URL(ctx.R.URL.Path).
 															EventFunc(ShowEditContainerDrawerEvent).
 															Queries(ctx.R.Form).
 															Query(paramModelID, web.Var("element.model_id")).
@@ -628,9 +624,9 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 	return
 }
 
-func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		pageID          = ctx.QueryAsInt(presets.ParamID)
+		pageID          int
 		pageVersion     = ctx.R.FormValue(paramPageVersion)
 		locale          = ctx.R.FormValue(paramLocale)
 		containerName   = ctx.R.FormValue(paramContainerName)
@@ -638,6 +634,9 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		modelID         = ctx.QueryAsInt(paramModelID)
 		containerID     = ctx.R.FormValue(paramContainerID)
 	)
+	if pageID, err = strconv.Atoi(pat.Param(ctx.R, presets.ParamID)); err != nil {
+		return
+	}
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, containerName, uint(modelID))
 	} else {
@@ -646,12 +645,12 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		modelID = int(newModelId)
 	}
 	r.RunScript = web.Plaid().
-		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		URL(ctx.R.URL.Path).
 		EventFunc(ReloadRenderPageOrTemplateEvent).
 		Queries(ctx.R.Form).
 		Query(paramModelID, modelID).
 		Go() + ";" + web.Plaid().
-		URL(b.ContainerByName(containerName).mb.Info().ListingHref()).
+		URL(ctx.R.URL.Path).
 		EventFunc(ShowEditContainerDrawerEvent).
 		Queries(ctx.R.Form).
 		Query(paramModelID, modelID).
@@ -659,7 +658,7 @@ func (b *Builder) AddContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	return
 }
 
-func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) moveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	moveResult := ctx.R.FormValue(paramMoveResult)
 
 	var result []ContainerSorterItem
@@ -676,11 +675,11 @@ func (b *Builder) MoveContainer(ctx *web.EventContext) (r web.EventResponse, err
 		return
 	})
 	ctx.R.Form.Del(paramMoveResult)
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Form(nil).Queries(ctx.R.Form).Go()
+	r.RunScript = web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Form(nil).Queries(ctx.R.Form).Go()
 	return
 }
 
-func (b *Builder) MoveUpDownContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) moveUpDownContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		container    Container
 		preContainer Container
@@ -717,30 +716,36 @@ func (b *Builder) MoveUpDownContainer(ctx *web.EventContext) (r web.EventRespons
 	return
 }
 
-func (b *Builder) ToggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
-	paramID := ctx.R.FormValue(paramContainerID)
-	pageID := ctx.R.FormValue(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	cs := container.PrimaryColumnValuesBySlug(paramID)
-	containerID := cs["id"]
-	locale := cs["locale_code"]
+func (b *Builder) toggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		container Container
+	)
+	var (
+		paramID     = ctx.R.FormValue(paramContainerID)
+		cs          = container.PrimaryColumnValuesBySlug(paramID)
+		containerID = cs["id"]
+		locale      = cs["locale_code"]
+	)
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Queries(ctx.R.Form).Go() +
+	r.RunScript = web.Plaid().URL(ctx.R.URL.Path).
+		EventFunc(ReloadRenderPageOrTemplateEvent).
+		Queries(ctx.R.Form).
+		Go() +
 		";" +
 		web.Plaid().
-			URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+			URL(ctx.R.URL.Path).
 			EventFunc(ShowSortedContainerDrawerEvent).
 			Queries(ctx.R.Form).
 			Go()
 	return
 }
 
-func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
-	paramID := ctx.R.FormValue(paramContainerID)
-
-	containerName := ctx.R.FormValue(paramContainerName)
+func (b *Builder) deleteContainerConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		paramID       = ctx.R.FormValue(paramContainerID)
+		containerName = ctx.R.FormValue(paramContainerName)
+	)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: presets.DeleteConfirmPortalName,
@@ -760,7 +765,7 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
-								URL(fmt.Sprintf("%s/editors", b.prefix)).
+								URL(ctx.R.URL.Path).
 								EventFunc(DeleteContainerEvent).
 								Query(paramContainerID, paramID).
 								Go()),
@@ -774,7 +779,7 @@ func (b *Builder) DeleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 	return
 }
 
-func (b *Builder) DeleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) deleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
@@ -1041,7 +1046,7 @@ func (b *Builder) createModelAfterLocalizeDemoContainer(db *gorm.DB, c *DemoCont
 	return
 }
 
-func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) markAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var container Container
 	paramID := ctx.R.FormValue(paramContainerID)
 	cs := container.PrimaryColumnValuesBySlug(paramID)
@@ -1056,7 +1061,7 @@ func (b *Builder) MarkAsSharedContainer(ctx *web.EventContext) (r web.EventRespo
 	return
 }
 
-func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) renameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		container Container
 	)
@@ -1087,7 +1092,7 @@ func (b *Builder) RenameContainer(ctx *web.EventContext) (r web.EventResponse, e
 	return
 }
 
-func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
 	okAction := web.Plaid().
@@ -1129,7 +1134,6 @@ func (b *Builder) RenameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 
 func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
-		pageID      = ctx.R.FormValue(presets.ParamID)
 		pageVersion = ctx.R.FormValue(paramPageVersion)
 		locale      = ctx.R.FormValue(paramLocale)
 		containerId = ctx.R.FormValue(paramContainerID)
@@ -1168,9 +1172,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				VListItemSubtitle(VImg().Src(cover).Height(100)),
 			).Attr("@click",
 				web.Plaid().
-					URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+					URL(ctx.R.URL.Path).
 					EventFunc(AddContainerEvent).
-					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 					Query(paramStatus, ctx.R.FormValue(paramStatus)).
 					Query(paramModelName, builder.name).
 					Query(paramPageVersion, pageVersion).
@@ -1224,9 +1227,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 					VListItemTitle(h.Text(containerName)),
 					VListItemSubtitle(VImg().Src(cover).Height(100)),
 				).Attr("@click", web.Plaid().
-					URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+					URL(ctx.R.URL.Path).
 					EventFunc(AddContainerEvent).
-					Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
 					Query(paramStatus, ctx.R.FormValue(paramStatus)).
 					Query(paramPageVersion, pageVersion).
 					Query(paramLocale, locale).
@@ -1251,9 +1253,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	}
 
 	var backPlaid = web.Plaid().
-		URL(fmt.Sprintf("%s/editors/%s?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+		URL(ctx.R.URL.Path).
 		EventFunc(ShowSortedContainerDrawerEvent).
-		Query(presets.ParamID, pageID).
 		Query(paramPageVersion, pageVersion).
 		Query(paramLocale, locale).
 		Query(paramStatus, ctx.R.FormValue(paramStatus)).
@@ -1281,14 +1282,16 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	return
 }
 
-func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	pageID := ctx.QueryAsInt(paramPageID)
-	pageVersion := ctx.R.FormValue(paramPageVersion)
-	locale := ctx.R.FormValue(paramLocale)
-	// okAction := web.Plaid().EventFunc(RenameContainerEvent).Query(paramContainerID, containerID).Go()
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+func (b *Builder) addContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		containers []h.HTMLComponent
+	)
+	var (
+		pageVersion = ctx.R.FormValue(paramPageVersion)
+		locale      = ctx.R.FormValue(paramLocale)
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	)
 
-	var containers []h.HTMLComponent
 	for _, builder := range b.containerBuilders {
 		cover := builder.cover
 		if cover == "" {
@@ -1305,9 +1308,8 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							Variant(VariantText).
 							Color("primary").Attr("@click",
 							"dialogLocals.addContainerDialog = false;"+web.Plaid().
-								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+								URL(ctx.R.URL.Path).
 								EventFunc(AddContainerEvent).
-								Query(presets.ParamID, pageID).
 								Query(paramPageVersion, pageVersion).
 								Query(paramLocale, locale).
 								Query(paramContainerName, builder.name).
@@ -1343,9 +1345,8 @@ func (b *Builder) AddContainerDialog(ctx *web.EventContext) (r web.EventResponse
 							Variant(VariantText).
 							Color("primary").Attr("@click",
 							"dialogLocals.addContainerDialog = false;"+web.Plaid().
-								URL(fmt.Sprintf("%s/editors/%d?version=%s&locale=%s", b.prefix, pageID, pageVersion, locale)).
+								URL(ctx.R.URL.Path).
 								EventFunc(AddContainerEvent).
-								Query(presets.ParamID, pageID).
 								Query(paramPageVersion, pageVersion).
 								Query(paramLocale, locale).
 								Query(paramContainerName, sharedC.ModelName).
@@ -1440,12 +1441,12 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 	}
 }
 
-func (b *Builder) ShowAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) showAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: b.renderContainersList(ctx)})
 	return
 }
 
-func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
@@ -1454,7 +1455,7 @@ func (b *Builder) ShowSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 	return
 }
 
-func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) showEditContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
@@ -1463,7 +1464,7 @@ func (b *Builder) ShowEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 	return
 }
 
-func (b *Builder) ReloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	body, _, err = b.renderPageOrTemplate(ctx, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("locals", "{el:$}")...)})
