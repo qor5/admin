@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 
+	"github.com/qor5/admin/v3/internal/testenv"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -48,16 +47,19 @@ type (
 	}
 )
 
-func init() {
-	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+func TestMain(m *testing.M) {
+	env, err := testenv.New().SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
 
+	db = env.DB
 	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
 		panic(err)
 	}
+
+	m.Run()
 }
 
 func resetDB() {
@@ -69,7 +71,6 @@ func TestModelKeys(t *testing.T) {
 	builder := New(db, &TestActivityLog{})
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
-	resetDB()
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
