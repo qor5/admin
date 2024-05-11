@@ -296,16 +296,15 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing("Iframe", "Editor")
+	dp := pm.Detailing("Overview", "Editor")
 
-	// pm detailing iframe
-	b.installDetailingIframeField(templateM)
+	// pm detailing overview
+	b.mb.Detailing().Field("Overview").ComponentFunc(overview(b, templateM))
 
 	// pm detailing detail-field
-	b.installDetailingEditorField()
 
 	// pm detailing side panel
-	b.installDetailingSidePanel()
+	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
 
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 
@@ -2112,8 +2111,9 @@ func defaultSubPageTitle(ctx *web.EventContext) string {
 	return i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages).PageOverView
 }
 
-func (b *Builder) installDetailingSidePanel() {
-	b.mb.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+// TODO move to activity just use wrapper install it
+func detailingSidePanel(b *Builder) presets.ObjectComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			detailComponentTab     h.HTMLComponent
 			detailComponentContent h.HTMLComponent
@@ -2198,5 +2198,5 @@ func (b *Builder) installDetailingSidePanel() {
 				),
 			).Class("h-100"),
 		).VSlot("{locals}").Init(`{tab:"Activity"}`)
-	})
+	}
 }
