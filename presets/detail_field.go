@@ -277,13 +277,20 @@ func (b *DetailFieldBuilder) ListFieldPrefix(index int) string {
 }
 
 func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	id := ctx.Queries().Get(ParamID)
+	if id == "" {
+		if slugIf, ok := obj.(SlugEncoder); ok {
+			id = slugIf.PrimarySlug()
+		}
+	}
+
 	btn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
 		Attr("v-show", "isHovering").
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
 			Query(DetailFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(ParamID, id).
 			Go())
 
 	hiddenComp := h.Div()
@@ -324,11 +331,17 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 }
 
 func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	id := ctx.Queries().Get(ParamID)
+	if id == "" {
+		if slugIf, ok := obj.(SlugEncoder); ok {
+			id = slugIf.PrimarySlug()
+		}
+	}
 	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
 			Query(DetailFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(ParamID, id).
 			Go())
 
 	hiddenComp := h.Div()
@@ -398,6 +411,13 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 }
 
 func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+	id := ctx.Queries().Get(ParamID)
+	if id == "" {
+		if slugIf, ok := obj.(SlugEncoder); ok {
+			id = slugIf.PrimarySlug()
+		}
+	}
+
 	list, err := reflectutils.Get(obj, b.name)
 	if err != nil {
 		panic(err)
@@ -454,7 +474,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
 				Query(DetailFieldName, b.name).
-				Query(ParamID, ctx.Queries().Get(ParamID)).
+				Query(ParamID, id).
 				Go())
 		rows.AppendChildren(addBtn)
 	}
