@@ -56,8 +56,18 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		elementShowFunc:   nil,
 		elementEditFunc:   nil,
 		config: &DetailFieldConfig{
+			componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
+				return true
+			},
+			componentHoverFunc: func(obj interface{}, ctx *web.EventContext) bool {
+				return true
+			},
 			disableElementDeleteBtn: false,
 			disableElementCreateBtn: false,
+			elementEditBtnFunc:      nil,
+			elementEditBtn:          true,
+			elementHoverFunc:        nil,
+			elementHover:            true,
 			alwaysShowListLabel:     false,
 		},
 		isList: false,
@@ -74,17 +84,49 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 	return
 }
 
+type objectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
+
 type DetailFieldConfig struct {
 	// Only when isList is false, the following param will take effect
 
+	// control Delete button in show component
+	componentEditBtnFunc objectBoolFunc
+	// control Hover in show component
+	componentHoverFunc objectBoolFunc
+
 	// Only when isList is true, the following param will take effect
-	// Disable Delete button in element
+
+	// Disable Delete button in edit element
 	disableElementDeleteBtn bool
-	// Disable Create button in element
+	// Disable Create button in element list
 	disableElementCreateBtn bool
+	// Disable Edit button in show element
+	elementEditBtnFunc objectBoolFunc
+	// This is the return value of elementEditBtnFunc
+	elementEditBtn bool
+	// Disable Hover in show element
+	elementHoverFunc objectBoolFunc
+	// This is the return value of elementHoverFunc
+	elementHover bool
 	// By default, the title will only be displayed if the list is not empty.
 	// If alwaysShowListLabel is true, the label will show anyway
 	alwaysShowListLabel bool
+}
+
+func (d *DetailFieldConfig) ComponentEditBtnFunc(v objectBoolFunc) *DetailFieldConfig {
+	if v == nil {
+		panic("value required")
+	}
+	d.componentEditBtnFunc = v
+	return d
+}
+
+func (d *DetailFieldConfig) ComponentHoverFunc(v objectBoolFunc) *DetailFieldConfig {
+	if v == nil {
+		panic("value required")
+	}
+	d.componentHoverFunc = v
+	return d
 }
 
 func (d *DetailFieldConfig) DisableElementDeleteBtn() *DetailFieldConfig {
@@ -94,6 +136,22 @@ func (d *DetailFieldConfig) DisableElementDeleteBtn() *DetailFieldConfig {
 
 func (d *DetailFieldConfig) DisableElementCreateBtn() *DetailFieldConfig {
 	d.disableElementCreateBtn = true
+	return d
+}
+
+func (d *DetailFieldConfig) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldConfig {
+	if v == nil {
+		panic("value required")
+	}
+	d.elementEditBtnFunc = v
+	return d
+}
+
+func (d *DetailFieldConfig) ElementHoverFunc(v objectBoolFunc) *DetailFieldConfig {
+	if v == nil {
+		panic("value required")
+	}
+	d.elementHoverFunc = v
 	return d
 }
 
@@ -287,7 +345,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 	btn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-show", "isHovering").
+		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.config.componentEditBtnFunc(obj, ctx))).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, id).
@@ -315,7 +373,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 								h.Div(btn).Style("width:32px;"),
 							).Class("d-flex justify-space-between"),
 						),
-					).Class("mb-2").Variant(VariantOutlined).Hover(true).
+					).Class("mb-2").Variant(VariantOutlined).Hover(b.config.componentHoverFunc(obj, ctx)).
 						Attr("v-bind", "props"),
 				).Name("default").Scope("{ isHovering, props }"),
 			),
@@ -411,6 +469,13 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 }
 
 func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+	if b.config.elementHoverFunc != nil {
+		b.config.elementHover = b.config.elementHoverFunc(obj, ctx)
+	}
+	if b.config.elementEditBtnFunc != nil {
+		b.config.elementEditBtn = b.config.elementEditBtnFunc(obj, ctx)
+	}
+
 	id := ctx.Queries().Get(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
@@ -520,7 +585,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-show", "isHovering").
+		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.config.elementEditBtn)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
@@ -543,7 +608,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 							h.Div(editBtn),
 						).Class("d-flex justify-space-between"),
 					),
-				).Class("mb-2").Hover(true).
+				).Class("mb-2").Hover(b.config.elementHover).
 					Attr("v-bind", "props").
 					Variant(VariantOutlined),
 			).Name("default").Scope("{ isHovering, props }"),
