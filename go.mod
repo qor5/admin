@@ -115,7 +115,7 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/testcontainers/testcontainers-go v0.31.0 // indirect
-	github.com/theplant/testenv v0.0.0-20240511093149-cd7a4e7e155d // indirect
+	github.com/theplant/testenv v0.0.0-20240511100802-155db018b191 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
