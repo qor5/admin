@@ -3,9 +3,9 @@ package pagebuilder
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 
 	h "github.com/theplant/htmlgo"
+	"goji.io/v3/pat"
 
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
@@ -13,19 +13,21 @@ import (
 )
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
-	pageID := ctx.R.FormValue(presets.ParamID)
+
 	var (
 		body          h.HTMLComponent
 		containerList h.HTMLComponent
+
+		pageID = pat.Param(ctx.R, presets.ParamID)
 	)
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
+	ctx.R.Form.Set(presets.ParamID, pageID)
 	body, p, err = b.renderPageOrTemplate(ctx, true)
 	if err != nil {
 		return
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", pageID, p.Title)
-	ctx.R.Form.Set(presets.ParamID, strconv.Itoa(int(p.ID)))
 	ctx.R.Form.Set(paramStatus, p.GetStatus())
 	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
 	if containerList, err = b.renderContainersSortedList(ctx); err != nil {

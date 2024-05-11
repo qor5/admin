@@ -177,7 +177,7 @@ const ContainerToPageLayoutKey = "ContainerToPageLayout"
 func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
 	var (
 		isTpl            = ctx.R.FormValue(paramsTpl) != ""
-		pageOrTemplateID = pat.Param(ctx.R, presets.ParamID)
+		pageOrTemplateID = ctx.R.FormValue(presets.ParamID)
 		version          = ctx.R.FormValue(paramPageVersion)
 		locale           = ctx.R.FormValue(paramLocale)
 	)
@@ -1466,6 +1466,7 @@ func (b *Builder) showEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 
 func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
+	ctx.R.Form.Set(presets.ParamID, pat.Param(ctx.R, presets.ParamID))
 	body, _, err = b.renderPageOrTemplate(ctx, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("locals", "{el:$}")...)})
 	return

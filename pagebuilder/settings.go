@@ -114,6 +114,8 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		if p.GetStatus() == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 		}
+		vtb := &web.VueEventTagBuilder{}
+		vtb.Raw("vars.el=$")
 		return web.Scope(
 			VLayout(
 				VAppBar(
@@ -124,7 +126,9 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 					).Name(VSlotPrepend),
 					web.Slot(
 						h.Div(
-							h.H1(p.Title),
+							web.Portal(
+								h.H1(p.Title).Attr("ref", "pageTitle"),
+							).Loader(vtb),
 							versionBadge.Class("mt-2 ml-2"),
 						).Class("d-inline-flex align-center"),
 					).Name(VSlotTitle),
@@ -197,11 +201,21 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 	}
 }
 
-func detailPageEditor(fb *presets.DetailFieldBuilder) {
-	fb.SetSwitchable(true).Editing("Title").
+func detailPageEditor(dp *presets.DetailingBuilder) {
+	dp.Field("Editor").SetSwitchable(true).Editing("Title").
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
-			return h.Div(h.Text(p.Title))
+			vtb := &web.VueEventTagBuilder{}
+			vtb.Raw(fmt.Sprintf(
+				`
+				function() {
+				  if (!vars.el){return}	 
+				  const pt = vars.el.refs.pageTitle
+				  if ( pt && pt.innerText != '%s') {
+					pt.innerText = '%s'
+				  }
+				}()`, p.Title, p.Title))
+			return web.Portal(h.Div(h.Text(p.Title))).Loader(vtb)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		return VTextField().
