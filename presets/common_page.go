@@ -38,12 +38,14 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 				VTabs(
 					VTab(h.Text(msgr.FormTitle)).Value("default"),
 					h.Components(tabs...),
-				).Class("v-tabs--fixed-tabs").Attr("v-model", "tab"),
+				).Class("v-tabs--fixed-tabs").Attr("v-model", "locals.tab"),
 
 				VTabsWindow(
-					web.Scope(config.formContent).VSlot("{ form }"),
+					VTabsWindowItem(
+						web.Scope(config.formContent).VSlot("{ form }"),
+					).Value("default"),
 					h.Components(contents...),
-				).Attr("v-model", "tab"),
+				).Attr("v-model", "locals.tab"),
 			).VSlot("{ locals }").Init(`{tab: 'default'}`)
 		}
 	}

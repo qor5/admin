@@ -132,8 +132,14 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 				web.Slot(DiffComponent(log.GetModelDiffs(), ctx.R)).Name("title"),
 			))
 		}
-		tab = vuetify.VTab(h.Text(msgr.Activities)).Value("activityTab")
-		content = vuetify.VWindowItem(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
+
+		const tabKey = "activityTab"
+		tab = vuetify.VTab().Value(tabKey).Children(
+			h.Text(msgr.Activities),
+		)
+		content = vuetify.VTabsWindowItem().Value(tabKey).Children(
+			vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
+		)
 		return
 	})
 
