@@ -6,11 +6,13 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -57,11 +59,26 @@ INSERT INTO container_headers (color) VALUES ('black');
 		t.Error(w.Body.String())
 	}
 
-	_, err := pb.AddContainerToPage(1, "", "v1", "International", "Header")
-	if err != nil {
-		t.Error(err)
-	}
+	r = multipartestutils.NewMultipartBuilder().
+		PageURL("/page_builder/editors/1").
+		EventFunc(pagebuilder.AddContainerEvent).
+		AddField("pageVersion", "v1").
+		AddField("locale", "International").
+		AddField("containerName", "Header").
+		AddField("modelName", "Header").
+		AddField("modelID", "1").
+		BuildEventFuncRequest()
 
+	bs, _ := httputil.DumpRequest(r, true)
+	fmt.Println(string(bs))
+	w = httptest.NewRecorder()
+	pb.ServeHTTP(w, r)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
+	if strings.Index(w.Body.String(), "/page_builder/headers") < 0 {
+		t.Error(w.Body.String())
+	}
 }
 
 func TestUpdatePage(t *testing.T) {
