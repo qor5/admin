@@ -226,7 +226,10 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(newdiffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range newdiffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Now)))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Now)),
+			))
 		}
 
 		diffsElems = append(diffsElems,
@@ -242,7 +245,10 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(deletediffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range deletediffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Old)),
+			))
 		}
 
 		diffsElems = append(diffsElems,
@@ -258,7 +264,11 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(changediffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range changediffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)), h.Td(h.Text(fixSpecialChars(d.Now))))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Old)),
+				h.Td().Text(fixSpecialChars(d.Now)),
+			))
 		}
 
 		diffsElems = append(diffsElems,

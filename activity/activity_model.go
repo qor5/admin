@@ -128,8 +128,18 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 			}
 
 			panels = append(panels, vuetify.VExpansionPanel(
-				web.Slot(h.Span(headerText)).Name("text"),
-				web.Slot(DiffComponent(log.GetModelDiffs(), ctx.R)).Name("title"),
+				vuetify.VExpansionPanelTitle().Children(
+					web.Slot(
+						vuetify.VRow().Attr("no-gutters").Children(
+							vuetify.VCol().Class("justify-start ma-1").Children(
+								DiffComponent(log.GetModelDiffs(), ctx.R),
+							),
+						),
+					).Name("default"),
+				),
+				vuetify.VExpansionPanelText().Children(
+					h.Span(headerText),
+				),
 			))
 		}
 
