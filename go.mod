@@ -25,11 +25,13 @@ require (
 	github.com/qor5/ui/v3 v3.0.0
 	github.com/qor5/web/v3 v3.0.0
 	github.com/qor5/x/v3 v3.0.0
+	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.4
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
+	github.com/theplant/testenv v0.0.0-20240513012518-1c94c8c84239
 	github.com/theplant/testingutils v0.0.0-20240326065615-ab2586803ce4
 	github.com/tnclong/go-que v0.0.0-20240226030728-4e1f3c8ec781
 	github.com/ua-parser/uap-go v0.0.0-20240113215029-33f8e6d47f38
@@ -62,6 +64,7 @@ require (
 	github.com/containerd/containerd v1.7.16 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/docker/docker v26.1.2+incompatible // indirect
@@ -76,7 +79,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
@@ -115,7 +117,6 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/testcontainers/testcontainers-go v0.31.0 // indirect
-	github.com/theplant/testenv v0.0.0-20240511100802-155db018b191 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
@@ -128,16 +129,16 @@ require (
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/image v0.15.0 // indirect
-	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240509183442-62759503f434 // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/qor5/web/v3 => ../web
