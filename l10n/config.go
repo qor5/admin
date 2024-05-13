@@ -18,8 +18,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const WrapHandlerKey = "l10nWrapHandlerKey"
-const MenuTopItemFunc = "l10nMenuTopItemFunc"
+const (
+	WrapHandlerKey  = "l10nWrapHandlerKey"
+	MenuTopItemFunc = "l10nMenuTopItemFunc"
+)
 
 func configure(b *presets.Builder, lb *Builder) {
 	models := lb.models
@@ -162,7 +164,7 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 
 func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {
 	return func(ctx *web.EventContext) (r h.HTMLComponent) {
-		var supportLocales = lb.GetSupportLocaleCodesFromRequest(ctx.R)
+		supportLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 
 		if len(lb.GetSupportLocaleCodes()) <= 1 || len(supportLocales) == 0 {
 			return nil

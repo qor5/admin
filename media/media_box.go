@@ -26,8 +26,10 @@ import (
 
 type MediaBoxConfigKey int
 
-const MediaBoxConfig MediaBoxConfigKey = iota
-const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
+const (
+	MediaBoxConfig      MediaBoxConfigKey = iota
+	I18nMediaLibraryKey i18n.ModuleKey    = "I18nMediaLibraryKey"
+)
 
 func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 	err := db.AutoMigrate(&media_library.MediaLibrary{})
@@ -161,7 +163,8 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
-	f *media_library.MediaBox, field string, thumb string, disabled bool) h.HTMLComponent {
+	f *media_library.MediaBox, field string, thumb string, disabled bool,
+) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
 	url := f.URL(thumb)
@@ -196,7 +199,6 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 }
 
 func fileThumb(filename string) h.HTMLComponent {
-
 	return h.Div(
 		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
 	).Class("d-flex align-center justify-center")
@@ -242,6 +244,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 		return
 	}
 }
+
 func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
@@ -327,7 +330,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			)
 		} else {
 			var keys []string
-			for k, _ := range cfg.Sizes {
+			for k := range cfg.Sizes {
 				keys = append(keys, k)
 			}
 

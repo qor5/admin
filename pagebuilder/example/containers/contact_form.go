@@ -40,7 +40,6 @@ func RegisterContactFormContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return ContactFormBody(v, input)
 		})
 	vb.Model(&ContactForm{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "Text", "SendButtonText", "FormButtonText", "MessagePlaceholder", "NamePlaceholder", "EmailPlaceholder", "ThankyouMessage", "ActionUrl", "PrivacyPolicy")
-
 }
 
 const (
@@ -48,7 +47,7 @@ const (
 )
 
 func ContactFormBody(data *ContactForm, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	var n = Div(
+	n := Div(
 		CONTACT_FORM_ICON,
 		Div(
 			H2(data.Heading),

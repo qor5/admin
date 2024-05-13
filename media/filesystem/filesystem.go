@@ -1,10 +1,11 @@
 package filesystem
 
 import (
-	"github.com/qor5/admin/v3/media/base"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/qor5/admin/v3/media/base"
 )
 
 var _ base.Media = &FileSystem{}

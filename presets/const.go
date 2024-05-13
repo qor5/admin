@@ -13,9 +13,7 @@ const (
 	PermBulkActions     = "bulk_actions"
 )
 
-var (
-	PermRead = []string{PermList, PermGet}
-)
+var PermRead = []string{PermList, PermGet}
 
 // params
 const (

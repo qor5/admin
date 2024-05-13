@@ -125,7 +125,7 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 
 	var previewPaths []string
 
-	var wg = sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	var copyError error
 	var mutex sync.Mutex
 	for _, v := range this.GetFileList() {
@@ -181,7 +181,7 @@ func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName
 		return
 	}
 
-	var wg = sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	var putError error
 	var mutex sync.Mutex
 

@@ -96,7 +96,7 @@ type versionListTableItem struct {
 }
 
 func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx *web.EventContext) (table h.HTMLComponent, currentVersion *versionListTableItem, err error) {
-	var obj = mb.NewModel()
+	obj := mb.NewModel()
 	slugger := obj.(presets.SlugDecoder)
 	paramID := ctx.R.FormValue(presets.ParamID)
 	if paramID == "" {
@@ -123,7 +123,7 @@ func versionListTable(db *gorm.DB, mb *presets.ModelBuilder, msgr *Messages, ctx
 		}
 	}
 
-	var results = mb.NewModelSlice()
+	results := mb.NewModelSlice()
 	primaryKeys, err := utils.GetPrimaryKeys(mb.NewModel(), db)
 	if err != nil {
 		return
@@ -242,7 +242,7 @@ func switchVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Build
 
 func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var toObj = mb.NewModel()
+		toObj := mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)
 		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
 		paramID := ctx.R.FormValue(presets.ParamID)
@@ -255,7 +255,7 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Buil
 			return
 		}
 
-		var fromObj = mb.NewModel()
+		fromObj := mb.NewModel()
 		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
 		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
 			return
@@ -299,13 +299,13 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Buil
 
 func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var toObj = mb.NewModel()
+		toObj := mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)
 		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
 		paramID := ctx.R.FormValue(presets.ParamID)
 		me := mb.Editing()
 
-		var fromObj = mb.NewModel()
+		fromObj := mb.NewModel()
 		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj).Error; err != nil {
 			return
 		}
@@ -421,10 +421,10 @@ func searcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
 func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		gmsgr := presets.MustGetMessages(ctx.R)
-		var buttonLabel = gmsgr.Create
+		buttonLabel := gmsgr.Create
 		m.RightDrawerWidth("800")
 		var disableUpdateBtn bool
-		var isCreateBtn = true
+		isCreateBtn := true
 		if ctx.R.FormValue(presets.ParamID) != "" {
 			isCreateBtn = false
 			buttonLabel = gmsgr.Update

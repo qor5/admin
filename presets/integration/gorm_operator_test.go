@@ -70,5 +70,4 @@ func TestPrimarySlugger(t *testing.T) {
 	if err != presets.ErrRecordNotFound {
 		t.Error("didn't return not found after delete", tv, err)
 	}
-
 }

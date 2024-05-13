@@ -419,7 +419,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 	}
 
 	// encode context
-	var context = make(map[string]interface{})
+	context := make(map[string]interface{})
 	for key, v := range DefaultOriginalPageContextHandler(ctx) {
 		context[key] = v
 	}
@@ -594,7 +594,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, errors.New("invalid arguments")
 	}
 
-	var contexts = make(map[string]interface{})
+	contexts := make(map[string]interface{})
 	for key, v := range DefaultOriginalPageContextHandler(ctx) {
 		contexts[key] = v
 	}

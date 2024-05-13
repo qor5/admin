@@ -1,9 +1,10 @@
 package pages
 
 import (
+	"log"
+
 	media_view "github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
-	"log"
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/richeditor"

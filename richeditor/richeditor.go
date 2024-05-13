@@ -20,9 +20,11 @@ import (
 // how to add own plugins
 // 1. load plugin jss,css to PluginsJS,PluginsCSS
 // 2. add plugin names in Plugins array
-var Plugins = []string{"alignment", "table", "video", "imageinsert"}
-var PluginsJS [][]byte
-var PluginsCSS [][]byte
+var (
+	Plugins    = []string{"alignment", "table", "video", "imageinsert"}
+	PluginsJS  [][]byte
+	PluginsCSS [][]byte
+)
 
 type RichEditorBuilder struct {
 	db          *gorm.DB

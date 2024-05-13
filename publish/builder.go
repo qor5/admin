@@ -8,10 +8,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/qor5/admin/v3/presets"
+
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -96,7 +97,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 				}
 				scope := setPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.GetVersion(), StatusOnline)
 
-				var oldVersionUpdateMap = make(map[string]interface{})
+				oldVersionUpdateMap := make(map[string]interface{})
 				if _, ok := record.(ScheduleInterface); ok {
 					oldVersionUpdateMap["scheduled_end_at"] = nil
 					oldVersionUpdateMap["actual_end_at"] = &now
@@ -109,7 +110,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 					return
 				}
 			}
-			var updateMap = make(map[string]interface{})
+			updateMap := make(map[string]interface{})
 
 			if r, ok := record.(ScheduleInterface); ok {
 				r.SetPublishedAt(&now)
@@ -154,7 +155,7 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 
 		// update status
 		if _, ok := record.(StatusInterface); ok {
-			var updateMap = make(map[string]interface{})
+			updateMap := make(map[string]interface{})
 			if r, ok := record.(ScheduleInterface); ok {
 				now := b.db.NowFunc()
 				r.SetUnPublishedAt(&now)

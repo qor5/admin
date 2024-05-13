@@ -51,7 +51,6 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Variant(vuetify.FieldVariantUnderlined).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
-
 }
 
 func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (body HTMLComponent) {

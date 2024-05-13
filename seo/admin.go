@@ -193,7 +193,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 	var setting Setting
-	var mediaBox = media_library.MediaBox{}
+	mediaBox := media_library.MediaBox{}
 	for fieldWithPrefix := range ctx.R.Form {
 		// make sure OpenGraphImageFromMediaLibrary.Description set after OpenGraphImageFromMediaLibrary.Values
 		if fieldWithPrefix == fmt.Sprintf("%s.%s", field.Name, "OpenGraphImageFromMediaLibrary.Values") {

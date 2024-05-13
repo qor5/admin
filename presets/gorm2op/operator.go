@@ -11,9 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	wildcardReg = regexp.MustCompile(`[%_]`)
-)
+var wildcardReg = regexp.MustCompile(`[%_]`)
 
 func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 	r = &DataOperatorBuilder{db: db}

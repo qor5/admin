@@ -37,7 +37,8 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 func ContainerWrapper(containerID, anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
-	isEditor bool, isReadonly bool, style string, input *pagebuilder.RenderInput, comp ...HTMLComponent) HTMLComponent {
+	isEditor bool, isReadonly bool, style string, input *pagebuilder.RenderInput, comp ...HTMLComponent,
+) HTMLComponent {
 	r := Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
@@ -72,7 +73,6 @@ func ContainerWrapper(containerID, anchorID, classes,
 		}
 	}
 	return r
-
 }
 
 type (

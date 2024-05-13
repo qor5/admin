@@ -96,8 +96,8 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		})
 		return
 	}
-
 }
+
 func cropImage(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db

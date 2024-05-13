@@ -10,7 +10,6 @@ import (
 )
 
 func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
-
 	var freeStyleCss HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
 		freeStyleCss = Style(strings.Join(input.FreeStyleCss, "\n"))
@@ -49,7 +48,6 @@ func DefaultPageLayoutFunc(body HTMLComponent, input *pagebuilder.PageLayoutInpu
 		Script("").Src(js),
 		scriptWithCodes(input.FreeStyleBottomJs),
 	).Attr("data-site-domain", domain)
-
 }
 
 func scriptWithCodes(jscodes []string) HTMLComponent {

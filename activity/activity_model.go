@@ -327,7 +327,7 @@ func (mb *ModelBuilder) Diff(old, now interface{}) ([]Diff, error) {
 
 // save log into db
 func (mb *ModelBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
-	var m = mb.activity.NewLogModelData()
+	m := mb.activity.NewLogModelData()
 	log, ok := m.(ActivityLogInterface)
 	if !ok {
 		return fmt.Errorf("model %T is not implement ActivityLogInterface", m)

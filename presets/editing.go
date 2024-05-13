@@ -183,7 +183,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		id = vx.ObjectID(obj)
 	}
 
-	var buttonLabel = msgr.Create
+	buttonLabel := msgr.Create
 	var disableUpdateBtn bool
 	var title h.HTMLComponent
 	title = h.Text(msgr.CreatingObjectTitle(
@@ -327,7 +327,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	}
 
 	id := ctx.R.FormValue(ParamID)
-	var obj = b.mb.NewModel()
+	obj := b.mb.NewModel()
 	if len(id) > 0 {
 		err := b.Deleter(obj, id, ctx)
 		if err != nil {

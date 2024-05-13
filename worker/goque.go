@@ -47,7 +47,6 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 
 func (q *goque) Add(ctx context.Context, job QueJobInterface) error {
 	jobInfo, err := job.GetJobInfo()
-
 	if err != nil {
 		return err
 	}
@@ -85,7 +84,7 @@ func (q *goque) Remove(ctx context.Context, job QueJobInterface) error {
 }
 
 func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (QueJobInterface, error)) error {
-	for i, _ := range jobDefs {
+	for i := range jobDefs {
 		jd := jobDefs[i]
 		if jd.Handler == nil {
 			panic(fmt.Sprintf("job %s handler is nil", jd.Name))

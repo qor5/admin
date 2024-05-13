@@ -34,8 +34,10 @@ func (p *ParameterSetting) TableName() string {
 	return "parameter_setting"
 }
 
-type ParameterFieldSettingArray []*ParameterFieldSetting
-type ParameterConditionIDArray []uint
+type (
+	ParameterFieldSettingArray []*ParameterFieldSetting
+	ParameterConditionIDArray  []uint
+)
 
 func (parameterFieldSettingArray ParameterFieldSettingArray) Value() (driver.Value, error) {
 	json, err := json.Marshal(parameterFieldSettingArray)
@@ -86,7 +88,7 @@ type ParameterFieldSetting struct {
 	ValType     string // It should be a selector.
 	Description string
 	DisplayName string
-	//Options     [][]string // When we want the val to be displayed as a selector. fill this.
+	// Options     [][]string // When we want the val to be displayed as a selector. fill this.
 }
 
 type Case struct {
@@ -102,7 +104,7 @@ INSERT INTO parameter_setting (id, created_at, updated_at, deleted_at, parameter
 			`, []string{"parameter_setting"}))
 
 func TestDetailFieldBuilder(t *testing.T) {
-	var Cases = []Case{
+	Cases := []Case{
 		{
 			Name:      "DetailFieldSave",
 			FieldName: "Detail",
@@ -162,7 +164,8 @@ func TestDetailFieldBuilder(t *testing.T) {
 						ValType:     "",
 						Description: "",
 						DisplayName: "",
-					}},
+					},
+				},
 			},
 		},
 		{

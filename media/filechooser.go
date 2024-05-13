@@ -73,7 +73,8 @@ func fileChooser(mb *Builder) web.EventFunc {
 }
 
 func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+	cfg *media_library.MediaBoxConfig,
+) h.HTMLComponent {
 	db := mb.db
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
@@ -201,7 +202,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 		),
 	)
 
-	var initCroppingVars = []string{fileCroppingVarName(0) + ": false"}
+	initCroppingVars := []string{fileCroppingVarName(0) + ": false"}
 
 	for i, f := range files {
 		_, needCrop := mergeNewSizes(f, cfg)
@@ -371,7 +372,6 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 	//	)
 	// }
 	return g
-
 }
 
 type uploadFiles struct {

@@ -14,8 +14,10 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-var mediaHandlers = make(map[string]MediaHandler)
-var DefaultSizeKey = "default"
+var (
+	mediaHandlers  = make(map[string]MediaHandler)
+	DefaultSizeKey = "default"
+)
 
 // MediaHandler media library handler interface, defined which files could be handled, and the handler
 type MediaHandler interface {
@@ -127,7 +129,6 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	}
 
 	img, _, err := image.Decode(file)
-
 	if err != nil {
 		return
 	}

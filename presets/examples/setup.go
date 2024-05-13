@@ -355,7 +355,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	dp := m.Detailing("MainInfo", "Details", "Cards", "Events")
 
 	dp.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		var cus = &Customer{}
+		cus := &Customer{}
 		err = db.Find(cus, id).Error
 		if err != nil {
 			return
@@ -372,7 +372,6 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	})
 
 	dp.Field("MainInfo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-
 		cu := obj.(*Customer)
 
 		title := cu.Name

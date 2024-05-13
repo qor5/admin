@@ -32,7 +32,7 @@ func (b *ListingBuilder) FilterTabsFunc(v FilterTabsFunc) {
 		fts := v(ctx)
 		for _, ft := range fts {
 			newQuery := make(url.Values)
-			for k, _ := range ft.Query {
+			for k := range ft.Query {
 				newQuery["f_"+k] = ft.Query[k]
 			}
 			ft.Query = newQuery

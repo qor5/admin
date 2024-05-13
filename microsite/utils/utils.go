@@ -16,7 +16,7 @@ func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err er
 	defer func() {
 		timeFinish := time.Now()
 		if err != nil {
-			//todo error log
+			// todo error log
 			log.Println(err)
 		} else {
 			log.Printf("upload: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
@@ -35,7 +35,7 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	defer func() {
 		timeFinish := time.Now()
 		if err != nil {
-			//todo error log
+			// todo error log
 			log.Println(err)
 		} else {
 			log.Printf("delete: %s, time_spent_ms: %s \n", paths, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
@@ -43,8 +43,8 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	}()
 
 	if storage, ok := storage.(DeleteObjectsInterface); ok {
-		var length = len(paths)
-		var i = 0
+		length := len(paths)
+		i := 0
 		for i < length {
 			var left, right int
 			left = i
@@ -79,7 +79,7 @@ func Copy(storage oss.StorageInterface, from, to string) (err error) {
 	defer func() {
 		timeFinish := time.Now()
 		if err != nil {
-			//todo error log
+			// todo error log
 			log.Println(err)
 		} else {
 			log.Printf("copy: from %s to %s, time_spent_ms: %s \n", from, to, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))

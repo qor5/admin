@@ -31,7 +31,7 @@ func configNestedFieldDemo(b *presets.Builder, db *gorm.DB) {
 		},
 	})
 
-	var phoneFb = b.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{}).Only("Number")
+	phoneFb := b.NewFieldsBuilder(presets.WRITE).Model(&models.Phone{}).Only("Number")
 	addFb.Field("Phones").Nested(phoneFb, &presets.DisplayFieldInSorter{Field: "Number"})
 	ed := cust.Editing("Name", "Addresses", "MembershipCard")
 	ed.Field("Addresses").Nested(addFb, &presets.DisplayFieldInSorter{Field: "Street"})

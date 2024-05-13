@@ -50,7 +50,6 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 })()
         `, login.ZxcvbnJSURL))
 		return
-
 	})
 
 	pb.GetWebBuilder().RegisterEventFunc("login_changePassword", func(ctx *web.EventContext) (r web.EventResponse, err error) {

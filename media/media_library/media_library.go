@@ -4,17 +4,20 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/v3/media/base"
 	"math"
 	"path"
 	"strings"
+
+	"github.com/qor5/admin/v3/media/base"
 
 	"github.com/qor5/admin/v3/media/oss"
 	"gorm.io/gorm"
 )
 
-var QorPreviewSizeName = "@qor_preview"
-var QorPreviewMaxSize = 200
+var (
+	QorPreviewSizeName = "@qor_preview"
+	QorPreviewMaxSize  = 200
+)
 
 type MediaLibrary struct {
 	gorm.Model
@@ -84,7 +87,7 @@ func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*base.Size 
 		width = int(float64(width) * ratio)
 		height = int(float64(height) * ratio)
 	}
-	var sizes = map[string]*base.Size{
+	sizes := map[string]*base.Size{
 		QorPreviewSizeName: {
 			Width:  width,
 			Height: height,

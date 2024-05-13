@@ -10,9 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
-)
+var directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
 
 const (
 	queryLocaleCodeCategoryPathSlugSQL = `
@@ -97,7 +95,7 @@ func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (er
 		localePath = l10nB.GetLocalePath(category.LocaleCode)
 	}
 
-	var currentCategoryPathPublishUrl = generatePublishUrl(localePath, categoryPath, "")
+	currentCategoryPathPublishUrl := generatePublishUrl(localePath, categoryPath, "")
 
 	categories := []*Category{}
 	if err := db.Model(&Category{}).Find(&categories).Error; err != nil {

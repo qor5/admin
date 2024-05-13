@@ -135,7 +135,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 	r.Body = VContainer(h.Text(id))
 
-	var obj = b.mb.NewModel()
+	obj := b.mb.NewModel()
 
 	if id == "" {
 		panic("not found")
@@ -385,7 +385,6 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 	})
 
 	return
-
 }
 
 // SaveDetailListField Event: click detail list field element Save button

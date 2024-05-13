@@ -248,7 +248,7 @@ func (b *FieldsBuilder) Unmarshal(toObj interface{}, info *ModelInfo, removeDele
 		panic("toObj must be pointer")
 	}
 
-	var fromObj = reflect.New(t.Elem()).Interface()
+	fromObj := reflect.New(t.Elem()).Interface()
 	// don't panic for fields that set in SetterFunc
 	_ = ctx.UnmarshalForm(fromObj)
 	// testingutils.PrintlnJson("Unmarshal fromObj", fromObj)
@@ -261,7 +261,6 @@ func (b *FieldsBuilder) Unmarshal(toObj interface{}, info *ModelInfo, removeDele
 }
 
 func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, parent *FieldContext, removeDeletedAndSort bool, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) (vErr web.ValidationErrors) {
-
 	for _, f := range b.fields {
 		info := parent.ModelInfo
 		if info != nil {
@@ -378,14 +377,14 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 	modifiedIndexes *ModifiedIndexesBuilder,
 	toObj interface{},
 	removeDeletedAndSort bool,
-	ctx *web.EventContext) {
-
+	ctx *web.EventContext,
+) {
 	childFromObjs := reflectutils.MustGet(fromObj, f.name)
 	if childFromObjs == nil || reflect.TypeOf(childFromObjs).Kind() != reflect.Slice {
 		return
 	}
 
-	var i = 0
+	i := 0
 	reflectutils.ForEach(childFromObjs, func(childFromObj interface{}) {
 		defer func() { i++ }()
 		if childFromObj == nil {
@@ -425,7 +424,6 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 		// fmt.Printf("fieldContext %#+v\n", pf)
 		f.nestedFieldsBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
 	})
-
 }
 
 func (b *FieldsBuilder) Clone() (r *FieldsBuilder) {
@@ -591,7 +589,6 @@ func (b *FieldsBuilder) ToComponent(info *ModelInfo, obj interface{}, ctx *web.E
 }
 
 func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
-
 	var comps []h.HTMLComponent
 	if parentFormValueKey == "" {
 		comps = append(comps, modifiedIndexes.ToFormHidden())
@@ -728,7 +725,7 @@ func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ct
 
 func (b *FieldsBuilder) ToComponentForEach(field *FieldContext, slice interface{}, ctx *web.EventContext, rowFunc RowFunc) h.HTMLComponent {
 	var info *ModelInfo
-	var parentKeyPath = ""
+	parentKeyPath := ""
 	if field != nil {
 		info = field.ModelInfo
 		parentKeyPath = field.FormKey
@@ -761,8 +758,10 @@ type deletedIndexBuilderKeyType int
 
 const theDeleteIndexBuilderKey deletedIndexBuilderKeyType = iota
 
-const deletedHiddenNamePrefix = "__Deleted"
-const sortedHiddenNamePrefix = "__Sorted"
+const (
+	deletedHiddenNamePrefix = "__Deleted"
+	sortedHiddenNamePrefix  = "__Sorted"
+)
 
 func ContextModifiedIndexesBuilder(ctx *web.EventContext) (r *ModifiedIndexesBuilder) {
 	r, ok := ctx.R.Context().Value(theDeleteIndexBuilderKey).(*ModifiedIndexesBuilder)
@@ -790,7 +789,6 @@ func (b *ModifiedIndexesBuilder) SetSorted(sliceFormKey string, indexes []string
 }
 
 func (b *ModifiedIndexesBuilder) DeletedContains(sliceFormKey string, index int) (r bool) {
-
 	if b.deletedValues == nil {
 		return false
 	}
@@ -833,12 +831,12 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 		j1, _ := strconv.Atoi(j)
 		f(obj, j1)
 	}
-
 }
 
 func deleteHiddenSliceFormKey(sliceFormKey string) string {
 	return deletedHiddenNamePrefix + "." + sliceFormKey
 }
+
 func sortedHiddenSliceFormKey(sliceFormKey string) string {
 	return sortedHiddenNamePrefix + "." + sliceFormKey
 }
@@ -882,7 +880,6 @@ func (b *ModifiedIndexesBuilder) ToFormHidden() h.HTMLComponent {
 	for sliceFormKey, values := range b.deletedValues {
 		hidden = append(hidden, h.Input("").Type("hidden").
 			Attr(web.VField(deleteHiddenSliceFormKey(sliceFormKey), strings.Join(values, ","))...))
-
 	}
 
 	for sliceFormKey, values := range b.sortedValues {

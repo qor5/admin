@@ -84,8 +84,8 @@ func (mib *Builder) Install(b *presets.Builder) {
 				}
 				return
 			}
-			var fileName = fs[0].Filename
-			var packagePath = getPackagePath(this, fileName, mib)
+			fileName := fs[0].Filename
+			packagePath := getPackagePath(this, fileName, mib)
 
 			f, err := fs[0].Open()
 			if err != nil {

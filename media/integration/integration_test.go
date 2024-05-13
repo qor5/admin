@@ -2,9 +2,10 @@ package integration_test
 
 import (
 	"embed"
-	"github.com/qor5/admin/v3/media/base"
 	"os"
 	"testing"
+
+	"github.com/qor5/admin/v3/media/base"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -66,5 +67,4 @@ func TestUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }

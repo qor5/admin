@@ -76,25 +76,24 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 }
 
 func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	headingBody :=
+	headingBody := Div(
 		Div(
-			Div(
-				If(data.Heading != "",
-					If(data.Link != "",
-						A(H2(data.Heading).Class("container-heading-title")).Class("container-heading-title-link").Href(data.Link),
-					),
-					If(data.Link == "",
-						H2(data.Heading).Class("container-heading-title"),
-					),
+			If(data.Heading != "",
+				If(data.Link != "",
+					A(H2(data.Heading).Class("container-heading-title")).Class("container-heading-title-link").Href(data.Link),
 				),
-				If(data.Text != "", Div(RawHTML(data.Text)).Class("container-heading-content")),
-			).Class("container-heading-wrap"),
-			If(data.LinkText != "" && data.Link != "",
-				Div(
-					LinkTextWithArrow(data.LinkText, data.Link),
-				).Class("container-heading-link").Attr("data-display", data.LinkDisplayOption),
+				If(data.Link == "",
+					H2(data.Heading).Class("container-heading-title"),
+				),
 			),
-		).Class("container-heading-inner")
+			If(data.Text != "", Div(RawHTML(data.Text)).Class("container-heading-content")),
+		).Class("container-heading-wrap"),
+		If(data.LinkText != "" && data.Link != "",
+			Div(
+				LinkTextWithArrow(data.LinkText, data.Link),
+			).Class("container-heading-link").Attr("data-display", data.LinkDisplayOption),
+		),
+	).Class("container-heading-inner")
 
 	body = ContainerWrapper(
 		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,

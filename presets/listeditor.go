@@ -116,7 +116,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 			if deletedIndexes.DeletedContains(b.fieldContext.FormKey, i) {
 				return
 			}
-			var label = ""
+			label := ""
 			if b.displayFieldInSorter != "" {
 				label = fmt.Sprint(reflectutils.MustGet(obj, b.displayFieldInSorter))
 			} else {

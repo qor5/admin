@@ -46,7 +46,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 
 		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
 
-		var obj = mb.NewModelSlice()
+		obj := mb.NewModelSlice()
 		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(obj).Error
 		if err != nil {
 			return
@@ -139,7 +139,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 			return
 		}
 
-		var fromObj = mb.NewModel()
+		fromObj := mb.NewModel()
 
 		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), fromParamID).First(fromObj).Error; err != nil {
 			return
@@ -166,9 +166,9 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 		}(reflect.Indirect(reflect.ValueOf(fromObj)).Interface())
 		me := mb.Editing()
 
-		for toLocale, _ := range to {
-			var toObj = mb.NewModel()
-			var fakeToObj = fromObj
+		for toLocale := range to {
+			toObj := mb.NewModel()
+			fakeToObj := fromObj
 			if err = reflectutils.Set(fakeToObj, "LocaleCode", toLocale); err != nil {
 				return
 			}

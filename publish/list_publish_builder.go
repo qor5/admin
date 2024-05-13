@@ -125,7 +125,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 
 	var newItems []interface{}
 	if len(deleteItems) != 0 {
-		var deleteMap = make(map[int][]int)
+		deleteMap := make(map[int][]int)
 		for _, item := range deleteItems {
 			lp := item.(ListInterface)
 			deleteMap[lp.GetPageNumber()] = append(deleteMap[lp.GetPageNumber()], lp.GetPosition())
@@ -185,7 +185,6 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 					return errors.New("model must be ListInterface")
 				}
 			}
-
 		}
 
 		for _, item := range deleteItems {
@@ -201,7 +200,6 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 			} else {
 				return errors.New("model must be ListInterface")
 			}
-
 		}
 		return
 	})
@@ -240,7 +238,7 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 	var pageNumber int
 	for i := 1; needNextPageFunc(totalNumberPerPage, i, len(array)); i++ {
 		pageNumber = i
-		var items = array[(i-1)*totalNumberPerPage : i*totalNumberPerPage]
+		items := array[(i-1)*totalNumberPerPage : i*totalNumberPerPage]
 		for k := range items {
 			model := items[k].(ListInterface)
 			model.SetPageNumber(pageNumber)
@@ -254,7 +252,7 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 		})
 	}
 
-	var items = array[(pageNumber * totalNumberPerPage):]
+	items := array[(pageNumber * totalNumberPerPage):]
 	pageNumber = pageNumber + 1
 	for k := range items {
 		model := items[k].(ListInterface)
@@ -276,7 +274,7 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 func paginate(array []interface{}) (result []*OnePageItems) {
 	lp := array[0].(ListPublisher)
 	lp.Sort(array)
-	var pageMap = make(map[int][]interface{})
+	pageMap := make(map[int][]interface{})
 	for _, item := range array {
 		data := item.(ListInterface)
 		pageMap[data.GetPageNumber()] = append(pageMap[data.GetPageNumber()], item)
@@ -294,7 +292,7 @@ func getNeedPublishResultsAndIndexResult(oldResults, newResults, republishResult
 		return newResults, newResults[len(newResults)-1]
 	}
 
-	var republishMap = make(map[int]bool)
+	republishMap := make(map[int]bool)
 	for _, republishResult := range republishResults {
 		republishMap[republishResult.PageNumber] = true
 	}

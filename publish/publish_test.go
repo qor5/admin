@@ -77,6 +77,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 	})
 	return
 }
+
 func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
@@ -126,6 +127,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 	p.SetOnlineUrl(p.getUrl())
 	return
 }
+
 func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.GetOnlineUrl(),
@@ -171,7 +173,7 @@ type MockStorage struct {
 }
 
 func (m *MockStorage) Get(path string) (f *os.File, err error) {
-	var content, exist = m.Objects[path]
+	content, exist := m.Objects[path]
 	if !exist {
 		err = errors.New("NoSuchKey: The specified key does not exist")
 		return
@@ -413,7 +415,7 @@ func TestSchedulePublish(t *testing.T) {
 	}
 
 	productV1.Name = "2"
-	var startAt = db.NowFunc().Add(-24 * time.Hour)
+	startAt := db.NowFunc().Add(-24 * time.Hour)
 	productV1.SetScheduledStartAt(&startAt)
 	if err := db.Save(&productV1).Error; err != nil {
 		panic(err)
@@ -430,7 +432,7 @@ func TestSchedulePublish(t *testing.T) {
 	`, expected, storage.Objects["test/product/1/index.html"])))
 	}
 
-	var endAt = startAt.Add(time.Second * 2)
+	endAt := startAt.Add(time.Second * 2)
 	productV1.SetScheduledEndAt(&endAt)
 	if err := db.Save(&productV1).Error; err != nil {
 		panic(err)
@@ -504,7 +506,6 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	} else {
 		t.Error(errors.New(fmt.Sprintf("delete file %s failed", product1Clone.getUrl())))
 	}
-
 }
 
 func assertUpdateStatus(db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) (err error) {

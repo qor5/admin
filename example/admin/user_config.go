@@ -207,8 +207,8 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var selectedItems = []DefaultOptionItem{}
-			var values = []string{}
+			selectedItems := []DefaultOptionItem{}
+			values := []string{}
 			u, ok := obj.(*models.User)
 			if ok {
 				var roles []role.Role
@@ -224,7 +224,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 
 			var roles []role.Role
 			db.Find(&roles)
-			var allRoleItems = []DefaultOptionItem{}
+			allRoleItems := []DefaultOptionItem{}
 			for _, r := range roles {
 				allRoleItems = append(allRoleItems, DefaultOptionItem{
 					Text:  r.Name,

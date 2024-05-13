@@ -48,10 +48,8 @@ import (
 //go:embed assets
 var assets embed.FS
 
-var (
-	// PublishStorage is used to storage static pages published by page builder.
-	PublishStorage oss.StorageInterface = filesystem.New("publish")
-)
+// PublishStorage is used to storage static pages published by page builder.
+var PublishStorage oss.StorageInterface = filesystem.New("publish")
 
 type Config struct {
 	pb          *presets.Builder

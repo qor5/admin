@@ -199,7 +199,7 @@ func (b Base) GetURL(option *Option, db *gorm.DB, field *schema.Field, templater
 	if path := templater.GetURLTemplate(option); path != "" {
 		tmpl := template.New("").Funcs(getFuncMap(db, field, b.GetFileName()))
 		if tmpl, err := tmpl.Parse(path); err == nil {
-			var result = bytes.NewBufferString("")
+			result := bytes.NewBufferString("")
 			if err := tmpl.Execute(result, db.Statement.Dest); err == nil {
 				return result.String()
 			}

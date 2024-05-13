@@ -1,8 +1,10 @@
 package publish
 
-var NonVersionPublishModels map[string]interface{}
-var VersionPublishModels map[string]interface{}
-var ListPublishModels map[string]interface{}
+var (
+	NonVersionPublishModels map[string]interface{}
+	VersionPublishModels    map[string]interface{}
+	ListPublishModels       map[string]interface{}
+)
 
 func init() {
 	NonVersionPublishModels = make(map[string]interface{})

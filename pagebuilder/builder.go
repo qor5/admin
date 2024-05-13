@@ -155,8 +155,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		URIPrefix(prefix).
 		DetailLayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
-	type Editor struct {
-	}
+	type Editor struct{}
 	r.ps.Model(&Editor{}).
 		Detailing().
 		PageFunc(r.Editor)
@@ -261,6 +260,7 @@ func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 	b.templateEnabled = v
 	return b
 }
+
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
@@ -388,7 +388,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 			if v, ok := obj.(presets.SlugEncoder); ok {
 				primarySlug = v.PrimarySlug()
 			}
-			p := obj.(*Page)
 			var pageAppbarContent []h.HTMLComponent
 			pageAppbarContent = append(pageAppbarContent,
 				VProgressLinear().
@@ -399,7 +398,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 					Height(2).
 					Color(pb.GetProgressBarColor()),
 			)
-			sc := scheduleCount(db, p)
 			pageAppbarContent = h.Components(
 				VAppBarNavIcon().
 					Density(DensityCompact).
@@ -412,25 +410,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 					),
 				).Class("mr-auto"),
 				VSpacer(),
-				h.Div(h.Text(fmt.Sprintf(`Current Version :%v`, p.GetVersionName()))).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSuccessLighten1)),
-				h.If(
-					p.ScheduledStartAt != nil,
-					h.Div(
-						h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSuccessLighten1)).Style("height:4px"),
-						VIcon("mdi-circle").Size(SizeXSmall).Color(ColorSuccessLighten1).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
-					).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
-					h.Div(
-						h.Text(fmt.Sprintf(`Next Version :%v`, p.GetNextVersion(p.ScheduledStartAt))),
-					).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
-				),
-				h.If(sc > 0,
-					h.Div(
-						h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, ColorSecondaryLighten1)).Style("height:4px"),
-					).Class("h-100 d-flex align-center").Style("width:40px"),
-					h.Div(
-						h.Text(fmt.Sprintf(`+%v`, sc)),
-					).Class(fmt.Sprintf(`text-caption bg-%s`, ColorSecondaryLighten1)),
-				),
+				publish.DefaultVersionBar(db)(obj, ctx),
 			)
 
 			toolbar := VContainer(
@@ -697,6 +677,7 @@ func versionCount(db *gorm.DB, p *Page) (count int64) {
 	db.Model(&Page{}).Where("id = ? and locale_code = ?", p.ID, p.LocaleCode).Count(&count)
 	return
 }
+
 func scheduleCount(db *gorm.DB, p *Page) (count int64) {
 	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.GetVersion(), publish.StatusDraft).Count(&count)
 	return
@@ -839,7 +820,6 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 				SQLCondition: ``,
 			},
 			{
-
 				Key:          "online_version",
 				Invisible:    true,
 				SQLCondition: `status = 'online'`,
@@ -876,7 +856,6 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 			},
 		}
 	})
-
 }
 
 // cats should be ordered by path
@@ -1907,6 +1886,7 @@ func (b *ContainerBuilder) Cover(v string) *ContainerBuilder {
 	b.cover = v
 	return b
 }
+
 func (b *ContainerBuilder) Group(v string) *ContainerBuilder {
 	b.group = v
 	return b
@@ -1927,7 +1907,6 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
-
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil
 		}
@@ -2145,7 +2124,6 @@ func detailingSidePanel(b *Builder) presets.ObjectComponentFunc {
 					).DotColor(ColorSuccess).Size(SizeXSmall),
 				)
 			}
-
 		}
 		if len(notes) > 0 {
 			userID, _ := note.GetUserData(ctx)

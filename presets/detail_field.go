@@ -433,7 +433,7 @@ func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *we
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
 		return errors.New(fmt.Sprintf("model %#+v must be pointer", obj))
 	}
-	var formObj = reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+	formObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
 	if err = b.DefaultElementUnmarshal()(obj, formObj, b.name, ctx); err != nil {
 		return

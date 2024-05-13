@@ -28,8 +28,10 @@ var productData = gofixtures.Data(gofixtures.Sql(`
 				insert into preset_products (id, name) values (12, 'Product 1');
 			`, []string{"preset_products"}))
 
-var emptyCustomerData = gofixtures.Data(gofixtures.Sql(``, []string{"customers"}))
-var creditCardData = gofixtures.Data(customerData, gofixtures.Sql(``, []string{"credit_cards"}))
+var (
+	emptyCustomerData = gofixtures.Data(gofixtures.Sql(``, []string{"customers"}))
+	creditCardData    = gofixtures.Data(customerData, gofixtures.Sql(``, []string{"credit_cards"}))
+)
 
 type reqCase struct {
 	name               string
@@ -54,7 +56,7 @@ var cases = []reqCase{
 				BuildEventFuncRequest()
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
-			var u = &examples2.Customer{}
+			u := &examples2.Customer{}
 			err := db.Find(u, 11).Error
 			if err != nil {
 				t.Error(err)
@@ -77,10 +79,9 @@ var cases = []reqCase{
 				AddField("Int1", "42").
 				AddField("Name", "Felix").
 				BuildEventFuncRequest()
-
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
-			var u = &examples2.Customer{}
+			u := &examples2.Customer{}
 			err := db.First(u).Error
 			if err != nil {
 				t.Error(err)
@@ -120,10 +121,9 @@ var cases = []reqCase{
 				Query("customerID", "11").
 				AddField("Number", "12345678").
 				BuildEventFuncRequest()
-
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
-			var u = &examples2.CreditCard{}
+			u := &examples2.CreditCard{}
 			err := db.First(u).Error
 			if err != nil {
 				t.Error(err)
@@ -167,7 +167,7 @@ var cases = []reqCase{
 				BuildEventFuncRequest()
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
-			var u = &examples2.Product{}
+			u := &examples2.Product{}
 			err := db.First(u).Error
 			if err != nil {
 				t.Error(err)
@@ -190,7 +190,6 @@ var cases = []reqCase{
 				Query(presets.ParamAction, "AgreeTerms").
 				Query(presets.ParamID, "11").
 				BuildEventFuncRequest()
-
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
 			partial := er.UpdatePortals[0].Body
@@ -212,10 +211,9 @@ var cases = []reqCase{
 				Query(presets.ParamID, "11").
 				AddField("Agree", "true").
 				BuildEventFuncRequest()
-
 		},
 		eventResponseMatch: func(er *testEventResponse, db *gorm.DB, t *testing.T) {
-			var u = &examples2.Customer{}
+			u := &examples2.Customer{}
 			err := db.First(u).Error
 			if err != nil {
 				t.Error(err)
@@ -275,6 +273,5 @@ func TestAll(t *testing.T) {
 				c.pageMatch(w.Body, db, t)
 			}
 		})
-
 	}
 }

@@ -74,7 +74,6 @@ func VideoBannerHeadBody(data *VideoBanner) HTMLComponent {
 }
 
 func VideoBannerFootBody(data *VideoBanner) HTMLComponent {
-
 	return Div(
 		Div(
 			P(Text(data.Text)).Class("container-video_banner-text p-large"),

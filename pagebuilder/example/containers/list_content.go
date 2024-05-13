@@ -73,7 +73,6 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Items([]string{"white", "grey"}).
 			Label(field.Label).
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
-
 	})
 	eb.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().

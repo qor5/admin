@@ -33,6 +33,7 @@ func (version Version) GetVersionName() string {
 func (version *Version) SetVersionName(v string) {
 	version.VersionName = v
 }
+
 func (version *Version) GetNextVersion(t *time.Time) string {
 	if t == nil {
 		return ""

@@ -52,7 +52,6 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builde
 	mb.RegisterEventFunc(renameVersionEvent, renameVersionAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(selectVersionsEvent, selectVersionsAction(db, mb, publisher, ab, ActivityUnPublish))
 	mb.RegisterEventFunc(afterDeleteVersionEvent, afterDeleteVersionAction(db, mb, publisher))
-
 }
 
 func publishAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
@@ -139,9 +138,7 @@ func renameVersionAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Build
 
 func selectVersionsAction(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var (
-			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		table, _, err := versionListTable(db, mb, msgr, ctx)
 		if err != nil {

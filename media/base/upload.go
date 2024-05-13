@@ -8,13 +8,10 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-var (
-	// set MediaLibraryURL to change the default url /system/{{class}}/{{primary_key}}/{{column}}.{{extension}}
-	MediaLibraryURL = ""
-)
+// set MediaLibraryURL to change the default url /system/{{class}}/{{primary_key}}/{{column}}.{{extension}}
+var MediaLibraryURL = ""
 
 func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
-
 	if !field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).CanAddr() {
 		return
 	}
@@ -61,7 +58,7 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 		media.Scan(string(result))
 	}
 
-	var handled = false
+	handled := false
 
 	for _, handler := range mediaHandlers {
 		if !handler.CouldHandle(media) {
@@ -90,7 +87,7 @@ func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
 		return
 	}
 
-	var updateColumns = map[string]interface{}{}
+	updateColumns := map[string]interface{}{}
 
 	for _, field := range db.Statement.Schema.Fields {
 		ok, err := cropField(field, db)

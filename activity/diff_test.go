@@ -58,7 +58,8 @@ func TestDiff(t *testing.T) {
 					Field: "Content",
 					Old:   "",
 					Now:   "124",
-				}},
+				},
+			},
 		},
 		{
 			description:  "Default type handles",

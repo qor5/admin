@@ -217,13 +217,16 @@ func TestModelTypeHanders(t *testing.T) {
 
 	resetDB()
 	builder.AddEditRecordWithOld("a",
-		Page{ID: 1, VersionName: "v1", Title: "test",
+		Page{
+			ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
 				{Name: "Text 01", Title: "test1"},
 				{Name: "HeroBanner 02", Title: "banner 1"},
 				{Name: "Card 03", Title: "cards 1"},
-			}},
-		Page{ID: 1, VersionName: "v2", Title: "test1",
+			},
+		},
+		Page{
+			ID: 1, VersionName: "v2", Title: "test1",
 			Widgets: []Widget{
 				{Name: "Text 011", Title: "test1"},
 				{Name: "HeroBanner 022", Title: "banner 1"},
@@ -257,15 +260,16 @@ func TestCreator(t *testing.T) {
 	}
 }
 
-type user struct {
-}
+type user struct{}
 
 func (u user) GetID() uint {
 	return 10
 }
+
 func (u user) GetName() string {
 	return "user a"
 }
+
 func TestCreatorInferface(t *testing.T) {
 	builder := New(db, &TestActivityLog{})
 	builder.Install(pb)
@@ -319,7 +323,6 @@ func TestGetActivityLogs(t *testing.T) {
 	if (*testlogs)[2].Action != "Edit" || (*testlogs)[2].ModelName != "Page" || (*testlogs)[2].ModelKeys != "1:v1" || (*testlogs)[2].Creator != "creator a" {
 		t.Errorf("want the logs %v, but got %v", "Edit:Page:1:v1:creator a", (*testlogs)[2])
 	}
-
 }
 
 func TestMutliModelBuilder(t *testing.T) {

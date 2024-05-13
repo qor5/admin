@@ -122,7 +122,6 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-
 }
 
 func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
@@ -161,8 +160,8 @@ func TestAddContainer(t *testing.T) {
 		AddField("modelID", "1").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	// var er web.EventResponse
@@ -185,8 +184,8 @@ func TestEditorDeleteContainerConfirmationEvent(t *testing.T) {
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -209,8 +208,8 @@ func TestEditorDeleteContainerEvent(t *testing.T) {
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	var er web.EventResponse
@@ -234,8 +233,8 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 		AddField("moveDirection", "down").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -252,8 +251,8 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 		AddField("moveDirection", "up").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -278,8 +277,8 @@ func TestEditorReloadRenderPageOrTemplateEvent(t *testing.T) {
 		AddField("locale", "International").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -306,8 +305,8 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 		AddField("modelID", "1").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -331,13 +330,13 @@ func TestEditorRenameContainerEvent(t *testing.T) {
 		AddField("DisplayName", "Header0000001").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	var er web.EventResponse
 	_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// fmt.Printf("%#+v\n", er)
 	if er.PushState == nil {
 		t.Error(w.Body.String())
 		return
@@ -364,8 +363,8 @@ func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 		AddField("status", "draft").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -377,7 +376,6 @@ func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 }
 
 func TestEditorMoveContainerEvent(t *testing.T) {
-
 	var (
 		_, pb = initPageBuilder()
 		r     *http.Request
@@ -389,8 +387,8 @@ func TestEditorMoveContainerEvent(t *testing.T) {
 		AddField("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`).
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -400,8 +398,8 @@ func TestEditorMoveContainerEvent(t *testing.T) {
 		t.Error(w.Body.String())
 	}
 }
-func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 
+func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 	var (
 		_, pb = initPageBuilder()
 		r     *http.Request
@@ -413,8 +411,8 @@ func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse
@@ -426,7 +424,6 @@ func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 }
 
 func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
-
 	var (
 		_, pb = initPageBuilder()
 		r     *http.Request
@@ -440,8 +437,8 @@ func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
 		AddField("locale", "International").
 		BuildEventFuncRequest()
 
-	//bs, _ := httputil.DumpRequest(r, true)
-	//fmt.Println(string(bs))
+	// bs, _ := httputil.DumpRequest(r, true)
+	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	//var er web.EventResponse

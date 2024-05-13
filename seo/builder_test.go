@@ -386,7 +386,6 @@ func TestBuilder_Render(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestBuilder_GetSEOPriority(t *testing.T) {
@@ -483,7 +482,6 @@ func TestBuilder_RemoveSEO(t *testing.T) {
 }
 
 func TestBuilder_SortSEOs(t *testing.T) {
-
 	cases := []struct {
 		name     string
 		builder  *Builder
@@ -510,7 +508,8 @@ func TestBuilder_SortSEOs(t *testing.T) {
 				{Name: defaultGlobalSEOName},
 				{Name: "City"},
 				{Name: "Prefecture"},
-				{Name: "Product"}},
+				{Name: "Product"},
+			},
 			expected: []*QorSEOSetting{
 				{Name: defaultGlobalSEOName},
 				{Name: "PLP"},
@@ -518,7 +517,8 @@ func TestBuilder_SortSEOs(t *testing.T) {
 				{Name: "City"},
 				{Name: "Prefecture"},
 				{Name: "Post"},
-				{Name: "Product"}},
+				{Name: "Product"},
+			},
 		},
 	}
 
@@ -593,7 +593,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 				return builder
 			}(),
 			objs: NewNonModelSEOSlice("Product"),
-			wants: []string{`
+			wants: []string{
+				`
 			<title>product | Qor5 dev</title>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
 `,
@@ -632,7 +633,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 				return builder
 			}(),
 			objs: NewNonModelSEOSlice("Product"),
-			wants: []string{`
+			wants: []string{
+				`
 			<title>product | Qor5 dev</title>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
 `,
@@ -687,7 +689,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 					},
 				},
 			},
-			wants: []string{`
+			wants: []string{
+				`
 			<title>productA</title>
 			<meta name='description' content='Qor5 dev'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
@@ -747,7 +750,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 					},
 				},
 			},
-			wants: []string{`
+			wants: []string{
+				`
 			<title>productA</title>
 			<meta name='description' content='Qor5 dev'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
@@ -828,7 +832,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 					},
 				},
 			},
-			wants: []string{`
+			wants: []string{
+				`
 			<title>productA</title>
 			<meta name='description' content='Qor5-PLP'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
@@ -919,7 +924,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 					Locale: l10n.Locale{LocaleCode: "zh"},
 				},
 			},
-			wants: []string{`
+			wants: []string{
+				`
 			<title>productA</title>
 			<meta name='description' content='Qor5 dev'>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
@@ -983,7 +989,8 @@ func TestBuilder_BatchRender(t *testing.T) {
 				return builder
 			}(),
 			objs: NewNonModelSEOSlice("Product", "en", "zh"),
-			wants: []string{`
+			wants: []string{
+				`
 			<title>product | ProductName</title>
 			<meta property='og:url' name='og:url' content='http://dev.qor5.com/product/1'>
 `, `

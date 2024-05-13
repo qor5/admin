@@ -7,11 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
-var MaximumNumberOfFilesUploadedAtTheSameTime = 10
-var putSemaphore = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
+var (
+	MaximumNumberOfFilesUploadedAtTheSameTime = 10
+	putSemaphore                              = make(chan struct{}, MaximumNumberOfFilesUploadedAtTheSameTime)
+)
 
-var MaximumNumberOfFilesCopiedAtTheSameTime = 10
-var copySemaphore = make(chan struct{}, MaximumNumberOfFilesCopiedAtTheSameTime)
+var (
+	MaximumNumberOfFilesCopiedAtTheSameTime = 10
+	copySemaphore                           = make(chan struct{}, MaximumNumberOfFilesCopiedAtTheSameTime)
+)
 
 type Builder struct {
 	db                       *gorm.DB

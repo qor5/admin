@@ -157,7 +157,6 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 			return VCheckbox().Label(field.Label).
 				ModelValue(field.Value(obj)).
 				Attr(web.VField(field.Name, field.Value(obj))...)
-
 		})
 
 	ed.Field("Autocomplete1").

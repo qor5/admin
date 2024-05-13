@@ -13,7 +13,6 @@ import (
 )
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
-
 	var (
 		body          h.HTMLComponent
 		containerList h.HTMLComponent

@@ -35,7 +35,6 @@ type User struct {
 }
 
 func TestFields(t *testing.T) {
-
 	vd := &web.ValidationErrors{}
 	vd.FieldError("String1", "too small")
 
@@ -74,7 +73,7 @@ func TestFields(t *testing.T) {
 
 	ftRead := NewFieldDefaults(LIST)
 
-	var cases = []struct {
+	cases := []struct {
 		name           string
 		toComponentFun func() h.HTMLComponent
 		expect         string
@@ -178,7 +177,6 @@ func TestFields(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 type Person struct {
@@ -304,13 +302,12 @@ func TestFieldsBuilder(t *testing.T) {
 		return
 	})
 
-	var toComponentCases = []struct {
+	toComponentCases := []struct {
 		name         string
 		obj          *Org
 		setup        func(ctx *web.EventContext)
 		expectedHTML string
 	}{
-
 		{
 			name: "Only deleted",
 			obj: &Org{
@@ -526,10 +523,9 @@ func TestFieldsBuilder(t *testing.T) {
 				t.Error(diff)
 			}
 		})
-
 	}
 
-	var unmarshalCases = []struct {
+	unmarshalCases := []struct {
 		name                 string
 		initial              *Org
 		expected             *Org
@@ -970,9 +966,7 @@ func TestFieldsBuilder(t *testing.T) {
 				t.Error(diff)
 			}
 		})
-
 	}
-
 }
 
 func TestGoFunk(t *testing.T) {

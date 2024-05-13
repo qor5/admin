@@ -172,7 +172,7 @@ func (b *Builder) EnsureLocale(in http.Handler) (out http.Handler) {
 			return
 		}
 
-		var localeCode = b.GetCorrectLocaleCode(r)
+		localeCode := b.GetCorrectLocaleCode(r)
 
 		maxAge := 365 * 24 * 60 * 60
 		http.SetCookie(w, &http.Cookie{

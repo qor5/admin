@@ -82,7 +82,7 @@ func (bimgImageHandler) Handle(m base.Media, file base.FileInterface, option *ba
 		if err = generateWebp(m, option, bimgOption, img); err != nil {
 			return err
 		}
-		for key, _ := range m.GetSizes() {
+		for key := range m.GetSizes() {
 			if key == base.DefaultSizeKey {
 				continue
 			}

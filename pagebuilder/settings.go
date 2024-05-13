@@ -58,9 +58,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 			ctx.R.Form.Set(paramsTpl, "1")
 		}
 
-		var (
-			previewDevelopUrl = b.previewHref(ctx)
-		)
+		previewDevelopUrl := b.previewHref(ctx)
 
 		b.db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
 		if p.GetScheduledStartAt() != nil {

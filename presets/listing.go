@@ -173,12 +173,14 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 	return b.defaultPageFunc
 }
 
-const bulkPanelOpenParamName = "bulkOpen"
-const actionPanelOpenParamName = "actionOpen"
-const DeleteConfirmPortalName = "deleteConfirm"
-const dataTablePortalName = "dataTable"
-const dataTableAdditionsPortalName = "dataTableAdditions"
-const listingDialogContentPortalName = "listingDialogContentPortal"
+const (
+	bulkPanelOpenParamName         = "bulkOpen"
+	actionPanelOpenParamName       = "actionOpen"
+	DeleteConfirmPortalName        = "deleteConfirm"
+	dataTablePortalName            = "dataTable"
+	dataTableAdditionsPortalName   = "dataTableAdditions"
+	listingDialogContentPortalName = "listingDialogContentPortal"
+)
 
 func (b *ListingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
@@ -1195,14 +1197,13 @@ func (b *ListingBuilder) getTableComponents(
 	var err error
 
 	objs, totalCount, err = b.Searcher(b.mb.NewModelSlice(), searchParams, ctx)
-
 	if err != nil {
 		panic(err)
 	}
 
 	haveCheckboxes := len(b.bulkActions) > 0
 
-	var cellWrapperFunc = func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+	cellWrapperFunc := func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		if b.mb.hasDetailing && !b.mb.detailing.drawer {
 			tdbind.SetAttr("@click.self", web.Plaid().
@@ -1230,7 +1231,7 @@ func (b *ListingBuilder) getTableComponents(
 		cellWrapperFunc = b.cellWrapperFunc
 	}
 
-	var displayFields = b.fields
+	displayFields := b.fields
 	var selectColumnsBtn h.HTMLComponent
 	if b.selectableColumns {
 		selectColumnsBtn, displayFields = b.selectColumnsBtn(ctx.R.URL, ctx, inDialog)

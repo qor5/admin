@@ -83,7 +83,7 @@ func (b *RowMenuBuilder) RowMenuItem(name string) *RowMenuItemBuilder {
 	b.lb.mb.RegisterEventFunc(ib.eventID, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue(ParamID)
 		if ib.permAction != "" {
-			var obj = b.lb.mb.NewModel()
+			obj := b.lb.mb.NewModel()
 			obj, err = b.lb.mb.editing.Fetcher(obj, id, ctx)
 			if err != nil {
 				return r, err

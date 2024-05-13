@@ -387,7 +387,7 @@ func (job *QorJobInstance) getArgument() (interface{}, error) {
 }
 
 func (job *QorJobInstance) getContext() (map[string]interface{}, error) {
-	var context = make(map[string]interface{})
+	context := make(map[string]interface{})
 	err := json.Unmarshal([]byte(job.Context), &context)
 	return context, err
 }

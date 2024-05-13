@@ -27,9 +27,7 @@ type User struct {
 	login.SessionSecure
 }
 
-var (
-	db *gorm.DB
-)
+var db *gorm.DB
 
 func init() {
 	var err error

@@ -291,7 +291,6 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 				SQLCondition: ``,
 			},
 			{
-
 				Key:          "online_version",
 				Invisible:    true,
 				SQLCondition: `status = 'online'`,
@@ -333,7 +332,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		res := h.Div()
+		res := h.Div().Class("d-inline-flex align-center")
 
 		slugEncoderIf := obj.(presets.SlugEncoder)
 		slugDncoderIf := obj.(presets.SlugDecoder)
@@ -346,7 +345,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		}
 		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Color("green"))
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res
@@ -368,14 +367,26 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		if err != nil {
 			return res
 		}
-
+		res.AppendChildren(
+			h.Div(
+				h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSuccessLighten2)).Style("height:4px"),
+				v.VIcon("mdi-circle").Size(v.SizeXSmall).Color(v.ColorSuccess).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
+			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
+		)
 		versionIf = nextObj.(VersionInterface)
 		// TODO use nextVersion I18n
 		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
 		if count >= 2 {
-			nextText = nextText + fmt.Sprintf(" +%d", count-1)
+			res.AppendChildren(
+				h.Div(
+					h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSecondaryLighten1)).Style("height:4px"),
+				).Class("h-100 d-flex align-center").Style("width:40px"),
+				h.Div(
+					h.Text(fmt.Sprintf(`+%v`, count)),
+				).Class(fmt.Sprintf(`text-caption bg-%s`, v.ColorSecondaryLighten1)),
+			)
 		}
-		res.AppendChildren(v.VChip(h.Span(nextText)).Color("grey"))
 		return res
 	}
 }

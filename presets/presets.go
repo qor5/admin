@@ -204,6 +204,7 @@ func (b *Builder) ProfileFunc(v ComponentFunc) (r *Builder) {
 	b.profileFunc = v
 	return b
 }
+
 func (b *Builder) GetProfileFunc() ComponentFunc {
 	return b.profileFunc
 }
@@ -248,6 +249,7 @@ func (b *Builder) ProgressBarColor(v string) (r *Builder) {
 	b.progressBarColor = v
 	return b
 }
+
 func (b *Builder) GetProgressBarColor() string {
 	return b.progressBarColor
 }
@@ -352,7 +354,6 @@ func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
 			break
 		}
 	}
-
 }
 
 // item can be Slug name, model name, *MenuGroupBuilder
@@ -425,8 +426,10 @@ func defaultMenuIcon(mLabel string) string {
 	return "mdi-alert-octagon-outline"
 }
 
-const menuFontWeight = "500"
-const subMenuFontWeight = "400"
+const (
+	menuFontWeight    = "500"
+	subMenuFontWeight = "400"
+)
 
 func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (r h.HTMLComponent) {
 	menuIcon := m.menuIcon
@@ -521,7 +524,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if groupIcon == "" {
 				groupIcon = defaultMenuIcon(v.name)
 			}
-			var subMenus = []h.HTMLComponent{
+			subMenus := []h.HTMLComponent{
 				h.Template(
 					VListItem(
 						web.Slot(
@@ -636,7 +639,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		return b.switchLanguageFunc(ctx)
 	}
 
-	var supportLanguages = b.I18n().GetSupportLanguagesFromRequest(ctx.R)
+	supportLanguages := b.I18n().GetSupportLanguagesFromRequest(ctx.R)
 
 	if len(b.I18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
 		return nil
@@ -660,7 +663,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		)
 	}
 
-	var matcher = language.NewMatcher(supportLanguages)
+	matcher := language.NewMatcher(supportLanguages)
 
 	lang := ctx.R.FormValue(queryName)
 	if lang == "" {
@@ -766,18 +769,22 @@ func MustGetMessages(r *http.Request) *Messages {
 	return i18n.MustGetModuleMessages(r, CoreI18nModuleKey, Messages_en_US).(*Messages)
 }
 
-const RightDrawerPortalName = "presets_RightDrawerPortalName"
-const RightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
-const DialogPortalName = "presets_DialogPortalName"
-const dialogContentPortalName = "presets_DialogContentPortalName"
-const NotificationCenterPortalName = "notification-center"
-const DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
-const ListingDialogPortalName = "presets_listingDialogPortalName"
-const singletonEditingPortalName = "presets_SingletonEditingPortalName"
+const (
+	RightDrawerPortalName          = "presets_RightDrawerPortalName"
+	RightDrawerContentPortalName   = "presets_RightDrawerContentPortalName"
+	DialogPortalName               = "presets_DialogPortalName"
+	dialogContentPortalName        = "presets_DialogContentPortalName"
+	NotificationCenterPortalName   = "notification-center"
+	DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
+	ListingDialogPortalName        = "presets_listingDialogPortalName"
+	singletonEditingPortalName     = "presets_SingletonEditingPortalName"
+)
 
-const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
-const closeDialogVarScript = "vars.presetsDialog = false"
-const CloseListingDialogVarScript = "vars.presetsListingDialog = false"
+const (
+	closeRightDrawerVarScript   = "vars.presetsRightDrawer = false"
+	closeDialogVarScript        = "vars.presetsDialog = false"
+	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
+)
 
 func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if overlayType == actions.Dialog {
@@ -812,6 +819,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
 }
+
 func (b *Builder) contentDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
@@ -1297,6 +1305,7 @@ func (b *Builder) initMux() {
 
 	b.mux = mux
 }
+
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }

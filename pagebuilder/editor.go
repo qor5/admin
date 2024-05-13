@@ -90,7 +90,6 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 const editorPreviewContentPortal = "editorPreviewContentPortal"
 
 func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
-
 	var (
 		deviceToggler     h.HTMLComponent
 		versionComponent  h.HTMLComponent
@@ -371,7 +370,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 		if err != nil {
 			return
 		}
-		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
+		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
 			Page:        p,
 			IsEditor:    isEditor,
@@ -418,8 +417,8 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent
 	)
 	return
 }
-func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 
+func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
@@ -461,6 +460,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	).VSlot("{ form }")
 	return
 }
+
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons         []*Container
@@ -488,7 +488,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-		var displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
+		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
 
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
@@ -507,29 +507,27 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 			},
 		)
 	}
-	var (
-		menu = VMenu(
-			web.Slot(
-				VBtn("").Icon("mdi-dots-horizontal").Variant(VariantText).Size(SizeSmall).Attr("v-bind", "props").Attr("v-show", "element.editShow || (isActive || isHovering)"),
-			).Name("activator").Scope("{isActive,props}"),
-			VList(
-				VListItem(
-					VBtn(msgr.Rename).PrependIcon("mdi-pencil").Attr("@click",
-						"element.editShow=!element.editShow",
-					),
-				),
-				VListItem(
-					VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
-						web.Plaid().
-							URL(ctx.R.URL.Path).
-							EventFunc(DeleteContainerConfirmationEvent).
-							Query(paramContainerID, web.Var("element.param_id")).
-							Query(paramContainerName, web.Var("element.display_name")).
-							Go(),
-					),
+	menu := VMenu(
+		web.Slot(
+			VBtn("").Icon("mdi-dots-horizontal").Variant(VariantText).Size(SizeSmall).Attr("v-bind", "props").Attr("v-show", "element.editShow || (isActive || isHovering)"),
+		).Name("activator").Scope("{isActive,props}"),
+		VList(
+			VListItem(
+				VBtn(msgr.Rename).PrependIcon("mdi-pencil").Attr("@click",
+					"element.editShow=!element.editShow",
 				),
 			),
-		)
+			VListItem(
+				VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
+					web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(DeleteContainerConfirmationEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramContainerName, web.Var("element.display_name")).
+						Go(),
+				),
+			),
+		),
 	)
 
 	r = web.Scope(
@@ -717,9 +715,7 @@ func (b *Builder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRespons
 }
 
 func (b *Builder) toggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		container Container
-	)
+	var container Container
 	var (
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
@@ -1062,9 +1058,7 @@ func (b *Builder) markAsSharedContainer(ctx *web.EventContext) (r web.EventRespo
 }
 
 func (b *Builder) renameContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		container Container
-	)
+	var container Container
 	var (
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
@@ -1146,14 +1140,14 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	sort.Slice(b.containerBuilders, func(i, j int) bool {
 		return b.containerBuilders[i].group != "" && b.containerBuilders[j].group == ""
 	})
-	var groupContainers = utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
+	groupContainers := utils.GroupBySlice[*ContainerBuilder, string](b.containerBuilders, func(builder *ContainerBuilder) string {
 		return builder.group
 	})
 	for _, group := range groupContainers {
 		if len(group) == 0 {
 			break
 		}
-		var groupName = group[0].group
+		groupName := group[0].group
 		if groupName == "" {
 			groupName = "Others"
 		}
@@ -1207,7 +1201,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 		if len(group) == 0 {
 			break
 		}
-		var groupName = b.ContainerByName(group[0].ModelName).group
+		groupName := b.ContainerByName(group[0].ModelName).group
 		if groupName == "" {
 			groupName = "Others"
 		}
@@ -1252,7 +1246,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 
 	}
 
-	var backPlaid = web.Plaid().
+	backPlaid := web.Plaid().
 		URL(ctx.R.URL.Path).
 		EventFunc(ShowSortedContainerDrawerEvent).
 		Query(paramPageVersion, pageVersion).
@@ -1283,9 +1277,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 }
 
 func (b *Builder) addContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		containers []h.HTMLComponent
-	)
+	var containers []h.HTMLComponent
 	var (
 		pageVersion = ctx.R.FormValue(paramPageVersion)
 		locale      = ctx.R.FormValue(paramLocale)
@@ -1420,7 +1412,6 @@ const (
 
 func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-
 		b.ps.InjectAssets(ctx)
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
