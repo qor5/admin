@@ -373,7 +373,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 								h.Div(btn).Style("width:32px;"),
 							).Class("d-flex justify-space-between"),
 						),
-					).Class("mb-2").Variant(VariantOutlined).Hover(b.config.componentHoverFunc(obj, ctx)).
+					).Class("mb-6").Variant(VariantOutlined).Hover(b.config.componentHoverFunc(obj, ctx)).
 						Attr("v-bind", "props"),
 				).Name("default").Scope("{ isHovering, props }"),
 			),
@@ -422,7 +422,7 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 							h.Div(btn).Class("align-self-end"),
 						).Class("d-flex flex-column"),
 					),
-				).Variant(VariantOutlined).Class("mb-2"),
+				).Variant(VariantOutlined).Class("mb-6"),
 			),
 			hiddenComp,
 		).VSlot("{ form }"),
@@ -537,6 +537,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 
 	if !b.config.disableElementCreateBtn {
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
+			Class("mb-2").
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
 				Query(DetailFieldName, b.name).
 				Query(ParamID, id).
@@ -552,7 +553,10 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	}
 
 	return web.Portal(
-		web.Scope(rows).VSlot("{ form }"),
+		web.Scope(
+			// element and addBtn have mb-2, so the real effect is mb-6
+			h.Div(rows).Class("mb-4"),
+		).VSlot("{ form }"),
 		hiddenComp,
 	).Name(b.FieldPortalName())
 }
