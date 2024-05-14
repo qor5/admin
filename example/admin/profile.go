@@ -3,7 +3,6 @@ package admin
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -95,7 +94,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 		u := getCurrentUser(ctx.R)
 
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			return r, perm.PermissionDenied
 		}
 
@@ -165,7 +164,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 		// We don't allow public user to change its password
 		u := getCurrentUser(ctx.R)
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			return h.RawHTML("")
 		}
 
@@ -195,7 +194,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		}
 
 		isPublicUser := false
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			isPublicUser = true
 		}
 

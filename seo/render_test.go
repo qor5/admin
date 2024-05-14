@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -12,14 +11,17 @@ import (
 	"github.com/qor5/admin/v3/seo"
 	adminUser "github.com/qor5/admin/v3/seo/testdata/admin"
 	customerUser "github.com/qor5/admin/v3/seo/testdata/customer"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var dbForTest *gorm.DB
 
+var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+
 func init() {
-	if db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{}); err != nil {
+	if db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{}); err != nil {
 		panic(err)
 	} else {
 		dbForTest = db

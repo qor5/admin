@@ -2,7 +2,6 @@ package admin
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/qor5/admin/v3/example/models"
@@ -135,7 +134,7 @@ func InitDB(db *gorm.DB, tables []string) {
 
 // composeS3Path to generate file path as https://cdn.qor5.com/system/media_libraries/236/file.jpeg.
 func composeS3Path(filePath string) string {
-	endPoint := os.Getenv("S3_Endpoint")
+	endPoint := s3Endpoint
 	if endPoint == "" {
 		endPoint = "https://cdn.qor5.com"
 	}

@@ -2,10 +2,10 @@ package integration_test
 
 import (
 	"embed"
-	"os"
 	"testing"
 
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/theplant/osenv"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
@@ -20,9 +20,15 @@ import (
 //go:embed *.png
 var box embed.FS
 
+var (
+	testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+	s3Bucket     = osenv.Get("S3_Bucket", "s3-bucket for media library storage", "example")
+	s3Region     = osenv.Get("S3_Region", "s3-region for media library storage", "ap-northeast-1")
+)
+
 func setup() (db *gorm.DB) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -39,8 +45,8 @@ func setup() (db *gorm.DB) {
 	sess := session.Must(session.NewSession())
 
 	oss.Storage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
+		Bucket:  s3Bucket,
+		Region:  s3Region,
 		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session: sess,
 	})

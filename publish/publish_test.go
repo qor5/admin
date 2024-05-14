@@ -13,6 +13,7 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/theplant/osenv"
 	"github.com/theplant/sliceutils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -211,8 +212,10 @@ func (m *MockStorage) Delete(path string) error {
 	return nil
 }
 
+var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

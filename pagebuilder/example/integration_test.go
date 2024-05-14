@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -31,8 +31,10 @@ import (
 	"github.com/qor5/x/v3/perm"
 )
 
+var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +127,7 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 }
 
 func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -188,8 +190,8 @@ func TestEditorDeleteContainerConfirmationEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), presets.DeleteConfirmPortalName) < 0 {
 		t.Error(w.Body.String())
@@ -237,9 +239,9 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
 		t.Error(w.Body.String())
 	}
@@ -255,9 +257,9 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 
 	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
 		t.Error(w.Body.String())
@@ -281,9 +283,9 @@ func TestEditorReloadRenderPageOrTemplateEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), "editorPreviewContentPortal") < 0 {
 		t.Error(w.Body.String())
 	}
@@ -309,9 +311,9 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
 		t.Error(w.Body.String())
 	}
@@ -367,9 +369,9 @@ func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
 		t.Error(w.Body.String())
 	}
@@ -391,9 +393,9 @@ func TestEditorMoveContainerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
 		t.Error(w.Body.String())
 	}
@@ -415,9 +417,9 @@ func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 && strings.Index(w.Body.String(), pagebuilder.ShowSortedContainerDrawerEvent) < 0 {
 		t.Error(w.Body.String())
 	}
@@ -441,9 +443,9 @@ func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	//var er web.EventResponse
-	//_ = json.Unmarshal(w.Body.Bytes(), &er)
-	//fmt.Printf("%#+v\n", er)
+	// var er web.EventResponse
+	// _ = json.Unmarshal(w.Body.Bytes(), &er)
+	// fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
 		t.Error(w.Body.String())
 	}

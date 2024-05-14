@@ -4,7 +4,6 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
-	"os"
 	"path"
 
 	"github.com/qor5/admin/v3/media"
@@ -14,14 +13,17 @@ import (
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+var dbParamsString = osenv.Get("DB_PARAMS", "page builder example database connection string", "")
+
 func ConnectDB() (db *gorm.DB) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dbParamsString), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

@@ -3,7 +3,6 @@ package admin
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -245,7 +244,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 			if !ok {
 				return
 			}
-			if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+			if u.GetAccountName() == loginInitialUserEmail {
 				return perm.PermissionDenied
 			}
 			rids := ctx.R.Form[field.Name]
@@ -287,7 +286,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 	oldSaver := ed.Saver
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			return perm.PermissionDenied
 		}
 		u.RegistrationDate = time.Now()

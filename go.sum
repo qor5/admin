@@ -331,6 +331,8 @@ github.com/theplant/htmlgo v1.0.3 h1:G7/YSf8OrOIRHVQ13avd78T/GV1kDl/jMwpQURrXB0o
 github.com/theplant/htmlgo v1.0.3/go.mod h1:pCKSFJsoVNkyW+yN2i1Mst+8130NSQzIU7L2IbnuyKg=
 github.com/theplant/htmltestingutils v0.0.0-20190423050759-0e06de7b6967 h1:yPrgtU8bj7Q/XbXgjjmngZtOhsUufBAraruNwxv/eXM=
 github.com/theplant/htmltestingutils v0.0.0-20190423050759-0e06de7b6967/go.mod h1:86iN4EAYaQbx1VTW5uPslTIviRkYH8CzslMC//g+BgY=
+github.com/theplant/osenv v0.0.1 h1:CCuIqyEVHJmqPTJk9xbCkP3C9tGzkHVsZ5E8m2DmZ7c=
+github.com/theplant/osenv v0.0.1/go.mod h1:gUdlLzvmJb/dyBmXk+qEWiIhAN1tmVhYktzK1HHEz3c=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1 h1:EP+XW/tiUH8Cr1MSu7wKhpUnt4QzbVv5J5CoB6R32S4=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1/go.mod h1:+y978w//UsVK85wVF9XJey9qTGDv+4kQc8v3Mf/ZjmE=
 github.com/theplant/testenv v0.0.0-20240513012518-1c94c8c84239 h1:hoqkz7fn4LHAQFKDoY086SNsGG0l9oNgJp0CTkczIlU=

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -41,6 +40,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -57,22 +57,34 @@ type Config struct {
 	Publisher   *publish.Builder
 }
 
+var (
+	s3Bucket                  = osenv.Get("S3_Bucket", "s3-bucket for media library storage", "example")
+	s3Region                  = osenv.Get("S3_Region", "s3-region for media library storage", "ap-northeast-1")
+	s3Endpoint                = osenv.Get("S3_Endpoint", "s3-endpoint for media library storage", "https://s3.ap-northeast-1.amazonaws.com")
+	s3PublishBucket           = osenv.Get("S3_Publish_Bucket", "s3-bucket for publish", "example-publish")
+	s3PublishRegion           = osenv.Get("S3_Publish_Region", "s3-region for publish", "ap-northeast-1")
+	publishURL                = osenv.Get("PUBLISH_URL", "publish url", "")
+	awsRegion                 = osenv.Get("AWS_REGION", "aws region for show count down", "")
+	resetAndImportInitialData = osenv.GetBool("RESET_AND_IMPORT_INITIAL_DATA",
+		"Will reset and import initial data if set to true", false)
+)
+
 func NewConfig() Config {
 	db := ConnectDB()
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
-		Bucket:   os.Getenv("S3_Bucket"),
-		Region:   os.Getenv("S3_Region"),
+		Bucket:   s3Bucket,
+		Region:   s3Region,
 		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Endpoint: os.Getenv("S3_Endpoint"),
+		Endpoint: s3Endpoint,
 		Session:  sess,
 	})
 	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
-		Bucket:   os.Getenv("S3_Publish_Bucket"),
-		Region:   os.Getenv("S3_Publish_Region"),
+		Bucket:   s3PublishBucket,
+		Region:   s3PublishRegion,
 		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
 		Session:  sess,
-		Endpoint: os.Getenv("PUBLISH_URL"),
+		Endpoint: publishURL,
 	}))
 	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
 {
@@ -186,7 +198,7 @@ func NewConfig() Config {
 				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
-			h.If(os.Getenv("AWS_REGION") != "",
+			h.If(awsRegion != "",
 				h.Div(
 					h.Span(msgr.DBResetTipLabel),
 					v.VIcon("schedule").Size(v.SizeXSmall),
@@ -609,7 +621,7 @@ func NewConfig() Config {
 		Models(l10nM, l10nVM)
 	l10nBuilder.Install(b)
 
-	if os.Getenv("RESET_AND_IMPORT_INITIAL_DATA") == "true" {
+	if resetAndImportInitialData {
 		tbs := GetNonIgnoredTableNames()
 		EmptyDB(db, tbs)
 		InitDB(db, tbs)

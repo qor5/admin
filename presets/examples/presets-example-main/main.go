@@ -3,17 +3,19 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/qor5/admin/v3/presets/examples"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+var dbParamsString = osenv.Get("DB_PARAMS", "presets example database connection string", "")
+
 func main() {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBString")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dbParamsString), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

@@ -21,6 +21,7 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -30,9 +31,11 @@ var (
 	pb *presets.Builder
 )
 
+var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+
 func TestMain(m *testing.M) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

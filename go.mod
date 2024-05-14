@@ -1,6 +1,6 @@
 module github.com/qor5/admin/v3
 
-go 1.22
+go 1.22.2
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -30,6 +30,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/gofixtures v1.1.0
 	github.com/theplant/htmlgo v1.0.3
+	github.com/theplant/osenv v0.0.1
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.0.0-20240513012518-1c94c8c84239
 	github.com/theplant/testingutils v0.0.0-20240326065615-ab2586803ce4

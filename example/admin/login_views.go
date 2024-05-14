@@ -3,7 +3,6 @@ package admin
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
@@ -139,8 +138,8 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			),
 		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 
-		username := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
-		password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
+		username := loginInitialUserEmail
+		password := loginInitialUserPassword
 		isDemo := username != "" && password != ""
 		demoTips := Div(
 			Div(

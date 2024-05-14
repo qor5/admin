@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -16,6 +15,7 @@ import (
 	examples2 "github.com/qor5/admin/v3/presets/examples"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -225,9 +225,10 @@ var cases = []reqCase{
 		},
 	},
 }
+var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
 
 func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
