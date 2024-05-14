@@ -419,7 +419,7 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 							h.Div(b.componentEditFunc(obj, field, ctx)).
 								Class("flex-grow-1"),
 							// save btn
-							h.Div(btn).Class("align-self-end"),
+							h.Div(btn).Class("align-self-end mt-4"),
 						).Class("d-flex flex-column"),
 					),
 				).Variant(VariantOutlined).Class("mb-6"),
@@ -621,6 +621,16 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 }
 
 func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web.EventContext) h.HTMLComponent {
+	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
+		Rounded("0").
+		Icon("mdi-delete-outline").
+		Attr("v-show", fmt.Sprintf("%t", !b.config.disableElementDeleteBtn)).
+		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
+			Query(DetailFieldName, b.name).
+			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(b.DeleteBtnKey(), index).
+			Go())
+
 	contentDiv := h.Div(
 		h.Div(
 			b.elementEditFunc(obj, &FieldContext{
@@ -629,19 +639,8 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 				Label:   fmt.Sprintf("%s[%b]", b.label, index),
 			}, ctx),
 		).Class("flex-grow-1"),
-	).Class("d-flex justify-space-between")
-
-	if !b.config.disableElementDeleteBtn {
-		deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
-			Rounded("0").
-			Icon("mdi-delete-outline").
-			Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
-				Query(DetailFieldName, b.name).
-				Query(ParamID, ctx.Queries().Get(ParamID)).
-				Query(b.DeleteBtnKey(), index).
-				Go())
-		contentDiv.AppendChildren(h.Div(deleteBtn).Class("d-flex pl-3"))
-	}
+		h.Div(deleteBtn).Class("d-flex pl-3"),
+	).Class("d-flex justify-space-between mb-4")
 
 	saveBtn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
