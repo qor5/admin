@@ -132,7 +132,7 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	}
 
 	rmb := mb.listing.RowMenu()
-	rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
 	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
 	return
 }

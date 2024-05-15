@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/x/v3/i18n"
 
 	h "github.com/theplant/htmlgo"
@@ -26,10 +25,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// TODO: init default VersionComponent
 
-		var (
-			pm         = b.mb
-			seoBuilder = b.seoBuilder
-		)
+		pm := b.mb
 
 		var (
 			start, end, se string
@@ -72,41 +68,9 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		}
 
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		seoMsgr := i18n.MustGetModuleMessages(ctx.R, seo.I18nSeoKey, seo.Messages_en_US).(*seo.Messages)
 		if err := b.db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
-
-		infoComponentTab := h.Div(
-			VTabs(
-				VTab(h.Text("Page")).Size(SizeXSmall).Value("Page"),
-				VTab(h.Text(seoMsgr.Seo)).Size(SizeXSmall).Value("Seo"),
-			).Attr("v-model", "locals.tab"),
-			h.Div(
-				VBtn("Save").AppendIcon("mdi-check").Color(ColorSecondary).Size(SizeSmall).Variant(VariantFlat).
-					Attr("@click", fmt.Sprintf(`editLocals.infoTab=="Page"?%s:%s`, web.POST().
-						EventFunc(actions.Update).
-						Query(presets.ParamID, p.PrimarySlug()).
-						URL(mi.PresetsPrefix()+"/pages").
-						Go(), web.Plaid().
-						EventFunc(updateSEOEvent).
-						Query(presets.ParamID, p.PrimarySlug()).
-						URL(mi.PresetsPrefix()+"/pages").
-						Go()),
-					),
-			),
-		).Class("d-flex justify-space-between align-center")
-
-		seoForm := seoBuilder.EditingComponentFunc(obj, nil, ctx)
-
-		infoComponentContent := VTabsWindow(
-			VTabsWindowItem(
-				b.mb.Editing().ToComponent(pm.Info(), obj, ctx),
-			).Value("Page").Class("pt-8"),
-			VTabsWindowItem(
-				seoForm,
-			).Value("Seo").Class("pt-8"),
-		).Attr("v-model", "locals.tab")
 
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, p)))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		if p.GetStatus() == publish.StatusOnline {
@@ -145,23 +109,14 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 						).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
 					).Style(`position:relative`).Class("w-100 mt-4").
 						Attr("@click",
-							web.Plaid().URL(fmt.Sprintf("%s/editors/%v", b.prefix, p.ID)).
-								Query(paramPageVersion, p.GetVersion()).
-								Query(paramLocale, p.GetLocale()).
-								Query(paramPageID, p.PrimarySlug()).
-								PushState(true).Go(),
+							web.Plaid().URL(fmt.Sprintf("%s/editors/%v", b.prefix, p.PrimarySlug())).PushState(true).Go(),
 						),
 					h.Div(
 						h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
 						VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
 							Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "%s"}`, previewDevelopUrl, ColorSuccess)),
 					).Class("d-inline-flex align-center"),
-
-					web.Scope(
-						infoComponentTab.Class("mt-7"),
-						infoComponentContent,
-					).VSlot("{form}"),
-				).Class("mt-10"),
+				).Class("my-10"),
 			),
 		).VSlot(" { locals  }").Init(`{ tab:"Page"} `)
 	}
@@ -199,8 +154,9 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 	}
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder) {
-	dp.Field("Editor").SetSwitchable(true).Editing("Title").
+func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
+	dp.Field("Page").SetSwitchable(true).Editing("Title", "Slug", "CategoryID").
+		// TODO adjust layout
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			vtb := &web.VueEventTagBuilder{}
@@ -213,12 +169,39 @@ func detailPageEditor(dp *presets.DetailingBuilder) {
 					pt.innerText = '%s'
 				  }
 				}()`, p.Title, p.Title))
-			return web.Portal(h.Div(h.Text(p.Title))).Loader(vtb)
+			return h.Div(
+				web.Portal(h.Div(h.Text("title:"+p.Title))).Loader(vtb),
+				h.Div(h.Text("slug:"+p.Slug)))
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		return VTextField().
-			Variant(VariantOutlined).Density(DensityCompact).
-			Attr(web.VField("Editor.Title", p.Title)...)
+		categories := []*Category{}
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return h.Components(
+			VTextField().
+				Variant(FieldVariantUnderlined).Density(DensityCompact).
+				Attr(web.VField("Page.Title", p.Title)...),
+
+			VTextField().
+				Variant(FieldVariantUnderlined).
+				Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
+				Prefix("/").
+				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
+
+			vx.VXAutocomplete().Label(msgr.Category).
+				Attr(web.VField("Page.CategoryID", p.CategoryID)...).
+				Multiple(false).Chips(false).
+				Items(categories).ItemText("Path").ItemValue("ID").
+				ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...),
+		)
 	})
 	return
 }

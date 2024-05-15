@@ -13,34 +13,36 @@ import (
 )
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
+	p = new(Page)
 	var (
-		body          h.HTMLComponent
-		containerList h.HTMLComponent
+		body, editContainerDrawer h.HTMLComponent
 
-		pageID = pat.Param(ctx.R, presets.ParamID)
+		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		pageID      = primarySlug["id"]
+		version     = primarySlug["version"]
+		localeCode  = primarySlug["locale_code"]
 	)
 	deviceQueries := url.Values{}
 	deviceQueries.Add("tab", "content")
-	ctx.R.Form.Set(presets.ParamID, pageID)
-	body, p, err = b.renderPageOrTemplate(ctx, true)
+	body, p, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
 	if err != nil {
 		return
 	}
 	r.PageTitle = fmt.Sprintf("Editor for %s: %s", pageID, p.Title)
 	ctx.R.Form.Set(paramStatus, p.GetStatus())
-	ctx.R.Form.Set(paramPageVersion, p.GetVersion())
-	if containerList, err = b.renderContainersSortedList(ctx); err != nil {
+	if editContainerDrawer, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
 	if ctx.R.FormValue(paramsIsNotEmpty) == "" {
-		containerList = b.renderContainersList(ctx)
+		editContainerDrawer = b.renderContainersList(ctx)
 	}
+
 	r.Body = web.Scope(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
 		VNavigationDrawer(
-			web.Portal(containerList).Name(pageBuilderRightContentPortal),
+			web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 		).Location(LocationRight).
 			Permanent(true).
 			Width(420),

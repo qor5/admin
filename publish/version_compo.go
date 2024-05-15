@@ -24,6 +24,7 @@ type VersionComponentConfig struct {
 	PublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	UnPublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	RePublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	Top            bool
 }
 
 func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
@@ -112,13 +113,21 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 		}
 
 		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
-			scheduleBtn := v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
-				Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", web.POST().
+			var scheduleBtn h.HTMLComponent
+			clickEvent := web.POST().
 				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(fmt.Sprintf("%s/%s-version-list-dialog", b.Info().PresetsPrefix(), b.Info().URIName())).Go(),
-			)
+				URL(fmt.Sprintf("%s/%s-version-list-dialog", b.Info().PresetsPrefix(), b.Info().URIName())).Go()
+			if config.Top {
+				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
+					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
+					BgColor(v.ColorPrimaryLighten2).Readonly(true).
+					Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption")
+			} else {
+				scheduleBtn = v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
+					Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", clickEvent)
+			}
 			div.AppendChildren(scheduleBtn)
 			// SchedulePublishDialog
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))

@@ -363,3 +363,11 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 		).Variant(VariantOutlined).Flat(true),
 	).Attr("ref", "seo")
 }
+
+func (b *Builder) ConfigDetailing(mb *presets.DetailingBuilder) {
+	mb.Field("Seo").SetSwitchable(true).Editing("").ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(h.Text("Seo"))
+	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return b.EditingComponentFunc(obj, field, ctx)
+	})
+}

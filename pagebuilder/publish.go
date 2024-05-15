@@ -98,7 +98,7 @@ func (p *Page) getAccessUrl(publishUrl string) string {
 
 func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&pageVersion=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)
 
 	r = w.Body.String()

@@ -43,9 +43,17 @@ func ConnectDB() *gorm.DB {
 
 func TestEditor(t *testing.T) {
 	db := ConnectDB()
+	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	publisher := publish.New(db, oss.Storage)
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
+	pb.Publisher(publisher).Activity(ab).Install(b)
 	sdb, _ := db.DB()
+	p := pagebuilder.Page{}
+	p.L10nON()
 	gofixtures.Data(
 		gofixtures.Sql(`
 INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
@@ -54,7 +62,7 @@ INSERT INTO container_headers (color) VALUES ('black');
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 	).TruncatePut(sdb)
 
-	r := httptest.NewRequest("GET", "/page_builder/editors/1?pageVersion=v1&locale=International", nil)
+	r := httptest.NewRequest("GET", "/page_builder/editors/1_v1_International", nil)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	if strings.Index(w.Body.String(), "headers") < 0 {
@@ -62,10 +70,9 @@ INSERT INTO container_headers (color) VALUES ('black');
 	}
 
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.AddContainerEvent).
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
+		AddField("id", "1_v1_International").
 		AddField("containerName", "Header").
 		AddField("modelName", "Header").
 		AddField("modelID", "1").
@@ -78,7 +85,7 @@ INSERT INTO container_headers (color) VALUES ('black');
 	// var er web.EventResponse
 	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
-	if strings.Index(w.Body.String(), "/page_builder/headers") < 0 {
+	if strings.Index(w.Body.String(), pagebuilder.ReloadRenderPageOrTemplateEvent) < 0 {
 		t.Error(w.Body.String())
 	}
 }
@@ -133,6 +140,12 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 	}
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
+	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
+		func(log activity.ActivityLogInterface) string {
+			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		})
+	publisher := publish.New(db, oss.Storage)
+	pb.Publisher(publisher).Activity(ab).Install(b)
 	sdb, _ := db.DB()
 	p := pagebuilder.Page{}
 	p.L10nON()
@@ -153,10 +166,8 @@ func TestAddContainer(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.AddContainerEvent).
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
 		AddField("containerName", "Header").
 		AddField("modelName", "Header").
 		AddField("modelID", "1").
@@ -169,7 +180,7 @@ func TestAddContainer(t *testing.T) {
 	// var er web.EventResponse
 	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
-	if strings.Index(w.Body.String(), "/page_builder/headers") < 0 {
+	if strings.Index(w.Body.String(), "/page_builder/editors") < 0 {
 		t.Error(w.Body.String())
 	}
 }
@@ -181,7 +192,7 @@ func TestEditorDeleteContainerConfirmationEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.DeleteContainerConfirmationEvent).
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
@@ -205,7 +216,7 @@ func TestEditorDeleteContainerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.DeleteContainerEvent).
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
@@ -229,7 +240,7 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.MoveUpDownContainerEvent).
 		AddField("containerID", "1_International").
 		AddField("moveDirection", "down").
@@ -247,7 +258,7 @@ func TestEditorMoveUpDownContainerEvent(t *testing.T) {
 	}
 
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.MoveUpDownContainerEvent).
 		AddField("containerID", "1_International").
 		AddField("moveDirection", "up").
@@ -273,10 +284,8 @@ func TestEditorReloadRenderPageOrTemplateEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.ReloadRenderPageOrTemplateEvent).
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
 		BuildEventFuncRequest()
 
 	// bs, _ := httputil.DumpRequest(r, true)
@@ -298,10 +307,8 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.ShowEditContainerDrawerEvent).
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
 		AddField("modelName", "Header").
 		AddField("containerName", "Header").
 		AddField("modelID", "1").
@@ -326,7 +333,7 @@ func TestEditorRenameContainerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.RenameContainerEvent).
 		AddField("containerID", "1_International").
 		AddField("DisplayName", "Header0000001").
@@ -343,7 +350,7 @@ func TestEditorRenameContainerEvent(t *testing.T) {
 		t.Error(w.Body.String())
 		return
 	}
-	r = httptest.NewRequest("GET", "/page_builder/editors/1?pageVersion=v1&locale=International", nil)
+	r = httptest.NewRequest("GET", "/page_builder/editors/1_v1_International", nil)
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	if strings.Index(w.Body.String(), "Header0000001") < 0 {
@@ -358,10 +365,8 @@ func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
 		AddField("status", "draft").
 		BuildEventFuncRequest()
 
@@ -384,7 +389,7 @@ func TestEditorMoveContainerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.MoveContainerEvent).
 		AddField("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`).
 		BuildEventFuncRequest()
@@ -408,7 +413,7 @@ func TestEditorToggleContainerVisibilityEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
 		AddField("containerID", "1_International").
 		BuildEventFuncRequest()
@@ -432,11 +437,9 @@ func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
 		w     *httptest.ResponseRecorder
 	)
 	r = multipartestutils.NewMultipartBuilder().
-		PageURL("/page_builder/editors/1").
+		PageURL("/page_builder/editors/1_v1_International").
 		EventFunc(pagebuilder.ShowAddContainerDrawerEvent).
 		AddField("containerID", "1_International").
-		AddField("pageVersion", "v1").
-		AddField("locale", "International").
 		BuildEventFuncRequest()
 
 	// bs, _ := httputil.DumpRequest(r, true)

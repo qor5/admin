@@ -155,10 +155,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		URIPrefix(prefix).
 		DetailLayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
-	type Editor struct{}
-	r.ps.Model(&Editor{}).
-		Detailing().
-		PageFunc(r.Editor)
+
 	wb := r.ps.GetWebBuilder()
 	wb.RegisterEventFunc(AddContainerDialogEvent, r.addContainerDialog)
 	wb.RegisterEventFunc(ShowAddContainerDrawerEvent, r.showAddContainerDrawer)
@@ -272,7 +269,11 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	activityB := b.ab
 	publisher := b.publisher
 	seoBuilder := b.seoBuilder
-	// b.ps.VuetifyOptions(pb.GetVuetifyOptions())
+	mb := b.ps.Model(&Page{}).URIName("editors")
+	b.publisher.Models(mb)
+	md := mb.Detailing()
+	md.Field("defaultVersion")
+	md.PageFunc(b.Editor(mb))
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -302,8 +303,8 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	dp.Field("Overview").ComponentFunc(overview(b, templateM))
 
 	// pm detailing page  detail-field
-	detailPageEditor(dp)
-
+	detailPageEditor(dp, b.db)
+	b.seoBuilder.ConfigDetailing(dp)
 	// pm detailing side panel
 	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
 

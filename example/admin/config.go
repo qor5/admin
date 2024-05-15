@@ -10,10 +10,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/qor/oss/s3"
+	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
+
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
@@ -22,7 +25,6 @@ import (
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/microsite"
-	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
@@ -616,6 +618,7 @@ func NewConfig() Config {
 
 	nb.Install(b)
 	publisher.Install(b)
+	publisher.Install(pageBuilder.GetPresetsBuilder())
 
 	l10nBuilder.Activity(ab).
 		Models(l10nM, l10nVM)

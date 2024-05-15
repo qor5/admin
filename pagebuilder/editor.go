@@ -72,14 +72,17 @@ const (
 	EventAdd    = "add"
 	EventEdit   = "edit"
 
-	iframeHeightName = "_iframeHeight"
-
 	pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var p *Page
-	r.Body, p, err = b.renderPageOrTemplate(ctx, false)
+	var (
+		pageID  = ctx.R.FormValue(presets.ParamID)
+		version = ctx.R.FormValue(paramPageVersion)
+		local   = ctx.R.FormValue(paramLocale)
+	)
+	r.Body, p, err = b.renderPageOrTemplate(ctx, pageID, version, local, false)
 	if err != nil {
 		return
 	}
@@ -89,68 +92,69 @@ func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error)
 
 const editorPreviewContentPortal = "editorPreviewContentPortal"
 
-func (b *Builder) Editor(ctx *web.EventContext) (r web.PageResponse, err error) {
-	var (
-		deviceToggler     h.HTMLComponent
-		versionComponent  h.HTMLComponent
-		tabContent        web.PageResponse
-		activeDevice      int
-		pageAppbarContent []h.HTMLComponent
-		page              *Page
-		exitHref          string
+func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
+	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		var (
+			deviceToggler     h.HTMLComponent
+			versionComponent  h.HTMLComponent
+			tabContent        web.PageResponse
+			activeDevice      int
+			pageAppbarContent []h.HTMLComponent
+			page              *Page
+			exitHref          string
 
-		device = ctx.R.FormValue(paramsDevice)
-	)
-	switch device {
-	case DeviceTablet:
-		activeDevice = 1
-	case DevicePhone:
-		activeDevice = 2
-	}
-	deviceToggler = web.Scope(
-		VBtnToggle(
-			VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
-			VBtn("").Icon("mdi-tablet").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
-			VBtn("").Icon("mdi-cellphone").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-				Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
-		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
+			device = ctx.R.FormValue(paramsDevice)
+		)
+		switch device {
+		case DeviceTablet:
+			activeDevice = 1
+		case DevicePhone:
+			activeDevice = 2
+		}
+		deviceToggler = web.Scope(
+			VBtnToggle(
+				VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+					Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
+				VBtn("").Icon("mdi-tablet").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+					Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
+				VBtn("").Icon("mdi-cellphone").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+					Attr("@click", web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
+			).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+		).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
+		if tabContent, page, err = b.PageContent(ctx); err != nil {
+			return
+		}
+		versionComponent = publish.DefaultVersionComponentFunc(mb, publish.VersionComponentConfig{Top: true})(page, &presets.FieldContext{ModelInfo: mb.Info()}, ctx)
+		if b.mb != nil {
+			exitHref = b.mb.Info().DetailingHref(pat.Param(ctx.R, presets.ParamID))
+		}
+		pageAppbarContent = h.Components(
+			h.Div(
+				VIcon("mdi-exit-to-app").Class("mr-4").
+					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go()),
+				VToolbarTitle("Page Builder"),
+			).Class("d-inline-flex align-center"),
+			h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-2"),
+			versionComponent,
+		)
 
-	if tabContent, page, err = b.PageContent(ctx); err != nil {
+		r.Body = VApp(
+			VAppBar(
+				h.Div(
+					pageAppbarContent...,
+				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
+			).
+				Elevation(0).
+				Density("compact").Class("px-6"),
+			h.Tag("vx-restore-scroll-listener"),
+			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			VMain(
+				tabContent.Body.(h.HTMLComponent),
+			),
+		)
+
 		return
 	}
-	if b.mb != nil {
-		versionComponent = publish.DefaultVersionComponentFunc(b.mb)(page, &presets.FieldContext{ModelInfo: b.mb.Info()}, ctx)
-		exitHref = b.mb.Info().DetailingHref(ctx.R.FormValue(paramPageID))
-	}
-	pageAppbarContent = h.Components(
-		h.Div(
-			VIcon("mdi-exit-to-app").Class("mr-4").
-				Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go()),
-			VToolbarTitle("Page Builder"),
-		).Class("d-inline-flex align-center"),
-		h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-2"),
-		versionComponent,
-	)
-
-	r.Body = VApp(
-		VAppBar(
-			h.Div(
-				pageAppbarContent...,
-			).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
-		).
-			Elevation(0).
-			Density("compact").Class("px-6"),
-		h.Tag("vx-restore-scroll-listener"),
-		vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
-		VMain(
-			tabContent.Body.(h.HTMLComponent),
-		),
-	)
-
-	return
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
@@ -173,13 +177,8 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 
 const ContainerToPageLayoutKey = "ContainerToPageLayout"
 
-func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
-	var (
-		isTpl            = ctx.R.FormValue(paramsTpl) != ""
-		pageOrTemplateID = ctx.R.FormValue(presets.ParamID)
-		version          = ctx.R.FormValue(paramPageVersion)
-		locale           = ctx.R.FormValue(paramLocale)
-	)
+func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, version, locale string, isEditor bool) (r h.HTMLComponent, p *Page, err error) {
+	isTpl := ctx.R.FormValue(paramsTpl) != ""
 
 	if isTpl {
 		tpl := &Template{}
@@ -330,17 +329,10 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, isEditor bool) (r 
 					).Class("front"),
 				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
 			}
-			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
 			_, width := b.getDevice(ctx)
-			iframeValue := "1000px"
-			if iframeHeightCookie != nil {
-				iframeValue = iframeHeightCookie.Value
-			}
 			r = h.Div(
 				h.Tag("vx-scroll-iframe").Attr(
 					":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context()))).
-					Attr(":iframe-height-name", h.JSONString(iframeHeightName)).
-					Attr(":iframe-value", h.JSONString(iframeValue)).
 					Attr("ref", "scrollIframe"),
 			).Class("page-builder-container mx-auto").Attr("style", width)
 
@@ -464,9 +456,11 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons         []*Container
-		pageID       = pat.Param(ctx.R, presets.ParamID)
-		pageVersion  = ctx.R.FormValue(paramPageVersion)
-		locale       = ctx.R.FormValue(paramLocale)
+		p            = new(Page)
+		primarySlug  = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		pageID       = primarySlug["id"]
+		pageVersion  = primarySlug["version"]
+		locale       = primarySlug["locale_code"]
 		status       = ctx.R.FormValue(paramStatus)
 		isReadonly   = status != publish.StatusDraft
 		msgr         = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -625,14 +619,16 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		pageID          int
-		pageVersion     = ctx.R.FormValue(paramPageVersion)
-		locale          = ctx.R.FormValue(paramLocale)
+		p               = new(Page)
+		primarySlug     = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		pageVersion     = primarySlug["version"]
+		locale          = primarySlug["locale_code"]
 		containerName   = ctx.R.FormValue(paramContainerName)
 		sharedContainer = ctx.R.FormValue(paramSharedContainer)
 		modelID         = ctx.QueryAsInt(paramModelID)
 		containerID     = ctx.R.FormValue(paramContainerID)
 	)
-	if pageID, err = strconv.Atoi(pat.Param(ctx.R, presets.ParamID)); err != nil {
+	if pageID, err = strconv.Atoi(primarySlug["id"]); err != nil {
 		return
 	}
 	if sharedContainer == "true" {
@@ -1128,8 +1124,9 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 
 func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
-		pageVersion = ctx.R.FormValue(paramPageVersion)
-		locale      = ctx.R.FormValue(paramLocale)
+		p           = new(Page)
+		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		locale      = primarySlug["local_code"]
 		containerId = ctx.R.FormValue(paramContainerID)
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	)
@@ -1168,10 +1165,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(AddContainerEvent).
-					Query(paramStatus, ctx.R.FormValue(paramStatus)).
+					Queries(ctx.R.Form).
 					Query(paramModelName, builder.name).
-					Query(paramPageVersion, pageVersion).
-					Query(paramLocale, locale).
 					Query(paramContainerName, builder.name).
 					Query(paramContainerID, containerId).
 					Go(),
@@ -1223,9 +1218,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 				).Attr("@click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(AddContainerEvent).
-					Query(paramStatus, ctx.R.FormValue(paramStatus)).
-					Query(paramPageVersion, pageVersion).
-					Query(paramLocale, locale).
+					Queries(ctx.R.Form).
 					Query(paramContainerName, builder.ModelName).
 					Query(paramModelName, builder.ModelName).
 					Query(paramModelID, builder.ModelID).
@@ -1249,8 +1242,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	backPlaid := web.Plaid().
 		URL(ctx.R.URL.Path).
 		EventFunc(ShowSortedContainerDrawerEvent).
-		Query(paramPageVersion, pageVersion).
-		Query(paramLocale, locale).
+		Queries(ctx.R.Form).
 		Query(paramStatus, ctx.R.FormValue(paramStatus)).
 		Go()
 
@@ -1424,6 +1416,8 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.RightDrawerPortalName),
 			web.Portal().Name(presets.DialogPortalName),
 			web.Portal().Name(presets.DeleteConfirmPortalName),
+			web.Portal().Name(presets.ListingDialogPortalName),
+			web.Portal().Name(presets.RightDrawerContentPortalName),
 			web.Portal().Name(dialogPortalName),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
@@ -1457,8 +1451,14 @@ func (b *Builder) showEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 
 func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	ctx.R.Form.Set(presets.ParamID, pat.Param(ctx.R, presets.ParamID))
-	body, _, err = b.renderPageOrTemplate(ctx, true)
+	p := new(Page)
+	var (
+		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		pageID      = primarySlug["id"]
+		version     = primarySlug["version"]
+		localeCode  = primarySlug["locale_code"]
+	)
+	body, _, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("locals", "{el:$}")...)})
 	return
 }
