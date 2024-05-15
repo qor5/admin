@@ -8,6 +8,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -67,13 +68,13 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			div.AppendChildren(versionSwitch)
 			div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
 				Height(40).Class("ml-2").Variant(v.VariantOutlined).
-				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, SaveNewVersionEvent)))
+				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventSaveNewVersion)))
 		}
 
 		if status, ok = obj.(StatusInterface); ok {
 			switch status.GetStatus() {
 			case StatusDraft, StatusOffline:
-				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, PublishEvent)
+				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
 				if config.PublishEvent != nil {
 					publishEvent = config.PublishEvent(obj, field, ctx)
 				}
@@ -82,11 +83,11 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 						Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
 				)
 			case StatusOnline:
-				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, UnpublishEvent)
+				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventUnpublish)
 				if config.UnPublishEvent != nil {
 					unPublishEvent = config.UnPublishEvent(obj, field, ctx)
 				}
-				rePublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, RepublishEvent)
+				rePublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventRepublish)
 				if config.RePublishEvent != nil {
 					rePublishEvent = config.RePublishEvent(obj, field, ctx)
 				}
@@ -106,39 +107,97 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			)
 			// Publish/Unpublish/Republish CustomDialog
 			if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
-				div.AppendChildren(web.Portal().Name(PublishCustomDialogPortalName))
+				div.AppendChildren(web.Portal().Name(PortalPublishCustomDialog))
 			}
 		}
 
 		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
 			scheduleBtn := v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
 				Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", web.POST().
-				EventFunc(schedulePublishDialogEventV2).
+				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
 				URL(fmt.Sprintf("%s/%s-version-list-dialog", b.Info().PresetsPrefix(), b.Info().URIName())).Go(),
 			)
 			div.AppendChildren(scheduleBtn)
 			// SchedulePublishDialog
-			div.AppendChildren(web.Portal().Name(SchedulePublishDialogPortalName))
+			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
 		return web.Scope(div).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
 	}
 }
 
-func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder) {
+func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		res := h.Div().Class("d-inline-flex align-center")
+
+		slugEncoderIf := obj.(presets.SlugEncoder)
+		slugDncoderIf := obj.(presets.SlugDecoder)
+		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
+
+		currentObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+		err := db.Where("id = ?", mp["id"]).Where("status = ?", StatusOnline).First(&currentObj).Error
+		if err != nil {
+			return res
+		}
+		versionIf := currentObj.(VersionInterface)
+		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
+
+		if _, ok := currentObj.(ScheduleInterface); !ok {
+			return res
+		}
+
+		nextObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+		flagTime := db.NowFunc()
+		count := int64(0)
+		err = db.Model(nextObj).Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Count(&count).Error
+		if err != nil {
+			return res
+		}
+
+		if count == 0 {
+			return res
+		}
+
+		err = db.Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Order("scheduled_start_at ASC").First(&nextObj).Error
+		if err != nil {
+			return res
+		}
+		res.AppendChildren(
+			h.Div(
+				h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSuccessLighten2)).Style("height:4px"),
+				v.VIcon("mdi-circle").Size(v.SizeXSmall).Color(v.ColorSuccess).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
+			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
+		)
+		versionIf = nextObj.(VersionInterface)
+		// TODO use nextVersion I18n
+		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
+		if count >= 2 {
+			res.AppendChildren(
+				h.Div(
+					h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSecondaryLighten1)).Style("height:4px"),
+				).Class("h-100 d-flex align-center").Style("width:40px"),
+				h.Div(
+					h.Text(fmt.Sprintf(`+%v`, count)),
+				).Class(fmt.Sprintf(`text-caption bg-%s`, v.ColorSecondaryLighten1)),
+			)
+		}
+		return res
+	}
+}
+
+func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder, publisher *Builder, ab *activity.Builder) {
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
 		URIName(pm.Info().URIName() + "-version-list-dialog").
 		InMenu(false)
 
-	mb.RegisterEventFunc(schedulePublishDialogEventV2, schedulePublishDialogV2(db, mb))
-	mb.RegisterEventFunc(schedulePublishEventV2, schedulePublishV2(db, mb))
-	mb.RegisterEventFunc(renameVersionDialogEventV2, renameVersionDialogV2(mb))
-	mb.RegisterEventFunc(renameVersionEventV2, renameVersionV2(mb))
-	mb.RegisterEventFunc(deleteVersionDialogEventV2, deleteVersionDialogV2(mb))
+	registerEventFuncs(db, mb, publisher, ab)
 
 	searcher := mb.Listing().Searcher
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
@@ -233,7 +292,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 		return h.Td(v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).Attr("@click", web.Plaid().
 			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
-			EventFunc(deleteVersionDialogEventV2).
+			EventFunc(eventDeleteVersionDialog).
 			Queries(ctx.Queries()).
 			Query(presets.ParamOverlay, actions.Dialog).
 			Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
@@ -253,12 +312,12 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return v.VBtn("Save").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
 			Query("select_id", id).
 			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
-			EventFunc(selectVersionEventV2).
+			EventFunc(eventSelectVersion).
 			Go())
 	})
 	lb.RowMenu().Empty()
 
-	mb.RegisterEventFunc(selectVersionEventV2, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	mb.RegisterEventFunc(eventSelectVersion, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		refer, _ := url.Parse(ctx.R.Referer())
 		newQueries := refer.Query()
 		id := ctx.R.FormValue("select_id")
@@ -327,66 +386,4 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			},
 		}
 	})
-}
-
-func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
-	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		res := h.Div().Class("d-inline-flex align-center")
-
-		slugEncoderIf := obj.(presets.SlugEncoder)
-		slugDncoderIf := obj.(presets.SlugDecoder)
-		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
-
-		currentObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
-		err := db.Where("id = ?", mp["id"]).Where("status = ?", StatusOnline).First(&currentObj).Error
-		if err != nil {
-			return res
-		}
-		versionIf := currentObj.(VersionInterface)
-		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
-
-		if _, ok := currentObj.(ScheduleInterface); !ok {
-			return res
-		}
-
-		nextObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
-		flagTime := db.NowFunc()
-		count := int64(0)
-		err = db.Model(nextObj).Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Count(&count).Error
-		if err != nil {
-			return res
-		}
-
-		if count == 0 {
-			return res
-		}
-
-		err = db.Where("id = ?", mp["id"]).Where("scheduled_start_at >= ?", flagTime).Order("scheduled_start_at ASC").First(&nextObj).Error
-		if err != nil {
-			return res
-		}
-		res.AppendChildren(
-			h.Div(
-				h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSuccessLighten2)).Style("height:4px"),
-				v.VIcon("mdi-circle").Size(v.SizeXSmall).Color(v.ColorSuccess).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
-			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
-		)
-		versionIf = nextObj.(VersionInterface)
-		// TODO use nextVersion I18n
-		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
-		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
-		if count >= 2 {
-			res.AppendChildren(
-				h.Div(
-					h.Div().Class(fmt.Sprintf(`w-100 bg-%s`, v.ColorSecondaryLighten1)).Style("height:4px"),
-				).Class("h-100 d-flex align-center").Style("width:40px"),
-				h.Div(
-					h.Text(fmt.Sprintf(`+%v`, count)),
-				).Class(fmt.Sprintf(`text-caption bg-%s`, v.ColorSecondaryLighten1)),
-			)
-		}
-		return res
-	}
 }

@@ -19,6 +19,13 @@ import (
 
 const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 
+const (
+	ListingFieldDraftCount = "Draft Count"
+	ListingFieldOnline     = "Online"
+
+	EditingFieldControlBar = "ControlBar"
+)
+
 func configure(b *presets.Builder, publisher *Builder) {
 	db := publisher.db
 	ab := publisher.ab
@@ -33,7 +40,7 @@ func configure(b *presets.Builder, publisher *Builder) {
 				VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 			}
 
-			m.Editing().SidePanelFunc(sidePanel(db, m)).ActionsFunc(versionActionsFunc(m))
+			m.Editing().ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
 			searcher := m.Listing().Searcher
 			mb := m
 			m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -146,34 +153,22 @@ func configure(b *presets.Builder, publisher *Builder) {
 				}
 			})
 
-			m.Listing().Field("Draft Count").ComponentFunc(draftCountFunc(db))
-			m.Listing().Field("Online").ComponentFunc(onlineFunc(db))
-			if m.Editing().GetField("StatusBar") != nil {
-				m.Editing().Field("StatusBar").ComponentFunc(StatusEditFunc())
-			}
-			// Version V2
-			{
-				if m.GetHasDetailing() && m.Detailing().GetField("defaultVersion") != nil {
-					if m.Detailing().GetField("defaultVersion").GetCompFunc() == nil {
-						m.Detailing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
-					}
+			m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
+			m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
+			if m.GetHasDetailing() {
+				fb := m.Detailing().GetField(EditingFieldControlBar)
+				if fb != nil && fb.GetCompFunc() == nil {
+					fb.ComponentFunc(DefaultVersionComponentFunc(m))
 				}
-				if m.Editing().GetField("defaultVersion") != nil {
-					if m.Editing().GetField("defaultVersion").GetCompFunc() == nil {
-						m.Editing().Field("defaultVersion").ComponentFunc(DefaultVersionComponentFunc(m))
-					}
-				}
-				configureVersionListDialog(db, b, m)
 			}
+			fb := m.Editing().GetField(EditingFieldControlBar)
+			if fb != nil && fb.GetCompFunc() == nil {
+				fb.ComponentFunc(DefaultVersionComponentFunc(m))
+			}
+			configureVersionListDialog(db, b, m, publisher, ab)
 		} else {
 			if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
 				NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
-			}
-		}
-
-		if _, ok := obj.(ScheduleInterface); ok {
-			if m.Editing().GetField("ScheduleBar") != nil {
-				m.Editing().Field("ScheduleBar").ComponentFunc(ScheduleEditFunc()).SetterFunc(ScheduleEditSetterFunc)
 			}
 		}
 

@@ -183,10 +183,6 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 	return
 }
 
-func (b *Builder) Sync(models ...interface{}) error {
-	return nil
-}
-
 func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {

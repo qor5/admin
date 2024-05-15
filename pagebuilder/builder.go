@@ -577,7 +577,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 			p.Slug = path.Clean(p.Slug)
 		}
 		funcName := ctx.R.FormValue(web.EventFuncIDName)
-		if funcName == publish.DuplicateVersionEvent {
+		if funcName == publish.EventDuplicateVersion {
 			id := ctx.R.FormValue(presets.ParamID)
 			var fromPage Page
 			eb.Fetcher(&fromPage, id, ctx)
@@ -589,7 +589,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 				return
 			}
 
-			if strings.Contains(ctx.R.RequestURI, publish.SaveNewVersionEvent) || strings.Contains(ctx.R.RequestURI, publish.DuplicateVersionEvent) {
+			if strings.Contains(ctx.R.RequestURI, publish.EventSaveNewVersion) || strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
 				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}
@@ -1998,7 +1998,7 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 			web.AppendRunScripts(&r,
 				web.Plaid().
 					URL(pageURL).
-					EventFunc(publish.RepublishEvent).
+					EventFunc(publish.EventRepublish).
 					Query("id", id).
 					Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
 					Query("status_var", statusVar).
