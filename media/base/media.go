@@ -48,6 +48,10 @@ type Size struct {
 	Width   int
 	Height  int
 	Padding bool
+	// v-col sm
+	Sm int
+	// v-col col
+	Cols int
 }
 
 // URLTemplater is a interface to return url template

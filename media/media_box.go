@@ -337,10 +337,18 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			sort.Strings(keys)
 
 			for _, k := range keys {
+				sm := cfg.Sizes[k].Sm
+				if sm == 0 {
+					sm = 4
+				}
+				cols := cfg.Sizes[k].Cols
+				if cols == 0 {
+					cols = 6
+				}
 				row.AppendChildren(
 					VCol(
 						mediaBoxThumb(msgr, cfg, mediaBox, field, k, disabled),
-					).Cols(6).Sm(4).Class("pl-0"),
+					).Cols(cols).Sm(sm).Class("pl-0"),
 				)
 			}
 		}
