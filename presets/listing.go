@@ -1426,7 +1426,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Size(SizeSmall).
+				// Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1459,7 +1459,7 @@ func (b *ListingBuilder) actionsComponent(
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
 				Variant(VariantFlat).
-				Size(SizeSmall).
+				// Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1505,7 +1505,7 @@ func (b *ListingBuilder) actionsComponent(
 				Color("primary").
 				Variant(VariantFlat).
 				Theme("dark").Class("ml-2").
-				Size(SizeSmall).
+				// Size(SizeSmall).
 				Disabled(disableNewBtn).
 				Attr("@click", onclick.Go()))
 		}

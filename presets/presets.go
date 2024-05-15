@@ -965,7 +965,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		var profile h.HTMLComponent
 		if b.profileFunc != nil {
-			profile = b.profileFunc(ctx)
+			profile = VAppBar(
+				b.profileFunc(ctx),
+			).Location("bottom").Class("border-t-sm border-b-0").Elevation(0)
 		}
 
 		// showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
@@ -994,11 +996,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						).Class("ma-4").Variant(VariantText),
 					),
 					// VDivider(),
-
-					VAppBar(
-						profile,
-					).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
-				).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style",
+					profile,
+				).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
 					"height: calc(100% - 16px);"),
 				// ).Class("ma-2").
 				// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
