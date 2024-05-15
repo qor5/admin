@@ -1024,7 +1024,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						// App(true).
 						// Clipped(true).
 						// Fixed(true).
-						ModelValue(true).
 						Attr("v-model", "vars.navDrawer").
 						// Attr("style", "border-right: 1px solid grey ").
 						Permanent(true).
@@ -1056,7 +1055,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				).Class(""),
 			),
 		).Attr("id", "vt-app").
-			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
+			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
+navDrawer: true
+}`)...)
 
 		return
 	}
