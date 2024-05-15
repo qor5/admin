@@ -320,7 +320,7 @@ func (b *ListingBuilder) listingComponent(
 				).Flat(true).Color("surface").AutoHeight(true).Class("pa-2"),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
-				).Class("pa-0"),
+				).Class("pa-2"),
 			),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 			footerCardAction,
