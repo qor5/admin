@@ -984,58 +984,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
-			VNavigationDrawer(
-				// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-				// b.RunBrandFunc(ctx),
-				// profile,
-				VLayout(
-					VMain(
-						toolbar,
-						VCard(
-							menu,
-						).Class("ma-4").Variant(VariantText),
-					),
-					// VDivider(),
-					profile,
-				).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
-					"height: calc(100% - 16px);"),
-				// ).Class("ma-2").
-				// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
-			).
-				Width(320).
-				// App(true).
-				// Clipped(true).
-				// Fixed(true).
-				ModelValue(true).
-				Attr("v-model", "vars.navDrawer").
-				// Attr("style", "border-right: 1px solid grey ").
-				Permanent(true).
-				Floating(true).
-				Elevation(0),
-
-			VAppBar(
-
-				h.Div(
-					VProgressLinear().
-						Attr(":active", "isFetching").
-						Class("ml-4").
-						Attr("style", "position: fixed; z-index: 99;").
-						Indeterminate(true).
-						Height(2).
-						Color(b.progressBarColor),
-
-					VAppBarNavIcon().
-						Density("compact").
-						Class("mr-2").
-						Attr("v-if", "!vars.navDrawer").
-						On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-					h.Div(
-						VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
-					).Class("mr-auto"),
-					GetActionsComponent(ctx),
-				).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
-			).
-				Elevation(0),
 
 			// App(true).
 			// Fixed(true),
@@ -1052,14 +1000,61 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Timeout(2000).
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
-			VMain(
-				// VRow(
-				//	VCol(searchBox).Cols(3),
-				//	//Class("mx-2"),
-				// ).Class("d-flex align-center mx-2"),
-				// innerPr.Body.(h.HTMLComponent),
-				innerPr.Body,
-			).Class(""),
+			VLayout(
+				VMain(
+					VNavigationDrawer(
+						// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+						// b.RunBrandFunc(ctx),
+						// profile,
+						VLayout(
+							VMain(
+								toolbar,
+								VCard(
+									menu,
+								).Class("ma-4").Variant(VariantText),
+							),
+							// VDivider(),
+							profile,
+						).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
+							"height: calc(100% - 16px);"),
+						// ).Class("ma-2").
+						// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
+					).
+						Width(320).
+						// App(true).
+						// Clipped(true).
+						// Fixed(true).
+						ModelValue(true).
+						Attr("v-model", "vars.navDrawer").
+						// Attr("style", "border-right: 1px solid grey ").
+						Permanent(true).
+						Floating(true).
+						Elevation(0),
+					VAppBar(
+						h.Div(
+							VProgressLinear().
+								Attr(":active", "isFetching").
+								Class("ml-4").
+								Attr("style", "position: fixed; z-index: 99;").
+								Indeterminate(true).
+								Height(2).
+								Color(b.progressBarColor),
+
+							VAppBarNavIcon().
+								Density("compact").
+								Class("mr-2").
+								Attr("v-if", "!vars.navDrawer").
+								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+							h.Div(
+								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+							).Class("mr-auto"),
+							GetActionsComponent(ctx),
+						).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
+					).
+						Elevation(0),
+					innerPr.Body,
+				).Class(""),
+			),
 		).Attr("id", "vt-app").
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false}`)...)
 
