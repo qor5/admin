@@ -1213,7 +1213,7 @@ func (b *Builder) initMux() {
 	mainJSPath := b.prefix + "/assets/main.js"
 	mux.Handle(pat.Get(mainJSPath),
 		ub.PacksHandler("text/javascript",
-			Vuetify(b.vuetifyOptions),
+			Vuetify(),
 			JSComponentsPack(),
 			vuetifyx.JSComponentsPack(),
 			web.JSComponentsPack(),

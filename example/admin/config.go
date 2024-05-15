@@ -88,7 +88,7 @@ func NewConfig() Config {
 		Session:  sess,
 		Endpoint: publishURL,
 	}))
-	b := presets.New().RightDrawerWidth("700").VuetifyOptions(`
+	v.ChangeVuetifyOpts(`
 {
   theme: {
     defaultTheme: 'light',
@@ -177,6 +177,7 @@ func NewConfig() Config {
   },
 }
 `)
+	b := presets.New().RightDrawerWidth("700")
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
 	richeditor.PluginsJS = [][]byte{js}
