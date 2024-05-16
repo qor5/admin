@@ -298,13 +298,13 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
 	})
 	dp := pm.Detailing("Overview")
-
+	// register modelBuilder
+	seoBuilder.Models(pm)
 	// pm detailing overview
 	dp.Field("Overview").ComponentFunc(overview(b, templateM))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
-	b.seoBuilder.ConfigDetailing(dp)
 	// pm detailing side panel
 	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
 

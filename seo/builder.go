@@ -8,8 +8,11 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
+
+	"github.com/qor5/admin/v3/presets"
 
 	"github.com/qor5/admin/v3/l10n"
 	h "github.com/theplant/htmlgo"
@@ -88,6 +91,7 @@ type Builder struct {
 	seoRoot   *SEO
 	inherited bool
 	afterSave func(ctx context.Context, settingName string, locale string) error // hook called after saving
+	models    []*presets.ModelBuilder
 }
 
 // @snippet_end
@@ -506,4 +510,9 @@ func insertIfNotExists(db *gorm.DB, seoName string, locales []string) error {
 		return err
 	}
 	return nil
+}
+
+func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
+	b.models = slices.Compact(append(b.models, vs...))
+	return b
 }

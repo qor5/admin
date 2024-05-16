@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	I18nSeoKey i18n.ModuleKey = "I18nSeoKey"
+	I18nSeoKey         i18n.ModuleKey = "I18nSeoKey"
+	SeoDetailFieldName                = "SeoDetail"
 )
 
 var permVerifier *perm.Verifier
@@ -63,6 +64,9 @@ func (b *Builder) Install(pb *presets.Builder) (seoModel *presets.ModelBuilder) 
 	b.configListing(seoModel)
 	// Configure Editing Page
 	b.configEditing(seoModel)
+	// b.ConfigDetailing(pb)
+
+	b.configure()
 
 	pb.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
@@ -364,8 +368,14 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	).Attr("ref", "seo")
 }
 
-func (b *Builder) ConfigDetailing(mb *presets.DetailingBuilder) {
-	mb.Field("Seo").SetSwitchable(true).Editing("").ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *Builder) configure() {
+	for _, m := range b.models {
+		b.ConfigDetailing(m.GetDetailing())
+	}
+}
+
+func (b *Builder) ConfigDetailing(pd *presets.DetailingBuilder) {
+	pd.Field(SeoDetailFieldName).SetSwitchable(true).Editing("").ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(h.Text("Seo"))
 	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return b.EditingComponentFunc(obj, field, ctx)

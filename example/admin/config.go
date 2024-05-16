@@ -489,6 +489,7 @@ func NewConfig() Config {
 		Publisher(publisher).
 		SEO(seoBuilder)
 	pm := pageBuilder.Install(b)
+	seoBuilder.Install(pageBuilder.GetPresetsBuilder())
 	pmListing := pm.Listing()
 	pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		u := getCurrentUser(ctx.R)
