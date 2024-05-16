@@ -186,7 +186,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 			),
 		),
 	)
-	if base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey) && !disabled {
+	if base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey) && !disabled && !cfg.DisableCrop {
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
 			Query("field", field).
@@ -292,13 +292,15 @@ func doDelete(mb *Builder) web.EventFunc {
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
-
+	if cfg.BackgroundColor != "" {
+		c.Attr("style", fmt.Sprintf("background-color: %s;", cfg.BackgroundColor))
+	}
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
-			Variant(VariantFlat).Color("wight").Size(SizeXSmall).PrependIcon("mdi-upload-outline").
+			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
 			Class("rounded-sm").
-			Attr("style", "text-transform: none").
+			Attr("style", "text-transform: none;").
 			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
 				Query("field", field).
 				FieldValue("cfg", h.JSONString(cfg)).
@@ -308,7 +310,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	if mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		btnRow.AppendChildren(
 			VBtn(msgr.Delete).
-				Variant(VariantFlat).Color("red").Size(SizeXSmall).PrependIcon("mdi-delete-outline").
+				Variant(VariantTonal).Color(ColorError).Size(SizeXSmall).PrependIcon("mdi-delete-outline").
 				Class("rounded-sm ml-2").
 				Attr("style", "text-transform: none").
 				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
@@ -318,7 +320,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				).Disabled(disabled),
 		)
 	}
-	c.AppendChildren(btnRow)
+	c.AppendChildren(btnRow.Class())
 
 	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		row := VRow()
@@ -424,18 +426,24 @@ func stringToCfg(v string) *media_library.MediaBoxConfig {
 
 func thumbName(name string, size *base.Size, fileSize int, f *media_library.MediaBox) h.HTMLComponent {
 	div := h.Div().Class("pl-1")
+	title := ""
 	text := ""
-	if size != nil {
-		div.AppendChildren(h.Span(name).Style("color:#212121;"))
-		text = fmt.Sprintf("%d X %d", size.Width, size.Height)
-	}
 	if name == base.DefaultSizeKey {
-		div.AppendChildren(h.Span(name).Style("color:#212121;"))
+		title = name
 		text = fmt.Sprintf("%d X %d", f.Width, f.Height)
+	}
+	if size != nil {
+		title = name
+		if size.Width != 0 && size.Height != 0 {
+			text = fmt.Sprintf("%d X %d", size.Width, size.Height)
+		}
 	}
 	// if fileSize != 0 {
 	//	text = fmt.Sprintf("%s %s", text, media.ByteCountSI(fileSize))
 	// }
+	if title != "" {
+		div.AppendChildren(h.Span(name))
+	}
 	if text != "" {
 		div.AppendChildren(h.Br(), h.Span(text).Style("color:#757575;"))
 	}

@@ -33,6 +33,10 @@ type MediaBoxConfig struct {
 	Sizes     map[string]*base.Size
 	Max       uint
 	AllowType string
+	// the background color of MediaBox
+	BackgroundColor string
+	// disable crop
+	DisableCrop bool
 }
 
 func (mediaBox *MediaBox) Scan(data interface{}) (err error) {
