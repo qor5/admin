@@ -211,15 +211,15 @@ func genInitialUser(db *gorm.DB) {
 	}
 
 	var count int64
-	if err := db.Model(&models.User{}).Count(&count).Error; err != nil {
+	if err := db.Model(&models.User{}).Where("account = ?", email).Count(&count).Error; err != nil {
 		panic(err)
 	}
+
 	if count > 0 {
 		return
 	}
-
 	if err := initDefaultRoles(db); err != nil {
-		return
+		panic(err)
 	}
 
 	user := &models.User{

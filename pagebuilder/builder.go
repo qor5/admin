@@ -342,7 +342,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
 	// pm detailing side panel
-	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
+	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 
 	b.configDetailLayoutFunc(pb, pm, templateM, db)
 
@@ -353,12 +353,12 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 	}
+	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
+	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
 	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
 	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
-	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
-	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
 
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -2152,7 +2152,7 @@ func defaultSubPageTitle(ctx *web.EventContext) string {
 }
 
 // TODO move to activity just use wrapper install it
-func detailingSidePanel(b *Builder) presets.ObjectComponentFunc {
+func detailingSidePanel(b *Builder, pb *presets.Builder) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			detailComponentTab     h.HTMLComponent
@@ -2217,7 +2217,7 @@ func detailingSidePanel(b *Builder) presets.ObjectComponentFunc {
 						EventFunc(createNoteDialogEvent).
 						Query(presets.ParamOverlay, actions.Dialog).
 						Query(presets.ParamID, p.PrimarySlug()).
-						URL(b.prefix+"/pages").Go(),
+						URL(pb.GetURIPrefix()+"/pages").Go(),
 					),
 				VTimeline(
 					notesItems...,
