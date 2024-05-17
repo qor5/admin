@@ -52,20 +52,19 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 		),
 		VCard(content),
 	)
+	_ = notification
 	profileNewLook := VCard(
 		web.Slot(
-			VAvatar().Text(getAvatarShortName(u)).Color("secondary").Class("text-h6 rounded-lg").Size(48),
+			VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).Size(SizeLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary)),
 		).Name(VSlotPrepend),
 		web.Slot(
-			VRow(
-				VCol(h.Text(u.Name)).Class("font-weight-light text-grey-darken-1 d-inline-block text-truncate"),
-				VCol(
-					VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
-						Icon(true).Density(DensityCompact).Variant(VariantText).Children(
-						VIcon("mdi-chevron-right").Class("font-weight-light text-grey-darken-1").Size(20),
-					),
-				),
-			),
+			h.Div(
+				h.Div(h.Text(u.Name)).Class(fmt.Sprintf(`text-subtitle-2 text-%s`, ColorSecondary)),
+				VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
+					Icon(true).Density(DensityCompact).Variant(VariantText).Children(
+					VIcon("mdi-chevron-right").Size(SizeSmall),
+				).Class("mr-8"),
+			).Class("d-flex justify-space-between align-center"),
 		).Name(VSlotTitle),
 		web.Slot(
 			h.Div(h.Text(roles[0])),
@@ -77,7 +76,7 @@ func profile(ctx *web.EventContext) h.HTMLComponent {
 				),
 			).Class("border-s"),
 		).Name(VSlotAppend),
-	).Class(WAuto)
+	).Class(W100)
 	return profileNewLook
 }
 

@@ -1255,7 +1255,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			VTabs(
 				VTab(h.Text(msgr.New)).Value(msgr.New),
 				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
-			).Attr("v-model", "locals.tab").Class("px-6"),
+			).FixedTabs(true).Attr("v-model", "locals.tab").Class("px-6"),
 			VTabsWindow(
 				VTabsWindowItem(
 					VList(containers...).Opened(groupsNames),
