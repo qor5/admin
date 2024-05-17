@@ -157,7 +157,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 					variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"))
 					for varName := range settingVars {
 						fieldComp := VTextField().
-							Attr(web.VField(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName), seoSetting.Variables[varName])).
+							Attr(web.VField(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName), seoSetting.Variables[varName])...).
 							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName))
 						variablesComps = append(variablesComps, fieldComp)
 					}

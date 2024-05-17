@@ -309,7 +309,13 @@ func (b *Builder) Install(pb *presets.Builder) error {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	pm := pb.Model(&Page{})
+	pm := pb.Model(&Page{}).Plugins(
+		publisher,
+		b.ab,
+		seoBuilder,
+		b.note,
+		b.l10n,
+	)
 	b.mb = pm
 	templateM := presets.NewModelBuilder(pb, &Template{}).Plugins(b.ab)
 	if b.templateEnabled {
