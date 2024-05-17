@@ -78,6 +78,9 @@ func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r
 }
 
 func (b *Builder) GetLocalePath(localeCode string) string {
+	if b == nil {
+		return ""
+	}
 	p, exist := b.localesPaths[localeCode]
 	if exist {
 		return p

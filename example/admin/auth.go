@@ -104,7 +104,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 				return err
 			}
 
-			if err := addSessionLogByUserID(r, user.(*models.User).ID); err != nil {
+			if err := addSessionLogByUserID(db, r, user.(*models.User).ID); err != nil {
 				return err
 			}
 
@@ -140,7 +140,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 					panic(err)
 				}
 
-				if err := grantUserRole(user.ID, models.RoleManager); err != nil {
+				if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
 					panic(err)
 				}
 			}
@@ -161,7 +161,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 				return err
 			}
 
-			if err := expireCurrentSessionLog(r, user.(*models.User).ID); err != nil {
+			if err := expireCurrentSessionLog(db, r, user.(*models.User).ID); err != nil {
 				return err
 			}
 
@@ -173,13 +173,13 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
 		}).
 		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := expireAllSessionLogs(user.(*models.User).ID); err != nil {
+			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
 				return err
 			}
 			return ab.AddCustomizedRecord("reset-password", false, r.Context(), user)
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := expireAllSessionLogs(user.(*models.User).ID); err != nil {
+			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
 				return err
 			}
 
@@ -187,7 +187,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 		}).
 		AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
 			oldToken := extraVals[0].(string)
-			if err := updateCurrentSessionLog(r, user.(*models.User).ID, oldToken); err != nil {
+			if err := updateCurrentSessionLog(db, r, user.(*models.User).ID, oldToken); err != nil {
 				return err
 			}
 
@@ -200,10 +200,10 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 	vh = loginBuilder.ViewHelper()
 	loginBuilder.LoginPageFunc(loginPage(vh, pb))
 
-	GenInitialUser()
+	genInitialUser(db)
 }
 
-func GenInitialUser() {
+func genInitialUser(db *gorm.DB) {
 	email := loginInitialUserEmail
 	password := loginInitialUserPassword
 	if email == "" || password == "" {
@@ -218,7 +218,7 @@ func GenInitialUser() {
 		return
 	}
 
-	if err := initDefaultRoles(); err != nil {
+	if err := initDefaultRoles(db); err != nil {
 		return
 	}
 
@@ -233,12 +233,12 @@ func GenInitialUser() {
 	if err := db.Create(user).Error; err != nil {
 		panic(err)
 	}
-	if err := grantUserRole(user.ID, models.RoleManager); err != nil {
+	if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
 		panic(err)
 	}
 }
 
-func grantUserRole(userID uint, roleName string) error {
+func grantUserRole(db *gorm.DB, userID uint, roleName string) error {
 	var roleID int
 	if err := db.Table("roles").Where("name = ?", roleName).Pluck("id", &roleID).Error; err != nil {
 		panic(err)
@@ -250,7 +250,7 @@ func grantUserRole(userID uint, roleName string) error {
 		}).Error
 }
 
-func initDefaultRoles() error {
+func initDefaultRoles(db *gorm.DB) error {
 	var cnt int64
 	if err := db.Model(&role.Role{}).Count(&cnt).Error; err != nil {
 		return err

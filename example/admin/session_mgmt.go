@@ -15,7 +15,7 @@ const (
 	LoginTokenHashLen = 8 // The hash string length of the token stored in the DB.
 )
 
-func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
+func addSessionLogByUserID(db *gorm.DB, r *http.Request, userID uint) (err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
 
@@ -32,7 +32,7 @@ func addSessionLogByUserID(r *http.Request, userID uint) (err error) {
 	return nil
 }
 
-func updateCurrentSessionLog(r *http.Request, userID uint, oldToken string) (err error) {
+func updateCurrentSessionLog(db *gorm.DB, r *http.Request, userID uint, oldToken string) (err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
@@ -48,7 +48,7 @@ func updateCurrentSessionLog(r *http.Request, userID uint, oldToken string) (err
 	return nil
 }
 
-func expireCurrentSessionLog(r *http.Request, userID uint) (err error) {
+func expireCurrentSessionLog(db *gorm.DB, r *http.Request, userID uint) (err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	if err = db.Model(&models.LoginSession{}).
@@ -62,7 +62,7 @@ func expireCurrentSessionLog(r *http.Request, userID uint) (err error) {
 	return nil
 }
 
-func expireAllSessionLogs(userID uint) (err error) {
+func expireAllSessionLogs(db *gorm.DB, userID uint) (err error) {
 	return db.Model(&models.LoginSession{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
@@ -70,7 +70,7 @@ func expireAllSessionLogs(userID uint) (err error) {
 		}).Error
 }
 
-func expireOtherSessionLogs(r *http.Request, userID uint) (err error) {
+func expireOtherSessionLogs(db *gorm.DB, r *http.Request, userID uint) (err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 
 	return db.Model(&models.LoginSession{}).
@@ -84,7 +84,7 @@ func isTokenValid(v models.LoginSession) bool {
 	return time.Now().Sub(v.ExpiredAt) > 0
 }
 
-func checkIsTokenValidFromRequest(r *http.Request, userID uint) (valid bool, err error) {
+func checkIsTokenValidFromRequest(db *gorm.DB, r *http.Request, userID uint) (valid bool, err error) {
 	token := login.GetSessionToken(loginBuilder, r)
 	if token == "" {
 		return false, nil

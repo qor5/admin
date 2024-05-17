@@ -7,7 +7,7 @@ import (
 
 func main() {
 	db := admin.ConnectDB()
-	config := admin.NewConfig()
+	config := admin.NewConfig(db)
 	storage := admin.PublishStorage
 	publish.RunPublisher(db, storage, config.Publisher)
 	select {}

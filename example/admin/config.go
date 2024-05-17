@@ -10,13 +10,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-
 	"github.com/aws/aws-sdk-go/service/s3control"
-	"github.com/qor/oss/s3"
-	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
-
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
+	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
@@ -25,6 +22,7 @@ import (
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/microsite"
+	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
@@ -71,8 +69,7 @@ var (
 		"Will reset and import initial data if set to true", false)
 )
 
-func NewConfig() Config {
-	ConnectDB()
+func NewConfig(db *gorm.DB) Config {
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,
@@ -281,7 +278,7 @@ func NewConfig() Config {
 	microb := microsite.New(db).Publisher(publisher)
 
 	l10nBuilder.Activity(ab)
-	l10nM, l10nVM := configL10nModel(b)
+	l10nM, l10nVM := configL10nModel(db, b)
 	l10nM.Plugins(l10nBuilder)
 	l10nVM.Plugins(l10nBuilder)
 
@@ -307,7 +304,7 @@ func NewConfig() Config {
 	)
 
 	if resetAndImportInitialData {
-		tbs := GetNonIgnoredTableNames()
+		tbs := GetNonIgnoredTableNames(db)
 		EmptyDB(db, tbs)
 		InitDB(db, tbs)
 	}
@@ -551,7 +548,7 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
-	}).ProfileFunc(profile).
+	}).ProfileFunc(profile(db)).
 		NotificationFunc(notifierComponent(db), notifierCount(db)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {

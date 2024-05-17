@@ -6,7 +6,7 @@ import (
 
 func main() {
 	db := admin.ConnectDB()
-	tbs := admin.GetNonIgnoredTableNames()
+	tbs := admin.GetNonIgnoredTableNames(db)
 	admin.EmptyDB(db, tbs)
 	admin.InitDB(db, tbs)
 	admin.ErasePublicUsersData(db)

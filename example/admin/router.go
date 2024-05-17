@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/x/v3/sitemap"
+	"gorm.io/gorm"
 )
 
 //go:embed assets/favicon.ico
@@ -19,9 +20,16 @@ const (
 	exportOrdersURL = "/export-orders"
 )
 
-func Router() http.Handler {
-	db := ConnectDB()
-	c := NewConfig()
+func TestHandler(db *gorm.DB) http.Handler {
+	mux := http.NewServeMux()
+	c := NewConfig(db)
+	mux.Handle("/page_builder/", c.pageBuilder)
+	mux.Handle("/", c.pb)
+	return mux
+}
+
+func Router(db *gorm.DB) http.Handler {
+	c := NewConfig(db)
 
 	mux := http.NewServeMux()
 	loginBuilder.Mount(mux)
@@ -33,8 +41,6 @@ func Router() http.Handler {
 	//	background-color:orange;
 	// }
 	// `)))
-
-	mux.Handle("/page_builder/", c.pageBuilder)
 	// example of seo
 	mux.Handle("/posts/first", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var post models.Post
@@ -44,6 +50,7 @@ func Router() http.Handler {
 		fmt.Fprintf(w, `<html><head>%s</head><body>%s</body></html>`, seodata, post.Body)
 	}))
 
+	mux.Handle("/page_builder/", c.pageBuilder)
 	mux.Handle("/", c.pb)
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(favicon)
@@ -62,7 +69,7 @@ func Router() http.Handler {
 	cr := chi.NewRouter()
 	cr.Use(
 		loginBuilder.Middleware(),
-		validateSessionToken(),
+		validateSessionToken(db),
 		withRoles(db),
 		withNoteContext(),
 		securityMiddleware(),

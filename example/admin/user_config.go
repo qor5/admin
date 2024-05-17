@@ -104,7 +104,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 		if err != nil {
 			return r, err
 		}
-		err = expireAllSessionLogs(u.ID)
+		err = expireAllSessionLogs(db, u.ID)
 		if err != nil {
 			return r, err
 		}
@@ -277,10 +277,10 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 				Items([]string{"active", "inactive"})
 		})
 
-	configureFavorPostSelectDialog(b, publisher)
+	configureFavorPostSelectDialog(db, b, publisher)
 	ed.Field("FavorPostID").Label("Favorite Post").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		id := field.Value(obj).(uint)
-		return web.Portal(favorPostSelector(id)).Name("favorPostSelector")
+		return web.Portal(favorPostSelector(db, id)).Name("favorPostSelector")
 	})
 
 	oldSaver := ed.Saver
@@ -366,7 +366,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 	})
 }
 
-func favorPostSelector(id uint) h.HTMLComponent {
+func favorPostSelector(db *gorm.DB, id uint) h.HTMLComponent {
 	var items []*models.Post
 	if id > 0 {
 		p := &models.Post{}
@@ -388,7 +388,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 		Go())
 }
 
-func configureFavorPostSelectDialog(pb *presets.Builder, publisher *publish.Builder) {
+func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher *publish.Builder) {
 	b := pb.Model(&models.Post{}).
 		URIName("dialog-select-favor-posts").
 		InMenu(false).Plugins(publisher)
@@ -408,7 +408,7 @@ func configureFavorPostSelectDialog(pb *presets.Builder, publisher *publish.Buil
 		SelectableColumns(true)
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
-	registerSelectFavorPostEvent(pb)
+	registerSelectFavorPostEvent(db, pb)
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		cell.SetAttr("@click.self", web.Plaid().
 			Query("id", strings.Split(id, "_")[0]).
@@ -500,7 +500,7 @@ func configureFavorPostSelectDialog(pb *presets.Builder, publisher *publish.Buil
 	// })
 }
 
-func registerSelectFavorPostEvent(b *presets.Builder) {
+func registerSelectFavorPostEvent(db *gorm.DB, b *presets.Builder) {
 	b.GetWebBuilder().RegisterEventFunc("selectFavorPost", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var id uint
 		if v := ctx.R.FormValue("id"); v != "" {
@@ -509,7 +509,7 @@ func registerSelectFavorPostEvent(b *presets.Builder) {
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: "favorPostSelector",
-			Body: favorPostSelector(id),
+			Body: favorPostSelector(db, id),
 		})
 		web.AppendRunScripts(&r, presets.CloseListingDialogVarScript)
 		return

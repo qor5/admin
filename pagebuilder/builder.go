@@ -287,7 +287,9 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	l10nB := b.l10n
 	// activityB := b.ab
 	publisher := b.publisher
-	l10nB.Activity(b.ab)
+	if l10nB != nil {
+		l10nB.Activity(b.ab)
+	}
 	seoBuilder := b.seoBuilder
 	b.ps.Plugins(media.New(db), publisher, seoBuilder)
 

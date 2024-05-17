@@ -142,7 +142,7 @@ func composeS3Path(filePath string) string {
 }
 
 // GetNonIgnoredTableNames returns all table names except the ignored ones.
-func GetNonIgnoredTableNames() []string {
+func GetNonIgnoredTableNames(db *gorm.DB) []string {
 	ignoredTableNames := map[string]struct{}{
 		"users":            {},
 		"roles":            {},

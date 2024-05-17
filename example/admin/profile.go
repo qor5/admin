@@ -24,60 +24,63 @@ const (
 	signOutAllSessionEvent = "signOutAllSessionEvent"
 )
 
-func profile(ctx *web.EventContext) h.HTMLComponent {
-	u := getCurrentUser(ctx.R)
-	if u == nil {
-		return VBtn("Login").Variant(VariantText).Href("/auth/login")
-	}
+func profile(db *gorm.DB) presets.ComponentFunc {
+	return func(ctx *web.EventContext) h.HTMLComponent {
 
-	var roles []string
-	for _, role := range u.Roles {
-		roles = append(roles, role.Name)
-	}
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return VBtn("Login").Variant(VariantText).Href("/auth/login")
+		}
 
-	total := notifierCount(db)(ctx)
-	content := notifierComponent(db)(ctx)
-	icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
-	notification := VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{ props }").Children(
-			VBtn("").Icon(true).Children(
-				h.If(total > 0,
-					VBadge(
-						icon,
-					).Content(total).Dot(true).Color("error"),
-				).Else(icon),
-			).Attr("v-bind", "props").
-				Density(DensityCompact).
-				Variant(VariantText),
-		),
-		VCard(content),
-	)
-	_ = notification
-	profileNewLook := VCard(
-		web.Slot(
-			VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).Size(SizeLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary)),
-		).Name(VSlotPrepend),
-		web.Slot(
-			h.Div(
-				h.Div(h.Text(u.Name)).Class(fmt.Sprintf(`text-subtitle-2 text-%s`, ColorSecondary)),
-				VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
-					Icon(true).Density(DensityCompact).Variant(VariantText).Children(
-					VIcon("mdi-chevron-right").Size(SizeSmall),
-				).Class("mr-8"),
-			).Class("d-flex justify-space-between align-center"),
-		).Name(VSlotTitle),
-		web.Slot(
-			h.Div(h.Text(roles[0])),
-		).Name(VSlotSubtitle),
-		web.Slot(
-			VRow(
-				VCol(
-					notification,
-				),
-			).Class("border-s"),
-		).Name(VSlotAppend),
-	).Class(W100)
-	return profileNewLook
+		var roles []string
+		for _, role := range u.Roles {
+			roles = append(roles, role.Name)
+		}
+
+		total := notifierCount(db)(ctx)
+		content := notifierComponent(db)(ctx)
+		icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
+		notification := VMenu().Children(
+			h.Template().Attr("v-slot:activator", "{ props }").Children(
+				VBtn("").Icon(true).Children(
+					h.If(total > 0,
+						VBadge(
+							icon,
+						).Content(total).Dot(true).Color("error"),
+					).Else(icon),
+				).Attr("v-bind", "props").
+					Density(DensityCompact).
+					Variant(VariantText),
+			),
+			VCard(content),
+		)
+		_ = notification
+		profileNewLook := VCard(
+			web.Slot(
+				VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).Size(SizeLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary)),
+			).Name(VSlotPrepend),
+			web.Slot(
+				h.Div(
+					h.Div(h.Text(u.Name)).Class(fmt.Sprintf(`text-subtitle-2 text-%s`, ColorSecondary)),
+					VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
+						Icon(true).Density(DensityCompact).Variant(VariantText).Children(
+						VIcon("mdi-chevron-right").Size(SizeSmall),
+					).Class("mr-8"),
+				).Class("d-flex justify-space-between align-center"),
+			).Name(VSlotTitle),
+			web.Slot(
+				h.Div(h.Text(roles[0])),
+			).Name(VSlotSubtitle),
+			web.Slot(
+				VRow(
+					VCol(
+						notification,
+					),
+				).Class("border-s"),
+			).Name(VSlotAppend),
+		).Class(W100)
+		return profileNewLook
+	}
 }
 
 type Profile struct{}
@@ -97,7 +100,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			return r, perm.PermissionDenied
 		}
 
-		if err = expireOtherSessionLogs(ctx.R, u.ID); err != nil {
+		if err = expireOtherSessionLogs(db, ctx.R, u.ID); err != nil {
 			return r, err
 		}
 

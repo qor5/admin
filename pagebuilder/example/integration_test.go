@@ -11,38 +11,37 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/web/v3"
-	"github.com/qor5/web/v3/multipartestutils"
-	"github.com/theplant/gofixtures"
-	"github.com/theplant/osenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/x/v3/login"
-
 	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
+	"github.com/theplant/gofixtures"
+	"github.com/theplant/testenv"
+	"gorm.io/gorm"
 )
 
-var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+var TestDB *gorm.DB
 
-func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
-	return db.Debug()
+	defer env.TearDown()
+	TestDB = env.DB
+	m.Run()
 }
 
 func TestEditor(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
@@ -91,7 +90,7 @@ INSERT INTO container_headers (color) VALUES ('black');
 }
 
 func TestUpdatePage(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
@@ -134,11 +133,7 @@ INSERT INTO page_builder_pages (id,version, title, slug) VALUES (1,'v1', '123', 
 }
 
 func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
-	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-
+	db := TestDB
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	h := admin.Router()
+	h := admin.Router(admin.ConnectDB())
 
 	port := osenv.Get("PORT", "The port to serve the admin on", "9000")
 

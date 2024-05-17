@@ -3,9 +3,10 @@ package admin
 import (
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
+	"gorm.io/gorm"
 )
 
-func configL10nModel(b *presets.Builder) (*presets.ModelBuilder, *presets.ModelBuilder) {
+func configL10nModel(db *gorm.DB, b *presets.Builder) (*presets.ModelBuilder, *presets.ModelBuilder) {
 	if err := db.AutoMigrate(
 		&models.L10nModel{},
 		&models.L10nModelWithVersion{},

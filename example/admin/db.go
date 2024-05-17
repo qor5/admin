@@ -11,11 +11,10 @@ import (
 )
 
 var (
-	db             *gorm.DB
 	dbParamsString = osenv.Get("DB_PARAMS", "admin example database connection string", "")
 )
 
-func ConnectDB() *gorm.DB {
+func ConnectDB() (db *gorm.DB) {
 	var err error
 	db, err = gorm.Open(postgres.Open(dbParamsString), &gorm.Config{})
 	if err != nil {
