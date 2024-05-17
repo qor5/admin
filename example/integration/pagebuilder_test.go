@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/note"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -39,23 +40,27 @@ func TestPageBuilder(t *testing.T) {
 
 	cases := []TestCase{
 		{
-			Name: "Index page",
+			Name:  "Index Page",
+			Debug: true,
 			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
 			PageMatch: func(t *testing.T, body *bytes.Buffer) {
-				t.Log(body.String())
+				if !strings.Contains(body.String(), `12312`) {
+					t.Error("Page 12312 not found")
+				}
 			},
 		},
 
 		{
-			Name: "Page Builder Detail page",
+			Name:  "Page Builder Detail Page",
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
 			PageMatch: func(t *testing.T, body *bytes.Buffer) {
-				// t.Log(body.String())
 				if !strings.Contains(body.String(), `eventFunc("createNoteDialogEvent").query("overlay", "dialog").query("id", "1_2024-05-18-v01_International").url("/pages").go()`) {
 					t.Error(body.String())
 				}
@@ -63,17 +68,41 @@ func TestPageBuilder(t *testing.T) {
 		},
 
 		{
-			Name: "Page Builder Editor Notes add",
+			Name:  "Page Builder Editor Show Add Notes Dialog",
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				req := NewMultipartBuilder().PageURL("http://localhost:9500/pages?__execute_event__=createNoteDialogEvent&id=1_2024-05-18-v01_International&overlay=dialog").
+				req := NewMultipartBuilder().
+					PageURL("/pages?__execute_event__=createNoteDialogEvent&id=1_2024-05-18-v01_International&overlay=dialog").
 					BuildEventFuncRequest()
 				bs, _ := httputil.DumpRequest(req, true)
 				t.Log(string(bs))
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				t.Log(er)
+				if !strings.Contains(er.UpdatePortals[0].Body, `eventFunc("createNoteEvent")`) {
+					t.Error(er.UpdatePortals[0].Body)
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Editor Add a Note",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages?__execute_event__=createNoteEvent&overlay=dialog&resource_id=1_2024-05-18-v01_International&resource_type=Pages").
+					AddField("Content", "Hello").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				n := note.QorNote{}
+				TestDB.Find(&n)
+				if n.Content != "Hello" {
+					t.Error("Note not created", n)
+				}
 			},
 		},
 	}
