@@ -1259,6 +1259,7 @@ func (b *Builder) initMux() {
 	mux.Handle(pat.Get(mainCSSPath),
 		ub.PacksHandler("text/css",
 			CSSComponentsPack(),
+			vuetifyx.CSSComponentsPack(),
 		),
 	)
 	log.Println("mounted url", mainCSSPath)

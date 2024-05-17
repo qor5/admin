@@ -335,7 +335,8 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 
 	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
-		return
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -412,6 +413,10 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
@@ -466,6 +471,10 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 	}
 
 	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
@@ -509,7 +518,8 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 	}
 
 	if err = f.saver(obj, ctx.Queries().Get(ParamID), ctx); err != nil {
-		return
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

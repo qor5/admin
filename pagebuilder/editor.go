@@ -71,8 +71,6 @@ const (
 	EventDelete = "delete"
 	EventAdd    = "add"
 	EventEdit   = "edit"
-
-	pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -414,7 +412,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	var (
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		modelID       = ctx.R.FormValue(paramModelID)
+		modelID       = ctx.R.FormValue(presets.ParamID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
@@ -592,7 +590,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 															URL(ctx.R.URL.Path).
 															EventFunc(ShowEditContainerDrawerEvent).
 															Queries(ctx.R.Form).
-															Query(paramModelID, web.Var("element.model_id")).
+															Query(presets.ParamID, web.Var("element.model_id")).
 															Query(paramContainerName, web.Var("element.display_name")).
 															Query(paramModelName, web.Var("element.model_name")).
 															Go(),
@@ -647,7 +645,7 @@ func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		URL(ctx.R.URL.Path).
 		EventFunc(ShowEditContainerDrawerEvent).
 		Queries(ctx.R.Form).
-		Query(paramModelID, modelID).
+		Query(presets.ParamID, modelID).
 		Go()
 	return
 }
@@ -1255,7 +1253,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			VTabs(
 				VTab(h.Text(msgr.New)).Value(msgr.New),
 				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
-			).Attr("v-model", "locals.tab").Class("px-6"),
+			).FixedTabs(true).Attr("v-model", "locals.tab").Class("px-6"),
 			VTabsWindow(
 				VTabsWindowItem(
 					VList(containers...).Opened(groupsNames),
@@ -1427,7 +1425,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 }
 
 func (b *Builder) showAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: b.renderContainersList(ctx)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: b.renderContainersList(ctx)})
 	return
 }
 
@@ -1436,7 +1434,7 @@ func (b *Builder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: body})
 	return
 }
 
@@ -1445,7 +1443,7 @@ func (b *Builder) showEditContainerDrawer(ctx *web.EventContext) (r web.EventRes
 	if body, err = b.renderEditContainer(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderRightContentPortal, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: body})
 	return
 }
 
