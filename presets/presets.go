@@ -16,6 +16,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	"goji.io/v3"
@@ -113,7 +114,13 @@ func New() *Builder {
 }
 
 func (b *Builder) Plugins(vs ...Plugin) (r *Builder) {
-	b.plugins = slices.Compact(append(b.plugins, slices.DeleteFunc(vs, func(v Plugin) bool { return v == nil })...))
+	b.plugins = slices.Compact(append(
+		b.plugins,
+		slices.DeleteFunc(vs,
+			func(v Plugin) bool {
+				return reflectutils.IsNil(v)
+			},
+		)...))
 	return b
 }
 

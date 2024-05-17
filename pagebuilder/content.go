@@ -12,6 +12,8 @@ import (
 	"github.com/qor5/web/v3"
 )
 
+const pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
+
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
 	p = new(Page)
 	var (

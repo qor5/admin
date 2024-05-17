@@ -72,7 +72,7 @@ var (
 )
 
 func NewConfig() Config {
-	db := ConnectDB()
+	ConnectDB()
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,

@@ -282,6 +282,7 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 }
 
 func (b *Builder) Install(pb *presets.Builder) error {
+	defer b.ps.Build()
 	db := b.db
 	l10nB := b.l10n
 	// activityB := b.ab
