@@ -50,7 +50,7 @@ func TestEditor(t *testing.T) {
 	publisher := publish.New(db, oss.Storage)
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
-	pb.Publisher(publisher).Activity(ab).Install(b)
+	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab).Install(b)
 	sdb, _ := db.DB()
 	p := pagebuilder.Page{}
 	p.L10nON()
@@ -138,6 +138,7 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 	if err != nil {
 		panic(err)
 	}
+
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
@@ -145,7 +146,7 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
 	publisher := publish.New(db, oss.Storage)
-	pb.Publisher(publisher).Activity(ab).Install(b)
+	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab).Install(b)
 	sdb, _ := db.DB()
 	p := pagebuilder.Page{}
 	p.L10nON()
@@ -170,7 +171,7 @@ func TestAddContainer(t *testing.T) {
 		EventFunc(pagebuilder.AddContainerEvent).
 		AddField("containerName", "Header").
 		AddField("modelName", "Header").
-		AddField("modelID", "1").
+		AddField("id", "1").
 		BuildEventFuncRequest()
 
 	// bs, _ := httputil.DumpRequest(r, true)
@@ -311,7 +312,7 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 		EventFunc(pagebuilder.ShowEditContainerDrawerEvent).
 		AddField("modelName", "Header").
 		AddField("containerName", "Header").
-		AddField("modelID", "1").
+		AddField("id", "1").
 		BuildEventFuncRequest()
 
 	// bs, _ := httputil.DumpRequest(r, true)
@@ -321,7 +322,7 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 	// var er web.EventResponse
 	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
-	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+	if strings.Index(w.Body.String(), presets.RightDrawerContentPortalName) < 0 {
 		t.Error(w.Body.String())
 	}
 }
@@ -377,7 +378,7 @@ func TestEditorShowSortedContainerDrawerEvent(t *testing.T) {
 	// var er web.EventResponse
 	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
-	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+	if strings.Index(w.Body.String(), presets.RightDrawerContentPortalName) < 0 {
 		t.Error(w.Body.String())
 	}
 }
@@ -449,7 +450,7 @@ func TestEditorShowAddContainerDrawerEvent(t *testing.T) {
 	// var er web.EventResponse
 	// _ = json.Unmarshal(w.Body.Bytes(), &er)
 	// fmt.Printf("%#+v\n", er)
-	if strings.Index(w.Body.String(), "pageBuilderRightContentPortal") < 0 {
+	if strings.Index(w.Body.String(), presets.RightDrawerContentPortalName) < 0 {
 		t.Error(w.Body.String())
 	}
 }

@@ -299,7 +299,7 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	})
 	dp := pm.Detailing("Overview")
 	// register modelBuilder
-	seoBuilder.Models(pm)
+	b.seoBuilder.Models(pm)
 	// pm detailing overview
 	dp.Field("Overview").ComponentFunc(overview(b, templateM))
 
@@ -2029,7 +2029,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		EventFunc(ShowEditContainerDrawerEvent).
 		URL(ctx.R.URL.Path).
 		Queries(ctx.R.Form).
-		Query(paramModelID, web.Var("arr[1]")).
+		Query(presets.ParamID, web.Var("arr[1]")).
 		Query(paramContainerName, web.Var("display_name")).
 		Query(paramModelName, web.Var("model_name")).
 		Query(paramContainerID, web.Var("container_id")).
