@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
@@ -233,8 +232,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 		},
 	}
 
-	os.Setenv("DBURL", "user=postgres password=12345 dbname=admin_dev_1 sslmode=disable host=127.0.0.1 port=5433")
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&ParameterSetting{})
 	b := presets.New().URIPrefix("/ps")
 	b.DataOperator(gorm2op.DataOperator(db))

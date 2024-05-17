@@ -36,7 +36,7 @@ func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string 
 }
 
 func TestPrimarySlugger(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&TestVariant{})
 	rawDB, _ := db.DB()
 	emptyData.TruncatePut(rawDB)

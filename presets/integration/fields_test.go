@@ -73,11 +73,13 @@ func TestFields(t *testing.T) {
 
 	ftRead := NewFieldDefaults(LIST)
 
-	cases := []struct {
+	type testCase struct {
 		name           string
 		toComponentFun func() h.HTMLComponent
 		expect         string
-	}{
+	}
+
+	cases := []testCase{
 		{
 			name: "Only with additional nested object",
 			toComponentFun: func() h.HTMLComponent {
