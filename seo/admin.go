@@ -44,7 +44,7 @@ func (mtd *myTd) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return mtd.td.MarshalHTML(ctx)
 }
 
-func (b *Builder) Install(pb *presets.Builder) (seoModel *presets.ModelBuilder) {
+func (b *Builder) Install(pb *presets.Builder) error {
 	// The registration of FieldDefaults for writing Setting here
 	// must be executed before `pb.Model(&QorSEOSetting{})...`,
 	pb.FieldDefaults(presets.WRITE).
@@ -52,7 +52,7 @@ func (b *Builder) Install(pb *presets.Builder) (seoModel *presets.ModelBuilder) 
 		ComponentFunc(b.EditingComponentFunc).
 		SetterFunc(EditSetterFunc)
 
-	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").
+	seoModel := pb.Model(&QorSEOSetting{}).PrimaryField("Name").
 		Label("SEO").
 		RightDrawerWidth("1000").
 		LayoutConfig(&presets.LayoutConfig{
@@ -66,14 +66,12 @@ func (b *Builder) Install(pb *presets.Builder) (seoModel *presets.ModelBuilder) 
 	b.configEditing(seoModel)
 	// b.ConfigDetailing(pb)
 
-	b.configure()
-
 	pb.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSeoKey, Messages_zh_CN)
 
 	permVerifier = perm.NewVerifier("seo", pb.GetPermission())
-	return
+	return nil
 }
 
 func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
@@ -368,13 +366,12 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	).Attr("ref", "seo")
 }
 
-func (b *Builder) configure() {
-	for _, m := range b.models {
-		b.ConfigDetailing(m.GetDetailing())
-	}
+func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
+	b.configDetailing(mb.GetDetailing())
+	return nil
 }
 
-func (b *Builder) ConfigDetailing(pd *presets.DetailingBuilder) {
+func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
 	pd.Field(SeoDetailFieldName).SetSwitchable(true).Editing("").ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(h.Text("Seo"))
 	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

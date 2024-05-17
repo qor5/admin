@@ -10,7 +10,6 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -20,29 +19,6 @@ const (
 	createNoteEvent     = "note_CreateNoteEvent"
 	updateUserNoteEvent = "note_UpdateUserNoteEvent"
 )
-
-func configure(b *Builder, pb *presets.Builder) {
-	db := b.db
-	models := b.models
-	if err := db.AutoMigrate(QorNote{}, UserNote{}); err != nil {
-		panic(err)
-	}
-
-	for _, m := range models {
-		if m.Info().HasDetailing() {
-			m.Detailing().AppendTabsPanelFunc(tabsPanel(db, m))
-		}
-		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
-		m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
-		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
-		m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
-	}
-
-	pb.I18n().
-		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
-		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
-}
 
 func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {

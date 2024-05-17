@@ -19,7 +19,7 @@ import (
 
 const I18nMicrositeKey i18n.ModuleKey = "I18nMicrositeKey"
 
-func (mib *Builder) Install(b *presets.Builder) {
+func (mib *Builder) Install(b *presets.Builder) error {
 	publisher := mib.publisher
 	storage := mib.storage
 	db := mib.db
@@ -33,9 +33,7 @@ func (mib *Builder) Install(b *presets.Builder) {
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
 
-	model := b.Model(&MicroSite{})
-
-	publisher.Models(model).ContextValueFuncs(mib.ContextValueProvider)
+	model := b.Model(&MicroSite{}).Plugins(publisher.ContextValueFuncs(mib.ContextValueProvider))
 
 	model.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID::text", "Name").
@@ -160,7 +158,7 @@ func (mib *Builder) Install(b *presets.Builder) {
 		return nil
 	})
 
-	return
+	return nil
 }
 
 func getPackagePath(m *MicroSite, fileName string, mib *Builder) string {

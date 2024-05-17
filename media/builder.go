@@ -24,6 +24,7 @@ func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	return b
 }
 
-func (b *Builder) Install(pb *presets.Builder) {
+func (b *Builder) Install(pb *presets.Builder) error {
 	configure(pb, b, b.db)
+	return nil
 }

@@ -132,7 +132,7 @@ func (b *Builder) setStatus(id uint, status string) error {
 
 var permVerifier *perm.Verifier
 
-func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) error {
 	b.pb = pb
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 	pb.I18n().
@@ -366,7 +366,7 @@ func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
 			})
 	}
 
-	return mb
+	return nil
 }
 
 func (b *Builder) Listen() {

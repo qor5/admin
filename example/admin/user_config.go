@@ -29,7 +29,7 @@ import (
 func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	nb.Models(user)
+	user.Plugins(nb)
 
 	user.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
@@ -391,8 +391,7 @@ func favorPostSelector(id uint) h.HTMLComponent {
 func configureFavorPostSelectDialog(pb *presets.Builder, publisher *publish.Builder) {
 	b := pb.Model(&models.Post{}).
 		URIName("dialog-select-favor-posts").
-		InMenu(false)
-	publisher.Models(b)
+		InMenu(false).Plugins(publisher)
 	lb := b.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
 		SearchColumns("title", "body").
 		PerPage(10).

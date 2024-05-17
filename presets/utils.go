@@ -12,6 +12,17 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[string]string, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			r = nil
+			err = fmt.Errorf("wrong slug: %v", slug)
+		}
+	}()
+	r = dec.PrimaryColumnValuesBySlug(slug)
+	return r, nil
+}
+
 func ShowMessage(r *web.EventResponse, msg string, color string) {
 	if msg == "" {
 		return

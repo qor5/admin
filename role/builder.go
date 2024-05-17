@@ -20,7 +20,9 @@ type Builder struct {
 	resources []*DefaultOptionItem
 	// editorSubject is the subject that has permission to edit roles
 	// empty value means anyone can edit roles
-	editorSubject string
+	editorSubject    string
+	roleMb           *presets.ModelBuilder
+	AfterInstallFunc presets.ModelInstallFunc
 }
 
 func New(db *gorm.DB) *Builder {
@@ -42,6 +44,11 @@ func (b *Builder) Actions(vs []*DefaultOptionItem) *Builder {
 	return b
 }
 
+func (b *Builder) AfterInstall(v presets.ModelInstallFunc) *Builder {
+	b.AfterInstallFunc = v
+	return b
+}
+
 func (b *Builder) Resources(vs []*DefaultOptionItem) *Builder {
 	b.resources = vs
 	return b
@@ -52,7 +59,7 @@ func (b *Builder) EditorSubject(v string) *Builder {
 	return b
 }
 
-func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) error {
 	if b.editorSubject != "" {
 		permB := pb.GetPermission()
 		if permB == nil {
@@ -86,9 +93,9 @@ func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
 		)
 	}
 
-	role := pb.Model(&Role{})
+	b.roleMb = pb.Model(&Role{})
 
-	ed := role.Editing(
+	ed := b.roleMb.Editing(
 		"Name",
 		"Permissions",
 	)
@@ -180,5 +187,9 @@ func (b *Builder) Install(pb *presets.Builder) *presets.ModelBuilder {
 		return
 	})
 
-	return role
+	if b.AfterInstallFunc != nil {
+		return b.AfterInstallFunc(pb, b.roleMb)
+	}
+
+	return nil
 }

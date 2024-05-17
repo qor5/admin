@@ -1,11 +1,9 @@
 package l10n
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
-	"time"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
@@ -14,7 +12,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -22,106 +19,6 @@ const (
 	WrapHandlerKey  = "l10nWrapHandlerKey"
 	MenuTopItemFunc = "l10nMenuTopItemFunc"
 )
-
-func configure(b *presets.Builder, lb *Builder) {
-	models := lb.models
-	ab := lb.ab
-	db := lb.db
-	for _, m := range models {
-		obj := m.NewModel()
-		_ = obj.(presets.SlugEncoder)
-		_ = obj.(presets.SlugDecoder)
-		_ = obj.(L10nInterface)
-		if l10nONModel, exist := obj.(L10nONInterface); exist {
-			l10nONModel.L10nON()
-		}
-		m.Listing().Field("Locale")
-		m.Editing().Field("Locale")
-
-		searcher := m.Listing().Searcher
-		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
-				con := presets.SQLCondition{
-					Query: "locale_code = ?",
-					Args:  []interface{}{localeCode},
-				}
-				params.SQLConditions = append(params.SQLConditions, &con)
-			}
-
-			return searcher(model, params, ctx)
-		})
-
-		setter := m.Editing().Setter
-		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			if ctx.R.FormValue(presets.ParamID) == "" {
-				if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
-					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
-						return
-					}
-				}
-			}
-			if setter != nil {
-				setter(obj, ctx)
-			}
-		})
-
-		deleter := m.Editing().Deleter
-		m.Editing().DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			if err = deleter(obj, id, ctx); err != nil {
-				return
-			}
-			locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
-			locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
-
-			withoutKeys := []string{}
-			if ctx.R.URL.Query().Get("all_versions") == "true" {
-				withoutKeys = append(withoutKeys, "version")
-			}
-
-			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", locale).Error; err != nil {
-				return
-			}
-			return
-		})
-
-		rmb := m.Listing().RowMenu()
-		rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
-
-		registerEventFuncs(db, m, lb, ab)
-	}
-
-	b.FieldDefaults(presets.LIST).
-		FieldType(Locale{}).
-		ComponentFunc(localeListFunc(db, lb))
-	b.FieldDefaults(presets.WRITE).
-		FieldType(Locale{}).
-		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var value string
-			id, err := reflectutils.Get(obj, "ID")
-			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-				value = field.Value(obj).(Locale).GetLocale()
-			} else {
-				value = lb.GetCorrectLocaleCode(ctx.R)
-			}
-
-			return h.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
-		}).
-		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			value := field.Value(obj).(Locale).GetLocale()
-			if !utils.Contains(lb.GetSupportLocaleCodesFromRequest(ctx.R), value) {
-				return errors.New("Incorrect locale.")
-			}
-
-			return nil
-		})
-
-	b.AddWrapHandler(WrapHandlerKey, lb.EnsureLocale)
-	b.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(lb))
-	b.I18n().
-		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
-		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
-}
 
 func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

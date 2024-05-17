@@ -1,7 +1,6 @@
 package presets
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -74,17 +73,6 @@ type SlugDecoder interface {
 	PrimaryColumnValuesBySlug(slug string) map[string]string
 }
 
-func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[string]string, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			r = nil
-			err = fmt.Errorf("wrong slug: %v", slug)
-		}
-	}()
-	r = dec.PrimaryColumnValuesBySlug(slug)
-	return r, nil
-}
-
 type SlugEncoder interface {
 	PrimarySlug() string
 }
@@ -100,3 +88,13 @@ type FilterTab struct {
 }
 
 type FilterTabsFunc func(ctx *web.EventContext) []*FilterTab
+
+type Plugin interface {
+	Install(pb *Builder) (err error)
+}
+
+type ModelPlugin interface {
+	ModelInstall(pb *Builder, mb *ModelBuilder) (err error)
+}
+
+type ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error

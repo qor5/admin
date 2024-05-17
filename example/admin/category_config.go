@@ -5,14 +5,15 @@ import (
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/publish"
 	v "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	p := b.Model(&models.Category{})
+func configCategory(b *presets.Builder, db *gorm.DB, publisher *publish.Builder) *presets.ModelBuilder {
+	p := b.Model(&models.Category{}).Plugins(publisher)
 
 	eb := p.Editing("StatusBar", "ScheduleBar", "Name", "Products")
 	p.Listing("Name")

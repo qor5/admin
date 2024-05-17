@@ -34,12 +34,23 @@ type Builder struct {
 	lmb      *presets.ModelBuilder // log model builder
 	logModel ActivityLogInterface  // log model
 
-	models     []*ModelBuilder                   // registered model builders
-	tabHeading func(ActivityLogInterface) string // tab heading format
-	permPolicy *perm.PolicyBuilder               // permission policy
+	models                   []*ModelBuilder                   // registered model builders
+	tabHeading               func(ActivityLogInterface) string // tab heading format
+	permPolicy               *perm.PolicyBuilder               // permission policy
+	AfterLogModelInstallFunc presets.ModelInstallFunc
 }
 
 // @snippet_end
+
+func (ab *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
+	ab.RegisterModel(m)
+	return nil
+}
+
+func (ab *Builder) AfterLogModelInstall(v presets.ModelInstallFunc) *Builder {
+	ab.AfterLogModelInstallFunc = v
+	return ab
+}
 
 func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 	ab.permPolicy = v
@@ -67,11 +78,6 @@ func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
 		ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).On("*:activity_logs").On("*:activity_logs:*")
 
 	return ab
-}
-
-// GetPresetModelBuilder return the preset model builder
-func (ab Builder) GetPresetModelBuilder() *presets.ModelBuilder {
-	return ab.lmb
 }
 
 // GetActivityLogs get activity logs

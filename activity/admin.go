@@ -21,7 +21,7 @@ const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
 )
 
-func (ab *Builder) Install(b *presets.Builder) {
+func (ab *Builder) Install(b *presets.Builder) error {
 	b.I18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
@@ -179,6 +179,11 @@ func (ab *Builder) Install(b *presets.Builder) {
 			return h.Components(detailElems...)
 		},
 	)
+
+	if ab.AfterLogModelInstallFunc != nil {
+		return ab.AfterLogModelInstallFunc(b, mb)
+	}
+	return nil
 }
 
 func fixSpecialChars(str string) string {

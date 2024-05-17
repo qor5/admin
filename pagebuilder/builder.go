@@ -71,29 +71,32 @@ type PageLayoutInput struct {
 }
 
 type Builder struct {
-	prefix            string
-	wb                *web.Builder
-	db                *gorm.DB
-	containerBuilders []*ContainerBuilder
-	ps                *presets.Builder
-	mb                *presets.ModelBuilder
-	l10n              *l10n.Builder
-	note              *note.Builder
-	ab                *activity.Builder
-	publisher         *publish.Builder
-	seoBuilder        *seo.Builder
-	pageStyle         h.HTMLComponent
-	pageLayoutFunc    PageLayoutFunc
-	subPageTitleFunc  SubPageTitleFunc
-	preview           http.Handler
-	editor            http.Handler
-	images            http.Handler
-	imagesPrefix      string
-	defaultDevice     string
-	publishBtnColor   string
-	duplicateBtnColor string
-	templateEnabled   bool
-	expendContainers  bool
+	prefix                   string
+	wb                       *web.Builder
+	db                       *gorm.DB
+	containerBuilders        []*ContainerBuilder
+	ps                       *presets.Builder
+	mb                       *presets.ModelBuilder
+	l10n                     *l10n.Builder
+	note                     *note.Builder
+	ab                       *activity.Builder
+	publisher                *publish.Builder
+	seoBuilder               *seo.Builder
+	pageStyle                h.HTMLComponent
+	pageLayoutFunc           PageLayoutFunc
+	subPageTitleFunc         SubPageTitleFunc
+	preview                  http.Handler
+	editor                   http.Handler
+	images                   http.Handler
+	imagesPrefix             string
+	defaultDevice            string
+	publishBtnColor          string
+	duplicateBtnColor        string
+	templateEnabled          bool
+	expendContainers         bool
+	AfterPageInstallFunc     presets.ModelInstallFunc
+	AfterTemplateInstallFunc presets.ModelInstallFunc
+	AfterCategoryInstallFunc presets.ModelInstallFunc
 }
 
 const (
@@ -186,6 +189,21 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
+func (b *Builder) AfterPageInstall(v presets.ModelInstallFunc) (r *Builder) {
+	b.AfterPageInstallFunc = v
+	return b
+}
+
+func (b *Builder) AfterTemplateInstall(v presets.ModelInstallFunc) (r *Builder) {
+	b.AfterTemplateInstallFunc = v
+	return b
+}
+
+func (b *Builder) AfterCategoryInstall(v presets.ModelInstallFunc) (r *Builder) {
+	b.AfterCategoryInstallFunc = v
+	return b
+}
+
 func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	b.pageLayoutFunc = v
 	return b
@@ -263,14 +281,23 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	return b
 }
 
-func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) Install(pb *presets.Builder) error {
 	db := b.db
 	l10nB := b.l10n
-	activityB := b.ab
+	// activityB := b.ab
 	publisher := b.publisher
+	l10nB.Activity(b.ab)
 	seoBuilder := b.seoBuilder
-	mb := b.ps.Model(&Page{}).URIName("editors")
-	b.publisher.Models(mb)
+	b.ps.Plugins(media.New(db), publisher, seoBuilder)
+
+	mb := b.ps.Model(&Page{}).URIName("editors").Plugins(
+		publisher,
+		b.ab,
+		seoBuilder,
+		b.note,
+		b.l10n,
+	)
+
 	md := mb.Detailing()
 	md.Field("defaultVersion")
 	md.PageFunc(b.Editor(mb))
@@ -281,12 +308,12 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	pm = pb.Model(&Page{})
-	templateM := presets.NewModelBuilder(pb, &Template{})
+	pm := pb.Model(&Page{})
+	b.mb = pm
+	templateM := presets.NewModelBuilder(pb, &Template{}).Plugins(b.ab)
 	if b.templateEnabled {
 		templateM = b.configTemplate(pb, db)
 	}
-	b.mb = pm
 	lb := pm.Listing("ID", "Online", "Title", "Path")
 
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -299,7 +326,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	})
 	dp := pm.Detailing("Overview")
 	// register modelBuilder
-	seoBuilder.Models(pm)
 	// pm detailing overview
 	dp.Field("Overview").ComponentFunc(overview(b, templateM))
 
@@ -308,6 +334,214 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	// pm detailing side panel
 	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b))
 
+	b.configDetailLayoutFunc(pb, pm, templateM, db)
+
+	configureVersionListDialog(db, b, b.ps, pm)
+
+	if b.templateEnabled {
+		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
+		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
+		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
+	}
+	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
+	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
+	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
+	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
+	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
+	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
+
+	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Page)
+		err = pageValidator(ctx.R.Context(), c, db, l10nB)
+		return
+	})
+
+	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+			Prefix("/").
+			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		m := obj.(*Page)
+		m.Slug = path.Join("/", m.Slug)
+		return nil
+	})
+	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		categories := []*Category{}
+		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		return vx.VXAutocomplete().Label(msgr.Category).
+			Attr(web.VField(field.Name, p.CategoryID)...).
+			Multiple(false).Chips(false).
+			Items(categories).ItemText("Path").ItemValue("ID").
+			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+	})
+
+	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		if !b.templateEnabled {
+			return nil
+		}
+
+		p := obj.(*Page)
+
+		selectedID := ctx.R.FormValue(templateSelectedID)
+		body, err := getTplPortalComp(ctx, db, selectedID)
+		if err != nil {
+			panic(err)
+		}
+
+		// Display template selection only when creating a new page
+		if p.ID == 0 {
+			return h.Div(
+				web.Portal().Name(templateSelectPortal),
+				web.Portal(
+					body,
+				).Name(selectedTemplatePortal),
+			).Class("my-2").
+				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...)
+		}
+		return nil
+	})
+
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		p := obj.(*Page)
+		if p.Slug != "" {
+			p.Slug = path.Clean(p.Slug)
+		}
+		funcName := ctx.R.FormValue(web.EventFuncIDName)
+		if funcName == publish.EventDuplicateVersion {
+			id := ctx.R.FormValue(presets.ParamID)
+			var fromPage Page
+			eb.Fetcher(&fromPage, id, ctx)
+			p.SEO = fromPage.SEO
+		}
+
+		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+
+			if strings.Contains(ctx.R.RequestURI, publish.EventSaveNewVersion) || strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
+					return
+				}
+				return
+			}
+
+			if v := ctx.R.FormValue(templateSelectedID); v != "" {
+				var tplID int
+				tplID, inerr = strconv.Atoi(v)
+				if inerr != nil {
+					return
+				}
+				if !l10nON {
+					localeCode = ""
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
+					panic(inerr)
+					return
+				}
+			}
+			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+
+				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+					panic(inerr)
+					return
+				}
+				return
+			}
+			return
+		})
+
+		return
+	})
+
+	b.configSharedContainer(pb, db).Plugins(b.ab, l10nB)
+	b.configDemoContainer(pb, db).Plugins(b.ab, l10nB)
+	cb := b.configCategory(pb, db, l10nB).Plugins(b.ab, l10nB)
+
+	if publisher != nil {
+		publisher.ContextValueFuncs(b.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
+			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+		})
+	}
+	if seoBuilder != nil {
+		seoBuilder.RegisterSEO("Page", &Page{}).RegisterContextVariable(
+			"Title",
+			func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+				if p, ok := object.(*Page); ok {
+					return p.Title
+				}
+				return ""
+			},
+		)
+	}
+	if b.note != nil {
+		pm.Plugins(b.note)
+	}
+	eb.CleanTabsPanels()
+	dp.CleanTabsPanels()
+	var err error
+	if b.AfterPageInstallFunc != nil {
+		err = b.AfterPageInstallFunc(pb, mb)
+		if err != nil {
+			return err
+		}
+	}
+	if b.AfterCategoryInstallFunc != nil {
+		err = b.AfterCategoryInstallFunc(pb, cb)
+		if err != nil {
+			return err
+		}
+	}
+	if b.AfterTemplateInstallFunc != nil {
+		err = b.AfterTemplateInstallFunc(pb, templateM)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *Builder) configDetailLayoutFunc(
+	pb *presets.Builder,
+	pm *presets.ModelBuilder,
+	templateM *presets.ModelBuilder,
+	db *gorm.DB,
+) {
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 
 	// change old detail layout
@@ -485,192 +719,6 @@ func (b *Builder) Install(pb *presets.Builder) (pm *presets.ModelBuilder) {
 			return
 		}
 	})
-
-	configureVersionListDialog(db, b, b.ps, pm)
-
-	if b.templateEnabled {
-		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
-		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
-		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
-	}
-	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
-	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
-	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
-	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
-	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
-	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-
-	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
-	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		c := obj.(*Page)
-		err = pageValidator(ctx.R.Context(), c, db, l10nB)
-		return
-	})
-
-	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		return VTextField().
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Prefix("/").
-			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		m := obj.(*Page)
-		m.Slug = path.Join("/", m.Slug)
-		return nil
-	})
-	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-			panic(err)
-		}
-
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		return vx.VXAutocomplete().Label(msgr.Category).
-			Attr(web.VField(field.Name, p.CategoryID)...).
-			Multiple(false).Chips(false).
-			Items(categories).ItemText("Path").ItemValue("ID").
-			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
-	})
-
-	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		if !b.templateEnabled {
-			return nil
-		}
-
-		p := obj.(*Page)
-
-		selectedID := ctx.R.FormValue(templateSelectedID)
-		body, err := getTplPortalComp(ctx, db, selectedID)
-		if err != nil {
-			panic(err)
-		}
-
-		// Display template selection only when creating a new page
-		if p.ID == 0 {
-			return h.Div(
-				web.Portal().Name(templateSelectPortal),
-				web.Portal(
-					body,
-				).Name(selectedTemplatePortal),
-			).Class("my-2").
-				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...)
-		}
-		return nil
-	})
-
-	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		p := obj.(*Page)
-		if p.Slug != "" {
-			p.Slug = path.Clean(p.Slug)
-		}
-		funcName := ctx.R.FormValue(web.EventFuncIDName)
-		if funcName == publish.EventDuplicateVersion {
-			id := ctx.R.FormValue(presets.ParamID)
-			var fromPage Page
-			eb.Fetcher(&fromPage, id, ctx)
-			p.SEO = fromPage.SEO
-		}
-
-		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
-				return
-			}
-
-			if strings.Contains(ctx.R.RequestURI, publish.EventSaveNewVersion) || strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
-				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
-					return
-				}
-				return
-			}
-
-			if v := ctx.R.FormValue(templateSelectedID); v != "" {
-				var tplID int
-				tplID, inerr = strconv.Atoi(v)
-				if inerr != nil {
-					return
-				}
-				if !l10nON {
-					localeCode = ""
-				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
-					panic(inerr)
-					return
-				}
-			}
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n.FromID).(string)
-				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
-				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
-
-				var fromIDInt int
-				fromIDInt, err = strconv.Atoi(fromID)
-				if err != nil {
-					return
-				}
-
-				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.GetLocale()); inerr != nil {
-					panic(inerr)
-					return
-				}
-
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
-					panic(inerr)
-					return
-				}
-				return
-			}
-			return
-		})
-
-		return
-	})
-
-	sharedContainerM := b.ConfigSharedContainer(pb, db)
-	demoContainerM := b.ConfigDemoContainer(pb, db)
-	categoryM := b.configCategory(pb, db, l10nB)
-
-	if activityB != nil {
-		activityB.RegisterModels(pm, sharedContainerM, demoContainerM, templateM, categoryM)
-	}
-	if l10nB != nil {
-		l10nB.Models(pm, sharedContainerM, demoContainerM, templateM, categoryM).Activity(activityB)
-	}
-	if publisher != nil {
-		publisher.ContextValueFuncs(b.ContextValueProvider).Models(pm).Activity(activityB).AfterInstall(func() {
-			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
-		})
-	}
-	if seoBuilder != nil {
-		seoBuilder.RegisterSEO("Page", &Page{}).RegisterContextVariable(
-			"Title",
-			func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-				if p, ok := object.(*Page); ok {
-					return p.Title
-				}
-				return ""
-			},
-		)
-	}
-	if b.note != nil {
-		b.note.Models(pm)
-	}
-	eb.CleanTabsPanels()
-	dp.CleanTabsPanels()
-	media.New(db).Install(b.GetPresetsBuilder())
 	return
 }
 
@@ -1516,7 +1564,7 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
@@ -1595,7 +1643,7 @@ func (b *Builder) ConfigSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 	return
 }
 
-func (b *Builder) ConfigDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {

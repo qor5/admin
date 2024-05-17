@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -38,6 +39,7 @@ type ModelBuilder struct {
 	layoutConfig        *LayoutConfig
 	modelInfo           *ModelInfo
 	singleton           bool
+	plugins             []ModelPlugin
 	web.EventsHub
 }
 
@@ -58,6 +60,11 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb.newEditing()
 
 	return
+}
+
+func (mb *ModelBuilder) Plugins(vs ...ModelPlugin) (r *ModelBuilder) {
+	mb.plugins = slices.Compact(append(mb.plugins, slices.DeleteFunc(vs, func(v ModelPlugin) bool { return v == nil })...))
+	return mb
 }
 
 func (mb *ModelBuilder) GetHasDetailing() bool {

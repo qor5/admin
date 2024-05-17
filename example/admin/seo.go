@@ -12,7 +12,7 @@ import (
 // @snippet_begin(SeoExample)
 var seoBuilder *seo.Builder
 
-func ConfigureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
+func configureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
 	seoBuilder = seo.New(db, seo.WithLocales(locales...))
 	seoBuilder.RegisterSEO("Post", &models.Post{}).RegisterContextVariable(
 		"Title",
@@ -25,7 +25,7 @@ func ConfigureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
 	).RegisterSettingVariables("Test")
 	seoBuilder.RegisterSEO("Product")
 	seoBuilder.RegisterSEO("Announcement")
-	seoBuilder.Install(pb)
+	pb.Plugins(seoBuilder)
 }
 
 // @snippet_end

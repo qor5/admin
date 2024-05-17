@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -60,6 +61,7 @@ type Builder struct {
 	menuGroups                            MenuGroups
 	menuOrder                             []interface{}
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
+	plugins                               []Plugin
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -108,6 +110,11 @@ func New() *Builder {
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
 	return r
+}
+
+func (b *Builder) Plugins(vs ...Plugin) (r *Builder) {
+	b.plugins = slices.Compact(append(b.plugins, slices.DeleteFunc(vs, func(v Plugin) bool { return v == nil })...))
+	return b
 }
 
 func (b *Builder) I18n() (r *i18n.Builder) {
@@ -1205,6 +1212,25 @@ func (b *Builder) extraFullPath(ea *extraAsset) string {
 	return b.prefix + "/extra" + ea.path
 }
 
+func (b *Builder) runPluginsInstall() {
+	var err error
+	for _, p := range b.plugins {
+		err = p.Install(b)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	for _, m := range b.models {
+		for _, mp := range m.plugins {
+			err = mp.ModelInstall(b, m)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
 func (b *Builder) initMux() {
 	b.logger.Info("initializing mux for", zap.Reflect("models", modelNames(b.models)), zap.String("prefix", b.prefix))
 	mux := goji.NewMux()
@@ -1322,9 +1348,14 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 	return handlers
 }
 
+func (b *Builder) Build() {
+	b.runPluginsInstall()
+	b.initMux()
+}
+
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.mux == nil {
-		b.initMux()
+		b.Build()
 	}
 	RedirectSlashes(b.mux).ServeHTTP(w, r)
 }
