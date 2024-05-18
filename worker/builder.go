@@ -468,7 +468,7 @@ func (b *Builder) eventSelectJob(ctx *web.EventContext) (er web.EventResponse, e
 func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -536,7 +536,7 @@ func (b *Builder) doAbortJob(ctx context.Context, inst *QorJobInstance) (err err
 }
 
 func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, err error) {
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -581,7 +581,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -659,7 +659,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
@@ -707,8 +707,8 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 }
 
 func (b *Builder) eventLoadHiddenLogs(ctx *web.EventContext) (er web.EventResponse, err error) {
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
-	currentCount := ctx.QueryAsInt("currentCount")
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
+	currentCount := ctx.ParamAsInt("currentCount")
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
 	if err != nil {

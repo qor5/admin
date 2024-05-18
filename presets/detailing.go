@@ -8,14 +8,12 @@ import (
 	"strconv"
 
 	"github.com/jinzhu/inflection"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-
 	"github.com/qor5/admin/v3/presets/actions"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
 )
 
 type DetailingBuilder struct {
@@ -127,12 +125,7 @@ func (b *DetailingBuilder) Field(name string) (r *DetailFieldBuilder) {
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
-	var id string
-	if b.drawer {
-		id = ctx.R.FormValue(ParamID)
-	} else {
-		id = pat.Param(ctx.R, "id")
-	}
+	var id = ctx.Param(ParamID)
 	r.Body = VContainer(h.Text(id))
 
 	obj := b.mb.NewModel()

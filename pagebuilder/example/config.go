@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/pagebuilder/example/layouts"
@@ -57,8 +56,6 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}
-
-	media.New(db).Install(pb.GetPresetsBuilder())
 
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())

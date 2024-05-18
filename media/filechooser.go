@@ -433,7 +433,7 @@ func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		field := ctx.R.FormValue("field")
-		id := ctx.QueryAsInt("id")
+		id := ctx.ParamAsInt("id")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		var m media_library.MediaLibrary

@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
+	h "github.com/theplant/htmlgo"
 )
 
 const pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
@@ -19,7 +17,7 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Pag
 	var (
 		body, editContainerDrawer h.HTMLComponent
 
-		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID      = primarySlug["id"]
 		version     = primarySlug["version"]
 		localeCode  = primarySlug["locale_code"]

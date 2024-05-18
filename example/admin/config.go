@@ -121,6 +121,7 @@ func NewConfig(db *gorm.DB) Config {
 			return b.I18n().GetSupportLanguages()
 		})
 	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
+	mediab := media.New(db)
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
@@ -226,7 +227,9 @@ func NewConfig(db *gorm.DB) Config {
 	b.Plugins(w.Activity(ab))
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
-	pageBuilder.L10n(l10nBuilder).
+	pageBuilder.
+		Media(mediab).
+		L10n(l10nBuilder).
 		Activity(ab).
 		Publisher(publisher).
 		SEO(seoBuilder).
@@ -295,7 +298,7 @@ func NewConfig(db *gorm.DB) Config {
 	configProfile(b, db)
 
 	b.Plugins(
-		media.New(db),
+		mediab,
 		microb,
 		nb,
 		publisher,

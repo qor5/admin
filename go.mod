@@ -1,6 +1,6 @@
 module github.com/qor5/admin/v3
 
-go 1.22.2
+go 1.22.3
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -39,7 +39,6 @@ require (
 	github.com/wcharczuk/go-chart/v2 v2.1.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	goji.io/v3 v3.0.0
 	golang.org/x/text v0.15.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/driver/sqlite v1.5.5

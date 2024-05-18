@@ -547,7 +547,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		Editing("Content").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			note := obj.(*Note)
-			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})
 
@@ -556,7 +556,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		Editing("Type", "Description").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			note := obj.(*Event)
-			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})
 
@@ -566,7 +566,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	ccedit := cc.Editing("ExpireYearMonth", "Phone", "Email").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			card := obj.(*CreditCard)
-			card.CustomerID = ctx.QueryAsInt("customerID")
+			card.CustomerID = ctx.ParamAsInt("customerID")
 		})
 
 	ccedit.Creating("Number")

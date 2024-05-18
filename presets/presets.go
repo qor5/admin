@@ -19,9 +19,6 @@ import (
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
-	"goji.io/v3"
-	"goji.io/v3/middleware"
-	"goji.io/v3/pat"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -29,7 +26,7 @@ import (
 type Builder struct {
 	prefix                                string
 	models                                []*ModelBuilder
-	mux                                   *goji.Mux
+	handler                               http.Handler
 	builder                               *web.Builder
 	i18nBuilder                           *i18n.Builder
 	logger                                *zap.Logger
@@ -1240,11 +1237,11 @@ func (b *Builder) runPluginsInstall() {
 
 func (b *Builder) initMux() {
 	b.logger.Info("initializing mux for", zap.Reflect("models", modelNames(b.models)), zap.String("prefix", b.prefix))
-	mux := goji.NewMux()
+	mux := http.NewServeMux()
 	ub := b.builder
 
 	mainJSPath := b.prefix + "/assets/main.js"
-	mux.Handle(pat.Get(mainJSPath),
+	mux.Handle("GET "+mainJSPath,
 		ub.PacksHandler("text/javascript",
 			Vuetify(),
 			JSComponentsPack(),
@@ -1252,32 +1249,32 @@ func (b *Builder) initMux() {
 			web.JSComponentsPack(),
 		),
 	)
-	log.Println("mounted url", mainJSPath)
+	log.Println("mounted url:", mainJSPath)
 
 	vueJSPath := b.prefix + "/assets/vue.js"
-	mux.Handle(pat.Get(vueJSPath),
+	mux.Handle("GET "+vueJSPath,
 		ub.PacksHandler("text/javascript",
 			web.JSVueComponentsPack(),
 		),
 	)
-	log.Println("mounted url", vueJSPath)
+	log.Println("mounted url:", vueJSPath)
 
 	mainCSSPath := b.prefix + "/assets/main.css"
-	mux.Handle(pat.Get(mainCSSPath),
+	mux.Handle("GET "+mainCSSPath,
 		ub.PacksHandler("text/css",
 			CSSComponentsPack(),
 			vuetifyx.CSSComponentsPack(),
 		),
 	)
-	log.Println("mounted url", mainCSSPath)
+	log.Println("mounted url:", mainCSSPath)
 
 	for _, ea := range b.extraAssets {
 		fullPath := b.extraFullPath(ea)
-		mux.Handle(pat.Get(fullPath), ub.PacksHandler(
+		mux.Handle("GET "+fullPath, ub.PacksHandler(
 			ea.contentType,
 			ea.body,
 		))
-		log.Println("mounted url", fullPath)
+		log.Println("mounted url:", fullPath)
 	}
 
 	homeURL := b.prefix
@@ -1285,7 +1282,7 @@ func (b *Builder) initMux() {
 		homeURL = "/"
 	}
 	mux.Handle(
-		pat.New(homeURL),
+		homeURL,
 		b.wrap(nil, b.layoutFunc(b.getHomePageFunc(), b.homePageLayoutConfig)),
 	)
 
@@ -1302,37 +1299,37 @@ func (b *Builder) initMux() {
 			m.layoutConfig.SearchBoxInvisible = true
 		}
 		mux.Handle(
-			pat.New(routePath),
+			routePath,
 			b.wrap(m, b.layoutFunc(inPageFunc, m.layoutConfig)),
 		)
-		log.Println("mounted url", routePath)
+		log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
 		if m.hasDetailing {
-			routePath = fmt.Sprintf("%s/%s/:id", b.prefix, pluralUri)
+			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)
 			mux.Handle(
-				pat.New(routePath),
+				routePath,
 				b.wrap(m, b.detailLayoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
 			)
-			log.Println("mounted url", routePath)
+			log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
 		}
 	}
 
 	// Handle 404
-	mux.Use(func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasPrefix(r.RequestURI, b.prefix) || middleware.Handler(r.Context()) != nil {
-				handler.ServeHTTP(w, r)
-				return
-			}
+	b.handler = b.notFound(mux)
+}
 
-			b.wrap(
-				nil,
-				b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
-			).ServeHTTP(w, r)
+func (b *Builder) notFound(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.RequestURI, b.prefix) {
+			handler.ServeHTTP(w, r)
 			return
-		})
-	})
+		}
 
-	b.mux = mux
+		b.wrap(
+			nil,
+			b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
+		).ServeHTTP(w, r)
+		return
+	})
 }
 
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
@@ -1357,15 +1354,20 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 }
 
 func (b *Builder) Build() {
+	mns := modelNames(b.models)
+	fmt.Println(mns)
+	if len(slices.Compact(mns)) != len(mns) {
+		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
+	}
 	b.runPluginsInstall()
 	b.initMux()
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if b.mux == nil {
+	if b.handler == nil {
 		b.Build()
 	}
-	RedirectSlashes(b.mux).ServeHTTP(w, r)
+	RedirectSlashes(b.handler).ServeHTTP(w, r)
 }
 
 func RedirectSlashes(next http.Handler) http.Handler {

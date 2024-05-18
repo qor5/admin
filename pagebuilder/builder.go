@@ -13,7 +13,6 @@ import (
 
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
@@ -78,6 +77,7 @@ type Builder struct {
 	ps                       *presets.Builder
 	mb                       *presets.ModelBuilder
 	l10n                     *l10n.Builder
+	mediaBuilder             *media.Builder
 	note                     *note.Builder
 	ab                       *activity.Builder
 	publisher                *publish.Builder
@@ -219,6 +219,11 @@ func (b *Builder) L10n(v *l10n.Builder) (r *Builder) {
 	return b
 }
 
+func (b *Builder) Media(v *media.Builder) (r *Builder) {
+	b.mediaBuilder = v
+	return b
+}
+
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
@@ -291,7 +296,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		l10nB.Activity(b.ab)
 	}
 	seoBuilder := b.seoBuilder
-	b.ps.Plugins(media.New(db), publisher, seoBuilder)
+	b.ps.Plugins(b.mediaBuilder, publisher, seoBuilder)
 
 	mb := b.ps.Model(&Page{}).URIName("editors").Plugins(
 		publisher,
@@ -571,7 +576,7 @@ func (b *Builder) configDetailLayoutFunc(
 			}
 			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
 			pvMsgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, publish.Messages_en_US).(*publish.Messages)
-			id := pat.Param(ctx.R, "id")
+			id := ctx.Param(presets.ParamID)
 
 			if id == "" {
 				return pb.DefaultNotFoundPageFunc(ctx)
@@ -1657,7 +1662,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		modelID := ctx.QueryAsInt(presets.ParamOverlayUpdateID)
+		modelID := ctx.ParamAsInt(presets.ParamOverlayUpdateID)
 		modelName := ctx.R.FormValue("ModelName")
 		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
 		var existID uint

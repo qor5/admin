@@ -10,6 +10,7 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/pagebuilder"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -103,6 +104,23 @@ func TestPageBuilder(t *testing.T) {
 				if n.Content != "Hello" {
 					t.Error("Note not created", n)
 				}
+			},
+		},
+		{
+			Name:  "Page Builder Editor Duplicate A Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/1_2024-05-18-v01_International?__execute_event__=publish_EventSaveNewVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var pages []*pagebuilder.Page
+				TestDB.Find(&pages)
+				t.Logf("%+v", pages)
 			},
 		},
 	}

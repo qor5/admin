@@ -19,7 +19,7 @@ import (
 func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *media_library.MediaBoxConfig) {
 	field = ctx.R.FormValue("field")
 
-	id = ctx.QueryAsInt("id")
+	id = ctx.ParamAsInt("id")
 	thumb = ctx.R.FormValue("thumb")
 	cfg = stringToCfg(ctx.R.FormValue("cfg"))
 	return

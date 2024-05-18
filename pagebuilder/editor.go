@@ -13,11 +13,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"goji.io/v3/pat"
-	"gorm.io/gorm"
-
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -28,6 +23,9 @@ import (
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 const (
@@ -124,7 +122,7 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 		}
 		versionComponent = publish.DefaultVersionComponentFunc(mb, publish.VersionComponentConfig{Top: true})(page, &presets.FieldContext{ModelInfo: mb.Info()}, ctx)
 		if b.mb != nil {
-			exitHref = b.mb.Info().DetailingHref(pat.Param(ctx.R, presets.ParamID))
+			exitHref = b.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		}
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -455,7 +453,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 	var (
 		cons         []*Container
 		p            = new(Page)
-		primarySlug  = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		primarySlug  = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID       = primarySlug["id"]
 		pageVersion  = primarySlug["version"]
 		locale       = primarySlug["locale_code"]
@@ -618,12 +616,12 @@ func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err 
 	var (
 		pageID          int
 		p               = new(Page)
-		primarySlug     = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		primarySlug     = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageVersion     = primarySlug["version"]
 		locale          = primarySlug["locale_code"]
 		containerName   = ctx.R.FormValue(paramContainerName)
 		sharedContainer = ctx.R.FormValue(paramSharedContainer)
-		modelID         = ctx.QueryAsInt(paramModelID)
+		modelID         = ctx.ParamAsInt(paramModelID)
 		containerID     = ctx.R.FormValue(paramContainerID)
 	)
 	if pageID, err = strconv.Atoi(primarySlug["id"]); err != nil {
@@ -1123,7 +1121,7 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
 		p           = new(Page)
-		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		locale      = primarySlug["local_code"]
 		containerId = ctx.R.FormValue(paramContainerID)
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -1451,7 +1449,7 @@ func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.Event
 	var body h.HTMLComponent
 	p := new(Page)
 	var (
-		primarySlug = p.PrimaryColumnValuesBySlug(pat.Param(ctx.R, presets.ParamID))
+		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID      = primarySlug["id"]
 		version     = primarySlug["version"]
 		localeCode  = primarySlug["locale_code"]
