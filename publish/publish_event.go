@@ -9,7 +9,7 @@ import (
 
 func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
@@ -39,7 +39,7 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab 
 
 func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder, actionName string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)

@@ -262,7 +262,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	setter := m.Editing().Setter
 	m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		if ctx.R.FormValue(presets.ParamID) == "" {
+		if ctx.Param(presets.ParamID) == "" {
 			if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
 				if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
 					return

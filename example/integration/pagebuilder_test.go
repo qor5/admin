@@ -112,7 +112,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-05-18-v01_International?__execute_event__=publish_EventSaveNewVersion").
+					PageURL("/pages/1_2024-05-18-v01_International?__execute_event__=publish_EventDuplicateVersion").
 					BuildEventFuncRequest()
 
 				return req
@@ -120,7 +120,9 @@ func TestPageBuilder(t *testing.T) {
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var pages []*pagebuilder.Page
 				TestDB.Find(&pages)
-				t.Logf("%+v", pages)
+				if len(pages) != 2 {
+					t.Error("Page not duplicated", pages)
+				}
 			},
 		},
 	}

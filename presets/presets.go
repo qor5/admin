@@ -1317,17 +1317,28 @@ func (b *Builder) initMux() {
 	b.handler = b.notFound(mux)
 }
 
-func (b *Builder) notFound(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.RequestURI, b.prefix) {
-			handler.ServeHTTP(w, r)
-			return
-		}
+type responseWriterWrapper struct {
+	http.ResponseWriter
+	statusCode int
+}
 
-		b.wrap(
-			nil,
-			b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
-		).ServeHTTP(w, r)
+func (rw *responseWriterWrapper) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (b *Builder) notFound(handler http.Handler) http.Handler {
+	notFoundHandler := b.wrap(
+		nil,
+		b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedResponse := &responseWriterWrapper{w, http.StatusOK}
+		handler.ServeHTTP(capturedResponse, r)
+		if capturedResponse.statusCode == http.StatusNotFound {
+			// If no other handler wrote to the response, assume 404 and write our custom response.
+			notFoundHandler.ServeHTTP(w, r)
+		}
 		return
 	})
 }

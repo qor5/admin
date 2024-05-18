@@ -24,8 +24,8 @@ func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		toObj := mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)
-		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
+		currentVersionName := slugger.PrimaryColumnValuesBySlug(paramID)["version"]
 
 		me := mb.Editing()
 		vErr := me.RunSetterFunc(ctx, false, toObj)
@@ -81,8 +81,8 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		toObj := mb.NewModel()
 		slugger := toObj.(presets.SlugDecoder)
-		currentVersionName := slugger.PrimaryColumnValuesBySlug(ctx.R.FormValue(presets.ParamID))["version"]
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
+		currentVersionName := slugger.PrimaryColumnValuesBySlug(paramID)["version"]
 		me := mb.Editing()
 
 		fromObj := mb.NewModel()
@@ -135,7 +135,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 		m.RightDrawerWidth("800")
 		var disableUpdateBtn bool
 		isCreateBtn := true
-		if ctx.R.FormValue(presets.ParamID) != "" {
+		if ctx.Param(presets.ParamID) != "" {
 			isCreateBtn = false
 			buttonLabel = gmsgr.Update
 			m.RightDrawerWidth("1200")
@@ -148,7 +148,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 			Attr("@click", web.Plaid().
 				EventFunc(actions.Update).
 				Queries(ctx.Queries()).
-				Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+				Query(presets.ParamID, ctx.Param(presets.ParamID)).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
@@ -169,7 +169,7 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 			Attr("@click", web.Plaid().
 				EventFunc(EventSaveNewVersion).
 				Queries(ctx.Queries()).
-				Query(presets.ParamID, ctx.R.FormValue(presets.ParamID)).
+				Query(presets.ParamID, ctx.Param(presets.ParamID)).
 				URL(m.Info().ListingHref()).
 				Go(),
 			)
@@ -280,7 +280,7 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 
 func renameVersionAction(_ *gorm.DB, mb *presets.ModelBuilder, _ *Builder, _ *activity.Builder, _ string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)

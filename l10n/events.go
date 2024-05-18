@@ -40,7 +40,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		presetsMsgr := presets.MustGetMessages(ctx.R)
 
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
 		id := cs["id"]
 
@@ -120,7 +120,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 
 func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		fromParamID := ctx.R.FormValue(presets.ParamID)
+		fromParamID := ctx.Param(presets.ParamID)
 		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(fromParamID)
 		fromID := cs["id"]
 		fromVersion := cs["version"]

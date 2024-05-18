@@ -69,7 +69,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			div.AppendChildren(versionSwitch)
 			div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
 				Height(40).Class("ml-2").Variant(v.VariantOutlined).
-				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventSaveNewVersion)))
+				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 		}
 
 		if status, ok = obj.(StatusInterface); ok {

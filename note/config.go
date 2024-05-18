@@ -22,7 +22,7 @@ const (
 
 func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
-		id := ctx.R.FormValue(presets.ParamID)
+		id := ctx.Param(presets.ParamID)
 		if len(id) == 0 {
 			return
 		}

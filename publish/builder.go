@@ -166,7 +166,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 		setter := m.Editing().Setter
 		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			if ctx.R.FormValue(presets.ParamID) == "" {
+			if ctx.Param(presets.ParamID) == "" {
 				version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
 				if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
 					return

@@ -444,7 +444,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		}
 		funcName := ctx.R.FormValue(web.EventFuncIDName)
 		if funcName == publish.EventDuplicateVersion {
-			id := ctx.R.FormValue(presets.ParamID)
+			id := ctx.Param(presets.ParamID)
 			var fromPage Page
 			eb.Fetcher(&fromPage, id, ctx)
 			p.SEO = fromPage.SEO
@@ -1240,7 +1240,7 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 
 func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
@@ -1311,7 +1311,7 @@ func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc 
 
 func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
@@ -1334,7 +1334,7 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 
 		okAction := web.Plaid().
 			URL(mb.Info().ListingHref()).
@@ -1408,7 +1408,7 @@ func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		seoBuilder := b.seoBuilder
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
@@ -1455,7 +1455,7 @@ func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 
 func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {

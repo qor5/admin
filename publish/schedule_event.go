@@ -13,7 +13,7 @@ import (
 
 func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {
@@ -84,7 +84,7 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 func schedulePublish(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue(presets.ParamID)
+		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
 		if err != nil {

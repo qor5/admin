@@ -74,7 +74,7 @@ const (
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var p *Page
 	var (
-		pageID  = ctx.R.FormValue(presets.ParamID)
+		pageID  = ctx.Param(presets.ParamID)
 		version = ctx.R.FormValue(paramPageVersion)
 		local   = ctx.R.FormValue(paramLocale)
 	)
@@ -410,7 +410,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	var (
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		modelID       = ctx.R.FormValue(presets.ParamID)
+		modelID       = ctx.Param(presets.ParamID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
