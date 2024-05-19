@@ -3,7 +3,6 @@ package integration_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/http/httputil"
 	"testing"
 
 	"github.com/qor5/admin/v3/example/admin"
@@ -70,8 +69,6 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/pages?__execute_event__=createNoteDialogEvent&id=1_2024-05-18-v01_International&overlay=dialog").
 					BuildEventFuncRequest()
-				bs, _ := httputil.DumpRequest(req, true)
-				t.Log(string(bs))
 				return req
 			},
 			ExpectPortalUpdate0Contains: []string{`eventFunc("createNoteEvent")`},
