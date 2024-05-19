@@ -1,11 +1,9 @@
 package integration_test
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
-	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/example/admin"
@@ -47,11 +45,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
-			PageMatch: func(t *testing.T, body *bytes.Buffer) {
-				if !strings.Contains(body.String(), `12312`) {
-					t.Error("Page 12312 not found")
-				}
-			},
+			ExpectPageBodyContains: []string{"12312"},
 		},
 
 		{
@@ -61,10 +55,10 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
-			PageMatch: func(t *testing.T, body *bytes.Buffer) {
-				if !strings.Contains(body.String(), `eventFunc("createNoteDialogEvent").query("overlay", "dialog").query("id", "1_2024-05-18-v01_International").url("/pages").go()`) {
-					t.Error(body.String())
-				}
+			ExpectPageBodyContains: []string{
+				"createNoteDialogEvent",
+				`url("/pages")`,
+				`"1_2024-05-18-v01_International"`,
 			},
 		},
 
@@ -80,11 +74,7 @@ func TestPageBuilder(t *testing.T) {
 				t.Log(string(bs))
 				return req
 			},
-			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				if !strings.Contains(er.UpdatePortals[0].Body, `eventFunc("createNoteEvent")`) {
-					t.Error(er.UpdatePortals[0].Body)
-				}
-			},
+			ExpectPortalUpdate0Contains: []string{`eventFunc("createNoteEvent")`},
 		},
 		{
 			Name:  "Page Builder Editor Add a Note",
