@@ -67,7 +67,9 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
-		m.Editing().ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
+		ed := m.Editing()
+		creating := ed.Creating().Except(EditingFieldControlBar)
+		ed.ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
 		searcher := m.Listing().Searcher
 		mb := m
 		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -141,7 +143,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 				).Attr("@click", onclick.Go())
 			})
 			// rewrite Deleter to ignore version condition
-			m.Editing().DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			ed.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 				allVersions := ctx.R.URL.Query().Get("all_versions") == "true"
 
 				wh := db.Model(obj)
@@ -164,21 +166,9 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			})
 		}
 
-		setter := m.Editing().Setter
-		m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			if ctx.Param(presets.ParamID) == "" {
-				version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
-				if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
-					return
-				}
-				if err := reflectutils.Set(obj, "Version.VersionName", version); err != nil {
-					return
-				}
-			}
-			if setter != nil {
-				setter(obj, ctx)
-			}
-		})
+		setter := makeSetVersionSetterFunc(db, ed.Setter)
+		ed.SetterFunc(setter)
+		creating.SetterFunc(setter)
 
 		m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
 		m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
@@ -188,7 +178,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 				fb.ComponentFunc(DefaultVersionComponentFunc(m))
 			}
 		}
-		fb := m.Editing().GetField(EditingFieldControlBar)
+		fb := ed.GetField(EditingFieldControlBar)
 		if fb != nil && fb.GetCompFunc() == nil {
 			fb.ComponentFunc(DefaultVersionComponentFunc(m))
 		}
@@ -207,6 +197,23 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	registerEventFuncs(db, m, b, ab)
 	return nil
+}
+
+func makeSetVersionSetterFunc(db *gorm.DB, in presets.SetterFunc) presets.SetterFunc {
+	return func(obj interface{}, ctx *web.EventContext) {
+		if ctx.Param(presets.ParamID) == "" {
+			version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
+			if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
+				return
+			}
+			if err := reflectutils.Set(obj, "Version.VersionName", version); err != nil {
+				return
+			}
+		}
+		if in != nil {
+			in(obj, ctx)
+		}
+	}
 }
 
 func (b *Builder) Install(pb *presets.Builder) error {

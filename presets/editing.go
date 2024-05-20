@@ -55,6 +55,10 @@ func (b *EditingBuilder) Except(vs ...string) (r *EditingBuilder) {
 }
 
 func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
+	if b.mb.creating != nil && len(vs) == 0 {
+		return b.mb.creating
+	}
+
 	if b.mb.creating == nil {
 		b.mb.creating = &EditingBuilder{
 			mb:        b.mb,
@@ -65,9 +69,16 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 			Validator: b.Validator,
 		}
 	}
-	r = b.mb.creating
 
-	r.FieldsBuilder = *b.mb.writeFields.Only(vs...)
+	b.mb.creating.FieldsBuilder = *b.FieldsBuilder.Clone()
+	r = b.mb.creating
+	if len(vs) == 0 {
+		for _, f := range b.fields {
+			vs = append(vs, f.name)
+		}
+	}
+
+	r.FieldsBuilder = *b.FieldsBuilder.Only(vs...)
 
 	return r
 }

@@ -81,6 +81,20 @@ func TestFields(t *testing.T) {
 
 	cases := []testCase{
 		{
+			name: "creating should copy editing",
+			toComponentFun: func() h.HTMLComponent {
+				ed := mb.Editing("Int1", "Float1")
+				ed.Field("Float1").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+					return h.Div().Class("my_float32").Text(fmt.Sprintf("%f", field.Value(obj).(float32)))
+				})
+				creating := ed.Creating().Except("Int1")
+				return creating.FieldsBuilder.ToComponent(mb.Info(), user, ctx)
+			},
+			expect: `
+<div class='my_float32'>23.100000</div>
+`,
+		},
+		{
 			name: "Only with additional nested object",
 			toComponentFun: func() h.HTMLComponent {
 				return ft.InspectFields(&User{}).
