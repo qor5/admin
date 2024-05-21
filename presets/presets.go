@@ -1206,10 +1206,7 @@ func (b *Builder) getNotFoundPageFunc() web.PageFunc {
 	if b.notFoundFunc != nil {
 		pf = b.notFoundFunc
 	}
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		ctx.W.WriteHeader(http.StatusNotFound)
-		return pf(ctx)
-	}
+	return pf
 }
 
 func (b *Builder) extraFullPath(ea *extraAsset) string {
@@ -1279,7 +1276,7 @@ func (b *Builder) initMux() {
 
 	homeURL := b.prefix
 	if homeURL == "" {
-		homeURL = "/"
+		homeURL = "/{$}"
 	}
 	mux.Handle(
 		homeURL,
@@ -1313,6 +1310,7 @@ func (b *Builder) initMux() {
 		}
 	}
 
+	// b.handler = mux
 	// Handle 404
 	b.handler = b.notFound(mux)
 }
@@ -1324,7 +1322,20 @@ type responseWriterWrapper struct {
 
 func (rw *responseWriterWrapper) WriteHeader(code int) {
 	rw.statusCode = code
+	if code == http.StatusNotFound {
+		// default 404 will use http.Error to set Content-Type to text/plain,
+		// So we have to set it to html before WriteHeader
+		rw.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+	}
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
+	// don't write content, because we use customized page body
+	if rw.statusCode == http.StatusNotFound {
+		return 0, nil
+	}
+	return rw.ResponseWriter.Write(b)
 }
 
 func (b *Builder) notFound(handler http.Handler) http.Handler {
@@ -1378,10 +1389,10 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
 		b.Build()
 	}
-	RedirectSlashes(b.handler).ServeHTTP(w, r)
+	redirectSlashes(b.handler).ServeHTTP(w, r)
 }
 
-func RedirectSlashes(next http.Handler) http.Handler {
+func redirectSlashes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if len(path) > 1 && path[len(path)-1] == '/' {
