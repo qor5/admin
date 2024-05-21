@@ -26,7 +26,6 @@ const (
 
 func profile(db *gorm.DB) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return VBtn("Login").Variant(VariantText).Href("/auth/login")

@@ -32,7 +32,7 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 			}
 		}
 		if len(tabs) == 0 {
-			asideContent = web.Scope(config.formContent).VSlot("{ form }")
+			asideContent = config.formContent
 		} else {
 			asideContent = web.Scope(
 				VTabs(
@@ -42,7 +42,7 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 
 				VTabsWindow(
 					VTabsWindowItem(
-						web.Scope(config.formContent).VSlot("{ form }"),
+						config.formContent,
 					).Value("default"),
 					h.Components(contents...),
 				).Attr("v-model", "locals.tab"),

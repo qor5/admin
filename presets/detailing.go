@@ -125,7 +125,7 @@ func (b *DetailingBuilder) Field(name string) (r *DetailFieldBuilder) {
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
-	var id = ctx.Param(ParamID)
+	id := ctx.Param(ParamID)
 	r.Body = VContainer(h.Text(id))
 
 	obj := b.mb.NewModel()
@@ -158,8 +158,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		notice = VSnackbar(h.Text(msg)).ModelValue(true).Location("top").Color("success")
 	}
 
-	comp := b.ToComponent(b.mb.Info(), obj, ctx)
-
+	comp := web.Scope(b.ToComponent(b.mb.Info(), obj, ctx)).VSlot("{form}")
 	var tabsContent h.HTMLComponent = defaultToPage(commonPageConfig{
 		formContent: comp,
 		tabPanels:   b.tabPanels,

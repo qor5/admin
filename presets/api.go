@@ -48,10 +48,11 @@ type (
 )
 
 type (
-	SearchFunc func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
-	FetchFunc  func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
-	SaveFunc   func(obj interface{}, id string, ctx *web.EventContext) (err error)
-	DeleteFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
+	SearchFunc   func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	FetchFunc    func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
+	SaveFunc     func(obj interface{}, id string, ctx *web.EventContext) (err error)
+	AutoSaveFunc func(id string, ctx *web.EventContext) (s string)
+	DeleteFunc   func(obj interface{}, id string, ctx *web.EventContext) (err error)
 )
 
 type SQLCondition struct {

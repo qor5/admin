@@ -1,7 +1,6 @@
 package pagebuilder
 
 import (
-	"fmt"
 	"net/url"
 
 	"github.com/qor5/admin/v3/presets"
@@ -10,39 +9,41 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-const pageBuilderRightContentPortal = "pageBuilderRightContentPortal"
+const (
+	pageBuilderRightContentPortal   = "pageBuilderRightContentPortal"
+	pageBuilderLayerContainerPortal = "pageBuilderLayerContainerPortal"
+)
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
 	p = new(Page)
 	var (
-		body, editContainerDrawer h.HTMLComponent
+		body, editContainerDrawer, navigatorDrawer h.HTMLComponent
 
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID      = primarySlug["id"]
 		version     = primarySlug["version"]
 		localeCode  = primarySlug["locale_code"]
 	)
-	deviceQueries := url.Values{}
-	deviceQueries.Add("tab", "content")
 	body, p, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
 	if err != nil {
 		return
 	}
-	r.PageTitle = fmt.Sprintf("Editor for %s: %s", pageID, p.Title)
 	ctx.R.Form.Set(paramStatus, p.GetStatus())
-	if editContainerDrawer, err = b.renderContainersSortedList(ctx); err != nil {
-		return
-	}
-	if ctx.R.FormValue(paramsIsNotEmpty) == "" {
-		editContainerDrawer = b.renderContainersList(ctx)
-	}
+	//if editContainerDrawer, err = b.renderContainersSortedList(ctx); err != nil {
+	//	return
+	//}
+	navigatorDrawer = b.renderNavigator(ctx)
 
 	r.Body = web.Scope(
 		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
 			Class("mt-6").
 			Fluid(true),
 		VNavigationDrawer(
-			web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
+			navigatorDrawer,
+		).Location(LocationLeft).
+			Width(350),
+		VNavigationDrawer(
+			web.Portal(editContainerDrawer).Name(presets.RightDrawerContentPortalName),
 		).Location(LocationRight).
 			Permanent(true).
 			Width(420),

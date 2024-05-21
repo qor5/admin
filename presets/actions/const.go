@@ -3,6 +3,7 @@ package actions
 const (
 	New                        = "presets_New"
 	Edit                       = "presets_Edit"
+	AutoSaveEdit               = "presets_AutoSave_Edit"
 	Action                     = "presets_Action"
 	DeleteConfirmation         = "presets_DeleteConfirmation"
 	Update                     = "presets_Update"
@@ -32,6 +33,7 @@ const (
 )
 
 const (
-	Dialog = "dialog"
-	Drawer = "drawer"
+	Dialog  = "dialog"
+	Drawer  = "drawer"
+	Content = "content"
 )

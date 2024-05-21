@@ -43,6 +43,7 @@ const (
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ShowEditContainerDrawerEvent     = "page_builder_ShowEditContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
+	AutoSaveContainerEvent           = "page_builder_AutoSaveContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -55,7 +56,6 @@ const (
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
 	paramMoveDirection   = "moveDirection"
-	paramsIsNotEmpty     = "isNotEmpty"
 	paramsTpl            = "tpl"
 	paramsDevice         = "device"
 	paramsDisplayName    = "DisplayName"
@@ -217,6 +217,10 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 		if isEditor {
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
+			.wrapper-shadow{
+			  position: relative;
+			  width: 100%;	
+			}
 			.inner-shadow {
 			  position: absolute;
 			  width: 100%;
@@ -226,6 +230,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 			  left: 0;
 			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
 			}
+			
 			
 			.editor-add {
 			  width: 100%;
@@ -244,11 +249,15 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 			}
 			
 			.editor-add button {
+			  width: 32px;
+              height: 32px;	
 			  color: #FFFFFF;
 			  background-color: #3E63DD;
 			  pointer-event: none;
+              position: absolute;
+              bottom: -14px;
+              padding: 4px 0 4px 0;
 			}
-			
 			.wrapper-shadow:hover {
 			  cursor: pointer;
 			}
@@ -265,19 +274,25 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 			  position: absolute;
 			  z-index: 9999;
 			  width: 30%;
+			  height: 32px;	
 			  opacity: 0;
-			  display: flex;
+              display: flex;
+			  align-items: center;	
 			  background-color: #3E63DD;
 			  justify-content: space-between;
 			}
-			
+   			.editor-bar-buttons{
+              height: 24px;
+			}
 			.editor-bar button {
 			  color: #FFFFFF;
-			  background-color: #3E63DD;
+			  background-color: #3E63DD; 
+              height: 24px;	
 			}
 			
 			.editor-bar h6 {
 			  color: #FFFFFF;
+			  margin-left: 4px;	
 			}
 			
 			.highlight .editor-bar {
@@ -397,12 +412,28 @@ type ContainerSorter struct {
 	Items []ContainerSorterItem `json:"items"`
 }
 
-func (b *Builder) renderContainersList(ctx *web.EventContext) (r h.HTMLComponent) {
-	r = VLayout(
-		VMain(
-			b.ContainerComponent(ctx),
+func (b *Builder) renderNavigator(ctx *web.EventContext) (r h.HTMLComponent) {
+	r = web.Scope(
+		VApp(
+			VAppBar(
+				VTabs(
+					VTab().Text("Elements").Value("Elements"),
+					VTab().Text("Layers").Value("Layers").Attr("@click",
+						web.Plaid().
+							URL(ctx.R.URL.Path).
+							EventFunc(ShowSortedContainerDrawerEvent).
+							Queries(ctx.R.Form).
+							Go()),
+				).Attr("v-model", "locals.tab").FixedTabs(true),
+			),
+			VMain(
+				VTabsWindow(
+					VTabsWindowItem(b.renderContainersList(ctx)).Value("Elements"),
+					VTabsWindowItem(web.Portal().Name(pageBuilderLayerContainerPortal)).Value("Layers"),
+				).Attr("v-model", "locals.tab"),
+			),
 		),
-	)
+	).VSlot("{locals}").Init(`{tab:"Elements"}`)
 	return
 }
 
@@ -410,7 +441,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	var (
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		modelID       = ctx.Param(presets.ParamID)
+		modelID       = ctx.R.FormValue(presets.ParamID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
@@ -421,18 +452,9 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 		VLayout(
 			VMain(
 				h.Div(
-					h.Div(VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
-						Attr("@click", web.Plaid().
-							URL(ctx.R.URL.Path).
-							EventFunc(ShowAddContainerDrawerEvent).
-							Queries(ctx.R.Form).
-							Go(),
-						),
-						h.Span(containerName).Class("text-subtitle-1"),
-					),
+					h.Span(containerName).Class("text-subtitle-1"),
 					h.Div(
-						VBtn("Cancel").Variant(VariantOutlined).Size(SizeSmall).Class("mr-2"),
-						VBtn("Save").Variant(VariantFlat).Color("secondary").Size(SizeSmall).Attr("@click", web.Plaid().
+						VBtn("Save").Variant(VariantFlat).Color(ColorSecondary).Size(SizeSmall).Attr("@click", web.Plaid().
 							EventFunc(actions.Update).
 							URL(b.ContainerByName(modelName).mb.Info().ListingHref()).
 							Query(presets.ParamID, modelID).
@@ -441,6 +463,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 				).Class("d-flex  pa-6 align-center justify-space-between"),
 				VDivider(),
 				h.Div(
+
 					builder.Editing().ToComponent(builder.Info(), element, ctx),
 				).Class("pa-6"),
 			),
@@ -470,9 +493,6 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 
 	var sorterData ContainerSorter
 	sorterData.Items = []ContainerSorterItem{}
-	if len(cons) > 0 {
-		ctx.R.Form.Set(paramsIsNotEmpty, "1")
-	}
 	for i, c := range cons {
 		vicon := "mdi-eye"
 		if c.Hidden {
@@ -524,17 +544,6 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 		VSheet(
 			h.Div(
 				h.Div(h.Span("Elements").Class("text-subtitle-1")),
-				h.If(!isReadonly,
-					VBtn("ADD").Size(SizeSmall).Variant(VariantFlat).Color("primary").
-						Attr("@click",
-							web.Plaid().
-								URL(ctx.R.URL.Path).
-								EventFunc(ShowAddContainerDrawerEvent).
-								Queries(ctx.R.Form).
-								Form(nil).
-								Go(),
-						),
-				),
 			).Class("d-flex justify-space-between pa-6 align-center "),
 
 			VList(
@@ -1118,7 +1127,7 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 	return
 }
 
-func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLComponent) {
+func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
 		p           = new(Page)
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
@@ -1179,8 +1188,6 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 	}
 
 	var cons []*Container
-	var sharedGroups []h.HTMLComponent
-	var sharedGroupNames []string
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
 	sort.Slice(cons, func(i, j int) bool {
@@ -1192,12 +1199,10 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 		if len(group) == 0 {
 			break
 		}
-		groupName := b.ContainerByName(group[0].ModelName).group
-		if groupName == "" {
-			groupName = "Others"
-		}
+		groupName := msgr.Shared
+
 		if b.expendContainers {
-			sharedGroupNames = append(sharedGroupNames, groupName)
+			groupsNames = append(groupsNames, groupName)
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
@@ -1224,7 +1229,7 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			).Value(containerName))
 		}
 
-		sharedGroups = append(sharedGroups, VListGroup(
+		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
@@ -1232,35 +1237,8 @@ func (b *Builder) ContainerComponent(ctx *web.EventContext) (component h.HTMLCom
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
-
 	}
-
-	backPlaid := web.Plaid().
-		URL(ctx.R.URL.Path).
-		EventFunc(ShowSortedContainerDrawerEvent).
-		Queries(ctx.R.Form).
-		Query(paramStatus, ctx.R.FormValue(paramStatus)).
-		Go()
-
-	component = h.Components(h.Div(
-		VBtn("").Size(SizeSmall).Icon("mdi-arrow-left").Variant(VariantText).
-			Attr("@click", backPlaid),
-		h.Span("Elements").Class("text-subtitle-1"),
-	).Class("d-inline-flex pa-6 align-center"),
-		VDivider(), web.Scope(
-			VTabs(
-				VTab(h.Text(msgr.New)).Value(msgr.New),
-				VTab(h.Text(msgr.Shared)).Value(msgr.Shared),
-			).FixedTabs(true).Attr("v-model", "locals.tab").Class("px-6"),
-			VTabsWindow(
-				VTabsWindowItem(
-					VList(containers...).Opened(groupsNames),
-				).Value(msgr.New).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-				VTabsWindowItem(
-					VList(sharedGroups...).Opened(sharedGroupNames),
-				).Value(msgr.Shared).Attr("style", "overflow-y: scroll; overflow-x: hidden; height: 610px;"),
-			).Attr("v-model", "locals.tab").Class("pa-6"),
-		).Init(fmt.Sprintf(`{ tab : %s } `, msgr.New)).VSlot("{locals}"))
+	component = VList(containers...).Opened(groupsNames)
 	return
 }
 
@@ -1432,7 +1410,7 @@ func (b *Builder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventR
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: body})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderLayerContainerPortal, Body: body})
 	return
 }
 

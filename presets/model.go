@@ -99,6 +99,7 @@ func (mb *ModelBuilder) Link(v string) *ModelBuilder {
 func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
+	mb.RegisterEventFunc(actions.AutoSaveEdit, mb.editing.formEdit)
 	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)

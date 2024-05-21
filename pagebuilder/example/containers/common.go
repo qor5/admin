@@ -63,11 +63,11 @@ func ContainerWrapper(containerID, anchorID, classes,
 						Button("").Children(I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventUp, containerID, input)),
 						Button("").Children(I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDown, containerID, input)),
 						Button("").Children(I("delete").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDelete, containerID, input)),
-					),
+					).Class("editor-bar-buttons"),
 				).Class("editor-bar"),
 				Div(
 					Div().Class("add"),
-					Button("").Children(I("add").Class("material-icons add")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
+					Button("").Children(I("add").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
 				).Class("editor-add"),
 			).Class("wrapper-shadow").ClassIf("highlight", input.HighLight)
 		}

@@ -20,6 +20,7 @@ type EditingBuilder struct {
 	Fetcher          FetchFunc
 	Setter           SetterFunc
 	Saver            SaveFunc
+	AutoSaver        AutoSaveFunc
 	Deleter          DeleteFunc
 	Validator        ValidateFunc
 	tabPanels        []TabComponentFunc
@@ -187,9 +188,10 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 
 func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 	msgr := MustGetMessages(ctx.R)
-
 	id := ctx.R.FormValue(ParamID)
 	overlayType := ctx.R.FormValue(ParamOverlay)
+	isAutoSave := b.AutoSaver != nil && overlayType == actions.Content
+
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
@@ -290,14 +292,16 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		hiddenComps = append(hiddenComps, hf(obj, ctx))
 	}
 
-	formContent := h.Components(
+	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
-		VCardActions(actionButtons),
-	)
-
+		h.If(!isAutoSave, VCardActions(actionButtons)),
+	)).VSlot("{form}")
+	if isAutoSave {
+		formContent.OnChange(b.AutoSaver(id, ctx))
+	}
 	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
 		formContent: formContent,
 		tabPanels:   b.tabPanels,
@@ -308,7 +312,6 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
-
 	return web.Scope(
 		notice,
 		VLayout(
@@ -317,9 +320,9 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					VToolbarTitle("").Class("pl-2").
 						Children(title),
 					VSpacer(),
-					VBtn("").Icon(true).Children(
+					h.If(!isAutoSave, VBtn("").Icon(true).Children(
 						VIcon("mdi-close"),
-					).Attr("@click.stop", closeBtnVarScript),
+					).Attr("@click.stop", closeBtnVarScript)),
 				).Color("white").Elevation(0),
 			),
 			VMain(
@@ -327,8 +330,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					VCard(asideContent).Variant(VariantFlat),
 				).Class("pa-2"),
 			),
-		),
-	).VSlot("{ form }")
+		)).VSlot("{ form }")
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

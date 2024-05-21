@@ -1926,6 +1926,7 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.modelType = val.Elem().Type()
 
 	b.configureRelatedOnlinePagesTab()
+	b.registerEventFuncs()
 	return b
 }
 
@@ -1970,6 +1971,9 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
+	eb.AutoSaver = func(id string, ctx *web.EventContext) (s string) {
+		return web.Plaid().URL(ctx.R.URL.Path).EventFunc(AutoSaveContainerEvent).Query(presets.ParamID, id).Go()
+	}
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil
@@ -2054,6 +2058,10 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	})
 }
 
+func (b *ContainerBuilder) registerEventFuncs() {
+	b.mb.RegisterEventFunc(AutoSaveContainerEvent, b.autoSaveContainer)
+}
+
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ids := strings.Split(ctx.R.FormValue("ids"), ",")
@@ -2089,19 +2097,15 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	editAction := web.POST().
-		EventFunc(ShowEditContainerDrawerEvent).
-		URL(ctx.R.URL.Path).
-		Queries(ctx.R.Form).
+		EventFunc(actions.AutoSaveEdit).
+		URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
 		Query(presets.ParamID, web.Var("arr[1]")).
-		Query(paramContainerName, web.Var("display_name")).
-		Query(paramModelName, web.Var("model_name")).
-		Query(paramContainerID, web.Var("container_id")).
+		Query(presets.ParamOverlay, actions.Content).
 		Go()
 
 	addAction := web.POST().
 		EventFunc(ShowAddContainerDrawerEvent).
 		URL(ctx.R.URL.Path).
-		Queries(ctx.R.Form).
 		Query(paramContainerID, web.Var("container_id")).
 		Go()
 	deleteAction := web.POST().
@@ -2113,7 +2117,6 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	moveAction := web.Plaid().
 		URL(ctx.R.URL.Path).
 		EventFunc(MoveUpDownContainerEvent).
-		Queries(ctx.R.Form).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramMoveDirection, web.Var("msg_type")).
 		Query(paramModelID, web.Var("model_id")).
@@ -2243,4 +2246,29 @@ func detailingSidePanel(b *Builder, pb *presets.Builder) presets.ObjectComponent
 			).Class("h-100"),
 		).VSlot("{locals}").Init(`{tab:"Activity"}`)
 	}
+}
+
+func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		id = ctx.R.FormValue(presets.ParamID)
+		mb = b.mb.Editing()
+	)
+	obj, vErr := mb.FetchAndUnmarshal(id, true, ctx)
+	if vErr.HaveErrors() {
+		err = errors.New(vErr.Error())
+		return
+	}
+
+	if mb.Validator != nil {
+		if vErr = mb.Validator(obj, ctx); vErr.HaveErrors() {
+			err = errors.New(vErr.Error())
+			return
+		}
+	}
+
+	if err = mb.Saver(obj, id, ctx); err != nil {
+		return
+	}
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).PushState(true).Go()
+	return
 }

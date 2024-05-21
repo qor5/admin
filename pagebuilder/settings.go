@@ -160,6 +160,10 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			vtb := &web.VueEventTagBuilder{}
+			var (
+				category Category
+				err      error
+			)
 			vtb.Raw(fmt.Sprintf(
 				`
 				function() {
@@ -169,9 +173,14 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 					pt.innerText = '%s'
 				  }
 				}()`, p.Title, p.Title))
+			if category, err = p.GetCategory(db); err != nil {
+				panic(err)
+			}
 			return h.Div(
 				web.Portal(h.Div(h.Text("title:"+p.Title))).Loader(vtb),
-				h.Div(h.Text("slug:"+p.Slug)))
+				h.Div(h.Text("slug:"+p.Slug)),
+				h.Div(h.Text("category:"+category.Path)),
+			)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}

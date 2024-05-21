@@ -141,7 +141,8 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder) {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
 	publisher := publish.New(db, oss.Storage)
-	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab).Install(b)
+	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab)
+	b.Plugins(pb)
 	sdb, _ := db.DB()
 	p := pagebuilder.Page{}
 	p.L10nON()
@@ -173,9 +174,9 @@ func TestAddContainer(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	// var er web.EventResponse
-	// _ = json.Unmarshal(w.Body.Bytes(), &er)
-	// fmt.Printf("%#+v\n", er)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
 	if strings.Index(w.Body.String(), "/page_builder/editors") < 0 {
 		t.Error(w.Body.String())
 	}
@@ -314,9 +315,10 @@ func TestEditorShowEditContainerDrawerEvent(t *testing.T) {
 	// fmt.Println(string(bs))
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
-	// var er web.EventResponse
-	// _ = json.Unmarshal(w.Body.Bytes(), &er)
-	// fmt.Printf("%#+v\n", er)
+	//var er web.EventResponse
+	//_ = json.Unmarshal(w.Body.Bytes(), &er)
+	//fmt.Printf("%#+v\n", er)
+	fmt.Println(w.Body.String(), "---------------")
 	if strings.Index(w.Body.String(), presets.RightDrawerContentPortalName) < 0 {
 		t.Error(w.Body.String())
 	}
