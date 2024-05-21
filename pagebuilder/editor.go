@@ -383,7 +383,7 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			DisplayName: displayName,
 			IsFirst:     i == 0,
 			IsEnd:       i == len(cbs)-1,
-			HighLight:   ctx.R.FormValue(paramModelID) == strconv.Itoa(int(ec.container.ModelID)),
+			ModelID:     ctx.R.FormValue(paramModelID),
 			ModelName:   ec.container.ModelName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)

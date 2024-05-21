@@ -43,7 +43,7 @@ type RenderInput struct {
 	DisplayName string
 	IsFirst     bool
 	IsEnd       bool
-	HighLight   bool
+	ModelID     string
 	ModelName   string
 }
 
@@ -2096,13 +2096,14 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := web.POST().
+	editAction := web.Plaid().PushState(true).MergeQuery(true).
+		Query(paramModelID, web.Var("model_id")).RunPushState() +
+		";" + web.POST().
 		EventFunc(actions.AutoSaveEdit).
 		URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
 		Query(presets.ParamID, web.Var("arr[1]")).
 		Query(presets.ParamOverlay, actions.Content).
 		Go()
-
 	addAction := web.POST().
 		EventFunc(ShowAddContainerDrawerEvent).
 		URL(ctx.R.URL.Path).
