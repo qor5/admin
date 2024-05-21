@@ -132,13 +132,11 @@ func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		gmsgr := presets.MustGetMessages(ctx.R)
 		buttonLabel := gmsgr.Create
-		m.RightDrawerWidth("800")
 		var disableUpdateBtn bool
 		isCreateBtn := true
 		if ctx.Param(presets.ParamID) != "" {
 			isCreateBtn = false
 			buttonLabel = gmsgr.Update
-			m.RightDrawerWidth("1200")
 			disableUpdateBtn = m.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 		}
 

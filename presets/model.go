@@ -140,7 +140,6 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	mb.listing = &ListingBuilder{
 		mb:            mb,
 		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
-		dialogWidth:   "1200px",
 	}
 	if mb.p.dataOperator != nil {
 		mb.listing.SearchFunc(mb.p.dataOperator.Search)

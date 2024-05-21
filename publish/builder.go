@@ -70,35 +70,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		ed := m.Editing()
 		creating := ed.Creating().Except(EditingFieldControlBar)
 		ed.ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
-		searcher := m.Listing().Searcher
-		mb := m
-		m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			stmt := &gorm.Statement{DB: db}
-			stmt.Parse(mb.NewModel())
-			tn := stmt.Schema.Table
-
-			var pks []string
-			condition := ""
-			for _, f := range stmt.Schema.Fields {
-				if f.Name == "DeletedAt" {
-					condition = "WHERE deleted_at IS NULL"
-				}
-			}
-			for _, f := range stmt.Schema.PrimaryFields {
-				if f.Name != "Version" {
-					pks = append(pks, f.DBName)
-				}
-			}
-			pkc := strings.Join(pks, ",")
-			sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
-
-			con := presets.SQLCondition{
-				Query: sql,
-			}
-			params.SQLConditions = append(params.SQLConditions, &con)
-
-			return searcher(model, params, ctx)
-		})
+		m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
 
 		// listing-delete deletes all versions
 		{
@@ -143,27 +115,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 				).Attr("@click", onclick.Go())
 			})
 			// rewrite Deleter to ignore version condition
-			ed.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-				allVersions := ctx.R.URL.Query().Get("all_versions") == "true"
-
-				wh := db.Model(obj)
-
-				if id != "" {
-					if slugger, ok := obj.(presets.SlugDecoder); ok {
-						cs := slugger.PrimaryColumnValuesBySlug(id)
-						for key, value := range cs {
-							if allVersions && key == "version" {
-								continue
-							}
-							wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
-						}
-					} else {
-						wh = wh.Where("id =  ?", id)
-					}
-				}
-
-				return wh.Delete(obj).Error
-			})
+			ed.DeleteFunc(makeDeleteFunc(db))
 		}
 
 		setter := makeSetVersionSetterFunc(db, ed.Setter)
@@ -197,6 +149,60 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	registerEventFuncs(db, m, b, ab)
 	return nil
+}
+
+func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {
+	return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		allVersions := ctx.R.URL.Query().Get("all_versions") == "true"
+
+		wh := db.Model(obj)
+
+		if id != "" {
+			if slugger, ok := obj.(presets.SlugDecoder); ok {
+				cs := slugger.PrimaryColumnValuesBySlug(id)
+				for key, value := range cs {
+					if allVersions && key == "version" {
+						continue
+					}
+					wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
+				}
+			} else {
+				wh = wh.Where("id =  ?", id)
+			}
+		}
+
+		return wh.Delete(obj).Error
+	}
+}
+
+func makeSearchFunc(db *gorm.DB, searcher presets.SearchFunc) presets.SearchFunc {
+	return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		stmt := &gorm.Statement{DB: db}
+		stmt.Parse(model)
+		tn := stmt.Schema.Table
+
+		var pks []string
+		condition := ""
+		for _, f := range stmt.Schema.Fields {
+			if f.Name == "DeletedAt" {
+				condition = "WHERE deleted_at IS NULL"
+			}
+		}
+		for _, f := range stmt.Schema.PrimaryFields {
+			if f.Name != "Version" {
+				pks = append(pks, f.DBName)
+			}
+		}
+		pkc := strings.Join(pks, ",")
+		sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
+
+		con := presets.SQLCondition{
+			Query: sql,
+		}
+		params.SQLConditions = append(params.SQLConditions, &con)
+
+		return searcher(model, params, ctx)
+	}
 }
 
 func makeSetVersionSetterFunc(db *gorm.DB, in presets.SetterFunc) presets.SetterFunc {
