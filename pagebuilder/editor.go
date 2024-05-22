@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	vx "github.com/qor5/ui/v3/vuetifyx"
+
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/activity"
@@ -20,7 +22,6 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 	. "github.com/qor5/ui/v3/vuetify"
-	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
@@ -59,16 +60,21 @@ const (
 	paramsTpl            = "tpl"
 	paramsDevice         = "device"
 	paramsDisplayName    = "DisplayName"
+	paramTab             = "tab"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp     = "up"
-	EventDown   = "down"
-	EventDelete = "delete"
-	EventAdd    = "add"
-	EventEdit   = "edit"
+	EventUp          = "up"
+	EventDown        = "down"
+	EventDelete      = "delete"
+	EventAdd         = "add"
+	EventEdit        = "edit"
+	iframeHeightName = "_iframeHeight"
+
+	EditorTabElements = "Elements"
+	EditorTabLayers   = "Layers"
 )
 
 func (b *Builder) Preview(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -91,21 +97,36 @@ const editorPreviewContentPortal = "editorPreviewContentPortal"
 func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var (
-			deviceToggler     h.HTMLComponent
-			versionComponent  h.HTMLComponent
-			tabContent        web.PageResponse
-			activeDevice      int
-			pageAppbarContent []h.HTMLComponent
-			page              *Page
-			exitHref          string
+			deviceToggler, versionComponent      h.HTMLComponent
+			editContainerDrawer, navigatorDrawer h.HTMLComponent
+			tabContent                           web.PageResponse
+			activeDevice                         int
+			pageAppbarContent                    []h.HTMLComponent
+			page                                 *Page
+			exitHref                             string
 
-			device = ctx.R.FormValue(paramsDevice)
+			device  = ctx.R.FormValue(paramsDevice)
+			modelID = ctx.R.FormValue(paramModelID)
 		)
+
 		switch device {
 		case DeviceTablet:
 			activeDevice = 1
 		case DevicePhone:
 			activeDevice = 2
+		}
+		if modelID != "" {
+			arr := strings.Split(modelID, "_")
+			if len(arr) >= 2 {
+				// TODO run after ;use loader will raise loadPortalBody
+				web.POST().
+					EventFunc(actions.AutoSaveEdit).
+					URL(fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
+					Query(presets.ParamID, arr[1]).
+					Query(presets.ParamOverlay, actions.Content).
+					Go()
+			}
+
 		}
 		deviceToggler = web.Scope(
 			VBtnToggle(
@@ -120,6 +141,7 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 		if tabContent, page, err = b.PageContent(ctx); err != nil {
 			return
 		}
+		ctx.R.Form.Set(paramStatus, page.GetStatus())
 		versionComponent = publish.DefaultVersionComponentFunc(mb, publish.VersionComponentConfig{Top: true})(page, &presets.FieldContext{ModelInfo: mb.Info()}, ctx)
 		if b.mb != nil {
 			exitHref = b.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
@@ -128,23 +150,33 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 			h.Div(
 				VIcon("mdi-exit-to-app").Class("mr-4").
 					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go()),
-				VToolbarTitle("Page Builder"),
+				VAppBarTitle().Text("Page Builder"),
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-2"),
 			versionComponent,
 		)
-
-		r.Body = VApp(
+		if navigatorDrawer, err = b.renderNavigator(ctx); err != nil {
+			return
+		}
+		r.Body = h.Components(
 			VAppBar(
 				h.Div(
 					pageAppbarContent...,
 				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
-			).
-				Elevation(0).
-				Density("compact").Class("px-6"),
-			h.Tag("vx-restore-scroll-listener"),
-			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			).Elevation(0).Density(DensityCompact).Class("px-6"),
+			VNavigationDrawer(
+				navigatorDrawer,
+			).Location(LocationLeft).
+				Permanent(true).
+				Width(350),
+			VNavigationDrawer(
+				web.Portal(editContainerDrawer).Name(presets.RightDrawerContentPortalName),
+			).Location(LocationRight).
+				Permanent(true).
+				Width(350),
 			VMain(
+				// h.Tag("vx-restore-scroll-listener"),
+				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
 			),
 		)
@@ -319,6 +351,12 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 		}
 
 		if isEditor {
+			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+			iframeValue := "1000px"
+			_ = iframeValue
+			if iframeHeightCookie != nil {
+				iframeValue = iframeHeightCookie.Value
+			}
 			// use newCtx to avoid inserting page head to head outside of iframe
 			newCtx := &web.EventContext{
 				R:        ctx.R,
@@ -341,11 +379,12 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
 			}
 			_, width := b.getDevice(ctx)
-			r = h.Div(
-				h.Tag("vx-scroll-iframe").Attr(
-					":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context()))).
-					Attr("ref", "scrollIframe"),
-			).Class("page-builder-container mx-auto").Attr("style", width)
+			r = h.Tag("vx-scroll-iframe").Attr(
+				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
+				"iframe-height", iframeValue,
+				"iframe-height-name", iframeHeightName,
+				"width", width,
+				"ref", "scrollIframe")
 
 		} else {
 			r = b.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -412,28 +451,41 @@ type ContainerSorter struct {
 	Items []ContainerSorterItem `json:"items"`
 }
 
-func (b *Builder) renderNavigator(ctx *web.EventContext) (r h.HTMLComponent) {
-	r = web.Scope(
-		VApp(
-			VAppBar(
-				VTabs(
-					VTab().Text("Elements").Value("Elements"),
-					VTab().Text("Layers").Value("Layers").Attr("@click",
-						web.Plaid().
-							URL(ctx.R.URL.Path).
-							EventFunc(ShowSortedContainerDrawerEvent).
-							Queries(ctx.R.Form).
-							Go()),
-				).Attr("v-model", "locals.tab").FixedTabs(true),
-			),
-			VMain(
-				VTabsWindow(
-					VTabsWindowItem(b.renderContainersList(ctx)).Value("Elements"),
-					VTabsWindowItem(web.Portal().Name(pageBuilderLayerContainerPortal)).Value("Layers"),
-				).Attr("v-model", "locals.tab"),
-			),
-		),
-	).VSlot("{locals}").Init(`{tab:"Elements"}`)
+func (b *Builder) renderNavigator(ctx *web.EventContext) (r h.HTMLComponent, err error) {
+	tab := ctx.Param(paramTab)
+	if tab == "" {
+		tab = EditorTabElements
+	}
+
+	var listContainers h.HTMLComponent
+	if tab == EditorTabLayers {
+		if listContainers, err = b.renderContainersSortedList(ctx); err != nil {
+			return
+		}
+	}
+
+	r = h.Components(
+		VTabs(
+			VTab().Text("Elements").
+				Value(EditorTabElements).Attr("@click",
+				web.Plaid().PushState(true).MergeQuery(true).
+					Query(paramTab, EditorTabElements).RunPushState()),
+			VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
+				web.Plaid().PushState(true).MergeQuery(true).
+					Query(paramTab, EditorTabLayers).RunPushState()+
+					";"+
+					web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(ShowSortedContainerDrawerEvent).
+						Query(paramStatus, ctx.Param(paramStatus)).
+						MergeQuery(true).
+						Go()),
+		).Attr("v-model", "vars.containerTab").FixedTabs(true),
+		VTabsWindow(
+			VTabsWindowItem(b.renderContainersList(ctx)).Value(EditorTabElements),
+			VTabsWindowItem(web.Portal(listContainers).Name(pageBuilderLayerContainerPortal)).Value(EditorTabLayers),
+		).Attr("v-model", "vars.containerTab").Attr(web.VAssign("vars", fmt.Sprintf(`{containerTab:"%s"}`, tab))...),
+	)
 	return
 }
 
@@ -542,10 +594,6 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 
 	r = web.Scope(
 		VSheet(
-			h.Div(
-				h.Div(h.Span("Elements").Class("text-subtitle-1")),
-			).Class("d-flex justify-space-between pa-6 align-center "),
-
 			VList(
 				h.Tag("vx-draggable").
 					Attr("item-key", "model_id").
@@ -608,7 +656,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
 										Attr("v-bind", "props").
-										Attr("@click", fmt.Sprintf(`locals.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.label"), web.Var("element.model_id"))),
+										Attr("@click", fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.label"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -1385,7 +1433,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			panic(err)
 		}
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
-		pr.Body = VApp(
+		pr.Body = VLayout(
 
 			web.Portal().Name(presets.RightDrawerPortalName),
 			web.Portal().Name(presets.DialogPortalName),
@@ -1433,6 +1481,6 @@ func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.Event
 		localeCode  = primarySlug["locale_code"]
 	)
 	body, _, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("locals", "{el:$}")...)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("vars", "{el:$}")...)})
 	return
 }

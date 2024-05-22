@@ -2104,11 +2104,11 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(presets.ParamID, web.Var("arr[1]")).
 		Query(presets.ParamOverlay, actions.Content).
 		Go()
-	addAction := web.POST().
-		EventFunc(ShowAddContainerDrawerEvent).
-		URL(ctx.R.URL.Path).
-		Query(paramContainerID, web.Var("container_id")).
-		Go()
+	addAction := fmt.Sprintf(`vars.containerTab="%s";`, EditorTabElements) +
+		web.Plaid().PushState(true).MergeQuery(true).
+			Query(paramModelID, web.Var("model_id")).
+			Query(paramTab, EditorTabElements).
+			RunPushState()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
 		URL(ctx.R.URL.Path).
@@ -2270,6 +2270,6 @@ func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.Event
 	if err = mb.Saver(obj, id, ctx); err != nil {
 		return
 	}
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).PushState(true).Go()
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Go()
 	return
 }

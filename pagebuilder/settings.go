@@ -76,8 +76,6 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		if p.GetStatus() == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 		}
-		vtb := &web.VueEventTagBuilder{}
-		vtb.Raw("vars.el=$")
 		return web.Scope(
 			VLayout(
 				VAppBar(
@@ -88,9 +86,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 					).Name(VSlotPrepend),
 					web.Slot(
 						h.Div(
-							web.Portal(
-								h.H1(p.Title).Attr("ref", "pageTitle"),
-							).Loader(vtb),
+							h.H1("{{vars.pageTitle}}"),
 							versionBadge.Class("mt-2 ml-2"),
 						).Class("d-inline-flex align-center"),
 					).Name(VSlotTitle),
@@ -159,25 +155,15 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		// TODO adjust layout
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
-			vtb := &web.VueEventTagBuilder{}
 			var (
 				category Category
 				err      error
 			)
-			vtb.Raw(fmt.Sprintf(
-				`
-				function() {
-				  if (!vars.el){return}	 
-				  const pt = vars.el.refs.pageTitle
-				  if ( pt && pt.innerText != '%s') {
-					pt.innerText = '%s'
-				  }
-				}()`, p.Title, p.Title))
 			if category, err = p.GetCategory(db); err != nil {
 				panic(err)
 			}
 			return h.Div(
-				web.Portal(h.Div(h.Text("title:"+p.Title))).Loader(vtb),
+				h.Div(h.Text("title:"+p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
 				h.Div(h.Text("slug:"+p.Slug)),
 				h.Div(h.Text("category:"+category.Path)),
 			)

@@ -4,7 +4,6 @@ import (
 	"net/url"
 
 	"github.com/qor5/admin/v3/presets"
-	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 )
@@ -17,7 +16,7 @@ const (
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
 	p = new(Page)
 	var (
-		body, editContainerDrawer, navigatorDrawer h.HTMLComponent
+		body h.HTMLComponent
 
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID      = primarySlug["id"]
@@ -28,26 +27,9 @@ func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Pag
 	if err != nil {
 		return
 	}
-	ctx.R.Form.Set(paramStatus, p.GetStatus())
-	//if editContainerDrawer, err = b.renderContainersSortedList(ctx); err != nil {
-	//	return
-	//}
-	navigatorDrawer = b.renderNavigator(ctx)
-
-	r.Body = web.Scope(
-		VContainer(web.Portal(body).Name(editorPreviewContentPortal)).
-			Class("mt-6").
-			Fluid(true),
-		VNavigationDrawer(
-			navigatorDrawer,
-		).Location(LocationLeft).
-			Width(350),
-		VNavigationDrawer(
-			web.Portal(editContainerDrawer).Name(presets.RightDrawerContentPortalName),
-		).Location(LocationRight).
-			Permanent(true).
-			Width(420),
-	).VSlot("{ locals }").Init(` { el : $ }`)
+	r.Body = web.Portal(
+		body.(*h.HTMLTagBuilder).Attr(web.VAssign("vars", "{el:$}")...),
+	).Name(editorPreviewContentPortal)
 	return
 }
 
