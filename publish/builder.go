@@ -62,13 +62,19 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	obj := m.NewModel()
 	_ = obj.(presets.SlugEncoder)
 	_ = obj.(presets.SlugDecoder)
+
+	ed := m.Editing()
+	creating := ed.Creating().Except(EditingFieldControlBar)
+	if !m.HasDetailing() {
+		detailing := m.Detailing().Drawer(true)
+		detailing.PrependField(EditingFieldControlBar)
+	}
+
 	if model, ok := obj.(VersionInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
 			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
-		ed := m.Editing()
-		creating := ed.Creating().Except(EditingFieldControlBar)
 		ed.ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
 		m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
 
@@ -124,7 +130,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 		m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
 		m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
-		if m.GetHasDetailing() {
+		if m.HasDetailing() {
 			fb := m.Detailing().GetField(EditingFieldControlBar)
 			if fb != nil && fb.GetCompFunc() == nil {
 				fb.ComponentFunc(DefaultVersionComponentFunc(m))

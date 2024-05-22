@@ -51,7 +51,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
-			ExpectPageBodyContains: []string{"12312"},
+			ExpectPageBodyContainsInOrder: []string{"12312"},
 		},
 
 		{
@@ -61,7 +61,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
-			ExpectPageBodyContains: []string{
+			ExpectPageBodyContainsInOrder: []string{
 				"createNoteDialogEvent",
 				`url("/pages")`,
 				`"1_2024-05-18-v01_International"`,
@@ -78,7 +78,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0Contains: []string{`eventFunc("createNoteEvent")`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`eventFunc("createNoteEvent")`},
 		},
 		{
 			Name:  "Page Builder Editor Add a Note",
@@ -130,8 +130,8 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0NotContains: []string{"Update"},
-			ExpectPortalUpdate0Contains:    []string{"@change-debounced"},
+			ExpectPortalUpdate0NotContains:     []string{"Update"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"@change-debounced"},
 		},
 	}
 

@@ -74,16 +74,12 @@ func (mb *ModelBuilder) Plugins(vs ...ModelPlugin) (r *ModelBuilder) {
 	return mb
 }
 
-func (mb *ModelBuilder) GetHasDetailing() bool {
+func (mb *ModelBuilder) HasDetailing() bool {
 	return mb.hasDetailing
 }
 
 func (mb *ModelBuilder) GetSingleton() bool {
 	return mb.singleton
-}
-
-func (mb *ModelBuilder) GetDetailing() *DetailingBuilder {
-	return mb.detailing
 }
 
 func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {

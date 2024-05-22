@@ -331,14 +331,14 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		newQueries := refer.Query()
 		id := ctx.R.FormValue("select_id")
 
-		if !pm.GetHasDetailing() {
+		if !pm.HasDetailing() {
 			// close dialog and open editing
 			newQueries.Add(presets.ParamID, id)
 			r.RunScript = presets.CloseListingDialogVarScript + ";" +
 				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go()
 			return
 		}
-		if !pm.GetDetailing().GetDrawer() {
+		if !pm.Detailing().GetDrawer() {
 			// open detailing without drawer
 			// jump URL to support referer
 			r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))

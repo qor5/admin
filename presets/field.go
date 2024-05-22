@@ -70,7 +70,7 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 }
 
-func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
+func (b *FieldsBuilder) addNewFieldWithName(name string, prepend bool) (r *FieldBuilder) {
 	r = &FieldBuilder{}
 
 	if b.model == nil {
@@ -91,7 +91,11 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	r.name = name
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
-	b.fields = append(b.fields, r)
+	if prepend {
+		b.fields = append([]*FieldBuilder{r}, b.fields...)
+	} else {
+		b.fields = append(b.fields, r)
+	}
 	return
 }
 
@@ -235,6 +239,13 @@ type FieldsSection struct {
 
 func NewFieldsBuilder() *FieldsBuilder {
 	return &FieldsBuilder{}
+}
+
+func (b *FieldsBuilder) FieldNames() (r []any) {
+	for _, field := range b.fields {
+		r = append(r, field.name)
+	}
+	return
 }
 
 func (b *FieldsBuilder) Defaults(v *FieldDefaults) (r *FieldsBuilder) {
@@ -446,7 +457,17 @@ func (b *FieldsBuilder) Field(name string) (r *FieldBuilder) {
 		return
 	}
 
-	r = b.appendNewFieldWithName(name)
+	r = b.addNewFieldWithName(name, false)
+	return
+}
+
+func (b *FieldsBuilder) PrependField(name string) (r *FieldBuilder) {
+	r = b.GetField(name)
+	if r != nil {
+		return
+	}
+
+	r = b.addNewFieldWithName(name, true)
 	return
 }
 
@@ -553,7 +574,7 @@ func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 func (b *FieldsBuilder) appendFieldAfterClone(ob *FieldsBuilder, name string) {
 	f := ob.GetField(name)
 	if f == nil {
-		b.appendNewFieldWithName(name)
+		b.addNewFieldWithName(name, false)
 	} else {
 		b.fields = append(b.fields, f.Clone())
 	}

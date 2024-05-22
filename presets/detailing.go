@@ -35,7 +35,12 @@ type pageTitle interface {
 // string / []string / *FieldsSection
 func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	r = mb.detailing
+	if !mb.hasDetailing && len(vs) == 0 {
+		vs = mb.editing.FieldNames()
+	}
+
 	mb.hasDetailing = true
+
 	if len(vs) == 0 {
 		return
 	}

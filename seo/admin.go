@@ -367,7 +367,7 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
-	b.configDetailing(mb.GetDetailing())
+	b.configDetailing(mb.Detailing())
 	return nil
 }
 
