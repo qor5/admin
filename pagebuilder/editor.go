@@ -193,9 +193,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 
 	switch device {
 	case DevicePhone:
-		style = "width: 414px;"
+		style = "414px"
 	case DeviceTablet:
-		style = "width: 768px;"
+		style = "768px"
 		// case Device_Computer:
 		//	style = "width: 1264px;"
 	}
