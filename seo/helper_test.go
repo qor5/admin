@@ -7,26 +7,27 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/theplant/osenv"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
-var (
-	dbForTest    *gorm.DB
-	testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
-)
+var dbForTest *gorm.DB
 
-func init() {
-	if db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{}); err != nil {
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
+	if err != nil {
 		panic(err)
-	} else {
-		err := db.AutoMigrate(&QorSEOSetting{})
-		if err != nil {
-			panic("failed to migrate db")
-		}
-		dbForTest = db
 	}
+	defer env.TearDown()
+	dbForTest = env.DB
+	err = dbForTest.AutoMigrate(&QorSEOSetting{})
+	if err != nil {
+		panic("failed to migrate db")
+	}
+
+	code := m.Run()
+	resetDB()
+	os.Exit(code)
 }
 
 // @snippet_begin(SeoModelExample)
@@ -59,10 +60,4 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func TestMain(m *testing.M) {
-	code := m.Run()
-	resetDB()
-	os.Exit(code)
 }

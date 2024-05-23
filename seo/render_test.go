@@ -1,44 +1,21 @@
-package seo_test
+package seo
 
 import (
 	"context"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/qor5/admin/v3/seo"
-	adminUser "github.com/qor5/admin/v3/seo/testdata/admin"
-	customerUser "github.com/qor5/admin/v3/seo/testdata/customer"
-	"github.com/theplant/osenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
-var dbForTest *gorm.DB
-
-var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
-
-func init() {
-	if db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{}); err != nil {
-		panic(err)
-	} else {
-		dbForTest = db
-	}
+type CustomerUser struct {
+	Name string
+	SEO  Setting
 }
-
-func metaEqual(got, want string) bool {
-	for _, s := range strings.Split(want, "\n") {
-		s = strings.TrimSpace(s)
-		if s == "" {
-			continue
-		}
-		if !strings.Contains(got, s) {
-			return false
-		}
-	}
-	return true
+type AdminUser struct {
+	Name string
+	SEO  Setting
 }
 
 func TestRenderSameType(t *testing.T) {
@@ -47,9 +24,9 @@ func TestRenderSameType(t *testing.T) {
 		Method: "GET",
 		URL:    u,
 	}
-	globalSeoSetting := seo.QorSEOSetting{
+	globalSeoSetting := QorSEOSetting{
 		Name: "Global SEO",
-		Setting: seo.Setting{
+		Setting: Setting{
 			Title: "global | {{SiteName}}",
 		},
 		Variables: map[string]string{"SiteName": "Qor5 dev"},
@@ -58,7 +35,7 @@ func TestRenderSameType(t *testing.T) {
 	cases := []struct {
 		name      string
 		prepareDB func()
-		builder   *seo.Builder
+		builder   *Builder
 		obj       interface{}
 		want      string
 	}{
@@ -66,17 +43,17 @@ func TestRenderSameType(t *testing.T) {
 			name: "render_seo_in_the_case_of_types_with_the_same_name_in_different_packages",
 			prepareDB: func() {
 				dbForTest.Save(&globalSeoSetting)
-				seoSettings := []*seo.QorSEOSetting{
+				seoSettings := []*QorSEOSetting{
 					{
 						Name: "Customer",
-						Setting: seo.Setting{
+						Setting: Setting{
 							Description: "customer user description",
 						},
 						Locale: l10n.Locale{LocaleCode: "en"},
 					},
 					{
 						Name: "Admin User",
-						Setting: seo.Setting{
+						Setting: Setting{
 							Description: "admin user description",
 						},
 						Locale: l10n.Locale{LocaleCode: "en"},
@@ -86,25 +63,25 @@ func TestRenderSameType(t *testing.T) {
 					panic(err)
 				}
 			},
-			builder: func() *seo.Builder {
-				builder := seo.New(dbForTest, seo.WithLocales("en"))
-				builder.RegisterSEO("Customer", customerUser.User{Name: "CustomerA"}).
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en"))
+				builder.RegisterSEO("Customer", CustomerUser{Name: "CustomerA"}).
 					RegisterContextVariable("UserName",
-						func(obj interface{}, _ *seo.Setting, _ *http.Request) string {
-							return obj.(*customerUser.User).Name
+						func(obj interface{}, _ *Setting, _ *http.Request) string {
+							return obj.(*CustomerUser).Name
 						},
 					)
-				builder.RegisterSEO("Admin", adminUser.User{Name: "Administrator"}).
+				builder.RegisterSEO("Admin", AdminUser{Name: "Administrator"}).
 					RegisterContextVariable("UserName",
-						func(obj interface{}, _ *seo.Setting, _ *http.Request) string {
-							return obj.(*adminUser.User).Name
+						func(obj interface{}, _ *Setting, _ *http.Request) string {
+							return obj.(*AdminUser).Name
 						},
 					)
 				return builder
 			}(),
-			obj: &customerUser.User{
+			obj: &CustomerUser{
 				Name: "CustomerA",
-				SEO: seo.Setting{
+				SEO: Setting{
 					Description:      "{{UserName}}",
 					EnabledCustomize: true,
 				},
