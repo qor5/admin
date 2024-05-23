@@ -34,7 +34,7 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 	return v.VTextarea().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).Variant(v.FieldVariantUnderlined)
 }
 
-func ContainerWrapper(containerID, anchorID, classes,
+func ContainerWrapper(containerDataID, anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
 	isEditor bool, isReadonly bool, style string, input *pagebuilder.RenderInput, comp ...HTMLComponent,
@@ -48,7 +48,7 @@ func ContainerWrapper(containerID, anchorID, classes,
 		AttrIf("data-image-position", imagePosition, imagePosition != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
-		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")
+		Attr("data-container-id", containerDataID).Style("position:relative;").StyleIf(style, style != "")
 
 	if isEditor {
 		if isReadonly {
@@ -56,20 +56,20 @@ func ContainerWrapper(containerID, anchorID, classes,
 		} else {
 			r.AppendChildren(Div().Class("inner-shadow"))
 			r = Div(
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+postMessage(pagebuilder.EventEdit, containerID, input)),
+				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+postMessage(pagebuilder.EventEdit, containerDataID, input)),
 				Div(
 					H6(input.DisplayName).Class("title"),
 					Div(
-						Button("").Children(I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventUp, containerID, input)),
-						Button("").Children(I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDown, containerID, input)),
-						Button("").Children(I("delete").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDelete, containerID, input)),
+						Button("").Children(I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventUp, containerDataID, input)),
+						Button("").Children(I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDown, containerDataID, input)),
+						Button("").Children(I("delete").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventDelete, containerDataID, input)),
 					).Class("editor-bar-buttons"),
 				).Class("editor-bar"),
 				Div(
 					Div().Class("add"),
-					Button("").Children(I("add").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerID, input)),
+					Button("").Children(I("add").Class("material-icons")).Attr("onclick", postMessage(pagebuilder.EventAdd, containerDataID, input)),
 				).Class("editor-add"),
-			).Class("wrapper-shadow").ClassIf("highlight", input.ModelID == containerID)
+			).Class("wrapper-shadow").ClassIf("highlight", input.ContainerDataID == containerDataID)
 		}
 	}
 	return r
@@ -77,15 +77,15 @@ func ContainerWrapper(containerID, anchorID, classes,
 
 type (
 	postMessageBody struct {
-		MsgType     string `json:"msg_type"`
-		ModelId     string `json:"model_id"`
-		ContainerId string `json:"container_id"`
-		DisplayName string `json:"display_name"`
-		ModelName   string `json:"model_name"`
+		MsgType         string `json:"msg_type"`
+		ContainerDataID string `json:"container_data_id"`
+		ContainerId     string `json:"container_id"`
+		DisplayName     string `json:"display_name"`
+		ModelName       string `json:"model_name"`
 	}
 )
 
-func postMessage(msgType, modelId string, input *pagebuilder.RenderInput) string {
+func postMessage(msgType, containerDataID string, input *pagebuilder.RenderInput) string {
 	if msgType == pagebuilder.EventUp && input.IsFirst {
 		return ""
 	}
@@ -93,7 +93,7 @@ func postMessage(msgType, modelId string, input *pagebuilder.RenderInput) string
 		return ""
 	}
 	body := postMessageBody{
-		msgType, modelId, input.ContainerId, input.DisplayName, input.ModelName,
+		msgType, containerDataID, input.ContainerId, input.DisplayName, input.ModelName,
 	}
 	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, JSONString(body))
 }

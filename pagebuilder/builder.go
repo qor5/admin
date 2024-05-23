@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
+
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -35,16 +38,16 @@ import (
 )
 
 type RenderInput struct {
-	Page        *Page
-	IsEditor    bool
-	IsReadonly  bool
-	Device      string
-	ContainerId string
-	DisplayName string
-	IsFirst     bool
-	IsEnd       bool
-	ModelID     string
-	ModelName   string
+	Page            *Page
+	IsEditor        bool
+	IsReadonly      bool
+	Device          string
+	ContainerId     string
+	DisplayName     string
+	IsFirst         bool
+	IsEnd           bool
+	ContainerDataID string
+	ModelName       string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -2116,6 +2119,10 @@ func (b *ContainerBuilder) registerEventFuncs() {
 	b.mb.RegisterEventFunc(AutoSaveContainerEvent, b.autoSaveContainer)
 }
 
+func (b *ContainerBuilder) getContainerDataID(id int) string {
+	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
+}
+
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ids := strings.Split(ctx.R.FormValue("ids"), ",")
@@ -2150,39 +2157,44 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramModelID, web.Var("model_id")).RunPushState() +
-		";" + web.POST().
-		EventFunc(actions.AutoSaveEdit).
-		URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
-		Query(presets.ParamID, web.Var("arr[1]")).
-		Query(presets.ParamOverlay, actions.Content).
-		Go()
+	editAction := web.Plaid().
+		PushState(true).
+		MergeQuery(true).
+		Query(paramContainerDataID, web.Var("container_data_id")).
+		Query(paramContainerID, web.Var("container_id")).
+		RunPushState() + ";" +
+		web.POST().
+			EventFunc(actions.AutoSaveEdit).
+			URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
+			Query(presets.ParamID, web.Var("arr[1]")).
+			Query(presets.ParamOverlay, actions.Content).
+			Go()
 	addAction := fmt.Sprintf(`vars.containerTab="%s";`, EditorTabElements) +
-		web.Plaid().PushState(true).MergeQuery(true).
-			Query(paramModelID, web.Var("model_id")).
+		web.Plaid().
+			PushState(true).
+			MergeQuery(true).
+			Query(paramContainerID, web.Var("container_id")).
 			Query(paramTab, EditorTabElements).
 			RunPushState()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
-		URL(ctx.R.URL.Path).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramContainerName, web.Var("display_name")).
 		Go()
 	moveAction := web.Plaid().
-		URL(ctx.R.URL.Path).
 		EventFunc(MoveUpDownContainerEvent).
+		MergeQuery(true).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramMoveDirection, web.Var("msg_type")).
 		Query(paramModelID, web.Var("model_id")).
 		Go()
 	return fmt.Sprintf(`
 function(e){
-	const { msg_type,model_id ,container_id ,display_name,model_name } = e.data
-	if (!msg_type || !model_id.split) {
+	const { msg_type,container_data_id, container_id,display_name } = e.data
+	if (!msg_type || !container_data_id.split) {
 		return
 	} 
-	let arr = model_id.split("_");
+	let arr = container_data_id.split("_");
 	if (arr.length != 2) {
 		console.log(arr);
 		return

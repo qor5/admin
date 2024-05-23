@@ -33,11 +33,18 @@ INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, t
 `, []string{"page_builder_pages", "page_builder_categories"}))
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES (10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (398, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'ListContent', 9, 1, false, false, 'ListContent', 'International', 0);
-INSERT INTO public.container_list_content (id, add_top_space, add_bottom_space, anchor_id, items, background_color, link, link_text, link_display_option) VALUES (9, true, true, '', null, 'grey', 'ijuhuheweq', '', 'desktop');
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES 
+										   (10,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'ListContent', 10, 1, false, false, 'ListContent', 'International', 0),
+										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, false, 'Header', 'International', 0)  ;
+INSERT INTO public.container_list_content (id, add_top_space, add_bottom_space, anchor_id, items, background_color, link, link_text, link_display_option) VALUES (10, true, true, '', null, 'grey', 'ijuhuheweq', '', 'desktop');
+INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
 
-`, []string{"page_builder_pages", "page_builder_categories"}))
+
+
+
+`, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers"}))
 
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB)
@@ -123,13 +130,65 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-contents?__execute_event__=presets_AutoSave_Edit&id=9&overlay=content").
+					PageURL("/page_builder/list-contents?__execute_event__=presets_AutoSave_Edit&id=10&overlay=content").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			ExpectPortalUpdate0NotContains:     []string{"Update"},
 			ExpectPortalUpdate0ContainsInOrder: []string{"@change-debounced"},
+		},
+		// TODO run with under under containerDataID will to be headers_2
+		//{
+		//	Name:  "Page Builder add container",
+		//	Debug: true,
+		//	ReqFunc: func() *http.Request {
+		//		pageBuilderContainerTestData.TruncatePut(dbr)
+		//		req := NewMultipartBuilder().
+		//			PageURL("/page_builder/editors/10_2024-05-21-v01_International?__execute_event__=page_builder_AddContainerEvent&modelName=Header").
+		//			BuildEventFuncRequest()
+		//
+		//		return req
+		//	},
+		//	ExpectRunScriptContainsInOrder: []string{"page_builder_ReloadRenderPageOrTemplateEvent", "containerDataID", "headers_1", "/page_builder/headers", "presets_AutoSave_Edit"},
+		//},
+		{
+			Name:  "Page Builder add container under",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/editors/10_2024-05-21-v01_International?__execute_event__=page_builder_AddContainerEvent&containerID=10_International&modelName=Header").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"page_builder_ReloadRenderPageOrTemplateEvent", "containerDataID", "headers_1", "/page_builder/headers", "presets_AutoSave_Edit"},
+		},
+		{
+			Name:  "Page Builder delete container dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/editors/10_2024-05-21-v01_International?__execute_event__=page_builder_DeleteContainerConfirmationEvent&containerID=10_International&containerName=Header").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).eventFunc("page_builder_DeleteContainerEvent").query("containerID", "10_International").go()`},
+		},
+		{
+			Name:  "Page Builder delete container ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/editors/10_2024-05-21-v01_International?__execute_event__=page_builder_DeleteContainerEvent&containerID=10_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
 		},
 	}
 

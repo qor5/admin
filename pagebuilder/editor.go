@@ -51,6 +51,7 @@ const (
 	paramLocale          = "locale"
 	paramStatus          = "status"
 	paramContainerID     = "containerID"
+	paramContainerDataID = "containerDataID"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
@@ -105,8 +106,8 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 			page                                 *Page
 			exitHref                             string
 
-			device  = ctx.R.FormValue(paramsDevice)
-			modelID = ctx.R.FormValue(paramModelID)
+			device          = ctx.R.FormValue(paramsDevice)
+			containerDataID = ctx.R.FormValue(paramContainerDataID)
 		)
 
 		switch device {
@@ -115,8 +116,8 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 		case DevicePhone:
 			activeDevice = 2
 		}
-		if modelID != "" {
-			arr := strings.Split(modelID, "_")
+		if containerDataID != "" {
+			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
 				// TODO run after ;use loader will raise loadPortalBody
 				web.POST().
@@ -414,16 +415,16 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 		}
 		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
-			Page:        p,
-			IsEditor:    isEditor,
-			IsReadonly:  isReadonly,
-			Device:      device,
-			ContainerId: ec.container.PrimarySlug(),
-			DisplayName: displayName,
-			IsFirst:     i == 0,
-			IsEnd:       i == len(cbs)-1,
-			ModelID:     ctx.R.FormValue(paramModelID),
-			ModelName:   ec.container.ModelName,
+			Page:            p,
+			IsEditor:        isEditor,
+			IsReadonly:      isReadonly,
+			Device:          device,
+			ContainerId:     ec.container.PrimarySlug(),
+			DisplayName:     displayName,
+			IsFirst:         i == 0,
+			IsEnd:           i == len(cbs)-1,
+			ContainerDataID: ctx.R.FormValue(paramContainerDataID),
+			ModelName:       ec.container.ModelName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 		r = append(r, pure)
@@ -493,7 +494,7 @@ func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent,
 	var (
 		modelName     = ctx.R.FormValue(paramModelName)
 		containerName = ctx.R.FormValue(paramContainerName)
-		modelID       = ctx.R.FormValue(presets.ParamID)
+		modelID       = ctx.R.FormValue(paramModelID)
 	)
 	builder := b.ContainerByName(modelName).GetModelBuilder()
 	element := builder.NewModel()
@@ -623,7 +624,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
 															URL(fmt.Sprintf("%s/editors", b.prefix)).
-															EventFunc(RenameContainerEvent).Query(paramContainerID, web.Var("element.param_id")).Go()),
+															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
@@ -633,21 +634,18 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 												h.Div(
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
-															URL(ctx.R.URL.Path).
 															EventFunc(ToggleContainerVisibilityEvent).
-															Queries(ctx.R.Form).
 															Query(paramContainerID, web.Var("element.param_id")).
+															Query(paramStatus, status).
 															Go(),
 													).Attr("v-show", "element.editShow || (element.hidden || isHovering)"),
 
 													VBtn("").Variant(VariantText).Icon("mdi-cog").Size(SizeSmall).Attr("@click",
 														web.Plaid().
-															URL(ctx.R.URL.Path).
-															EventFunc(ShowEditContainerDrawerEvent).
-															Queries(ctx.R.Form).
+															URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.prefix))).
+															EventFunc(actions.AutoSaveEdit).
+															Query(presets.ParamOverlay, actions.Content).
 															Query(presets.ParamID, web.Var("element.model_id")).
-															Query(paramContainerName, web.Var("element.display_name")).
-															Query(paramModelName, web.Var("element.model_name")).
 															Go(),
 													).Attr("v-show", "element.editShow || isHovering"),
 													menu,
@@ -656,7 +654,11 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
 										Attr("v-bind", "props").
-										Attr("@click", fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.label"), web.Var("element.model_id"))),
+										Attr("@click", web.Plaid().PushState(true).MergeQuery(true).
+											Query(paramContainerID, web.Var("element.param_id")).
+											Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`)).
+											RunPushState()+
+											fmt.Sprintf(`;vars.el.refs.scrollIframe.scrollToCurrentContainer(%s+"_"+%s);`, web.Var("element.label"), web.Var("element.model_id"))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -676,32 +678,33 @@ func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err 
 		primarySlug     = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageVersion     = primarySlug["version"]
 		locale          = primarySlug["locale_code"]
-		containerName   = ctx.R.FormValue(paramContainerName)
-		sharedContainer = ctx.R.FormValue(paramSharedContainer)
+		modelName       = ctx.Param(paramModelName)
+		sharedContainer = ctx.Param(paramSharedContainer)
 		modelID         = ctx.ParamAsInt(paramModelID)
-		containerID     = ctx.R.FormValue(paramContainerID)
+		containerID     = ctx.Param(paramContainerID)
 	)
 	if pageID, err = strconv.Atoi(primarySlug["id"]); err != nil {
 		return
 	}
 	if sharedContainer == "true" {
-		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, containerName, uint(modelID))
+		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
-		newModelId, err = b.AddContainerToPage(pageID, containerID, pageVersion, locale, containerName)
+		newModelId, err = b.AddContainerToPage(pageID, containerID, pageVersion, locale, modelName)
 		modelID = int(newModelId)
 	}
+	cb := b.ContainerByName(modelName)
 	r.RunScript = web.Plaid().
-		URL(ctx.R.URL.Path).
 		EventFunc(ReloadRenderPageOrTemplateEvent).
-		Queries(ctx.R.Form).
-		Query(paramModelID, modelID).
-		Go() + ";" + web.Plaid().
-		URL(ctx.R.URL.Path).
-		EventFunc(ShowEditContainerDrawerEvent).
-		Queries(ctx.R.Form).
-		Query(presets.ParamID, modelID).
-		Go()
+		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
+		Go() + ";" +
+		web.Plaid().
+			URL(fmt.Sprintf(`%s/%s`, b.prefix, inflection.Plural(strcase.ToKebab(cb.name)))).
+			EventFunc(actions.AutoSaveEdit).
+			Query(presets.ParamOverlay, actions.Content).
+			Query(presets.ParamID, modelID).
+			Go()
+
 	return
 }
 
@@ -759,7 +762,7 @@ func (b *Builder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRespons
 		}
 		return
 	})
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).URL(ctx.R.URL.Path).Queries(ctx.R.Form).Go()
+	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
 	return
 }
 
@@ -773,22 +776,21 @@ func (b *Builder) toggleContainerVisibility(ctx *web.EventContext) (r web.EventR
 	)
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-	r.RunScript = web.Plaid().URL(ctx.R.URL.Path).
+	r.RunScript = web.Plaid().
 		EventFunc(ReloadRenderPageOrTemplateEvent).
-		Queries(ctx.R.Form).
+		MergeQuery(true).
 		Go() +
 		";" +
 		web.Plaid().
-			URL(ctx.R.URL.Path).
 			EventFunc(ShowSortedContainerDrawerEvent).
-			Queries(ctx.R.Form).
+			Query(paramStatus, ctx.Param(paramStatus)).
 			Go()
 	return
 }
 
 func (b *Builder) deleteContainerConfirmation(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		paramID       = ctx.R.FormValue(paramContainerID)
+		containerID   = ctx.R.FormValue(paramContainerID)
 		containerName = ctx.R.FormValue(paramContainerName)
 	)
 
@@ -803,22 +805,21 @@ func (b *Builder) deleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 						VBtn("Cancel").
 							Variant(VariantFlat).
 							Class("ml-2").
-							Attr("@click", "dialogLocals.deleteConfirmation = false"),
+							Attr("@click", "locals.deleteConfirmation = false"),
 
 						VBtn("Delete").
 							Color("primary").
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
-								URL(ctx.R.URL.Path).
 								EventFunc(DeleteContainerEvent).
-								Query(paramContainerID, paramID).
+								Query(paramContainerID, containerID).
 								Go()),
 					),
 				),
 			).MaxWidth("600px").
-				Attr("v-model", "dialogLocals.deleteConfirmation"),
-		).VSlot(`{ locals : dialogLocals }`).Init(`{deleteConfirmation: true}`),
+				Attr("v-model", "locals.deleteConfirmation"),
+		).VSlot(`{ locals  }`).Init(`{deleteConfirmation: true}`),
 	})
 
 	return
@@ -826,8 +827,7 @@ func (b *Builder) deleteContainerConfirmation(ctx *web.EventContext) (r web.Even
 
 func (b *Builder) deleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var container Container
-	paramID := ctx.R.FormValue(paramContainerID)
-	cs := container.PrimaryColumnValuesBySlug(paramID)
+	cs := container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
 	containerID := cs["id"]
 	locale := cs["locale_code"]
 
@@ -839,15 +839,14 @@ func (b *Builder) deleteContainer(ctx *web.EventContext) (r web.EventResponse, e
 	return
 }
 
-func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, locale, containerName string) (modelID uint, err error) {
-	model := b.ContainerByName(containerName).NewModel()
+func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, err error) {
+	model := b.ContainerByName(modelName).NewModel()
 	var dc DemoContainer
-	b.db.Where("model_name = ? AND locale_code = ?", containerName, locale).First(&dc)
+	b.db.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
 	if dc.ID != 0 && dc.ModelID != 0 {
 		b.db.Where("id = ?", dc.ModelID).First(model)
 		reflectutils.Set(model, "ID", uint(0))
 	}
-
 	err = b.db.Create(model).Error
 	if err != nil {
 		return
@@ -864,14 +863,14 @@ func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, local
 	if containerID != "" {
 		var lastContainer Container
 		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
-		if err = b.db.Where("id = ? AND locale_code = ?", cs["id"], locale).First(&lastContainer).Error; err != nil {
-			return
+		if dbErr := b.db.Where("id = ? AND locale_code = ?", cs["id"], locale).First(&lastContainer).Error; dbErr == nil {
+			displayOrder = lastContainer.DisplayOrder
+			if err = b.db.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and display_order > ? ", pageID, pageVersion, locale, displayOrder).
+				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
+				return
+			}
 		}
-		displayOrder = lastContainer.DisplayOrder
-		if err = b.db.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and display_order > ? ", pageID, pageVersion, locale, displayOrder).
-			UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
-			return
-		}
+
 	} else {
 		displayOrder = maxOrder.Float64
 	}
@@ -879,8 +878,8 @@ func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, local
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
 		PageVersion:  pageVersion,
-		ModelName:    containerName,
-		DisplayName:  containerName,
+		ModelName:    modelName,
+		DisplayName:  modelName,
 		ModelID:      modelID,
 		DisplayOrder: displayOrder + 1,
 		Locale: l10n.Locale{
@@ -890,9 +889,9 @@ func (b *Builder) AddContainerToPage(pageID int, containerID, pageVersion, local
 	return
 }
 
-func (b *Builder) AddSharedContainerToPage(pageID int, containerID, pageVersion, locale, containerName string, modelID uint) (err error) {
+func (b *Builder) AddSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (err error) {
 	var c Container
-	err = b.db.First(&c, "model_name = ? AND model_id = ? AND shared = true", containerName, modelID).Error
+	err = b.db.First(&c, "model_name = ? AND model_id = ? AND shared = true", modelName, modelID).Error
 	if err != nil {
 		return
 	}
@@ -907,21 +906,21 @@ func (b *Builder) AddSharedContainerToPage(pageID int, containerID, pageVersion,
 	if containerID != "" {
 		var lastContainer Container
 		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
-		if err = b.db.Where("id = ? AND locale_code = ?", cs["id"], locale).First(&lastContainer).Error; err != nil {
-			return
+		if dbErr := b.db.Where("id = ? AND locale_code = ?", cs["id"], locale).First(&lastContainer).Error; dbErr == nil {
+			displayOrder = lastContainer.DisplayOrder
+			if err = b.db.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and display_order > ? ", pageID, pageVersion, locale, displayOrder).
+				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
+				return
+			}
 		}
-		displayOrder = lastContainer.DisplayOrder
-		if err = b.db.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and display_order > ? ", pageID, pageVersion, locale, displayOrder).
-			UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
-			return
-		}
+
 	} else {
 		displayOrder = maxOrder.Float64
 	}
 	err = b.db.Create(&Container{
 		PageID:       uint(pageID),
 		PageVersion:  pageVersion,
-		ModelName:    containerName,
+		ModelName:    modelName,
 		DisplayName:  c.DisplayName,
 		ModelID:      modelID,
 		Shared:       true,
@@ -1131,7 +1130,8 @@ func (b *Builder) renameContainer(ctx *web.EventContext) (r web.EventResponse, e
 		}
 	}
 
-	r.PushState = web.Location(url.Values{})
+	r.RunScript = web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go() + ";" +
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
 	return
 }
 
@@ -1180,7 +1180,6 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 		p           = new(Page)
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		locale      = primarySlug["local_code"]
-		containerId = ctx.R.FormValue(paramContainerID)
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	)
 	var (
@@ -1215,13 +1214,10 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 				VListItemTitle(h.Text(containerName)),
 				VListItemSubtitle(VImg().Src(cover).Height(100)),
 			).Attr("@click",
-				web.Plaid().
-					URL(ctx.R.URL.Path).
-					EventFunc(AddContainerEvent).
-					Queries(ctx.R.Form).
+				web.Plaid().EventFunc(AddContainerEvent).
+					MergeQuery(true).
 					Query(paramModelName, builder.name).
 					Query(paramContainerName, builder.name).
-					Query(paramContainerID, containerId).
 					Go(),
 			))
 		}
@@ -1265,14 +1261,12 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 					VListItemTitle(h.Text(containerName)),
 					VListItemSubtitle(VImg().Src(cover).Height(100)),
 				).Attr("@click", web.Plaid().
-					URL(ctx.R.URL.Path).
 					EventFunc(AddContainerEvent).
-					Queries(ctx.R.Form).
+					MergeQuery(true).
 					Query(paramContainerName, builder.ModelName).
 					Query(paramModelName, builder.ModelName).
 					Query(paramModelID, builder.ModelID).
 					Query(paramSharedContainer, "true").
-					Query(paramContainerID, containerId).
 					Go()),
 			).Value(containerName))
 		}
@@ -1475,11 +1469,15 @@ func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.Event
 	var body h.HTMLComponent
 	p := new(Page)
 	var (
-		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
-		pageID      = primarySlug["id"]
-		version     = primarySlug["version"]
-		localeCode  = primarySlug["locale_code"]
+		primarySlug     = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
+		pageID          = primarySlug["id"]
+		version         = primarySlug["version"]
+		localeCode      = primarySlug["locale_code"]
+		containerDataID = ctx.Param(paramContainerDataID)
 	)
+	if containerDataID != "" {
+		r.RunScript = web.Plaid().PushState(true).MergeQuery(true).Query(paramContainerDataID, containerDataID).RunPushState()
+	}
 	body, _, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("vars", "{el:$}")...)})
 	return
