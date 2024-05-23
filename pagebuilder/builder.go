@@ -441,6 +441,9 @@ func (b *Builder) configPage(pb *presets.Builder) {
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
 		}
+		if p.LocaleCode == "" {
+			p.LocaleCode = localeCode
+		}
 		funcName := ctx.R.FormValue(web.EventFuncIDName)
 		if funcName == publish.EventDuplicateVersion {
 			id := ctx.Param(presets.ParamID)
