@@ -87,7 +87,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelBuilder, db *gorm.DB, ab *activity.Builder) {
 	ed := m.Editing()
-	creating := ed.Creating().Except(EditingFieldControlBar)
+	creating := ed.Creating().Except(VersionsPublishBar)
 	var detailing *presets.DetailingBuilder
 	if !m.HasDetailing() {
 		detailing = m.Detailing().Drawer(true)
@@ -95,13 +95,8 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 		detailing = m.Detailing()
 	}
 
-	fb := detailing.GetField(EditingFieldControlBar)
-	if fb == nil {
-		detailing.Prepend(EditingFieldControlBar)
-		fb = detailing.GetField(EditingFieldControlBar)
-	}
-
-	if fb.GetCompFunc() == nil {
+	fb := detailing.GetField(VersionsPublishBar)
+	if fb != nil && fb.GetCompFunc() == nil {
 		fb.ComponentFunc(DefaultVersionComponentFunc(m))
 	}
 

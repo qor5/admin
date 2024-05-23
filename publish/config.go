@@ -10,5 +10,5 @@ const (
 	ListingFieldDraftCount = "Draft Count"
 	ListingFieldOnline     = "Online"
 
-	EditingFieldControlBar = "ControlBar"
+	VersionsPublishBar = "VersionsPublishBar"
 )
