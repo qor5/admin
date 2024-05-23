@@ -60,6 +60,12 @@ func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	return
 }
 
+func (b *DetailingBuilder) Prepend(vs ...interface{}) (r *DetailingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Prepend(vs...)
+	return
+}
+
 func (b *DetailingBuilder) Except(vs ...string) (r *DetailingBuilder) {
 	r = b
 	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)

@@ -63,83 +63,12 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	_ = obj.(presets.SlugEncoder)
 	_ = obj.(presets.SlugDecoder)
 
-	ed := m.Editing()
-	creating := ed.Creating().Except(EditingFieldControlBar)
-	if !m.HasDetailing() {
-		detailing := m.Detailing().Drawer(true)
-		detailing.PrependField(EditingFieldControlBar)
-	}
-
 	if model, ok := obj.(VersionInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
 			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
-		m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
-
-		// listing-delete deletes all versions
-		{
-			// rewrite Delete row menu item to show correct id in prompt message
-			m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
-				msgr := presets.MustGetMessages(ctx.R)
-				if m.Info().Verifier().Do(presets.PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-					return nil
-				}
-
-				promptID := id
-				if slugger, ok := obj.(presets.SlugDecoder); ok {
-					fvs := []string{}
-					for f, v := range slugger.PrimaryColumnValuesBySlug(id) {
-						if f == "id" {
-							fvs = append([]string{v}, fvs...)
-						} else {
-							if f != "version" {
-								fvs = append(fvs, v)
-							}
-						}
-					}
-					promptID = strings.Join(fvs, "_")
-				}
-
-				onclick := web.Plaid().
-					EventFunc(actions.DeleteConfirmation).
-					Query(presets.ParamID, id).
-					Query("all_versions", true).
-					Query("prompt_id", promptID)
-				if presets.IsInDialog(ctx) {
-					onclick.URL(ctx.R.RequestURI).
-						Query(presets.ParamOverlay, actions.Dialog).
-						Query(presets.ParamInDialog, true).
-						Query(presets.ParamListingQueries, ctx.Queries().Encode())
-				}
-				return vuetify.VListItem(
-					web.Slot(
-						vuetify.VIcon("mdi-delete"),
-					).Name("prepend"),
-					vuetify.VListItemTitle(htmlgo.Text(msgr.Delete)),
-				).Attr("@click", onclick.Go())
-			})
-			// rewrite Deleter to ignore version condition
-			ed.DeleteFunc(makeDeleteFunc(db))
-		}
-
-		setter := makeSetVersionSetterFunc(db, ed.Setter)
-		ed.SetterFunc(setter)
-		creating.SetterFunc(setter)
-
-		m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
-		m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
-		if m.HasDetailing() {
-			fb := m.Detailing().GetField(EditingFieldControlBar)
-			if fb != nil && fb.GetCompFunc() == nil {
-				fb.ComponentFunc(DefaultVersionComponentFunc(m))
-			}
-		}
-		fb := ed.GetField(EditingFieldControlBar)
-		if fb != nil && fb.GetCompFunc() == nil {
-			fb.ComponentFunc(DefaultVersionComponentFunc(m))
-		}
-		configureVersionListDialog(db, pb, m, b, ab)
+		b.configVersionAndPublish(pb, m, db, ab)
 	} else {
 		if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
 			NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
@@ -154,6 +83,84 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	registerEventFuncs(db, m, b, ab)
 	return nil
+}
+
+func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelBuilder, db *gorm.DB, ab *activity.Builder) {
+	ed := m.Editing()
+	creating := ed.Creating().Except(EditingFieldControlBar)
+	var detailing *presets.DetailingBuilder
+	if !m.HasDetailing() {
+		detailing = m.Detailing().Drawer(true)
+	} else {
+		detailing = m.Detailing()
+	}
+
+	fb := detailing.GetField(EditingFieldControlBar)
+	if fb == nil {
+		detailing.Prepend(EditingFieldControlBar)
+		fb = detailing.GetField(EditingFieldControlBar)
+	}
+
+	if fb.GetCompFunc() == nil {
+		fb.ComponentFunc(DefaultVersionComponentFunc(m))
+	}
+
+	m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
+
+	// listing-delete deletes all versions
+	{
+		// rewrite Delete row menu item to show correct id in prompt message
+		m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+			msgr := presets.MustGetMessages(ctx.R)
+			if m.Info().Verifier().Do(presets.PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+				return nil
+			}
+
+			promptID := id
+			if slugger, ok := obj.(presets.SlugDecoder); ok {
+				fvs := []string{}
+				for f, v := range slugger.PrimaryColumnValuesBySlug(id) {
+					if f == "id" {
+						fvs = append([]string{v}, fvs...)
+					} else {
+						if f != "version" {
+							fvs = append(fvs, v)
+						}
+					}
+				}
+				promptID = strings.Join(fvs, "_")
+			}
+
+			onclick := web.Plaid().
+				EventFunc(actions.DeleteConfirmation).
+				Query(presets.ParamID, id).
+				Query("all_versions", true).
+				Query("prompt_id", promptID)
+			if presets.IsInDialog(ctx) {
+				onclick.URL(ctx.R.RequestURI).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamInDialog, true).
+					Query(presets.ParamListingQueries, ctx.Queries().Encode())
+			}
+			return vuetify.VListItem(
+				web.Slot(
+					vuetify.VIcon("mdi-delete"),
+				).Name("prepend"),
+				vuetify.VListItemTitle(htmlgo.Text(msgr.Delete)),
+			).Attr("@click", onclick.Go())
+		})
+		// rewrite Deleter to ignore version condition
+		ed.DeleteFunc(makeDeleteFunc(db))
+	}
+
+	setter := makeSetVersionSetterFunc(db, ed.Setter)
+	ed.SetterFunc(setter)
+	creating.SetterFunc(setter)
+
+	m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
+	m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
+
+	configureVersionListDialog(db, pb, m, b, ab)
 }
 
 func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {

@@ -70,7 +70,7 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 }
 
-func (b *FieldsBuilder) addNewFieldWithName(name string, prepend bool) (r *FieldBuilder) {
+func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	r = &FieldBuilder{}
 
 	if b.model == nil {
@@ -91,11 +91,7 @@ func (b *FieldsBuilder) addNewFieldWithName(name string, prepend bool) (r *Field
 	r.name = name
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
-	if prepend {
-		b.fields = append([]*FieldBuilder{r}, b.fields...)
-	} else {
-		b.fields = append(b.fields, r)
-	}
+	b.fields = append(b.fields, r)
 	return
 }
 
@@ -457,17 +453,7 @@ func (b *FieldsBuilder) Field(name string) (r *FieldBuilder) {
 		return
 	}
 
-	r = b.addNewFieldWithName(name, false)
-	return
-}
-
-func (b *FieldsBuilder) PrependField(name string) (r *FieldBuilder) {
-	r = b.GetField(name)
-	if r != nil {
-		return
-	}
-
-	r = b.addNewFieldWithName(name, true)
+	r = b.appendNewFieldWithName(name)
 	return
 }
 
@@ -557,6 +543,10 @@ func (b *FieldsBuilder) getFieldNamesFromLayout() []string {
 	return ns
 }
 
+func (b *FieldsBuilder) Prepend(names ...any) (r *FieldsBuilder) {
+	return b.Only(append(names, b.fieldsLayout...)...)
+}
+
 func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 	if len(vs) == 0 {
 		return b
@@ -574,7 +564,7 @@ func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 func (b *FieldsBuilder) appendFieldAfterClone(ob *FieldsBuilder, name string) {
 	f := ob.GetField(name)
 	if f == nil {
-		b.addNewFieldWithName(name, false)
+		b.appendNewFieldWithName(name)
 	} else {
 		b.fields = append(b.fields, f.Clone())
 	}
