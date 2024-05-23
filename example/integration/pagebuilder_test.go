@@ -62,9 +62,7 @@ func TestPageBuilder(t *testing.T) {
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"createNoteDialogEvent",
-				`url("/pages")`,
-				`"1_2024-05-18-v01_International"`,
+				`.eventFunc("createNoteDialogEvent").query("overlay", "dialog").query("id", "1_2024-05-18-v01_International").url("/pages")`,
 			},
 		},
 

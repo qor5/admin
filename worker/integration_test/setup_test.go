@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -21,8 +20,7 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
@@ -31,24 +29,23 @@ var (
 	pb *presets.Builder
 )
 
-var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
-
 func TestMain(m *testing.M) {
-	var err error
-	db, err = gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
+	db = env.DB
 
 	pb = presets.New().
 		DataOperator(gorm2op.DataOperator(db))
 
 	wb := worker.NewWithQueue(db, integration.Que)
-	wb.Install(pb)
+	pb.Use(wb)
 	addJobs(wb)
 	wb.Listen()
 
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func addJobs(w *worker.Builder) {

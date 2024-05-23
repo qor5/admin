@@ -33,7 +33,7 @@ func (mib *Builder) Install(b *presets.Builder) error {
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
 
-	model := b.Model(&MicroSite{}).Plugins(publisher.ContextValueFuncs(mib.ContextValueProvider))
+	model := b.Model(&MicroSite{}).Use(publisher.ContextValueFuncs(mib.ContextValueProvider))
 
 	model.Listing("ID", "Name", "PrePath", "Status").
 		SearchColumns("ID::text", "Name").

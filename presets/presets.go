@@ -16,7 +16,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
@@ -108,17 +107,6 @@ func New() *Builder {
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
 	return r
-}
-
-func (b *Builder) Plugins(vs ...Plugin) (r *Builder) {
-	b.plugins = slices.Compact(append(
-		b.plugins,
-		slices.DeleteFunc(vs,
-			func(v Plugin) bool {
-				return reflectutils.IsNil(v)
-			},
-		)...))
-	return b
 }
 
 func (b *Builder) I18n() (r *i18n.Builder) {
@@ -1216,25 +1204,6 @@ func (b *Builder) extraFullPath(ea *extraAsset) string {
 	return b.prefix + "/extra" + ea.path
 }
 
-func (b *Builder) runPluginsInstall() {
-	var err error
-	for _, p := range b.plugins {
-		err = p.Install(b)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	for _, m := range b.models {
-		for _, mp := range m.plugins {
-			err = mp.ModelInstall(b, m)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-}
-
 func (b *Builder) initMux() {
 	b.logger.Info("initializing mux for", zap.Reflect("models", modelNames(b.models)), zap.String("prefix", b.prefix))
 	mux := http.NewServeMux()
@@ -1380,11 +1349,9 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 
 func (b *Builder) Build() {
 	mns := modelNames(b.models)
-	fmt.Println(mns)
 	if len(slices.Compact(mns)) != len(mns) {
 		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
-	b.runPluginsInstall()
 	b.initMux()
 }
 

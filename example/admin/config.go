@@ -154,7 +154,7 @@ func NewConfig(db *gorm.DB) Config {
 			})
 			return nil
 		})
-	b.Plugins(ab)
+	b.Use(ab)
 
 	// ab.Model(m).EnableActivityInfoTab()
 	// ab.Model(pm).EnableActivityInfoTab()
@@ -224,7 +224,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configNestedFieldDemo(b, db)
 
-	b.Plugins(w.Activity(ab))
+	b.Use(w.Activity(ab))
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
 	pageBuilder.
@@ -237,7 +237,6 @@ func NewConfig(db *gorm.DB) Config {
 			pmListing := pm.Listing()
 			pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 				u := getCurrentUser(ctx.R)
-
 				return []*vx.FilterItem{
 					{
 						Key:          "hasUnreadNotes",
@@ -266,7 +265,7 @@ func NewConfig(db *gorm.DB) Config {
 			return nil
 		})
 
-	b.Plugins(pageBuilder)
+	b.Use(pageBuilder)
 
 	configListModel(b, ab)
 
@@ -276,14 +275,14 @@ func NewConfig(db *gorm.DB) Config {
 		panic(err)
 	}
 
-	m.Plugins(nb, ab)
+	m.Use(nb, ab)
 
 	microb := microsite.New(db).Publisher(publisher)
 
 	l10nBuilder.Activity(ab)
 	l10nM, l10nVM := configL10nModel(db, b)
-	l10nM.Plugins(l10nBuilder)
-	l10nVM.Plugins(l10nBuilder)
+	l10nM.Use(l10nBuilder)
+	l10nVM.Use(l10nBuilder)
 
 	publisher.Activity(ab)
 
@@ -297,7 +296,7 @@ func NewConfig(db *gorm.DB) Config {
 	configUser(b, nb, db, publisher)
 	configProfile(b, db)
 
-	b.Plugins(
+	b.Use(
 		mediab,
 		microb,
 		nb,
@@ -320,7 +319,7 @@ func NewConfig(db *gorm.DB) Config {
 }
 
 func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBuilder {
-	l := b.Model(&models.ListModel{}).Plugins(ab)
+	l := b.Model(&models.ListModel{}).Use(ab)
 	{
 		l.Listing("ID", "Title", "Status")
 		ed := l.Editing("StatusBar", "ScheduleBar", "Title", "DetailPath", "ListPath")
@@ -573,7 +572,7 @@ func configPost(
 	nb *note.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
-	m.Plugins(
+	m.Use(
 		slug.New(),
 		ab,
 		publisher,

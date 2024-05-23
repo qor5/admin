@@ -113,8 +113,8 @@ func (b *EditingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *EditingBuil
 	return b
 }
 
-func (b *EditingBuilder) CleanTabsPanels() (r *EditingBuilder) {
-	b.tabPanels = nil
+func (b *EditingBuilder) TabsPanels(vs ...TabComponentFunc) (r *EditingBuilder) {
+	b.tabPanels = vs
 	return b
 }
 

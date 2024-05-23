@@ -109,8 +109,8 @@ func (b *DetailingBuilder) TabsPanelFunc() (r []TabComponentFunc) {
 	return b.tabPanels
 }
 
-func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
-	b.tabPanels = nil
+func (b *DetailingBuilder) TabsPanels(vs ...TabComponentFunc) (r *DetailingBuilder) {
+	b.tabPanels = vs
 	return b
 }
 

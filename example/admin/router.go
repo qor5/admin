@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
 )
@@ -23,8 +25,17 @@ const (
 func TestHandler(db *gorm.DB) http.Handler {
 	mux := http.NewServeMux()
 	c := NewConfig(db)
-	mux.Handle("/page_builder/", c.pageBuilder)
-	mux.Handle("/", c.pb)
+	u := &models.User{
+		Model: gorm.Model{ID: 888},
+		Roles: []role.Role{
+			{
+				Name: "admin",
+			},
+		},
+	}
+	m := login.MockCurrentUser(u)
+	mux.Handle("/page_builder/", m(c.pageBuilder))
+	mux.Handle("/", m(c.pb))
 	return mux
 }
 

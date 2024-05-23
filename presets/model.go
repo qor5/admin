@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -13,7 +12,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
 )
 
 type ModelBuilder struct {
@@ -61,17 +59,6 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb.newEditing()
 
 	return
-}
-
-func (mb *ModelBuilder) Plugins(vs ...ModelPlugin) (r *ModelBuilder) {
-	mb.plugins = slices.Compact(append(
-		mb.plugins,
-		slices.DeleteFunc(vs,
-			func(v ModelPlugin) bool {
-				return reflectutils.IsNil(v)
-			},
-		)...))
-	return mb
 }
 
 func (mb *ModelBuilder) HasDetailing() bool {

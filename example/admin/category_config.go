@@ -13,7 +13,7 @@ import (
 )
 
 func configCategory(b *presets.Builder, db *gorm.DB, publisher *publish.Builder) *presets.ModelBuilder {
-	p := b.Model(&models.Category{}).Plugins(publisher)
+	p := b.Model(&models.Category{}).Use(publisher)
 
 	eb := p.Editing("StatusBar", "ScheduleBar", "Name", "Products")
 	p.Listing("Name")

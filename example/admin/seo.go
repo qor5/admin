@@ -25,7 +25,7 @@ func configureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
 	).RegisterSettingVariables("Test")
 	seoBuilder.RegisterSEO("Product")
 	seoBuilder.RegisterSEO("Announcement")
-	pb.Plugins(seoBuilder)
+	pb.Use(seoBuilder)
 }
 
 // @snippet_end

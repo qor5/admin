@@ -288,27 +288,8 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) error {
 	defer b.ps.Build()
-	db := b.db
-	l10nB := b.l10n
-	// activityB := b.ab
-	publisher := b.publisher
-	if l10nB != nil {
-		l10nB.Activity(b.ab)
-	}
-	seoBuilder := b.seoBuilder
-	b.ps.Plugins(b.mediaBuilder, publisher, seoBuilder)
+	b.preparePlugins()
 
-	mb := b.ps.Model(&Page{}).URIName("editors").Plugins(
-		publisher,
-		b.ab,
-		seoBuilder,
-		b.note,
-		b.l10n,
-	)
-
-	md := mb.Detailing()
-	md.Field("defaultVersion")
-	md.PageFunc(b.Editor(mb))
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -316,15 +297,30 @@ func (b *Builder) Install(pb *presets.Builder) error {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	pm := pb.Model(&Page{}).Plugins(
-		publisher,
-		b.ab,
-		seoBuilder,
-		b.note,
-		b.l10n,
-	)
+
+	b.configEditor()
+	b.configPage(pb)
+	b.configSharedContainer(pb)
+	b.configDemoContainer(pb)
+	b.configCategory(pb)
+
+	return nil
+}
+
+func (b *Builder) configEditor() {
+	mb := b.ps.Model(&Page{}).URIName("editors")
+
+	md := mb.Detailing()
+	md.Field("defaultVersion")
+	md.PageFunc(b.Editor(mb))
+	b.useAllPlugin(mb)
+}
+
+func (b *Builder) configPage(pb *presets.Builder) {
+	db := b.db
+	pm := pb.Model(&Page{})
 	b.mb = pm
-	templateM := presets.NewModelBuilder(pb, &Template{}).Plugins(b.ab)
+	templateM := presets.NewModelBuilder(pb, &Template{}).Use(b.ab)
 	if b.templateEnabled {
 		templateM = b.configTemplate(pb, db)
 	}
@@ -336,7 +332,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		if err != nil {
 			panic(err)
 		}
-		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(l10nB.GetLocalePath(page.LocaleCode), category.Path))))
+		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
 	dp := pm.Detailing("Overview")
 	// register modelBuilder
@@ -347,7 +343,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
 	// pm detailing side panel
-	b.mb.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
+	pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 
 	b.configDetailLayoutFunc(pb, pm, templateM, db)
 
@@ -368,7 +364,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(ctx.R.Context(), c, db, l10nB)
+		err = pageValidator(ctx.R.Context(), c, db, b.l10n)
 		return
 	})
 
@@ -504,15 +500,62 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		return
 	})
 
-	b.configSharedContainer(pb, db).Plugins(b.ab, l10nB)
-	b.configDemoContainer(pb, db).Plugins(b.ab, l10nB)
-	cb := b.configCategory(pb, db, l10nB).Plugins(b.ab, l10nB)
-
+	publisher := b.publisher
 	if publisher != nil {
 		publisher.ContextValueFuncs(b.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
-			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil)
+			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil).TabsPanels()
 		})
 	}
+
+	b.useAllPlugin(pm)
+
+	// dp.TabsPanels()
+
+	if b.AfterPageInstallFunc != nil {
+		err := b.AfterPageInstallFunc(pb, pm)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if b.AfterTemplateInstallFunc != nil {
+		err := b.AfterTemplateInstallFunc(pb, templateM)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
+	if b.publisher != nil {
+		pm.Use(b.publisher)
+	}
+
+	if b.ab != nil {
+		pm.Use(b.ab)
+	}
+
+	if b.seoBuilder != nil {
+		pm.Use(b.seoBuilder)
+	}
+
+	if b.l10n != nil {
+		pm.Use(b.l10n)
+	}
+
+	if b.note != nil {
+		pm.Use(b.note)
+	}
+}
+
+func (b *Builder) preparePlugins() {
+	l10nB := b.l10n
+	// activityB := b.ab
+	publisher := b.publisher
+	if l10nB != nil {
+		l10nB.Activity(b.ab)
+	}
+	seoBuilder := b.seoBuilder
 	if seoBuilder != nil {
 		seoBuilder.RegisterSEO("Page", &Page{}).RegisterContextVariable(
 			"Title",
@@ -524,31 +567,11 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			},
 		)
 	}
-	if b.note != nil {
-		pm.Plugins(b.note)
+
+	if b.mediaBuilder == nil {
+		b.mediaBuilder = media.New(b.db)
 	}
-	eb.CleanTabsPanels()
-	dp.CleanTabsPanels()
-	var err error
-	if b.AfterPageInstallFunc != nil {
-		err = b.AfterPageInstallFunc(pb, mb)
-		if err != nil {
-			return err
-		}
-	}
-	if b.AfterCategoryInstallFunc != nil {
-		err = b.AfterCategoryInstallFunc(pb, cb)
-		if err != nil {
-			return err
-		}
-	}
-	if b.AfterTemplateInstallFunc != nil {
-		err = b.AfterTemplateInstallFunc(pb, templateM)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	b.ps.Use(b.mediaBuilder, publisher, seoBuilder)
 }
 
 func (b *Builder) configDetailLayoutFunc(
@@ -937,7 +960,9 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) configCategory(pb *presets.Builder) (pm *presets.ModelBuilder) {
+	db := b.db
+
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	lb := pm.Listing("Name", "Path", "Description")
 
@@ -1008,7 +1033,7 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
-		err = categoryValidator(c, db, l10nB)
+		err = categoryValidator(c, db, b.l10n)
 		return
 	})
 
@@ -1018,8 +1043,19 @@ func (b *Builder) configCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 		err = db.Save(c).Error
 		return
 	})
-	b.ab.RegisterModels(pm)
+	if b.ab != nil {
+		pm.Use(b.ab)
+	}
+	if b.l10n != nil {
+		pm.Use(b.l10n)
+	}
 
+	if b.AfterCategoryInstallFunc != nil {
+		err := b.AfterCategoryInstallFunc(pb, pm)
+		if err != nil {
+			panic(err)
+		}
+	}
 	return
 }
 
@@ -1579,8 +1615,10 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
-	pm = pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
+func (b *Builder) configSharedContainer(pb *presets.Builder) {
+	db := b.db
+
+	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
 
@@ -1655,10 +1693,19 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, db *gorm.DB) (pm *p
 
 		return tdbind
 	})
+
+	if b.ab != nil {
+		pm.Use(b.ab)
+	}
+	if b.l10n != nil {
+		pm.Use(b.l10n)
+	}
 	return
 }
 
-func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
+func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
+	db := b.db
+
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -1793,6 +1840,13 @@ func (b *Builder) configDemoContainer(pb *presets.Builder, db *gorm.DB) (pm *pre
 
 		return
 	})
+
+	if b.ab != nil {
+		pm.Use(b.ab)
+	}
+	if b.l10n != nil {
+		pm.Use(b.l10n)
+	}
 	return
 }
 

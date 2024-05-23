@@ -4,34 +4,33 @@ import (
 	"embed"
 	"testing"
 
+	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/media/base"
-	"github.com/theplant/osenv"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3control"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/web/v3/multipartestutils"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
 //go:embed *.png
 var box embed.FS
 
-var (
-	testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
-	s3Bucket     = osenv.Get("S3_Bucket", "s3-bucket for media library storage", "example")
-	s3Region     = osenv.Get("S3_Region", "s3-region for media library storage", "ap-northeast-1")
-)
+var TestDB *gorm.DB
 
-func setup() (db *gorm.DB) {
-	var err error
-	db, err = gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
+	TestDB = env.DB
+	m.Run()
+}
+
+func setup() (db *gorm.DB) {
+	var err error
+	db = TestDB
 
 	db = db.Debug()
 	// db.Logger = db.Logger.LogMode(logger.Info)
@@ -42,14 +41,7 @@ func setup() (db *gorm.DB) {
 		panic(err)
 	}
 
-	sess := session.Must(session.NewSession())
-
-	oss.Storage = s3.New(&s3.Config{
-		Bucket:  s3Bucket,
-		Region:  s3Region,
-		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session: sess,
-	})
+	oss.Storage = filesystem.New("/tmp/media_test")
 
 	return
 }

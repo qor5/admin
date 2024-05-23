@@ -13,9 +13,8 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/theplant/osenv"
 	"github.com/theplant/sliceutils"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -212,18 +211,20 @@ func (m *MockStorage) Delete(path string) error {
 	return nil
 }
 
-var testDBParams = osenv.Get("TEST_DB_PARAMS", "test database connection string", "user=test password=test dbname=test sslmode=disable host=localhost port=6432 TimeZone=Asia/Tokyo")
+var TestDB *gorm.DB
 
-func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(testDBParams), &gorm.Config{})
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
-	return db.Debug()
+	defer env.TearDown()
+	TestDB = env.DB
+	m.Run()
 }
 
 func TestPublishVersionContentToS3(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&Product{})
 	storage := &MockStorage{}
 
@@ -303,7 +304,7 @@ func TestPublishVersionContentToS3(t *testing.T) {
 }
 
 func TestPublishList(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&ProductWithoutVersion{})
 	storage := &MockStorage{}
 
@@ -390,7 +391,7 @@ get: %v
 }
 
 func TestSchedulePublish(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.Migrator().DropTable(&Product{})
 	db.AutoMigrate(&Product{})
 	storage := &MockStorage{}
@@ -453,7 +454,7 @@ func TestSchedulePublish(t *testing.T) {
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&ProductWithoutVersion{})
 	storage := &MockStorage{}
 
