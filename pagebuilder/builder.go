@@ -451,7 +451,7 @@ func (b *Builder) configPage(pb *presets.Builder) {
 				return
 			}
 
-			if strings.Contains(ctx.R.RequestURI, publish.EventSaveNewVersion) || strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
 				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
 					return
 				}

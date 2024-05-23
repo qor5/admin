@@ -20,63 +20,6 @@ const (
 	PortalPublishCustomDialog   = "publish_PortalPublishCustomDialog"
 )
 
-func saveNewVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		toObj := mb.NewModel()
-		slugger := toObj.(presets.SlugDecoder)
-		paramID := ctx.Param(presets.ParamID)
-		currentVersionName := slugger.PrimaryColumnValuesBySlug(paramID)["version"]
-
-		me := mb.Editing()
-		vErr := me.RunSetterFunc(ctx, false, toObj)
-
-		if vErr.HaveErrors() {
-			me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
-			return
-		}
-
-		fromObj := mb.NewModel()
-		utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj)
-		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
-			return
-		}
-
-		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
-			return
-		}
-
-		if me.Validator != nil {
-			if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
-				me.UpdateOverlayContent(ctx, &r, toObj, "", &vErr)
-				return
-			}
-		}
-
-		if err = me.Saver(toObj, paramID, ctx); err != nil {
-			me.UpdateOverlayContent(ctx, &r, toObj, "", err)
-			return
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
-
-		if ctx.R.URL.Query().Get(presets.ParamInDialog) == "true" {
-			web.AppendRunScripts(&r,
-				"vars.presetsDialog = false",
-				web.Plaid().
-					URL(ctx.R.RequestURI).
-					EventFunc(actions.UpdateListingDialog).
-					StringQuery(ctx.R.URL.Query().Get(presets.ParamListingQueries)).
-					Go(),
-			)
-		} else {
-			r.Reload = true
-		}
-
-		return
-	}
-}
-
 func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		toObj := mb.NewModel()
@@ -125,63 +68,6 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 		newQueries.Del(presets.ParamID)
 		r.PushState = web.Location(newQueries).URL(mb.Info().DetailingHref(se.PrimarySlug()))
 		return
-	}
-}
-
-func versionActionsFunc(m *presets.ModelBuilder) presets.ObjectComponentFunc {
-	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-		gmsgr := presets.MustGetMessages(ctx.R)
-		buttonLabel := gmsgr.Create
-		var disableUpdateBtn bool
-		isCreateBtn := true
-		if ctx.Param(presets.ParamID) != "" {
-			isCreateBtn = false
-			buttonLabel = gmsgr.Update
-			disableUpdateBtn = m.Info().Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		updateBtn := v.VBtn(buttonLabel).
-			Color("primary").
-			Attr("@click", web.Plaid().
-				EventFunc(actions.Update).
-				Queries(ctx.Queries()).
-				Query(presets.ParamID, ctx.Param(presets.ParamID)).
-				URL(m.Info().ListingHref()).
-				Go(),
-			)
-		if disableUpdateBtn {
-			updateBtn = updateBtn.Disabled(disableUpdateBtn)
-		} else {
-			updateBtn = updateBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
-		}
-		if isCreateBtn {
-			return h.Components(
-				v.VSpacer(),
-				updateBtn,
-			)
-		}
-
-		saveNewVersionBtn := v.VBtn(msgr.SaveAsNewVersion).
-			Color("secondary").
-			Attr("@click", web.Plaid().
-				EventFunc(EventSaveNewVersion).
-				Queries(ctx.Queries()).
-				Query(presets.ParamID, ctx.Param(presets.ParamID)).
-				URL(m.Info().ListingHref()).
-				Go(),
-			)
-		if disableUpdateBtn {
-			saveNewVersionBtn = saveNewVersionBtn.Disabled(disableUpdateBtn)
-		} else {
-			saveNewVersionBtn = saveNewVersionBtn.Attr(":disabled", "isFetching").Attr(":loading", "isFetching")
-		}
-
-		return h.Components(
-			v.VSpacer(),
-			saveNewVersionBtn,
-			updateBtn,
-		)
 	}
 }
 

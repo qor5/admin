@@ -75,7 +75,6 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
-		ed.ActionsFunc(versionActionsFunc(m)) // TODO: does it still need it?
 		m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
 
 		// listing-delete deletes all versions

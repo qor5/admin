@@ -11,7 +11,6 @@ const (
 	EventRepublish = "publish_EventRepublish"
 	EventUnpublish = "publish_EventUnpublish"
 
-	EventSaveNewVersion      = "publish_EventSaveNewVersion"
 	EventDuplicateVersion    = "publish_EventDuplicateVersion" // TODO:
 	eventSelectVersion       = "publish_eventSelectVersion"
 	eventRenameVersionDialog = "publish_eventRenameVersionDialog" // TODO:
@@ -34,7 +33,6 @@ func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builde
 	mb.RegisterEventFunc(EventRepublish, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(EventUnpublish, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 
-	mb.RegisterEventFunc(EventSaveNewVersion, saveNewVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(db, mb, publisher))
 	mb.RegisterEventFunc(eventRenameVersionDialog, renameVersionDialog(mb))
 	mb.RegisterEventFunc(eventRenameVersionV2, renameVersion(mb))
