@@ -39,9 +39,12 @@ func TestMain(m *testing.M) {
 
 var pageBuilderData = gofixtures.Data(
 	gofixtures.Sql(`
-INSERT INTO page_builder_pages (version, locale_code, title, slug) VALUES ('v1','International', '123', '123');
-INSERT INTO container_headers (color) VALUES ('black');
-INSERT INTO page_builder_containers (page_id, page_version,locale_code, model_name, model_id, display_order) VALUES ( 1, 'v1','International', 'Header', 1, 1),( 1, 'v1','International', 'Header', 1, 2);
+INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
+SELECT setval('page_builder_pages_id_seq', 1, true);
+INSERT INTO container_headers (id, color) VALUES (1, 'black');
+SELECT setval('container_headers_id_seq', 1, true);
+INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (1, 1, 'v1','International', 'Header', 1, 1),(2, 1, 'v1','International', 'Header', 1, 2);
+SELECT setval('page_builder_containers_id_seq', 2, true);
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 )
 
