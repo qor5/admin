@@ -18,6 +18,8 @@ import (
 const (
 	WrapHandlerKey  = "l10nWrapHandlerKey"
 	MenuTopItemFunc = "l10nMenuTopItemFunc"
+
+	SlugLocaleCode = "locale_code"
 )
 
 func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

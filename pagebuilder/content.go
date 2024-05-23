@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/qor5/admin/v3/presets"
@@ -15,15 +16,10 @@ const (
 
 func (b *Builder) PageContent(ctx *web.EventContext) (r web.PageResponse, p *Page, err error) {
 	p = new(Page)
-	var (
-		body h.HTMLComponent
+	var body h.HTMLComponent
 
-		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
-		pageID      = primarySlug["id"]
-		version     = primarySlug["version"]
-		localeCode  = primarySlug["locale_code"]
-	)
-	body, p, err = b.renderPageOrTemplate(ctx, pageID, version, localeCode, true)
+	pageID, version, localeCode := primaryKeys(ctx)
+	body, p, err = b.renderPageOrTemplate(ctx, fmt.Sprint(pageID), version, localeCode, true)
 	if err != nil {
 		return
 	}

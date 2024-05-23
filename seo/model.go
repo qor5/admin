@@ -35,8 +35,8 @@ func (s *QorSEOSetting) PrimaryColumnValuesBySlug(slug string) map[string]string
 		panic("wrong slug")
 	}
 	return map[string]string{
-		"name":        segs[0],
-		"locale_code": segs[1],
+		"name":              segs[0],
+		l10n.SlugLocaleCode: segs[1],
 	}
 }
 

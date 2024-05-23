@@ -793,7 +793,7 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 				cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
 				con := presets.SQLCondition{
 					Query: "id = ? and locale_code = ?",
-					Args:  []interface{}{cs["id"], cs["locale_code"]},
+					Args:  []interface{}{cs["id"], cs[l10n.SlugLocaleCode]},
 				}
 				params.SQLConditions = append(params.SQLConditions, &con)
 			}
@@ -1021,7 +1021,7 @@ func (b *Builder) configCategory(pb *presets.Builder) (pm *presets.ModelBuilder)
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
 		ID := cs["id"]
-		Locale := cs["locale_code"]
+		Locale := cs[l10n.SlugLocaleCode]
 
 		var count int64
 		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {

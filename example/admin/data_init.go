@@ -234,22 +234,24 @@ INSERT INTO public.page_builder_categories VALUES (1, '2023-03-03 06:21:07.78251
 -- Data for Name: page_builder_containers; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_containers VALUES (1, '2023-03-03 06:20:48.334178+00', '2023-03-03 06:20:48.334178+00', NULL, 1, 'tpl', 'Image', 1, 1, false, false, 'Image', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (2, '2023-03-03 06:21:40.233601+00', '2023-03-03 06:21:40.233601+00', NULL, 1, '2023-03-03-v01', 'Header', 1, 1, false, false, 'Header', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (3, '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:42.275791+00', '2023-03-03 06:21:54.868151+00', 1, '2023-03-03-v01', 'Header', 2, 2, false, false, 'Header', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (4, '2023-03-03 06:21:58.674323+00', '2023-03-03 06:21:58.674323+00', NULL, 1, '2023-03-03-v01', 'Video Banner', 1, 2, false, false, 'Video Banner', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (5, '2023-03-03 06:22:46.641959+00', '2023-03-03 06:22:46.641959+00', NULL, 1, '2023-03-03-v01', 'Heading', 1, 3, false, false, 'Heading', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (7, '2023-03-03 06:24:15.676928+00', '2023-03-03 06:24:15.676928+00', NULL, 1, '2023-03-03-v01', 'Heading', 2, 5, false, false, 'Heading', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (9, '2023-03-03 06:25:41.972811+00', '2023-03-03 06:25:41.972811+00', NULL, 1, '2023-03-03-v01', 'Image', 2, 7, false, false, 'Image', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (10, '2023-03-03 06:25:55.874078+00', '2023-03-03 06:25:55.874078+00', NULL, 1, '2023-03-03-v01', 'Heading', 3, 8, false, false, 'Heading', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (13, '2023-03-03 06:27:54.022522+00', '2023-03-03 06:28:27.625631+00', NULL, 1, '2023-03-03-v01', 'ContactForm', 1, 11, true, false, 'ContactForm', 'International', 0);
-INSERT INTO public.page_builder_containers VALUES (14, '2023-03-03 06:28:30.305332+00', '2023-03-03 06:28:30.305332+00', NULL, 1, '2023-03-03-v01', 'Footer', 1, 12, false, false, 'Footer', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2023-03-03 06:20:48.334178 +00:00', '2023-03-03 06:20:48.334178 +00:00', null, 1, 'tpl', 'Image', 1, 1, false, false, 'Image', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2023-03-03 06:21:40.233601 +00:00', '2023-03-03 06:21:40.233601 +00:00', null, 1, '2023-03-03-v01', 'Header', 1, 1, false, false, 'Header', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (3, '2023-03-03 06:21:42.275791 +00:00', '2023-03-03 06:21:42.275791 +00:00', '2023-03-03 06:21:54.868151 +00:00', 1, '2023-03-03-v01', 'Header', 2, 2, false, false, 'Header', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (4, '2023-03-03 06:21:58.674323 +00:00', '2023-03-03 06:21:58.674323 +00:00', null, 1, '2023-03-03-v01', 'Video Banner', 1, 2, false, false, 'Video Banner', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (5, '2023-03-03 06:22:46.641959 +00:00', '2023-03-03 06:22:46.641959 +00:00', null, 1, '2023-03-03-v01', 'Heading', 1, 3, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (7, '2023-03-03 06:24:15.676928 +00:00', '2023-03-03 06:24:15.676928 +00:00', null, 1, '2023-03-03-v01', 'Heading', 2, 5, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (9, '2023-03-03 06:25:41.972811 +00:00', '2023-03-03 06:25:41.972811 +00:00', null, 1, '2023-03-03-v01', 'Image', 2, 7, false, false, 'Image', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (10, '2023-03-03 06:25:55.874078 +00:00', '2023-03-03 06:25:55.874078 +00:00', null, 1, '2023-03-03-v01', 'Heading', 3, 8, false, false, 'Heading', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (13, '2023-03-03 06:27:54.022522 +00:00', '2023-03-03 06:28:27.625631 +00:00', null, 1, '2023-03-03-v01', 'ContactForm', 1, 11, true, false, 'ContactForm', 'International', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (14, '2023-03-03 06:28:30.305332 +00:00', '2023-03-03 06:28:30.305332 +00:00', null, 1, '2023-03-03-v01', 'Footer', 1, 12, false, false, 'Footer', 'International', 0);
+
 
 --
 -- Data for Name: page_builder_pages; Type: TABLE DATA; Schema: public; Owner: example
 --
 
-INSERT INTO public.page_builder_pages VALUES (1, '2023-03-03 06:20:35.886165+00', '2023-03-03 06:20:35.886165+00', NULL, 'The Plant Homepage', '/', 0, 'draft', '', NULL, NULL, NULL, NULL, '2023-03-03-v01', '', '', '', 'International');
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status,
+online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES (1, '2024-05-23 12:45:15.163414 +00:00', '2024-05-23 12:45:15.163414 +00:00', null, 'The Plant Homepage', '/', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2023-03-03-v01', '2023-03-03-v01', '', 'International');
 
 
 --

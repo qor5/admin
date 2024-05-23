@@ -531,8 +531,8 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 		p            = new(Page)
 		primarySlug  = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		pageID       = primarySlug["id"]
-		pageVersion  = primarySlug["version"]
-		locale       = primarySlug["locale_code"]
+		pageVersion  = primarySlug[publish.SlugVersion]
+		locale       = primarySlug[l10n.SlugLocaleCode]
 		status       = ctx.R.FormValue(paramStatus)
 		isReadonly   = status != publish.StatusDraft
 		msgr         = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -671,21 +671,26 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 	return
 }
 
+func primaryKeys(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
+	p := new(Page)
+	primarySlug := p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
+	pageVersion = primarySlug[publish.SlugVersion]
+	locale = primarySlug[l10n.SlugLocaleCode]
+	pageIDi, _ := strconv.ParseInt(primarySlug["id"], 10, 64)
+	pageID = int(pageIDi)
+	return
+}
+
 func (b *Builder) addContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		pageID          int
-		p               = new(Page)
-		primarySlug     = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
-		pageVersion     = primarySlug["version"]
-		locale          = primarySlug["locale_code"]
 		modelName       = ctx.Param(paramModelName)
 		sharedContainer = ctx.Param(paramSharedContainer)
 		modelID         = ctx.ParamAsInt(paramModelID)
 		containerID     = ctx.Param(paramContainerID)
 	)
-	if pageID, err = strconv.Atoi(primarySlug["id"]); err != nil {
-		return
-	}
+
+	pageID, pageVersion, locale := primaryKeys(ctx)
+
 	if sharedContainer == "true" {
 		err = b.AddSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
@@ -1179,9 +1184,10 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 	var (
 		p           = new(Page)
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
-		locale      = primarySlug["local_code"]
+		locale      = primarySlug["locale_code"]
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	)
+
 	var (
 		containers  []h.HTMLComponent
 		groupsNames []string

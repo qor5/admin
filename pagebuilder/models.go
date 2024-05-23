@@ -55,8 +55,8 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 		}
 
 		return map[string]string{
-			"id":      segs[0],
-			"version": segs[1],
+			"id":                segs[0],
+			publish.SlugVersion: segs[1],
 		}
 	}
 	if len(segs) != 3 {
@@ -64,9 +64,9 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 
 	return map[string]string{
-		"id":          segs[0],
-		"version":     segs[1],
-		"locale_code": segs[2],
+		"id":                segs[0],
+		publish.SlugVersion: segs[1],
+		l10n.SlugLocaleCode: segs[2],
 	}
 }
 
@@ -120,8 +120,8 @@ func (c *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 
 	return map[string]string{
-		"id":          segs[0],
-		"locale_code": segs[1],
+		"id":                segs[0],
+		l10n.SlugLocaleCode: segs[1],
 	}
 }
 
