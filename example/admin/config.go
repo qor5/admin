@@ -167,7 +167,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configMenuOrder(b)
 
-	m := configPost(b, db, ab, publisher, nb)
+	configPost(b, db, ab, publisher, nb)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -274,8 +274,6 @@ func NewConfig(db *gorm.DB) Config {
 	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
 		panic(err)
 	}
-
-	m.Use(nb, ab)
 
 	microb := microsite.New(db).Publisher(publisher)
 
