@@ -24,7 +24,7 @@ func main() {
 			),
 		),
 	)
-	err := http.ListenAndServe("localhost:"+port, mux)
+	err := http.ListenAndServe(":"+port, mux)
 	if err != nil {
 		panic(err)
 	}
