@@ -39,6 +39,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
@@ -70,6 +71,25 @@ var (
 )
 
 func NewConfig(db *gorm.DB) Config {
+	if err := db.AutoMigrate(
+		&models.Post{},
+		&models.InputDemo{},
+		&models.User{},
+		&models.LoginSession{},
+		&models.ListModel{},
+		&role.Role{},
+		&perm.DefaultDBPolicy{},
+		&models.Customer{},
+		&models.Address{},
+		&models.Phone{},
+		&models.MembershipCard{},
+		&models.Product{},
+		&models.Order{},
+		&models.Category{},
+	); err != nil {
+		panic(err)
+	}
+
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,

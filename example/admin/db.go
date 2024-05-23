@@ -1,9 +1,6 @@
 package admin
 
 import (
-	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,23 +18,5 @@ func ConnectDB() (db *gorm.DB) {
 
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = db.AutoMigrate(
-		&models.Post{},
-		&models.InputDemo{},
-		&models.User{},
-		&models.LoginSession{},
-		&models.ListModel{},
-		&role.Role{},
-		&perm.DefaultDBPolicy{},
-		&models.Customer{},
-		&models.Address{},
-		&models.Phone{},
-		&models.MembershipCard{},
-		&models.Product{},
-		&models.Order{},
-		&models.Category{},
-	); err != nil {
-		panic(err)
-	}
 	return db
 }
