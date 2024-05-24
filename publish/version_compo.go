@@ -239,13 +239,15 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
-		return h.Td(
-			v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", web.Plaid().EventFunc(actions.UpdateListingDialog).
-				URL(b.GetURIPrefix()+"/"+mb.Info().URIName()).
-				Query("select_id", p.PrimarySlug()).
-				Go()),
-			h.Text(versionName),
-		).Class("d-inline-flex align-center")
+		return h.Td().Children(
+			h.Div().Class("d-inline-flex align-center").Children(
+				v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", web.Plaid().EventFunc(actions.UpdateListingDialog).
+					URL(b.GetURIPrefix()+"/"+mb.Info().URIName()).
+					Query("select_id", p.PrimarySlug()).
+					Go()),
+				h.Text(versionName),
+			),
+		)
 	})
 	lb.Field("State").ComponentFunc(StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -299,14 +301,29 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			disable = true
 		}
 
-		return h.Td(v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).Attr("@click", web.Plaid().
-			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
-			EventFunc(eventDeleteVersionDialog).
-			Queries(ctx.Queries()).
-			Query(presets.ParamOverlay, actions.Dialog).
-			Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
-			Query("version_name", versionName).
-			Go()))
+		return h.Td().Children(
+			// TODO: i18n
+			v.VBtn("Rename").Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+				Attr("@click", web.Plaid().
+					URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
+					EventFunc(eventRenameVersionDialog).
+					Queries(ctx.Queries()).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
+					Query("version_name", versionName).
+					Go(),
+				),
+			v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+				Attr("@click", web.Plaid().
+					URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
+					EventFunc(eventDeleteVersionDialog).
+					Queries(ctx.Queries()).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
+					Query("version_name", versionName).
+					Go(),
+				),
+		)
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {

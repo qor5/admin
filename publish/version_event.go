@@ -3,7 +3,6 @@ package publish
 import (
 	"fmt"
 
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
@@ -77,7 +76,7 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 		versionName := ctx.R.FormValue("version_name")
 		okAction := web.Plaid().
 			URL(mb.Info().ListingHref()).
-			EventFunc(eventRenameVersionV2).
+			EventFunc(eventRenameVersion).
 			Queries(ctx.Queries()).
 			Query("rename_id", id).Go()
 
@@ -158,32 +157,6 @@ func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 					Query(presets.ParamID, id).Go(),
 				utilMsgr),
 		})
-		return
-	}
-}
-
-func renameVersionAction(_ *gorm.DB, mb *presets.ModelBuilder, _ *Builder, _ *activity.Builder, _ string) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-
-		name := ctx.R.FormValue("name")
-
-		if err = reflectutils.Set(obj, "Version.VersionName", name); err != nil {
-			return
-		}
-
-		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
-			return
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		presets.ShowMessage(&r, msgr.SuccessfullyRename, "")
 		return
 	}
 }
