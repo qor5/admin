@@ -221,7 +221,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		),
 	).VSlot("{ form }")
 
-	b.mb.p.overlay(overlayType, &r, comp, b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, comp, b.mb.rightDrawerWidth)
 	return
 }
 

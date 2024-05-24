@@ -785,12 +785,13 @@ const (
 	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
 )
 
-func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
+	overlayType := ctx.Param(ParamOverlay)
 	if overlayType == actions.Dialog {
 		b.dialog(r, comp, width)
 		return
 	} else if overlayType == actions.Content {
-		b.contentDrawer(r, comp, width)
+		b.contentDrawer(ctx, r, comp, width)
 		return
 	}
 	b.rightDrawer(r, comp, width)
@@ -822,12 +823,17 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
 }
 
-func (b *Builder) contentDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
 	}
+	portalName := ctx.Param(ParamPortalName)
+	p := RightDrawerContentPortalName
+	if portalName != "" {
+		p = portalName
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: RightDrawerContentPortalName,
+		Name: p,
 		Body: comp,
 	})
 }

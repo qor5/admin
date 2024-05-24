@@ -2167,10 +2167,11 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(paramContainerID, web.Var("container_id")).
 		RunPushState() + ";" +
 		web.POST().
-			EventFunc(actions.AutoSaveEdit).
+			EventFunc(actions.Edit).
 			URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
 			Query(presets.ParamID, web.Var("arr[1]")).
 			Query(presets.ParamOverlay, actions.Content).
+			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
 	addAction := fmt.Sprintf(`vars.containerTab="%s";`, EditorTabElements) +
 		web.Plaid().

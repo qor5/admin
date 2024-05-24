@@ -149,7 +149,7 @@ func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, er
 		creatingB = b.mb.creating
 	}
 
-	b.mb.p.overlay(ctx.R.FormValue(ParamOverlay), &r, creatingB.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, creatingB.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return
 }
 
@@ -158,7 +158,7 @@ func (b *EditingBuilder) formEdit(ctx *web.EventContext) (r web.EventResponse, e
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-	b.mb.p.overlay(ctx.R.FormValue(ParamOverlay), &r, b.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, b.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return
 }
 
@@ -532,16 +532,17 @@ func (b *EditingBuilder) UpdateOverlayContent(
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
+	portalName := ctx.R.FormValue(ParamPortalName)
 	p := RightDrawerContentPortalName
-
 	if overlayType == actions.Dialog {
 		p = dialogContentPortalName
 	}
-
 	if b.mb.singleton {
 		p = singletonEditingPortalName
 	}
-
+	if portalName != "" {
+		p = portalName
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: p,
 		Body: b.editFormFor(obj, ctx),
