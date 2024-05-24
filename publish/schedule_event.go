@@ -75,8 +75,8 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 						),
 					),
 				).MaxWidth("480px").
-					Attr("v-model", "locals.schedulePublishDialogV2"),
-			).Init("{schedulePublishDialogV2:true}").VSlot("{locals}"),
+					Attr("v-model", "locals.schedulePublishDialog"),
+			).Init("{schedulePublishDialog:true}").VSlot("{locals}"),
 		})
 		return
 	}

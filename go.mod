@@ -20,6 +20,7 @@ require (
 	github.com/markbates/goth v1.80.0
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/ory/ladon v1.3.0
+	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/ui/v3 v3.0.0
@@ -109,7 +110,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect

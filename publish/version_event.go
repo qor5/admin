@@ -94,17 +94,17 @@ func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
 							v.VBtn("Cancel").
 								Variant(v.VariantFlat).
 								Class("ml-2").
-								On("click", "locals.renameVersionDialogV2 = false"),
+								On("click", "locals.renameVersionDialog = false"),
 
 							v.VBtn("OK").
 								Color("primary").
 								Variant(v.VariantFlat).
 								Theme(v.ThemeDark).
-								Attr("@click", "locals.renameVersionDialogV2 = false; "+okAction),
+								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
 						),
 					),
-				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialogV2"),
-			).Init("{renameVersionDialogV2:true}").VSlot("{locals}"),
+				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
+			).Init("{renameVersionDialog:true}").VSlot("{locals}"),
 		})
 		return
 	}

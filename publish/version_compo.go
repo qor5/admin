@@ -239,12 +239,14 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
+
+		queries := ctx.Queries()
+		queries.Set("select_id", p.PrimarySlug())
+		onChange := web.Plaid().URL(ctx.R.URL.Path).Queries(queries).EventFunc(actions.UpdateListingDialog).Go()
+
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(
-				v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", web.Plaid().EventFunc(actions.UpdateListingDialog).
-					URL(b.GetURIPrefix()+"/"+mb.Info().URIName()).
-					Query("select_id", p.PrimarySlug()).
-					Go()),
+				v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", onChange),
 				h.Text(versionName),
 			),
 		)
