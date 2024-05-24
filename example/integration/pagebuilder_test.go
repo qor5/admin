@@ -149,9 +149,15 @@ func TestPageBuilder(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var pages []*pagebuilder.Page
-				TestDB.Find(&pages)
+				TestDB.Order("id DESC, version DESC").Find(&pages)
 				if len(pages) != 2 {
-					t.Error("Page not duplicated", pages)
+					t.Fatal("Page not duplicated", pages)
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+					pages[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
 				}
 			},
 		},
