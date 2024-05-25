@@ -17,9 +17,8 @@ import (
 type EditingBuilder struct {
 	mb               *ModelBuilder
 	Fetcher          FetchFunc
-	Setter           SetterFunc
+	setter           SetterFunc
 	Saver            SaveFunc
-	AutoSaver        AutoSaveFunc
 	Deleter          DeleteFunc
 	Validator        ValidateFunc
 	tabPanels        []TabComponentFunc
@@ -27,6 +26,7 @@ type EditingBuilder struct {
 	sidePanel        ObjectComponentFunc
 	actionsFunc      ObjectComponentFunc
 	editingTitleFunc EditingTitleComponentFunc
+	onChangeAction   OnChangeActionFunc
 	FieldsBuilder
 }
 
@@ -63,7 +63,7 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 		b.mb.creating = &EditingBuilder{
 			mb:        b.mb,
 			Fetcher:   b.Fetcher,
-			Setter:    b.Setter,
+			setter:    b.setter,
 			Saver:     b.Saver,
 			Deleter:   b.Deleter,
 			Validator: b.Validator,
@@ -88,8 +88,18 @@ func (b *EditingBuilder) FetchFunc(v FetchFunc) (r *EditingBuilder) {
 	return b
 }
 
+func (b *EditingBuilder) WrapFetchFunc(w func(in FetchFunc) FetchFunc) (r *EditingBuilder) {
+	b.Fetcher = w(b.Fetcher)
+	return b
+}
+
 func (b *EditingBuilder) SaveFunc(v SaveFunc) (r *EditingBuilder) {
 	b.Saver = v
+	return b
+}
+
+func (b *EditingBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *EditingBuilder) {
+	b.Saver = w(b.Saver)
 	return b
 }
 
@@ -98,13 +108,33 @@ func (b *EditingBuilder) DeleteFunc(v DeleteFunc) (r *EditingBuilder) {
 	return b
 }
 
+func (b *EditingBuilder) WrapDeleteFunc(w func(in DeleteFunc) DeleteFunc) (r *EditingBuilder) {
+	b.Deleter = w(b.Deleter)
+	return b
+}
+
 func (b *EditingBuilder) ValidateFunc(v ValidateFunc) (r *EditingBuilder) {
 	b.Validator = v
 	return b
 }
 
+func (b *EditingBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *EditingBuilder) {
+	b.Validator = w(b.Validator)
+	return b
+}
+
 func (b *EditingBuilder) SetterFunc(v SetterFunc) (r *EditingBuilder) {
-	b.Setter = v
+	b.setter = v
+	return b
+}
+
+func (b *EditingBuilder) OnChangeActionFunc(v OnChangeActionFunc) (r *EditingBuilder) {
+	b.onChangeAction = v
+	return b
+}
+
+func (b *EditingBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *EditingBuilder) {
+	b.setter = w(b.setter)
 	return b
 }
 
@@ -189,7 +219,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	msgr := MustGetMessages(ctx.R)
 	id := ctx.R.FormValue(ParamID)
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	isAutoSave := b.AutoSaver != nil && overlayType == actions.Content
+	isAutoSave := b.onChangeAction != nil && overlayType == actions.Content
 
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
@@ -299,7 +329,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		h.If(!isAutoSave, VCardActions(actionButtons)),
 	)).VSlot("{form}")
 	if isAutoSave {
-		formContent.OnChange(b.AutoSaver(id, ctx))
+		formContent.OnChange(b.onChangeAction(id, ctx))
 	}
 	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
 		formContent: formContent,
@@ -501,8 +531,8 @@ func (b *EditingBuilder) SaveOverlayContent(
 }
 
 func (b *EditingBuilder) RunSetterFunc(ctx *web.EventContext, removeDeletedAndSort bool, toObj interface{}) (vErr web.ValidationErrors) {
-	if b.Setter != nil {
-		b.Setter(toObj, ctx)
+	if b.setter != nil {
+		b.setter(toObj, ctx)
 	}
 
 	vErr = b.Unmarshal(toObj, b.mb.Info(), removeDeletedAndSort, ctx)

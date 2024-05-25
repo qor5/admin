@@ -283,14 +283,15 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 		return web.Portal(favorPostSelector(db, id)).Name("favorPostSelector")
 	})
 
-	oldSaver := ed.Saver
-	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		u := obj.(*models.User)
-		if u.GetAccountName() == loginInitialUserEmail {
-			return perm.PermissionDenied
+	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			u := obj.(*models.User)
+			if u.GetAccountName() == loginInitialUserEmail {
+				return perm.PermissionDenied
+			}
+			u.RegistrationDate = time.Now()
+			return in(obj, id, ctx)
 		}
-		u.RegistrationDate = time.Now()
-		return oldSaver(obj, id, ctx)
 	})
 
 	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)

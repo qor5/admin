@@ -261,37 +261,39 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		}
 	})
 
-	setter := m.Editing().Setter
-	m.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		if ctx.Param(presets.ParamID) == "" {
-			if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
-				if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
-					return
+	m.Editing().WrapSetterFunc(func(setter presets.SetterFunc) presets.SetterFunc {
+		return func(obj interface{}, ctx *web.EventContext) {
+			if ctx.Param(presets.ParamID) == "" {
+				if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
+					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
+						return
+					}
 				}
 			}
-		}
-		if setter != nil {
-			setter(obj, ctx)
+			if setter != nil {
+				setter(obj, ctx)
+			}
 		}
 	})
 
-	deleter := m.Editing().Deleter
-	m.Editing().DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if err = deleter(obj, id, ctx); err != nil {
+	m.Editing().WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
+				return
+			}
+			locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
+			locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
+
+			withoutKeys := []string{}
+			if ctx.R.URL.Query().Get("all_versions") == "true" {
+				withoutKeys = append(withoutKeys, "version")
+			}
+
+			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", locale).Error; err != nil {
+				return
+			}
 			return
 		}
-		locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
-		locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
-
-		withoutKeys := []string{}
-		if ctx.R.URL.Query().Get("all_versions") == "true" {
-			withoutKeys = append(withoutKeys, "version")
-		}
-
-		if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", locale).Error; err != nil {
-			return
-		}
-		return
 	})
 
 	rmb := m.Listing().RowMenu()

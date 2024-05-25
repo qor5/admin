@@ -183,47 +183,49 @@ func (ab *Builder) RegisterModel(m interface{}) (mb *ModelBuilder) {
 		mb.presetModel = presetModel
 
 		var (
-			editing    = presetModel.Editing()
-			oldSaver   = editing.Saver
-			oldDeleter = editing.Deleter
+			editing = presetModel.Editing()
 		)
 
-		editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			if mb.skip&Update != 0 && mb.skip&Create != 0 {
-				return oldSaver(obj, id, ctx)
-			}
+		editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+				if mb.skip&Update != 0 && mb.skip&Create != 0 {
+					return in(obj, id, ctx)
+				}
 
-			old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
-			if err = oldSaver(obj, id, ctx); err != nil {
-				return err
-			}
+				old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
+				if err = in(obj, id, ctx); err != nil {
+					return err
+				}
 
-			if (!ok || id == "") && mb.skip&Create == 0 {
-				return mb.AddRecords(ActivityCreate, ctx.R.Context(), obj)
-			}
+				if (!ok || id == "") && mb.skip&Create == 0 {
+					return mb.AddRecords(ActivityCreate, ctx.R.Context(), obj)
+				}
 
-			if ok && id != "" && mb.skip&Update == 0 {
-				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
-			}
+				if ok && id != "" && mb.skip&Update == 0 {
+					return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
+				}
 
-			return
+				return
+			}
 		})
 
-		editing.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			if mb.skip&Delete != 0 {
-				return oldDeleter(obj, id, ctx)
-			}
+		editing.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+				if mb.skip&Delete != 0 {
+					return in(obj, id, ctx)
+				}
 
-			old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
-			if err = oldDeleter(obj, id, ctx); err != nil {
-				return err
-			}
+				old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
+				if err = in(obj, id, ctx); err != nil {
+					return err
+				}
 
-			if ok {
-				return mb.AddRecords(ActivityDelete, ctx.R.Context(), old)
-			}
+				if ok {
+					return mb.AddRecords(ActivityDelete, ctx.R.Context(), old)
+				}
 
-			return
+				return
+			}
 		})
 	}
 

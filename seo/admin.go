@@ -132,7 +132,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 	// Customize the Saver to trigger the invocation of the `afterSave` hook function (if available)
 	// when updating the global seo.
-	editing.Saver = func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		seoSetting := obj.(*QorSEOSetting)
 		if err = b.db.Updates(obj).Error; err != nil {
 			return err
@@ -143,7 +143,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 			}
 		}
 		return nil
-	}
+	})
 
 	// configure variables field
 	{

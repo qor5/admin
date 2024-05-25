@@ -148,9 +148,9 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 		ed.DeleteFunc(makeDeleteFunc(db))
 	}
 
-	setter := makeSetVersionSetterFunc(db, ed.Setter)
-	ed.SetterFunc(setter)
-	creating.SetterFunc(setter)
+	setter := makeSetVersionSetterFunc(db)
+	ed.WrapSetterFunc(setter)
+	creating.WrapSetterFunc(setter)
 
 	m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
 	m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
@@ -215,19 +215,21 @@ func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.Searc
 
 }
 
-func makeSetVersionSetterFunc(db *gorm.DB, in presets.SetterFunc) presets.SetterFunc {
-	return func(obj interface{}, ctx *web.EventContext) {
-		if ctx.Param(presets.ParamID) == "" {
-			version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
-			if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
-				return
+func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.SetterFunc {
+	return func(in presets.SetterFunc) presets.SetterFunc {
+		return func(obj interface{}, ctx *web.EventContext) {
+			if ctx.Param(presets.ParamID) == "" {
+				version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
+				if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
+					return
+				}
+				if err := reflectutils.Set(obj, "Version.VersionName", version); err != nil {
+					return
+				}
 			}
-			if err := reflectutils.Set(obj, "Version.VersionName", version); err != nil {
-				return
+			if in != nil {
+				in(obj, ctx)
 			}
-		}
-		if in != nil {
-			in(obj, ctx)
 		}
 	}
 }

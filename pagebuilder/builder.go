@@ -2033,9 +2033,9 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
-	eb.AutoSaver = func(id string, ctx *web.EventContext) (s string) {
+	eb.OnChangeActionFunc(func(id string, ctx *web.EventContext) (s string) {
 		return web.Plaid().URL(ctx.R.URL.Path).EventFunc(AutoSaveContainerEvent).Query(presets.ParamID, id).Go()
-	}
+	})
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil
