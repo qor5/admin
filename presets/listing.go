@@ -273,7 +273,10 @@ func (b *ListingBuilder) listingComponent(
 		footerCardAction = VCardActions(footerActions...)
 	}
 	if inDialog {
-		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+		title := b.title
+		if title == "" {
+			title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+		}
 		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
 			searchBoxDefault = VResponsive(
 				web.Scope(

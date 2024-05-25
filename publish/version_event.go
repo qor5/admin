@@ -60,12 +60,37 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 			return
 		}
 
+		se := toObj.(presets.SlugEncoder)
+		id := se.PrimarySlug()
+		newQueries := ctx.Queries()
+
+		if !mb.HasDetailing() {
+			// close dialog and open editing
+			newQueries.Set(presets.ParamID, id)
+			web.AppendRunScripts(&r,
+				presets.CloseListingDialogVarScript,
+				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go(),
+			)
+			return
+		}
+		if !mb.Detailing().GetDrawer() {
+			// open detailing without drawer
+			// jump URL to support referer
+			r.PushState = web.Location(newQueries).URL(mb.Info().DetailingHref(id))
+			return
+		}
+		// close dialog and open detailingDrawer
+		newQueries.Set(presets.ParamID, id)
+		web.AppendRunScripts(&r,
+			presets.CloseListingDialogVarScript,
+			presets.CloseRightDrawerVarScript,
+			web.Plaid().EventFunc(actions.DetailingDrawer).Queries(newQueries).Go(),
+		)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
-		se := toObj.(presets.SlugEncoder)
-		newQueries := ctx.Queries()
-		newQueries.Del(presets.ParamID)
-		r.PushState = web.Location(newQueries).URL(mb.Info().DetailingHref(se.PrimarySlug()))
+
+		r.RunScript = web.Plaid().ThenScript(r.RunScript).Go()
 		return
 	}
 }

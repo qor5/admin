@@ -209,6 +209,8 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	registerEventFuncs(db, mb, publisher, ab)
 
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
+		DialogWidth("838px").
+		Title("Version List"). // TODO: i18n
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -353,9 +355,11 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 		if !pm.HasDetailing() {
 			// close dialog and open editing
-			newQueries.Add(presets.ParamID, id)
-			r.RunScript = presets.CloseListingDialogVarScript + ";" +
-				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go()
+			newQueries.Set(presets.ParamID, id)
+			web.AppendRunScripts(&r,
+				presets.CloseListingDialogVarScript,
+				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go(),
+			)
 			return
 		}
 		if !pm.Detailing().GetDrawer() {
@@ -364,10 +368,13 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
 			return
 		}
-		newQueries.Add(presets.ParamID, id)
 		// close dialog and open detailingDrawer
-		r.RunScript = presets.CloseListingDialogVarScript + ";" +
-			web.Plaid().EventFunc(actions.DetailingDrawer).Queries(newQueries).Go()
+		newQueries.Set(presets.ParamID, id)
+		web.AppendRunScripts(&r,
+			presets.CloseListingDialogVarScript,
+			presets.CloseRightDrawerVarScript,
+			web.Plaid().EventFunc(actions.DetailingDrawer).Queries(newQueries).Go(),
+		)
 		return
 	})
 

@@ -195,7 +195,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	closeBtnVarScript := closeRightDrawerVarScript
+	closeBtnVarScript := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
@@ -252,7 +252,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 	}
 
 	r.PushState = web.Location(url.Values{})
-	r.RunScript = closeRightDrawerVarScript
+	r.RunScript = CloseRightDrawerVarScript
 
 	return
 }
