@@ -3,7 +3,6 @@ package activity
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net/http/httptest"
 	"reflect"
 	"testing"
@@ -11,11 +10,9 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -59,57 +56,13 @@ func TestMain(m *testing.M) {
 	defer env.TearDown()
 
 	db = env.DB
+	db.Logger = db.Logger.LogMode(logger.Info)
+
 	if err = db.AutoMigrate(&TestActivityModel{}, &TestActivityLog{}); err != nil {
 		panic(err)
 	}
 
 	m.Run()
-}
-
-func TestTruncatePut(t *testing.T) {
-	sdb, err := db.DB()
-	require.NoError(t, err)
-
-	f := func() error {
-		first := &TestActivityModel{
-			ID:          uint(rand.Int31n(10) + 1),
-			VersionName: "v1",
-			Title:       "first_activity_title",
-			Description: "first_activity_description",
-		}
-		second := &TestActivityModel{
-			ID:          uint(rand.Int31n(10) + 10 + 1),
-			VersionName: "v1",
-			Title:       "second_activity_title",
-			Description: "second_activity_desciption",
-		}
-
-		gofixtures.Data(
-			gofixtures.Sql(
-				fmt.Sprintf(`INSERT INTO test_activity_models (id, version_name, title, description) VALUES (%d, 'v1','first_activity_title', 'first_activity_description');`, first.ID),
-				[]string{"test_activity_models"},
-			),
-		).TruncatePut(sdb)
-
-		models := []*TestActivityModel{}
-		if err := db.Find(&models).Error; err != nil {
-			return err
-		}
-		assert.ElementsMatch(t, []*TestActivityModel{first}, models)
-
-		if err := db.Create(second).Error; err != nil {
-			return err
-		}
-
-		models = []*TestActivityModel{}
-		if err := db.Find(&models).Error; err != nil {
-			return err
-		}
-		assert.ElementsMatch(t, []*TestActivityModel{first, second}, models)
-		return nil
-	}
-	assert.NoError(t, f())
-	assert.NoError(t, f())
 }
 
 func resetDB() {
@@ -121,7 +74,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 
 	builder := New(db, &TestActivityLog{})
-	builder.Install(pb)
+	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
@@ -147,7 +100,7 @@ func TestModelKeys(t *testing.T) {
 func TestModelLink(t *testing.T) {
 	builder := New(db, &TestActivityLog{})
 	builder.Install(pb)
-	builder.RegisterModel(pageModel).SetLink(func(v interface{}) string {
+	builder.RegisterModel(pageModel).LinkFunc(func(v interface{}) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
 	})
@@ -333,9 +286,9 @@ func TestMutliModelBuilder(t *testing.T) {
 	pageModel2 := pb.Model(&TestActivityModel{}).URIName("page-02").Label("Page-02")
 	pageModel3 := pb.Model(&TestActivityModel{}).URIName("page-03").Label("Page-03")
 
-	builder.RegisterModel(&TestActivityModel{}).SetKeys("ID")
-	builder.RegisterModel(pageModel2).SetKeys("ID").SkipDelete().AddIgnoredFields("VersionName")
-	builder.RegisterModel(pageModel3).SetKeys("ID").SkipCreate().AddIgnoredFields("Description")
+	builder.RegisterModel(&TestActivityModel{}).Keys("ID")
+	builder.RegisterModel(pageModel2).Keys("ID").SkipDelete().AddIgnoredFields("VersionName")
+	builder.RegisterModel(pageModel3).Keys("ID").SkipCreate().AddIgnoredFields("Description")
 
 	data1 := &TestActivityModel{ID: 1, VersionName: "v1", Title: "test1", Description: "Description1"}
 	data2 := &TestActivityModel{ID: 2, VersionName: "v2", Title: "test2", Description: "Description3"}

@@ -34,11 +34,6 @@ type ModelBuilder struct {
 
 // @snippet_end
 
-// GetType get ModelBuilder type
-func (mb *ModelBuilder) GetType() reflect.Type {
-	return mb.typ
-}
-
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	for _, key := range keys {
@@ -57,13 +52,13 @@ func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 }
 
 // SetKeys set keys for the model builder
-func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
+func (mb *ModelBuilder) Keys(keys ...string) *ModelBuilder {
 	mb.keys = keys
 	return mb
 }
 
 // SetLink set the link that linked to the modified record
-func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
+func (mb *ModelBuilder) LinkFunc(f func(interface{}) string) *ModelBuilder {
 	mb.link = f
 	return mb
 }
