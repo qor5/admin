@@ -9,14 +9,13 @@ import (
 	"strconv"
 	"strings"
 
-	h "github.com/theplant/htmlgo"
-
 	"github.com/qor5/admin/v3/presets/actions"
 	. "github.com/qor5/ui/v3/vuetify"
 	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	h "github.com/theplant/htmlgo"
 )
 
 type ListingBuilder struct {
@@ -31,7 +30,7 @@ type ListingBuilder struct {
 	newBtnFunc      ComponentFunc
 	pageFunc        web.PageFunc
 	cellWrapperFunc vx.CellWrapperFunc
-	Searcher        SearchFunc
+	searcher        SearchFunc
 	searchColumns   []string
 
 	// title is the title of the listing page.
@@ -102,7 +101,12 @@ func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
 }
 
 func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
-	b.Searcher = v
+	b.searcher = v
+	return b
+}
+
+func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *ListingBuilder) {
+	b.searcher = w(b.searcher)
 	return b
 }
 
@@ -1188,7 +1192,7 @@ func (b *ListingBuilder) getTableComponents(
 		})
 	}
 
-	if b.Searcher == nil || b.mb.p.dataOperator == nil {
+	if b.searcher == nil || b.mb.p.dataOperator == nil {
 		panic("presets.New().DataOperator(...) required")
 	}
 
@@ -1196,7 +1200,7 @@ func (b *ListingBuilder) getTableComponents(
 	var totalCount int
 	var err error
 
-	objs, totalCount, err = b.Searcher(b.mb.NewModelSlice(), searchParams, ctx)
+	objs, totalCount, err = b.searcher(b.mb.NewModelSlice(), searchParams, ctx)
 	if err != nil {
 		panic(err)
 	}

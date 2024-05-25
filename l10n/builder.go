@@ -247,17 +247,18 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	m.Listing().Field("Locale")
 	m.Editing().Field("Locale")
 
-	searcher := m.Listing().Searcher
-	m.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-		if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
-			con := presets.SQLCondition{
-				Query: "locale_code = ?",
-				Args:  []interface{}{localeCode},
+	m.Listing().WrapSearchFunc(func(searcher presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
+				con := presets.SQLCondition{
+					Query: "locale_code = ?",
+					Args:  []interface{}{localeCode},
+				}
+				params.SQLConditions = append(params.SQLConditions, &con)
 			}
-			params.SQLConditions = append(params.SQLConditions, &con)
-		}
 
-		return searcher(model, params, ctx)
+			return searcher(model, params, ctx)
+		}
 	})
 
 	setter := m.Editing().Setter

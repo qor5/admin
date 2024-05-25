@@ -208,26 +208,27 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 	registerEventFuncs(db, mb, publisher, ab)
 
-	searcher := mb.Listing().Searcher
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
 		SearchColumns("version", "version_name").
 		PerPage(10).
-		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			id := ctx.R.FormValue("select_id")
-			if id == "" {
-				id = ctx.R.FormValue("f_select_id")
-			}
-			if id != "" {
-				cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-				con := presets.SQLCondition{
-					Query: "id = ?",
-					Args:  []interface{}{cs["id"]},
+		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+				id := ctx.R.FormValue("select_id")
+				if id == "" {
+					id = ctx.R.FormValue("f_select_id")
 				}
-				params.SQLConditions = append(params.SQLConditions, &con)
-			}
-			params.OrderBy = "created_at DESC"
+				if id != "" {
+					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+					con := presets.SQLCondition{
+						Query: "id = ?",
+						Args:  []interface{}{cs["id"]},
+					}
+					params.SQLConditions = append(params.SQLConditions, &con)
+				}
+				params.OrderBy = "created_at DESC"
 
-			return searcher(model, params, ctx)
+				return in(model, params, ctx)
+			}
 		})
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		return cell

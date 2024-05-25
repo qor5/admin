@@ -205,7 +205,7 @@ func NewConfig(db *gorm.DB) Config {
 			{Text: "Workers", Value: "*:workers:*"},
 		}).
 		AfterInstall(func(pb *presets.Builder, mb *presets.ModelBuilder) error {
-			mb.Listing().Searcher = func(
+			mb.Listing().SearchFunc(func(
 				model interface{},
 				params *presets.SearchParams,
 				ctx *web.EventContext,
@@ -218,7 +218,7 @@ func NewConfig(db *gorm.DB) Config {
 					qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
 				}
 				return gorm2op.DataOperator(qdb).Search(model, params, ctx)
-			}
+			})
 			return nil
 		})
 

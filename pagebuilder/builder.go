@@ -780,26 +780,27 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 	mb := pb.Model(&Page{}).
 		URIName("version-list-dialog").
 		InMenu(false)
-	searcher := mb.Listing().Searcher
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
 		SearchColumns("version", "version_name").
 		PerPage(10).
-		SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			id := ctx.R.FormValue("select_id")
-			if id == "" {
-				id = ctx.R.FormValue("f_select_id")
-			}
-			if id != "" {
-				cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-				con := presets.SQLCondition{
-					Query: "id = ? and locale_code = ?",
-					Args:  []interface{}{cs["id"], cs[l10n.SlugLocaleCode]},
+		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+				id := ctx.R.FormValue("select_id")
+				if id == "" {
+					id = ctx.R.FormValue("f_select_id")
 				}
-				params.SQLConditions = append(params.SQLConditions, &con)
-			}
-			params.OrderBy = "created_at DESC"
+				if id != "" {
+					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+					con := presets.SQLCondition{
+						Query: "id = ? and locale_code = ?",
+						Args:  []interface{}{cs["id"], cs[l10n.SlugLocaleCode]},
+					}
+					params.SQLConditions = append(params.SQLConditions, &con)
+				}
+				params.OrderBy = "created_at DESC"
 
-			return searcher(model, params, ctx)
+				return in(model, params, ctx)
+			}
 		})
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		return cell
@@ -972,15 +973,16 @@ func (b *Builder) configCategory(pb *presets.Builder) (pm *presets.ModelBuilder)
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	lb := pm.Listing("Name", "Path", "Description")
 
-	oldSearcher := lb.Searcher
-	lb.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-		r, totalCount, err = oldSearcher(model, params, ctx)
-		cats := r.([]*Category)
-		sort.Slice(cats, func(i, j int) bool {
-			return cats[i].Path < cats[j].Path
-		})
-		fillCategoryIndentLevels(cats)
-		return
+	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			r, totalCount, err = in(model, params, ctx)
+			cats := r.([]*Category)
+			sort.Slice(cats, func(i, j int) bool {
+				return cats[i].Path < cats[j].Path
+			})
+			fillCategoryIndentLevels(cats)
+			return
+		}
 	})
 
 	lb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

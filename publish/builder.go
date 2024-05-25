@@ -100,7 +100,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 		fb.ComponentFunc(DefaultVersionComponentFunc(m))
 	}
 
-	m.Listing().SearchFunc(makeSearchFunc(db, m.Listing().Searcher))
+	m.Listing().WrapSearchFunc(makeSearchFunc(db))
 
 	// listing-delete deletes all versions
 	{
@@ -182,34 +182,37 @@ func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {
 	}
 }
 
-func makeSearchFunc(db *gorm.DB, searcher presets.SearchFunc) presets.SearchFunc {
-	return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-		stmt := &gorm.Statement{DB: db}
-		stmt.Parse(model)
-		tn := stmt.Schema.Table
+func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
+	return func(searcher presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			stmt := &gorm.Statement{DB: db}
+			stmt.Parse(model)
+			tn := stmt.Schema.Table
 
-		var pks []string
-		condition := ""
-		for _, f := range stmt.Schema.Fields {
-			if f.Name == "DeletedAt" {
-				condition = "WHERE deleted_at IS NULL"
+			var pks []string
+			condition := ""
+			for _, f := range stmt.Schema.Fields {
+				if f.Name == "DeletedAt" {
+					condition = "WHERE deleted_at IS NULL"
+				}
 			}
-		}
-		for _, f := range stmt.Schema.PrimaryFields {
-			if f.Name != "Version" {
-				pks = append(pks, f.DBName)
+			for _, f := range stmt.Schema.PrimaryFields {
+				if f.Name != "Version" {
+					pks = append(pks, f.DBName)
+				}
 			}
-		}
-		pkc := strings.Join(pks, ",")
-		sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
+			pkc := strings.Join(pks, ",")
+			sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
 
-		con := presets.SQLCondition{
-			Query: sql,
-		}
-		params.SQLConditions = append(params.SQLConditions, &con)
+			con := presets.SQLCondition{
+				Query: sql,
+			}
+			params.SQLConditions = append(params.SQLConditions, &con)
 
-		return searcher(model, params, ctx)
+			return searcher(model, params, ctx)
+		}
 	}
+
 }
 
 func makeSetVersionSetterFunc(db *gorm.DB, in presets.SetterFunc) presets.SetterFunc {

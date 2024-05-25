@@ -31,7 +31,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 	// MenuIcon("people")
 	user.Use(nb)
 
-	user.Listing().Searcher = func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db
 
@@ -44,7 +44,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 		}
 
 		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
-	}
+	})
 
 	ed := user.Editing(
 		"Type",
