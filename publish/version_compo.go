@@ -56,9 +56,11 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				h.Text(version.GetVersionName()),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
-				Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
+				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(b.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
 					Query("select_id", primarySlugger.PrimarySlug()).
+					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplayID)).
+					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplayID, primarySlugger.PrimarySlug())).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
@@ -206,10 +208,10 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		URIName(pm.Info().URIName() + "-version-list-dialog").
 		InMenu(false)
 
-	registerEventFuncs(db, mb, publisher, ab)
+	registerEventFuncsForVersion(mb, pm, db)
 
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
-		DialogWidth("838px").
+		DialogWidth("950px").
 		Title("Version List"). // TODO: i18n
 		SearchColumns("version", "version_name").
 		PerPage(10).
@@ -294,38 +296,31 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	}).Label("Unread Notes")
 
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionIf := obj.(VersionInterface)
-		statusIf := obj.(StatusInterface)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-		versionName := versionIf.GetVersionName()
-		var disable bool
-		if statusIf.GetStatus() == StatusOnline || statusIf.GetStatus() == StatusOffline {
-			disable = true
-		}
-
+		id := obj.(presets.SlugEncoder).PrimarySlug()
+		versionName := obj.(VersionInterface).GetVersionName()
+		status := obj.(StatusInterface).GetStatus()
+		disable := status == StatusOnline || status == StatusOffline // TODO: perm check
 		return h.Td().Children(
 			// TODO: i18n
 			v.VBtn("Rename").Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
-				Attr("@click", web.Plaid().
-					URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
+				On("click", web.Plaid().
+					URL(ctx.R.URL.Path).
 					EventFunc(eventRenameVersionDialog).
-					Queries(ctx.Queries()).
+					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
-					Query("rename_id", obj.(presets.SlugEncoder).PrimarySlug()).
+					Query(presets.ParamID, id).
 					Query("version_name", versionName).
 					Go(),
 				),
 			v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
-				Attr("@click", web.Plaid().
-					URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
+				On("click", web.Plaid().
+					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersionDialog).
-					Queries(ctx.Queries()).
+					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
-					Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
+					Query(presets.ParamID, id).
 					Query("version_name", versionName).
+					Query("current_display_id", web.Var(VarCurrentDisplayID)).
 					Go(),
 				),
 		)
@@ -340,43 +335,13 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			id = ctx.R.FormValue("f_select_id")
 		}
 
-		return v.VBtn("Save").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
+		return v.VBtn("Save").Disabled(id == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
 			Query("select_id", id).
-			URL(pm.Info().PresetsPrefix()+"/"+mb.Info().URIName()).
+			URL(pm.Info().PresetsPrefix()+"/"+pm.Info().URIName()).
 			EventFunc(eventSelectVersion).
 			Go())
 	})
 	lb.RowMenu().Empty()
-
-	mb.RegisterEventFunc(eventSelectVersion, func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		refer, _ := url.Parse(ctx.R.Referer())
-		newQueries := refer.Query()
-		id := ctx.R.FormValue("select_id")
-
-		if !pm.HasDetailing() {
-			// close dialog and open editing
-			newQueries.Set(presets.ParamID, id)
-			web.AppendRunScripts(&r,
-				presets.CloseListingDialogVarScript,
-				web.Plaid().EventFunc(actions.Edit).Queries(newQueries).Go(),
-			)
-			return
-		}
-		if !pm.Detailing().GetDrawer() {
-			// open detailing without drawer
-			// jump URL to support referer
-			r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
-			return
-		}
-		// close dialog and open detailingDrawer
-		newQueries.Set(presets.ParamID, id)
-		web.AppendRunScripts(&r,
-			presets.CloseListingDialogVarScript,
-			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Queries(newQueries).Go(),
-		)
-		return
-	})
 
 	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		return []*vx.FilterItem{

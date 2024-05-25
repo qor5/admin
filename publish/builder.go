@@ -81,7 +81,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		}
 	}
 
-	registerEventFuncs(db, m, b, ab)
+	registerEventFuncsForResource(db, m, b, ab)
 	return nil
 }
 
@@ -212,7 +212,6 @@ func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.Searc
 			return searcher(model, params, ctx)
 		}
 	}
-
 }
 
 func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.SetterFunc {
