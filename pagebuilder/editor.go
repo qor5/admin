@@ -377,7 +377,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 						).Id("app").Attr("v-cloak", true),
 						newCtx.Injector.GetTailHTMLComponent(),
 					).Class("front"),
-				).AttrIf("lang", newCtx.Injector.GetHTMLLang(), newCtx.Injector.GetHTMLLang() != ""),
+				).Attr(newCtx.Injector.HTMLLangAttrs()...),
 			}
 			_, width := b.getDevice(ctx)
 			r = h.Tag("vx-scroll-iframe").Attr(
