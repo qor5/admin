@@ -259,36 +259,43 @@ func NewConfig(db *gorm.DB) Config {
 		Activity(ab).
 		Publisher(publisher).
 		SEO(seoBuilder).
-		AfterPageInstall(func(pb *presets.Builder, pm *presets.ModelBuilder) error {
-			pmListing := pm.Listing()
-			pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-				u := getCurrentUser(ctx.R)
-				return []*vx.FilterItem{
-					{
-						Key:          "hasUnreadNotes",
-						Invisible:    true,
-						SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
-					},
+		WrapPageInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
+			return func(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
+				err = in(pb, pm)
+				if err != nil {
+					return
 				}
-			})
+				pmListing := pm.Listing()
+				pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+					u := getCurrentUser(ctx.R)
+					return []*vx.FilterItem{
+						{
+							Key:          "hasUnreadNotes",
+							Invisible:    true,
+							SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
+						},
+					}
+				})
 
-			pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-				msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+				pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+					msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
-				return []*presets.FilterTab{
-					{
-						Label: msgr.FilterTabsAll,
-						ID:    "all",
-						Query: url.Values{"all": []string{"1"}},
-					},
-					{
-						Label: msgr.FilterTabsHasUnreadNotes,
-						ID:    "hasUnreadNotes",
-						Query: url.Values{"hasUnreadNotes": []string{"1"}},
-					},
-				}
-			})
-			return nil
+					return []*presets.FilterTab{
+						{
+							Label: msgr.FilterTabsAll,
+							ID:    "all",
+							Query: url.Values{"all": []string{"1"}},
+						},
+						{
+							Label: msgr.FilterTabsHasUnreadNotes,
+							ID:    "hasUnreadNotes",
+							Query: url.Values{"hasUnreadNotes": []string{"1"}},
+						},
+					}
+				})
+				return nil
+			}
+
 		})
 
 	b.Use(pageBuilder)

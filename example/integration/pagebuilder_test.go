@@ -151,9 +151,9 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Page Builder Editor Duplicate A Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
+				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-05-18-v01_International?__execute_event__=publish_EventDuplicateVersion").
+					PageURL("/pages/10_2024-05-21-v01_International?__execute_event__=publish_EventDuplicateVersion").
 					BuildEventFuncRequest()
 
 				return req

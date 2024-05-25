@@ -13,12 +13,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
-
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -35,6 +29,10 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 type RenderInput struct {
@@ -79,6 +77,7 @@ type Builder struct {
 	containerBuilders        []*ContainerBuilder
 	ps                       *presets.Builder
 	mb                       *presets.ModelBuilder
+	templateModel            *presets.ModelBuilder
 	l10n                     *l10n.Builder
 	mediaBuilder             *media.Builder
 	note                     *note.Builder
@@ -97,9 +96,10 @@ type Builder struct {
 	duplicateBtnColor        string
 	templateEnabled          bool
 	expendContainers         bool
-	AfterPageInstallFunc     presets.ModelInstallFunc
-	AfterTemplateInstallFunc presets.ModelInstallFunc
-	AfterCategoryInstallFunc presets.ModelInstallFunc
+	templateInstall          presets.ModelInstallFunc
+	pageInstall              presets.ModelInstallFunc
+	categoryInstall          presets.ModelInstallFunc
+	versionListDialogInstall presets.ModelInstallFunc
 }
 
 const (
@@ -155,6 +155,11 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		templateEnabled:   true,
 		expendContainers:  true,
 	}
+	r.templateInstall = r.defaultTemplateInstall
+	r.categoryInstall = r.defaultCategoryInstall
+	r.pageInstall = r.defaultPageInstall
+	r.versionListDialogInstall = r.defaultInstallVersionListDialog
+
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
@@ -192,18 +197,23 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
-func (b *Builder) AfterPageInstall(v presets.ModelInstallFunc) (r *Builder) {
-	b.AfterPageInstallFunc = v
+func (b *Builder) WrapPageInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
+	b.pageInstall = w(b.pageInstall)
 	return b
 }
 
-func (b *Builder) AfterTemplateInstall(v presets.ModelInstallFunc) (r *Builder) {
-	b.AfterTemplateInstallFunc = v
+func (b *Builder) WrapTemplateInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
+	b.templateInstall = w(b.templateInstall)
 	return b
 }
 
-func (b *Builder) AfterCategoryInstall(v presets.ModelInstallFunc) (r *Builder) {
-	b.AfterCategoryInstallFunc = v
+func (b *Builder) WrapCategoryInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
+	b.categoryInstall = w(b.categoryInstall)
+	return b
+}
+
+func (b *Builder) WrapVersionListDialogInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
+	b.versionListDialogInstall = w(b.versionListDialogInstall)
 	return b
 }
 
@@ -289,7 +299,7 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	return b
 }
 
-func (b *Builder) Install(pb *presets.Builder) error {
+func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
 	b.preparePlugins()
 
@@ -301,34 +311,71 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 
-	b.configEditor()
-	b.configPage(pb)
+	err = b.configEditor(pb)
+	if err != nil {
+		return
+	}
+	b.configTemplateAndPage(pb)
 	b.configSharedContainer(pb)
 	b.configDemoContainer(pb)
-	b.configCategory(pb)
+	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+	err = b.categoryInstall(pb, categoryM)
 
-	return nil
+	return
 }
 
-func (b *Builder) configEditor() {
+func (b *Builder) configEditor(pb *presets.Builder) (err error) {
 	mb := b.ps.Model(&Page{}).URIName("editors")
+	err = b.pageInstall(pb, mb)
+	if err != nil {
+		return
+	}
+	err = b.versionListDialogInstall(b.ps, mb)
+	if err != nil {
+		return
+	}
 
+	b.useAllPlugin(mb)
 	md := mb.Detailing()
 	md.Field("defaultVersion")
 	md.PageFunc(b.Editor(mb))
-	b.useAllPlugin(mb)
+	return
 }
 
-func (b *Builder) configPage(pb *presets.Builder) {
-	db := b.db
-	pm := pb.Model(&Page{})
-	b.mb = pm
+func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
 	templateM := presets.NewModelBuilder(pb, &Template{}).Use(b.ab)
 	if b.templateEnabled {
-		templateM = b.configTemplate(pb, db)
+		templateM = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
+		err := b.templateInstall(pb, templateM)
+		if err != nil {
+			panic(err)
+		}
+		b.templateModel = templateM
 	}
-	lb := pm.Listing("ID", "Online", "Title", "Path")
 
+	pm := pb.Model(&Page{})
+	err := b.pageInstall(pb, pm)
+	if err != nil {
+		panic(err)
+	}
+
+	publisher := b.publisher
+	if publisher != nil {
+		publisher.ContextValueFuncs(b.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
+			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil).TabsPanels()
+		})
+	}
+
+	b.useAllPlugin(pm)
+
+	// dp.TabsPanels()
+
+}
+
+func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
+	db := b.db
+	b.mb = pm
+	lb := pm.Listing("ID", "Online", "Title", "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -341,16 +388,14 @@ func (b *Builder) configPage(pb *presets.Builder) {
 	// register modelBuilder
 
 	// pm detailing overview
-	dp.Field("Overview").ComponentFunc(overview(b, templateM))
+	dp.Field("Overview").ComponentFunc(overview(b, b.templateModel))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
 	// pm detailing side panel
 	pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 
-	b.configDetailLayoutFunc(pb, pm, templateM, db)
-
-	configureVersionListDialog(db, b, b.ps, pm)
+	b.configDetailLayoutFunc(pb, pm, b.templateModel, db)
 
 	if b.templateEnabled {
 		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
@@ -505,31 +550,7 @@ func (b *Builder) configPage(pb *presets.Builder) {
 
 		return
 	})
-
-	publisher := b.publisher
-	if publisher != nil {
-		publisher.ContextValueFuncs(b.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
-			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil).TabsPanels()
-		})
-	}
-
-	b.useAllPlugin(pm)
-
-	// dp.TabsPanels()
-
-	if b.AfterPageInstallFunc != nil {
-		err := b.AfterPageInstallFunc(pb, pm)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if b.AfterTemplateInstallFunc != nil {
-		err := b.AfterTemplateInstallFunc(pb, templateM)
-		if err != nil {
-			panic(err)
-		}
-	}
+	return
 }
 
 func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
@@ -776,7 +797,8 @@ func scheduleCount(db *gorm.DB, p *Page) (count int64) {
 	return
 }
 
-func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm *presets.ModelBuilder) {
+func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
+	db := b.db
 	mb := pb.Model(&Page{}).
 		URIName("version-list-dialog").
 		InMenu(false)
@@ -950,6 +972,7 @@ func configureVersionListDialog(db *gorm.DB, b *Builder, pb *presets.Builder, pm
 			},
 		}
 	})
+	return
 }
 
 // cats should be ordered by path
@@ -967,10 +990,9 @@ func fillCategoryIndentLevels(cats []*Category) {
 	}
 }
 
-func (b *Builder) configCategory(pb *presets.Builder) (pm *presets.ModelBuilder) {
+func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
 
-	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	lb := pm.Listing("Name", "Path", "Description")
 
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -1058,12 +1080,6 @@ func (b *Builder) configCategory(pb *presets.Builder) (pm *presets.ModelBuilder)
 		pm.Use(b.l10n)
 	}
 
-	if b.AfterCategoryInstallFunc != nil {
-		err := b.AfterCategoryInstallFunc(pb, pm)
-		if err != nil {
-			panic(err)
-		}
-	}
 	return
 }
 
@@ -1858,8 +1874,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	return
 }
 
-func (b *Builder) configTemplate(pb *presets.Builder, db *gorm.DB) (pm *presets.ModelBuilder) {
-	pm = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
+func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
+
+	db := b.db
 
 	pm.Listing("ID", "Name", "Description")
 
