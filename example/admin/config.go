@@ -161,18 +161,24 @@ func NewConfig(db *gorm.DB) Config {
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		}).
-		AfterLogModelInstall(func(pb *presets.Builder, mb *presets.ModelBuilder) error {
-			mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams,
-				ctx *web.EventContext,
-			) (r interface{}, totalCount int, err error) {
-				u := getCurrentUser(ctx.R)
-				qdb := db
-				if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
-					qdb = db.Where("user_id = ?", u.ID)
+		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
+			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+				err = in(pb, mb)
+				if err != nil {
+					return
 				}
-				return gorm2op.DataOperator(qdb).Search(model, params, ctx)
-			})
-			return nil
+				mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams,
+					ctx *web.EventContext,
+				) (r interface{}, totalCount int, err error) {
+					u := getCurrentUser(ctx.R)
+					qdb := db
+					if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
+						qdb = db.Where("user_id = ?", u.ID)
+					}
+					return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+				})
+				return
+			}
 		})
 	b.Use(ab)
 

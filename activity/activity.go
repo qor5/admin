@@ -34,10 +34,10 @@ type Builder struct {
 	lmb      *presets.ModelBuilder // log model builder
 	logModel ActivityLogInterface  // log model
 
-	models                   []*ModelBuilder                   // registered model builders
-	tabHeading               func(ActivityLogInterface) string // tab heading format
-	permPolicy               *perm.PolicyBuilder               // permission policy
-	AfterLogModelInstallFunc presets.ModelInstallFunc
+	models          []*ModelBuilder                   // registered model builders
+	tabHeading      func(ActivityLogInterface) string // tab heading format
+	permPolicy      *perm.PolicyBuilder               // permission policy
+	logModelInstall presets.ModelInstallFunc
 }
 
 // @snippet_end
@@ -47,8 +47,8 @@ func (ab *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) er
 	return nil
 }
 
-func (ab *Builder) AfterLogModelInstall(v presets.ModelInstallFunc) *Builder {
-	ab.AfterLogModelInstallFunc = v
+func (ab *Builder) WrapLogModelInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) *Builder {
+	ab.logModelInstall = w(ab.logModelInstall)
 	return ab
 }
 
@@ -64,6 +64,7 @@ func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
 		dbContextKey:      DBContextKey,
 	}
 
+	ab.logModelInstall = ab.defaultLogModelInstall
 	if len(logModel) > 0 {
 		ab.logModel = logModel[0]
 	} else {

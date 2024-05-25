@@ -29,9 +29,13 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	if permB := b.GetPermission(); permB != nil {
 		permB.CreatePolicies(ab.permPolicy)
 	}
+	var mb = b.Model(ab.logModel).MenuIcon("receipt_long")
 
+	return ab.logModelInstall(b, mb)
+}
+
+func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
 		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		detailing = mb.Detailing("ModelDiffs")
 	)
@@ -179,10 +183,6 @@ func (ab *Builder) Install(b *presets.Builder) error {
 			return h.Components(detailElems...)
 		},
 	)
-
-	if ab.AfterLogModelInstallFunc != nil {
-		return ab.AfterLogModelInstallFunc(b, mb)
-	}
 	return nil
 }
 

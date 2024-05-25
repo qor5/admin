@@ -99,3 +99,4 @@ type ModelPlugin interface {
 }
 
 type ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error
+type InstallFunc func(pb *Builder) error
