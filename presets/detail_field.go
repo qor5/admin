@@ -145,13 +145,14 @@ type DetailFieldBuilder struct {
 	componentEditFunc FieldComponentFunc
 	father            *DetailFieldsBuilder
 
-	// control Delete button in show component
+	isList bool
+	// Only when isList is false, the following param will take effect
+	// control Delete button in the show component
 	componentEditBtnFunc objectBoolFunc
-	// control Hover in show component
+	// control Hover in the show component
 	componentHoverFunc objectBoolFunc
 
 	// Only when isList is true, the following param will take effect
-
 	// Disable Delete button in edit element
 	disableElementDeleteBtn bool
 	// Disable Create button in element list
@@ -167,13 +168,10 @@ type DetailFieldBuilder struct {
 	// By default, the title will only be displayed if the list is not empty.
 	// If alwaysShowListLabel is true, the label will show anyway
 	alwaysShowListLabel bool
+	elementShowFunc     FieldComponentFunc
+	elementEditFunc     FieldComponentFunc
+	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 
-	// Only when isList is false, the following param will take effect
-	// only used if isList = true
-	isList             bool
-	elementShowFunc    FieldComponentFunc
-	elementEditFunc    FieldComponentFunc
-	elementUnmarshaler func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 	FieldsBuilder
 }
 
