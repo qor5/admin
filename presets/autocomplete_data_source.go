@@ -95,7 +95,7 @@ func (b *ListingBuilder) ConfigureAutocompleteDataSource(config *AutocompleteDat
 			searchParams.SQLConditions = config.SQLConditions
 		}
 
-		objs, totalCount, err = b.searcher(b.mb.NewModelSlice(), searchParams, ctx)
+		objs, totalCount, err = b.Searcher(b.mb.NewModelSlice(), searchParams, ctx)
 		if err != nil {
 			return web.EventResponse{}, err
 		}

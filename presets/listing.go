@@ -30,7 +30,7 @@ type ListingBuilder struct {
 	newBtnFunc      ComponentFunc
 	pageFunc        web.PageFunc
 	cellWrapperFunc vx.CellWrapperFunc
-	searcher        SearchFunc
+	Searcher        SearchFunc
 	searchColumns   []string
 
 	// title is the title of the listing page.
@@ -101,12 +101,12 @@ func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
 }
 
 func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
-	b.searcher = v
+	b.Searcher = v
 	return b
 }
 
 func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *ListingBuilder) {
-	b.searcher = w(b.searcher)
+	b.Searcher = w(b.Searcher)
 	return b
 }
 
@@ -1195,7 +1195,7 @@ func (b *ListingBuilder) getTableComponents(
 		})
 	}
 
-	if b.searcher == nil || b.mb.p.dataOperator == nil {
+	if b.Searcher == nil || b.mb.p.dataOperator == nil {
 		panic("presets.New().DataOperator(...) required")
 	}
 
@@ -1203,7 +1203,7 @@ func (b *ListingBuilder) getTableComponents(
 	var totalCount int
 	var err error
 
-	objs, totalCount, err = b.searcher(b.mb.NewModelSlice(), searchParams, ctx)
+	objs, totalCount, err = b.Searcher(b.mb.NewModelSlice(), searchParams, ctx)
 	if err != nil {
 		panic(err)
 	}

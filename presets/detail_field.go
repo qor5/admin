@@ -55,22 +55,20 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		father:            d,
 		elementShowFunc:   nil,
 		elementEditFunc:   nil,
-		config: &DetailFieldConfig{
-			componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
-				return true
-			},
-			componentHoverFunc: func(obj interface{}, ctx *web.EventContext) bool {
-				return true
-			},
-			disableElementDeleteBtn: false,
-			disableElementCreateBtn: false,
-			elementEditBtnFunc:      nil,
-			elementEditBtn:          true,
-			elementHoverFunc:        nil,
-			elementHover:            true,
-			alwaysShowListLabel:     false,
+		componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
+			return true
 		},
-		isList: false,
+		componentHoverFunc: func(obj interface{}, ctx *web.EventContext) bool {
+			return true
+		},
+		disableElementDeleteBtn: false,
+		disableElementCreateBtn: false,
+		elementEditBtnFunc:      nil,
+		elementEditBtn:          true,
+		elementHoverFunc:        nil,
+		elementHover:            true,
+		alwaysShowListLabel:     false,
+		isList:                  false,
 	}
 	r.FieldsBuilder.Model(d.mb.model)
 	r.saver = r.DefaultSaveFunc
@@ -86,8 +84,66 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 
 type objectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-type DetailFieldConfig struct {
-	// Only when isList is false, the following param will take effect
+func (d *DetailFieldBuilder) ComponentEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+	if v == nil {
+		panic("value required")
+	}
+	d.componentEditBtnFunc = v
+	return d
+}
+
+func (d *DetailFieldBuilder) ComponentHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+	if v == nil {
+		panic("value required")
+	}
+	d.componentHoverFunc = v
+	return d
+}
+
+func (d *DetailFieldBuilder) DisableElementDeleteBtn() *DetailFieldBuilder {
+	d.disableElementDeleteBtn = true
+	return d
+}
+
+func (d *DetailFieldBuilder) DisableElementCreateBtn() *DetailFieldBuilder {
+	d.disableElementCreateBtn = true
+	return d
+}
+
+func (d *DetailFieldBuilder) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+	if v == nil {
+		panic("value required")
+	}
+	d.elementEditBtnFunc = v
+	return d
+}
+
+func (d *DetailFieldBuilder) ElementHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+	if v == nil {
+		panic("value required")
+	}
+	d.elementHoverFunc = v
+	return d
+}
+
+func (d *DetailFieldBuilder) AlwaysShowListLabel() *DetailFieldBuilder {
+	d.alwaysShowListLabel = true
+	return d
+}
+
+// DetailFieldBuilder
+// save: 	   fetcher => setter => saver
+// show, edit: fetcher => setter
+type DetailFieldBuilder struct {
+	NameLabel
+	// if the field can switch status to edit and show, switchable must be true
+	switchable        bool
+	saver             SaveFunc
+	setter            SetterFunc
+	hiddenFuncs       []ObjectComponentFunc
+	componentShowFunc FieldComponentFunc
+	componentEditFunc FieldComponentFunc
+	father            *DetailFieldsBuilder
 
 	// control Delete button in show component
 	componentEditBtnFunc objectBoolFunc
@@ -111,76 +167,14 @@ type DetailFieldConfig struct {
 	// By default, the title will only be displayed if the list is not empty.
 	// If alwaysShowListLabel is true, the label will show anyway
 	alwaysShowListLabel bool
-}
 
-func (d *DetailFieldConfig) ComponentEditBtnFunc(v objectBoolFunc) *DetailFieldConfig {
-	if v == nil {
-		panic("value required")
-	}
-	d.componentEditBtnFunc = v
-	return d
-}
-
-func (d *DetailFieldConfig) ComponentHoverFunc(v objectBoolFunc) *DetailFieldConfig {
-	if v == nil {
-		panic("value required")
-	}
-	d.componentHoverFunc = v
-	return d
-}
-
-func (d *DetailFieldConfig) DisableElementDeleteBtn() *DetailFieldConfig {
-	d.disableElementDeleteBtn = true
-	return d
-}
-
-func (d *DetailFieldConfig) DisableElementCreateBtn() *DetailFieldConfig {
-	d.disableElementCreateBtn = true
-	return d
-}
-
-func (d *DetailFieldConfig) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldConfig {
-	if v == nil {
-		panic("value required")
-	}
-	d.elementEditBtnFunc = v
-	return d
-}
-
-func (d *DetailFieldConfig) ElementHoverFunc(v objectBoolFunc) *DetailFieldConfig {
-	if v == nil {
-		panic("value required")
-	}
-	d.elementHoverFunc = v
-	return d
-}
-
-func (d *DetailFieldConfig) AlwaysShowListLabel() *DetailFieldConfig {
-	d.alwaysShowListLabel = true
-	return d
-}
-
-// DetailFieldBuilder
-// save: 	   fetcher => setter => saver
-// show, edit: fetcher => setter
-type DetailFieldBuilder struct {
-	NameLabel
-	// if the field can switch status to edit and show, switchable must be true
-	switchable        bool
-	saver             SaveFunc
-	setter            SetterFunc
-	hiddenFuncs       []ObjectComponentFunc
-	componentShowFunc FieldComponentFunc
-	componentEditFunc FieldComponentFunc
-	father            *DetailFieldsBuilder
-	config            *DetailFieldConfig
-	FieldsBuilder
-
+	// Only when isList is false, the following param will take effect
 	// only used if isList = true
 	isList             bool
 	elementShowFunc    FieldComponentFunc
 	elementEditFunc    FieldComponentFunc
 	elementUnmarshaler func(toObj, formObj any, prefix string, ctx *web.EventContext) error
+	FieldsBuilder
 }
 
 func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
@@ -288,10 +282,6 @@ func (b *DetailFieldBuilder) Label(label string) (r *DetailFieldBuilder) {
 	return b
 }
 
-func (b *DetailFieldBuilder) FieldConfig() (r *DetailFieldConfig) {
-	return b.config
-}
-
 func (b *DetailFieldBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
 	if !b.switchable {
 		panic("detailField is not switchable")
@@ -345,7 +335,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 	btn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.config.componentEditBtnFunc(obj, ctx))).
+		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.componentEditBtnFunc(obj, ctx))).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, id).
@@ -373,7 +363,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 								h.Div(btn).Style("width:32px;"),
 							).Class("d-flex justify-space-between"),
 						),
-					).Class("mb-6").Variant(VariantOutlined).Hover(b.config.componentHoverFunc(obj, ctx)).
+					).Class("mb-6").Variant(VariantOutlined).Hover(b.componentHoverFunc(obj, ctx)).
 						Attr("v-bind", "props"),
 				).Name("default").Scope("{ isHovering, props }"),
 			),
@@ -469,11 +459,11 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 }
 
 func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
-	if b.config.elementHoverFunc != nil {
-		b.config.elementHover = b.config.elementHoverFunc(obj, ctx)
+	if b.elementHoverFunc != nil {
+		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
-	if b.config.elementEditBtnFunc != nil {
-		b.config.elementEditBtn = b.config.elementEditBtnFunc(obj, ctx)
+	if b.elementEditBtnFunc != nil {
+		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
 	}
 
 	id := ctx.Queries().Get(ParamID)
@@ -491,7 +481,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	label := h.Div(h.Span(b.label).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 	rows := h.Div()
 
-	if b.config.alwaysShowListLabel {
+	if b.alwaysShowListLabel {
 		rows.AppendChildren(label)
 	}
 
@@ -500,7 +490,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		reflectutils.ForEach(list, func(elementObj interface{}) {
 			defer func() { i++ }()
 			if i == 0 {
-				if b.label != "" && !b.config.alwaysShowListLabel {
+				if b.label != "" && !b.alwaysShowListLabel {
 					rows.AppendChildren(label)
 				}
 			}
@@ -535,7 +525,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		})
 	}
 
-	if !b.config.disableElementCreateBtn {
+	if !b.disableElementCreateBtn {
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
@@ -589,7 +579,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.config.elementEditBtn)).
+		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.elementEditBtn)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
@@ -612,7 +602,7 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 							h.Div(editBtn),
 						).Class("d-flex justify-space-between"),
 					),
-				).Class("mb-2").Hover(b.config.elementHover).
+				).Class("mb-2").Hover(b.elementHover).
 					Attr("v-bind", "props").
 					Variant(VariantOutlined),
 			).Name("default").Scope("{ isHovering, props }"),
@@ -624,7 +614,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").
-		Attr("v-show", fmt.Sprintf("%t", !b.config.disableElementDeleteBtn)).
+		Attr("v-show", fmt.Sprintf("%t", !b.disableElementDeleteBtn)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
 			Query(DetailFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).

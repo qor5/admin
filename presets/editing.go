@@ -17,7 +17,7 @@ import (
 type EditingBuilder struct {
 	mb               *ModelBuilder
 	Fetcher          FetchFunc
-	setter           SetterFunc
+	Setter           SetterFunc
 	Saver            SaveFunc
 	Deleter          DeleteFunc
 	Validator        ValidateFunc
@@ -63,7 +63,7 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 		b.mb.creating = &EditingBuilder{
 			mb:        b.mb,
 			Fetcher:   b.Fetcher,
-			setter:    b.setter,
+			Setter:    b.Setter,
 			Saver:     b.Saver,
 			Deleter:   b.Deleter,
 			Validator: b.Validator,
@@ -124,7 +124,7 @@ func (b *EditingBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) 
 }
 
 func (b *EditingBuilder) SetterFunc(v SetterFunc) (r *EditingBuilder) {
-	b.setter = v
+	b.Setter = v
 	return b
 }
 
@@ -134,7 +134,7 @@ func (b *EditingBuilder) OnChangeActionFunc(v OnChangeActionFunc) (r *EditingBui
 }
 
 func (b *EditingBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *EditingBuilder) {
-	b.setter = w(b.setter)
+	b.Setter = w(b.Setter)
 	return b
 }
 
@@ -531,8 +531,8 @@ func (b *EditingBuilder) SaveOverlayContent(
 }
 
 func (b *EditingBuilder) RunSetterFunc(ctx *web.EventContext, removeDeletedAndSort bool, toObj interface{}) (vErr web.ValidationErrors) {
-	if b.setter != nil {
-		b.setter(toObj, ctx)
+	if b.Setter != nil {
+		b.Setter(toObj, ctx)
 	}
 
 	vErr = b.Unmarshal(toObj, b.mb.Info(), removeDeletedAndSort, ctx)
