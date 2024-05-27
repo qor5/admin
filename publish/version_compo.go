@@ -120,7 +120,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(fmt.Sprintf("%s/%s-version-list-dialog", b.Info().PresetsPrefix(), b.Info().URIName())).Go()
+				URL(fmt.Sprintf("%s/%s", b.Info().PresetsPrefix(), b.Info().URIName())).Go()
 			if config.Top {
 				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
