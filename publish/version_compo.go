@@ -351,7 +351,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 				SQLCondition: ``,
 			},
 			{
-				Key:          "online_version",
+				Key:          "online_versions",
 				Invisible:    true,
 				SQLCondition: `status = 'online'`,
 			},
@@ -377,8 +377,8 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 			},
 			{
 				Label: msgr.FilterTabOnlineVersion,
-				ID:    "online_version",
-				Query: url.Values{"online_version": []string{"1"}, "select_id": []string{id}},
+				ID:    "online_versions",
+				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{id}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,

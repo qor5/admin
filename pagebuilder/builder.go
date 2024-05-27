@@ -960,7 +960,7 @@ func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *prese
 			{
 				Label: msgr.FilterTabOnlineVersion,
 				ID:    "online_version",
-				Query: url.Values{"online_version": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{id}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,

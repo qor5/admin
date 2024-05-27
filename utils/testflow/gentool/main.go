@@ -93,12 +93,12 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		// 若不存在则直接输出和记录patch
 		if os.IsNotExist(err) {
 			// 记录原始内容作为 patch 基础文件，以做下次使用
-			if err := os.WriteFile(patchFile, []byte(output), 0o666); err != nil {
+			if err := os.WriteFile(patchFile, []byte(output), 0o644); err != nil {
 				return errors.WithStack(err)
 			}
 
 			// 写入目标文件
-			if err := os.WriteFile(outputFile, []byte(output), 0o666); err != nil {
+			if err := os.WriteFile(outputFile, []byte(output), 0o644); err != nil {
 				return errors.WithStack(err)
 			}
 
@@ -137,19 +137,19 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 
 	// 备份修改前文件以防止意外
 	backupFile := filepath.Join(backupDir, filepath.Base(outputFile)+fmt.Sprintf(".%s.backup", time.Now().Format(time.RFC3339)))
-	if err := os.WriteFile(backupFile, []byte(edited), 0o666); err != nil {
+	if err := os.WriteFile(backupFile, []byte(edited), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
 
 	// 记录原始参考内容作为 patch 基础文件，以做下次使用
-	if err := os.WriteFile(patchFile, []byte(output), 0o666); err != nil {
+	if err := os.WriteFile(patchFile, []byte(output), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
 
 	output = pacthed
 
 	// 写入目标文件
-	if err := os.WriteFile(outputFile, []byte(output), 0o666); err != nil {
+	if err := os.WriteFile(outputFile, []byte(output), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
 

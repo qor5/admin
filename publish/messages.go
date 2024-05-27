@@ -67,7 +67,7 @@ var Messages_en_US = &Messages{
 	RenameVersion:           "Rename Version",
 
 	FilterTabAllVersions:   "All Versions",
-	FilterTabOnlineVersion: "Online Version",
+	FilterTabOnlineVersion: "Online Versions",
 	FilterTabNamedVersions: "Named Versions",
 	Rename:                 "Rename",
 	PageOverView:           "Page Overview",

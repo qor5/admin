@@ -33,14 +33,21 @@ func NewThen(t *testing.T, w *httptest.ResponseRecorder, r *http.Request) *Then 
 	return &Then{t, w, r}
 }
 
-func (v *Then) Then(f ValidatorFunc) {
+func (v *Then) Then(f ValidatorFunc) *Then {
 	f(v.t, v.w, v.r)
+	return v
 }
 
-func (v *Then) ThenEvent(f func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, e multipartestutils.TestEventResponse)) {
+func (v *Then) ThenEvent(f func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, e multipartestutils.TestEventResponse)) *Then {
 	var resp multipartestutils.TestEventResponse
 	require.NoError(v.t, json.Unmarshal(v.w.Body.Bytes(), &resp))
 	f(v.t, v.w, v.r, resp)
+	return v
+}
+
+func (v *Then) ThenValidate(fs ...ValidatorFunc) *Then {
+	Validate(v.t, v.w, v.r, fs...)
+	return v
 }
 
 func ParseOpenRightDrawerParams(body []byte) ([]any, error) {
@@ -77,11 +84,11 @@ func ContainsInOrderAtUpdatePortal(idx int, candidates ...string) ValidatorFunc 
 		var resp multipartestutils.TestEventResponse
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 		require.Truef(t, len(resp.UpdatePortals) > idx, "UpdatePortal %d not found", idx)
-		assert.Truef(t, ContainsInOrder(resp.UpdatePortals[idx].Body, candidates), "should contains in correct order: %v", candidates)
+		assert.Truef(t, ContainsInOrder(resp.UpdatePortals[idx].Body, candidates...), "should contains in correct order: %v", candidates)
 	}
 }
 
-func ContainsInOrder(body string, candidates []string) bool {
+func ContainsInOrder(body string, candidates ...string) bool {
 	for _, candidate := range candidates {
 		i := strings.Index(body, candidate)
 		if i < 0 {
