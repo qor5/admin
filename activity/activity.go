@@ -183,9 +183,7 @@ func (ab *Builder) RegisterModel(m interface{}) (mb *ModelBuilder) {
 	if presetModel, ok := m.(*presets.ModelBuilder); ok {
 		mb.presetModel = presetModel
 
-		var (
-			editing = presetModel.Editing()
-		)
+		editing := presetModel.Editing()
 
 		editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {

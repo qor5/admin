@@ -295,7 +295,6 @@ func NewConfig(db *gorm.DB) Config {
 				})
 				return nil
 			}
-
 		})
 
 	b.Use(pageBuilder)

@@ -29,7 +29,7 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	if permB := b.GetPermission(); permB != nil {
 		permB.CreatePolicies(ab.permPolicy)
 	}
-	var mb = b.Model(ab.logModel).MenuIcon("receipt_long")
+	mb := b.Model(ab.logModel).MenuIcon("receipt_long")
 
 	return ab.logModelInstall(b, mb)
 }

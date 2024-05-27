@@ -123,7 +123,6 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	// detailing
 	b.RightDrawerWidth("50%")
 	orderDetailing := b.Detailing(
-		// ActionsAttr,
 		&presets.FieldsSection{
 			Title: "Basic Information",
 			Rows: [][]string{

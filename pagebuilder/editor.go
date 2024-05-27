@@ -40,9 +40,7 @@ const (
 	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
 	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
-	ShowAddContainerDrawerEvent      = "page_builder_ShowAddContainerDrawerEvent"
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
-	ShowEditContainerDrawerEvent     = "page_builder_ShowEditContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	AutoSaveContainerEvent           = "page_builder_AutoSaveContainerEvent"
 
@@ -427,7 +425,9 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 			ModelName:       ec.container.ModelName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
-		r = append(r, pure)
+
+		r = append(r, b.containerWrapper(pure.(*h.HTMLTagBuilder), isEditor,
+			isReadonly, ec.builder.getContainerDataID(int(ec.container.ModelID)), &input))
 	}
 
 	return
@@ -1458,26 +1458,12 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 	}
 }
 
-func (b *Builder) showAddContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: b.renderContainersList(ctx)})
-	return
-}
-
 func (b *Builder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 	if body, err = b.renderContainersSortedList(ctx); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: pageBuilderLayerContainerPortal, Body: body})
-	return
-}
-
-func (b *Builder) showEditContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var body h.HTMLComponent
-	if body, err = b.renderEditContainer(ctx); err != nil {
-		return
-	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.RightDrawerContentPortalName, Body: body})
 	return
 }
 
@@ -1501,4 +1487,53 @@ func (b *Builder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.Event
 
 func scrollToContainer(containerDataID interface{}) string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%v);`, containerDataID)
+}
+
+func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, isEditor, isReadonly bool, containerDataID string, input *RenderInput) h.HTMLComponent {
+	if isEditor {
+		if isReadonly {
+			r.AppendChildren(h.Div().Class("wrapper-shadow"))
+		} else {
+			r.AppendChildren(h.Div().Class("inner-shadow"))
+			r = h.Div(
+				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+postMessage(EventEdit, containerDataID, input)),
+				h.Div(
+					h.H6(input.DisplayName).Class("title"),
+					h.Div(
+						h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(EventUp, containerDataID, input)),
+						h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(EventDown, containerDataID, input)),
+						h.Button("").Children(h.I("delete").Class("material-icons")).Attr("onclick", postMessage(EventDelete, containerDataID, input)),
+					).Class("editor-bar-buttons"),
+				).Class("editor-bar"),
+				h.Div(
+					h.Div().Class("add"),
+					h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", postMessage(EventAdd, containerDataID, input)),
+				).Class("editor-add"),
+			).Class("wrapper-shadow").ClassIf("highlight", input.ContainerDataID == containerDataID)
+		}
+	}
+	return r
+}
+
+type (
+	postMessageBody struct {
+		MsgType         string `json:"msg_type"`
+		ContainerDataID string `json:"container_data_id"`
+		ContainerId     string `json:"container_id"`
+		DisplayName     string `json:"display_name"`
+		ModelName       string `json:"model_name"`
+	}
+)
+
+func postMessage(msgType, containerDataID string, input *RenderInput) string {
+	if msgType == EventUp && input.IsFirst {
+		return ""
+	}
+	if msgType == EventDown && input.IsEnd {
+		return ""
+	}
+	body := postMessageBody{
+		msgType, containerDataID, input.ContainerId, input.DisplayName, input.ModelName,
+	}
+	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(body))
 }

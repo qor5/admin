@@ -98,5 +98,7 @@ type ModelPlugin interface {
 	ModelInstall(pb *Builder, mb *ModelBuilder) (err error)
 }
 
-type ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error
-type InstallFunc func(pb *Builder) error
+type (
+	ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error
+	InstallFunc      func(pb *Builder) error
+)

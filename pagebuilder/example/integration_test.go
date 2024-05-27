@@ -119,7 +119,7 @@ func TestPageBuilder(t *testing.T) {
 					AddField("id", "1").
 					BuildEventFuncRequest()
 			},
-			ExpectRunScriptContainsInOrder: []string{"/page_builder/editors"},
+			ExpectRunScriptContainsInOrder: []string{"page_builder_ReloadRenderPageOrTemplateEvent", "pageBuilderRightContentPortal", "overlay", "content"},
 		},
 		{
 			Name:  "Delete Container Confirmation Event",
@@ -145,11 +145,7 @@ func TestPageBuilder(t *testing.T) {
 					AddField("containerID", "1_International").
 					BuildEventFuncRequest()
 			},
-			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
-				if er.PushState == nil {
-					t.Error("No pushState")
-				}
-			},
+			ExpectRunScriptContainsInOrder: []string{"pushState(true)", "clearMergeQuery"},
 		},
 		{
 			Name:  "Editor Move Down Container Event",
@@ -192,21 +188,6 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"vx-scroll-iframe"},
 		},
 		{
-			Name:  "Editor Show Edit Container Drawer Event",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
-					EventFunc(pagebuilder.ShowEditContainerDrawerEvent).
-					AddField("modelName", "Header").
-					AddField("containerName", "Header").
-					AddField("id", "1").
-					BuildEventFuncRequest()
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Color"`},
-		},
-		{
 			Name:  "Editor Rename Container Event",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -218,10 +199,8 @@ func TestPageBuilder(t *testing.T) {
 					AddField("DisplayName", "Header0000001").
 					BuildEventFuncRequest()
 			},
+			ExpectRunScriptContainsInOrder: []string{pagebuilder.ShowSortedContainerDrawerEvent, pagebuilder.ReloadRenderPageOrTemplateEvent},
 			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
-				if er.PushState == nil {
-					t.Error("No pushState")
-				}
 				var pc pagebuilder.Container
 				db.Find(&pc, 1)
 				if pc.DisplayName != "Header0000001" {
@@ -270,19 +249,6 @@ func TestPageBuilder(t *testing.T) {
 				pagebuilder.ReloadRenderPageOrTemplateEvent,
 				pagebuilder.ShowSortedContainerDrawerEvent,
 			},
-		},
-		{
-			Name:  "Editor Show Add Container Drawer Event",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
-					EventFunc(pagebuilder.ShowAddContainerDrawerEvent).
-					AddField("containerID", "1_International").
-					BuildEventFuncRequest()
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"/page_builder/editors/1_v1_International"},
 		},
 	}
 

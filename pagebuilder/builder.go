@@ -169,9 +169,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 
 	wb := r.ps.GetWebBuilder()
 	wb.RegisterEventFunc(AddContainerDialogEvent, r.addContainerDialog)
-	wb.RegisterEventFunc(ShowAddContainerDrawerEvent, r.showAddContainerDrawer)
 	wb.RegisterEventFunc(ShowSortedContainerDrawerEvent, r.showSortedContainerDrawer)
-	wb.RegisterEventFunc(ShowEditContainerDrawerEvent, r.showEditContainerDrawer)
 	wb.RegisterEventFunc(AddContainerEvent, r.addContainer)
 	wb.RegisterEventFunc(DeleteContainerConfirmationEvent, r.deleteContainerConfirmation)
 	wb.RegisterEventFunc(DeleteContainerEvent, r.deleteContainer)
@@ -369,7 +367,6 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
 	b.useAllPlugin(pm)
 
 	// dp.TabsPanels()
-
 }
 
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
@@ -1875,7 +1872,6 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 }
 
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
-
 	db := b.db
 
 	pm.Listing("ID", "Name", "Description")

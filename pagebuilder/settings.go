@@ -20,11 +20,7 @@ import (
 )
 
 func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponentFunc {
-	// TODO: refactor versionDialog to use publish/views
-	// publish.ConfigureVersionListDialog(db, b.ps, pm)
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// TODO: init default VersionComponent
-
 		pm := b.mb
 
 		var (
@@ -150,9 +146,15 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 	}
 }
 
+func pageRow(label string, showComp h.HTMLComponent) (r *VRowBuilder) {
+	return VRow(
+		VCol(h.Text(label)).Cols(2),
+		VCol(showComp),
+	).NoGutters(true).Align("center").Class("my-4")
+}
+
 func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 	dp.Field("Page").SetSwitchable(true).Editing("Title", "Slug", "CategoryID").
-		// TODO adjust layout
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			var (
@@ -162,10 +164,10 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 			if category, err = p.GetCategory(db); err != nil {
 				panic(err)
 			}
-			return h.Div(
-				h.Div(h.Text("title:"+p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
-				h.Div(h.Text("slug:"+p.Slug)),
-				h.Div(h.Text("category:"+category.Path)),
+			return h.Components(
+				pageRow("Title", h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
+				pageRow("Slug", h.Text(p.Slug)),
+				pageRow("Category", h.Text(category.Path)),
 			)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -181,21 +183,28 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return h.Components(
-			VTextField().
-				Variant(FieldVariantUnderlined).Density(DensityCompact).
+			pageRow("Title", VTextField().
+				Variant(VariantOutlined).
+				HideDetails(true).
 				Attr(web.VField("Page.Title", p.Title)...),
-
-			VTextField().
-				Variant(FieldVariantUnderlined).
-				Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
-				Prefix("/").
-				ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
-
-			vx.VXAutocomplete().Label(msgr.Category).
-				Attr(web.VField("Page.CategoryID", p.CategoryID)...).
-				Multiple(false).Chips(false).
-				Items(categories).ItemText("Path").ItemValue("ID").
-				ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...),
+			),
+			pageRow("Slug",
+				VTextField().
+					Variant(VariantOutlined).
+					HideDetails(true).
+					Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
+					Prefix("/").
+					ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
+			),
+			pageRow("Category",
+				vx.VXAutocomplete().Label(msgr.Category).
+					Outlined(true).
+					Variant(VariantOutlined).
+					Attr(web.VField("Page.CategoryID", p.CategoryID)...).
+					Multiple(false).Chips(false).
+					Items(categories).ItemText("Path").ItemValue("ID").
+					ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...),
+			),
 		)
 	})
 	return
