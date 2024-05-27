@@ -327,10 +327,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!isAutoSave, VCardActions(actionButtons)),
-	)).VSlot("{form}")
-	if isAutoSave {
-		formContent.OnChange(b.onChangeAction(id, ctx))
-	}
+	))
+
 	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
 		formContent: formContent,
 		tabPanels:   b.tabPanels,
@@ -341,7 +339,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
-	return web.Scope(
+	scope := web.Scope(
 		notice,
 		VLayout(
 			h.If(!b.mb.singleton,
@@ -360,6 +358,10 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				).Class("pa-2"),
 			),
 		)).VSlot("{ form }")
+	if isAutoSave {
+		scope.OnChange(b.onChangeAction(id, ctx))
+	}
+	return scope
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

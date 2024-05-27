@@ -240,6 +240,7 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		}
 		ContextModifiedIndexesBuilder(ctx).AppendDeleted(sliceField, index)
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
+		r.RunScript = fmt.Sprintf(`form["%s"]=null;`, formKey)
 		return
 	}
 }
