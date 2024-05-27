@@ -23,6 +23,22 @@ func Validate(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, fs ..
 	return w, r
 }
 
+func Combine(fs ...ValidatorFunc) ValidatorFunc {
+	return func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request) {
+		for _, f := range fs {
+			f(t, w, r)
+		}
+	}
+}
+
+func WrapEvent(f func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, e multipartestutils.TestEventResponse)) ValidatorFunc {
+	return func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request) {
+		var resp multipartestutils.TestEventResponse
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+		f(t, w, r, resp)
+	}
+}
+
 type Then struct {
 	t *testing.T
 	w *httptest.ResponseRecorder
@@ -39,9 +55,7 @@ func (v *Then) Then(f ValidatorFunc) *Then {
 }
 
 func (v *Then) ThenEvent(f func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, e multipartestutils.TestEventResponse)) *Then {
-	var resp multipartestutils.TestEventResponse
-	require.NoError(v.t, json.Unmarshal(v.w.Body.Bytes(), &resp))
-	f(v.t, v.w, v.r, resp)
+	WrapEvent(f)(v.t, v.w, v.r)
 	return v
 }
 
