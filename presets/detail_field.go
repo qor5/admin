@@ -75,9 +75,9 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 
 	d.detailFields = append(d.detailFields, r)
 
-	d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		panic("you must set ShowComponentFunc and EditComponentFunc if you want to use DetailFieldsBuilder")
-	})
+	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	// 	panic("you must set ShowComponentFunc and EditComponentFunc if you want to use DetailFieldsBuilder")
+	// })
 
 	return
 }
