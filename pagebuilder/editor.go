@@ -588,7 +588,11 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 			),
 		),
 	)
-
+	pushState := web.Plaid().PushState(true).MergeQuery(true).
+		Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`))
+	if !isReadonly {
+		pushState.Query(paramContainerID, web.Var("element.param_id"))
+	}
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -651,10 +655,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
 										Attr("v-bind", "props").
-										Attr("@click", web.Plaid().PushState(true).MergeQuery(true).
-											Query(paramContainerID, web.Var("element.param_id")).
-											Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`)).
-											RunPushState()+
+										Attr("@click", pushState.RunPushState()+
 											";"+scrollToContainer(fmt.Sprintf(`%s+"_"+%s`, web.Var("element.label"), web.Var("element.model_id")))),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
@@ -1192,6 +1193,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 		p           = new(Page)
 		primarySlug = p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 		locale      = primarySlug["locale_code"]
+		isReadonly  = ctx.Param(paramStatus) != publish.StatusDraft
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	)
 
@@ -1226,7 +1228,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 			listItems = append(listItems, VListItem(
 				VListItemTitle(h.Text(containerName)),
 				VListItemSubtitle(VImg().Src(cover).Height(100)),
-			).Attr("@click",
+			).Disabled(isReadonly).Attr("@click",
 				web.Plaid().EventFunc(AddContainerEvent).
 					MergeQuery(true).
 					Query(paramModelName, builder.name).
@@ -1273,7 +1275,7 @@ func (b *Builder) renderContainersList(ctx *web.EventContext) (component h.HTMLC
 				h.Div(
 					VListItemTitle(h.Text(containerName)),
 					VListItemSubtitle(VImg().Src(cover).Height(100)),
-				).Attr("@click", web.Plaid().
+				).Disabled(isReadonly).Attr("@click", web.Plaid().
 					EventFunc(AddContainerEvent).
 					MergeQuery(true).
 					Query(paramContainerName, builder.ModelName).
