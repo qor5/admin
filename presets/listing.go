@@ -1440,7 +1440,7 @@ func (b *ListingBuilder) actionsComponent(
 
 		actionBtns = append(actionBtns, btn)
 	}
-	b.newBtnFunc = nil
+
 	// Render actions
 	for _, ba := range b.actions {
 		if b.mb.Info().Verifier().SnakeDo(PermActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
