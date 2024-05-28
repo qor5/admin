@@ -46,7 +46,7 @@ func registerChangePasswordEvents(b *login.Builder, pb *presets.Builder) {
 var tag = document.createElement("script");
 tag.src = "%s";
 tag.onload= function(){
-	vars.meter_score = function(x){return zxcvbn(x).score};
+	vars.meter_score = function(x){return zxcvbn(x).score+1};
 }
 document.getElementsByTagName("head")[0].appendChild(tag);
 })()
