@@ -71,6 +71,7 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		isList:                  false,
 	}
 	r.FieldsBuilder.Model(d.mb.model)
+	r.FieldsBuilder.defaults = d.mb.writeFields.defaults
 	r.saver = r.DefaultSaveFunc
 
 	d.detailFields = append(d.detailFields, r)
@@ -206,6 +207,11 @@ func (b *DetailFieldBuilder) SetSwitchable(v bool) (r *DetailFieldBuilder) {
 func (b *DetailFieldBuilder) Editing(fields ...interface{}) (r *DetailFieldBuilder) {
 	r = b
 	b.FieldsBuilder = *b.FieldsBuilder.Only(fields...)
+	if b.componentEditFunc == nil {
+		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return b.FieldsBuilder.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+		})
+	}
 	return
 }
 

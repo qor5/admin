@@ -595,8 +595,12 @@ func (b *FieldsBuilder) String() (r string) {
 }
 
 func (b *FieldsBuilder) ToComponent(info *ModelInfo, obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+	return b.toComponentWithModifiedIndexes(info, obj, "", ctx)
+}
+
+func (b *FieldsBuilder) toComponentWithModifiedIndexes(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext) h.HTMLComponent {
 	modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
-	return b.toComponentWithFormValueKey(info, obj, "", modifiedIndexes, ctx)
+	return b.toComponentWithFormValueKey(info, obj, parentFormValueKey, modifiedIndexes, ctx)
 }
 
 func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
