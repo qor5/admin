@@ -36,16 +36,12 @@ import (
 )
 
 type RenderInput struct {
-	Page            *Page
-	IsEditor        bool
-	IsReadonly      bool
-	Device          string
-	ContainerId     string
-	DisplayName     string
-	IsFirst         bool
-	IsEnd           bool
-	ContainerDataID string
-	ModelName       string
+	Page        *Page
+	IsEditor    bool
+	IsReadonly  bool
+	Device      string
+	ContainerId string
+	DisplayName string
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -372,7 +368,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
 	b.mb = pm
-	lb := pm.Listing("ID", "Online", "Title", "Path")
+	lb := pm.Listing("ID", publish.ListingFieldLive, "Title", "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)

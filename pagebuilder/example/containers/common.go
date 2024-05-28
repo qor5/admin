@@ -47,7 +47,7 @@ func ContainerWrapper(containerDataID, anchorID, classes,
 		AttrIf("data-image-position", imagePosition, imagePosition != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
-		Attr("data-container-id", containerDataID).Style("position:relative;").StyleIf(style, style != "")
+		Style("position:relative;").StyleIf(style, style != "")
 }
 
 func LinkTextWithArrow(text, link string, class ...string) HTMLComponent {

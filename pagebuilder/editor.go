@@ -413,21 +413,17 @@ func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool
 		}
 		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
-			Page:            p,
-			IsEditor:        isEditor,
-			IsReadonly:      isReadonly,
-			Device:          device,
-			ContainerId:     ec.container.PrimarySlug(),
-			DisplayName:     displayName,
-			IsFirst:         i == 0,
-			IsEnd:           i == len(cbs)-1,
-			ContainerDataID: ctx.R.FormValue(paramContainerDataID),
-			ModelName:       ec.container.ModelName,
+			Page:        p,
+			IsEditor:    isEditor,
+			IsReadonly:  isReadonly,
+			Device:      device,
+			ContainerId: ec.container.PrimarySlug(),
+			DisplayName: displayName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 
-		r = append(r, b.containerWrapper(pure.(*h.HTMLTagBuilder), isEditor,
-			isReadonly, ec.builder.getContainerDataID(int(ec.container.ModelID)), &input))
+		r = append(r, b.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, isReadonly, i == 0, i == len(cbs)-1,
+			ec.builder.getContainerDataID(int(ec.container.ModelID)), ec.container.ModelName, &input))
 	}
 
 	return
@@ -1489,27 +1485,36 @@ func scrollToContainer(containerDataID interface{}) string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%v);`, containerDataID)
 }
 
-func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, isEditor, isReadonly bool, containerDataID string, input *RenderInput) h.HTMLComponent {
+func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, isEditor, isReadonly, isFirst, isEnd bool, containerDataID, modelName string, input *RenderInput) h.HTMLComponent {
+	r.Attr("data-container-id", containerDataID)
+	pmb := postMessageBody{
+		ContainerDataID: containerDataID,
+		ContainerId:     input.ContainerId,
+		DisplayName:     input.DisplayName,
+		ModelName:       modelName,
+		isFirst:         isFirst,
+		isEnd:           isEnd,
+	}
 	if isEditor {
 		if isReadonly {
 			r.AppendChildren(h.Div().Class("wrapper-shadow"))
 		} else {
 			r.AppendChildren(h.Div().Class("inner-shadow"))
 			r = h.Div(
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+postMessage(EventEdit, containerDataID, input)),
+				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.H6(input.DisplayName).Class("title"),
 					h.Div(
-						h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", postMessage(EventUp, containerDataID, input)),
-						h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", postMessage(EventDown, containerDataID, input)),
-						h.Button("").Children(h.I("delete").Class("material-icons")).Attr("onclick", postMessage(EventDelete, containerDataID, input)),
+						h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventUp)),
+						h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDown)),
+						h.Button("").Children(h.I("delete").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDelete)),
 					).Class("editor-bar-buttons"),
 				).Class("editor-bar"),
 				h.Div(
 					h.Div().Class("add"),
-					h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", postMessage(EventAdd, containerDataID, input)),
+					h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", pmb.postMessage(EventAdd)),
 				).Class("editor-add"),
-			).Class("wrapper-shadow").ClassIf("highlight", input.ContainerDataID == containerDataID)
+			).Class("wrapper-shadow").ClassIf("highlight", ctx.Param(paramContainerDataID) == containerDataID)
 		}
 	}
 	return r
@@ -1522,18 +1527,18 @@ type (
 		ContainerId     string `json:"container_id"`
 		DisplayName     string `json:"display_name"`
 		ModelName       string `json:"model_name"`
+		isFirst         bool
+		isEnd           bool
 	}
 )
 
-func postMessage(msgType, containerDataID string, input *RenderInput) string {
-	if msgType == EventUp && input.IsFirst {
+func (b *postMessageBody) postMessage(msgType string) string {
+	if msgType == EventUp && b.isFirst {
 		return ""
 	}
-	if msgType == EventDown && input.IsEnd {
+	if msgType == EventDown && b.isEnd {
 		return ""
 	}
-	body := postMessageBody{
-		msgType, containerDataID, input.ContainerId, input.DisplayName, input.ModelName,
-	}
-	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(body))
+	b.MsgType = msgType
+	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(b))
 }

@@ -148,7 +148,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 	creating.WrapSetterFunc(setter)
 
 	m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
-	m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
+	m.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
 
 	configureVersionListDialog(db, pb, m)
 }
@@ -396,6 +396,9 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 		querys = append(querys, fmt.Sprintf("%s = ?", strcase.ToSnake(p.Name)))
 		args = append(args, val)
 	}
-
 	return db.Where(strings.Join(querys, " AND "), args...)
+}
+
+func setPrimaryKeysConditionWithoutVersionWrapper(db *gorm.DB, obj interface{}, s *schema.Schema) *gorm.DB {
+	return setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(s.ModelType).Interface()), obj, s)
 }

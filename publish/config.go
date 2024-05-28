@@ -9,6 +9,7 @@ const I18nPublishKey i18n.ModuleKey = "I18nPublishKey"
 const (
 	ListingFieldDraftCount = "Draft Count"
 	ListingFieldOnline     = "Online"
+	ListingFieldLive       = "Live"
 
 	VersionsPublishBar = "VersionsPublishBar"
 
