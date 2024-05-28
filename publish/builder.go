@@ -398,7 +398,3 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 	}
 	return db.Where(strings.Join(querys, " AND "), args...)
 }
-
-func setPrimaryKeysConditionWithoutVersionWrapper(db *gorm.DB, obj interface{}, s *schema.Schema) *gorm.DB {
-	return setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(s.ModelType).Interface()), obj, s)
-}

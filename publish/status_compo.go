@@ -56,7 +56,9 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		}
 
 		var (
-			g       = setPrimaryKeysConditionWithoutVersionWrapper
+			g = func() *gorm.DB {
+				return setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema)
+			}
 			nowTime = db.NowFunc()
 		)
 		if statusInterface, ok = obj.(StatusInterface); !ok {
@@ -65,23 +67,23 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		}
 		status = statusInterface.GetStatus()
 		if _, ok = obj.(ScheduleInterface); !ok {
-			comp, err = noScheduledLive(g(db, obj, modelSchema), msgr)
+			comp, err = noScheduledLive(g, msgr)
 			return
 		}
 		var (
 			startFieldName = modelSchema.FieldsByName["ScheduledStartAt"].DBName
 			endFieldName   = modelSchema.FieldsByName["ScheduledEndAt"].DBName
 		)
-		if err = g(db, obj, modelSchema).Where(fmt.Sprintf(`%s >= @nowTime or %s >= @nowTime`, startFieldName, endFieldName), sql.Named("nowTime", nowTime)).Count(&count).Error; err != nil {
+		if err = g().Where(fmt.Sprintf(`%s >= @nowTime or %s >= @nowTime`, startFieldName, endFieldName), sql.Named("nowTime", nowTime)).Count(&count).Error; err != nil {
 			return
 		}
 		if count == 0 {
-			comp, err = noScheduledLive(g(db, obj, modelSchema), msgr)
+			comp, err = noScheduledLive(g, msgr)
 			return
 		}
 
-		g(db, obj, modelSchema).Select(startFieldName).Where(fmt.Sprintf(`%s >= ?`, startFieldName), nowTime).Order(startFieldName).Limit(1).Scan(&scheduleStart)
-		g(db, obj, modelSchema).Select(endFieldName).Where(fmt.Sprintf(`%s >= ?`, endFieldName), nowTime).Order(endFieldName).Limit(1).Scan(&scheduleEnd)
+		g().Select(startFieldName).Where(fmt.Sprintf(`%s >= ?`, startFieldName), nowTime).Order(startFieldName).Limit(1).Scan(&scheduleStart)
+		g().Select(endFieldName).Where(fmt.Sprintf(`%s >= ?`, endFieldName), nowTime).Order(endFieldName).Limit(1).Scan(&scheduleEnd)
 		if scheduleStart.ScheduledStartAt == nil && scheduleEnd.ScheduledEndAt == nil {
 			err = errors.New("dbError")
 			return
@@ -125,15 +127,15 @@ func GetStatusColor(status string) string {
 	return ""
 }
 
-func noScheduledLive(g *gorm.DB, msgr *Messages) (comp h.HTMLComponent, err error) {
+func noScheduledLive(g func() *gorm.DB, msgr *Messages) (comp h.HTMLComponent, err error) {
 	var count int64
-	if err = g.Where("status = ?", StatusOnline).Count(&count).Error; err != nil {
+	if err = g().Where("status = ?", StatusOnline).Count(&count).Error; err != nil {
 		return
 	}
 	if count > 0 {
 		return VChip().Text(msgr.StatusOnline).Color(ColorSuccess), nil
 	}
-	if err = g.Where("status = ?", StatusOffline).Count(&count).Error; err != nil {
+	if err = g().Where("status = ?", StatusOffline).Count(&count).Error; err != nil {
 		return
 	}
 	if count > 0 {
