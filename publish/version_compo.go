@@ -8,7 +8,6 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -201,7 +200,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 	}
 }
 
-func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder, publisher *Builder, ab *activity.Builder) {
+func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.ModelBuilder) {
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
@@ -211,7 +210,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	registerEventFuncsForVersion(mb, pm, db)
 
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
-		DialogWidth("950px").
+		DialogWidth("900").
 		Title("Version List"). // TODO: i18n
 		SearchColumns("version", "version_name").
 		PerPage(10).

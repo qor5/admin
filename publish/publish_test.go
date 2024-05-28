@@ -181,11 +181,9 @@ func (m *MockStorage) Get(path string) (f *os.File, err error) {
 
 	pattern := fmt.Sprintf("s3*%d", time.Now().Unix())
 
-	if err == nil {
-		if f, err = os.CreateTemp("/tmp", pattern); err == nil {
-			f.WriteString(content)
-			f.Seek(0, 0)
-		}
+	if f, err = os.CreateTemp("/tmp", pattern); err == nil {
+		f.WriteString(content)
+		f.Seek(0, 0)
 	}
 
 	return

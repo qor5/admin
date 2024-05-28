@@ -128,7 +128,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 	patcherrs := []string{}
 	for idx, b := range bs {
 		if !b {
-			patcherrs = append(patcherrs, fmt.Sprintf("patch failed: %v", pacthed[idx]))
+			patcherrs = append(patcherrs, fmt.Sprintf("patch failed: %v", patches[idx]))
 		}
 	}
 	if len(patcherrs) > 0 {

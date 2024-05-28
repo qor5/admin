@@ -40,11 +40,6 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	}
 }
 
-// func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
-// 	b.models = slices.Compact(append(b.models, vs...))
-// 	return b
-// }
-
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
@@ -68,7 +63,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
-		b.configVersionAndPublish(pb, m, db, ab)
+		b.configVersionAndPublish(pb, m, db)
 	} else {
 		if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
 			NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
@@ -85,7 +80,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	return nil
 }
 
-func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelBuilder, db *gorm.DB, ab *activity.Builder) {
+func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelBuilder, db *gorm.DB) {
 	ed := m.Editing()
 	creating := ed.Creating().Except(VersionsPublishBar)
 	var detailing *presets.DetailingBuilder
@@ -155,7 +150,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 	m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
 	m.Listing().Field(ListingFieldOnline).ComponentFunc(onlineFunc(db))
 
-	configureVersionListDialog(db, pb, m, b, ab)
+	configureVersionListDialog(db, pb, m)
 }
 
 func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {
