@@ -388,7 +388,7 @@ func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar s
 		),
 	).MaxWidth("600px").
 		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)),
-	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: false}`, showVar))
+	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
 func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builder) func(ctx *web.EventContext) HTMLComponent {

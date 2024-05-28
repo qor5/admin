@@ -41,11 +41,13 @@ func registerChangePasswordEvents(b *login.Builder, pb *presets.Builder) {
 			Body: changePasswordDialog(vh, ctx, showVar, defaultChangePasswordDialogContent(vh, pb)(ctx)),
 		})
 
-		web.AppendRunScripts(&r, fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar))
 		web.AppendRunScripts(&r, fmt.Sprintf(`
 (function(){
 var tag = document.createElement("script");
 tag.src = "%s";
+tag.onload= function(){
+	vars.meter_score = function(x){return zxcvbn(x).score};
+}
 document.getElementsByTagName("head")[0].appendChild(tag);
 })()
         `, login.ZxcvbnJSURL))

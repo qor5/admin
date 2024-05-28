@@ -119,42 +119,21 @@ func (vc *ViewCommon) PasswordInput(
 	return in
 }
 
-// need to import zxcvbn js
-// func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
-// 	passVar := fmt.Sprintf(`password_%s`, id)
-// 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-// 	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-// 		Attr(":loading", fmt.Sprintf(`!!vars.%s`, passVar)).
-// 		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-// 	return Div(
-// 		in.Children(
-// 			RawHTML(fmt.Sprintf(`
-//         <template v-slot:progress>
-//           <v-progress-linear
-//             :value="vars.%s * 20"
-//             :color="['grey', 'red', 'deep-orange', 'amber', 'yellow', 'light-green'][vars.%s]"
-//             absolute
-//           ></v-progress-linear>
-//         </template>
-//             `, meterScoreVar, meterScoreVar)),
-// 		),
-// 	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
-// }
-
 // need to import zxcvbn.js
 func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *VTextFieldBuilder, id string, val string) HTMLComponent {
-	passVar := fmt.Sprintf(`password_%s`, id)
-	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-	in.Attr("v-model", fmt.Sprintf(`progressLocals.%s`, passVar)).
-		On("input", fmt.Sprintf(`progressLocals.%s = progressLocals.%s ? zxcvbn(progressLocals.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-	return web.Scope(
+	in.Attr("v-model", fmt.Sprintf(`form.%s`, id))
+	return Components(
 		in,
-		VProgressLinear().
-			Class("mt-2").
-			Attr(":value", fmt.Sprintf(`progressLocals.%s * 20`, meterScoreVar)).
-			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][progressLocals.%s]`, meterScoreVar)).
-			Attr("v-show", fmt.Sprintf(`!!progressLocals.%s`, passVar)),
-	).VSlot(" { locals : progressLocals } ").Init(fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
+		Div(
+			web.Scope(
+				VProgressLinear().
+					Class("mt-2").
+					Attr(":model-value", fmt.Sprintf(`(vars.meter_score?vars.meter_score(form.%s):0) * 20`, id)).
+					Attr(":color", fmt.Sprintf(`["secondary", "error-darken-2", "error-darken-1", "warning", "warning-lighten-1", "success"][(vars.meter_score?vars.meter_score(form.%s):0)]`, id)),
+			).VSlot("{ locals }").
+				Init(fmt.Sprintf(`{ meter_score:  0 }`)),
+		).Id(fmt.Sprintf("password_%s", id)).Attr("v-show", fmt.Sprintf("!!form.%s", id)),
+	)
 }
 
 func (vc *ViewCommon) FormSubmitBtn(
