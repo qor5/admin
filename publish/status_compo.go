@@ -38,10 +38,8 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		var (
 			ok                         bool
 			err                        error
-			statusInterface            StatusInterface
 			modelSchema                *schema.Schema
 			count                      int64
-			status                     string
 			scheduleStart, scheduleEnd Schedule
 		)
 		defer func() {
@@ -61,13 +59,12 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			}
 			nowTime = db.NowFunc()
 		)
-		if statusInterface, ok = obj.(StatusInterface); !ok {
+		if _, ok = obj.(StatusInterface); !ok {
 			err = errors.New("ErrorModel")
 			return
 		}
-		status = statusInterface.GetStatus()
 		if _, ok = obj.(ScheduleInterface); !ok {
-			comp, err = noScheduledLive(g, msgr)
+			comp, err = liveStatusColumn(g, msgr, "")
 			return
 		}
 		var (
@@ -78,7 +75,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			return
 		}
 		if count == 0 {
-			comp, err = noScheduledLive(g, msgr)
+			comp, err = liveStatusColumn(g, msgr, "")
 			return
 		}
 
@@ -88,16 +85,16 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			err = errors.New("dbError")
 			return
 		} else if scheduleStart.ScheduledStartAt != nil && scheduleEnd.ScheduledEndAt == nil {
-			comp = scheduledLive(status, msgr)
+			comp, err = liveStatusColumn(g, msgr, StatusOnline)
 			return
 		} else if scheduleStart.ScheduledStartAt == nil && scheduleEnd.ScheduledEndAt != nil {
-			comp = scheduledLiveOffline(status, msgr)
+			comp, err = liveStatusColumn(g, msgr, StatusOffline)
 			return
 		} else {
 			if scheduleEnd.ScheduledEndAt.Before(*scheduleStart.ScheduledStartAt) {
-				comp = scheduledLiveOffline(status, msgr)
+				comp, err = liveStatusColumn(g, msgr, StatusOffline)
 			} else {
-				comp = scheduledLive(status, msgr)
+				comp, err = liveStatusColumn(g, msgr, StatusOnline)
 			}
 		}
 		return
@@ -134,40 +131,61 @@ func GetStatusColor(status string) string {
 	return ""
 }
 
-func noScheduledLive(g func() *gorm.DB, msgr *Messages) (comp h.HTMLComponent, err error) {
+func liveStatusColumn(g func() *gorm.DB, msgr *Messages, toStatus string) (comp h.HTMLComponent, err error) {
 	var count int64
 	if err = g().Where("status = ?", StatusOnline).Count(&count).Error; err != nil {
 		return
 	}
 	if count > 0 {
-		return VChip().Text(msgr.StatusOnline).Color(ColorSuccess), nil
+		return liveChips(StatusOnline, toStatus, msgr), nil
 	}
 	if err = g().Where("status = ?", StatusOffline).Count(&count).Error; err != nil {
 		return
 	}
 	if count > 0 {
-		return VChip().Text(msgr.StatusOffline).Color(ColorWarning), nil
+		if toStatus == StatusOffline {
+			return liveChips(StatusOffline, "", msgr), nil
+		}
+		return liveChips(StatusOffline, toStatus, msgr), nil
 	}
-	return VChip().Text(msgr.StatusDraft).Color(ColorSecondary), nil
+	if toStatus == StatusOffline {
+		return liveChips(StatusDraft, "", msgr), nil
+	}
+	return liveChips(StatusDraft, toStatus, msgr), nil
 }
 
-func scheduledLive(status string, msgr *Messages) (comp h.HTMLComponent) {
-	if status == StatusDraft {
-		// draft -> online
-		comp = VChip().Text(fmt.Sprintf(`%s->%s`, msgr.StatusDraft, msgr.StatusOnline))
-	} else if status == StatusOffline {
-		comp = VChip().Text(fmt.Sprintf(`%s->%s`, msgr.StatusOffline, msgr.StatusOnline))
-	} else {
-		comp = VChip().Text(fmt.Sprintf(`%s->%s`, msgr.StatusOnline, msgr.StatusOnline))
-	}
-	return
+func liveChip(status string, isScheduled bool, msgr *Messages) h.HTMLComponent {
+	label, color := GetStatusLabelColor(status, msgr)
+	return VChip(
+		h.If(status == StatusOnline,
+			web.Slot(
+				VRadio().Density(DensityCompact).ModelValue(true).Readonly(true).Ripple(false).Class("ml-n2"),
+			).Name(VSlotPrepend),
+		),
+		h.Span(label),
+		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-2")),
+	).Color(color).Density(DensityCompact).Tile(true).Class("px-2")
 }
 
-func scheduledLiveOffline(status string, msgr *Messages) h.HTMLComponent {
-	if status == StatusDraft {
-		return VChip().Text(msgr.StatusDraft).Color(ColorSecondary)
-	} else if status == StatusOffline {
-		return VChip().Text(msgr.StatusOffline).Color(ColorSecondary)
+func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
+	if status == toStatus && status == StatusOnline {
+		toStatus = "+1"
 	}
-	return VChip().Text(fmt.Sprintf(`%s->%s`, msgr.StatusOnline, msgr.StatusOffline))
+	return h.Components(
+		liveChip(status, toStatus != "", msgr),
+		h.If(toStatus != "", liveChip(toStatus, false, msgr)),
+	)
+}
+
+func GetStatusLabelColor(status string, msgr *Messages) (label, color string) {
+	switch status {
+	case StatusOnline:
+		return msgr.StatusOnline, ColorSuccess
+	case StatusOffline:
+		return msgr.StatusOffline, ColorSecondary
+	case StatusDraft:
+		return msgr.StatusDraft, ColorWarning
+	default:
+		return status, ColorSuccess
+	}
 }

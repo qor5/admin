@@ -655,6 +655,7 @@ func (b *Builder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLCom
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
 										Attr("v-bind", "props").
+										Disabled(isReadonly).
 										Attr("@click", pushState.RunPushState()+
 											";"+scrollToContainer(fmt.Sprintf(`%s+"_"+%s`, web.Var("element.label"), web.Var("element.model_id")))),
 								).Name("default").Scope("{ isHovering, props }"),
