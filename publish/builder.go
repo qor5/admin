@@ -96,7 +96,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 		fb.ComponentFunc(DefaultVersionComponentFunc(m))
 	}
 
-	m.Listing().WrapSearchFunc(makeSearchFunc(db))
+	m.Listing().WrapSearchFunc(makeSearchFunc(m, db))
 
 	// listing-delete deletes all versions
 	{
@@ -178,7 +178,7 @@ func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {
 	}
 }
 
-func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
+func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			stmt := &gorm.Statement{DB: db}
@@ -209,6 +209,29 @@ func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.Searc
 				) subquery
 				WHERE subquery.rn = 1
 			)`, pkc, pkc, pkc, pkc, StatusOnline, tn, condition)
+
+			if _, ok := mb.NewModel().(ScheduleInterface); ok {
+				// Also need to get the most recent planned to publish
+				sql = fmt.Sprintf(`
+				(%s, version) IN (
+					SELECT %s, version
+					FROM (
+						SELECT %s, version,
+							ROW_NUMBER() OVER (
+								PARTITION BY %s 
+								ORDER BY 
+									CASE WHEN status = '%s' THEN 0 ELSE 1 END,
+									CASE 
+										WHEN scheduled_start_at >= now() THEN scheduled_start_at
+										ELSE NULL 
+									END,
+									version DESC
+							) as rn
+						FROM %s %s
+					) subquery
+					WHERE subquery.rn = 1
+				)`, pkc, pkc, pkc, pkc, StatusOnline, tn, condition)
+			}
 
 			con := presets.SQLCondition{
 				Query: sql,
