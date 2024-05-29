@@ -50,6 +50,10 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 
 		div := h.Div().Class("w-100 d-inline-flex")
 
+		if !config.Top {
+			div.Class("pb-4")
+		}
+
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.GetVersionName()),

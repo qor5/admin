@@ -99,7 +99,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 							VBtn("Page Builder").PrependIcon("mdi-pencil").Color(ColorSecondary).
 								Class("rounded-sm").Height(40).Variant(VariantFlat),
 						).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
-					).Style(`position:relative`).Class("w-100 mt-4").
+					).Style(`position:relative`).Class("w-100").
 						Attr("@click",
 							web.Plaid().URL(fmt.Sprintf("%s/editors/%v", b.prefix, p.PrimarySlug())).PushState(true).Go(),
 						),
