@@ -299,13 +299,15 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	}).Label("Unread Notes")
 
 	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		pmsgr := presets.MustGetMessages(ctx.R)
+
 		id := obj.(presets.SlugEncoder).PrimarySlug()
 		versionName := obj.(VersionInterface).GetVersionName()
 		status := obj.(StatusInterface).GetStatus()
 		disable := status == StatusOnline || status == StatusOffline // TODO: perm check
 		return h.Td().Children(
-			// TODO: i18n
-			v.VBtn("Rename").Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(msgr.Rename).Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventRenameVersionDialog).
@@ -315,7 +317,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query("version_name", versionName).
 					Go(),
 				),
-			v.VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(pmsgr.Delete).Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersionDialog).

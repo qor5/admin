@@ -252,8 +252,6 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 			items, _ := findVersionItems(db, mb, deleteID)
 			rv := reflect.ValueOf(items).Elem()
 			if rv.Len() == 0 {
-				// TODO: any diffrent?
-				// r.RunScript = web.Plaid().URL(pm.Info().ListingHref()).PushState(true).Go()
 				r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
 				return
 			}

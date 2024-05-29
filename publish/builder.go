@@ -197,7 +197,17 @@ func makeSearchFunc(db *gorm.DB) func(searcher presets.SearchFunc) presets.Searc
 				}
 			}
 			pkc := strings.Join(pks, ",")
-			sql := fmt.Sprintf("(%v,version) IN (SELECT %v, MAX(version) FROM %v %v GROUP BY %v)", pkc, pkc, tn, condition, pkc)
+
+			sql := fmt.Sprintf(`
+			(%s, version) IN (
+				SELECT %s, version
+				FROM (
+					SELECT %s, version,
+						ROW_NUMBER() OVER (PARTITION BY %s ORDER BY CASE WHEN status = '%s' THEN 0 ELSE 1 END, version DESC) as rn
+					FROM %s %s
+				) subquery
+				WHERE subquery.rn = 1
+			)`, pkc, pkc, pkc, pkc, StatusOnline, tn, condition)
 
 			con := presets.SQLCondition{
 				Query: sql,
