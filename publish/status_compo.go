@@ -98,14 +98,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(StatusInterface); ok {
-			return h.Td().Children(
-				VChip().Theme(ThemeDark).
-					Label(true).
-					Color(GetStatusColor(s.GetStatus())).
-					Children(
-						h.Text(GetStatusText(s.GetStatus(), msgr)),
-					),
-			)
+			return h.Td(liveChip(s.GetStatus(), false, msgr))
 		}
 		return nil
 	}
