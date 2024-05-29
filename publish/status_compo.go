@@ -55,7 +55,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 
 		var (
 			g = func() *gorm.DB {
-				return setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema)
+				return setPrimaryKeysConditionWithoutFields(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema, "Version", "LocaleCode")
 			}
 			nowTime = db.NowFunc()
 		)

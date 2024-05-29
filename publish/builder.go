@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -400,6 +401,20 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 	args := []interface{}{}
 	for _, p := range s.PrimaryFields {
 		if p.Name == "Version" {
+			continue
+		}
+		val, _ := p.ValueOf(db.Statement.Context, reflect.ValueOf(record))
+		querys = append(querys, fmt.Sprintf("%s = ?", strcase.ToSnake(p.Name)))
+		args = append(args, val)
+	}
+	return db.Where(strings.Join(querys, " AND "), args...)
+}
+
+func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *schema.Schema, ignoreFields ...string) *gorm.DB {
+	querys := []string{}
+	args := []interface{}{}
+	for _, p := range s.PrimaryFields {
+		if slices.Contains(ignoreFields, p.Name) {
 			continue
 		}
 		val, _ := p.ValueOf(db.Statement.Context, reflect.ValueOf(record))
