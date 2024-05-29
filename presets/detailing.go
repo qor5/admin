@@ -82,6 +82,11 @@ func (b *DetailingBuilder) FetchFunc(v FetchFunc) (r *DetailingBuilder) {
 	return b
 }
 
+func (b *DetailingBuilder) WrapFetchFunc(w func(in FetchFunc) FetchFunc) (r *DetailingBuilder) {
+	b.fetcher = w(b.fetcher)
+	return b
+}
+
 func (b *DetailingBuilder) GetFetchFunc() FetchFunc {
 	return b.fetcher
 }
