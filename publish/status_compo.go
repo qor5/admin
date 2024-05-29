@@ -120,13 +120,11 @@ func liveChip(status string, isScheduled bool, msgr *Messages) h.HTMLComponent {
 	label, color := GetStatusLabelColor(status, msgr)
 	return VChip(
 		h.If(status == StatusOnline,
-			web.Slot(
-				VRadio().Density(DensityCompact).ModelValue(true).Readonly(true).Ripple(false).Class("ml-n2"),
-			).Name(VSlotPrepend),
+			VIcon("mdi-radiobox-marked").Size(SizeSmall).Class("mr-1"),
 		),
 		h.Span(label),
-		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-2")),
-	).Color(color).Density(DensityCompact).Tile(true).Class("px-2")
+		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-1")),
+	).Color(color).Density(DensityCompact).Tile(true).Class("px-1")
 }
 
 func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
