@@ -1119,10 +1119,8 @@ message: ""}}`)...)
 
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(strings.Replace(`
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
-			<link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet" async>
-			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
+			<link rel="stylesheet" href="{{prefix}}/vuetify/assets/index.css" async>
+			<link rel="stylesheet" href="{{prefix}}/vuetifyx/assets/index.css" async>
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
 				[v-cloak] {
@@ -1232,15 +1230,18 @@ func (b *Builder) initMux() {
 			web.JSVueComponentsPack(),
 		),
 	)
+
+	HandleMaterialDesignIcons(b.prefix, mux)
+
 	log.Println("mounted url:", vueJSPath)
 
-	mainCSSPath := b.prefix + "/assets/main.css"
+	mainCSSPath := b.prefix + "/vuetifyx/assets/index.css"
 	mux.Handle("GET "+mainCSSPath,
 		ub.PacksHandler("text/css",
-			CSSComponentsPack(),
 			vuetifyx.CSSComponentsPack(),
 		),
 	)
+
 	log.Println("mounted url:", mainCSSPath)
 
 	for _, ea := range b.extraAssets {
