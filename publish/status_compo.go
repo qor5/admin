@@ -1,7 +1,6 @@
 package publish
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -36,11 +35,10 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		var (
-			ok                         bool
-			err                        error
-			modelSchema                *schema.Schema
-			count                      int64
-			scheduleStart, scheduleEnd Schedule
+			ok            bool
+			err           error
+			modelSchema   *schema.Schema
+			scheduleStart Schedule
 		)
 		defer func() {
 			if err != nil {
@@ -59,45 +57,39 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			}
 			nowTime = db.NowFunc()
 		)
-		if _, ok = obj.(StatusInterface); !ok {
+		st, ok := obj.(StatusInterface)
+		if !ok {
 			err = errors.New("ErrorModel")
 			return
 		}
-		if _, ok = obj.(ScheduleInterface); !ok {
-			comp, err = liveStatusColumn(g, msgr, "")
-			return
-		}
-		var (
-			startFieldName = modelSchema.FieldsByName["ScheduledStartAt"].DBName
-			endFieldName   = modelSchema.FieldsByName["ScheduledEndAt"].DBName
-		)
-		if err = g().Where(fmt.Sprintf(`%s >= @nowTime or %s >= @nowTime`, startFieldName, endFieldName), sql.Named("nowTime", nowTime)).Count(&count).Error; err != nil {
-			return
-		}
-		if count == 0 {
-			comp, err = liveStatusColumn(g, msgr, "")
-			return
+		sc, ok := obj.(ScheduleInterface)
+		if !ok {
+			return liveChip(st.GetStatus(), false, msgr)
 		}
 
-		g().Select(startFieldName).Where(fmt.Sprintf(`%s >= ?`, startFieldName), nowTime).Order(startFieldName).Limit(1).Scan(&scheduleStart)
-		g().Select(endFieldName).Where(fmt.Sprintf(`%s >= ?`, endFieldName), nowTime).Order(endFieldName).Limit(1).Scan(&scheduleEnd)
-		if scheduleStart.ScheduledStartAt == nil && scheduleEnd.ScheduledEndAt == nil {
-			err = errors.New("dbError")
-			return
-		} else if scheduleStart.ScheduledStartAt != nil && scheduleEnd.ScheduledEndAt == nil {
-			comp, err = liveStatusColumn(g, msgr, StatusOnline)
-			return
-		} else if scheduleStart.ScheduledStartAt == nil && scheduleEnd.ScheduledEndAt != nil {
-			comp, err = liveStatusColumn(g, msgr, StatusOffline)
-			return
+		var (
+			statusFieldName = modelSchema.FieldsByName["Status"].DBName
+			startFieldName  = modelSchema.FieldsByName["ScheduledStartAt"].DBName
+		)
+
+		var toStatus string
+		if st.GetStatus() != StatusOnline {
+			if sc.GetScheduledStartAt() != nil {
+				toStatus = StatusOnline
+			}
 		} else {
-			if scheduleEnd.ScheduledEndAt.Before(*scheduleStart.ScheduledStartAt) {
-				comp, err = liveStatusColumn(g, msgr, StatusOffline)
-			} else {
-				comp, err = liveStatusColumn(g, msgr, StatusOnline)
+			err := g().Select(startFieldName).Where(fmt.Sprintf("%s <> ? AND %s > ?", statusFieldName, startFieldName), StatusOnline, nowTime).Order(startFieldName).Limit(1).Scan(&scheduleStart).Error
+			if err != nil {
+				return
+			}
+			currentEndAt := sc.GetScheduledEndAt()
+			if scheduleStart.ScheduledStartAt != nil && (currentEndAt == nil || !scheduleStart.ScheduledStartAt.After(*currentEndAt)) {
+				toStatus = "+1"
+			} else if currentEndAt != nil {
+				toStatus = StatusOffline
 			}
 		}
-		return
+		return liveChips(st.GetStatus(), toStatus, msgr)
 	}
 }
 
@@ -131,29 +123,6 @@ func GetStatusColor(status string) string {
 	return ""
 }
 
-func liveStatusColumn(g func() *gorm.DB, msgr *Messages, toStatus string) (comp h.HTMLComponent, err error) {
-	var count int64
-	if err = g().Where("status = ?", StatusOnline).Count(&count).Error; err != nil {
-		return
-	}
-	if count > 0 {
-		return liveChips(StatusOnline, toStatus, msgr), nil
-	}
-	if err = g().Where("status = ?", StatusOffline).Count(&count).Error; err != nil {
-		return
-	}
-	if count > 0 {
-		if toStatus == StatusOffline {
-			return liveChips(StatusOffline, "", msgr), nil
-		}
-		return liveChips(StatusOffline, toStatus, msgr), nil
-	}
-	if toStatus == StatusOffline {
-		return liveChips(StatusDraft, "", msgr), nil
-	}
-	return liveChips(StatusDraft, toStatus, msgr), nil
-}
-
 func liveChip(status string, isScheduled bool, msgr *Messages) h.HTMLComponent {
 	label, color := GetStatusLabelColor(status, msgr)
 	return VChip(
@@ -168,9 +137,6 @@ func liveChip(status string, isScheduled bool, msgr *Messages) h.HTMLComponent {
 }
 
 func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
-	if status == toStatus && status == StatusOnline {
-		toStatus = "+1"
-	}
 	return h.Components(
 		liveChip(status, toStatus != "", msgr),
 		h.If(toStatus != "", liveChip(toStatus, false, msgr)),
