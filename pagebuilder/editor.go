@@ -152,7 +152,7 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go()),
 				VAppBarTitle().Text("Page Builder"),
 			).Class("d-inline-flex align-center"),
-			h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-2"),
+			h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-8"),
 			versionComponent,
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx); err != nil {
@@ -162,8 +162,8 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 			VAppBar(
 				h.Div(
 					pageAppbarContent...,
-				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
-			).Elevation(0).Density(DensityCompact).Class("px-6"),
+				).Class("d-flex align-center  justify-space-between  w-100 px-6").Style("height: 36px"),
+			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
 			VNavigationDrawer(
 				navigatorDrawer,
 			).Location(LocationLeft).
