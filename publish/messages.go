@@ -32,6 +32,7 @@ type Messages struct {
 	AllVersions                             string
 	NamedVersions                           string
 	RenameVersion                           string
+	DeleteVersionConfirmationTextTemplate   string
 
 	FilterTabAllVersions   string
 	FilterTabOnlineVersion string
@@ -73,6 +74,7 @@ var Messages_en_US = &Messages{
 	AllVersions:                             "All versions",
 	NamedVersions:                           "Named versions",
 	RenameVersion:                           "Rename Version",
+	DeleteVersionConfirmationTextTemplate:   "Are you sure you want to delete version {VersionName} ?",
 
 	FilterTabAllVersions:   "All Versions",
 	FilterTabOnlineVersion: "Online Versions",
@@ -114,6 +116,7 @@ var Messages_zh_CN = &Messages{
 	AllVersions:                             "所有版本",
 	NamedVersions:                           "已命名版本",
 	RenameVersion:                           "命名版本",
+	DeleteVersionConfirmationTextTemplate:   "你确定你要删除此版本 {VersionName} 吗？",
 
 	FilterTabAllVersions:   "所有版本",
 	FilterTabOnlineVersion: "在线版本",
@@ -155,6 +158,7 @@ var Messages_ja_JP = &Messages{
 	AllVersions:                             "全てのバージョン",
 	NamedVersions:                           "名付け済みバージョン",
 	RenameVersion:                           "バージョンの名前を変更する",
+	DeleteVersionConfirmationTextTemplate:   "このバージョン {VersionName} を削除してもよろしいですか？",
 
 	FilterTabAllVersions:   "全てのバージョン",
 	FilterTabOnlineVersion: "オンラインバージョン",

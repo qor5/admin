@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -197,13 +198,12 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		versionName := ctx.R.FormValue("version_name")
 
 		utilMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
-		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,
 			Body: utils.DeleteDialog(
-				// TODO i18n
-				fmt.Sprintf("Are you sure you want to delete %s?", versionName),
+				strings.NewReplacer("{VersionName}", versionName).Replace(msgr.DeleteVersionConfirmationTextTemplate),
 				"locals.deleteConfirmation = false;"+web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersion).
