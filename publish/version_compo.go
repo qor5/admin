@@ -67,8 +67,9 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(v.VChip(h.Text(GetStatusText(status.GetStatus(), msgr))).Label(true).Color(GetStatusColor(status.GetStatus())).Size(v.SizeSmall).Class("px-1 mx-1 ml-2"))
+				versionSwitch.AppendChildren(statusChip(status.GetStatus(), msgr).Class("mx-2"))
 			}
+			versionSwitch.AppendChildren(v.VSpacer())
 			versionSwitch.AppendIcon("mdi-chevron-down")
 
 			div.AppendChildren(versionSwitch)
@@ -117,7 +118,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			}
 		}
 
-		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
+		if _, ok = obj.(ScheduleInterface); ok {
 			var scheduleBtn h.HTMLComponent
 			clickEvent := web.POST().
 				EventFunc(eventSchedulePublishDialog).
