@@ -1235,15 +1235,6 @@ func (b *Builder) initMux() {
 
 	log.Println("mounted url:", vueJSPath)
 
-	mainCSSPath := b.prefix + "/vuetifyx/assets/index.css"
-	mux.Handle("GET "+mainCSSPath,
-		ub.PacksHandler("text/css",
-			vuetifyx.CSSComponentsPack(),
-		),
-	)
-
-	log.Println("mounted url:", mainCSSPath)
-
 	for _, ea := range b.extraAssets {
 		fullPath := b.extraFullPath(ea)
 		mux.Handle("GET "+fullPath, ub.PacksHandler(
