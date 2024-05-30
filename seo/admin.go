@@ -24,7 +24,7 @@ import (
 
 const (
 	I18nSeoKey         i18n.ModuleKey = "I18nSeoKey"
-	SeoDetailFieldName                = "SeoDetail"
+	SeoDetailFieldName                = "SEO"
 )
 
 var permVerifier *perm.Verifier
@@ -288,6 +288,13 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 		VSlot("{ locals }")
 }
 
+func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) {
+	return h.Div(
+		h.Div(h.Text(label)).Class("text-subtitle-2").Style("width:200px;height:20px"),
+		h.Div(showComp).Class("text-body-1 ml-2 w-100"),
+	).Class("d-flex align-center ma-2").Style("height:40px")
+}
+
 func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
 	var (
 		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
@@ -367,15 +374,121 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	).Attr("ref", "seo")
 }
 
+func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
+	var (
+		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
+		db   = b.db
+	)
+
+	var varComps []h.HTMLComponent
+	for varName := range seo.getAvailableVars() {
+		varComps = append(varComps,
+			VChip(
+				VIcon("mdi-plus-box").Class("mr-2"),
+				h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", varName)),
+			).Variant(VariantText).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Variant(VariantOutlined),
+		)
+	}
+
+	image := &setting.OpenGraphImageFromMediaLibrary
+	if image.ID.String() == "0" {
+		image.ID = json.Number("")
+	}
+	return VSeo(
+		VCard(
+			h.Span(msgr.Basic).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(60),
+		h.Div(h.Span("Search Result Preview")).Class("mt-6"),
+		VCard(
+			h.Span(setting.Title).Class("text-subtitle-1"),
+			h.Span(setting.Keywords).Class("mt-2"),
+			h.Span(setting.Description).Class("text-body-2 mt-2"),
+		).Class("pa-6").Variant(VariantTonal),
+
+		detailingRow(msgr.Title, h.Text(setting.Title)),
+		detailingRow(msgr.Description, h.Text(setting.Description)),
+		detailingRow(msgr.Keywords, h.Text(setting.Keywords)),
+
+		VCard(
+			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(200),
+		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
+		VCard(
+			h.Span(setting.OpenGraphTitle).Class("text-subtitle-1"),
+			h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2"),
+			h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2"),
+		).Class("pa-6").Variant(VariantTonal),
+
+		detailingRow(msgr.OpenGraphTitle, h.Text(setting.OpenGraphTitle)),
+		detailingRow(msgr.OpenGraphDescription, h.Text(setting.OpenGraphDescription)),
+		detailingRow(msgr.OpenGraphURL, h.Text(setting.OpenGraphURL)),
+		detailingRow(msgr.OpenGraphType, h.Text(setting.OpenGraphType)),
+		detailingRow(msgr.OpenGraphImageURL, h.Text(setting.OpenGraphImageURL)),
+
+		VRow(
+			VCol(media.QMediaBox(db).Label(msgr.OpenGraphImage).
+				FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+				Value(image).
+				Config(&media_library.MediaBoxConfig{
+					AllowType: "image",
+					Sizes: map[string]*base.Size{
+						"og": {
+							Width:  1200,
+							Height: 630,
+						},
+						"twitter-large": {
+							Width:  1200,
+							Height: 600,
+						},
+						"twitter-small": {
+							Width:  630,
+							Height: 630,
+						},
+					},
+				})).Cols(12)),
+	).Attr("ref", "seo").Class("mt-10")
+}
+
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
 	b.configDetailing(mb.Detailing())
 	return nil
 }
 
 func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
-	pd.Field(SeoDetailFieldName).SetSwitchable(true).Editing("").ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(h.Text("Seo"))
-	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return b.EditingComponentFunc(obj, field, ctx)
-	})
+	pd.Field(SeoDetailFieldName).SetSwitchable(true).
+		Editing("EnabledCustomize", "Title", "SEO").
+		ShowComponentFunc(b.detailShowComponent).
+		EditComponentFunc(b.EditingComponentFunc)
+}
+
+func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	var (
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		fieldPrefix string
+		setting     Setting
+		db          = b.db
+		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
+	)
+	seo := b.GetSEO(obj)
+	if seo == nil {
+		return h.Div()
+	}
+
+	value := reflect.Indirect(reflect.ValueOf(obj))
+	for i := 0; i < value.NumField(); i++ {
+		if s, ok := value.Field(i).Interface().(Setting); ok {
+			setting = s
+			fieldPrefix = value.Type().Field(i).Name
+		}
+	}
+	if !setting.EnabledCustomize && setting.IsEmpty() {
+		modelSetting := &QorSEOSetting{}
+		db.Where("name = ? AND locale_code = ?", seo.name, locale).First(modelSetting)
+		setting = modelSetting.Setting
+	}
+
+	return h.Div(
+		h.Label(msgr.Seo).Class("v-label theme--light"),
+		b.vseoReadonly(fieldPrefix, seo, &setting, ctx.R),
+	).Class("pb-4")
 }
