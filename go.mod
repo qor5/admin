@@ -26,6 +26,7 @@ require (
 	github.com/qor5/ui/v3 v3.0.2
 	github.com/qor5/web/v3 v3.0.2
 	github.com/qor5/x/v3 v3.0.2
+	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.4
 	github.com/theplant/bimg v1.1.1
@@ -128,6 +129,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/image v0.16.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
@@ -141,6 +143,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/qor5/web/v3 => ../web
+replace github.com/qor5/web/v3 => ../web
+
 //replace github.com/qor5/ui/v3 => ../ui
 //replace github.com/qor5/x/v3 => ../x
