@@ -121,6 +121,8 @@ const (
 	paramOpenFromSharedContainer = "open_from_shared_container"
 )
 
+const PageBuilderPreviewCard = "PageBuilderPreviewCard"
+
 func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 	err := db.AutoMigrate(
 		&Page{},
@@ -291,6 +293,10 @@ func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
+}
+
+func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+	return nil
 }
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
@@ -1977,6 +1983,15 @@ type ContainerBuilder struct {
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
+	r = &ContainerBuilder{
+		name:    name,
+		builder: b,
+	}
+	b.containerBuilders = append(b.containerBuilders, r)
+	return
+}
+
+func (b *Builder) RegisterModelContainer(name string, ed *presets.EditingBuilder) (r *ContainerBuilder) {
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
