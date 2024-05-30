@@ -85,7 +85,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			currentEndAt := sc.GetScheduledEndAt()
 			if scheduleStart.ScheduledStartAt != nil && (currentEndAt == nil || !scheduleStart.ScheduledStartAt.After(*currentEndAt)) {
 				toStatus = "+1"
-			} else if currentEndAt != nil {
+			} else if currentEndAt != nil && !currentEndAt.Before(nowTime) {
 				toStatus = StatusOffline
 			}
 		}

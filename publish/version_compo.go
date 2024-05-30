@@ -326,7 +326,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
 					Query("version_name", versionName).
-					Query("current_display_id", web.Var(VarCurrentDisplayID)).
+					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplayID)).
 					Go(),
 				),
 		)

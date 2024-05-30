@@ -2,10 +2,9 @@ package publish
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"net/url"
-	"reflect"
-	"strings"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -35,7 +34,6 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 		me := mb.Editing()
 
 		fromObj := mb.NewModel()
-		// TODO: use fetcher?
 		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj).Error; err != nil {
 			return
 		}
@@ -204,7 +202,7 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,
 			Body: utils.DeleteDialog(
-				// TODO i18
+				// TODO i18n
 				fmt.Sprintf("Are you sure you want to delete %s?", versionName),
 				"locals.deleteConfirmation = false;"+web.Plaid().
 					URL(ctx.R.URL.Path).
@@ -216,95 +214,78 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, paramId string) (list interface{}, err error) {
-	list = mb.NewModelSlice()
-	primaryKeys, err := utils.GetPrimaryKeys(mb.NewModel(), db)
-	if err != nil {
-		return
-	}
-	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(primaryKeys, ",")), mb.NewModel(), paramId, "version").
-		Order("version DESC").
-		Find(list).
-		Error
-	return list, err
-}
+const paramCurrentDisplaySlug = "current_display_id"
 
 func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		deleteID := ctx.R.FormValue(presets.ParamID)
-		if len(deleteID) <= 0 {
-			presets.ShowMessage(&r, "no delete_id", "warning")
-			return
-		}
+	return wrapEventFuncWithShowError(func(ctx *web.EventContext) (web.EventResponse, error) {
+		var r web.EventResponse
 
 		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil {
-			presets.ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-			return
+			return r, perm.PermissionDenied
 		}
 
-		if err = mb.Editing().Deleter(mb.NewModel(), deleteID, ctx); err != nil {
-			presets.ShowMessage(&r, err.Error(), "warning")
-			return
+		slug := ctx.R.FormValue(presets.ParamID)
+		if len(slug) <= 0 {
+			return r, errors.New("no delete_id")
 		}
 
-		currentDisplayID := ctx.R.FormValue("current_display_id")
-		if deleteID == currentDisplayID {
-			items, _ := findVersionItems(db, mb, deleteID)
-			rv := reflect.ValueOf(items).Elem()
-			if rv.Len() == 0 {
-				r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
-				return
+		if err := mb.Editing().Deleter(mb.NewModel(), slug, ctx); err != nil {
+			return r, err
+		}
+
+		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
+		if slug == currentDisplaySlug {
+			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
+
+			// find the older version first then find the max version
+			version := mb.NewModel()
+			db := utils.PrimarySluggerWhere(db, version, slug, "version").Order("version DESC").WithContext(ctx.R.Context())
+			err := db.Where("version < ?", deletedVersion).First(version).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return r, err
 			}
-
-			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(deleteID)["version"]
-
-			version := rv.Index(0).Interface()
-			if rv.Len() > 1 {
-				hasOlderVersion := false
-				for i := 0; i < rv.Len(); i++ {
-					v := rv.Index(i).Interface()
-					if v.(VersionInterface).GetVersion() < deletedVersion {
-						hasOlderVersion = true
-						version = v
-						break
-					}
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				err := db.First(version).Error
+				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return r, err
 				}
-				if !hasOlderVersion {
-					version = rv.Index(rv.Len() - 1)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
+					return r, nil
 				}
 			}
 
-			currentDisplayID = version.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r, fmt.Sprintf("%s = %q", VarCurrentDisplayID, currentDisplayID))
+			currentDisplaySlug = version.(presets.SlugEncoder).PrimarySlug()
+			web.AppendRunScripts(&r, fmt.Sprintf("%s = %q", VarCurrentDisplayID, currentDisplaySlug))
 
 			if !pm.HasDetailing() {
 				web.AppendRunScripts(&r,
-					web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, currentDisplayID).Go(),
+					web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, currentDisplaySlug).Go(),
 				)
 			} else {
 				if !pm.Detailing().GetDrawer() {
-					r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(currentDisplayID))
-					return
+					r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(currentDisplaySlug))
+					return r, nil
 				}
 				web.AppendRunScripts(&r,
 					presets.CloseRightDrawerVarScript,
-					web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, currentDisplayID).Go(),
+					web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, currentDisplaySlug).Go(),
 				)
 			}
 		}
 
 		listQuery, err := url.ParseQuery(ctx.Queries().Get(presets.ParamListingQueries))
 		if err != nil {
-			return
+			return r, err
 		}
-		if deleteID == cmp.Or(listQuery.Get("select_id"), listQuery.Get("f_select_id")) {
-			listQuery.Set("select_id", currentDisplayID)
+		if slug == cmp.Or(listQuery.Get("select_id"), listQuery.Get("f_select_id")) {
+			listQuery.Set("select_id", currentDisplaySlug)
 		}
 
 		web.AppendRunScripts(&r,
 			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
-			// web.Plaid().URL(pm.Info().ListingHref()).EventFunc(actions.ReloadList).Go(), // TODO: dont know how to reload res list now
+			// web.Plaid().EventFunc(actions.ReloadList).Go(), // TODO: This will reload the dialog list, I don't know how to reload the main list yet.
 		)
-		return
-	}
+		return r, nil
+	})
 }
