@@ -146,15 +146,3 @@ var Messages_ja_JP = &Messages{
 	Rename:                 "名前の変更",
 	PageOverView:           "ページ概要",
 }
-
-func GetStatusText(status string, msgr *Messages) string {
-	switch status {
-	case StatusDraft:
-		return msgr.StatusDraft
-	case StatusOnline:
-		return msgr.StatusOnline
-	case StatusOffline:
-		return msgr.StatusOffline
-	}
-	return ""
-}

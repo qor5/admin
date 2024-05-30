@@ -64,7 +64,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		}
 		sc, ok := obj.(ScheduleInterface)
 		if !ok {
-			return liveChip(st.GetStatus(), false, msgr)
+			return statusChip(st.GetStatus(), msgr)
 		}
 
 		var (
@@ -98,40 +98,39 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(StatusInterface); ok {
-			return h.Td(liveChip(s.GetStatus(), false, msgr))
+			return h.Td(statusChip(s.GetStatus(), msgr))
 		}
 		return nil
 	}
 }
 
-func GetStatusColor(status string) string {
-	switch status {
-	case StatusDraft:
-		return "warning"
-	case StatusOnline:
-		return "success"
-	case StatusOffline:
-		return "secondary"
-	}
-	return ""
-}
-
-func liveChip(status string, isScheduled bool, msgr *Messages) h.HTMLComponent {
+func liveChip(status string, isScheduled bool, msgr *Messages) *VChipBuilder {
 	label, color := GetStatusLabelColor(status, msgr)
-	return VChip(
+	chip := VChip(
 		h.If(status == StatusOnline,
 			VIcon("mdi-radiobox-marked").Size(SizeSmall).Class("mr-1"),
 		),
 		h.Span(label),
 		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-1")),
 	).Color(color).Density(DensityCompact).Tile(true).Class("px-1")
+	if !isScheduled {
+		return chip
+	}
+	return chip.Class("rounded-s-lg")
+}
+
+func statusChip(status string, msgr *Messages) *VChipBuilder {
+	return liveChip(status, false, msgr).Class("rounded")
 }
 
 func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
-	return h.Components(
-		liveChip(status, toStatus != "", msgr),
-		h.If(toStatus != "", liveChip(toStatus, false, msgr)),
-	)
+	if toStatus != "" {
+		return h.Components(
+			liveChip(status, true, msgr).Class("rounded-s"),
+			liveChip(toStatus, false, msgr).Class("rounded-e"),
+		)
+	}
+	return statusChip(status, msgr)
 }
 
 func GetStatusLabelColor(status string, msgr *Messages) (label, color string) {
