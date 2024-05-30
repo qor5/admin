@@ -1120,7 +1120,6 @@ message: ""}}`)...)
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(strings.Replace(`
 			<link rel="stylesheet" href="{{prefix}}/vuetify/assets/index.css" async>
-			<link rel="stylesheet" href="{{prefix}}/vuetifyx/assets/index.css" async>
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
 				[v-cloak] {
