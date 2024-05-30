@@ -1,6 +1,9 @@
 package publish
 
 import (
+	"errors"
+	"time"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	v "github.com/qor5/ui/v3/vuetify"
@@ -47,6 +50,11 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 				URL(mb.Info().ListingHref()).
 				Go())
 
+		dialogWidth := "480px"
+		dislayStartAtPicker := s.GetStatus() != StatusOnline
+		if !dislayStartAtPicker {
+			dialogWidth = "280px"
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: PortalSchedulePublishDialog,
 			Body: web.Scope(
@@ -55,26 +63,24 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 						v.VCardTitle(h.Text("Schedule Publish Time")),
 						v.VCardText(
 							v.VRow(
-								v.VCol(
+								h.If(dislayStartAtPicker, v.VCol(
 									vx.VXDateTimePicker().Attr(web.VField("ScheduledStartAt", start)...).Label(msgr.ScheduledStartAt).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
-								).Cols(6),
+								)),
 								v.VCol(
 									vx.VXDateTimePicker().Attr(web.VField("ScheduledEndAt", end)...).Label(msgr.ScheduledEndAt).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
-								).Cols(6),
-							),
+								),
+							).Class("justify-center"),
 						),
 						v.VCardActions(
 							v.VSpacer(),
 							updateBtn,
 						),
 					),
-				).MaxWidth("480px").
+				).MaxWidth(dialogWidth).
 					Attr("v-model", "locals.schedulePublishDialog"),
 			).Init("{schedulePublishDialog:true}").VSlot("{locals}"),
 		})
@@ -82,28 +88,95 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func schedulePublish(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
+func wrapEventFuncWithShowError(f web.EventFunc) web.EventFunc {
+	return func(ctx *web.EventContext) (web.EventResponse, error) {
+		r, err := f(ctx)
+		if err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+		}
+		return r, nil
+	}
+}
+
+func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return wrapEventFuncWithShowError(func(ctx *web.EventContext) (web.EventResponse, error) {
+		var r web.EventResponse
+
 		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
+		sc, ok := obj.(ScheduleInterface)
+		if !ok {
+			return r, errors.New("invalid object")
 		}
-		err = ScheduleEditSetterFunc(obj, nil, ctx)
+
+		slug := ctx.Param(presets.ParamID)
+		obj, err := mb.Editing().Fetcher(obj, slug, ctx)
 		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
+			return r, err
 		}
-		err = mb.Editing().Saver(obj, paramID, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
+		if err := setScheduledTimesFromForm(ctx, sc, db); err != nil {
+			return r, err
+		}
+		// TODO: If there are identical StartAts, fine-tuning should be done to ensure that the times of the different versions are not equal
+
+		if err = mb.Editing().Saver(obj, slug, ctx); err != nil {
+			return r, err
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: PortalSchedulePublishDialog,
 			Body: nil,
 		})
-		return
+		return r, nil
+	})
+}
+
+var scheduleTimeFormat = "2006-01-02 15:04"
+
+func parseScheduleTimeValue(val string) (*time.Time, error) {
+	if val == "" {
+		return nil, nil
 	}
+	t, err := time.Parse(scheduleTimeFormat, val)
+	if err != nil {
+		return nil, err
+	}
+	if t.IsZero() {
+		return nil, nil
+	}
+	return &t, nil
+}
+
+func setScheduledTimesFromForm(ctx *web.EventContext, sc ScheduleInterface, db *gorm.DB) error {
+	startAt, err := parseScheduleTimeValue(ctx.R.FormValue("ScheduledStartAt"))
+	if err != nil {
+		return err
+	}
+	endAt, err := parseScheduleTimeValue(ctx.R.FormValue("ScheduledEndAt"))
+	if err != nil {
+		return err
+	}
+
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+	now := db.NowFunc()
+
+	if startAt != nil && startAt.Before(now) {
+		return errors.New(msgr.ScheduledStartAtShouldLaterThanNow)
+	}
+
+	if startAt != nil && endAt != nil {
+		if !startAt.Before(*endAt) {
+			return errors.New(msgr.ScheduledEndAtShouldLaterThanStartAt)
+		}
+	}
+
+	if endAt != nil && endAt.Before(now) {
+		return errors.New(msgr.ScheduledEndAtShouldLaterThanNowOrEmpty)
+	}
+
+	if sc.GetStatus() != StatusOnline && startAt == nil {
+		return errors.New(msgr.ScheduledStartAtShouldNotEmpty)
+	}
+
+	sc.SetScheduledStartAt(startAt)
+	sc.SetScheduledEndAt(endAt)
+	return nil
 }

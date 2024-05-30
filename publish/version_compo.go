@@ -118,7 +118,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			}
 		}
 
-		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
+		if _, ok = obj.(ScheduleInterface); ok {
 			var scheduleBtn h.HTMLComponent
 			clickEvent := web.POST().
 				EventFunc(eventSchedulePublishDialog).

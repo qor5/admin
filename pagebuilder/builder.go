@@ -403,8 +403,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	}
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
-	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 
@@ -1295,100 +1293,6 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 			).Class("mr-4 float-right"),
 		).Height(280).Class("text-truncate").Variant(VariantOutlined),
 	).Cols(3)
-}
-
-func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-
-		s, ok := obj.(publish.ScheduleInterface)
-		if !ok {
-			return
-		}
-
-		var start, end string
-		if s.GetScheduledStartAt() != nil {
-			start = s.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
-		if s.GetScheduledEndAt() != nil {
-			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
-		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		updateBtn := VBtn(cmsgr.Update).
-			Color(ColorPrimary).
-			Attr(":disabled", "isFetching").
-			Attr(":loading", "isFetching").
-			Attr("@click", web.Plaid().
-				EventFunc(schedulePublishEvent).
-				// Queries(queries).
-				Query(presets.ParamID, paramID).
-				Query(presets.ParamOverlay, actions.Dialog).
-				URL(mb.Info().ListingHref()).
-				Go())
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text("Schedule Publish Time")),
-						VCardText(
-							VRow(
-								VCol(
-									vx.VXDateTimePicker().Attr(web.VField("ScheduledStartAt", start)...).Label(msgr.ScheduledStartAt).
-										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
-								).Cols(6),
-								VCol(
-									vx.VXDateTimePicker().Attr(web.VField("ScheduledEndAt", end)...).Label(msgr.ScheduledEndAt).
-										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
-								).Cols(6),
-							),
-						),
-						VCardActions(
-							VSpacer(),
-							updateBtn,
-						),
-					),
-				).MaxWidth("480px").
-					Attr("v-model", "locals.schedulePublishDialog"),
-			).Init("{schedulePublishDialog:true}").VSlot("{locals}"),
-		})
-		return
-	}
-}
-
-func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-		err = publish.ScheduleEditSetterFunc(obj, nil, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		err = mb.Editing().Saver(obj, paramID, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		r.PushState = web.Location(nil)
-		return
-	}
 }
 
 func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
