@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/qor5/ui/v3/vuetify"
+	h "github.com/theplant/htmlgo"
 	"reflect"
 
 	"github.com/qor5/admin/v3/presets"
@@ -181,54 +183,65 @@ func (ab *Builder) RegisterModel(m interface{}) (mb *ModelBuilder) {
 	ab.models = append(ab.models, mb)
 
 	if presetModel, ok := m.(*presets.ModelBuilder); ok {
-		mb.presetModel = presetModel
-
-		editing := presetModel.Editing()
-
-		editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-				if mb.skip&Update != 0 && mb.skip&Create != 0 {
-					return in(obj, id, ctx)
-				}
-
-				old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
-				if err = in(obj, id, ctx); err != nil {
-					return err
-				}
-
-				if (!ok || id == "") && mb.skip&Create == 0 {
-					return mb.AddRecords(ActivityCreate, ctx.R.Context(), obj)
-				}
-
-				if ok && id != "" && mb.skip&Update == 0 {
-					return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
-				}
-
-				return
-			}
-		})
-
-		editing.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
-			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-				if mb.skip&Delete != 0 {
-					return in(obj, id, ctx)
-				}
-
-				old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
-				if err = in(obj, id, ctx); err != nil {
-					return err
-				}
-
-				if ok {
-					return mb.AddRecords(ActivityDelete, ctx.R.Context(), old)
-				}
-
-				return
-			}
-		})
+		ab.installModelBuilder(mb, presetModel)
 	}
 
 	return mb
+}
+
+func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
+	mb.presetModel = presetModel
+
+	editing := presetModel.Editing()
+	d := presetModel.Detailing()
+
+	d.Field(Timeline).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return vuetify.VTimeline(
+			vuetify.VTimelineItem(),
+		)
+	})
+
+	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if mb.skip&Update != 0 && mb.skip&Create != 0 {
+				return in(obj, id, ctx)
+			}
+
+			old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
+			if err = in(obj, id, ctx); err != nil {
+				return err
+			}
+
+			if (!ok || id == "") && mb.skip&Create == 0 {
+				return mb.AddRecords(ActivityCreate, ctx.R.Context(), obj)
+			}
+
+			if ok && id != "" && mb.skip&Update == 0 {
+				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
+			}
+
+			return
+		}
+	})
+
+	editing.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if mb.skip&Delete != 0 {
+				return in(obj, id, ctx)
+			}
+
+			old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
+			if err = in(obj, id, ctx); err != nil {
+				return err
+			}
+
+			if ok {
+				return mb.AddRecords(ActivityDelete, ctx.R.Context(), old)
+			}
+
+			return
+		}
+	})
 }
 
 // GetModelBuilder 	get model builder
