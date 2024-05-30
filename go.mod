@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
-	github.com/aws/aws-sdk-go v1.53.10
+	github.com/aws/aws-sdk-go v1.53.12
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.0.12
@@ -23,9 +23,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/ui/v3 v3.0.0
-	github.com/qor5/web/v3 v3.0.0
-	github.com/qor5/x/v3 v3.0.0
+	github.com/qor5/ui/v3 v3.0.2
+	github.com/qor5/web/v3 v3.0.2
+	github.com/qor5/x/v3 v3.0.2
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.4
 	github.com/theplant/bimg v1.1.1
