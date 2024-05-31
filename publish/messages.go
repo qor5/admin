@@ -1,5 +1,7 @@
 package publish
 
+import "strings"
+
 type Messages struct {
 	StatusDraft                             string
 	StatusOnline                            string
@@ -40,6 +42,11 @@ type Messages struct {
 	Rename                 string
 	PageOverView           string
 	Duplicate              string
+}
+
+func (msgr *Messages) DeleteVersionConfirmationText(versionName string) string {
+	return strings.NewReplacer("{VersionName}", versionName).
+		Replace(msgr.DeleteVersionConfirmationTextTemplate)
 }
 
 var Messages_en_US = &Messages{
