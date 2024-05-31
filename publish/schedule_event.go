@@ -46,20 +46,20 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			valEndAt = sc.GetScheduledEndAt().Format(timeFormatSchedule)
 		}
 
-		dislayStartAtPicker := sc.GetStatus() != StatusOnline
+		displayStartAtPicker := sc.GetStatus() != StatusOnline
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: PortalSchedulePublishDialog,
 			Body: web.Scope().VSlot("{locals}").Init("{schedulePublishDialog:true}").Children(
-				v.VDialog().Attr("v-model", "locals.schedulePublishDialog").MaxWidth(lo.If(dislayStartAtPicker, "480px").Else("280px")).Children(
+				v.VDialog().Attr("v-model", "locals.schedulePublishDialog").MaxWidth(lo.If(displayStartAtPicker, "480px").Else("280px")).Children(
 					v.VCard().Children(
 						v.VCardTitle().Children(
 							h.Text(msgr.SchedulePublishTime),
 						),
 						v.VCardText().Children(
 							v.VRow().Class("justify-center").Children(
-								h.If(dislayStartAtPicker, v.VCol().Children(
+								h.If(displayStartAtPicker, v.VCol().Children(
 									vx.VXDateTimePicker().Attr(web.VField(fieldScheduledStartAt, valStartAt)...).Label(msgr.ScheduledStartAt).
 										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
 										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
