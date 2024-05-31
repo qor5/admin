@@ -400,9 +400,15 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 		).Class("px-2 py-1").Variant(VariantTonal).Width(60),
 		h.Div(h.Span("Search Result Preview")).Class("mt-6"),
 		VCard(
-			h.Span(setting.Title).Class("text-subtitle-1"),
-			h.Span(setting.Keywords).Class("mt-2"),
-			h.Span(setting.Description).Class("text-body-2 mt-2"),
+			VCardText(
+				h.Span(setting.Title).Class("text-subtitle-1"),
+			),
+			VCardText(
+				h.Span(setting.Keywords).Class("mt-2"),
+			),
+			VCardText(
+				h.Span(setting.Description).Class("text-body-2 mt-2"),
+			),
 		).Class("pa-6").Variant(VariantTonal),
 
 		detailingRow(msgr.Title, h.Text(setting.Title)),
@@ -414,9 +420,9 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 		).Class("px-2 py-1").Variant(VariantTonal).Width(200),
 		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
 		VCard(
-			h.Span(setting.OpenGraphTitle).Class("text-subtitle-1"),
-			h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2"),
-			h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2"),
+			VCardText(h.Span(setting.OpenGraphTitle).Class("text-subtitle-1")),
+			VCardText(h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2")),
+			VCardText(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2")),
 		).Class("pa-6").Variant(VariantTonal),
 
 		detailingRow(msgr.OpenGraphTitle, h.Text(setting.OpenGraphTitle)),
@@ -465,6 +471,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) er
 func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
 	pd.Field(SeoDetailFieldName).SetSwitchable(true).
 		Editing("SEO").
+		SaveFunc(b.detailSaver).
 		ShowComponentFunc(b.detailShowComponent).
 		EditComponentFunc(b.EditingComponentFunc)
 }
@@ -499,4 +506,14 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 		b.vseoReadonly(fieldPrefix, seo, &setting, ctx.R),
 	).Class("pb-4")
+}
+
+func (b *Builder) detailSaver(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	if err = EditSetterFunc(obj, &presets.FieldContext{Name: SeoDetailFieldName}, ctx); err != nil {
+		return
+	}
+	if err = b.db.Updates(obj).Error; err != nil {
+		return err
+	}
+	return
 }

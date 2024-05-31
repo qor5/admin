@@ -310,8 +310,8 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-
-	err = b.configEditor(pb)
+	mb := b.ps.Model(&Page{}).URIName("editors")
+	err = b.configEditor(pb, mb)
 	if err != nil {
 		return
 	}
@@ -324,8 +324,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	return
 }
 
-func (b *Builder) configEditor(pb *presets.Builder) (err error) {
-	mb := b.ps.Model(&Page{}).URIName("editors")
+func (b *Builder) configEditor(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 	err = b.pageInstall(pb, mb)
 	if err != nil {
 		return
