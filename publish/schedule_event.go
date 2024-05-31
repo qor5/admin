@@ -73,12 +73,16 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 						),
 						v.VCardActions().Children(
 							v.VSpacer(),
-							v.VBtn(cmsgr.Update).Color("primary").Attr(":disabled", "isFetching").Attr(":loading", "isFetching").Attr("@click", web.Plaid().
-								EventFunc(eventSchedulePublish).
-								Query(presets.ParamID, slug).
-								URL(mb.Info().ListingHref()).
-								Go(),
-							),
+							v.VBtn(cmsgr.Cancel).
+								Variant(v.VariantFlat).
+								On("click", "locals.schedulePublishDialog = false"),
+							v.VBtn(cmsgr.Update).Color("primary").Attr(":disabled", "isFetching").Attr(":loading", "isFetching").
+								On("click", web.Plaid().
+									EventFunc(eventSchedulePublish).
+									Query(presets.ParamID, slug).
+									URL(mb.Info().ListingHref()).
+									Go(),
+								),
 						),
 					),
 				),
@@ -110,11 +114,11 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		if err = mb.Editing().Saver(obj, slug, ctx); err != nil {
 			return r, err
 		}
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: PortalSchedulePublishDialog,
-			Body: nil,
-		})
-		web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go())
+
+		web.AppendRunScripts(&r, "locals.schedulePublishDialog = false")
+		if mb.Detailing().GetDrawer() {
+			web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go())
+		}
 		return r, nil
 	})
 }
