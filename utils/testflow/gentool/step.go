@@ -27,7 +27,6 @@ type Step struct {
 }
 
 func generateStep(rr RequestResponse) (*Step, error) {
-	// 解析URL
 	u, err := url.Parse(fmt.Sprintf("%s://%s:%d%s?%s", rr.Scheme, rr.Host, rr.Port, rr.Path, rr.Query))
 	if err != nil {
 		return nil, errors.Wrap(err, "url.Parse")
@@ -38,11 +37,9 @@ func generateStep(rr RequestResponse) (*Step, error) {
 		queries[key] = values[0]
 	}
 
-	// 提取EventFunc
 	eventFunc := queries["__execute_event__"]
 	delete(queries, "__execute_event__")
 
-	// 解析请求体为表单
 	formFields := make(map[string]string)
 	if rr.Request.MimeType == "multipart/form-data" {
 		boundary := getBoundary(rr.Request.Header.Headers)

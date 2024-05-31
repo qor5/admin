@@ -7,21 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// var regexps = cmap.New[*regexp.Regexp]()
-
-// func GetRegexp(pattern string) *regexp.Regexp {
-// 	v, ok := regexps.Get(pattern)
-// 	if ok && v != nil {
-// 		return v
-// 	}
-// 	return regexps.Upsert(pattern, nil, func(exist bool, valueInMap *regexp.Regexp, _ *regexp.Regexp) *regexp.Regexp {
-// 		if exist {
-// 			return valueInMap
-// 		}
-// 		return regexp.MustCompile(pattern)
-// 	})
-// }
-
 func Match(pattern, text string) ([][]string, error) {
 	subs := regexp.MustCompile(pattern).FindAllStringSubmatch(text, -1)
 	if len(subs) <= 0 {

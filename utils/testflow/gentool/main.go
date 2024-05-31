@@ -19,10 +19,10 @@ import (
 )
 
 var (
-	sampleFile = flag.String("sample-file", "", "sample file ")
-	patchFile  = flag.String("patch-file", "", "patch file, it is actually a base file for generating patches")
-	backupDir  = flag.String("backup-dir", "", "backup dir if output file exists")
-	outputFile = flag.String("output-file", "", "output file ")
+	sampleFile = flag.String("sample-file", "", "Path to the sample file")
+	patchFile  = flag.String("patch-file", "", "Path to the patch file, actually a base file for generating patches")
+	backupDir  = flag.String("backup-dir", "", "Backup directory if output file exists")
+	outputFile = flag.String("output-file", "", "Path to the output file")
 )
 
 func main() {
@@ -44,6 +44,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		}
 	}()
 
+	// Read and parse the sample JSON file
 	sample, err := os.ReadFile(sampleFile)
 	if err != nil {
 		return errors.WithStack(err)
@@ -53,10 +54,12 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		return errors.WithStack(err)
 	}
 
+	// Generate the flow name from the file name
 	filenameWithExt := filepath.Base(sampleFile)
 	flowName := strings.TrimSuffix(filenameWithExt, filepath.Ext(filenameWithExt))
 	flowName = flect.Pascalize(flowName)
 
+	// Generate steps for each request-response pair
 	steps := []*Step{}
 	for i, rr := range rrs {
 		v, err := generateStep(rr)
@@ -68,6 +71,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		steps = append(steps, v)
 	}
 
+	// Prepare data for output template
 	data := struct {
 		FlowName string
 		Steps    []*Step
@@ -76,7 +80,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		Steps:    steps,
 	}
 
-	// 生成并格式化结果
+	// Generate and format output
 	output, err := executeOutput(flowTemplate, data)
 	if err != nil {
 		return err
@@ -87,43 +91,30 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		return errors.WithStack(err)
 	}
 
-	// 获取原内容，即为我们可能已修改的内容
+	// Read existing output for possible updates
 	edited, err := os.ReadFile(outputFile)
 	if err != nil {
-		// 若不存在则直接输出和记录patch
 		if os.IsNotExist(err) {
-			// 记录原始内容作为 patch 基础文件，以做下次使用
+			// Write original output and record as a patch base for future use
 			if err := os.WriteFile(patchFile, []byte(output), 0o644); err != nil {
 				return errors.WithStack(err)
 			}
-
-			// 写入目标文件
 			if err := os.WriteFile(outputFile, []byte(output), 0o644); err != nil {
 				return errors.WithStack(err)
 			}
-
 			return nil
 		}
-
 		return errors.WithStack(err)
 	}
 
-	// 如果目标文件存在，则应用 patch，必须存在对应的 patch 文件用作更新
+	// Apply patch if target file exists and corresponding patch file is required
 	if len(original) <= 0 {
 		return errors.Errorf("patch file not found: %s", patchFile)
 	}
 
 	dmp := diffmatchpatch.New()
-
-	// 计算差异
 	diffs := dmp.DiffMain(string(original), string(edited), false)
-	// log.Println("Diffs:", diffs)
-
-	// 即时生成补丁，其实 patch-file 是 patch-base 文件
 	patches := dmp.PatchMake(string(original), diffs)
-	// log.Println("Patches:", patches)
-
-	// 对新生成的参考代码应用补丁，这样就能防止丢失我们自己的修改
 	pacthed, bs := dmp.PatchApply(patches, output)
 	patcherrs := []string{}
 	for idx, b := range bs {
@@ -135,20 +126,20 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 		return errors.New(strings.Join(patcherrs, "\n"))
 	}
 
-	// 备份修改前文件以防止意外
+	// Backup file before making changes
 	backupFile := filepath.Join(backupDir, filepath.Base(outputFile)+fmt.Sprintf(".%s.backup", time.Now().Format(time.RFC3339)))
 	if err := os.WriteFile(backupFile, []byte(edited), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
 
-	// 记录原始参考内容作为 patch 基础文件，以做下次使用
+	// Record original reference content as a patch base for future use
 	if err := os.WriteFile(patchFile, []byte(output), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
 
 	output = pacthed
 
-	// 写入目标文件
+	// Write to the output file
 	if err := os.WriteFile(outputFile, []byte(output), 0o644); err != nil {
 		return errors.WithStack(err)
 	}
@@ -156,9 +147,8 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 	return nil
 }
 
-// 生成并格式化结果
+// Generate and format output using a template
 func executeOutput(templateText string, data any) (string, error) {
-	// 使用 template 生成代码到 buffer
 	t, err := template.New("testflow").Parse(templateText)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -169,7 +159,7 @@ func executeOutput(templateText string, data any) (string, error) {
 		return "", errors.WithStack(err)
 	}
 
-	// 使用 gofumpt 格式化代码
+	// Format the generated code using gofumpt
 	formattedCode, err := format.Source(buf.Bytes(), format.Options{})
 	if err != nil {
 		return "", errors.Wrap(err, "gofumpt format")
