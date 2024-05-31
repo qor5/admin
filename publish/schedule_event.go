@@ -147,6 +147,10 @@ func setScheduledTimesFromForm(ctx *web.EventContext, sc ScheduleInterface, db *
 		return err
 	}
 
+	if sc.GetStatus() == StatusOnline {
+		startAt = nil
+	}
+
 	if startAt == nil && endAt == nil {
 		sc.SetScheduledStartAt(startAt)
 		sc.SetScheduledEndAt(endAt)
