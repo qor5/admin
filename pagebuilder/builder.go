@@ -383,11 +383,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing("Overview")
+	dp := pm.Detailing(PageBuilderPreviewCard)
 	// register modelBuilder
 
 	// pm detailing overview
-	dp.Field("Overview").ComponentFunc(overview(b, b.templateModel))
+	dp.Field(PageBuilderPreviewCard).ComponentFunc(overview(b, b.templateModel))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
@@ -1879,6 +1879,7 @@ type ContainerBuilder struct {
 	builder    *Builder
 	name       string
 	mb         *presets.ModelBuilder
+	eb         *presets.EditingBuilder
 	model      interface{}
 	modelType  reflect.Type
 	renderFunc RenderFunc
@@ -1899,6 +1900,7 @@ func (b *Builder) RegisterModelContainer(name string, ed *presets.EditingBuilder
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
+		eb:      ed,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return

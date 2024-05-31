@@ -264,7 +264,7 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 
 	return web.Scope(
 		h.Div(
-			h.Label(msgr.Seo).Class("v-label theme--light"),
+			h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 			VExpansionPanels(
 				VExpansionPanel(
 
@@ -394,7 +394,7 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 	if image.ID.String() == "0" {
 		image.ID = json.Number("")
 	}
-	return VSeo(
+	return h.Components(
 		VCard(
 			h.Span(msgr.Basic).Class("text-subtitle-1"),
 		).Class("px-2 py-1").Variant(VariantTonal).Width(60),
@@ -425,8 +425,12 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 		detailingRow(msgr.OpenGraphType, h.Text(setting.OpenGraphType)),
 		detailingRow(msgr.OpenGraphImageURL, h.Text(setting.OpenGraphImageURL)),
 
+		VCard(
+			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(160),
 		VRow(
-			VCol(media.QMediaBox(db).Label(msgr.OpenGraphImage).
+			VCol(media.QMediaBox(db).
+				Readonly(true).
 				FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
 				Value(image).
 				Config(&media_library.MediaBoxConfig{
@@ -446,7 +450,11 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 						},
 					},
 				})).Cols(12)),
-	).Attr("ref", "seo").Class("mt-10")
+		VCard(
+			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(184),
+		h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata)),
+	)
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
@@ -456,7 +464,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) er
 
 func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
 	pd.Field(SeoDetailFieldName).SetSwitchable(true).
-		Editing("EnabledCustomize", "Title", "SEO").
+		Editing("SEO").
 		ShowComponentFunc(b.detailShowComponent).
 		EditComponentFunc(b.EditingComponentFunc)
 }
@@ -488,7 +496,7 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 	}
 
 	return h.Div(
-		h.Label(msgr.Seo).Class("v-label theme--light"),
+		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 		b.vseoReadonly(fieldPrefix, seo, &setting, ctx.R),
 	).Class("pb-4")
 }

@@ -101,6 +101,7 @@ type QMediaBoxBuilder struct {
 	config    *media_library.MediaBoxConfig
 	db        *gorm.DB
 	disabled  bool
+	readonly  bool
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
@@ -122,6 +123,11 @@ func (b *QMediaBoxBuilder) Value(v *media_library.MediaBox) (r *QMediaBoxBuilder
 
 func (b *QMediaBoxBuilder) Disabled(v bool) (r *QMediaBoxBuilder) {
 	b.disabled = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Readonly(v bool) (r *QMediaBoxBuilder) {
+	b.readonly = v
 	return b
 }
 
@@ -153,7 +159,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled),
+				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
@@ -289,7 +295,7 @@ func doDelete(mb *Builder) web.EventFunc {
 	}
 }
 
-func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled bool) h.HTMLComponent {
+func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 	if cfg.BackgroundColor != "" {
@@ -320,8 +326,9 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				).Disabled(disabled),
 		)
 	}
-	c.AppendChildren(btnRow.Class())
-
+	if !readonly {
+		c.AppendChildren(btnRow.Class())
+	}
 	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		row := VRow()
 		if len(cfg.Sizes) == 0 {
@@ -404,7 +411,7 @@ func deleteFileField() web.EventFunc {
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false, false),
 		})
 
 		return

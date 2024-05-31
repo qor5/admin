@@ -155,7 +155,7 @@ func cropImage(mb *Builder) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, mb, field, cfg, false),
+			Body: mediaBoxThumbnails(ctx, mb, field, cfg, false, false),
 		})
 		return
 	}
