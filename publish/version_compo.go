@@ -214,9 +214,10 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 	registerEventFuncsForVersion(mb, pm, db)
 
+	// TODO: i18n
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
 		DialogWidth("900").
-		Title("Version List"). // TODO: i18n
+		Title("Version List").
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -306,9 +307,11 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		id := obj.(presets.SlugEncoder).PrimarySlug()
 		versionName := obj.(VersionInterface).GetVersionName()
 		status := obj.(StatusInterface).GetStatus()
-		disable := status == StatusOnline || status == StatusOffline // TODO: perm check
+		disable := status == StatusOnline || status == StatusOffline
+		deniedUpdate := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		deniedDelete := mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil
 		return h.Td().Children(
-			v.VBtn(msgr.Rename).Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventRenameVersionDialog).
@@ -318,7 +321,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query("version_name", versionName).
 					Go(),
 				),
-			v.VBtn(pmsgr.Delete).Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersionDialog).
