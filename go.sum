@@ -292,8 +292,8 @@ github.com/qor/oss v0.0.0-20230717083721-c04686f83630 h1:CRi4xF7B8aGX/y48NCjarNd
 github.com/qor/oss v0.0.0-20230717083721-c04686f83630/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/ui/v3 v3.0.2 h1:b12ABubI4sWYUNNfUrIZFKMtWtMXc7f3dQTLbeA+m7Y=
 github.com/qor5/ui/v3 v3.0.2/go.mod h1:JXYwTuniKOrJSZVrIUyCBBcjVKX1NKHwklDuckYnWQM=
-github.com/qor5/web/v3 v3.0.2 h1:mFKxFnrpDpJWeC55qnm9IBHiH3hQ1ODL0quV+SgwBmQ=
-github.com/qor5/web/v3 v3.0.2/go.mod h1:c8IQAOj3oqr78P8Nq80xNm4UeXwW/hEMkdKfQYeNfHY=
+github.com/qor5/web/v3 v3.0.3 h1:/dKshHquPok3f39Au7OI4WEawVaUKk/+Ie1qFQfqOn0=
+github.com/qor5/web/v3 v3.0.3/go.mod h1:c8IQAOj3oqr78P8Nq80xNm4UeXwW/hEMkdKfQYeNfHY=
 github.com/qor5/x/v3 v3.0.2 h1:eh0kI9xfS7brabK0/KjgnmUlqNga2Cit4wRVLH2ttNI=
 github.com/qor5/x/v3 v3.0.2/go.mod h1:/EBOqBuykhveo9vMgmcuwfa3GuB8HiqA/tZK1i/opDY=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
