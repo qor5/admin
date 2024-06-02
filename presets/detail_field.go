@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -39,6 +40,10 @@ func (d *DetailFieldsBuilder) GetDetailField(name string) *DetailFieldBuilder {
 		}
 	}
 	return nil
+}
+
+func (d *DetailFieldsBuilder) GetDetailFields() []*DetailFieldBuilder {
+	return slices.Clone(d.detailFields)
 }
 
 func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *DetailFieldBuilder) {
@@ -85,9 +90,9 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 	return
 }
 
-type objectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
+type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-func (d *DetailFieldBuilder) ComponentEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *DetailFieldBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *DetailFieldBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -95,12 +100,22 @@ func (d *DetailFieldBuilder) ComponentEditBtnFunc(v objectBoolFunc) *DetailField
 	return d
 }
 
-func (d *DetailFieldBuilder) ComponentHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (b *DetailFieldBuilder) WrapComponentEditBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *DetailFieldBuilder) {
+	b.componentEditBtnFunc = w(b.componentEditBtnFunc)
+	return b
+}
+
+func (d *DetailFieldBuilder) ComponentHoverFunc(v ObjectBoolFunc) *DetailFieldBuilder {
 	if v == nil {
 		panic("value required")
 	}
 	d.componentHoverFunc = v
 	return d
+}
+
+func (b *DetailFieldBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *DetailFieldBuilder) {
+	b.componentHoverFunc = w(b.componentHoverFunc)
+	return b
 }
 
 func (d *DetailFieldBuilder) DisableElementDeleteBtn() *DetailFieldBuilder {
@@ -113,7 +128,7 @@ func (d *DetailFieldBuilder) DisableElementCreateBtn() *DetailFieldBuilder {
 	return d
 }
 
-func (d *DetailFieldBuilder) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *DetailFieldBuilder) ElementEditBtnFunc(v ObjectBoolFunc) *DetailFieldBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -121,7 +136,7 @@ func (d *DetailFieldBuilder) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldBu
 	return d
 }
 
-func (d *DetailFieldBuilder) ElementHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *DetailFieldBuilder) ElementHoverFunc(v ObjectBoolFunc) *DetailFieldBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -151,9 +166,9 @@ type DetailFieldBuilder struct {
 	isList bool
 	// Only when isList is false, the following param will take effect
 	// control Delete button in the show component
-	componentEditBtnFunc objectBoolFunc
+	componentEditBtnFunc ObjectBoolFunc
 	// control Hover in the show component
-	componentHoverFunc objectBoolFunc
+	componentHoverFunc ObjectBoolFunc
 
 	// Only when isList is true, the following param will take effect
 	// Disable Delete button in edit element
@@ -161,11 +176,11 @@ type DetailFieldBuilder struct {
 	// Disable Create button in element list
 	disableElementCreateBtn bool
 	// Disable Edit button in show element
-	elementEditBtnFunc objectBoolFunc
+	elementEditBtnFunc ObjectBoolFunc
 	// This is the return value of elementEditBtnFunc
 	elementEditBtn bool
 	// Disable Hover in show element
-	elementHoverFunc objectBoolFunc
+	elementHoverFunc ObjectBoolFunc
 	// This is the return value of elementHoverFunc
 	elementHover bool
 	// By default, the title will only be displayed if the list is not empty.

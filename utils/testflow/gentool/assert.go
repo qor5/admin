@@ -35,8 +35,8 @@ func generateAssertions(prefix string, obj any, ignore func(prefix string) bool)
 		}
 		return
 	case reflect.Slice, reflect.Array, reflect.Map:
-		if v.IsNil() {
-			// use Empty for more fault tolerance
+		if v.IsNil() || v.Len() == 0 {
+			// also use Empty for more fault tolerance if is nil
 			assertions = append(assertions, fmt.Sprintf("assert.Empty(t, %s)", prefix))
 			return
 		}
