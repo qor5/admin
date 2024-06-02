@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -104,6 +105,8 @@ var validators = []NamedValidator{
 	},
 }
 
+var assertIgnoreRegexp = regexp.MustCompile(`^\**\w+\.(Body|UpdatePortals\[\d+\]\.Body|UpdatePortals\[\d+\]\.AfterLoaded)$`)
+
 func generateLines(body string) ([]string, error) {
 	body = strings.TrimSpace(body)
 	var resp multipartestutils.TestEventResponse
@@ -111,113 +114,29 @@ func generateLines(body string) ([]string, error) {
 		return nil, errors.Wrapf(err, "UnmarshalResponseBody: %s", body)
 	}
 
-	assertion := func(action, actual string, expected any) string {
-		if expected == nil {
-			return fmt.Sprintf("assert.%s(t, resp.%s)", action, actual)
-		}
-		expectedExp := fmt.Sprint(expected)
-		if s, ok := expected.(string); ok {
-			expectedExp = strconv.Quote(s)
-		}
-		if action == "Len" {
-			return fmt.Sprintf("assert.%s(t, resp.%s,%s, )", action, actual, expectedExp)
-		}
-		return fmt.Sprintf("assert.%s(t, %s, resp.%s)", action, expectedExp, actual)
-	}
-
 	lines := []string{}
 
-	// PageTitle
-	if resp.PageTitle != "" {
-		lines = append(lines, assertion("Equal", "PageTitle", resp.PageTitle))
-	} else {
-		lines = append(lines, assertion("Empty", "PageTitle", nil))
-	}
-	// Reload
-	if resp.Reload {
-		lines = append(lines, assertion("True", "Reload", nil))
-	} else {
-		lines = append(lines, assertion("False", "Reload", nil))
-	}
-	// PushState
-	if resp.PushState != nil {
-		lines = append(lines, assertion("NotNil", "PushState", nil))
-		if resp.PushState.MyMergeQuery {
-			lines = append(lines, assertion("True", "PushState.MyMergeQuery", nil))
-		} else {
-			lines = append(lines, assertion("False", "PushState.MyMergeQuery", nil))
-		}
-		if resp.PushState.MyURL != "" {
-			lines = append(lines, assertion("Equal", "PushState.MyURL", resp.PushState.MyURL))
-		} else {
-			lines = append(lines, assertion("Empty", "PushState.MyURL", nil))
-		}
-		if resp.PushState.MyStringQuery != "" {
-			lines = append(lines, assertion("Equal", "PushState.MyStringQuery", resp.PushState.MyStringQuery))
-		} else {
-			lines = append(lines, assertion("Empty", "PushState.MyStringQuery", nil))
-		}
-		if len(resp.PushState.MyClearMergeQueryKeys) > 0 {
-			lines = append(lines, assertion("Equal", "PushState.MyClearMergeQueryKeys", resp.PushState.MyClearMergeQueryKeys))
-		} else {
-			lines = append(lines, assertion("Empty", "PushState.MyClearMergeQueryKeys", nil))
-		}
-	} else {
-		lines = append(lines, assertion("Nil", "PushState", nil))
-	}
-	// RedirectURL
-	if resp.RedirectURL != "" {
-		lines = append(lines, assertion("Equal", "RedirectURL", resp.RedirectURL))
-	} else {
-		lines = append(lines, assertion("Empty", "RedirectURL", nil))
-	}
-	// ReloadPortals
-	if len(resp.ReloadPortals) > 0 {
-		lines = append(lines, assertion("Equal", "ReloadPortals", resp.ReloadPortals))
-	} else {
-		lines = append(lines, assertion("Empty", "ReloadPortals", nil))
-	}
-	// UpdatePortals
-	if len(resp.UpdatePortals) > 0 {
-		lines = append(lines, assertion("Len", "UpdatePortals", len(resp.UpdatePortals)))
-		for i, portal := range resp.UpdatePortals {
-			if portal.Name != "" {
-				lines = append(lines, assertion("Equal", fmt.Sprintf("UpdatePortals[%d].Name", i), portal.Name))
-			} else {
-				lines = append(lines, assertion("Empty", fmt.Sprintf("UpdatePortals[%d].Name", i), nil))
-			}
-		}
-	} else {
-		lines = append(lines, assertion("Empty", "UpdatePortals", nil))
-	}
-	// Data
-	if resp.Data != nil {
-		lines = append(lines, assertion("NotNil", "Data", nil))
-	} else {
-		lines = append(lines, assertion("Nil", "Data", nil))
-	}
-	// RunScript
-	if resp.RunScript != "" {
-		lines = append(lines, assertion("Equal", "RunScript", resp.RunScript))
-	} else {
-		lines = append(lines, assertion("Empty", "RunScript", nil))
+	assertions := generateAssertions("resp", resp, func(prefix string) bool {
+		return assertIgnoreRegexp.MatchString(prefix)
+	})
+	if len(assertions) > 0 {
+		lines = append(lines, assertions...)
+		lines = append(lines, "")
 	}
 
-	lines = append(lines, "")
-
-	vLines := []string{}
 	b := []byte(body)
+	vlines := []string{}
 	for _, validator := range validators {
 		params, err := validator.ParseParams(b)
-		if err != nil || len(params) < 1 {
+		if err != nil {
 			continue
 		}
 		if _, ok := validator.Validate.(testflow.ValidatorFunc); ok {
-			vLines = append(vLines, validator.Name)
+			vlines = append(vlines, validator.Name)
 			continue
 		}
 		if _, ok := validator.Validate.(func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request)); ok {
-			vLines = append(vLines, validator.Name)
+			vlines = append(vlines, validator.Name)
 			continue
 		}
 		var callParams []string
@@ -229,11 +148,11 @@ func generateLines(body string) ([]string, error) {
 				callParams = append(callParams, fmt.Sprint(vv))
 			}
 		}
-		vLines = append(vLines, fmt.Sprintf("%s(%s)", validator.Name, strings.Join(callParams, ",")))
+		vlines = append(vlines, fmt.Sprintf("%s(%s)", validator.Name, strings.Join(callParams, ",")))
 	}
-	if len(vLines) > 0 {
+	if len(vlines) > 0 {
 		lines = append(lines, `testflow.Validate(t, w, r,`)
-		lines = append(lines, strings.Join(vLines, ",\n")+",")
+		lines = append(lines, strings.Join(vlines, ",\n")+",")
 		lines = append(lines, ")")
 	}
 
