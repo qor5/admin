@@ -521,7 +521,7 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 		listLen = listValue.Len()
 	}
 
-	if err = reflectutils.Set(obj, f.name+"[]", f.model); err != nil {
+	if err = reflectutils.Set(obj, f.name+"[]", f.editFB.model); err != nil {
 		return
 	}
 

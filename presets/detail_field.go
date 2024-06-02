@@ -70,8 +70,10 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		alwaysShowListLabel:     false,
 		isList:                  false,
 	}
-	r.FieldsBuilder.Model(d.mb.model)
-	r.FieldsBuilder.defaults = d.mb.writeFields.defaults
+	r.editFB.Model(d.mb.model)
+	r.editFB.defaults = d.mb.writeFields.defaults
+	r.showFB.Model(d.mb.model)
+	r.showFB.defaults = d.mb.p.detailFieldDefaults
 	r.saver = r.DefaultSaveFunc
 
 	d.detailFields = append(d.detailFields, r)
@@ -173,7 +175,8 @@ type DetailFieldBuilder struct {
 	elementEditFunc     FieldComponentFunc
 	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 
-	FieldsBuilder
+	editFB FieldsBuilder
+	showFB FieldsBuilder
 }
 
 func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
@@ -189,7 +192,7 @@ func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
 	}
 
 	r = b
-	r.FieldsBuilder.Model(v)
+	r.editFB.Model(v)
 	r.isList = true
 	r.saver = r.DefaultListElementSaveFunc
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
@@ -206,10 +209,16 @@ func (b *DetailFieldBuilder) SetSwitchable(v bool) (r *DetailFieldBuilder) {
 // Editing default saver only save these field
 func (b *DetailFieldBuilder) Editing(fields ...interface{}) (r *DetailFieldBuilder) {
 	r = b
-	b.FieldsBuilder = *b.FieldsBuilder.Only(fields...)
+	b.editFB = *b.editFB.Only(fields...)
+	b.showFB = *b.showFB.Only(fields...)
 	if b.componentEditFunc == nil {
 		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.FieldsBuilder.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.editFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+		})
+	}
+	if b.componentShowFunc == nil {
+		b.ShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return b.showFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
 	return
@@ -452,7 +461,7 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
-	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+	formObj := reflect.New(reflect.TypeOf(b.editFB.model).Elem()).Interface()
 	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
@@ -518,7 +527,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 				if !isEditing {
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
-					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+					formObj := reflect.New(reflect.TypeOf(b.editFB.model).Elem()).Interface()
 					err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
@@ -680,7 +689,7 @@ func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, 
 		ctx2.R.MultipartForm = newForm
 
 		_ = ctx2.UnmarshalForm(formObj)
-		for _, f := range b.fields {
+		for _, f := range b.editFB.fields {
 			name := f.name
 			info := b.father.mb.modelInfo
 			if info != nil {
@@ -699,7 +708,7 @@ func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, 
 				ModelInfo: info,
 				FormKey:   keyPath,
 				Name:      f.name,
-				Label:     b.getLabel(f.NameLabel),
+				Label:     b.editFB.getLabel(f.NameLabel),
 			}, ctx)
 			if err != nil {
 				return err
