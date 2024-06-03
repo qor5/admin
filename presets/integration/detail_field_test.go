@@ -241,7 +241,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 
 	detail := cust.Detailing("ParameterID", "Detail", "FormSetting").Drawer(true)
 	detail.Field("Detail").
-		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			ps := obj.(*ParameterSetting)
 			return h.Div(h.Text(ps.DisplayName))
 		}).

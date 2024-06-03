@@ -39,7 +39,7 @@ func (d *SectionsBuilder) Section(name string) *SectionBuilder {
 			return v
 		}
 	}
-	return nil
+	return d.appendNewSection(name)
 }
 
 func (d *SectionsBuilder) GetSections() []*SectionBuilder {
@@ -54,10 +54,10 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 		},
 		saver:             nil,
 		setter:            nil,
-		componentShowFunc: nil,
+		componentViewFunc: nil,
 		componentEditFunc: nil,
 		father:            d,
-		elementShowFunc:   nil,
+		elementViewFunc:   nil,
 		elementEditFunc:   nil,
 		componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
 			return true
@@ -74,16 +74,16 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 		alwaysShowListLabel:     false,
 		isList:                  false,
 	}
-	r.editFB.Model(d.mb.model)
-	r.editFB.defaults = d.mb.writeFields.defaults
-	r.showFB.Model(d.mb.model)
-	r.showFB.defaults = d.mb.p.detailFieldDefaults
+	r.editingFB.Model(d.mb.model)
+	r.editingFB.defaults = d.mb.writeFields.defaults
+	r.viewingFB.Model(d.mb.model)
+	r.viewingFB.defaults = d.mb.p.detailFieldDefaults
 	r.saver = r.DefaultSaveFunc
 
 	d.sections = append(d.sections, r)
 
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	// 	panic("you must set ShowComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
+	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
 
 	return
@@ -157,7 +157,7 @@ type SectionBuilder struct {
 	saver             SaveFunc
 	setter            SetterFunc
 	hiddenFuncs       []ObjectComponentFunc
-	componentShowFunc FieldComponentFunc
+	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
 	father            *SectionsBuilder
 
@@ -184,12 +184,12 @@ type SectionBuilder struct {
 	// By default, the title will only be displayed if the list is not empty.
 	// If alwaysShowListLabel is true, the label will show anyway
 	alwaysShowListLabel bool
-	elementShowFunc     FieldComponentFunc
+	elementViewFunc     FieldComponentFunc
 	elementEditFunc     FieldComponentFunc
 	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 
-	editFB FieldsBuilder
-	showFB FieldsBuilder
+	editingFB FieldsBuilder
+	viewingFB FieldsBuilder
 }
 
 func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
@@ -205,7 +205,7 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	}
 
 	r = b
-	r.editFB.Model(v)
+	r.editingFB.Model(v)
 	r.isList = true
 	r.saver = r.DefaultListElementSaveFunc
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
@@ -216,19 +216,33 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 // Editing default saver only save these field
 func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 	r = b
-	b.editFB = *b.editFB.Only(fields...)
-	b.showFB = *b.showFB.Only(fields...)
+	b.editingFB = *b.editingFB.Only(fields...)
 	if b.componentEditFunc == nil {
 		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.editFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
-	if b.componentShowFunc == nil {
-		b.ShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.showFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+	b.Viewing(fields...)
+	return
+}
+
+func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
+	r = b
+	b.viewingFB = *b.viewingFB.Only(fields...)
+	if b.componentViewFunc == nil {
+		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
 	return
+}
+
+func (b *SectionBuilder) EditingField(name string) (r *FieldBuilder) {
+	return b.editingFB.Field(name)
+}
+
+func (b *SectionBuilder) ViewingField(name string) (r *FieldBuilder) {
+	return b.viewingFB.Field(name)
 }
 
 func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
@@ -265,14 +279,14 @@ func (b *SectionBuilder) ElementUnmarshalFunc(v func(toObj, formObj any, prefix 
 	return b
 }
 
-func (b *SectionBuilder) ShowComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) ViewComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
-	b.componentShowFunc = v
+	b.componentViewFunc = v
 	if b.componentEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.showComponent(obj, field, ctx)
+			return b.viewComponent(obj, field, ctx)
 		})
 	}
 	return b
@@ -283,9 +297,9 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 		panic("value required")
 	}
 	b.componentEditFunc = v
-	if b.componentShowFunc != nil {
+	if b.componentViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.showComponent(obj, field, ctx)
+			return b.viewComponent(obj, field, ctx)
 		})
 	}
 	return b
@@ -300,7 +314,7 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 	if v == nil {
 		panic("value required")
 	}
-	b.elementShowFunc = v
+	b.elementViewFunc = v
 	if b.elementEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.listComponent(obj, field, ctx, -1, -1, -1)
@@ -314,7 +328,7 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 		panic("value required")
 	}
 	b.elementEditFunc = v
-	if b.elementShowFunc != nil {
+	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.listComponent(obj, field, ctx, -1, -1, -1)
 		})
@@ -332,7 +346,7 @@ func (b *SectionBuilder) ListFieldPrefix(index int) string {
 	return fmt.Sprintf("%s[%b]", b.name, index)
 }
 
-func (b *SectionBuilder) showComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	id := ctx.Queries().Get(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
@@ -356,7 +370,7 @@ func (b *SectionBuilder) showComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 	content := h.Div()
-	showComponent := b.componentShowFunc(obj, field, ctx)
+	showComponent := b.componentViewFunc(obj, field, ctx)
 	if showComponent != nil {
 		content.AppendChildren(
 			VHover(
@@ -456,7 +470,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
-	formObj := reflect.New(reflect.TypeOf(b.editFB.model).Elem()).Interface()
+	formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
@@ -522,7 +536,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, field *FieldContext, ctx
 				if !isEditing {
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
-					formObj := reflect.New(reflect.TypeOf(b.editFB.model).Elem()).Interface()
+					formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 					err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
@@ -594,7 +608,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
-	content := b.elementShowFunc(obj, &FieldContext{
+	content := b.elementViewFunc(obj, &FieldContext{
 		Name:    b.name,
 		FormKey: fmt.Sprintf("%s[%b]", b.name, index),
 		Label:   b.label,
@@ -684,7 +698,7 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 		ctx2.R.MultipartForm = newForm
 
 		_ = ctx2.UnmarshalForm(formObj)
-		for _, f := range b.editFB.fields {
+		for _, f := range b.editingFB.fields {
 			name := f.name
 			info := b.father.mb.modelInfo
 			if info != nil {
@@ -703,7 +717,7 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 				ModelInfo: info,
 				FormKey:   keyPath,
 				Name:      f.name,
-				Label:     b.editFB.getLabel(f.NameLabel),
+				Label:     b.editingFB.getLabel(f.NameLabel),
 			}, ctx)
 			if err != nil {
 				return err

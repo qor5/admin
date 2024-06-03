@@ -472,7 +472,7 @@ func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
 	pd.Field(SeoDetailFieldName).
 		Editing("SEO").
 		SaveFunc(b.detailSaver).
-		ShowComponentFunc(b.detailShowComponent).
+		ViewComponentFunc(b.detailShowComponent).
 		EditComponentFunc(b.EditingComponentFunc)
 }
 

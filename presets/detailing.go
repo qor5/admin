@@ -131,13 +131,7 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 }
 
 func (b *DetailingBuilder) Field(name string) (r *SectionBuilder) {
-	r = b.Section(name)
-	if r != nil {
-		return
-	}
-
-	r = b.appendNewSection(name)
-	return r
+	return b.Section(name)
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -349,7 +343,7 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.showComponent(obj, &FieldContext{
+		Body: f.viewComponent(obj, &FieldContext{
 			FormKey: f.name,
 			Name:    f.name,
 		}, ctx),
@@ -521,7 +515,7 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 		listLen = listValue.Len()
 	}
 
-	if err = reflectutils.Set(obj, f.name+"[]", f.editFB.model); err != nil {
+	if err = reflectutils.Set(obj, f.name+"[]", f.editingFB.model); err != nil {
 		return
 	}
 
