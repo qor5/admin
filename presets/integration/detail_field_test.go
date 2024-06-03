@@ -112,7 +112,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
 					EventFunc(actions.DoSaveDetailingField).
-					Query(presets.DetailFieldName, "Detail").
+					Query(presets.SectionFieldName, "Detail").
 					Query(presets.ParamID, "1").
 					AddField("DisplayName", "newName").
 					BuildEventFuncRequest()
@@ -140,7 +140,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
 					EventFunc(actions.DoCreateDetailingListField).
-					Query(presets.DetailFieldName, "FormSetting").
+					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 			},
@@ -175,7 +175,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
 					EventFunc(actions.DoSaveDetailingListField).
-					Query(presets.DetailFieldName, "FormSetting").
+					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
 					Query("detailListFieldSaveBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
@@ -211,7 +211,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
 					EventFunc(actions.DoDeleteDetailingListField).
-					Query(presets.DetailFieldName, "FormSetting").
+					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
 					Query("detailListFieldDeleteBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
@@ -240,7 +240,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 	cust := b.Model(&ParameterSetting{})
 
 	detail := cust.Detailing("ParameterID", "Detail", "FormSetting").Drawer(true)
-	detail.Field("Detail").SetSwitchable(true).
+	detail.Field("Detail").
 		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			ps := obj.(*ParameterSetting)
 			return h.Div(h.Text(ps.DisplayName))
@@ -253,7 +253,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 			)
 		})
 	detail.Field("FormSetting").
-		SetSwitchable(true).IsList(&ParameterFieldSetting{}).
+		IsList(&ParameterFieldSetting{}).
 		Editing("DisplayName", "Description", "Path", "ValType").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			ps := obj.(*ParameterFieldSetting)

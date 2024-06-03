@@ -25,7 +25,7 @@ type DetailingBuilder struct {
 	sidePanel          ObjectComponentFunc
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
-	DetailFieldsBuilder
+	SectionsBuilder
 }
 
 type pageTitle interface {
@@ -130,13 +130,13 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 	return b
 }
 
-func (b *DetailingBuilder) Field(name string) (r *DetailFieldBuilder) {
-	r = b.GetDetailField(name)
+func (b *DetailingBuilder) Field(name string) (r *SectionBuilder) {
+	r = b.Section(name)
 	if r != nil {
 		return
 	}
 
-	r = b.appendNewDetailFieldWithName(name)
+	r = b.appendNewSection(name)
 	return r
 }
 
@@ -303,9 +303,9 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 
 // EditDetailField EventFunc: click detail field component edit button
 func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(DetailFieldName)
+	key := ctx.Queries().Get(SectionFieldName)
 
-	f := b.GetDetailField(key)
+	f := b.Section(key)
 
 	obj := b.mb.NewModel()
 	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
@@ -328,9 +328,9 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 
 // SaveDetailField EventFunc: click save button
 func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(DetailFieldName)
+	key := ctx.Queries().Get(SectionFieldName)
 
-	f := b.GetDetailField(key)
+	f := b.Section(key)
 
 	obj := b.mb.NewModel()
 	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
@@ -364,8 +364,8 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 		index, deleteIndex int64
 	)
 
-	fieldName = ctx.Queries().Get(DetailFieldName)
-	f := b.GetDetailField(fieldName)
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
 	if err != nil {
@@ -403,8 +403,8 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 		index     int64
 	)
 
-	fieldName = ctx.Queries().Get(DetailFieldName)
-	f := b.GetDetailField(fieldName)
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.SaveBtnKey()), 10, 64)
 	if err != nil {
@@ -441,8 +441,8 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		index     int64
 	)
 
-	fieldName = ctx.Queries().Get(DetailFieldName)
-	f := b.GetDetailField(fieldName)
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
 
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
 	if err != nil {
@@ -494,8 +494,8 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 
 // CreateDetailListField Event: click detail list field element Add row button
 func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	fieldName := ctx.Queries().Get(DetailFieldName)
-	f := b.GetDetailField(fieldName)
+	fieldName := ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
 
 	obj := b.mb.NewModel()
 	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)

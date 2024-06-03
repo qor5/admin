@@ -77,7 +77,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	if _, ok := obj.(StatusInterface); ok {
 		if m.HasDetailing() {
-			detailFields := m.Detailing().GetDetailFields()
+			detailFields := m.Detailing().GetSections()
 			for _, detailField := range detailFields {
 				wrapper := func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
 					return func(obj interface{}, ctx *web.EventContext) bool {
