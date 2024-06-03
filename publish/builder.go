@@ -12,9 +12,7 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
-	"github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	"github.com/theplant/htmlgo"
@@ -112,52 +110,10 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 	}
 
 	m.Listing().WrapSearchFunc(makeSearchFunc(m, db))
-
-	// listing-delete deletes all versions
-	{
-		// rewrite Delete row menu item to show correct id in prompt message
-		m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
-			msgr := presets.MustGetMessages(ctx.R)
-			if m.Info().Verifier().Do(presets.PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-				return nil
-			}
-
-			promptID := id
-			if slugger, ok := obj.(presets.SlugDecoder); ok {
-				fvs := []string{}
-				for f, v := range slugger.PrimaryColumnValuesBySlug(id) {
-					if f == "id" {
-						fvs = append([]string{v}, fvs...)
-					} else {
-						if f != "version" {
-							fvs = append(fvs, v)
-						}
-					}
-				}
-				promptID = strings.Join(fvs, "_")
-			}
-
-			onclick := web.Plaid().
-				EventFunc(actions.DeleteConfirmation).
-				Query(presets.ParamID, id).
-				Query("all_versions", true).
-				Query("prompt_id", promptID)
-			if presets.IsInDialog(ctx) {
-				onclick.URL(ctx.R.RequestURI).
-					Query(presets.ParamOverlay, actions.Dialog).
-					Query(presets.ParamInDialog, true).
-					Query(presets.ParamListingQueries, ctx.Queries().Encode())
-			}
-			return vuetify.VListItem(
-				web.Slot(
-					vuetify.VIcon("mdi-delete"),
-				).Name("prepend"),
-				vuetify.VListItemTitle(htmlgo.Text(msgr.Delete)),
-			).Attr("@click", onclick.Go())
-		})
-		// rewrite Deleter to ignore version condition
-		ed.DeleteFunc(makeDeleteFunc(db))
-	}
+	m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+		// DeleteRowMenu should be disabled when using the version interface
+		return nil
+	})
 
 	setter := makeSetVersionSetterFunc(db)
 	ed.WrapSetterFunc(setter)
@@ -167,30 +123,6 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 	m.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
 
 	configureVersionListDialog(db, pb, m)
-}
-
-func makeDeleteFunc(db *gorm.DB) presets.DeleteFunc {
-	return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		allVersions := ctx.R.URL.Query().Get("all_versions") == "true"
-
-		wh := db.Model(obj)
-
-		if id != "" {
-			if slugger, ok := obj.(presets.SlugDecoder); ok {
-				cs := slugger.PrimaryColumnValuesBySlug(id)
-				for key, value := range cs {
-					if allVersions && key == "version" {
-						continue
-					}
-					wh = wh.Where(fmt.Sprintf("%s = ?", key), value)
-				}
-			} else {
-				wh = wh.Where("id =  ?", id)
-			}
-		}
-
-		return wh.Delete(obj).Error
-	}
 }
 
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
