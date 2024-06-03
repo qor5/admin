@@ -590,6 +590,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			menuItem := b.menuItem(ctx, m, false)
 			menus = append(menus, menuItem)
 			inOrderMap[m.uriName] = struct{}{}
+
+			if b.isMenuItemActive(ctx, m) {
+				selection = m.label
+			}
 		}
 	}
 
@@ -605,6 +609,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 
 		if m.notInMenu {
 			continue
+		}
+
+		if b.isMenuItemActive(ctx, m) {
+			selection = m.label
 		}
 		menus = append(menus, b.menuItem(ctx, m, false))
 	}
