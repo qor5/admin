@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -27,67 +28,94 @@ const (
 
 func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		toObj := mb.NewModel()
-		slugger := toObj.(presets.SlugDecoder)
-		paramID := ctx.Param(presets.ParamID)
-		currentVersionName := slugger.PrimaryColumnValuesBySlug(paramID)["version"]
-		me := mb.Editing()
-
-		fromObj := mb.NewModel()
-		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj).Error; err != nil {
-			return
-		}
-		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
+		slug := ctx.Param(presets.ParamID)
+		obj := mb.NewModel()
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
 			return
 		}
 
-		if vErr := me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
-			ModelInfo: mb.Info(),
-		}, false, presets.ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R), ctx); vErr.HaveErrors() {
-			presets.ShowMessage(&r, vErr.Error(), "error")
+		ver, ok := obj.(VersionInterface)
+		if !ok {
+			err = errInvalidObject
 			return
 		}
 
-		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
+		oldVersion := ver.GetVersion()
+		newVersion, err := ver.CreateVersion(db, slug, mb.NewModel())
+		if err != nil {
 			return
 		}
 
-		if me.Validator != nil {
-			if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
-				presets.ShowMessage(&r, vErr.Error(), "error")
+		if err = reflectutils.Set(obj, "Version", Version{
+			Version:       newVersion, // In fact, it is also set in CreateVersion, just in case
+			VersionName:   newVersion, // In fact, it is also set in CreateVersion, just in case
+			ParentVersion: oldVersion,
+		}); err != nil {
+			return
+		}
+
+		if st, ok := ver.(StatusInterface); ok {
+			st.SetStatus(StatusDraft)
+			st.SetOnlineUrl("")
+
+			// _, err = reflectutils.Get(obj, "Status")
+			// if err == nil {
+			// 	if err = reflectutils.Set(obj, "Status", Status{Status: StatusDraft}); err != nil {
+			// 		return
+			// 	}
+			// }
+		}
+		if sched, ok := ver.(ScheduleInterface); ok {
+			sched.SetScheduledStartAt(nil)
+			sched.SetScheduledEndAt(nil)
+			sched.SetPublishedAt(nil)
+			sched.SetUnPublishedAt(nil)
+			// _, err = reflectutils.Get(obj, "Schedule")
+			// if err == nil {
+			// 	if err = reflectutils.Set(obj, "Schedule", Schedule{}); err != nil {
+			// 		return
+			// 	}
+			// }
+		}
+
+		_, err = reflectutils.Get(obj, "CreatedAt")
+		if err == nil {
+			if err = reflectutils.Set(obj, "CreatedAt", time.Time{}); err != nil {
+				return
+			}
+		}
+		_, err = reflectutils.Get(obj, "UpdatedAt")
+		if err == nil {
+			if err = reflectutils.Set(obj, "UpdatedAt", time.Time{}); err != nil {
 				return
 			}
 		}
 
-		if err = me.Saver(toObj, paramID, ctx); err != nil {
+		slug = obj.(presets.SlugEncoder).PrimarySlug()
+		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
 			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
-
-		se := toObj.(presets.SlugEncoder)
-		id := se.PrimarySlug()
 
 		if !mb.HasDetailing() {
 			// close dialog and open editing
 			web.AppendRunScripts(&r,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, id).Go(),
+				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, slug).Go(),
 			)
 			return
 		}
 		if !mb.Detailing().GetDrawer() {
 			// open detailing without drawer
 			// jump URL to support referer
-			r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(id))
+			r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(slug))
 			return
 		}
 		// close dialog and open detailingDrawer
 		web.AppendRunScripts(&r,
 			presets.CloseListingDialogVarScript,
 			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, id).Go(),
+			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, slug).Go(),
 		)
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
