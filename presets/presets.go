@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -16,6 +15,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
@@ -325,10 +325,6 @@ func modelNames(ms []*ModelBuilder) (r []string) {
 	return
 }
 
-func (b *Builder) defaultBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-	return
-}
-
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
 	if !b.isMenuGroupInOrder(mgb) {
@@ -391,7 +387,7 @@ type defaultMenuIconRE struct {
 
 var defaultMenuIconREs = []defaultMenuIconRE{
 	// user
-	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "person"},
+	{re: regexp.MustCompile(`\b(users?|members?)\b`), icon: "person"},
 	// store
 	{re: regexp.MustCompile(`\bstores?\b`), icon: "store"},
 	// order
@@ -399,15 +395,15 @@ var defaultMenuIconREs = []defaultMenuIconRE{
 	// product
 	{re: regexp.MustCompile(`\bproducts?\b`), icon: "format_list_bulleted"},
 	// post
-	{re: regexp.MustCompile(`\bposts?|articles?\b`), icon: "article"},
+	{re: regexp.MustCompile(`\b(posts?|articles?)\b`), icon: "article"},
 	// web
-	{re: regexp.MustCompile(`\bweb|site\b`), icon: "web"},
+	{re: regexp.MustCompile(`\b(web|site)\b`), icon: "web"},
 	// seo
 	{re: regexp.MustCompile(`\bseo\b`), icon: "travel_explore"},
 	// i18n
-	{re: regexp.MustCompile(`\bi18n|translations?\b`), icon: "language"},
+	{re: regexp.MustCompile(`\b(i18n|translations?)\b`), icon: "language"},
 	// chart
-	{re: regexp.MustCompile(`\banalytics?|charts?|statistics?\b`), icon: "analytics"},
+	{re: regexp.MustCompile(`\b(analytics?|charts?|statistics?)\b`), icon: "analytics"},
 	// dashboard
 	{re: regexp.MustCompile(`\bdashboard\b`), icon: "dashboard"},
 	// setting
@@ -719,8 +715,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			VRow(
-				VCol(
-					VIcon("mdi-translate")).Cols(1),
+				VCol(VIcon("mdi-translate")).Cols(1),
 				VCol(VIcon("mdi-menu-down")).Cols(1),
 			).Attr("v-bind", "props"),
 		),
@@ -1278,7 +1273,7 @@ func (b *Builder) initMux() {
 		)
 		log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
 		if m.hasDetailing {
-			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)
+			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri) // WARN: [OK] http.ServerMux 支持参数化路由？ oh 1.22之后其支持了
 			mux.Handle(
 				routePath,
 				b.wrap(m, b.detailLayoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
@@ -1354,7 +1349,8 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 
 func (b *Builder) Build() {
 	mns := modelNames(b.models)
-	if len(slices.Compact(mns)) != len(mns) {
+	// WARN: slices.Compact 是压缩不是 uniq 哦
+	if len(lo.Uniq(mns)) != len(mns) {
 		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
 	b.initMux()

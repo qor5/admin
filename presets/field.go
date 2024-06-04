@@ -3,7 +3,6 @@ package presets
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"slices"
@@ -77,9 +76,10 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 		panic("model must be provided")
 	}
 
+	// WARN: 这里目前看下来有个好处就是可以借此获取后代的值，这个的作用应该和 Nested 方法不冲突或者重复吧
 	fType := reflectutils.GetType(b.model, name)
 	if fType == nil {
-		fType = reflect.TypeOf("")
+		fType = reflect.TypeOf("") // WARN: 貌似是为了支持 FakeField ，不过是否有什么好的方法可以让此处和 FieldDefaults 更好的配合呢？让其天生支持一些假字段配置。
 	}
 	r.rt = fType
 
@@ -92,11 +92,6 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
 	b.fields = append(b.fields, r)
-	return
-}
-
-func emptyComponentFunc(obj interface{}, field *FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-	log.Printf("No ComponentFunc for field %v\n", field.Name)
 	return
 }
 
@@ -115,6 +110,7 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.label = b.label
 	r.compFunc = b.compFunc
 	r.setterFunc = b.setterFunc
+	// WARN: rt 不需要copy？
 	return r
 }
 
@@ -189,6 +185,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				panic("unknown nested config")
 			}
 		}
+		// WARN: 这个在 example/admin configNestedFieldDemo 里有体现
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return NewListEditor(field).Value(field.Value(obj)).
 				DisplayFieldInSorter(displayFieldInSorter).
@@ -237,6 +234,7 @@ func NewFieldsBuilder() *FieldsBuilder {
 	return &FieldsBuilder{}
 }
 
+// WARN: 为什么不返回 []string
 func (b *FieldsBuilder) FieldNames() (r []any) {
 	for _, field := range b.fields {
 		r = append(r, field.name)
@@ -287,6 +285,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 				b.setToObjNilOrDelete(toObj, formKey, f, modifiedIndexes, removeDeletedAndSort)
 				continue
 			default:
+				// WARN: 例如原本 parent 里的 Errors 等信息会在此丢失吗？或者这里是压根不需要？
 				pf := &FieldContext{
 					ModelInfo: info,
 					FormKey:   formKey,
@@ -300,11 +299,13 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 				if childToObj == nil {
 					childToObj = reflect.New(rt.Elem()).Interface()
 				}
+				// WARN: 所以这里其实也支持 Map 的吗？应该不吧，毕竟 Map 无序，除非默认按 key 排序
 				if rt.Kind() == reflect.Struct {
 					prv := reflect.New(rt)
 					prv.Elem().Set(reflect.ValueOf(childToObj))
 					childToObj = prv.Interface()
 				}
+				// WARN: 此方法反馈的错误都应被忽略？
 				f.nestedFieldsBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
 				if err := reflectutils.Set(toObj, f.name, childToObj); err != nil {
 					panic(err)
@@ -315,6 +316,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 
 		val, err1 := reflectutils.Get(fromObj, f.name)
 		if err1 == nil {
+			// WARN: [OK] 虽然没什么坏处，但既然都给了 setterFunc 为什么不让 setterFunc 自己处理？ oh，因为 setter 只是对 toObj 做处理，当前方法负责的是从 from -> to 的 copy 工作
 			reflectutils.Set(toObj, f.name, val)
 		}
 
@@ -327,7 +329,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 			keyPath = fmt.Sprintf("%s.%s", parent.FormKey, f.name)
 		}
 		err1 = f.setterFunc(toObj, &FieldContext{
-			ModelInfo: info,
+			ModelInfo: info, // WARN: 其实为什么不直接传递 moder builder
 			FormKey:   keyPath,
 			Name:      f.name,
 			Label:     b.getLabel(f.NameLabel),
@@ -345,7 +347,7 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 			for _, idx := range modifiedIndexes.deletedValues[formKey] {
 				sliceFieldName := fmt.Sprintf("%s[%s]", f.name, idx)
 				err := reflectutils.Set(toObj, sliceFieldName, nil)
-				if err != nil {
+				if err != nil { // WARN: 删除不存在的 idx 这里也不会报错？
 					panic(err)
 				}
 			}
@@ -411,6 +413,7 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 
 		childToObj := reflectutils.MustGet(toObj, sliceFieldName)
 		if childToObj == nil {
+			// WARN: 所以这个支持给到一个不存在的 idx 也能获取到 slice 里的元素类型？
 			arrayElementType := reflectutils.GetType(toObj, sliceFieldName)
 
 			if arrayElementType.Kind() == reflect.Ptr {
@@ -429,6 +432,7 @@ func (b *FieldsBuilder) setWithChildFromObjs(
 		// fmt.Printf("childFromObj %#+v\n", childFromObj)
 		// fmt.Printf("childToObj %#+v\n", childToObj)
 		// fmt.Printf("fieldContext %#+v\n", pf)
+		// WARN: 此方法反馈的错误都应被忽略？
 		f.nestedFieldsBuilder.SetObjectFields(childFromObj, childToObj, pf, removeDeletedAndSort, modifiedIndexes, ctx)
 	})
 }
@@ -501,12 +505,13 @@ func (b *FieldsBuilder) getFieldOrDefault(name string) (r *FieldBuilder) {
 
 		fType := reflectutils.GetType(b.model, name)
 		if fType == nil {
-			fType = reflect.TypeOf("")
+			fType = reflect.TypeOf("") // WARN: 应该还是为了应对 FakeField
 		}
 
+		// WARN: 这样虽然也可以，但是会不会和 Defaults 里的 inpect 逻辑重复了，不能放于一处吗？
 		ft := b.defaults.fieldTypeByTypeOrCreate(fType)
 		r.ComponentFunc(ft.compFunc).
-			SetterFunc(ft.setterFunc)
+			SetterFunc(ft.setterFunc) // WARN: 但是这个 setterFunc 如果之前已经设置过了呢？
 	}
 	return
 }
@@ -552,6 +557,7 @@ func (b *FieldsBuilder) Only(vs ...interface{}) (r *FieldsBuilder) {
 		return b
 	}
 
+	// WARN: 一定要 clone 吗？或者为什么要 clone ？
 	r = b.Clone()
 
 	r.fieldsLayout = vs
@@ -577,6 +583,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 
 	r = b.Clone()
 
+	// WARN: 这样的话不是会丢失 fieldsLayout 吗？
 	for _, f := range b.fields {
 		if hasMatched(patterns, f.name) {
 			continue
@@ -616,6 +623,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 
 	id, err := reflectutils.Get(obj, "ID")
 	edit := false
+	// WARN: 依赖于这个的话会不会太武断了？强依赖于 Model 必须要有 ID 字段，并且 edit false 和 true 只有俩值，怎么去得知其只是要 read 呢？当然了这个可能只是为了 perm 而非其他，还不如将这块逻辑放于 fieldToComponentWithFormValueKey 内部
 	if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
 		edit = true
 	}
@@ -627,7 +635,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			layout = append(layout, f.name)
 		}
 	} else {
-		layout = b.fieldsLayout[:]
+		layout = b.fieldsLayout[:] // WARN: 还是保留了已经 layout 的 fieldname
 		layoutFM := make(map[string]struct{})
 		for _, fn := range b.getFieldNamesFromLayout() {
 			layoutFM[fn] = struct{}{}
@@ -654,7 +662,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				colsComp = append(colsComp, v.VCol(fComp).Class("pr-4"))
 			}
 			if len(colsComp) > 0 {
-				comp = v.VRow(colsComp...).NoGutters(true)
+				comp = v.VRow(colsComp...).NoGutters(true) // WARN: 感觉应该使用 gutter 而不是 pr-4 会更合理
 			}
 		case *FieldsSection:
 			rowsComp := make([]h.HTMLComponent, 0, len(t.Rows))
@@ -693,18 +701,17 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 	return h.Components(comps...)
 }
 
-func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, id interface{}, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
+func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, _ interface{}, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
 	f := b.getFieldOrDefault(name)
-	// if f.compFunc == nil {
-	// 	return nil
-	// }
+
+	// WARN: info 有可能为 nil ？
 	if info != nil && info.Verifier().Do(PermGet).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 		return nil
 	}
 
 	label := b.getLabel(f.NameLabel)
 	if info != nil {
-		label = i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), b.getLabel(f.NameLabel))
+		label = i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), label)
 	}
 
 	contextKeyPath := f.name
@@ -831,6 +838,7 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 	}
 
 	sliceLen := reflect.ValueOf(slice).Len()
+	// WARN: [OK] 这里就是补充没有标注的 indexes
 	for j1 := 0; j1 < sliceLen; j1++ {
 		if slices.Contains(sortedIndexes, fmt.Sprint(j1)) {
 			continue
@@ -840,9 +848,11 @@ func (b *ModifiedIndexesBuilder) SortedForEach(slice interface{}, sliceFormKey s
 
 	for _, j := range sortedIndexes {
 		obj, err := reflectutils.Get(slice, fmt.Sprintf("[%s]", j))
+		// WARN: [OK] 提供的 sortedIndexes 可能本就不存在
 		if obj == nil || err != nil {
 			continue
 		}
+		// WARN: [OK] 此时能保证 j 一定为整数且存在
 		j1, _ := strconv.Atoi(j)
 		f(obj, j1)
 	}

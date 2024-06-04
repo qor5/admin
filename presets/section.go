@@ -50,7 +50,7 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	r = &SectionBuilder{
 		NameLabel: NameLabel{
 			name:  name,
-			label: name,
+			label: name, // WARN: 这个不一定是 name ，按说还是应该通过 getLabel 来获取，或者置空？
 		},
 		saver:             nil,
 		setter:            nil,
@@ -407,6 +407,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
+	// WARN: i18n
 	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
@@ -480,7 +481,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	return
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
@@ -490,6 +491,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, field *FieldContext, ctx
 
 	id := ctx.Queries().Get(ParamID)
 	if id == "" {
+		// WARN: 或许直接报错会更合理
 		if slugIf, ok := obj.(SlugEncoder); ok {
 			id = slugIf.PrimarySlug()
 		}
@@ -522,7 +524,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, field *FieldContext, ctx
 			fromIndex := i
 			if deletedID != -1 && i >= deletedID {
 				// if last event is click deleteBtn, fromIndex should add one
-				fromIndex++
+				fromIndex++ // WARN: 不是太看得懂
 			}
 			if editID == sortIndex {
 				// if click edit
@@ -632,7 +634,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *SectionBuilder) editElement(obj any, index, fromIndex int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContext) h.HTMLComponent {
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").

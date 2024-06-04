@@ -136,6 +136,7 @@ func (b *DetailingBuilder) Field(name string) (r *SectionBuilder) {
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.Param(ParamID)
+	// WARN: [OK] 这个只是一个默认显示罢了，后续会被覆盖
 	r.Body = VContainer(h.Text(id))
 
 	obj := b.mb.NewModel()
@@ -158,6 +159,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	msgr := MustGetMessages(ctx.R)
+	// WARN: 忘记使用 getLabel 方法？
 	r.PageTitle = msgr.DetailingObjectTitle(inflection.Singular(b.mb.label), getPageTitle(obj, id))
 	if b.afterTitleCompFunc != nil {
 		ctx.WithContextValue(ctxDetailingAfterTitleComponent, b.afterTitleCompFunc(obj, ctx))
@@ -165,6 +167,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
+		// WARN: 这个应该是有默认时长的吧，并且这个 Flash 是否会被外层先处理？
 		notice = VSnackbar(h.Text(msg)).ModelValue(true).Location("top").Color("success")
 	}
 
@@ -177,11 +180,12 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	r.Body = VContainer(
 		notice,
-	).AppendChildren(tabsContent).Fluid(true)
+	).AppendChildren(tabsContent).Fluid(true) // WARN: Fluid 干嘛的
 
 	return
 }
 
+// WARN: 就目前来看，这个应该为 showInOverlay 会更合适，并且其中 closeBtnVarScript 没有处理所有的 overlayType
 func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
@@ -210,7 +214,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 				VAppBarTitle(title).Class("pl-2"),
 				VBtn("").Icon("mdi-close").
 					Attr("@click.stop", closeBtnVarScript),
-			).Color("white").Elevation(0),
+			).Color("white").Elevation(0), // WARN: 这里的 color 可能有点武断了
 
 			VMain(
 				VSheet(
@@ -225,6 +229,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 }
 
 func getPageTitle(obj interface{}, id string) string {
+	// WARN: 这个如果应用在 publish 里的话，只在 publish.Version 定义接口方法即可吧？
 	title := id
 	if pt, ok := obj.(pageTitle); ok {
 		title = pt.PageTitle()
@@ -277,7 +282,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 	return VContainer(
 		VCard(
 			VCardText(
-				action.compFunc(id, ctx),
+				action.compFunc(id, ctx), // WARN: 这个内部去处理 ctx.Flash ? 得测试下这个 compFunc 一般是构造哪个区域的
 			),
 			VCardActions(
 				VSpacer(),
@@ -288,13 +293,15 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 						EventFunc(actions.DoAction).
 						Query(ParamID, id).
 						Query(ParamAction, ctx.R.FormValue(ParamAction)).
-						URL(b.mb.Info().DetailingHref(id)).
+						URL(b.mb.Info().DetailingHref(id)). // WARN: 不是很懂
 						Go()),
 			),
 		).Flat(true),
 	).Fluid(true)
 }
 
+// WARN: 可能需要一个 eventFunc 的 wrap 方法用来做护卫？
+// WARN: 这个实现可能绕过了 perm 判断？
 // EditDetailField EventFunc: click detail field component edit button
 func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	key := ctx.Queries().Get(SectionFieldName)
@@ -366,7 +373,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 		return
 	}
 	deleteIndex = -1
-	if ctx.Queries().Get(f.DeleteBtnKey()) != "" {
+	if ctx.Queries().Get(f.DeleteBtnKey()) != "" { // WARN: 这下面为什么获取的是 EditBtnKey ？
 		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
 		if err != nil {
 			return
@@ -515,6 +522,7 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 		listLen = listValue.Len()
 	}
 
+	// WARN: 不需要 new 一个 model 出来吗？
 	if err = reflectutils.Set(obj, f.name+"[]", f.editingFB.model); err != nil {
 		return
 	}

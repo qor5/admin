@@ -69,7 +69,7 @@ func TestFields(t *testing.T) {
 			FoundedAt: time.Unix(1567048169, 0),
 		},
 	}
-	mb := New().Model(&User{})
+	mb := New().Model(&User{}) // WARN: 这个内部并没有使用 ft 和 ftRead
 
 	ftRead := NewFieldDefaults(LIST)
 
@@ -87,6 +87,7 @@ func TestFields(t *testing.T) {
 				ed.Field("Float1").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 					return h.Div().Class("my_float32").Text(fmt.Sprintf("%f", field.Value(obj).(float32)))
 				})
+				// WARN: Creating 只能是 Editing 的子吗？
 				creating := ed.Creating().Except("Int1")
 				return creating.FieldsBuilder.ToComponent(mb.Info(), user, ctx)
 			},
@@ -272,20 +273,23 @@ func TestFieldsBuilder(t *testing.T) {
 		if v == "" {
 			return
 		}
-		return reflectutils.Set(obj, "Number", "900"+v)
+		return reflectutils.Set(obj, "Number", "900"+v) // WARN: 这不就重复添加 900 前缀了吗？
 	})
 
 	deptFbs := NewFieldsBuilder().Model(&Department{}).Defaults(defaults)
-	deptFbs.Field("Name").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// [0].Departments[0].Name
-		// [0].Departments[1].Name
-		// [1].Departments[0].Name
-		return h.Input(field.FormKey).Type("text").Value(field.StringValue(obj))
-	}).SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
-		reflectutils.Set(obj, field.Name, ctx.R.FormValue(field.FormKey)+"!!!")
-		// panic("dept name setter")
-		return
-	})
+	deptFbs.Field("Name").
+		ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			// [0].Departments[0].Name
+			// [0].Departments[1].Name
+			// [1].Departments[0].Name
+			return h.Input(field.FormKey).Type("text").Value(field.StringValue(obj))
+		}).
+		// WARN: 如果没设置 ComponentFunc 的话，SetterFunc 也无效？
+		SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+			reflectutils.Set(obj, field.Name, ctx.R.FormValue(field.FormKey)+"!!!")
+			// panic("dept name setter")
+			return
+		})
 
 	deptFbs.Field("Employees").Nested(employeeFbs).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(
@@ -296,7 +300,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 	fbs := NewFieldsBuilder().Model(&Org{}).Defaults(defaults)
 	fbs.Field("Name").ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// [0].Name
+		// [0].Name // WARN: 这里并没有使用 FormKey ，但目前的用例下应该不会影响吧。
 		return h.Input(field.Name).Type("text").Value(field.StringValue(obj))
 	})
 	// .SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
@@ -311,7 +315,7 @@ func TestFieldsBuilder(t *testing.T) {
 		).Class("departments")
 	})
 
-	fbs.Field("Address").Nested(addressFb)
+	fbs.Field("Address").Nested(addressFb) // WARN: 可以重复使用？
 
 	fbs.Field("PeopleCount").SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 		reflectutils.Set(obj, field.Name, ctx.R.FormValue(field.FormKey))
@@ -359,6 +363,8 @@ func TestFieldsBuilder(t *testing.T) {
 					AppendDeleted("Departments[0].Employees", 5)
 			},
 
+			// WARN: 首先 Employee.Address 都是空也会打印吗
+			// WARN: 再者 AppendDeleted 是会已经 apply 了吗？还是暂时没 apply ，只是不打印了而已，会体现在 hidden 里？
 			expectedHTML: fmt.Sprintf(`
 <input type='hidden' v-model='form["__Deleted.Departments[0].Employees"]' v-assign='[form, {"__Deleted.Departments[0].Employees":"1,5"}]'>
 
@@ -447,8 +453,8 @@ func TestFieldsBuilder(t *testing.T) {
 			},
 			setup: func(ctx *web.EventContext) {
 				ContextModifiedIndexesBuilder(ctx).
-					AppendDeleted("Departments[0].Employees", 1).
-					SetSorted("Departments[0].Employees", []string{"2", "0", "3", "6"})
+					AppendDeleted("Departments[0].Employees", 1).                       // WARN: 如果重复执行会如何？
+					SetSorted("Departments[0].Employees", []string{"2", "0", "3", "6"}) // WARN: [OK] 影响的是删除之后的序号吗？oh 应该是之前的。
 			},
 
 			expectedHTML: fmt.Sprintf(`
@@ -595,7 +601,7 @@ func TestFieldsBuilder(t *testing.T) {
 				PeopleCount: 420,
 				Departments: []*Department{
 					{
-						Name: "!!!",
+						Name: "!!!", // WARN: 为什么没了原名称？
 						Employees: []*Employee{
 							{
 								Number: 0,
@@ -692,6 +698,7 @@ func TestFieldsBuilder(t *testing.T) {
 								Address: &Address{},
 							},
 						},
+						// WARN: DBStatus 为什么没有体现？
 					},
 					{
 						Name: "Department C",

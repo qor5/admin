@@ -23,7 +23,7 @@ import (
 
 type ParameterSetting struct {
 	gorm.Model
-	ParaMeterSettingDetail
+	ParameterSettingDetail
 	// This is where we setup the form. It should be a collection edit, each item contains 2 attributes
 	// [ {"path": "path to the value", "valType": "string"}, {"path": "path to the value", "valType": "boolean"}]
 	FormSetting ParameterFieldSettingArray `gorm:"type:text;" sql:"type:text"`
@@ -74,7 +74,7 @@ func (ParameterConditionIDArray *ParameterConditionIDArray) Scan(data interface{
 	return nil
 }
 
-type ParaMeterSettingDetail struct {
+type ParameterSettingDetail struct {
 	ParameterID           uint
 	DisplayName           string
 	Description           string
@@ -103,7 +103,7 @@ INSERT INTO parameter_setting (id, created_at, updated_at, deleted_at, parameter
 			`, []string{"parameter_setting"}))
 
 func TestDetailFieldBuilder(t *testing.T) {
-	Cases := []Case{
+	cases := []Case{
 		{
 			Name:      "DetailFieldSave",
 			FieldName: "Detail",
@@ -121,8 +121,8 @@ func TestDetailFieldBuilder(t *testing.T) {
 				Model: gorm.Model{
 					ID: 1,
 				},
-				ParaMeterSettingDetail: ParaMeterSettingDetail{
-					DisplayName: "oldName",
+				ParameterSettingDetail: ParameterSettingDetail{
+					DisplayName: "oldName", // WARN: 没修改成 newName 这是期望的吗？
 				},
 				FormSetting: ParameterFieldSettingArray{{
 					Path:        "/path1",
@@ -139,7 +139,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				settingData.TruncatePut(db)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
-					EventFunc(actions.DoCreateDetailingListField).
+					EventFunc(actions.DoCreateDetailingListField). // WARN: 感觉没利用上 FieldsBuilder 的 Modifier 机制
 					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -148,7 +148,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				Model: gorm.Model{
 					ID: 1,
 				},
-				ParaMeterSettingDetail: ParaMeterSettingDetail{
+				ParameterSettingDetail: ParameterSettingDetail{
 					DisplayName: "oldName",
 				},
 				FormSetting: []*ParameterFieldSetting{
@@ -182,7 +182,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 					AddField("FormSetting[0].DisplayName", "newName").
 					AddField("FormSetting[0].Description", "newDesc").
 					AddField("FormSetting[0].ValType", "/IMAGE").
-					AddField("FormSetting[1].ValType", "/NUMBER").
+					AddField("FormSetting[1].ValType", "/NUMBER"). // WARN: 原来不存在就会被忽略？
 					AddField("FormSetting[1].DisplayName", "otherName").
 					AddField("FormSetting[1].Description", "otherDesc").
 					AddField("FormSetting[1].Path", "/otherPath").
@@ -192,7 +192,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				Model: gorm.Model{
 					ID: 1,
 				},
-				ParaMeterSettingDetail: ParaMeterSettingDetail{
+				ParameterSettingDetail: ParameterSettingDetail{
 					DisplayName: "oldName",
 				},
 				FormSetting: []*ParameterFieldSetting{{
@@ -224,7 +224,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				Model: gorm.Model{
 					ID: 1,
 				},
-				ParaMeterSettingDetail: ParaMeterSettingDetail{
+				ParameterSettingDetail: ParameterSettingDetail{
 					DisplayName: "oldName",
 				},
 				FormSetting: []*ParameterFieldSetting{},
@@ -269,7 +269,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 			div := h.Div(
 				v.VTextField().
 					Variant("outlined").Density("compact").Placeholder("DisplayName").
-					Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "DisPlayName"), ps.DisplayName)...),
+					Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "DisplayName"), ps.DisplayName)...),
 				v.VTextField().
 					Variant("outlined").Density("compact").Placeholder("Description").
 					Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "Description"), ps.Description)...),
@@ -283,7 +283,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 			return div
 		})
 
-	for _, c := range Cases {
+	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			dbraw, _ := db.DB()
@@ -297,7 +297,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if diff := testingutils.PrettyJsonDiff(ps.ParaMeterSettingDetail, c.Want.ParaMeterSettingDetail); diff != "" {
+			if diff := testingutils.PrettyJsonDiff(ps.ParameterSettingDetail, c.Want.ParameterSettingDetail); diff != "" {
 				t.Error(diff)
 			}
 			if diff := testingutils.PrettyJsonDiff(ps.FormSetting, c.Want.FormSetting); diff != "" {

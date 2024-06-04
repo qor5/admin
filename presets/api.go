@@ -70,6 +70,7 @@ type SearchParams struct {
 	PageURL        *url.URL
 }
 
+// WARN: 这个分成俩感觉不是很有必要
 type SlugDecoder interface {
 	PrimaryColumnValuesBySlug(slug string) map[string]string
 }

@@ -70,6 +70,7 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 		}
 	}
 
+	// WARN: 这个 Clone 貌似没啥必要，和下面的重复了，Only 内部还是有一层 Clone
 	b.mb.creating.FieldsBuilder = *b.FieldsBuilder.Clone()
 	r = b.mb.creating
 	if len(vs) == 0 {
@@ -184,6 +185,7 @@ func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, er
 }
 
 func (b *EditingBuilder) formEdit(ctx *web.EventContext) (r web.EventResponse, err error) {
+	// WARN: 不应该是 PermUpdate 吗？
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
@@ -203,6 +205,7 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 	r.PageTitle = title
 	obj, err := b.Fetcher(b.mb.NewModel(), "", ctx)
 	if err == ErrRecordNotFound {
+		// WARN: 没看懂，就是插入一条空的记录？
 		if err = b.Saver(b.mb.NewModel(), "", ctx); err != nil {
 			return
 		}

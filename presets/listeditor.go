@@ -212,7 +212,7 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 		me := mb.Editing()
 		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
 		formKey := ctx.R.FormValue(ParamAddRowFormKey)
-		t := reflectutils.GetType(obj, formKey+"[0]")
+		t := reflectutils.GetType(obj, formKey+"[0]") // WARN: 所以即使长度为 0 ，这里也能获取到结果？
 		newVal := reflect.New(t.Elem()).Interface()
 		err = reflectutils.Set(obj, formKey+"[]", newVal)
 		if err != nil {

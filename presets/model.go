@@ -134,6 +134,7 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 }
 
 func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
+	// WARN: 为什么 mb.listing.searchColumns 要在 newEditing 里获取？可能是为了默认的 Exclude “ID” 但是这样也太隐晦了。。。 并且如果 model 是有 embbed nested 的话可以自动处理吗？
 	mb.writeFields, mb.listing.searchColumns = mb.p.writeFieldDefaults.inspectFieldsAndCollectName(mb.model, reflect.TypeOf(""))
 	mb.editing = &EditingBuilder{mb: mb, FieldsBuilder: *mb.writeFields}
 	if mb.p.dataOperator != nil {
@@ -256,6 +257,7 @@ func (mb *ModelBuilder) Singleton(v bool) (r *ModelBuilder) {
 	return mb
 }
 
+// WARN: 这个貌似只是给 listing 用的，listing 的话为什么不是用 listing 里的 FieldsBuilder 来处理相关？
 func (mb *ModelBuilder) getComponentFuncField(field *FieldBuilder) (r *FieldContext) {
 	r = &FieldContext{
 		ModelInfo: mb.Info(),
@@ -265,6 +267,7 @@ func (mb *ModelBuilder) getComponentFuncField(field *FieldBuilder) (r *FieldCont
 	return
 }
 
+// WARN: 这个东西确定不是和 FieldsBuilder 里的重复了？
 func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
 	if len(field.label) > 0 {
 		return field.label

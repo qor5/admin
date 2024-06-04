@@ -86,7 +86,7 @@ func (b *FieldDefaults) Exclude(patterns ...string) (r *FieldDefaults) {
 
 func (b *FieldDefaults) InspectFields(val interface{}) (r *FieldsBuilder) {
 	r, _ = b.inspectFieldsAndCollectName(val, nil)
-	r.Model(val)
+	r.Model(val) // WARN: 多此一举，并且也不应该有 Model 方法，其在 FieldsBuilder 应为必选且无法修改项
 	return
 }
 
@@ -110,6 +110,10 @@ func (b *FieldDefaults) inspectFieldsAndCollectName(val interface{}, collectType
 
 		ft := b.fieldTypeByType(f.Type)
 
+		// WARN: excludesPatterns 只有在 WRITE 的时候才会被默认 Exclude ID
+		// WARN: 这个应该会要求想要自定义 FieldDefaultBuilder 的话得在执行 b.Model 方法之前吧
+		// WARN: 其实总感觉这个事不应该让 FieldDefaults 来做，它存一存默认实现就好啦，而且现在这么提前加载的话，我们要再对 FieldsBuilder 修改 Defaults ，新的修改也会因为这块逻辑无法应用体现
+		// WARN: 当然了，如果 FieldDefaults 不负责 inspectFields ，那 excludesPatterns 也不应该它来处理
 		if !hasMatched(b.excludesPatterns, f.Name) && ft != nil {
 			r.Field(f.Name).
 				ComponentFunc(ft.compFunc).
@@ -117,6 +121,7 @@ func (b *FieldDefaults) inspectFieldsAndCollectName(val interface{}, collectType
 		}
 
 		if collectType != nil && f.Type == collectType {
+			// WARN: 不理解，目前只是被 newEditing 用到，给到的是字符串类型，只是收集所有字符串类型作为 listing 的 search columns ，但是为什么这个事是 newEditing 来做？其实觉得这个 collect 还是应该另外开个方法单独来做比较合适，现在这个太 trick
 			names = append(names, strcase.ToSnake(f.Name))
 		}
 	}
@@ -164,7 +169,7 @@ func (b *FieldDefaults) fieldTypeByTypeOrCreate(tv reflect.Type) (r *FieldDefaul
 	if b.mode == LIST {
 		r.ComponentFunc(cfTextTd)
 	} else {
-		r.ComponentFunc(cfTextField)
+		r.ComponentFunc(cfTextField) // WARN: 是不是太武断了，会有影响吗？是因为它很通用所以这样？但是目前 DETAIL 可不简单是 Edit 哦
 	}
 	b.fieldTypes = append(b.fieldTypes, r)
 	return
