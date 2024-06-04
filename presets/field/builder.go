@@ -58,16 +58,10 @@ type Builder interface {
 	Build(ctx *web.EventContext, field *Context) (h.HTMLComponent, error)
 }
 
-type builderFunc struct {
-	build func(ctx *web.EventContext, field *Context) (h.HTMLComponent, error)
-}
+type BuilderFunc func(ctx *web.EventContext, field *Context) (h.HTMLComponent, error)
 
-func (v *builderFunc) Build(ctx *web.EventContext, field *Context) (h.HTMLComponent, error) {
-	return v.build(ctx, field)
-}
-
-func BuilderFunc(build func(ctx *web.EventContext, field *Context) (h.HTMLComponent, error)) Builder {
-	return &builderFunc{build: build}
+func (f BuilderFunc) Build(ctx *web.EventContext, field *Context) (h.HTMLComponent, error) {
+	return f(ctx, field)
 }
 
 type scopeBuilder struct {
