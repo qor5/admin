@@ -3,3 +3,4 @@
 go.work*
 dev_env_local
 __debug_*
+_*
