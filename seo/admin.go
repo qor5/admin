@@ -469,7 +469,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) er
 }
 
 func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
-	pd.Field(SeoDetailFieldName).
+	pd.Section(SeoDetailFieldName).
 		Editing("SEO").
 		SaveFunc(b.detailSaver).
 		ViewComponentFunc(b.detailShowComponent).

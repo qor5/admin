@@ -154,7 +154,7 @@ func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) 
 }
 
 func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
-	dp.Field("Page").
+	dp.Section("Page").
 		Editing("Title", "Slug", "CategoryID").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)

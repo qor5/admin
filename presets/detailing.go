@@ -130,10 +130,6 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 	return b
 }
 
-func (b *DetailingBuilder) Field(name string) (r *SectionBuilder) {
-	return b.Section(name)
-}
-
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.Param(ParamID)
 	r.Body = VContainer(h.Text(id))

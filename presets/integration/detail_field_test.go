@@ -240,7 +240,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 	cust := b.Model(&ParameterSetting{})
 
 	detail := cust.Detailing("ParameterID", "Detail", "FormSetting").Drawer(true)
-	detail.Field("Detail").
+	detail.Section("Detail").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			ps := obj.(*ParameterSetting)
 			return h.Div(h.Text(ps.DisplayName))
@@ -252,7 +252,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 					Attr(web.VField(fmt.Sprintf("%s.DisplayName", field.FormKey), ps.DisplayName)...),
 			)
 		})
-	detail.Field("FormSetting").
+	detail.Section("FormSetting").
 		IsList(&ParameterFieldSetting{}).
 		Editing("DisplayName", "Description", "Path", "ValType").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
