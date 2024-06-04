@@ -40,7 +40,7 @@ type pagePathInfo struct {
 	Slug         string
 }
 
-func pageValidator(ctx context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {

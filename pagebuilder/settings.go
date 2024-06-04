@@ -114,7 +114,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 	}
 }
 
-func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
+func templateSettings(_ *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Template)
 

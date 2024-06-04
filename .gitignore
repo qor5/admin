@@ -2,4 +2,4 @@
 .DS_Store
 go.work*
 dev_env_local
-__debug_*
+__*

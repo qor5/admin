@@ -516,7 +516,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
-					return
 				}
 			}
 			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
@@ -532,12 +531,10 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 
 				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 				return
 			}
@@ -1152,7 +1149,7 @@ func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.
 }
 
 // Unused
-func clearTemplate(db *gorm.DB) web.EventFunc {
+func clearTemplate(_ *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
@@ -1294,7 +1291,7 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 	).Cols(3)
 }
 
-func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func createNoteDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.Param(presets.ParamID)
 
@@ -1335,7 +1332,7 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func createNote(db *gorm.DB, _ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
@@ -1415,7 +1412,7 @@ func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func updateSEO(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
@@ -1754,7 +1751,6 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
 					panic(inerr)
-					return
 				}
 			}
 
@@ -1805,7 +1801,6 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 
 				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 				return
 			}
@@ -1818,7 +1813,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	return
 }
 
-func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB, _ *presets.ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
@@ -2090,7 +2085,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
+func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 	editAction := web.Plaid().
 		PushState(true).
 		MergeQuery(true).

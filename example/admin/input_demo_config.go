@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func configInputDemo(b *presets.Builder, db *gorm.DB) {
+func configInputDemo(b *presets.Builder, _ *gorm.DB) {
 	inputDemo := b.Model(&models.InputDemo{})
 	// MenuIcon("view_quilt")
 

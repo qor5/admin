@@ -480,7 +480,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	return
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
@@ -632,7 +632,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *SectionBuilder) editElement(obj any, index, fromIndex int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContext) h.HTMLComponent {
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").

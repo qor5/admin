@@ -325,10 +325,6 @@ func modelNames(ms []*ModelBuilder) (r []string) {
 	return
 }
 
-func (b *Builder) defaultBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-	return
-}
-
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
 	if !b.isMenuGroupInOrder(mgb) {

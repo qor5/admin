@@ -96,7 +96,7 @@ func (p *Page) getAccessUrl(publishUrl string) string {
 	return filepath.Dir(publishUrl)
 }
 
-func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
+func (p *Page) getPublishContent(b *Builder, _ context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&pageVersion=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)

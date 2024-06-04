@@ -3,7 +3,6 @@ package presets
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"slices"
@@ -92,11 +91,6 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
 	b.fields = append(b.fields, r)
-	return
-}
-
-func emptyComponentFunc(obj interface{}, field *FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-	log.Printf("No ComponentFunc for field %v\n", field.Name)
 	return
 }
 
@@ -643,11 +637,11 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		var comp h.HTMLComponent
 		switch t := iv.(type) {
 		case string:
-			comp = b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, t, id, edit, vErr)
+			comp = b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, t, edit, vErr)
 		case []string:
 			colsComp := make([]h.HTMLComponent, 0, len(t))
 			for _, n := range t {
-				fComp := b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, n, id, edit, vErr)
+				fComp := b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, n, edit, vErr)
 				if fComp == nil {
 					continue
 				}
@@ -661,7 +655,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			for _, row := range t.Rows {
 				colsComp := make([]h.HTMLComponent, 0, len(row))
 				for _, n := range row {
-					fComp := b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, n, id, edit, vErr)
+					fComp := b.fieldToComponentWithFormValueKey(info, obj, parentFormValueKey, ctx, n, edit, vErr)
 					if fComp == nil {
 						continue
 					}
@@ -693,11 +687,8 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 	return h.Components(comps...)
 }
 
-func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, id interface{}, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
+func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
 	f := b.getFieldOrDefault(name)
-	// if f.compFunc == nil {
-	// 	return nil
-	// }
 	if info != nil && info.Verifier().Do(PermGet).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil {
 		return nil
 	}

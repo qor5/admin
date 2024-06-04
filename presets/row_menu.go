@@ -127,7 +127,7 @@ func (b *RowMenuItemBuilder) PermAction(v string) *RowMenuItemBuilder {
 	return b
 }
 
-func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuItemFunc {
+func (b *RowMenuItemBuilder) getComponentFunc(_ *web.EventContext) vx.RowMenuItemFunc {
 	if b.compF != nil {
 		return b.compF
 	}
