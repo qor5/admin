@@ -89,7 +89,7 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 	listing.Field("Name").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			seoSetting := obj.(*QorSEOSetting)
-			icon := "folder"
+			icon := "mdi-folder"
 			priority := b.GetSEOPriority(seoSetting.Name)
 			return &myTd{
 				td: h.Td(),

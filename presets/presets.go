@@ -387,27 +387,27 @@ type defaultMenuIconRE struct {
 
 var defaultMenuIconREs = []defaultMenuIconRE{
 	// user
-	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "person"},
+	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "mdi-account"},
 	// store
-	{re: regexp.MustCompile(`\bstores?\b`), icon: "store"},
+	{re: regexp.MustCompile(`\bstores?\b`), icon: "mdi-store"},
 	// order
-	{re: regexp.MustCompile(`\borders?\b`), icon: "shopping_cart"},
+	{re: regexp.MustCompile(`\borders?\b`), icon: "mdi-cart"},
 	// product
-	{re: regexp.MustCompile(`\bproducts?\b`), icon: "format_list_bulleted"},
+	{re: regexp.MustCompile(`\bproducts?\b`), icon: "mdi-format-list-bulleted"},
 	// post
-	{re: regexp.MustCompile(`\bposts?|articles?\b`), icon: "article"},
+	{re: regexp.MustCompile(`\bposts?|articles?\b`), icon: "mdi-note"},
 	// web
-	{re: regexp.MustCompile(`\bweb|site\b`), icon: "web"},
+	{re: regexp.MustCompile(`\bweb|site\b`), icon: "mdi-web"},
 	// seo
-	{re: regexp.MustCompile(`\bseo\b`), icon: "travel_explore"},
+	{re: regexp.MustCompile(`\bseo\b`), icon: "mdi-search-web"},
 	// i18n
-	{re: regexp.MustCompile(`\bi18n|translations?\b`), icon: "language"},
+	{re: regexp.MustCompile(`\bi18n|translations?\b`), icon: "mdi-translate"},
 	// chart
-	{re: regexp.MustCompile(`\banalytics?|charts?|statistics?\b`), icon: "analytics"},
+	{re: regexp.MustCompile(`\banalytics?|charts?|statistics?\b`), icon: "mdi-google-analytics"},
 	// dashboard
-	{re: regexp.MustCompile(`\bdashboard\b`), icon: "dashboard"},
+	{re: regexp.MustCompile(`\bdashboard\b`), icon: "mdi-view-dashboard"},
 	// setting
-	{re: regexp.MustCompile(`\bsettings?\b`), icon: "settings"},
+	{re: regexp.MustCompile(`\bsettings?\b`), icon: "mdi-cog"},
 }
 
 func defaultMenuIcon(mLabel string) string {
