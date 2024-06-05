@@ -282,8 +282,8 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 			if r, ok := record.(ScheduleInterface); ok {
 				r.EmbedSchedule().ActualStartAt = &now
 				r.EmbedSchedule().ScheduledStartAt = nil
-				updateMap["scheduled_start_at"] = r.EmbedSchedule().ActualStartAt
-				updateMap["actual_start_at"] = r.EmbedSchedule().ScheduledStartAt
+				updateMap["scheduled_start_at"] = r.EmbedSchedule().ScheduledStartAt
+				updateMap["actual_start_at"] = r.EmbedSchedule().ActualStartAt
 			}
 			if _, ok := record.(ListInterface); ok {
 				updateMap["list_updated"] = true
@@ -327,8 +327,8 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 				now := b.db.NowFunc()
 				r.EmbedSchedule().ActualEndAt = &now
 				r.EmbedSchedule().ScheduledEndAt = nil
-				updateMap["scheduled_end_at"] = r.EmbedSchedule().ActualEndAt
-				updateMap["actual_end_at"] = r.EmbedSchedule().ScheduledEndAt
+				updateMap["scheduled_end_at"] = r.EmbedSchedule().ScheduledEndAt
+				updateMap["actual_end_at"] = r.EmbedSchedule().ActualEndAt
 			}
 			if _, ok := record.(ListInterface); ok {
 				updateMap["list_deleted"] = true
