@@ -43,8 +43,8 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		if v, ok := obj.(publish.VersionInterface); ok {
 			ctx.R.Form.Set(paramPageVersion, v.EmbedVersion().Version)
 		}
-		if l, ok := obj.(l10n.L10nInterface); ok {
-			ctx.R.Form.Set(paramLocale, l.GetLocale())
+		if l, ok := obj.(l10n.LocaleInterface); ok {
+			ctx.R.Form.Set(paramLocale, l.EmbedLocale().LocaleCode)
 		}
 		if isTemplate {
 			ctx.R.Form.Set(paramsTpl, "1")
@@ -59,7 +59,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 			se = "Scheduled at: " + start + " ~ " + end
 		}
 
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		if err := b.db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
@@ -171,7 +171,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}

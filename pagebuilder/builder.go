@@ -431,7 +431,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}
@@ -477,7 +477,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	})
 
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		localeCode, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		localeCode, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		p := obj.(*Page)
 		if p.Slug != "" {
 			p.Slug = path.Clean(p.Slug)
@@ -499,7 +499,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			}
 
 			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
-				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.Version.Version); inerr != nil {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.LocaleCode, p.ParentVersion, p.Version.Version); inerr != nil {
 					return
 				}
 				return
@@ -529,11 +529,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 					return
 				}
 
-				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.GetLocale()); inerr != nil {
+				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.LocaleCode); inerr != nil {
 					panic(inerr)
 				}
 
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.Version.Version, p.GetLocale()); inerr != nil {
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.Version.Version, p.LocaleCode); inerr != nil {
 					panic(inerr)
 				}
 				return
@@ -659,9 +659,9 @@ func (b *Builder) configDetailLayoutFunc(
 				return
 			}
 
-			if l, ok := obj.(l10n.L10nInterface); ok {
+			if l, ok := obj.(l10n.LocaleInterface); ok {
 				locale := ctx.R.FormValue("locale")
-				if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != l.GetLocale() {
+				if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != l.EmbedLocale().LocaleCode {
 					// redirect to list page when change locale
 					http.Redirect(ctx.W, ctx.R, dmb.Info().ListingHref(), http.StatusSeeOther)
 					return
@@ -1119,7 +1119,7 @@ func selectTemplate(db *gorm.DB) web.EventFunc {
 
 func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.HTMLComponent, error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 
 	name := msgr.Blank
 	if selectedID != "" {
@@ -1164,7 +1164,7 @@ func clearTemplate(_ *gorm.DB) web.EventFunc {
 func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		gmsgr := presets.MustGetMessages(ctx.R)
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		selectedID := ctx.R.FormValue(templateSelectedID)
 		if selectedID == "" {
 			selectedID = templateBlankVal
@@ -1626,7 +1626,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		modelID := ctx.ParamAsInt(presets.ParamOverlayUpdateID)
 		modelName := ctx.R.FormValue("ModelName")
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var existID uint
 		{
 			m := DemoContainer{}
@@ -1651,7 +1651,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	ed.Field("ModelName")
 	ed.Field("ModelID")
 	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		locale, localizable := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, localizable := l10n.IsLocalizableFromContext(ctx.R.Context())
 
 		var demoContainers []DemoContainer
 		db.Find(&demoContainers)
@@ -1684,7 +1684,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 			var modelID uint
 			for _, dc := range demoContainers {
 				if dc.ModelName == builder.name {
-					if localizable && dc.GetLocale() != locale {
+					if localizable && dc.LocaleCode != locale {
 						continue
 					}
 					isExists = true
@@ -1791,7 +1791,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 					return
 				}
 
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.GetLocale()); inerr != nil {
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.LocaleCode); inerr != nil {
 					panic(inerr)
 				}
 				return
@@ -1827,7 +1827,7 @@ func sharedContainerSearcher(db *gorm.DB, _ *presets.ModelBuilder) presets.Searc
 			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 		}
 
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
 		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
 			return

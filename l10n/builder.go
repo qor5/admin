@@ -110,7 +110,7 @@ func LocalePathFromContext(m interface{}, ctx context.Context) (localePath strin
 		return
 	}
 
-	if locale, ok := IsLocalizableFromCtx(ctx); ok {
+	if locale, ok := IsLocalizableFromContext(ctx); ok {
 		localePath = l10nBuilder.GetLocalePath(locale)
 	}
 
@@ -219,7 +219,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			var value string
 			id, err := reflectutils.Get(obj, "ID")
 			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-				value = field.Value(obj).(Locale).GetLocale()
+				value = EmbedLocale(field.Value(obj)).LocaleCode
 			} else {
 				value = b.GetCorrectLocaleCode(ctx.R)
 			}
@@ -227,7 +227,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			value := field.Value(obj).(Locale).GetLocale()
+			value := EmbedLocale(field.Value(obj)).LocaleCode
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}
@@ -250,7 +250,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	obj := m.NewModel()
 	_ = obj.(presets.SlugEncoder)
 	_ = obj.(presets.SlugDecoder)
-	_ = obj.(L10nInterface)
+	_ = obj.(LocaleInterface)
 
 	m.Listing().Field("Locale")
 	m.Editing().Field("Locale")
@@ -318,7 +318,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			var value string
 			id, err := reflectutils.Get(obj, "ID")
 			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-				value = field.Value(obj).(Locale).GetLocale()
+				value = EmbedLocale(field.Value(obj)).LocaleCode
 			} else {
 				value = b.GetCorrectLocaleCode(ctx.R)
 			}
@@ -326,7 +326,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			value := field.Value(obj).(Locale).GetLocale()
+			value := EmbedLocale(field.Value(obj)).LocaleCode
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}

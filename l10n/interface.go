@@ -7,17 +7,30 @@ import (
 	"github.com/qor5/admin/v3/utils"
 )
 
-type L10nInterface interface {
-	SetLocale(locale string)
-	GetLocale() string
+type LocaleInterface interface {
+	EmbedLocale() *Locale
+}
+
+// Locale embed this struct into GROM-backend models to enable localization feature for your model
+type Locale struct {
+	LocaleCode string `sql:"size:20" gorm:"primaryKey;default:''"`
+}
+
+// GetLocale get model's locale
+func (l *Locale) EmbedLocale() *Locale {
+	return l
+}
+
+func EmbedLocale(v any) *Locale {
+	return v.(LocaleInterface).EmbedLocale()
 }
 
 func IsLocalizable(obj interface{}) (isLocalizable bool) {
-	_, isLocalizable = utils.GetStruct(reflect.TypeOf(obj)).(L10nInterface)
+	_, isLocalizable = utils.GetStruct(reflect.TypeOf(obj)).(LocaleInterface)
 	return
 }
 
-func IsLocalizableFromCtx(ctx context.Context) (localeCode string, isLocalizable bool) {
+func IsLocalizableFromContext(ctx context.Context) (localeCode string, isLocalizable bool) {
 	locale := ctx.Value(LocaleCode)
 	if locale != nil {
 		localeCode = locale.(string)

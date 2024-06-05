@@ -395,7 +395,7 @@ func (b *Builder) renderPageOrTemplate(ctx *web.EventContext, pageOrTemplateID, 
 
 func (b *Builder) renderContainers(ctx *web.EventContext, p *Page, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", p.ID, p.Version.Version, p.GetLocale()).Error
+	err = b.db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", p.ID, p.Version.Version, p.LocaleCode).Error
 	if err != nil {
 		return
 	}

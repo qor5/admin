@@ -35,7 +35,7 @@ func (*Page) TableName() string {
 }
 
 func primarySlug(v interface{}) string {
-	locale := v.(l10n.L10nInterface).GetLocale()
+	locale := v.(l10n.LocaleInterface).EmbedLocale().LocaleCode
 	version := v.(publish.VersionInterface).EmbedVersion().Version
 	id := reflectutils.MustGet(v, "ID")
 	if locale == "" {
@@ -46,7 +46,7 @@ func primarySlug(v interface{}) string {
 }
 
 func primarySlugWithoutVersion(v interface{}) string {
-	locale := v.(l10n.L10nInterface).GetLocale()
+	locale := v.(l10n.LocaleInterface).EmbedLocale().LocaleCode
 	id := reflectutils.MustGet(v, "ID")
 	if locale == "" {
 		return fmt.Sprintf("%v", id)
