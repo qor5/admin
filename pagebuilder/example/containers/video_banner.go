@@ -1,11 +1,6 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/web/v3"
@@ -46,9 +41,9 @@ func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 
 func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner",
+		data.AnchorID, "container-video_banner",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div().Class("container-video_banner-mask"), VideoBannerHeadBody(data), VideoBannerFootBody(data),
 		// If(data.PopupText != "", VideoBannerPopupBody(data)),
 	)

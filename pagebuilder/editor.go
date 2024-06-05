@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 
 	vx "github.com/qor5/ui/v3/vuetifyx"
@@ -419,21 +418,6 @@ func (b *Builder) createModelAfterLocalizeDemoContainer(db *gorm.DB, c *DemoCont
 	}
 
 	c.ModelID = reflectutils.MustGet(model, "ID").(uint)
-	return
-}
-
-func (b *Builder) markAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
-	paramID := ctx.R.FormValue(paramContainerID)
-	cs := container.PrimaryColumnValuesBySlug(paramID)
-	containerID := cs["id"]
-	locale := cs["locale_code"]
-
-	err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("shared", true).Error
-	if err != nil {
-		return
-	}
-	r.PushState = web.Location(url.Values{})
 	return
 }
 

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/web/v3"
@@ -91,9 +89,9 @@ func PageTitleBody(data *PageTitle, input *pagebuilder.RenderInput) (body HTMLCo
 	).Class("container-page_title-wrap")
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("PageTitle"))+"_%v", data.ID), data.AnchorID, "container-page_title container-lottie",
+		data.AnchorID, "container-page_title container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		image, wraper,
 	)
 	return

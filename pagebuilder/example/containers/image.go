@@ -1,10 +1,6 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
@@ -55,9 +51,9 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Image"))+"_%v", data.ID), data.AnchorID, "container-image",
+		data.AnchorID, "container-image",
 		data.BackgroundColor, data.TransitionBackgroundColor, "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			ImageHtml(data.Image),
 			Div().Class("container-image-corner"),

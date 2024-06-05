@@ -1,11 +1,6 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/ui/v3/vuetify"
@@ -50,8 +45,8 @@ func HeaderTemplate(data *WebHeader, input *pagebuilder.RenderInput) (body HTMLC
 	}
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Header"))+"_%v", data.ID), "", "container-header", "", "", "",
-		"", false, false, input.IsEditor, input.IsReadonly, style, input,
+		"", "container-header", "", "", "",
+		"", false, false, style,
 		Div(RawHTML(`
 <a href="/" class="container-header-logo"><svg viewBox="0 0 29 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.399 10.054V0L0 10.054V29.73h28.792V0L14.4 10.054z" fill="currentColor"><title>The Plant</title></path></svg></a>
 <ul data-list-unset="true" class="container-header-links">

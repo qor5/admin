@@ -17,8 +17,8 @@ type contextKeyType int
 
 const contextKey contextKeyType = iota
 
-func (pb *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
-	return context.WithValue(in, contextKey, pb)
+func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, b)
 }
 
 func builderFromContext(c context.Context) (b *ModelBuilder, ok bool) {

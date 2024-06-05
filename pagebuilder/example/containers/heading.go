@@ -1,11 +1,6 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/richeditor"
@@ -96,8 +91,8 @@ func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLCompon
 	).Class("container-heading-inner")
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
 	return

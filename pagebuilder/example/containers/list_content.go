@@ -4,12 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/qor5/ui/v3/vuetify"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -89,9 +86,9 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ListContentBody(data *ListContent, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContent"))+"_%v", data.ID), data.AnchorID, "container-list_content container-lottie",
+		data.AnchorID, "container-list_content container-lottie",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			ListItemsBody(data.Items, input),
 			If(data.LinkText != "" && data.Link != "",

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"reflect"
 	"sort"
@@ -52,7 +53,8 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
-	b.preview = web.Page(b.previewModel)
+	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
+	b.preview = web.Page(b.previewContent)
 }
 
 func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -485,7 +487,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 
 	var cons []*Container
 
-	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?", locale).Group("display_name,model_name,model_id").Find(&cons)
+	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name,model_name,model_id").Find(&cons)
 	sort.Slice(cons, func(i, j int) bool {
 		return b.builder.ContainerByName(cons[i].ModelName).group != "" && b.builder.ContainerByName(cons[j].ModelName).group == ""
 	})
@@ -726,16 +728,6 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r we
 	return
 }
 
-func primaryKeys(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
-	p := new(Page)
-	primarySlug := p.PrimaryColumnValuesBySlug(ctx.Param(presets.ParamID))
-	pageVersion = primarySlug[publish.SlugVersion]
-	locale = primarySlug[l10n.SlugLocaleCode]
-	pageIDi, _ := strconv.ParseInt(primarySlug["id"], 10, 64)
-	pageID = int(pageIDi)
-	return
-}
-
 func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
 	var (
 		ps map[string]string
@@ -952,24 +944,6 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	return
 }
 
-func copyPrimarySlug(primarySlug, replace map[string]string) map[string]string {
-	newPrimarySlug := make(map[string]string)
-	if replace == nil {
-		return primarySlug
-	}
-	for k, v := range primarySlug {
-		if replaceKey, ok := replace[k]; ok {
-			if replaceKey == "" {
-				continue
-			}
-			newPrimarySlug[replaceKey] = v
-		} else {
-			newPrimarySlug[k] = v
-		}
-	}
-	return newPrimarySlug
-}
-
 func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
 	err = b.db.Order("display_order ASC").
@@ -1005,7 +979,7 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 	return
 }
 
-func (b *ModelBuilder) previewModel(ctx *web.EventContext) (r web.PageResponse, err error) {
+func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	obj := b.mb.NewModel()
 	r.Body, err = b.renderPageOrTemplate(ctx, obj, false)
 	if err != nil {
@@ -1014,5 +988,20 @@ func (b *ModelBuilder) previewModel(ctx *web.EventContext) (r web.PageResponse, 
 	if p, ok := obj.(PageTitleInterface); ok {
 		r.PageTitle = p.GetTitle()
 	}
+	return
+}
+
+func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var container Container
+	paramID := ctx.R.FormValue(paramContainerID)
+	cs := container.PrimaryColumnValuesBySlug(paramID)
+	containerID := cs["id"]
+	locale := cs["locale_code"]
+
+	err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("shared", true).Error
+	if err != nil {
+		return
+	}
+	r.PushState = web.Location(url.Values{})
 	return
 }

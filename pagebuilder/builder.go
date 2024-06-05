@@ -313,7 +313,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		return
 	}
 	b.configTemplateAndPage(pb, r)
-	b.configSharedContainer(pb, r.mb)
+	b.configSharedContainer(pb, r)
 	b.configDemoContainer(pb)
 	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	err = b.categoryInstall(pb, categoryM)
@@ -1121,12 +1121,12 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 	).Cols(3)
 }
 
-func (b *Builder) configSharedContainer(pb *presets.Builder, mb *presets.ModelBuilder) {
+func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	db := b.db
 
 	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
-	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(mb.Info().ListingHref()))
+	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
 	listing.RowMenu("Rename").RowMenuItem("Rename").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
@@ -1142,49 +1142,13 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, mb *presets.ModelBu
 				Go(),
 		)
 	})
-
-	// ed := pm.Editing("SelectContainer")
-	// ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	//	var containers []h.HTMLComponent
-	//	for _, builder := range b.containerBuilders {
-	//		cover := builder.cover
-	//		if cover == "" {
-	//			cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
-	//		}
-	//		containers = append(containers,
-	//			VCol(
-	//				VCard(
-	//					VImg().Src(cover).Height(200),
-	//					VCardActions(
-	//						VCardTitle(h.Text(builder.name)),
-	//						VSpacer(),
-	//						VBtn("Select").
-	//							Variant(VariantText).
-	//							Color(ColorPrimary).Attr("@click",
-	//							web.Plaid().
-	//								EventFunc(actions.New).
-	//								URL(builder.GetModelBuilder().Info().ListingHref()).
-	//								Go()),
-	//					),
-	//				),
-	//			).Cols(6),
-	//		)
-	//	}
-	//	return VSheet(
-	//		VContainer(
-	//			VRow(
-	//				containers...,
-	//			),
-	//		),
-	//	)
-	// })
 	if permB := pb.GetPermission(); permB != nil {
 		permB.CreatePolicies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
 		)
 	}
 	listing.Field("DisplayName").Label("Name")
-	listing.SearchFunc(sharedContainerSearcher(db, pm))
+	listing.SearchFunc(sharedContainerSearcher(db, r))
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*Container)
@@ -1396,7 +1360,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	return
 }
 
-func sharedContainerSearcher(db *gorm.DB, _ *presets.ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
@@ -1420,7 +1384,7 @@ func sharedContainerSearcher(db *gorm.DB, _ *presets.ModelBuilder) presets.Searc
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ?", locale).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
 			return
 		}
 		totalCount = int(c)

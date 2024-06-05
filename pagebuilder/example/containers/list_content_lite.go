@@ -4,10 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/richeditor"
@@ -85,9 +82,9 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ListContentLiteBody(data *ListContentLite, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContentLite"))+"_%v", data.ID), data.AnchorID, "container-list_content_lite",
+		data.AnchorID, "container-list_content_lite",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(LiteItemsBody(data.Items)).Class("container-wrapper"),
 	)
 	return
