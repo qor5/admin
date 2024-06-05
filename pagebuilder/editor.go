@@ -72,21 +72,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			deviceToggler, versionComponent      h.HTMLComponent
 			editContainerDrawer, navigatorDrawer h.HTMLComponent
 			tabContent                           web.PageResponse
-			activeDevice                         int
 			pageAppbarContent                    []h.HTMLComponent
 			exitHref                             string
 
-			device          = ctx.R.FormValue(paramsDevice)
 			containerDataID = ctx.R.FormValue(paramContainerDataID)
 			obj             = m.mb.NewModel()
 		)
-
-		switch device {
-		case DeviceTablet:
-			activeDevice = 1
-		case DevicePhone:
-			activeDevice = 2
-		}
 
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
@@ -100,23 +91,14 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			}
 
 		}
-		deviceToggler = web.Scope(
-			VBtnToggle(
-				VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-					Attr("@click", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceComputer).Go()),
-				VBtn("").Icon("mdi-tablet").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-					Attr("@click", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DeviceTablet).Go()),
-				VBtn("").Icon("mdi-cellphone").Color(ColorPrimary).Variant(VariantText).Class("mr-4").
-					Attr("@click", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Queries(ctx.R.Form).Query(paramsDevice, DevicePhone).Go()),
-			).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
-		).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %d}`, activeDevice))
+		deviceToggler = b.deviceToggle(ctx)
 		if tabContent, err = m.pageContent(ctx, obj); err != nil {
 			return
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 		}
-		versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{Top: true})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
+		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -160,16 +142,12 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	if len(device) == 0 {
 		device = b.defaultDevice
 	}
-
-	switch device {
-	case DevicePhone:
-		style = "414px"
-	case DeviceTablet:
-		style = "768px"
-		// case Device_Computer:
-		//	style = "width: 1264px;"
+	for _, d := range b.devices {
+		if d.Name == device {
+			style = d.Width
+			return
+		}
 	}
-
 	return
 }
 

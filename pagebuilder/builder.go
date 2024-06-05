@@ -92,6 +92,7 @@ type Builder struct {
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
+	devices           []Device
 }
 
 const (
@@ -1730,4 +1731,48 @@ func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.Event
 	}
 	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Go()
 	return
+}
+
+type (
+	Device struct {
+		Name  string
+		Width string
+		Icon  string
+	}
+)
+
+func (b *Builder) PreviewDevices(devices ...Device) {
+	b.devices = devices
+}
+
+func (b *Builder) getDevices() []Device {
+	if len(b.devices) == 0 {
+		b.setDefaultDevices()
+	}
+	return b.devices
+}
+
+func (b *Builder) setDefaultDevices() {
+	b.devices = []Device{
+		{Name: DeviceComputer, Width: "", Icon: "mdi-laptop"},
+		{Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
+		{Name: DevicePhone, Width: "414px", Icon: "mdi-cellphone"},
+	}
+}
+
+func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
+	var comps []h.HTMLComponent
+	ctx.R.Form.Del(web.EventFuncIDName)
+	for _, d := range b.getDevices() {
+		comps = append(comps,
+			VBtn("").Icon(d.Icon).Color(ColorPrimary).Variant(VariantText).Class("mr-4").
+				Attr("@click", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+					PushState(true).Queries(ctx.R.Form).Query(paramsDevice, d.Name).Go()).Value(d.Name),
+		)
+	}
+	return web.Scope(
+		VBtnToggle(
+			comps...,
+		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice").Density(DensityCompact),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, ctx.Param(paramsDevice)))
 }
