@@ -26,6 +26,15 @@ const (
 	VarCurrentDisplayID = "vars.publish_VarCurrentDisplayID"
 )
 
+const (
+	NoticationAfterDuplicateVersion = "publish_AfterDuplicateVersion"
+)
+
+type PayloadAfterDuplicateVersion struct {
+	ParentSlug     string `json:"parentSlug"`
+	DuplicatedSlug string `json:"duplicatedSlug"`
+}
+
 func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		slug := ctx.Param(presets.ParamID)
@@ -34,51 +43,27 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 			return
 		}
 
-		ver, ok := obj.(VersionInterface)
-		if !ok {
+		ver := EmbedVersion(obj)
+		if ver == nil {
 			err = errInvalidObject
 			return
 		}
 
-		oldVersion := ver.EmbedVersion().Version
+		oldVersion := ver.Version
 		newVersion, err := ver.CreateVersion(db, slug, mb.NewModel())
 		if err != nil {
 			return
 		}
+		*ver = Version{newVersion, newVersion, oldVersion}
 
-		if err = reflectutils.Set(obj, "Version", Version{
-			Version:       newVersion, // In fact, it is also set in CreateVersion, just in case
-			VersionName:   newVersion, // In fact, it is also set in CreateVersion, just in case
-			ParentVersion: oldVersion,
-		}); err != nil {
-			return
+		st := EmbedStatus(obj)
+		if st != nil {
+			*st = Status{Status: StatusDraft}
 		}
 
-		if _, ok := ver.(StatusInterface); ok {
-			st := ver.(StatusInterface).EmbedStatus()
-			st.Status = StatusDraft
-			st.OnlineUrl = ""
-
-			// _, err = reflectutils.Get(obj, "Status")
-			// if err == nil {
-			// 	if err = reflectutils.Set(obj, "Status", Status{Status: StatusDraft}); err != nil {
-			// 		return
-			// 	}
-			// }
-		}
-		if _, ok := ver.(ScheduleInterface); ok {
-			sched := ver.(ScheduleInterface).EmbedSchedule()
-
-			sched.ScheduledStartAt = nil
-			sched.ScheduledEndAt = nil
-			sched.ActualStartAt = nil
-			sched.ActualEndAt = nil
-			// _, err = reflectutils.Get(obj, "Schedule")
-			// if err == nil {
-			// 	if err = reflectutils.Set(obj, "Schedule", Schedule{}); err != nil {
-			// 		return
-			// 	}
-			// }
+		sched := EmbedSchedule(obj)
+		if sched != nil {
+			*sched = Schedule{}
 		}
 
 		_, err = reflectutils.Get(obj, "CreatedAt")
@@ -95,37 +80,42 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 		}
 		err = nil
 
+		parentSlug := slug
 		slug = obj.(presets.SlugEncoder).PrimarySlug()
 		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
 			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
 
-		if !mb.HasDetailing() {
-			// close dialog and open editing
-			web.AppendRunScripts(&r,
-				presets.CloseListingDialogVarScript,
-				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, slug).Go(),
-			)
-			return
-		}
-		if !mb.Detailing().GetDrawer() {
-			// open detailing without drawer
-			// jump URL to support referer
-			r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(slug))
-			return
-		}
-		// close dialog and open detailingDrawer
-		web.AppendRunScripts(&r,
-			presets.CloseListingDialogVarScript,
-			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, slug).Go(),
-		)
+		// if !mb.HasDetailing() {
+		// 	// close dialog and open editing
+		// 	web.AppendRunScripts(&r,
+		// 		presets.CloseListingDialogVarScript,
+		// 		web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, slug).Go(),
+		// 	)
+		// 	return
+		// }
+		// if !mb.Detailing().GetDrawer() {
+		// 	// open detailing without drawer
+		// 	// jump URL to support referer
+		// 	r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(slug))
+		// 	return
+		// }
+		// // close dialog and open detailingDrawer
+		// web.AppendRunScripts(&r,
+		// 	presets.CloseListingDialogVarScript,
+		// 	presets.CloseRightDrawerVarScript,
+		// 	web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, slug).Go(),
+		// )
 
+		web.AppendRunScripts(&r,
+			"locals.commonConfirmDialog = false",
+			web.NotifyScript(NoticationAfterDuplicateVersion, PayloadAfterDuplicateVersion{ParentSlug: parentSlug, DuplicatedSlug: slug}),
+		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
-		r.RunScript = web.Plaid().ThenScript(r.RunScript).Go()
+		// r.RunScript = web.Plaid().ThenScript(r.RunScript).Go()
 		return
 	}
 }

@@ -26,6 +26,7 @@ require (
 	github.com/qor5/ui/v3 v3.0.3
 	github.com/qor5/web/v3 v3.0.4-0.20240605034223-bef26c49d0cf
 	github.com/qor5/x/v3 v3.0.3
+	github.com/rs/xid v1.5.0
 	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.4
@@ -143,7 +144,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/qor5/web/v3 => ../web
+replace github.com/qor5/web/v3 => ../web
 
 //replace github.com/qor5/ui/v3 => ../ui
 //replace github.com/qor5/x/v3 => ../x

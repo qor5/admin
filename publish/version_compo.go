@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
 
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -139,7 +140,23 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		return web.Scope(div).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
+		return web.Scope(div).
+			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`)).
+			// TODO: juts a example now
+			Observer(
+				NoticationAfterDuplicateVersion,
+				fmt.Sprintf(
+					`if (payload.parentSlug == %q) {
+						%s
+					}`,
+					primarySlugger.PrimarySlug(),
+					strings.Join([]string{
+						// TODO: also need check where the compo is via js
+						presets.CloseRightDrawerVarScript,
+						web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.duplicatedSlug")).Go(),
+					}, ";"),
+				),
+			)
 	}
 }
 
