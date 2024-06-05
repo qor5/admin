@@ -3,9 +3,8 @@ package pages
 import (
 	"log"
 
-	media_view "github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
-
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/ui/v3/cropper"
@@ -25,7 +24,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 				VRow(
 					VCol(
 						h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
-						media_view.QMediaBox(db).
+						media.QMediaBox(db).
 							FieldName("test").
 							Value(&media_library.MediaBox{}).
 							Config(&media_library.MediaBoxConfig{

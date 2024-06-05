@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/x/v3/perm"
-
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/ui/v3/cropper"
@@ -18,6 +16,7 @@ import (
 	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -43,12 +42,16 @@ func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 
 	b.FieldDefaults(presets.WRITE).
 		FieldType(media_library.MediaBox{}).
-		ComponentFunc(MediaBoxComponentFunc(db)).
+		ComponentFunc(MediaBoxComponentFunc(db, false)).
 		SetterFunc(MediaBoxSetterFunc(db))
 
 	b.FieldDefaults(presets.LIST).
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxListFunc())
+
+	b.FieldDefaults(presets.DETAIL).
+		FieldType(media_library.MediaBox{}).
+		ComponentFunc(MediaBoxComponentFunc(db, true))
 
 	registerEventFuncs(b.GetWebBuilder(), mb)
 
@@ -60,7 +63,7 @@ func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 	configList(b, mb)
 }
 
-func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
+func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		cfg, ok := field.ContextValue(MediaBoxConfig).(*media_library.MediaBoxConfig)
 		if !ok {
@@ -71,7 +74,9 @@ func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
 			FieldName(field.FormKey).
 			Value(&mediaBox).
 			Label(field.Label).
-			Config(cfg).Disabled(field.Disabled)
+			Config(cfg).
+			Disabled(field.Disabled).
+			Readonly(readonly)
 	}
 }
 
@@ -101,6 +106,7 @@ type QMediaBoxBuilder struct {
 	config    *media_library.MediaBoxConfig
 	db        *gorm.DB
 	disabled  bool
+	readonly  bool
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
@@ -122,6 +128,11 @@ func (b *QMediaBoxBuilder) Value(v *media_library.MediaBox) (r *QMediaBoxBuilder
 
 func (b *QMediaBoxBuilder) Disabled(v bool) (r *QMediaBoxBuilder) {
 	b.disabled = v
+	return b
+}
+
+func (b *QMediaBoxBuilder) Readonly(v bool) (r *QMediaBoxBuilder) {
+	b.readonly = v
 	return b
 }
 
@@ -153,7 +164,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				h.Label(b.label).Class("v-label theme--light"),
 			),
 			web.Portal(
-				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled),
+				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
@@ -289,7 +300,7 @@ func doDelete(mb *Builder) web.EventFunc {
 	}
 }
 
-func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled bool) h.HTMLComponent {
+func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
 	if cfg.BackgroundColor != "" {
@@ -320,8 +331,9 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				).Disabled(disabled),
 		)
 	}
-	c.AppendChildren(btnRow.Class())
-
+	if !readonly {
+		c.AppendChildren(btnRow.Class())
+	}
 	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
 		row := VRow()
 		if len(cfg.Sizes) == 0 {
@@ -362,20 +374,26 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		if len(value) == 0 {
 			value = mediaBox.Description
 		}
-		c.AppendChildren(
-			VRow(h.Text(msgr.DescriptionForAccessibility)),
-			VRow(
-				VCol(
-					VTextField().
-						Attr(web.VField(fieldName, value)...).
-						Placeholder(msgr.DescriptionForAccessibility).
-						Density(DensityCompact).
-						HideDetails(true).
-						Variant(VariantOutlined).
-						Disabled(disabled),
-				).Cols(12).Class("pl-0 pt-0"),
-			),
-		)
+		if !(len(value) == 0 && readonly) {
+			c.AppendChildren(
+				VRow(
+					VCol(
+						h.If(
+							readonly,
+							h.Span(value),
+						).Else(
+							VTextField().
+								Attr(web.VField(fieldName, value)...).
+								Placeholder(msgr.DescriptionForAccessibility).
+								Density(DensityCompact).
+								HideDetails(true).
+								Variant(VariantOutlined).
+								Disabled(disabled),
+						),
+					).Cols(12).Class("pl-0 pt-0"),
+				),
+			)
+		}
 	}
 
 	mediaBoxValue := ""
@@ -404,7 +422,7 @@ func deleteFileField() web.EventFunc {
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false),
+			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false, false),
 		})
 
 		return

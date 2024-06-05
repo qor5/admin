@@ -67,8 +67,9 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(v.VChip(h.Text(GetStatusText(status.GetStatus(), msgr))).Label(true).Color(GetStatusColor(status.GetStatus())).Size(v.SizeSmall).Class("px-1 mx-1 ml-2"))
+				versionSwitch.AppendChildren(statusChip(status.GetStatus(), msgr).Class("mx-2"))
 			}
+			versionSwitch.AppendChildren(v.VSpacer())
 			versionSwitch.AppendIcon("mdi-chevron-down")
 
 			div.AppendChildren(versionSwitch)
@@ -117,7 +118,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			}
 		}
 
-		if _, ok = obj.(ScheduleInterface); ok && status.GetStatus() == StatusDraft {
+		if _, ok = obj.(ScheduleInterface); ok {
 			var scheduleBtn h.HTMLComponent
 			clickEvent := web.POST().
 				EventFunc(eventSchedulePublishDialog).
@@ -213,9 +214,10 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 	registerEventFuncsForVersion(mb, pm, db)
 
+	// TODO: i18n
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
 		DialogWidth("900").
-		Title("Version List"). // TODO: i18n
+		Title("Version List").
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -305,9 +307,11 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		id := obj.(presets.SlugEncoder).PrimarySlug()
 		versionName := obj.(VersionInterface).GetVersionName()
 		status := obj.(StatusInterface).GetStatus()
-		disable := status == StatusOnline || status == StatusOffline // TODO: perm check
+		disable := status == StatusOnline || status == StatusOffline
+		deniedUpdate := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
+		deniedDelete := mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil
 		return h.Td().Children(
-			v.VBtn(msgr.Rename).Disabled(disable).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventRenameVersionDialog).
@@ -317,7 +321,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query("version_name", versionName).
 					Go(),
 				),
-			v.VBtn(pmsgr.Delete).Disabled(disable).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersionDialog).
@@ -325,7 +329,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
 					Query("version_name", versionName).
-					Query("current_display_id", web.Var(VarCurrentDisplayID)).
+					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplayID)).
 					Go(),
 				),
 		)

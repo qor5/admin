@@ -127,7 +127,6 @@ func (b *Builder) Editor(mb *presets.ModelBuilder) web.PageFunc {
 			}
 
 		}
-		_ = editContainerDrawer
 		deviceToggler = web.Scope(
 			VBtnToggle(
 				VBtn("").Icon("mdi-laptop").Color(ColorPrimary).Variant(VariantText).Class("mr-4").

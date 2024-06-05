@@ -40,13 +40,13 @@ func (b *Builder) previewHref(ctx *web.EventContext) string {
 	)
 	ur.Add(presets.ParamID, id)
 	if isTpl {
-		if isLocalizable && l10nON {
+		if isLocalizable && b.l10n != nil {
 			ur.Add(paramsTpl, "1")
 			ur.Add(paramLocale, locale)
 		}
 	} else {
 		ur.Add(paramPageVersion, version)
-		if isLocalizable && l10nON {
+		if isLocalizable && b.l10n != nil {
 			ur.Add(paramLocale, locale)
 		}
 	}

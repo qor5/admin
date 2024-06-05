@@ -51,7 +51,10 @@ func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []vx.RowMen
 	}
 	for _, li := range listings {
 		if ib, ok := b.items[strcase.ToSnake(li)]; ok {
-			fs = append(fs, ib.getComponentFunc(ctx))
+			comp := ib.getComponentFunc(ctx)
+			if comp != nil {
+				fs = append(fs, comp)
+			}
 		}
 	}
 	return fs
@@ -124,7 +127,7 @@ func (b *RowMenuItemBuilder) PermAction(v string) *RowMenuItemBuilder {
 	return b
 }
 
-func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuItemFunc {
+func (b *RowMenuItemBuilder) getComponentFunc(_ *web.EventContext) vx.RowMenuItemFunc {
 	if b.compF != nil {
 		return b.compF
 	}

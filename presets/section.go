@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	DetailFieldName = "detailField"
+	SectionFieldName = "detailField"
 
 	detailListFieldEditBtnKey   = "detailListFieldEditBtn"
 	detailListFieldSaveBtnKey   = "detailListFieldSaveBtn"
@@ -26,34 +27,37 @@ const (
 	detailListFieldEditing = "detailListFieldEditing"
 )
 
-type DetailFieldsBuilder struct {
-	mb           *ModelBuilder
-	detailFields []*DetailFieldBuilder
+type SectionsBuilder struct {
+	mb       *ModelBuilder
+	sections []*SectionBuilder
 	FieldsBuilder
 }
 
-func (d *DetailFieldsBuilder) GetDetailField(name string) *DetailFieldBuilder {
-	for _, v := range d.detailFields {
+func (d *SectionsBuilder) Section(name string) *SectionBuilder {
+	for _, v := range d.sections {
 		if v.name == name {
 			return v
 		}
 	}
-	return nil
+	return d.appendNewSection(name)
 }
 
-func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *DetailFieldBuilder) {
-	r = &DetailFieldBuilder{
+func (d *SectionsBuilder) GetSections() []*SectionBuilder {
+	return slices.Clone(d.sections)
+}
+
+func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
+	r = &SectionBuilder{
 		NameLabel: NameLabel{
 			name:  name,
 			label: name,
 		},
-		switchable:        false,
 		saver:             nil,
 		setter:            nil,
-		componentShowFunc: nil,
+		componentViewFunc: nil,
 		componentEditFunc: nil,
 		father:            d,
-		elementShowFunc:   nil,
+		elementViewFunc:   nil,
 		elementEditFunc:   nil,
 		componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
 			return true
@@ -70,22 +74,24 @@ func (d *DetailFieldsBuilder) appendNewDetailFieldWithName(name string) (r *Deta
 		alwaysShowListLabel:     false,
 		isList:                  false,
 	}
-	r.FieldsBuilder.Model(d.mb.model)
-	r.FieldsBuilder.defaults = d.mb.writeFields.defaults
+	r.editingFB.Model(d.mb.model)
+	r.editingFB.defaults = d.mb.writeFields.defaults
+	r.viewingFB.Model(d.mb.model)
+	r.viewingFB.defaults = d.mb.p.detailFieldDefaults
 	r.saver = r.DefaultSaveFunc
 
-	d.detailFields = append(d.detailFields, r)
+	d.sections = append(d.sections, r)
 
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	// 	panic("you must set ShowComponentFunc and EditComponentFunc if you want to use DetailFieldsBuilder")
+	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
 
 	return
 }
 
-type objectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
+type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-func (d *DetailFieldBuilder) ComponentEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -93,7 +99,12 @@ func (d *DetailFieldBuilder) ComponentEditBtnFunc(v objectBoolFunc) *DetailField
 	return d
 }
 
-func (d *DetailFieldBuilder) ComponentHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (b *SectionBuilder) WrapComponentEditBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
+	b.componentEditBtnFunc = w(b.componentEditBtnFunc)
+	return b
+}
+
+func (d *SectionBuilder) ComponentHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -101,17 +112,22 @@ func (d *DetailFieldBuilder) ComponentHoverFunc(v objectBoolFunc) *DetailFieldBu
 	return d
 }
 
-func (d *DetailFieldBuilder) DisableElementDeleteBtn() *DetailFieldBuilder {
+func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
+	b.componentHoverFunc = w(b.componentHoverFunc)
+	return b
+}
+
+func (d *SectionBuilder) DisableElementDeleteBtn() *SectionBuilder {
 	d.disableElementDeleteBtn = true
 	return d
 }
 
-func (d *DetailFieldBuilder) DisableElementCreateBtn() *DetailFieldBuilder {
+func (d *SectionBuilder) DisableElementCreateBtn() *SectionBuilder {
 	d.disableElementCreateBtn = true
 	return d
 }
 
-func (d *DetailFieldBuilder) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *SectionBuilder) ElementEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -119,7 +135,7 @@ func (d *DetailFieldBuilder) ElementEditBtnFunc(v objectBoolFunc) *DetailFieldBu
 	return d
 }
 
-func (d *DetailFieldBuilder) ElementHoverFunc(v objectBoolFunc) *DetailFieldBuilder {
+func (d *SectionBuilder) ElementHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
@@ -127,31 +143,30 @@ func (d *DetailFieldBuilder) ElementHoverFunc(v objectBoolFunc) *DetailFieldBuil
 	return d
 }
 
-func (d *DetailFieldBuilder) AlwaysShowListLabel() *DetailFieldBuilder {
+func (d *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
 	d.alwaysShowListLabel = true
 	return d
 }
 
-// DetailFieldBuilder
+// SectionBuilder
 // save: 	   fetcher => setter => saver
 // show, edit: fetcher => setter
-type DetailFieldBuilder struct {
+type SectionBuilder struct {
 	NameLabel
 	// if the field can switch status to edit and show, switchable must be true
-	switchable        bool
 	saver             SaveFunc
 	setter            SetterFunc
 	hiddenFuncs       []ObjectComponentFunc
-	componentShowFunc FieldComponentFunc
+	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
-	father            *DetailFieldsBuilder
+	father            *SectionsBuilder
 
 	isList bool
 	// Only when isList is false, the following param will take effect
 	// control Delete button in the show component
-	componentEditBtnFunc objectBoolFunc
+	componentEditBtnFunc ObjectBoolFunc
 	// control Hover in the show component
-	componentHoverFunc objectBoolFunc
+	componentHoverFunc ObjectBoolFunc
 
 	// Only when isList is true, the following param will take effect
 	// Disable Delete button in edit element
@@ -159,24 +174,25 @@ type DetailFieldBuilder struct {
 	// Disable Create button in element list
 	disableElementCreateBtn bool
 	// Disable Edit button in show element
-	elementEditBtnFunc objectBoolFunc
+	elementEditBtnFunc ObjectBoolFunc
 	// This is the return value of elementEditBtnFunc
 	elementEditBtn bool
 	// Disable Hover in show element
-	elementHoverFunc objectBoolFunc
+	elementHoverFunc ObjectBoolFunc
 	// This is the return value of elementHoverFunc
 	elementHover bool
 	// By default, the title will only be displayed if the list is not empty.
 	// If alwaysShowListLabel is true, the label will show anyway
 	alwaysShowListLabel bool
-	elementShowFunc     FieldComponentFunc
+	elementViewFunc     FieldComponentFunc
 	elementEditFunc     FieldComponentFunc
 	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
 
-	FieldsBuilder
+	editingFB FieldsBuilder
+	viewingFB FieldsBuilder
 }
 
-func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	if b.father.model == nil {
 		panic("model must be provided")
 	}
@@ -189,7 +205,7 @@ func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
 	}
 
 	r = b
-	r.FieldsBuilder.Model(v)
+	r.editingFB.Model(v)
 	r.isList = true
 	r.saver = r.DefaultListElementSaveFunc
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
@@ -197,25 +213,39 @@ func (b *DetailFieldBuilder) IsList(v interface{}) (r *DetailFieldBuilder) {
 	return
 }
 
-func (b *DetailFieldBuilder) SetSwitchable(v bool) (r *DetailFieldBuilder) {
+// Editing default saver only save these field
+func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 	r = b
-	b.switchable = v
+	b.editingFB = *b.editingFB.Only(fields...)
+	if b.componentEditFunc == nil {
+		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+		})
+	}
+	b.Viewing(fields...)
 	return
 }
 
-// Editing default saver only save these field
-func (b *DetailFieldBuilder) Editing(fields ...interface{}) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
 	r = b
-	b.FieldsBuilder = *b.FieldsBuilder.Only(fields...)
-	if b.componentEditFunc == nil {
-		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.FieldsBuilder.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+	b.viewingFB = *b.viewingFB.Only(fields...)
+	if b.componentViewFunc == nil {
+		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
 	return
 }
 
-func (b *DetailFieldBuilder) SaveFunc(v SaveFunc) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) EditingField(name string) (r *FieldBuilder) {
+	return b.editingFB.Field(name)
+}
+
+func (b *SectionBuilder) ViewingField(name string) (r *FieldBuilder) {
+	return b.viewingFB.Field(name)
+}
+
+func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
@@ -223,7 +253,7 @@ func (b *DetailFieldBuilder) SaveFunc(v SaveFunc) (r *DetailFieldBuilder) {
 	return b
 }
 
-func (b *DetailFieldBuilder) SetterFunc(v SetterFunc) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
@@ -231,7 +261,7 @@ func (b *DetailFieldBuilder) SetterFunc(v SetterFunc) (r *DetailFieldBuilder) {
 	return b
 }
 
-func (b *DetailFieldBuilder) HiddenFuncs(funcs ...ObjectComponentFunc) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) HiddenFuncs(funcs ...ObjectComponentFunc) (r *SectionBuilder) {
 	for _, f := range funcs {
 		if f == nil {
 			panic("value required")
@@ -241,7 +271,7 @@ func (b *DetailFieldBuilder) HiddenFuncs(funcs ...ObjectComponentFunc) (r *Detai
 	return b
 }
 
-func (b *DetailFieldBuilder) ElementUnmarshalFunc(v func(toObj, formObj any, prefix string, ctx *web.EventContext) error) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) ElementUnmarshalFunc(v func(toObj, formObj any, prefix string, ctx *web.EventContext) error) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
@@ -249,51 +279,42 @@ func (b *DetailFieldBuilder) ElementUnmarshalFunc(v func(toObj, formObj any, pre
 	return b
 }
 
-func (b *DetailFieldBuilder) ShowComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
-	if !b.switchable {
-		panic("detailField is not switchable")
-	}
+func (b *SectionBuilder) ViewComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
-	b.componentShowFunc = v
+	b.componentViewFunc = v
 	if b.componentEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.showComponent(obj, field, ctx)
+			return b.viewComponent(obj, field, ctx)
 		})
 	}
 	return b
 }
 
-func (b *DetailFieldBuilder) EditComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
-	if !b.switchable {
-		panic("detailField is not switchable")
-	}
+func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
 	b.componentEditFunc = v
-	if b.componentShowFunc != nil {
+	if b.componentViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.showComponent(obj, field, ctx)
+			return b.viewComponent(obj, field, ctx)
 		})
 	}
 	return b
 }
 
-func (b *DetailFieldBuilder) Label(label string) (r *DetailFieldBuilder) {
+func (b *SectionBuilder) Label(label string) (r *SectionBuilder) {
 	b.father.Field(b.name).Label(label)
 	return b
 }
 
-func (b *DetailFieldBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
-	if !b.switchable {
-		panic("detailField is not switchable")
-	}
+func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
-	b.elementShowFunc = v
+	b.elementViewFunc = v
 	if b.elementEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.listComponent(obj, field, ctx, -1, -1, -1)
@@ -302,15 +323,12 @@ func (b *DetailFieldBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *
 	return b
 }
 
-func (b *DetailFieldBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *DetailFieldBuilder) {
-	if !b.switchable {
-		panic("detailField is not switchable")
-	}
+func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
 	b.elementEditFunc = v
-	if b.elementShowFunc != nil {
+	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.listComponent(obj, field, ctx, -1, -1, -1)
 		})
@@ -319,16 +337,16 @@ func (b *DetailFieldBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *
 }
 
 // ComponentFunc set FieldBuilder compFunc
-func (b *DetailFieldBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
+func (b *SectionBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
 	r = b.father.Field(b.name)
 	return r.ComponentFunc(v)
 }
 
-func (b *DetailFieldBuilder) ListFieldPrefix(index int) string {
+func (b *SectionBuilder) ListFieldPrefix(index int) string {
 	return fmt.Sprintf("%s[%b]", b.name, index)
 }
 
-func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	id := ctx.Queries().Get(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
@@ -341,7 +359,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 		Icon("mdi-square-edit-outline").
 		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.componentEditBtnFunc(obj, ctx))).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
-			Query(DetailFieldName, b.name).
+			Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
 
@@ -352,7 +370,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 		}
 	}
 	content := h.Div()
-	showComponent := b.componentShowFunc(obj, field, ctx)
+	showComponent := b.componentViewFunc(obj, field, ctx)
 	if showComponent != nil {
 		content.AppendChildren(
 			VHover(
@@ -382,7 +400,7 @@ func (b *DetailFieldBuilder) showComponent(obj interface{}, field *FieldContext,
 	).Name(b.FieldPortalName())
 }
 
-func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	id := ctx.Queries().Get(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
@@ -392,7 +410,7 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
-			Query(DetailFieldName, b.name).
+			Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
 
@@ -423,7 +441,7 @@ func (b *DetailFieldBuilder) editComponent(obj interface{}, field *FieldContext,
 	).Name(b.FieldPortalName())
 }
 
-func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
+func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
 		return errors.New(fmt.Sprintf("model %#+v must be pointer", obj))
 	}
@@ -437,7 +455,7 @@ func (b *DetailFieldBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *we
 	return
 }
 
-func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
+func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
 	// Delete or Add row
 	if ctx.Queries().Get(b.SaveBtnKey()) == "" {
 		err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
@@ -452,7 +470,7 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	elementObj := listObj.Index(int(index)).Interface()
-	formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+	formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
 		return
 	}
@@ -462,7 +480,7 @@ func (b *DetailFieldBuilder) DefaultListElementSaveFunc(obj interface{}, id stri
 	return
 }
 
-func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
@@ -518,7 +536,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 				if !isEditing {
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
-					formObj := reflect.New(reflect.TypeOf(b.model).Elem()).Interface()
+					formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 					err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
@@ -533,7 +551,7 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
 			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
-				Query(DetailFieldName, b.name).
+				Query(SectionFieldName, b.name).
 				Query(ParamID, id).
 				Go())
 		rows.AppendChildren(addBtn)
@@ -555,42 +573,42 @@ func (b *DetailFieldBuilder) listComponent(obj interface{}, field *FieldContext,
 	).Name(b.FieldPortalName())
 }
 
-func (b *DetailFieldBuilder) EditBtnKey() string {
+func (b *SectionBuilder) EditBtnKey() string {
 	return fmt.Sprintf("%s_%s", detailListFieldEditBtnKey, b.name)
 }
 
-func (b *DetailFieldBuilder) SaveBtnKey() string {
+func (b *SectionBuilder) SaveBtnKey() string {
 	return fmt.Sprintf("%s_%s", detailListFieldSaveBtnKey, b.name)
 }
 
-func (b *DetailFieldBuilder) DeleteBtnKey() string {
+func (b *SectionBuilder) DeleteBtnKey() string {
 	return fmt.Sprintf("%s_%s", detailListFieldDeleteBtnKey, b.name)
 }
 
-func (b *DetailFieldBuilder) ListElementIsEditing(index int) string {
+func (b *SectionBuilder) ListElementIsEditing(index int) string {
 	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, detailListFieldEditing)
 }
 
-func (b *DetailFieldBuilder) ListElementPortalName(index int) string {
+func (b *SectionBuilder) ListElementPortalName(index int) string {
 	return fmt.Sprintf("DetailElementPortal_%s_%b", b.name, index)
 }
 
-func (b *DetailFieldBuilder) FieldPortalName() string {
+func (b *SectionBuilder) FieldPortalName() string {
 	return fmt.Sprintf("DetailFieldPortal_%s", b.name)
 }
 
-func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
 	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
 		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.elementEditBtn)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
-			Query(DetailFieldName, b.name).
+			Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
-	content := b.elementShowFunc(obj, &FieldContext{
+	content := b.elementViewFunc(obj, &FieldContext{
 		Name:    b.name,
 		FormKey: fmt.Sprintf("%s[%b]", b.name, index),
 		Label:   b.label,
@@ -614,13 +632,13 @@ func (b *DetailFieldBuilder) showElement(obj any, index int, ctx *web.EventConte
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContext) h.HTMLComponent {
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").
 		Attr("v-show", fmt.Sprintf("%t", !b.disableElementDeleteBtn)).
 		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
-			Query(DetailFieldName, b.name).
+			Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.DeleteBtnKey(), index).
 			Go())
@@ -639,7 +657,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	saveBtn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingListField).
-			Query(DetailFieldName, b.name).
+			Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Queries().Get(ParamID)).
 			Query(b.SaveBtnKey(), strconv.Itoa(index)).
 			Go())
@@ -659,7 +677,7 @@ func (b *DetailFieldBuilder) editElement(obj any, index, fromIndex int, ctx *web
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
+func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	return func(toObj, formObj any, prefix string, ctx *web.EventContext) (err error) {
 		if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
 			return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
@@ -680,7 +698,7 @@ func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, 
 		ctx2.R.MultipartForm = newForm
 
 		_ = ctx2.UnmarshalForm(formObj)
-		for _, f := range b.fields {
+		for _, f := range b.editingFB.fields {
 			name := f.name
 			info := b.father.mb.modelInfo
 			if info != nil {
@@ -699,7 +717,7 @@ func (b *DetailFieldBuilder) DefaultElementUnmarshal() func(toObj, formObj any, 
 				ModelInfo: info,
 				FormKey:   keyPath,
 				Name:      f.name,
-				Label:     b.getLabel(f.NameLabel),
+				Label:     b.editingFB.getLabel(f.NameLabel),
 			}, ctx)
 			if err != nil {
 				return err

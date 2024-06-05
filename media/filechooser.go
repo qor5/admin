@@ -476,7 +476,7 @@ func chooseFile(mb *Builder) web.EventFunc {
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
-			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false),
+			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false, false),
 		})
 		r.RunScript = `vars.showFileChooser = false`
 		return

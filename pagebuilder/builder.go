@@ -310,8 +310,8 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-
-	err = b.configEditor(pb)
+	mb := b.ps.Model(&Page{}).URIName("editors")
+	err = b.configEditor(pb, mb)
 	if err != nil {
 		return
 	}
@@ -324,8 +324,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	return
 }
 
-func (b *Builder) configEditor(pb *presets.Builder) (err error) {
-	mb := b.ps.Model(&Page{}).URIName("editors")
+func (b *Builder) configEditor(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 	err = b.pageInstall(pb, mb)
 	if err != nil {
 		return
@@ -383,11 +382,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing("Overview")
+	dp := pm.Detailing(PageBuilderPreviewCard)
 	// register modelBuilder
 
 	// pm detailing overview
-	dp.Field("Overview").ComponentFunc(overview(b, b.templateModel))
+	dp.Field(PageBuilderPreviewCard).ComponentFunc(overview(b, b.templateModel))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
@@ -403,8 +402,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	}
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-	pm.RegisterEventFunc(schedulePublishDialogEvent, schedulePublishDialog(db, pm))
-	pm.RegisterEventFunc(schedulePublishEvent, schedulePublish(db, pm))
 	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 
@@ -514,15 +511,14 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				if inerr != nil {
 					return
 				}
-				if !l10nON {
+				if b.l10n == nil {
 					localeCode = ""
 				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
-					return
 				}
 			}
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				fromID := ctx.R.Context().Value(l10n.FromID).(string)
 				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
 				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
@@ -535,12 +531,10 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 				if inerr = b.localizeCategory(tx, p.CategoryID, fromLocale, p.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 
 				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 				return
 			}
@@ -1155,7 +1149,7 @@ func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.
 }
 
 // Unused
-func clearTemplate(db *gorm.DB) web.EventFunc {
+func clearTemplate(_ *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
@@ -1297,101 +1291,7 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 	).Cols(3)
 }
 
-func schedulePublishDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-
-		s, ok := obj.(publish.ScheduleInterface)
-		if !ok {
-			return
-		}
-
-		var start, end string
-		if s.GetScheduledStartAt() != nil {
-			start = s.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
-		if s.GetScheduledEndAt() != nil {
-			end = s.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
-		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		updateBtn := VBtn(cmsgr.Update).
-			Color(ColorPrimary).
-			Attr(":disabled", "isFetching").
-			Attr(":loading", "isFetching").
-			Attr("@click", web.Plaid().
-				EventFunc(schedulePublishEvent).
-				// Queries(queries).
-				Query(presets.ParamID, paramID).
-				Query(presets.ParamOverlay, actions.Dialog).
-				URL(mb.Info().ListingHref()).
-				Go())
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text("Schedule Publish Time")),
-						VCardText(
-							VRow(
-								VCol(
-									vx.VXDateTimePicker().Attr(web.VField("ScheduledStartAt", start)...).Label(msgr.ScheduledStartAt).
-										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledStartAt" value="%s" v-field-name='"ScheduledStartAt"'> </vx-datetimepicker>`, start)),
-								).Cols(6),
-								VCol(
-									vx.VXDateTimePicker().Attr(web.VField("ScheduledEndAt", end)...).Label(msgr.ScheduledEndAt).
-										TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-										ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
-									// h.RawHTML(fmt.Sprintf(`<vx-datetimepicker label="ScheduledEndAt" value="%s" v-field-name='"ScheduledEndAt"'> </vx-datetimepicker>`, end)),
-								).Cols(6),
-							),
-						),
-						VCardActions(
-							VSpacer(),
-							updateBtn,
-						),
-					),
-				).MaxWidth("480px").
-					Attr("v-model", "locals.schedulePublishDialog"),
-			).Init("{schedulePublishDialog:true}").VSlot("{locals}"),
-		})
-		return
-	}
-}
-
-func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-		err = publish.ScheduleEditSetterFunc(obj, nil, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		err = mb.Editing().Saver(obj, paramID, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		r.PushState = web.Location(nil)
-		return
-	}
-}
-
-func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func createNoteDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.Param(presets.ParamID)
 
@@ -1432,7 +1332,7 @@ func createNoteDialog(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func createNote(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func createNote(db *gorm.DB, _ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
@@ -1512,7 +1412,7 @@ func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func updateSEO(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		paramID := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
@@ -1848,10 +1748,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*DemoContainer)
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
 					panic(inerr)
-					return
 				}
 			}
 
@@ -1890,7 +1789,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 				return
 			}
 
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				fromID := ctx.R.Context().Value(l10n.FromID).(string)
 				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
 
@@ -1902,7 +1801,6 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 
 				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.GetLocale()); inerr != nil {
 					panic(inerr)
-					return
 				}
 				return
 			}
@@ -1915,7 +1813,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	return
 }
 
-func sharedContainerSearcher(db *gorm.DB, mb *presets.ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB, _ *presets.ModelBuilder) presets.SearchFunc {
 	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
@@ -1975,6 +1873,7 @@ type ContainerBuilder struct {
 	builder    *Builder
 	name       string
 	mb         *presets.ModelBuilder
+	eb         *presets.EditingBuilder
 	model      interface{}
 	modelType  reflect.Type
 	renderFunc RenderFunc
@@ -1995,6 +1894,7 @@ func (b *Builder) RegisterModelContainer(name string, ed *presets.EditingBuilder
 	r = &ContainerBuilder{
 		name:    name,
 		builder: b,
+		eb:      ed,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return
@@ -2185,7 +2085,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
+func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 	editAction := web.Plaid().
 		PushState(true).
 		MergeQuery(true).

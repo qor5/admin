@@ -114,7 +114,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 	}
 }
 
-func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
+func templateSettings(_ *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Template)
 
@@ -146,16 +146,17 @@ func templateSettings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompon
 	}
 }
 
-func pageRow(label string, showComp h.HTMLComponent) (r *VRowBuilder) {
-	return VRow(
-		VCol(h.Text(label)).Cols(2),
-		VCol(showComp),
-	).NoGutters(true).Align("center").Class("my-4")
+func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) {
+	return h.Div(
+		h.Div(h.Text(label)).Class("text-subtitle-2").Style("width:180px;height:20px"),
+		h.Div(showComp).Class("text-body-1 ml-2 w-100"),
+	).Class("d-flex align-center ma-2").Style("height:40px")
 }
 
 func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
-	dp.Field("Page").SetSwitchable(true).Editing("Title", "Slug", "CategoryID").
-		ShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	dp.Section("Page").
+		Editing("Title", "Slug", "CategoryID").
+		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			var (
 				category Category
@@ -164,10 +165,12 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 			if category, err = p.GetCategory(db); err != nil {
 				panic(err)
 			}
-			return h.Components(
-				pageRow("Title", h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
-				pageRow("Slug", h.Text(p.Slug)),
-				pageRow("Category", h.Text(category.Path)),
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			return h.Div(
+				h.Div(h.Text(msgr.PageOverView)).Class("text-h4"),
+				detailingRow("Title", h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
+				detailingRow("Slug", h.Text(p.Slug)),
+				detailingRow(msgr.Category, h.Text(category.Path)),
 			)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -183,26 +186,31 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return h.Components(
-			pageRow("Title", VTextField().
-				Variant(VariantOutlined).
-				HideDetails(true).
-				Attr(web.VField("Page.Title", p.Title)...),
-			),
-			pageRow("Slug",
+			h.Div(h.Text(msgr.PageOverView)).Class("text-h4"),
+			detailingRow("Title",
 				VTextField().
 					Variant(VariantOutlined).
+					Density(DensityCompact).
+					HideDetails(true).
+					Attr(web.VField("Page.Title", p.Title)...),
+			),
+			detailingRow("Slug",
+				VTextField().
+					Variant(VariantOutlined).
+					Density(DensityCompact).
 					HideDetails(true).
 					Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
 					Prefix("/").
 					ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
 			),
-			pageRow("Category",
-				vx.VXAutocomplete().Label(msgr.Category).
-					Outlined(true).
+			detailingRow(msgr.Category,
+				VAutocomplete().
 					Variant(VariantOutlined).
+					Density(DensityCompact).
+					HideDetails(true).
 					Attr(web.VField("Page.CategoryID", p.CategoryID)...).
 					Multiple(false).Chips(false).
-					Items(categories).ItemText("Path").ItemValue("ID").
+					Items(categories).ItemTitle("Path").ItemValue("ID").
 					ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...),
 			),
 		)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/qor5/admin/v3/activity"
@@ -19,28 +20,29 @@ import (
 	"gorm.io/gorm"
 )
 
+var IncorrectLocaleErr = errors.New("incorrect locale")
+
 type Builder struct {
 	db *gorm.DB
 	ab *activity.Builder
 	// models                               []*presets.ModelBuilder
-	supportLocaleCodes                   []string
-	localesPaths                         map[string]string
-	paths                                []string
-	localesLabels                        map[string]string
+	locales                              []*loc
 	getSupportLocaleCodesFromRequestFunc func(R *http.Request) []string
 	cookieName                           string
 	queryName                            string
 }
 
+type loc struct {
+	code  string
+	path  string
+	label string
+}
+
 func New(db *gorm.DB) *Builder {
 	b := &Builder{
-		db:                 db,
-		supportLocaleCodes: []string{},
-		localesPaths:       make(map[string]string),
-		paths:              []string{},
-		localesLabels:      make(map[string]string),
-		cookieName:         "locale",
-		queryName:          "locale",
+		db:         db,
+		cookieName: "locale",
+		queryName:  "locale",
 	}
 	return b
 }
@@ -62,18 +64,18 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	return b
 }
 
-// func (b *Builder) Models(vs ...*presets.ModelBuilder) (r *Builder) {
-// 	b.models = append(b.models, vs...)
-// 	return b
-// }
-
 func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r *Builder) {
-	b.supportLocaleCodes = append(b.supportLocaleCodes, localeCode)
-	b.localesPaths[localeCode] = path.Join("/", localePath)
-	if !utils.Contains(b.paths, localePath) {
-		b.paths = append(b.paths, localePath)
+	if slices.ContainsFunc(b.locales, func(l *loc) bool {
+		return l.code == localeCode
+	}) {
+		return b
 	}
-	b.localesLabels[localeCode] = localeLabel
+
+	b.locales = append(b.locales, &loc{
+		code:  localeCode,
+		path:  path.Join("/", localePath),
+		label: localeLabel,
+	})
 	return b
 }
 
@@ -81,9 +83,10 @@ func (b *Builder) GetLocalePath(localeCode string) string {
 	if b == nil {
 		return ""
 	}
-	p, exist := b.localesPaths[localeCode]
-	if exist {
-		return p
+	for _, l := range b.locales {
+		if l.code == localeCode {
+			return l.path
+		}
 	}
 	return ""
 }
@@ -118,20 +121,27 @@ func LocalePathFromContext(m interface{}, ctx context.Context) (localePath strin
 	return
 }
 
-func (b *Builder) GetAllLocalePaths() []string {
-	return b.paths
+func (b *Builder) GetAllLocalePaths() (r []string) {
+	for _, l := range b.locales {
+		r = append(r, l.path)
+	}
+	return
 }
 
 func (b *Builder) GetLocaleLabel(localeCode string) string {
-	label, exist := b.localesLabels[localeCode]
-	if exist {
-		return label
+	for _, l := range b.locales {
+		if l.code == localeCode {
+			return l.label
+		}
 	}
-	return "Unkonw"
+	return "Unknown"
 }
 
-func (b *Builder) GetSupportLocaleCodes() []string {
-	return b.supportLocaleCodes
+func (b *Builder) GetSupportLocaleCodes() (r []string) {
+	for _, l := range b.locales {
+		r = append(r, l.code)
+	}
+	return
 }
 
 func (b *Builder) GetSupportLocaleCodesFromRequest(R *http.Request) []string {
@@ -141,7 +151,7 @@ func (b *Builder) GetSupportLocaleCodesFromRequest(R *http.Request) []string {
 	return b.GetSupportLocaleCodes()
 }
 
-func (b *Builder) GetSupportLocaleCodesFromRequestFunc(v func(R *http.Request) []string) (r *Builder) {
+func (b *Builder) SupportLocalesFunc(v func(R *http.Request) []string) (r *Builder) {
 	b.getSupportLocaleCodesFromRequestFunc = v
 	return b
 }
@@ -219,7 +229,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := field.Value(obj).(Locale).GetLocale()
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
-				return errors.New("Incorrect locale.")
+				return IncorrectLocaleErr
 			}
 
 			return nil
@@ -241,9 +251,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	_ = obj.(presets.SlugEncoder)
 	_ = obj.(presets.SlugDecoder)
 	_ = obj.(L10nInterface)
-	if l10nONModel, exist := obj.(L10nONInterface); exist {
-		l10nONModel.L10nON()
-	}
+
 	m.Listing().Field("Locale")
 	m.Editing().Field("Locale")
 
@@ -284,7 +292,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
 			locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
 
-			withoutKeys := []string{}
+			var withoutKeys []string
 			if ctx.R.URL.Query().Get("all_versions") == "true" {
 				withoutKeys = append(withoutKeys, "version")
 			}
@@ -320,7 +328,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := field.Value(obj).(Locale).GetLocale()
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
-				return errors.New("Incorrect locale.")
+				return IncorrectLocaleErr
 			}
 
 			return nil

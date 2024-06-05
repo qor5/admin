@@ -19,6 +19,7 @@ import (
 
 const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
+	Timeline                       = "Timeline"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {

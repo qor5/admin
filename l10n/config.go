@@ -18,8 +18,7 @@ import (
 const (
 	WrapHandlerKey  = "l10nWrapHandlerKey"
 	MenuTopItemFunc = "l10nMenuTopItemFunc"
-
-	SlugLocaleCode = "locale_code"
+	SlugLocaleCode  = "locale_code"
 )
 
 func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -53,10 +52,18 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 		chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("success").Variant(VariantFlat).Label(true).Size(SizeSmall))
 
 		for _, locale := range otherLocales {
-			chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)))).Label(true).Size(SizeSmall))
+			chips = append(chips,
+				VChip(
+					h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale))),
+				).
+					Label(true).
+					Size(SizeSmall),
+			)
 		}
 		return h.Td(
-			chips...,
+			h.Div(
+				chips...,
+			).Class("d-flex ga-2"),
 		)
 	}
 }
@@ -69,7 +76,7 @@ func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLCompo
 			return nil
 		}
 
-		localeQueryName := lb.GetQueryName()
+		localeQueryName := lb.queryName
 
 		if len(supportLocales) == 1 {
 			return h.Template().Children(

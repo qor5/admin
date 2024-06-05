@@ -59,8 +59,6 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 	publisher := publish.New(db, oss.Storage)
 	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab)
 	b.Use(pb)
-	p := pagebuilder.Page{}
-	p.L10nON()
 
 	return db, pb, b
 }

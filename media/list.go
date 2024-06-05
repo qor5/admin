@@ -12,7 +12,7 @@ const (
 )
 
 func configList(b *presets.Builder, mb *Builder) {
-	mm := b.Model(&media_library.MediaLibrary{}).Label("Media Library").MenuIcon("image").URIName("media-library")
+	mm := b.Model(&media_library.MediaLibrary{}).Label("Media Library").MenuIcon("mdi-image").URIName("media-library")
 
 	mm.Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		r.PageTitle = "Media Library"

@@ -2,10 +2,10 @@ package publish
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"net/url"
-	"reflect"
-	"strings"
+	"time"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -28,68 +28,95 @@ const (
 
 func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		toObj := mb.NewModel()
-		slugger := toObj.(presets.SlugDecoder)
-		paramID := ctx.Param(presets.ParamID)
-		currentVersionName := slugger.PrimaryColumnValuesBySlug(paramID)["version"]
-		me := mb.Editing()
-
-		fromObj := mb.NewModel()
-		// TODO: use fetcher?
-		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), paramID).First(fromObj).Error; err != nil {
-			return
-		}
-		if err = utils.SetPrimaryKeys(fromObj, toObj, db, paramID); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
+		slug := ctx.Param(presets.ParamID)
+		obj := mb.NewModel()
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
 			return
 		}
 
-		if vErr := me.SetObjectFields(fromObj, toObj, &presets.FieldContext{
-			ModelInfo: mb.Info(),
-		}, false, presets.ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R), ctx); vErr.HaveErrors() {
-			presets.ShowMessage(&r, vErr.Error(), "error")
+		ver, ok := obj.(VersionInterface)
+		if !ok {
+			err = errInvalidObject
 			return
 		}
 
-		if err = reflectutils.Set(toObj, "Version.ParentVersion", currentVersionName); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
+		oldVersion := ver.GetVersion()
+		newVersion, err := ver.CreateVersion(db, slug, mb.NewModel())
+		if err != nil {
 			return
 		}
 
-		if me.Validator != nil {
-			if vErr := me.Validator(toObj, ctx); vErr.HaveErrors() {
-				presets.ShowMessage(&r, vErr.Error(), "error")
+		if err = reflectutils.Set(obj, "Version", Version{
+			Version:       newVersion, // In fact, it is also set in CreateVersion, just in case
+			VersionName:   newVersion, // In fact, it is also set in CreateVersion, just in case
+			ParentVersion: oldVersion,
+		}); err != nil {
+			return
+		}
+
+		if st, ok := ver.(StatusInterface); ok {
+			st.SetStatus(StatusDraft)
+			st.SetOnlineUrl("")
+
+			// _, err = reflectutils.Get(obj, "Status")
+			// if err == nil {
+			// 	if err = reflectutils.Set(obj, "Status", Status{Status: StatusDraft}); err != nil {
+			// 		return
+			// 	}
+			// }
+		}
+		if sched, ok := ver.(ScheduleInterface); ok {
+			sched.SetScheduledStartAt(nil)
+			sched.SetScheduledEndAt(nil)
+			sched.SetPublishedAt(nil)
+			sched.SetUnPublishedAt(nil)
+			// _, err = reflectutils.Get(obj, "Schedule")
+			// if err == nil {
+			// 	if err = reflectutils.Set(obj, "Schedule", Schedule{}); err != nil {
+			// 		return
+			// 	}
+			// }
+		}
+
+		_, err = reflectutils.Get(obj, "CreatedAt")
+		if err == nil {
+			if err = reflectutils.Set(obj, "CreatedAt", time.Time{}); err != nil {
 				return
 			}
 		}
+		_, err = reflectutils.Get(obj, "UpdatedAt")
+		if err == nil {
+			if err = reflectutils.Set(obj, "UpdatedAt", time.Time{}); err != nil {
+				return
+			}
+		}
+		err = nil
 
-		if err = me.Saver(toObj, paramID, ctx); err != nil {
+		slug = obj.(presets.SlugEncoder).PrimarySlug()
+		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
 			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
-
-		se := toObj.(presets.SlugEncoder)
-		id := se.PrimarySlug()
 
 		if !mb.HasDetailing() {
 			// close dialog and open editing
 			web.AppendRunScripts(&r,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, id).Go(),
+				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, slug).Go(),
 			)
 			return
 		}
 		if !mb.Detailing().GetDrawer() {
 			// open detailing without drawer
 			// jump URL to support referer
-			r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(id))
+			r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(slug))
 			return
 		}
 		// close dialog and open detailingDrawer
 		web.AppendRunScripts(&r,
 			presets.CloseListingDialogVarScript,
 			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, id).Go(),
+			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, slug).Go(),
 		)
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -199,13 +226,12 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		versionName := ctx.R.FormValue("version_name")
 
 		utilMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
-		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DeleteConfirmPortalName,
 			Body: utils.DeleteDialog(
-				// TODO i18
-				fmt.Sprintf("Are you sure you want to delete %s?", versionName),
+				msgr.DeleteVersionConfirmationText(versionName),
 				"locals.deleteConfirmation = false;"+web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersion).
@@ -216,95 +242,78 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func findVersionItems(db *gorm.DB, mb *presets.ModelBuilder, paramId string) (list interface{}, err error) {
-	list = mb.NewModelSlice()
-	primaryKeys, err := utils.GetPrimaryKeys(mb.NewModel(), db)
-	if err != nil {
-		return
-	}
-	err = utils.PrimarySluggerWhere(db.Session(&gorm.Session{NewDB: true}).Select(strings.Join(primaryKeys, ",")), mb.NewModel(), paramId, "version").
-		Order("version DESC").
-		Find(list).
-		Error
-	return list, err
-}
+const paramCurrentDisplaySlug = "current_display_id"
 
 func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		deleteID := ctx.R.FormValue(presets.ParamID)
-		if len(deleteID) <= 0 {
-			presets.ShowMessage(&r, "no delete_id", "warning")
-			return
-		}
+	return wrapEventFuncWithShowError(func(ctx *web.EventContext) (web.EventResponse, error) {
+		var r web.EventResponse
 
 		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil {
-			presets.ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-			return
+			return r, perm.PermissionDenied
 		}
 
-		if err = mb.Editing().Deleter(mb.NewModel(), deleteID, ctx); err != nil {
-			presets.ShowMessage(&r, err.Error(), "warning")
-			return
+		slug := ctx.R.FormValue(presets.ParamID)
+		if len(slug) <= 0 {
+			return r, errors.New("no delete_id")
 		}
 
-		currentDisplayID := ctx.R.FormValue("current_display_id")
-		if deleteID == currentDisplayID {
-			items, _ := findVersionItems(db, mb, deleteID)
-			rv := reflect.ValueOf(items).Elem()
-			if rv.Len() == 0 {
-				r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
-				return
+		if err := mb.Editing().Deleter(mb.NewModel(), slug, ctx); err != nil {
+			return r, err
+		}
+
+		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
+		if slug == currentDisplaySlug {
+			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
+
+			// find the older version first then find the max version
+			version := mb.NewModel()
+			db := utils.PrimarySluggerWhere(db, version, slug, "version").Order("version DESC").WithContext(ctx.R.Context())
+			err := db.Where("version < ?", deletedVersion).First(version).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return r, err
 			}
-
-			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(deleteID)["version"]
-
-			version := rv.Index(0).Interface()
-			if rv.Len() > 1 {
-				hasOlderVersion := false
-				for i := 0; i < rv.Len(); i++ {
-					v := rv.Index(i).Interface()
-					if v.(VersionInterface).GetVersion() < deletedVersion {
-						hasOlderVersion = true
-						version = v
-						break
-					}
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				err := db.First(version).Error
+				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return r, err
 				}
-				if !hasOlderVersion {
-					version = rv.Index(rv.Len() - 1)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
+					return r, nil
 				}
 			}
 
-			currentDisplayID = version.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r, fmt.Sprintf("%s = %q", VarCurrentDisplayID, currentDisplayID))
+			currentDisplaySlug = version.(presets.SlugEncoder).PrimarySlug()
+			web.AppendRunScripts(&r, fmt.Sprintf("%s = %q", VarCurrentDisplayID, currentDisplaySlug))
 
 			if !pm.HasDetailing() {
 				web.AppendRunScripts(&r,
-					web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, currentDisplayID).Go(),
+					web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, currentDisplaySlug).Go(),
 				)
 			} else {
 				if !pm.Detailing().GetDrawer() {
-					r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(currentDisplayID))
-					return
+					r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(currentDisplaySlug))
+					return r, nil
 				}
 				web.AppendRunScripts(&r,
 					presets.CloseRightDrawerVarScript,
-					web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, currentDisplayID).Go(),
+					web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, currentDisplaySlug).Go(),
 				)
 			}
 		}
 
 		listQuery, err := url.ParseQuery(ctx.Queries().Get(presets.ParamListingQueries))
 		if err != nil {
-			return
+			return r, err
 		}
-		if deleteID == cmp.Or(listQuery.Get("select_id"), listQuery.Get("f_select_id")) {
-			listQuery.Set("select_id", currentDisplayID)
+		if slug == cmp.Or(listQuery.Get("select_id"), listQuery.Get("f_select_id")) {
+			listQuery.Set("select_id", currentDisplaySlug)
 		}
 
 		web.AppendRunScripts(&r,
 			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
-			// web.Plaid().URL(pm.Info().ListingHref()).EventFunc(actions.ReloadList).Go(), // TODO: dont know how to reload res list now
+			// web.Plaid().EventFunc(actions.ReloadList).Go(), // TODO: This will reload the dialog list, I don't know how to reload the main list yet.
 		)
-		return
-	}
+		return r, nil
+	})
 }

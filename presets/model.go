@@ -147,7 +147,7 @@ func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 func (mb *ModelBuilder) newDetailing() (r *DetailingBuilder) {
 	mb.detailing = &DetailingBuilder{
 		mb: mb,
-		DetailFieldsBuilder: DetailFieldsBuilder{
+		SectionsBuilder: SectionsBuilder{
 			mb:            mb,
 			FieldsBuilder: *mb.p.detailFieldDefaults.InspectFields(mb.model),
 		},
