@@ -511,14 +511,14 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				if inerr != nil {
 					return
 				}
-				if !l10nON {
+				if b.l10n == nil {
 					localeCode = ""
 				}
 				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
 					panic(inerr)
 				}
 			}
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				fromID := ctx.R.Context().Value(l10n.FromID).(string)
 				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
 				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
@@ -1748,7 +1748,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		this := obj.(*DemoContainer)
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
 					panic(inerr)
 				}
@@ -1789,7 +1789,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 				return
 			}
 
-			if l10nON && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
 				fromID := ctx.R.Context().Value(l10n.FromID).(string)
 				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
 

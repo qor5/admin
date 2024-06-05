@@ -38,7 +38,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	}
 
 	var localePath string
-	if l10nON {
+	if b.l10n != nil {
 		localePath = l10n.LocalePathFromContext(p, ctx)
 	}
 
@@ -57,7 +57,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	var liveRecord Page
 	{
 		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
-		if l10nON {
+		if b.l10n != nil {
 			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
 		}
 		lrdb.First(&liveRecord)

@@ -25,7 +25,3 @@ func IsLocalizableFromCtx(ctx context.Context) (localeCode string, isLocalizable
 	}
 	return
 }
-
-type L10nONInterface interface {
-	L10nON()
-}

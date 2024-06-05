@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
+	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 )
 
@@ -33,36 +34,38 @@ func (*Page) TableName() string {
 	return "page_builder_pages"
 }
 
-var l10nON bool
-
-func (p *Page) L10nON() {
-	l10nON = true
-	return
-}
-
-func (p *Page) PrimarySlug() string {
-	if !l10nON {
-		return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
+func primarySlug(v interface{}) string {
+	locale := v.(l10n.L10nInterface).GetLocale()
+	version := v.(publish.VersionInterface).GetVersion()
+	id := reflectutils.MustGet(v, "ID")
+	if locale == "" {
+		return fmt.Sprintf("%v_%v", id, version)
 	}
-	return fmt.Sprintf("%v_%v_%v", p.ID, p.Version.Version, p.LocaleCode)
+
+	return fmt.Sprintf("%v_%v_%v", id, version, locale)
 }
 
-func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if !l10nON {
-		if len(segs) != 2 {
-			panic("wrong slug")
-		}
+func primarySlugWithoutVersion(v interface{}) string {
+	locale := v.(l10n.L10nInterface).GetLocale()
+	id := reflectutils.MustGet(v, "ID")
+	if locale == "" {
+		return fmt.Sprintf("%v", id)
+	}
 
+	return fmt.Sprintf("%v_%v", id, locale)
+}
+
+func primaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) > 3 {
+		panic("wrong slug")
+	}
+	if len(segs) == 2 {
 		return map[string]string{
 			"id":                segs[0],
 			publish.SlugVersion: segs[1],
 		}
 	}
-	if len(segs) != 3 {
-		panic("wrong slug")
-	}
-
 	return map[string]string{
 		"id":                segs[0],
 		publish.SlugVersion: segs[1],
@@ -70,9 +73,33 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 }
 
+func primaryColumnValuesBySlugWithoutVersion(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) > 2 {
+		panic("wrong slug")
+	}
+	if len(segs) == 1 {
+		return map[string]string{
+			"id": segs[0],
+		}
+	}
+	return map[string]string{
+		"id":                segs[0],
+		l10n.SlugLocaleCode: segs[1],
+	}
+}
+
+func (p *Page) PrimarySlug() string {
+	return primarySlug(p)
+}
+
+func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	return primaryColumnValuesBySlug(slug)
+}
+
 func (p *Page) PermissionRN() []string {
 	rn := []string{"pages", strconv.Itoa(int(p.ID)), p.Version.Version}
-	if l10nON {
+	if len(p.LocaleCode) > 0 {
 		rn = append(rn, p.LocaleCode)
 	}
 	return rn
@@ -98,31 +125,11 @@ type Category struct {
 }
 
 func (c *Category) PrimarySlug() string {
-	if !l10nON {
-		return fmt.Sprintf("%v", c.ID)
-	}
-	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
+	return primarySlugWithoutVersion(c)
 }
 
 func (c *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if !l10nON {
-		if len(segs) != 1 {
-			panic("wrong slug")
-		}
-
-		return map[string]string{
-			"id": segs[0],
-		}
-	}
-	if len(segs) != 2 {
-		panic("wrong slug")
-	}
-
-	return map[string]string{
-		"id":                segs[0],
-		l10n.SlugLocaleCode: segs[1],
-	}
+	return primaryColumnValuesBySlugWithoutVersion(slug)
 }
 
 func (*Category) TableName() string {
@@ -145,31 +152,11 @@ type Container struct {
 }
 
 func (c *Container) PrimarySlug() string {
-	if !l10nON {
-		return fmt.Sprintf("%v", c.ID)
-	}
-	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
+	return primarySlugWithoutVersion(c)
 }
 
 func (c *Container) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if !l10nON {
-		if len(segs) != 1 {
-			panic("wrong slug")
-		}
-
-		return map[string]string{
-			"id": segs[0],
-		}
-	}
-	if len(segs) != 2 {
-		panic("wrong slug")
-	}
-
-	return map[string]string{
-		"id":          segs[0],
-		"locale_code": segs[1],
-	}
+	return primaryColumnValuesBySlugWithoutVersion(slug)
 }
 
 func (*Container) TableName() string {
@@ -185,31 +172,11 @@ type DemoContainer struct {
 }
 
 func (c *DemoContainer) PrimarySlug() string {
-	if !l10nON {
-		return fmt.Sprintf("%v", c.ID)
-	}
-	return fmt.Sprintf("%v_%v", c.ID, c.LocaleCode)
+	return primarySlugWithoutVersion(c)
 }
 
 func (c *DemoContainer) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if !l10nON {
-		if len(segs) != 1 {
-			panic("wrong slug")
-		}
-
-		return map[string]string{
-			"id": segs[0],
-		}
-	}
-	if len(segs) != 2 {
-		panic("wrong slug")
-	}
-
-	return map[string]string{
-		"id":          segs[0],
-		"locale_code": segs[1],
-	}
+	return primaryColumnValuesBySlugWithoutVersion(slug)
 }
 
 func (*DemoContainer) TableName() string {
@@ -229,31 +196,11 @@ func (t *Template) GetID() uint {
 }
 
 func (t *Template) PrimarySlug() string {
-	if !l10nON {
-		return fmt.Sprintf("%v", t.ID)
-	}
-	return fmt.Sprintf("%v_%v", t.ID, t.LocaleCode)
+	return primarySlugWithoutVersion(t)
 }
 
 func (t *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if !l10nON {
-		if len(segs) != 1 {
-			panic("wrong slug")
-		}
-
-		return map[string]string{
-			"id": segs[0],
-		}
-	}
-	if len(segs) != 2 {
-		panic("wrong slug")
-	}
-
-	return map[string]string{
-		"id":          segs[0],
-		"locale_code": segs[1],
-	}
+	return primaryColumnValuesBySlugWithoutVersion(slug)
 }
 
 func (*Template) TableName() string {
