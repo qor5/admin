@@ -9,31 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// @snippet_begin(PublishVersion)
-type Version struct {
-	Version       string `gorm:"primary_key;size:128;not null;"`
-	VersionName   string
-	ParentVersion string
-}
-
-// @snippet_end
-
-func (version Version) GetVersion() string {
-	return version.Version
-}
-
-func (version *Version) SetVersion(v string) {
-	version.Version = v
-}
-
-func (version Version) GetVersionName() string {
-	return version.VersionName
-}
-
-func (version *Version) SetVersionName(v string) {
-	version.VersionName = v
-}
-
 func (version *Version) GetNextVersion(t *time.Time) string {
 	if t == nil {
 		return ""

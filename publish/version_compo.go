@@ -56,7 +56,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
-				h.Text(version.GetVersionName()),
+				h.Text(version.EmbedVersion().VersionName),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
@@ -67,7 +67,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(statusChip(status.GetStatus(), msgr).Class("mx-2"))
+				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2"))
 			}
 			versionSwitch.AppendChildren(v.VSpacer())
 			versionSwitch.AppendIcon("mdi-chevron-down")
@@ -79,7 +79,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 		}
 
 		if status, ok = obj.(StatusInterface); ok {
-			switch status.GetStatus() {
+			switch status.EmbedStatus().Status {
 			case StatusDraft, StatusOffline:
 				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
 				if config.PublishEvent != nil {
@@ -158,7 +158,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 			return res
 		}
 		versionIf := currentObj.(VersionInterface)
-		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
 		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
@@ -189,7 +189,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		)
 		versionIf = nextObj.(VersionInterface)
 		// TODO use nextVersion I18n
-		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.GetVersionName())
+		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
 		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
 		if count >= 2 {
 			res.AppendChildren(
@@ -243,7 +243,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return cell
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(VersionInterface).GetVersionName()
+		versionName := obj.(VersionInterface).EmbedVersion().VersionName
 		p := obj.(presets.SlugEncoder)
 		id := ctx.R.FormValue("select_id")
 		if id == "" {
@@ -264,23 +264,15 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	lb.Field("State").ComponentFunc(StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(ScheduleInterface)
-		var showTime string
-		if p.GetScheduledStartAt() != nil {
-			showTime = p.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
 
 		return h.Td(
-			h.Text(showTime),
+			h.Text(ScheduleTimeString(p.EmbedSchedule().ScheduledStartAt)),
 		)
 	}).Label("Start at")
 	lb.Field("EndAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(ScheduleInterface)
-		var showTime string
-		if p.GetScheduledEndAt() != nil {
-			showTime = p.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
 		return h.Td(
-			h.Text(showTime),
+			h.Text(ScheduleTimeString(p.EmbedSchedule().ScheduledEndAt)),
 		)
 	}).Label("End at")
 
@@ -305,8 +297,8 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		pmsgr := presets.MustGetMessages(ctx.R)
 
 		id := obj.(presets.SlugEncoder).PrimarySlug()
-		versionName := obj.(VersionInterface).GetVersionName()
-		status := obj.(StatusInterface).GetStatus()
+		versionName := obj.(VersionInterface).EmbedVersion().VersionName
+		status := obj.(StatusInterface).EmbedStatus().Status
 		disable := status == StatusOnline || status == StatusOffline
 		deniedUpdate := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
 		deniedDelete := mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil

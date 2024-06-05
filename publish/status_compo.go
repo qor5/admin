@@ -64,7 +64,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		}
 		sc, ok := obj.(ScheduleInterface)
 		if !ok {
-			return statusChip(st.GetStatus(), msgr)
+			return statusChip(st.EmbedStatus().Status, msgr)
 		}
 
 		var (
@@ -73,8 +73,8 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		)
 
 		var toStatus string
-		if st.GetStatus() != StatusOnline {
-			if sc.GetScheduledStartAt() != nil {
+		if st.EmbedStatus().Status != StatusOnline {
+			if sc.EmbedSchedule().ScheduledStartAt != nil {
 				toStatus = StatusOnline
 			}
 		} else {
@@ -82,14 +82,14 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			if err != nil {
 				return
 			}
-			currentEndAt := sc.GetScheduledEndAt()
+			currentEndAt := sc.EmbedSchedule().ScheduledEndAt
 			if scheduleStart.ScheduledStartAt != nil && (currentEndAt == nil || !scheduleStart.ScheduledStartAt.After(*currentEndAt)) {
 				toStatus = "+1"
 			} else if currentEndAt != nil && !currentEndAt.Before(nowTime) {
 				toStatus = StatusOffline
 			}
 		}
-		return liveChips(st.GetStatus(), toStatus, msgr)
+		return liveChips(st.EmbedStatus().Status, toStatus, msgr)
 	}
 }
 
@@ -98,7 +98,7 @@ func StatusListFunc() presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		if s, ok := obj.(StatusInterface); ok {
-			return h.Td(statusChip(s.GetStatus(), msgr))
+			return h.Td(statusChip(s.EmbedStatus().Status, msgr))
 		}
 		return nil
 	}

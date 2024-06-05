@@ -41,7 +41,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 			ctx.R.Form.Set(paramPageID, strconv.Itoa(int(v.GetID())))
 		}
 		if v, ok := obj.(publish.VersionInterface); ok {
-			ctx.R.Form.Set(paramPageVersion, v.GetVersion())
+			ctx.R.Form.Set(paramPageVersion, v.EmbedVersion().Version)
 		}
 		if l, ok := obj.(l10n.L10nInterface); ok {
 			ctx.R.Form.Set(paramLocale, l.GetLocale())
@@ -53,12 +53,8 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		previewDevelopUrl := b.previewHref(ctx)
 
 		b.db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
-		if p.GetScheduledStartAt() != nil {
-			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
-		if p.GetScheduledEndAt() != nil {
-			end = p.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
+		start = publish.ScheduleTimeString(p.ScheduledStartAt)
+		end = publish.ScheduleTimeString(p.ScheduledEndAt)
 		if start != "" || end != "" {
 			se = "Scheduled at: " + start + " ~ " + end
 		}
@@ -69,7 +65,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponen
 		}
 
 		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, p)))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
-		if p.GetStatus() == publish.StatusOnline {
+		if p.Status.Status == publish.StatusOnline {
 			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 		}
 		return web.Scope(

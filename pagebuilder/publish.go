@@ -52,7 +52,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		Content:  content,
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getPublishUrl(localePath, category.Path))
+	p.OnlineUrl = p.getPublishUrl(localePath, category.Path)
 
 	var liveRecord Page
 	{
@@ -66,9 +66,9 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		return
 	}
 
-	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
+	if liveRecord.OnlineUrl != p.OnlineUrl {
 		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.GetOnlineUrl(),
+			Url:      liveRecord.OnlineUrl,
 			IsDelete: true,
 		})
 	}
@@ -78,7 +78,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.GetOnlineUrl(),
+		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
 	return
@@ -98,7 +98,7 @@ func (p *Page) getAccessUrl(publishUrl string) string {
 
 func (p *Page) getPublishContent(b *Builder, _ context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&pageVersion=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&pageVersion=%s&locale=%s", p.ID, p.Version.Version, p.GetLocale()), nil)
 	b.preview.ServeHTTP(w, req)
 
 	r = w.Body.String()

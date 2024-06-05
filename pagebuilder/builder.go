@@ -499,7 +499,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			}
 
 			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
-				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.GetVersion()); inerr != nil {
+				if inerr = b.copyContainersToNewPageVersion(tx, int(p.ID), p.GetLocale(), p.ParentVersion, p.Version.Version); inerr != nil {
 					return
 				}
 				return
@@ -514,7 +514,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				if b.l10n == nil {
 					localeCode = ""
 				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.GetVersion(), localeCode); inerr != nil {
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, int(p.ID), p.Version.Version, localeCode); inerr != nil {
 					panic(inerr)
 				}
 			}
@@ -533,7 +533,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 					panic(inerr)
 				}
 
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.GetVersion(), p.GetLocale()); inerr != nil {
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, int(p.ID), p.Version.Version, p.GetLocale()); inerr != nil {
 					panic(inerr)
 				}
 				return
@@ -786,7 +786,7 @@ func versionCount(db *gorm.DB, p *Page) (count int64) {
 }
 
 func scheduleCount(db *gorm.DB, p *Page) (count int64) {
-	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.GetVersion(), publish.StatusDraft).Count(&count)
+	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.Version.Version, publish.StatusDraft).Count(&count)
 	return
 }
 
@@ -821,7 +821,7 @@ func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *prese
 		return cell
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(publish.VersionInterface).GetVersionName()
+		versionName := obj.(publish.VersionInterface).EmbedVersion().VersionName
 		p := obj.(*Page)
 		id := ctx.R.FormValue("select_id")
 		if id == "" {
@@ -838,23 +838,15 @@ func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *prese
 	lb.Field("State").ComponentFunc(publish.StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		var showTime string
-		if p.GetScheduledStartAt() != nil {
-			showTime = p.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
 
 		return h.Td(
-			h.Text(showTime),
+			h.Text(publish.ScheduleTimeString(p.ScheduledStartAt)),
 		)
 	}).Label("Start at")
 	lb.Field("EndAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
-		var showTime string
-		if p.GetScheduledEndAt() != nil {
-			showTime = p.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
 		return h.Td(
-			h.Text(showTime),
+			h.Text(publish.ScheduleTimeString(p.ScheduledEndAt)),
 		)
 	}).Label("End at")
 
@@ -879,9 +871,9 @@ func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *prese
 		if id == "" {
 			id = ctx.R.FormValue("f_select_id")
 		}
-		versionName := p.GetVersionName()
+		versionName := p.VersionName
 		var disable bool
-		if p.GetStatus() == publish.StatusOnline || p.GetStatus() == publish.StatusOffline {
+		if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
 			disable = true
 		}
 

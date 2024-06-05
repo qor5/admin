@@ -24,6 +24,13 @@ const (
 
 var errInvalidObject = errors.New("invalid object")
 
+func ScheduleTimeString(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format(timeFormatSchedule)
+}
+
 func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := mb.NewModel()
@@ -38,15 +45,10 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		var valStartAt, valEndAt string
-		if sc.GetScheduledStartAt() != nil {
-			valStartAt = sc.GetScheduledStartAt().Format(timeFormatSchedule)
-		}
-		if sc.GetScheduledEndAt() != nil {
-			valEndAt = sc.GetScheduledEndAt().Format(timeFormatSchedule)
-		}
+		valStartAt := ScheduleTimeString(sc.EmbedSchedule().ScheduledStartAt)
+		valEndAt := ScheduleTimeString(sc.EmbedSchedule().ScheduledEndAt)
 
-		displayStartAtPicker := sc.GetStatus() != StatusOnline
+		displayStartAtPicker := EmbedStatus(sc).Status != StatusOnline
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -147,13 +149,13 @@ func setScheduledTimesFromForm(ctx *web.EventContext, sc ScheduleInterface, db *
 		return err
 	}
 
-	if sc.GetStatus() == StatusOnline {
+	if EmbedStatus(sc).Status == StatusOnline {
 		startAt = nil
 	}
 
 	if startAt == nil && endAt == nil {
-		sc.SetScheduledStartAt(startAt)
-		sc.SetScheduledEndAt(endAt)
+		sc.EmbedSchedule().ScheduledStartAt = startAt
+		sc.EmbedSchedule().ScheduledEndAt = endAt
 		return nil
 	}
 
@@ -174,23 +176,23 @@ func setScheduledTimesFromForm(ctx *web.EventContext, sc ScheduleInterface, db *
 		return errors.New(msgr.ScheduledEndAtShouldLaterThanNowOrEmpty)
 	}
 
-	if sc.GetStatus() != StatusOnline && startAt == nil {
+	if EmbedStatus(sc).Status != StatusOnline && startAt == nil {
 		return errors.New(msgr.ScheduledStartAtShouldNotEmpty)
 	}
 
-	sc.SetScheduledEndAt(endAt)
+	sc.EmbedSchedule().ScheduledEndAt = endAt
 	if startAt == nil {
-		sc.SetScheduledStartAt(startAt)
+		sc.EmbedSchedule().ScheduledStartAt = startAt
 		return nil
 	}
 
-	oldStartAt := sc.GetScheduledStartAt()
-	sc.SetScheduledStartAt(startAt)
+	oldStartAt := sc.EmbedSchedule().ScheduledStartAt
+	sc.EmbedSchedule().ScheduledStartAt = startAt
 
 	// If there are identical StartAts, fine-tuning should be done to ensure that the times of the different versions are not equal
 	if _, ok := sc.(VersionInterface); ok {
 		if oldStartAt != nil && oldStartAt.Truncate(time.Minute).Equal(*startAt) {
-			sc.SetScheduledStartAt(oldStartAt)
+			sc.EmbedSchedule().ScheduledStartAt = oldStartAt
 			return nil
 		}
 
@@ -204,11 +206,11 @@ func setScheduledTimesFromForm(ctx *web.EventContext, sc ScheduleInterface, db *
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			ref, _ := ver.(ScheduleInterface)
-			t := ref.GetScheduledStartAt().Add(time.Microsecond)
+			t := ref.EmbedSchedule().ScheduledStartAt.Add(time.Microsecond)
 			if t.Sub(*startAt) >= time.Minute {
 				return errors.New("no enough time space to fine tuning")
 			}
-			sc.SetScheduledStartAt(&t)
+			sc.EmbedSchedule().ScheduledStartAt = &t
 		}
 	}
 	return nil

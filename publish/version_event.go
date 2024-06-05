@@ -40,7 +40,7 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 			return
 		}
 
-		oldVersion := ver.GetVersion()
+		oldVersion := ver.EmbedVersion().Version
 		newVersion, err := ver.CreateVersion(db, slug, mb.NewModel())
 		if err != nil {
 			return
@@ -54,9 +54,10 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 			return
 		}
 
-		if st, ok := ver.(StatusInterface); ok {
-			st.SetStatus(StatusDraft)
-			st.SetOnlineUrl("")
+		if _, ok := ver.(StatusInterface); ok {
+			st := ver.(StatusInterface).EmbedStatus()
+			st.Status = StatusDraft
+			st.OnlineUrl = ""
 
 			// _, err = reflectutils.Get(obj, "Status")
 			// if err == nil {
@@ -65,11 +66,13 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 			// 	}
 			// }
 		}
-		if sched, ok := ver.(ScheduleInterface); ok {
-			sched.SetScheduledStartAt(nil)
-			sched.SetScheduledEndAt(nil)
-			sched.SetPublishedAt(nil)
-			sched.SetUnPublishedAt(nil)
+		if _, ok := ver.(ScheduleInterface); ok {
+			sched := ver.(ScheduleInterface).EmbedSchedule()
+
+			sched.ScheduledStartAt = nil
+			sched.ScheduledEndAt = nil
+			sched.ActualStartAt = nil
+			sched.ActualEndAt = nil
 			// _, err = reflectutils.Get(obj, "Schedule")
 			// if err == nil {
 			// 	if err = reflectutils.Set(obj, "Schedule", Schedule{}); err != nil {
