@@ -29,7 +29,7 @@ func RegisterHeader(pb *pagebuilder.Builder) {
 			return HeaderTemplate(header, input)
 		})
 
-	ed := header.Model(&WebHeader{}).URIName(inflection.Plural(strcase.ToKebab("Header"))).Editing("Color")
+	ed := header.Model(&WebHeader{}).Editing("Color")
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"black", "white"}).

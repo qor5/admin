@@ -17,17 +17,17 @@ type contextKeyType int
 
 const contextKey contextKeyType = iota
 
-func (pb *Builder) ContextValueProvider(in context.Context) context.Context {
+func (pb *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
 	return context.WithValue(in, contextKey, pb)
 }
 
-func builderFromContext(c context.Context) (b *Builder, ok bool) {
-	b, ok = c.Value(contextKey).(*Builder)
+func builderFromContext(c context.Context) (b *ModelBuilder, ok bool) {
+	b, ok = c.Value(contextKey).(*ModelBuilder)
 	return
 }
 
 func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	var b *Builder
+	var b *ModelBuilder
 	var ok bool
 	if b, ok = builderFromContext(ctx); !ok || b == nil {
 		return
@@ -38,7 +38,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	}
 
 	var localePath string
-	if b.l10n != nil {
+	if b.builder.l10n != nil {
 		localePath = l10n.LocalePathFromContext(p, ctx)
 	}
 
@@ -57,7 +57,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	var liveRecord Page
 	{
 		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
-		if b.l10n != nil {
+		if b.builder.l10n != nil {
 			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
 		}
 		lrdb.First(&liveRecord)
@@ -96,11 +96,11 @@ func (p *Page) getAccessUrl(publishUrl string) string {
 	return filepath.Dir(publishUrl)
 }
 
-func (p *Page) getPublishContent(b *Builder, _ context.Context) (r string, err error) {
+func (p *Page) getPublishContent(b *ModelBuilder, _ context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&pageVersion=%s&locale=%s", p.ID, p.Version.Version, p.LocaleCode), nil)
-	b.preview.ServeHTTP(w, req)
 
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return
 }

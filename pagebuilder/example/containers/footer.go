@@ -28,7 +28,7 @@ func RegisterFooter(pb *pagebuilder.Builder) {
 			return FooterTemplate(footer, input)
 		})
 
-	footer.Model(&WebFooter{}).URIName(inflection.Plural(strcase.ToKebab("Footer"))).Editing("EnglishUrl", "JapaneseUrl")
+	footer.Model(&WebFooter{}).Editing("EnglishUrl", "JapaneseUrl")
 }
 
 func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {

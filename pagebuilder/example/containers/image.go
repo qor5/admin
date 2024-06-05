@@ -35,7 +35,7 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			v := obj.(*ImageContainer)
 			return ImageContainerBody(v, input)
 		})
-	mb := vb.Model(&ImageContainer{}).URIName(inflection.Plural(strcase.ToKebab("Image")))
+	mb := vb.Model(&ImageContainer{})
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "TransitionBackgroundColor", "Image")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().

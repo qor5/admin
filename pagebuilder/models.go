@@ -26,6 +26,14 @@ type Page struct {
 	l10n.Locale
 }
 
+type PageTitleInterface interface {
+	GetTitle() string
+}
+
+func (p *Page) GetTitle() string {
+	return p.Title
+}
+
 func (p *Page) GetID() uint {
 	return p.ID
 }
@@ -138,14 +146,15 @@ func (*Category) TableName() string {
 
 type Container struct {
 	gorm.Model
-	PageID       uint
-	PageVersion  string
-	ModelName    string
-	ModelID      uint
-	DisplayOrder float64
-	Shared       bool
-	Hidden       bool
-	DisplayName  string
+	PageID        uint
+	PageVersion   string
+	PageModelName string
+	ModelName     string
+	ModelID       uint
+	DisplayOrder  float64
+	Shared        bool
+	Hidden        bool
+	DisplayName   string
 
 	l10n.Locale
 	LocalizeFromModelID uint
@@ -225,3 +234,10 @@ func (t *Template) Page() *Page {
 		Locale: t.Locale,
 	}
 }
+
+type (
+	PrimarySlugInterface interface {
+		PrimarySlug() string
+		PrimaryColumnValuesBySlug(slug string) map[string]string
+	}
+)

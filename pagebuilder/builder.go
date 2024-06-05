@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"path"
 	"reflect"
 	"sort"
@@ -51,7 +50,6 @@ type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.
 type SubPageTitleFunc func(ctx *web.EventContext) string
 
 type PageLayoutInput struct {
-	Page              *Page
 	SeoTags           h.HTMLComponent
 	CanonicalLink     h.HTMLComponent
 	StructuredData    h.HTMLComponent
@@ -62,40 +60,38 @@ type PageLayoutInput struct {
 	Header            h.HTMLComponent
 	Footer            h.HTMLComponent
 	IsEditor          bool
+	LocaleCode        string
 	EditorCss         []h.HTMLComponent
 	IsPreview         bool
 }
 
 type Builder struct {
-	prefix                   string
-	wb                       *web.Builder
-	db                       *gorm.DB
-	containerBuilders        []*ContainerBuilder
-	ps                       *presets.Builder
-	mb                       *presets.ModelBuilder
-	templateModel            *presets.ModelBuilder
-	l10n                     *l10n.Builder
-	mediaBuilder             *media.Builder
-	note                     *note.Builder
-	ab                       *activity.Builder
-	publisher                *publish.Builder
-	seoBuilder               *seo.Builder
-	pageStyle                h.HTMLComponent
-	pageLayoutFunc           PageLayoutFunc
-	subPageTitleFunc         SubPageTitleFunc
-	preview                  http.Handler
-	editor                   http.Handler
-	images                   http.Handler
-	imagesPrefix             string
-	defaultDevice            string
-	publishBtnColor          string
-	duplicateBtnColor        string
-	templateEnabled          bool
-	expendContainers         bool
-	templateInstall          presets.ModelInstallFunc
-	pageInstall              presets.ModelInstallFunc
-	categoryInstall          presets.ModelInstallFunc
-	versionListDialogInstall presets.ModelInstallFunc
+	prefix            string
+	wb                *web.Builder
+	db                *gorm.DB
+	containerBuilders []*ContainerBuilder
+	ps                *presets.Builder
+	models            []*ModelBuilder
+	templateModel     *presets.ModelBuilder
+	l10n              *l10n.Builder
+	mediaBuilder      *media.Builder
+	note              *note.Builder
+	ab                *activity.Builder
+	publisher         *publish.Builder
+	seoBuilder        *seo.Builder
+	pageStyle         h.HTMLComponent
+	pageLayoutFunc    PageLayoutFunc
+	subPageTitleFunc  SubPageTitleFunc
+	images            http.Handler
+	imagesPrefix      string
+	defaultDevice     string
+	publishBtnColor   string
+	duplicateBtnColor string
+	templateEnabled   bool
+	expendContainers  bool
+	templateInstall   presets.ModelInstallFunc
+	pageInstall       presets.ModelInstallFunc
+	categoryInstall   presets.ModelInstallFunc
 }
 
 const (
@@ -104,24 +100,10 @@ const (
 	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
-	schedulePublishDialogEvent = "schedulePublishDialogEvent"
-	schedulePublishEvent       = "schedulePublishEvent"
-
-	createNoteDialogEvent = "createNoteDialogEvent"
-	createNoteEvent       = "createNoteEvent"
-
-	editSEODialogEvent = "editSEODialogEvent"
-	updateSEOEvent     = "updateSEOEvent"
-
-	selectVersionEvent       = "selectVersionEvent"
-	renameVersionDialogEvent = "renameVersionDialogEvent"
-	renameVersionEvent       = "renameVersionEvent"
-	deleteVersionDialogEvent = "deleteVersionDialogEvent"
-
 	paramOpenFromSharedContainer = "open_from_shared_container"
-)
 
-const PageBuilderPreviewCard = "PageBuilderPreviewCard"
+	PageBuilderPreviewCard = "PageBuilderPreviewCard"
+)
 
 func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 	err := db.AutoMigrate(
@@ -156,7 +138,6 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
 	r.pageInstall = r.defaultPageInstall
-	r.versionListDialogInstall = r.defaultInstallVersionListDialog
 
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
@@ -165,20 +146,6 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		DetailLayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
 
-	wb := r.ps.GetWebBuilder()
-	wb.RegisterEventFunc(AddContainerDialogEvent, r.addContainerDialog)
-	wb.RegisterEventFunc(ShowSortedContainerDrawerEvent, r.showSortedContainerDrawer)
-	wb.RegisterEventFunc(AddContainerEvent, r.addContainer)
-	wb.RegisterEventFunc(DeleteContainerConfirmationEvent, r.deleteContainerConfirmation)
-	wb.RegisterEventFunc(DeleteContainerEvent, r.deleteContainer)
-	wb.RegisterEventFunc(MoveContainerEvent, r.moveContainer)
-	wb.RegisterEventFunc(MoveUpDownContainerEvent, r.moveUpDownContainer)
-	wb.RegisterEventFunc(ToggleContainerVisibilityEvent, r.toggleContainerVisibility)
-	wb.RegisterEventFunc(MarkAsSharedContainerEvent, r.markAsSharedContainer)
-	wb.RegisterEventFunc(RenameContainerDialogEvent, r.renameContainerDialog)
-	wb.RegisterEventFunc(RenameContainerEvent, r.renameContainer)
-	wb.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, r.reloadRenderPageOrTemplate)
-	r.preview = wb.Page(r.Preview)
 	return r
 }
 
@@ -205,11 +172,6 @@ func (b *Builder) WrapTemplateInstall(w func(presets.ModelInstallFunc) presets.M
 
 func (b *Builder) WrapCategoryInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
 	b.categoryInstall = w(b.categoryInstall)
-	return b
-}
-
-func (b *Builder) WrapVersionListDialogInstall(w func(presets.ModelInstallFunc) presets.ModelInstallFunc) (r *Builder) {
-	b.versionListDialogInstall = w(b.versionListDialogInstall)
 	return b
 }
 
@@ -295,14 +257,42 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
+	r = &ModelBuilder{
+		mb:      mb,
+		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName() + "/editors"),
+		builder: b,
+		db:      b.db,
+	}
+	b.models = append(b.models, r)
+	r.setName()
+	r.registerFuncs()
+	return r
+}
+
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+	defer b.ps.Build()
+	if b.publisher != nil {
+		mb.Use(b.publisher)
+	}
+	if mb.HasDetailing() {
+		fb := mb.Detailing().GetField(PageBuilderPreviewCard)
+		if fb != nil && fb.GetCompFunc() == nil {
+			fb.ComponentFunc(overview(b, nil, mb))
+		}
+	}
+	r := b.Model(mb)
+	// register model editors page
+	b.installAsset(pb)
+	if err = b.configEditor(r); err != nil {
+		return
+	}
+	b.configPublish(r)
+	b.pageLayoutFunc = DefaultPageLayoutFunc
 	return nil
 }
 
-func (b *Builder) Install(pb *presets.Builder) (err error) {
-	defer b.ps.Build()
-	b.preparePlugins()
-
+func (b *Builder) installAsset(pb *presets.Builder) {
 	pb.I18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
@@ -310,13 +300,20 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	mb := b.ps.Model(&Page{}).URIName("editors")
-	err = b.configEditor(pb, mb)
+}
+
+func (b *Builder) Install(pb *presets.Builder) (err error) {
+	defer b.ps.Build()
+	b.preparePlugins()
+
+	b.installAsset(pb)
+	r := b.Model(pb.Model(&Page{}))
+	err = b.configEditor(r)
 	if err != nil {
 		return
 	}
-	b.configTemplateAndPage(pb)
-	b.configSharedContainer(pb)
+	b.configTemplateAndPage(pb, r)
+	b.configSharedContainer(pb, r.mb)
 	b.configDemoContainer(pb)
 	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	err = b.categoryInstall(pb, categoryM)
@@ -324,25 +321,27 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	return
 }
 
-func (b *Builder) configEditor(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
-	err = b.pageInstall(pb, mb)
-	if err != nil {
-		return
-	}
-	err = b.versionListDialogInstall(b.ps, mb)
-	if err != nil {
-		return
-	}
-
-	b.useAllPlugin(mb)
-	md := mb.Detailing()
-	md.Field("defaultVersion")
-	md.PageFunc(b.Editor(mb))
+func (b *Builder) configEditor(m *ModelBuilder) (err error) {
+	b.useAllPlugin(m.editor)
+	md := m.editor.Detailing()
+	md.PageFunc(b.Editor(m))
 	return
 }
 
-func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
-	templateM := presets.NewModelBuilder(pb, &Template{}).Use(b.ab)
+func (b *Builder) configPublish(r *ModelBuilder) {
+	publisher := b.publisher
+	if publisher != nil {
+		publisher.ContextValueFuncs(r.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
+			r.mb.Editing().SidePanelFunc(nil).ActionsFunc(nil).TabsPanels()
+		})
+	}
+}
+
+func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
+	templateM := presets.NewModelBuilder(pb, &Template{})
+	if b.ab != nil {
+		templateM.Use(b.ab)
+	}
 	if b.templateEnabled {
 		templateM = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
 		err := b.templateInstall(pb, templateM)
@@ -351,20 +350,12 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
 		}
 		b.templateModel = templateM
 	}
-
-	pm := pb.Model(&Page{})
+	pm := r.mb
 	err := b.pageInstall(pb, pm)
 	if err != nil {
 		panic(err)
 	}
-
-	publisher := b.publisher
-	if publisher != nil {
-		publisher.ContextValueFuncs(b.ContextValueProvider).Activity(b.ab).AfterInstall(func() {
-			pm.Editing().SidePanelFunc(nil).ActionsFunc(nil).TabsPanels()
-		})
-	}
-
+	b.configPublish(r)
 	b.useAllPlugin(pm)
 
 	// dp.TabsPanels()
@@ -372,7 +363,6 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder) {
 
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
-	b.mb = pm
 	lb := pm.Listing("ID", publish.ListingFieldLive, "Title", "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
@@ -386,12 +376,12 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	// register modelBuilder
 
 	// pm detailing overview
-	dp.Field(PageBuilderPreviewCard).ComponentFunc(overview(b, b.templateModel))
+	dp.Field(PageBuilderPreviewCard).ComponentFunc(overview(b, b.templateModel, pm))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
 	// pm detailing side panel
-	pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
+	// pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 
 	b.configDetailLayoutFunc(pb, pm, b.templateModel, db)
 
@@ -400,10 +390,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
 		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
 	}
-	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(b, pm))
-	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-	pm.RegisterEventFunc(createNoteDialogEvent, createNoteDialog(db, pm))
-	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -605,7 +591,7 @@ func (b *Builder) configDetailLayoutFunc(
 	// change old detail layout
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && !strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/") {
+			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && templateM != nil && !strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/") {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}
@@ -624,9 +610,12 @@ func (b *Builder) configDetailLayoutFunc(
 			if id == "" {
 				return pb.DefaultNotFoundPageFunc(ctx)
 			}
-
+			var isTemplate bool
 			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
-			isTemplate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			if templateM != nil {
+				isTemplate = strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			}
+
 			if isTemplate {
 				ctx.R.Form.Set(paramsTpl, "1")
 			}
@@ -667,7 +656,15 @@ func (b *Builder) configDetailLayoutFunc(
 					return
 				}
 			}
-			var tabContent web.PageResponse
+			var (
+				tabContent   web.PageResponse
+				versionBadge *VChipBuilder
+			)
+
+			if v, ok := obj.(PrimarySlugInterface); ok {
+				ps := v.PrimaryColumnValuesBySlug(id)
+				versionBadge = VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"])))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
+			}
 			tabContent, err = in(ctx)
 			if errors.Is(err, perm.PermissionDenied) {
 				pr.Body = h.Text(perm.PermissionDenied.Error())
@@ -677,9 +674,9 @@ func (b *Builder) configDetailLayoutFunc(
 				panic(err)
 			}
 
-			primarySlug := ""
+			primaryID := ""
 			if v, ok := obj.(presets.SlugEncoder); ok {
-				primarySlug = v.PrimarySlug()
+				primaryID = v.PrimarySlug()
 			}
 			var pageAppbarContent []h.HTMLComponent
 			pageAppbarContent = append(pageAppbarContent,
@@ -755,7 +752,7 @@ func (b *Builder) configDetailLayoutFunc(
 					web.Portal().Name(presets.ListingDialogPortalName),
 					web.Portal().Name(dialogPortalName),
 					utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-						Query(presets.ParamID, primarySlug).Go(),
+						Query(presets.ParamID, primaryID).Go(),
 						utilsMsgr),
 					VProgressLinear().
 						Attr(":active", "isFetching").
@@ -770,7 +767,18 @@ func (b *Builder) configDetailLayoutFunc(
 							Timeout(1000),
 					).Attr("v-if", "vars.presetsMessage"),
 					VMain(
-						tabContent.Body.(h.HTMLComponent),
+						VLayout(
+							VMain(
+								VContainer(
+									VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
+										web.GET().URL(pm.Info().ListingHref()).PushState(true).Go(),
+									),
+									h.H1("{{vars.pageTitle}}").Class("ml-4"),
+									versionBadge.Class("mt-2 ml-2"),
+								).Class("d-inline-flex align-center"),
+								tabContent.Body.(h.HTMLComponent),
+							),
+						).Class("pa-6"),
 					),
 				).Attr("id", "vt-app").Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)...),
 			).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
@@ -780,183 +788,13 @@ func (b *Builder) configDetailLayoutFunc(
 	return
 }
 
-func versionCount(db *gorm.DB, p *Page) (count int64) {
-	db.Model(&Page{}).Where("id = ? and locale_code = ?", p.ID, p.LocaleCode).Count(&count)
+func versionCount(db *gorm.DB, obj interface{}, id string, localCode string) (count int64) {
+	db.Model(obj).Where("id = ? and locale_code = ?", id, localCode).Count(&count)
 	return
 }
 
 func scheduleCount(db *gorm.DB, p *Page) (count int64) {
 	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.Version.Version, publish.StatusDraft).Count(&count)
-	return
-}
-
-func (b *Builder) defaultInstallVersionListDialog(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
-	db := b.db
-	mb := pb.Model(&Page{}).
-		URIName("version-list-dialog").
-		InMenu(false)
-	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
-		SearchColumns("version", "version_name").
-		PerPage(10).
-		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-				id := ctx.R.FormValue("select_id")
-				if id == "" {
-					id = ctx.R.FormValue("f_select_id")
-				}
-				if id != "" {
-					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-					con := presets.SQLCondition{
-						Query: "id = ? and locale_code = ?",
-						Args:  []interface{}{cs["id"], cs[l10n.SlugLocaleCode]},
-					}
-					params.SQLConditions = append(params.SQLConditions, &con)
-				}
-				params.OrderBy = "created_at DESC"
-
-				return in(model, params, ctx)
-			}
-		})
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		return cell
-	})
-	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(publish.VersionInterface).EmbedVersion().VersionName
-		p := obj.(*Page)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-		return h.Td(
-			VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", web.Plaid().EventFunc(actions.UpdateListingDialog).
-				URL(b.prefix+"/version-list-dialog").
-				Query("select_id", p.PrimarySlug()).
-				Go()),
-			h.Text(versionName),
-		).Class("d-inline-flex align-center")
-	})
-	lb.Field("State").ComponentFunc(publish.StatusListFunc())
-	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-
-		return h.Td(
-			h.Text(publish.ScheduleTimeString(p.ScheduledStartAt)),
-		)
-	}).Label("Start at")
-	lb.Field("EndAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		return h.Td(
-			h.Text(publish.ScheduleTimeString(p.ScheduledEndAt)),
-		)
-	}).Label("End at")
-
-	lb.Field("Notes").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		rt := pm.Info().Label()
-		ri := p.PrimarySlug()
-		userID, _ := note.GetUserData(ctx)
-		count := note.GetUnreadNotesCount(db, userID, rt, ri)
-
-		return h.Td(
-			h.If(count > 0,
-				VBadge().Content(count).Color("red"),
-			).Else(
-				h.Text(""),
-			),
-		)
-	}).Label("Unread Notes")
-	lb.Field("Option").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-		versionName := p.VersionName
-		var disable bool
-		if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
-			disable = true
-		}
-
-		return h.Td(VBtn("Delete").Disabled(disable).PrependIcon("mdi-delete").Size(SizeXSmall).Color(ColorPrimary).Variant(VariantText).Attr("@click", web.Plaid().
-			URL(pb.GetURIPrefix()+"/version-list-dialog").
-			EventFunc(deleteVersionDialogEvent).
-			Queries(ctx.Queries()).
-			Query(presets.ParamOverlay, actions.Dialog).
-			Query("delete_id", obj.(presets.SlugEncoder).PrimarySlug()).
-			Query("version_name", versionName).
-			Go()))
-	})
-	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
-	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		return VBtn("Cancel").Variant(VariantElevated).Attr("@click", "vars.presetsListingDialog=false")
-	})
-	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-		return VBtn("Save").Variant(VariantElevated).Color("secondary").Attr("@click", web.Plaid().
-			Query("select_id", id).
-			URL(pb.GetURIPrefix()+"/version-list-dialog").
-			EventFunc(selectVersionEvent).
-			Go())
-	})
-	lb.RowMenu().Empty()
-	mb.RegisterEventFunc(selectVersionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("select_id")
-		refer, _ := url.Parse(ctx.R.Referer())
-		newQueries := refer.Query()
-		r.PushState = web.Location(newQueries).URL(pm.Info().DetailingHref(id))
-		return
-	})
-	mb.RegisterEventFunc(renameVersionDialogEvent, renameVersionDialog(mb))
-	mb.RegisterEventFunc(renameVersionEvent, renameVersion(mb))
-	mb.RegisterEventFunc(deleteVersionDialogEvent, deleteVersionDialog(mb))
-
-	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		return []*vx.FilterItem{
-			{
-				Key:          "all",
-				Invisible:    true,
-				SQLCondition: ``,
-			},
-			{
-				Key:          "online_version",
-				Invisible:    true,
-				SQLCondition: `status = 'online'`,
-			},
-			{
-				Key:          "named_versions",
-				Invisible:    true,
-				SQLCondition: `version <> version_name`,
-			},
-		}
-	})
-
-	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-		return []*presets.FilterTab{
-			{
-				Label: msgr.FilterTabAllVersions,
-				ID:    "all",
-				Query: url.Values{"all": []string{"1"}, "select_id": []string{id}},
-			},
-			{
-				Label: msgr.FilterTabOnlineVersion,
-				ID:    "online_version",
-				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{id}},
-			},
-			{
-				Label: msgr.FilterTabNamedVersions,
-				ID:    "named_versions",
-				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{id}},
-			},
-		}
-	})
 	return
 }
 
@@ -1283,259 +1121,12 @@ func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, sel
 	).Cols(3)
 }
 
-func createNoteDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-
-		okAction := web.Plaid().
-			URL(mb.Info().ListingHref()).
-			EventFunc(createNoteEvent).
-			Query("resource_id", paramID).
-			Query("resource_type", mb.Info().Label()).
-			Query(presets.ParamOverlay, actions.Dialog).Go()
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text("Note")),
-						VCardText(
-							VTextField().Variant(FieldVariantUnderlined).Attr(web.VField("Content", "")...),
-						),
-						VCardActions(
-							VSpacer(),
-							VBtn("Cancel").
-								Variant(VariantFlat).
-								Class("ml-2").
-								On("click", "locals.createNoteDialog = false"),
-
-							VBtn("OK").
-								Color(ColorPrimary).
-								Variant(VariantFlat).
-								Theme(ThemeDark).
-								Attr("@click", okAction),
-						),
-					),
-				).MaxWidth("420px").Attr("v-model", "locals.createNoteDialog"),
-			).Init("{createNoteDialog:true}").VSlot("{locals}"),
-		})
-		return
-	}
-}
-
-func createNote(db *gorm.DB, _ *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		ri := ctx.R.FormValue("resource_id")
-		rt := ctx.R.FormValue("resource_type")
-		content := ctx.R.FormValue("Content")
-
-		userID, creator := note.GetUserData(ctx)
-		nt := note.QorNote{
-			UserID:       userID,
-			Creator:      creator,
-			ResourceID:   ri,
-			ResourceType: rt,
-			Content:      content,
-		}
-
-		if err = db.Save(&nt).Error; err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
-			err = nil
-			return
-		}
-
-		userNote := note.UserNote{UserID: userID, ResourceType: rt, ResourceID: ri}
-		db.Where(userNote).FirstOrCreate(&userNote)
-
-		var total int64
-		db.Model(&note.QorNote{}).Where("resource_type = ? AND resource_id = ?", rt, ri).Count(&total)
-		db.Model(&userNote).UpdateColumn("Number", total)
-		r.PushState = web.Location(nil)
-		return
-	}
-}
-
-func editSEODialog(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		seoBuilder := b.seoBuilder
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-
-		// msgr := i18n.MustGetModuleMessages(ctx.R, pv.I18nPublishKey, Messages_en_US).(*pv.Messages)
-		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		updateBtn := VBtn(cmsgr.Update).
-			Color(ColorPrimary).
-			Attr(":disabled", "isFetching").
-			Attr(":loading", "isFetching").
-			Attr("@click", web.Plaid().
-				EventFunc(updateSEOEvent).
-				// Queries(queries).
-				Query(presets.ParamID, paramID).
-				// Query(presets.ParamOverlay, actions.Dialog).
-				URL(mb.Info().ListingHref()).
-				Go())
-		ctx.R.Form.Set("hideActionsIconForSEOForm", "true")
-		seoForm := seoBuilder.EditingComponentFunc(obj, nil, ctx)
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text("")),
-						VCardText(
-							seoForm,
-						),
-						VCardActions(
-							VSpacer(),
-							updateBtn,
-						),
-					),
-				).MaxWidth("650px").
-					Attr("v-model", "locals.editSEODialog"),
-			).Init("{editSEODialog:true}").VSlot("{locals}"),
-		})
-		return
-	}
-}
-
-func updateSEO(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.Param(presets.ParamID)
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-		err = seo.EditSetterFunc(obj, &presets.FieldContext{Name: "SEO"}, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		err = mb.Editing().Saver(obj, paramID, ctx)
-		if err != nil {
-			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
-			return
-		}
-		r.PushState = web.Location(nil)
-		return
-	}
-}
-
-func renameVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("rename_id")
-		versionName := ctx.R.FormValue("version_name")
-		okAction := web.Plaid().
-			URL(mb.Info().ListingHref()).
-			EventFunc(renameVersionEvent).
-			Queries(ctx.Queries()).
-			Query("rename_id", id).Go()
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text("Version")),
-						VCardText(
-							VTextField().Attr(web.VField("VersionName", versionName)...).Variant(FieldVariantUnderlined),
-						),
-						VCardActions(
-							VSpacer(),
-							VBtn("Cancel").
-								Variant(VariantFlat).
-								Class("ml-2").
-								On("click", "locals.renameVersionDialog = false"),
-
-							VBtn("OK").
-								Color(ColorPrimary).
-								Variant(VariantFlat).
-								Theme(ThemeDark).
-								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
-						),
-					),
-				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
-			).Init("{renameVersionDialog:true}").VSlot("{locals}"),
-		})
-		return
-	}
-}
-
-func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		paramID := ctx.R.FormValue("rename_id")
-		obj := mb.NewModel()
-		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
-		if err != nil {
-			return
-		}
-
-		name := ctx.R.FormValue("VersionName")
-		if err = reflectutils.Set(obj, "Version.VersionName", name); err != nil {
-			return
-		}
-
-		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
-			return
-		}
-		qs := ctx.Queries()
-		delete(qs, "version_name")
-		delete(qs, "rename_id")
-
-		r.RunScript = web.Plaid().URL(ctx.R.RequestURI).Queries(qs).EventFunc(actions.UpdateListingDialog).Go()
-		return
-	}
-}
-
-func deleteVersionDialog(mb *presets.ModelBuilder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("delete_id")
-		versionName := ctx.R.FormValue("version_name")
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: presets.DeleteConfirmPortalName,
-			Body: web.Scope(
-				VDialog(
-					VCard(
-						VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", versionName))),
-						VCardActions(
-							VSpacer(),
-							VBtn("Cancel").
-								Variant(VariantFlat).
-								Class("ml-2").
-								On("click", "dialogLocals.deleteConfirmation = false"),
-
-							VBtn("Delete").
-								Color(ColorPrimary).
-								Variant(VariantFlat).
-								Theme(ThemeDark).
-								Attr("@click", web.Plaid().
-									URL(mb.Info().ListingHref()).
-									EventFunc(actions.DoDelete).
-									Queries(ctx.Queries()).
-									Query(presets.ParamInDialog, true).
-									Query(presets.ParamID, id).Go()),
-						),
-					),
-				).MaxWidth("580px").
-					Attr("v-model", "dialogLocals.deleteConfirmation"),
-			).VSlot(" { locals: dialogLocals }").Init(`{deleteConfirmation: true}`),
-		})
-		return
-	}
-}
-
-func (b *Builder) configSharedContainer(pb *presets.Builder) {
+func (b *Builder) configSharedContainer(pb *presets.Builder, mb *presets.ModelBuilder) {
 	db := b.db
 
 	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
-	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(b.mb.Info().ListingHref()))
+	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(mb.Info().ListingHref()))
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
 	listing.RowMenu("Rename").RowMenuItem("Rename").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
@@ -1862,15 +1453,15 @@ func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
 }
 
 type ContainerBuilder struct {
-	builder    *Builder
-	name       string
-	mb         *presets.ModelBuilder
-	eb         *presets.EditingBuilder
-	model      interface{}
-	modelType  reflect.Type
-	renderFunc RenderFunc
-	cover      string
-	group      string
+	builder      *Builder
+	name         string
+	mb           *presets.ModelBuilder
+	modelBuilder *presets.ModelBuilder
+	model        interface{}
+	modelType    reflect.Type
+	renderFunc   RenderFunc
+	cover        string
+	group        string
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -1882,11 +1473,11 @@ func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
 	return
 }
 
-func (b *Builder) RegisterModelContainer(name string, ed *presets.EditingBuilder) (r *ContainerBuilder) {
+func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) (r *ContainerBuilder) {
 	r = &ContainerBuilder{
-		name:    name,
-		builder: b,
-		eb:      ed,
+		name:         name,
+		builder:      b,
+		modelBuilder: mb,
 	}
 	b.containerBuilders = append(b.containerBuilders, r)
 	return
@@ -1905,10 +1496,11 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 
 	b.configureRelatedOnlinePagesTab()
 	b.registerEventFuncs()
+	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	return b
 }
 
-func (b *ContainerBuilder) URIName(uri string) *ContainerBuilder {
+func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 	if b.mb == nil {
 		return b
 	}
@@ -2065,14 +1657,17 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.Index(r.RequestURI, b.prefix+"/preview") >= 0 {
-		b.preview.ServeHTTP(w, r)
-		return
+	for _, mb := range b.models {
+		if strings.Index(r.RequestURI, b.prefix+"/"+mb.name+"/preview") >= 0 {
+			mb.preview.ServeHTTP(w, r)
+			return
+		}
 	}
-
-	if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
-		b.images.ServeHTTP(w, r)
-		return
+	if b.images != nil {
+		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
+			b.images.ServeHTTP(w, r)
+			return
+		}
 	}
 	b.ps.ServeHTTP(w, r)
 }
@@ -2146,95 +1741,6 @@ function(e){
 
 func defaultSubPageTitle(ctx *web.EventContext) string {
 	return i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages).PageOverView
-}
-
-// TODO move to activity just use wrapper install it
-func detailingSidePanel(b *Builder, pb *presets.Builder) presets.ObjectComponentFunc {
-	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-		var (
-			detailComponentTab     h.HTMLComponent
-			detailComponentContent h.HTMLComponent
-			notesItems             []h.HTMLComponent
-			timelineItems          []h.HTMLComponent
-			notes                  []note.QorNote
-		)
-		var (
-			p        = obj.(*Page)
-			noteMsgr = i18n.MustGetModuleMessages(ctx.R, note.I18nNoteKey, note.Messages_en_US).(*note.Messages)
-			ri       = p.PrimarySlug()
-			rt       = b.mb.Info().Label()
-		)
-
-		b.db.Where("resource_type = ? and resource_id = ?", rt, ri).
-			Order("id DESC").Find(&notes)
-		if b.ab != nil {
-			for _, i := range b.ab.GetActivityLogs(p, b.db.Order("created_at desc")) {
-				timelineItems = append(timelineItems,
-					VTimelineItem(
-						h.Div(h.Text(i.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
-						h.Div(
-							VAvatar().Text(strings.ToUpper(string(i.GetCreator()[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
-							h.Strong(i.GetCreator()).Class("ml-1"),
-						),
-						h.Div(h.Text(i.GetAction())).Class("text-caption"),
-					).DotColor(ColorSuccess).Size(SizeXSmall),
-				)
-			}
-		}
-		if len(notes) > 0 {
-			userID, _ := note.GetUserData(ctx)
-			userNote := note.UserNote{UserID: userID, ResourceType: rt, ResourceID: ri}
-			b.db.Where(userNote).FirstOrCreate(&userNote)
-			if userNote.Number != int64(len(notes)) {
-				userNote.Number = int64(len(notes))
-				b.db.Save(&userNote)
-			}
-			for _, n := range notes {
-				notesItems = append(notesItems, VTimelineItem(
-					h.Div(h.Text(n.CreatedAt.Format("2006-01-02 15:04:05 MST"))).Class("text-caption"),
-					h.Div(
-						VAvatar().Text(strings.ToUpper(string(n.Creator[0]))).Color(ColorSecondary).Class("text-h6 rounded-lg").Size(SizeXSmall),
-						h.Strong(n.Creator).Class("ml-1"),
-					),
-					h.Div(h.Text(n.Content)).Class("text-caption"),
-				).DotColor(ColorSuccess).Size(SizeXSmall),
-				)
-			}
-		}
-
-		detailComponentTab = VTabs(
-			VTab(h.Text("Activity")).Size(SizeXSmall).Value("Activity"),
-			VTab(h.Text(noteMsgr.Notes)).Size(SizeXSmall).Value("Notes"),
-		).Attr("v-model", "locals.tab").AlignTabs(Center).FixedTabs(true)
-
-		detailComponentContent = VTabsWindow(
-			VTabsWindowItem(
-				VBtn(noteMsgr.NewNote).PrependIcon("mdi-plus").Variant(VariantTonal).Class("w-100").
-					Attr("@click", web.POST().
-						EventFunc(createNoteDialogEvent).
-						Query(presets.ParamOverlay, actions.Dialog).
-						Query(presets.ParamID, p.PrimarySlug()).
-						URL(pb.GetURIPrefix()+"/pages").Go(),
-					),
-				VTimeline(
-					notesItems...,
-				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart).Class("mt-5"),
-			).Value("Notes").Class("pa-5"),
-			VTabsWindowItem(
-				VTimeline(
-					timelineItems...,
-				).Density(DensityCompact).TruncateLine("start").Side("end").Align(LocationStart),
-			).Value("Activity").Class("pa-5"),
-		).Attr("v-model", "locals.tab")
-		return web.Scope(
-			VLayout(
-				VCardText(
-					detailComponentTab,
-					detailComponentContent,
-				),
-			).Class("h-100"),
-		).VSlot("{locals}").Init(`{tab:"Activity"}`)
-	}
 }
 
 func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
