@@ -758,12 +758,11 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 		p := tpl.Page()
 		pageVersion = p.Version.Version
 	} else {
-		g := b.db.Where(obj, "id = ? and version = ?", pageID, pageVersion)
+		g := b.db.Where("id = ? and version = ?", pageID, pageVersion)
 		if locale != "" {
 			g.Where("locale_code = ?", locale)
 		}
-		err = b.db.First(obj).Error
-		if err != nil {
+		if err = g.First(obj).Error; err != nil {
 			return
 		}
 	}
