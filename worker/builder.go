@@ -142,7 +142,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	mb := pb.Model(&QorJob{}).
 		Label("Workers").
 		URIName("workers").
-		MenuIcon("smart_toy")
+		MenuIcon("mdi-briefcase")
 
 	b.mb = mb
 	mb.RegisterEventFunc("worker_selectJob", b.eventSelectJob)
