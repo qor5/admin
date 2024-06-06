@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -171,7 +172,7 @@ func NewConfig(db *gorm.DB) Config {
 				) (r interface{}, totalCount int, err error) {
 					u := getCurrentUser(ctx.R)
 					qdb := db
-					if rs := u.GetRoles(); !utils.Contains(rs, models.RoleAdmin) {
+					if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
 						qdb = db.Where("user_id = ?", u.ID)
 					}
 					return gorm2op.DataOperator(qdb).Search(model, params, ctx)
@@ -219,7 +220,7 @@ func NewConfig(db *gorm.DB) Config {
 				qdb := db
 				// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
 				// We didn't do this on permission because of we are not supporting the permission on listing page
-				if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
+				if currentRoles := u.GetRoles(); !slices.Contains(currentRoles, models.RoleAdmin) {
 					qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
 				}
 				return gorm2op.DataOperator(qdb).Search(model, params, ctx)
