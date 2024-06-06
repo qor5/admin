@@ -1,0 +1,2 @@
+export DB_PARAMS="user=admin password=123 dbname=admin_dev sslmode=disable host=localhost port=6432"
+export PORT="9000"

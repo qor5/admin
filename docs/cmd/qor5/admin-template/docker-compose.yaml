@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=admin"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=admin_dev"
+    ports:
+      - "6432:5432"

@@ -5,8 +5,8 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/qor5/ui/v3/redactor"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/ui/redactor"
 )
 
 //go:embed redactor

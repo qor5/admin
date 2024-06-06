@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"

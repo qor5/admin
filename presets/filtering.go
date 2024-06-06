@@ -3,8 +3,8 @@ package presets
 import (
 	"net/url"
 
-	"github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 func (b *ListingBuilder) FilterDataFunc(v FilterDataFunc) {
