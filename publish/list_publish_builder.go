@@ -128,11 +128,11 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		deleteMap := make(map[int][]int)
 		for _, item := range deleteItems {
 			lp := item.(ListInterface)
-			deleteMap[lp.GetPageNumber()] = append(deleteMap[lp.GetPageNumber()], lp.GetPosition())
+			deleteMap[lp.EmbedList().PageNumber] = append(deleteMap[lp.EmbedList().PageNumber], lp.EmbedList().Position)
 		}
 		for _, item := range oldItems {
 			lp := item.(ListInterface)
-			if position, exist := deleteMap[lp.GetPageNumber()]; exist && utils.Contains(position, lp.GetPosition()) {
+			if position, exist := deleteMap[lp.EmbedList().PageNumber]; exist && utils.Contains(position, lp.EmbedList().Position) {
 				continue
 			}
 			newItems = append(newItems, item)
@@ -174,10 +174,10 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 			for _, item := range items.Items {
 				if listItem, ok := item.(ListInterface); ok {
 					if err1 = b.db.Model(item).Updates(map[string]interface{}{
-						"list_updated": listItem.GetListUpdated(),
-						"list_deleted": listItem.GetListDeleted(),
-						"page_number":  listItem.GetPageNumber(),
-						"position":     listItem.GetPosition(),
+						"list_updated": listItem.EmbedList().ListUpdated,
+						"list_deleted": listItem.EmbedList().ListDeleted,
+						"page_number":  listItem.EmbedList().PageNumber,
+						"position":     listItem.EmbedList().Position,
 					}).Error; err1 != nil {
 						return
 					}
@@ -240,11 +240,11 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 		pageNumber = i
 		items := array[(i-1)*totalNumberPerPage : i*totalNumberPerPage]
 		for k := range items {
-			model := items[k].(ListInterface)
-			model.SetPageNumber(pageNumber)
-			model.SetPosition(k)
-			model.SetListUpdated(false)
-			model.SetListDeleted(false)
+			model := items[k].(ListInterface).EmbedList()
+			model.PageNumber = pageNumber
+			model.Position = k
+			model.ListUpdated = false
+			model.ListDeleted = false
 		}
 		result = append(result, &OnePageItems{
 			Items:      items,
@@ -255,11 +255,11 @@ func rePaginate(array []interface{}, totalNumberPerPage int, needNextPageFunc fu
 	items := array[(pageNumber * totalNumberPerPage):]
 	pageNumber = pageNumber + 1
 	for k := range items {
-		model := items[k].(ListInterface)
-		model.SetPageNumber(pageNumber)
-		model.SetPosition(k)
-		model.SetListUpdated(false)
-		model.SetListDeleted(false)
+		model := items[k].(ListInterface).EmbedList()
+		model.PageNumber = pageNumber
+		model.Position = k
+		model.ListUpdated = false
+		model.ListDeleted = false
 	}
 	result = append(result, &OnePageItems{
 		Items:      items,
@@ -277,7 +277,7 @@ func paginate(array []interface{}) (result []*OnePageItems) {
 	pageMap := make(map[int][]interface{})
 	for _, item := range array {
 		data := item.(ListInterface)
-		pageMap[data.GetPageNumber()] = append(pageMap[data.GetPageNumber()], item)
+		pageMap[data.EmbedList().PageNumber] = append(pageMap[data.EmbedList().PageNumber], item)
 	}
 	for pageNumber, items := range pageMap {
 		result = append(result, &OnePageItems{items, pageNumber})
@@ -323,7 +323,7 @@ func getNeedPublishResultsAndIndexResult(oldResults, newResults, republishResult
 			for position, item := range newResult.Items {
 				model := item.(ListInterface)
 				oldModel := oldResults[i].Items[position].(ListInterface)
-				if model.GetPosition() != oldModel.GetPosition() {
+				if model.EmbedList().Position != oldModel.EmbedList().Position {
 					needPublishResults = append(needPublishResults, newResult)
 					if i == len(newResults)-1 {
 						indexResult = newResult

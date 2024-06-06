@@ -234,7 +234,7 @@ func (b *Builder) AfterSave(v func(ctx context.Context, settingName string, loca
 // b.render(NewNonModelSEO("About Us")) when the locales passed to New method is only one.
 type NonModelSEO interface {
 	GetName() string
-	l10n.L10nInterface
+	l10n.LocaleInterface
 }
 
 type nonModelSEO struct {
@@ -316,8 +316,8 @@ func (b *Builder) Render(obj interface{}, req *http.Request) h.HTMLComponent {
 	if seo == nil {
 		return h.RawHTML("")
 	}
-	if v, ok := obj.(l10n.L10nInterface); ok {
-		locale = v.GetLocale()
+	if v, ok := obj.(l10n.LocaleInterface); ok {
+		locale = v.EmbedLocale().LocaleCode
 	}
 	if locale == "" && len(b.locales) == 1 {
 		locale = b.locales[0]
@@ -368,7 +368,7 @@ func (b *Builder) BatchRender(objs interface{}, req *http.Request) []h.HTMLCompo
 		var locale string
 		if isNonModelSEO {
 			obj = objV.Interface()
-			locale = obj.(NonModelSEO).GetLocale()
+			locale = obj.(NonModelSEO).EmbedLocale().LocaleCode
 		} else {
 			// the purpose of objV.addr().Interface() is to get the pointer of the element in objs.
 			// if the element in objs is a pointer, it will return the pointer itself.
@@ -378,8 +378,8 @@ func (b *Builder) BatchRender(objs interface{}, req *http.Request) []h.HTMLCompo
 			// For Example:
 			// b.BatchRender([]Product{...}) // []Product is a slice of value type.
 			obj = objV.Addr().Interface()
-			if v, ok := obj.(l10n.L10nInterface); ok {
-				locale = v.GetLocale()
+			if v, ok := obj.(l10n.LocaleInterface); ok {
+				locale = v.EmbedLocale().LocaleCode
 			}
 		}
 		if locale == "" && len(b.locales) == 1 {

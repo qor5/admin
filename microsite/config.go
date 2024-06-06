@@ -10,9 +10,9 @@ import (
 	"github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -75,7 +75,7 @@ func (mib *Builder) Install(b *presets.Builder) error {
 			fs := ctx.R.MultipartForm.File[field.Name]
 			if len(fs) == 0 {
 				if this.GetID() != 0 {
-					err = db.Where("id = ? AND version_name = ?", this.GetID(), this.GetVersionName()).Select("files_list").Find(&this).Error
+					err = db.Where("id = ? AND version_name = ?", this.GetID(), this.VersionName).Select("files_list").Find(&this).Error
 					if err != nil {
 						return
 					}
@@ -120,7 +120,7 @@ func (mib *Builder) Install(b *presets.Builder) error {
 	model.Editing().Field("FilesList").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			this := obj.(*MicroSite)
-			if this.GetStatus() == publish.StatusOffline || len(this.GetFileList()) == 0 {
+			if this.Status.Status == publish.StatusOffline || len(this.GetFileList()) == 0 {
 				return nil
 			}
 
@@ -130,7 +130,7 @@ func (mib *Builder) Install(b *presets.Builder) error {
 				h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, model.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
 			)
 
-			if this.GetStatus() == publish.StatusOnline {
+			if this.Status.Status == publish.StatusOnline {
 				for k, v := range this.GetFileList() {
 					if k != 0 {
 						content = append(content, h.Br())

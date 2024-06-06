@@ -81,7 +81,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			for _, detailField := range detailFields {
 				wrapper := func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
 					return func(obj interface{}, ctx *web.EventContext) bool {
-						return in(obj, ctx) && obj.(StatusInterface).GetStatus() == StatusDraft
+						return in(obj, ctx) && EmbedStatus(obj).Status == StatusDraft
 					}
 				}
 				detailField.WrapComponentEditBtnFunc(wrapper)
@@ -262,7 +262,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 				if err != nil {
 					return
 				}
-				scope := setPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.GetVersion(), StatusOnline)
+				scope := setPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.EmbedVersion().Version, StatusOnline)
 
 				oldVersionUpdateMap := make(map[string]interface{})
 				if _, ok := record.(ScheduleInterface); ok {
@@ -280,16 +280,16 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 			updateMap := make(map[string]interface{})
 
 			if r, ok := record.(ScheduleInterface); ok {
-				r.SetPublishedAt(&now)
-				r.SetScheduledStartAt(nil)
-				updateMap["scheduled_start_at"] = r.GetScheduledStartAt()
-				updateMap["actual_start_at"] = r.GetPublishedAt()
+				r.EmbedSchedule().ActualStartAt = &now
+				r.EmbedSchedule().ScheduledStartAt = nil
+				updateMap["scheduled_start_at"] = r.EmbedSchedule().ScheduledStartAt
+				updateMap["actual_start_at"] = r.EmbedSchedule().ActualStartAt
 			}
 			if _, ok := record.(ListInterface); ok {
 				updateMap["list_updated"] = true
 			}
 			updateMap["status"] = StatusOnline
-			updateMap["online_url"] = r.GetOnlineUrl()
+			updateMap["online_url"] = r.EmbedStatus().OnlineUrl
 			if err = b.db.Model(record).Updates(updateMap).Error; err != nil {
 				return
 			}
@@ -325,10 +325,10 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 			updateMap := make(map[string]interface{})
 			if r, ok := record.(ScheduleInterface); ok {
 				now := b.db.NowFunc()
-				r.SetUnPublishedAt(&now)
-				r.SetScheduledEndAt(nil)
-				updateMap["scheduled_end_at"] = r.GetScheduledEndAt()
-				updateMap["actual_end_at"] = r.GetUnPublishedAt()
+				r.EmbedSchedule().ActualEndAt = &now
+				r.EmbedSchedule().ScheduledEndAt = nil
+				updateMap["scheduled_end_at"] = r.EmbedSchedule().ScheduledEndAt
+				updateMap["actual_end_at"] = r.EmbedSchedule().ActualEndAt
 			}
 			if _, ok := record.(ListInterface); ok {
 				updateMap["list_deleted"] = true

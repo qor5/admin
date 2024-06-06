@@ -57,7 +57,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		for i := 0; i < needUnpublishReflectValues.Len(); i++ {
 			{
 				record := needUnpublishReflectValues.Index(i).Interface().(ScheduleInterface)
-				if record.GetScheduledStartAt() != nil && record.GetScheduledStartAt().Sub(*record.GetScheduledEndAt()) < 0 {
+				if record.EmbedSchedule().ScheduledStartAt != nil && record.EmbedSchedule().ScheduledStartAt.Sub(*record.EmbedSchedule().ScheduledEndAt) < 0 {
 					unpublishAfterPublishRecords = append(unpublishAfterPublishRecords, record)
 					continue
 				}

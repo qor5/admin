@@ -14,103 +14,84 @@ import (
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
-	. "github.com/qor5/ui/v3/vuetify"
-	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
-func overview(b *Builder, templateM *presets.ModelBuilder) presets.FieldComponentFunc {
+func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuilder) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		pm := b.mb
-
 		var (
 			start, end, se string
-			categories     []*Category
 			onlineHint     h.HTMLComponent
+			isTemplate     bool
+			ps             string
+			id             uint
 		)
-		var (
-			versionComponent = publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-			mi               = field.ModelInfo
-			p                = obj.(*Page)
-			c                = &Category{}
-		)
-		isTemplate := strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
+		if templateM != nil {
+			isTemplate = strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+		}
+		if v, ok := obj.(PrimarySlugInterface); ok {
+			ps = v.PrimarySlug()
+		}
 		if v, ok := obj.(interface {
 			GetID() uint
 		}); ok {
-			ctx.R.Form.Set(paramPageID, strconv.Itoa(int(v.GetID())))
+			id = v.GetID()
+			ctx.R.Form.Set(paramPageID, strconv.Itoa(int(id)))
 		}
 		if v, ok := obj.(publish.VersionInterface); ok {
-			ctx.R.Form.Set(paramPageVersion, v.GetVersion())
+			ctx.R.Form.Set(paramPageVersion, v.EmbedVersion().Version)
 		}
-		if l, ok := obj.(l10n.L10nInterface); ok {
-			ctx.R.Form.Set(paramLocale, l.GetLocale())
+		if l, ok := obj.(l10n.LocaleInterface); ok {
+			ctx.R.Form.Set(paramLocale, l.EmbedLocale().LocaleCode)
 		}
 		if isTemplate {
 			ctx.R.Form.Set(paramsTpl, "1")
 		}
 
-		previewDevelopUrl := b.previewHref(ctx)
+		previewDevelopUrl := b.previewHref(ctx, pm, ps)
 
-		b.db.First(c, "id = ? AND locale_code = ?", p.CategoryID, p.LocaleCode)
-		if p.GetScheduledStartAt() != nil {
-			start = p.GetScheduledStartAt().Format("2006-01-02 15:04")
-		}
-		if p.GetScheduledEndAt() != nil {
-			end = p.GetScheduledEndAt().Format("2006-01-02 15:04")
-		}
-		if start != "" || end != "" {
-			se = "Scheduled at: " + start + " ~ " + end
-		}
-
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		if err := b.db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-			panic(err)
+		if schedule, ok := obj.(publish.ScheduleInterface); ok {
+			if em := schedule.EmbedSchedule().ScheduledStartAt; em != nil {
+				start = em.Format("2006-01-02 15:04")
+			}
+			if em := schedule.EmbedSchedule().ScheduledEndAt; em != nil {
+				end = em.Format("2006-01-02 15:04")
+			}
+			if start != "" || end != "" {
+				se = "Scheduled at: " + start + " ~ " + end
+			}
 		}
 
-		versionBadge := VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, p)))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
-		if p.GetStatus() == publish.StatusOnline {
-			onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+		if p, ok := obj.(publish.StatusInterface); ok {
+			if p.EmbedStatus().Status == publish.StatusOnline {
+				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+			}
 		}
-		return web.Scope(
-			VLayout(
-				VAppBar(
-					web.Slot(
-						VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-							web.GET().URL(mi.PresetsPrefix()+"/pages").PushState(true).Go(),
-						),
-					).Name(VSlotPrepend),
-					web.Slot(
-						h.Div(
-							h.H1("{{vars.pageTitle}}"),
-							versionBadge.Class("mt-2 ml-2"),
-						).Class("d-inline-flex align-center"),
-					).Name(VSlotTitle),
-				).Color(ColorSurface).Elevation(0),
-				VMain(
-					onlineHint,
-					versionComponent,
+		return h.Div(
+			onlineHint,
+			versionComponent,
+			h.Div(
+				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").Style(`height:320px;width:100%;pointer-events: none;`),
+				h.Div(
 					h.Div(
-						h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").Style(`height:320px;width:100%;pointer-events: none;`),
-						h.Div(
-							h.Div(
-								h.Text(se),
-							).Class(fmt.Sprintf("bg-%s", ColorSecondaryLighten2)),
-							VBtn("Page Builder").PrependIcon("mdi-pencil").Color(ColorSecondary).
-								Class("rounded-sm").Height(40).Variant(VariantFlat),
-						).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
-					).Style(`position:relative`).Class("w-100").
-						Attr("@click",
-							web.Plaid().URL(fmt.Sprintf("%s/editors/%v", b.prefix, p.PrimarySlug())).PushState(true).Go(),
-						),
-					h.Div(
-						h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
-						VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
-							Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "%s"}`, previewDevelopUrl, ColorSuccess)),
-					).Class("d-inline-flex align-center"),
-				).Class("my-10"),
-			),
-		).VSlot(" { locals  }").Init(`{ tab:"Page"} `)
+						h.Text(se),
+					).Class(fmt.Sprintf("bg-%s", ColorSecondaryLighten2)),
+					VBtn("Page Builder").PrependIcon("mdi-pencil").Color(ColorSecondary).
+						Class("rounded-sm").Height(40).Variant(VariantFlat),
+				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
+			).Style(`position:relative`).Class("w-100").
+				Attr("@click",
+					web.Plaid().URL(fmt.Sprintf("%s/%s/editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),
+				),
+			h.Div(
+				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
+				VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
+					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "%s"}`, previewDevelopUrl, ColorSuccess)),
+			).Class("d-inline-flex align-center"),
+		).Class("my-10")
 	}
 }
 
@@ -175,7 +156,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
 		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
 			panic(err)
 		}

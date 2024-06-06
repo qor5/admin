@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>UI Components - Integrate a heavy Vue Component - QOR5 Document</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/docs/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
+<div class='flex-1 flex flex-col overflow-hidden'>
+<div class='flex h-full'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<div class='h-12'><search></search></div>
+
+<ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
+<li class='m-0'>
+<a href='index.html' id='index.html' onclick='window.storeMenuState("index.html")' class='inline-block px-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Introduction</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Getting Started</li>
+
+<li class='m-0'>
+<a href='getting-started/one-minute-quick-start.html' id='getting-started/one-minute-quick-start.html' onclick='window.storeMenuState("getting-started/one-minute-quick-start.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>1 Minute Quick Start</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
+
+<li class='m-0'>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing.html' id='basics/listing.html' onclick='window.storeMenuState("basics/listing.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing-customizations.html' id='basics/listing-customizations.html' onclick='window.storeMenuState("basics/listing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing Customizations</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/filter.html' id='basics/filter.html' onclick='window.storeMenuState("basics/filter.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Filters</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/editing-customizations.html' id='presets-guide/editing-customizations.html' onclick='window.storeMenuState("presets-guide/editing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Editing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/brand.html' id='basics/brand.html' onclick='window.storeMenuState("basics/brand.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Brand</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/menu.html' id='basics/menu.html' onclick='window.storeMenuState("basics/menu.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Menu</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/detail-page-for-complex-object.html' id='presets-guide/detail-page-for-complex-object.html' onclick='window.storeMenuState("presets-guide/detail-page-for-complex-object.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Detailing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout.html' id='basics/layout.html' onclick='window.storeMenuState("basics/layout.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/login.html' id='basics/login.html' onclick='window.storeMenuState("basics/login.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Login</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/permissions.html' id='presets-guide/permissions.html' onclick='window.storeMenuState("presets-guide/permissions.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Permissions</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/role.html' id='presets-guide/role.html' onclick='window.storeMenuState("presets-guide/role.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Role</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/shortcut.html' id='basics/shortcut.html' onclick='window.storeMenuState("basics/shortcut.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Keyboard Shortcut</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
+</li>
+
+<li class='m-0'>
+<a href='slug.html' id='slug.html' onclick='window.storeMenuState("slug.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Slug</a>
+</li>
+
+<li class='m-0'>
+<a href='seo.html' id='seo.html' onclick='window.storeMenuState("seo.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>SEO</a>
+</li>
+
+<li class='m-0'>
+<a href='activity-log.html' id='activity-log.html' onclick='window.storeMenuState("activity-log.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Activity Log</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/worker.html' id='basics/worker.html' onclick='window.storeMenuState("basics/worker.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Worker</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/publish.html' id='basics/publish.html' onclick='window.storeMenuState("basics/publish.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Publish</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/i18n.html' id='basics/i18n.html' onclick='window.storeMenuState("basics/i18n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Internationalization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
+
+<li class='m-0'>
+<a href='advanced-functions/the-go-html-builder.html' id='advanced-functions/the-go-html-builder.html' onclick='window.storeMenuState("advanced-functions/the-go-html-builder.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>The Go HTML builder</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/page-func-and-event-func.html' id='basics/page-func-and-event-func.html' onclick='window.storeMenuState("basics/page-func-and-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Page Func and Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout-function-and-page-injector.html' id='basics/layout-function-and-page-injector.html' onclick='window.storeMenuState("basics/layout-function-and-page-injector.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout Function and Page Injector</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/lazy-portals.html' id='vuetify-components/lazy-portals.html' onclick='window.storeMenuState("vuetify-components/lazy-portals.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Lazy Portals</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/switch-pages-with-push-state.html' id='basics/switch-pages-with-push-state.html' onclick='window.storeMenuState("basics/switch-pages-with-push-state.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Switch Pages with Push State</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/reload-page-with-a-flash.html' id='basics/reload-page-with-a-flash.html' onclick='window.storeMenuState("basics/reload-page-with-a-flash.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Reload Page with a Flash</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/partial-refresh-with-portal.html' id='basics/partial-refresh-with-portal.html' onclick='window.storeMenuState("basics/partial-refresh-with-portal.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Partial Refresh with Portal</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/manipulate-page-url-in-event-func.html' id='basics/manipulate-page-url-in-event-func.html' onclick='window.storeMenuState("basics/manipulate-page-url-in-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Manipulate Page URL in Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/summary-of-event-response.html' id='basics/summary-of-event-response.html' onclick='window.storeMenuState("basics/summary-of-event-response.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Summary of Event Response</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/web-scope.html' id='basics/web-scope.html' onclick='window.storeMenuState("basics/web-scope.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>web.Scope</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/event-handling.html' id='basics/event-handling.html' onclick='window.storeMenuState("basics/event-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Event Handling</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/form-handling.html' id='basics/form-handling.html' onclick='window.storeMenuState("basics/form-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Form Handling</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>UI Components</li>
+
+<li class='m-0'>
+<a href='vuetify-components/basic-inputs.html' id='vuetify-components/basic-inputs.html' onclick='window.storeMenuState("vuetify-components/basic-inputs.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Basic Inputs</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/a-taste-of-using-vuetify-in-go.html' id='vuetify-components/a-taste-of-using-vuetify-in-go.html' onclick='window.storeMenuState("vuetify-components/a-taste-of-using-vuetify-in-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>A Taste of using Vuetify in Go</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/linkage-select.html' id='vuetify-components/linkage-select.html' onclick='window.storeMenuState("vuetify-components/linkage-select.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Linkage Select</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/composite-new-component-with-go.html' id='components-guide/composite-new-component-with-go.html' onclick='window.storeMenuState("components-guide/composite-new-component-with-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Composite new Component With Go</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/integrate-a-heavy-vue-component.html' id='components-guide/integrate-a-heavy-vue-component.html' onclick='window.storeMenuState("components-guide/integrate-a-heavy-vue-component.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Integrate a heavy Vue Component</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Appendix</li>
+
+<li class='m-0'>
+<a href='appendix/all-demo-examples.html' id='appendix/all-demo-examples.html' onclick='window.storeMenuState("appendix/all-demo-examples.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>All Demo Examples</a>
+</li>
+</ul>
+</aside>
+
+<main class='flex flex-col w-full bg-white overflow-x-hidden overflow-y-auto'>
+<div id='docContentBox' class='flex flex-row w-full'>
+<div class='flex flex-grow flex-col w-2/3'>
+<div class='flex flex-row'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
+<div class='w-4 h-4 fill-current text-gray-300'>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2 12 L 2 11 L 14 11 L 14 12 Z M 2 8.5 L 2 7.5 L 14 7.5 L 14 8.5 Z M 2 5 L 2 4 L 14 4 L 14 5 Z M 2 5 "/>
+</g>
+</svg>
+</div>
+</button>
+</div>
+
+<div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
+<h1 class='mb-8'>Integrate a heavy Vue Component</h1>
+
+<div class='border-t'><p>We can abstract any complicated of server side render component with <a href="https://github.com/theplant/htmlgo" rel="nofollow">htmlgo</a>.
+But a lots of components in the modern web have done many things on the client side. means there are many logic
+happens before the it interact with server side.</p>
+
+<p>Here is an example, a rich text editor. you have a toolbar of buttons that you can interact, most of them won&#39;t
+need to communicate with server. We are going to integrate the fantastic rich text editor <a href="https://tiptap.dev/" rel="nofollow">tiptap</a>
+to be used as any <code>htmlgo.HTMLComponent</code>.</p>
+
+<p><strong>Step 1</strong>: <a href="https://vuejs.org/guide/quick-start.html" rel="nofollow">Create a vue3 project</a>:</p>
+
+<pre><code>$ pnpm create vue@latest
+</code></pre>
+
+<p>Modify or add a separate <code>vite.config.ts</code> config file,</p>
+
+<highlightjs :language='"javascript"' :code='"rollupOptions: {\n    external: [&#39;vue&#39;],\n    output: {\n        assetFileNames: (assetInfo) =\u003e {\n            return &#39;tiptap.css&#39;\n        },\n        globals: {\n            vue: &#39;Vue&#39;,\n        }\n    }\n}"'></highlightjs>
+<ul>
+<li>Made <code>Vue</code> as externals so that it won&#39;t be packed to the dist production js file,
+Since we will be sharing one Vue.js for in one page with other libraries.</li>
+<li>Config svg module to inline the svg icons used by tiptap</li>
+</ul>
+
+<p><strong>Step 2</strong>: Create a vue component that use tiptap</p>
+
+<p>Install <code>tiptap</code> and <code>tiptap-extensions</code> first</p>
+
+<pre><code>$ pnpm install tiptap tiptap-extensions
+</code></pre>
+
+<p>And write the <code>editor.vue</code> something like this, We omitted the template at here.</p>
+
+<highlightjs :language='"javascript"' :code='"\u003cscript setup lang=\"ts\"\u003e\nimport \"@/lib/sass/main.scss\";\nimport { Editor, EditorContent } from \"@tiptap/vue-3\";\nimport Blockquote from \"@tiptap/extension-blockquote\";\nimport Bold from \"@tiptap/extension-bold\";\nimport BulletList from \"@tiptap/extension-bullet-list\";\nimport Code from \"@tiptap/extension-code\";\nimport CodeBlock from \"@tiptap/extension-code-block\";\nimport HardBreak from \"@tiptap/extension-hard-break\";\nimport Heading from \"@tiptap/extension-heading\";\nimport History from \"@tiptap/extension-history\";\nimport Italic from \"@tiptap/extension-italic\";\nimport Link from \"@tiptap/extension-link\";\nimport ListItem from \"@tiptap/extension-list-item\";\nimport OrderedList from \"@tiptap/extension-ordered-list\";\nimport Strike from \"@tiptap/extension-strike\";\nimport Table from \"@tiptap/extension-table\";\nimport TableCell from \"@tiptap/extension-table-cell\";\nimport TableHeader from \"@tiptap/extension-table-header\";\nimport TableRow from \"@tiptap/extension-table-row\";\nimport Underline from \"@tiptap/extension-underline\";\n\nimport Document from \"@tiptap/extension-document\";\nimport Paragraph from \"@tiptap/extension-paragraph\";\nimport Text from \"@tiptap/extension-text\";\n\nimport Icon from \"./Icon.vue\";\n\nimport { onMounted, ref } from \"vue\";\n\nconst emit = defineEmits([\"update:modelValue\"]);\nconst props = defineProps({ modelValue: String });\nconst editor = ref();\n\nonMounted(() =\u003e {\n  editor.value = new Editor({\n    content: props.modelValue,\n    extensions: [\n      Blockquote,\n      Bold,\n      BulletList,\n      Code,\n      CodeBlock,\n      HardBreak,\n      Heading,\n      History,\n      Document,\n      Paragraph,\n      Text,\n      Italic,\n      Link,\n      ListItem,\n      OrderedList,\n      Strike,\n      Table.configure({\n        resizable: true,\n      }),\n      TableCell,\n      TableHeader,\n      TableRow,\n      Underline,\n    ],\n    onUpdate: () =\u003e {\n      emit(\"update:modelValue\", editor.value.getHTML());\n    },\n  });\n});\n\u003c/script\u003e\n\n\u003ctemplate\u003e\n  \u003cdiv class=\"tiptap-editor\"\u003e\n    \u003cdiv class=\"menubar\" v-if=\"editor\"\u003e\n      \u003cdiv class=\"toolbar\"\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 1 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 1 }) }\"\n        \u003e\n          H1\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 2 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 2 }) }\"\n        \u003e\n          H2\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 3 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 3 }) }\"\n        \u003e\n          H3\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBulletList().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;bulletList&#39;) }\"\n        \u003e\n          \u003cicon name=\"ul\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleOrderedList().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;orderedList&#39;) }\"\n        \u003e\n          \u003cicon name=\"ol\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBold().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleBold().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;bold&#39;) }\"\n        \u003e\n          \u003cicon name=\"bold\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleItalic().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleItalic().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;italic&#39;) }\"\n        \u003e\n          \u003cicon name=\"italic\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleStrike().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleStrike().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;strike&#39;) }\"\n        \u003e\n          \u003cicon name=\"strike\" /\u003e\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleUnderline().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleUnderline().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;underline&#39;) }\"\n        \u003e\n          \u003cicon name=\"underline\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleCode().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleCode().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;code&#39;) }\"\n        \u003e\n          \u003cicon name=\"code\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().setParagraph().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;paragraph&#39;) }\"\n        \u003e\n          \u003cicon name=\"paragraph\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().setParagraph().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;paragraph&#39;) }\"\n        \u003e\n          \u003cicon name=\"paragraph\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBlockquote().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;blockquote&#39;) }\"\n        \u003e\n          \u003cicon name=\"quote\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleCodeBlock().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;codeBlock&#39;) }\"\n        \u003e\n          \u003cicon name=\"code_block\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"\n            editor\n              .chain()\n              .focus()\n              .insertTable({ rows: 3, cols: 3, withHeaderRow: false })\n              .run()\n          \"\n        \u003e\n          \u003cicon name=\"table\" /\u003e\n        \u003c/button\u003e\n        \u003cspan v-if=\"editor.isActive(&#39;table&#39;)\"\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteTable().run()\"\n            :disabled=\"!editor.can().deleteTable()\"\n          \u003e\n            \u003cicon name=\"delete_table\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addColumnBefore().run()\"\n            :disabled=\"!editor.can().addColumnBefore()\"\n          \u003e\n            \u003cicon name=\"add_col_before\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addColumnAfter().run()\"\n            :disabled=\"!editor.can().addColumnAfter()\"\n          \u003e\n            \u003cicon name=\"add_col_after\" /\u003e\n          \u003c/button\u003e\n\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteColumn().run()\"\n            :disabled=\"!editor.can().deleteColumn()\"\n          \u003e\n            \u003cicon name=\"delete_col\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addRowBefore().run()\"\n            :disabled=\"!editor.can().addRowBefore()\"\n          \u003e\n            \u003cicon name=\"add_row_before\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addRowAfter().run()\"\n            :disabled=\"!editor.can().addRowAfter()\"\n          \u003e\n            \u003cicon name=\"add_row_after\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteRow().run()\"\n            :disabled=\"!editor.can().deleteRow()\"\n          \u003e\n            \u003cicon name=\"delete_row\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().mergeCells().run()\"\n            :disabled=\"!editor.can().mergeCells()\"\n          \u003e\n            \u003cicon name=\"combine_cells\" /\u003e\u003c/button\n        \u003e\u003c/span\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n    \u003ceditor-content :editor=\"editor\" class=\"tiptap-editor__content\" /\u003e\n  \u003c/div\u003e\n\u003c/template\u003e"'></highlightjs>
+<p><strong>Step 3</strong>: At <code>main.js</code>, Use a special hook to register the component to <code>web/corejs</code></p>
+
+<highlightjs :language='"javascript"' :code='"import { type App } from \"vue\";\nimport TipTapEditor from \"@/lib/Editor.vue\";\n\ndeclare const window: any;\nwindow.__goplaidVueComponentRegisters =\n  window.__goplaidVueComponentRegisters || [];\nwindow.__goplaidVueComponentRegisters.push((app: App, vueOptions: any): any =\u003e {\n  app.component(\"tiptap-editor\", TipTapEditor);\n});"'></highlightjs>
+<p><strong>Step 4</strong>: Use standard <a href="https://pkg.go.dev/embed" rel="nofollow">Go embed</a> to pack the dist folder</p>
+
+<p>We write a packr box inside <code>tiptapjs.go</code> along side the tiptapjs folder.</p>
+
+<highlightjs :language='"go"' :code='"import (\n\t\"embed\"\n\n\t\"github.com/qor5/web/v3\"\n)\n\n//go:embed tiptapjs/dist\nvar box embed.FS\n\nfunc JSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptapjs.umd.cjs\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n\nfunc CSSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptap.css\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n"'></highlightjs>
+<p>And write a <code>build.sh</code> to build the javascript to production version.</p>
+
+<highlightjs :language='"bash"' :code='"CUR=$(pwd)/$(dirname $0)\n\nif test \"$1\" = &#39;clean&#39;; then\n    echo \"Removing node_modules\"\n    rm -rf $CUR/tiptapjs/node_modules/\nfi\n\nrm -r $CUR/tiptapjs/dist\necho \"Building tiptapjs\"\ncd $CUR/tiptapjs \u0026\u0026 npm install \u0026\u0026 npm run build\n"'></highlightjs>
+<p><strong>Step 5</strong>: Write a Go wrapper to wrap it to be a <code>HTMLComponent</code></p>
+
+<highlightjs :language='"go"' :code='"import (\n\t\"context\"\n\n\th \"github.com/theplant/htmlgo\"\n)\n\ntype TipTapEditorBuilder struct {\n\ttag *h.HTMLTagBuilder\n}\n\nfunc TipTapEditor() (r *TipTapEditorBuilder) {\n\tr = \u0026TipTapEditorBuilder{\n\t\ttag: h.Tag(\"tiptap-editor\"),\n\t}\n\n\treturn\n}\n\nfunc (b *TipTapEditorBuilder) Attr(vs ...interface{}) (r *TipTapEditorBuilder) {\n\tb.tag.Attr(vs...)\n\treturn b\n}\n\nfunc (b *TipTapEditorBuilder) MarshalHTML(ctx context.Context) (r []byte, err error) {\n\treturn b.tag.MarshalHTML(ctx)\n}\n"'></highlightjs>
+<p><strong>Step 6</strong>: Use it in your web app</p>
+
+<p>To use it, first we have to mount the assets into our app</p>
+
+<highlightjs :language='"go"' :code='"mux.Handle(\"/assets/tiptap.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\ttiptap.JSComponentsPack(),\n\t),\n)\n\nmux.Handle(\"/assets/tiptap.css\",\n\tweb.PacksHandler(\"text/css\",\n\t\ttiptap.CSSComponentsPack(),\n\t),\n)"'></highlightjs>
+<p>And reference them in our layout function.</p>
+
+<highlightjs :language='"go"' :code='"func tiptapLayout(in web.PageFunc) (out web.PageFunc) {\n\treturn func(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\t\texamples.AddGA(ctx)\n\n\t\tctx.Injector.HeadHTML(`\n\t\t\t\u003clink rel=\"stylesheet\" href=\"/assets/tiptap.css\"\u003e\n\t\t\t\u003cscript src=&#39;/assets/vue.js&#39;\u003e\u003c/script\u003e\n\t\t`)\n\n\t\tctx.Injector.TailHTML(`\n\u003cscript src=&#39;/assets/tiptap.js&#39;\u003e\u003c/script\u003e\n\u003cscript src=&#39;/assets/main.js&#39;\u003e\u003c/script\u003e\n`)\n\t\tctx.Injector.HeadHTML(`\n\t\t\u003cstyle\u003e\n\t\t\t[v-cloak] {\n\t\t\t\tdisplay: none;\n\t\t\t}\n\t\t\u003c/style\u003e\n\t\t`)\n\n\t\tvar innerPr web.PageResponse\n\t\tinnerPr, err = in(ctx)\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\n\t\tpr.Body = innerPr.Body\n\n\t\treturn\n\t}\n}\n"'></highlightjs>
+<p>And we write a page func to use it like any other component:</p>
+
+<highlightjs :language='"go"' :code='"import (\n\t\"github.com/qor5/admin/v3/docs/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t\"github.com/qor5/x/v3/ui/tiptap\"\n\t. \"github.com/theplant/htmlgo\"\n\t\"github.com/yosssi/gohtml\"\n)\n\nfunc HelloWorldTipTap(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tdefaultValue := ctx.R.FormValue(\"Content1\")\n\tif len(defaultValue) == 0 {\n\t\tdefaultValue = `\n\t\t\t\u003ch1\u003eHello\u003c/h1\u003e\n\t\t\t\u003cp\u003e\n\t\t\t\tThis is a nice editor\n\t\t\t\u003c/p\u003e\n\t\t\t\u003cul\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  123\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  456\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  789\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t\u003c/ul\u003e\n`\n\t}\n\n\tpr.Body = Div(\n\t\ttiptap.TipTapEditor().\n\t\t\tAttr(\"v-model\", \"form.Content1\"),\n\t\tHr(),\n\t\tPre(\n\t\t\tgohtml.Format(ctx.R.FormValue(\"Content1\")),\n\t\t).Style(\"background-color: #f8f8f8; padding: 20px;\"),\n\t\tButton(\"Submit\").Style(\"font-size: 24px\").\n\t\t\tAttr(\"@click\", web.POST().EventFunc(\"refresh\").Go()),\n\t)\n\n\treturn\n}\n\nfunc refresh(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.Reload = true\n\treturn\n}\n\nvar HelloWorldTipTapPB = web.Page(HelloWorldTipTap).\n\tEventFunc(\"refresh\", refresh)\n\nvar HelloWorldTipTapPath = examples.URLPathByFunc(HelloWorldTipTap)\n"'></highlightjs>
+<p>And now let&#39;s check out our fruits:</p>
+
+<div>
+<div class='demo'>
+<a href='/samples/hello-world-tip-tap' target='_blank'>Check the demo</a>
+ | 
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/use-tiptap-editor.go#L3-L64' target='_blank'>Source on GitHub</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class='font-medium text-base hidden xl:block text-gray-600 pt-4'>
+<div class='sticky top-4 w-52'>On This Page<toc></toc></div>
+</div>
+</div>
+<search-result></search-result></main>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

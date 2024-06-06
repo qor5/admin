@@ -34,12 +34,12 @@ import (
 	"github.com/qor5/admin/v3/slug"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
-	v "github.com/qor5/ui/v3/vuetify"
-	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
@@ -356,7 +356,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
-				if this.GetStatus() != publish.StatusOnline {
+				if this.Status.Status != publish.StatusOnline {
 					return nil
 				}
 
@@ -387,7 +387,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
-				if this.GetStatus() != publish.StatusOnline || this.GetPageNumber() == 0 {
+				if this.Status.Status != publish.StatusOnline || this.PageNumber == 0 {
 					return nil
 				}
 
@@ -398,7 +398,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 				)
 				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
-					p := this.GetListUrl(strconv.Itoa(this.GetPageNumber()))
+					p := this.GetListUrl(strconv.Itoa(this.PageNumber))
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
 				}
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
-	"github.com/qor5/admin/v3/pagebuilder/example/layouts"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
@@ -61,7 +60,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 
-	pb.PageLayout(layouts.DefaultPageLayoutFunc)
+	pb.PageLayout(pagebuilder.DefaultPageLayoutFunc)
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"
 	pb.Images(http.StripPrefix(path.Join(prefix, imagePrefix), http.FileServer(http.FS(fSys))), imagePrefix)

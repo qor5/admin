@@ -51,20 +51,20 @@ func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 		IsDelete: false,
 	})
 
-	if this.GetStatus() == publish.StatusOnline && this.GetOnlineUrl() != this.getPublishUrl() {
+	if this.Status.Status == publish.StatusOnline && this.OnlineUrl != this.getPublishUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      this.GetOnlineUrl(),
+			Url:      this.OnlineUrl,
 			IsDelete: true,
 		})
 	}
 
-	this.SetOnlineUrl(this.getPublishUrl())
+	this.OnlineUrl = this.getPublishUrl()
 	return
 }
 
 func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      this.GetOnlineUrl(),
+		Url:      this.OnlineUrl,
 		IsDelete: true,
 	})
 	return

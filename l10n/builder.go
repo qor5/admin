@@ -110,7 +110,7 @@ func LocalePathFromContext(m interface{}, ctx context.Context) (localePath strin
 		return
 	}
 
-	if locale, ok := IsLocalizableFromCtx(ctx); ok {
+	if locale, ok := IsLocalizableFromContext(ctx); ok {
 		localePath = l10nBuilder.GetLocalePath(locale)
 	}
 
@@ -216,18 +216,11 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	pb.FieldDefaults(presets.WRITE).
 		FieldType(Locale{}).
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
-			var value string
-			id, err := reflectutils.Get(obj, "ID")
-			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-				value = field.Value(obj).(Locale).GetLocale()
-			} else {
-				value = b.GetCorrectLocaleCode(ctx.R)
-			}
-
+			value := b.localeValue(obj, field, ctx)
 			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			value := field.Value(obj).(Locale).GetLocale()
+			value := EmbedLocale(obj).LocaleCode
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}
@@ -244,13 +237,24 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	return nil
 }
 
+func (b *Builder) localeValue(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string {
+	var value string
+	id, err := reflectutils.Get(obj, "ID")
+	if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
+		value = EmbedLocale(obj).LocaleCode
+	} else {
+		value = b.GetCorrectLocaleCode(ctx.R)
+	}
+	return value
+}
+
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	ab := b.ab
 	db := b.db
 	obj := m.NewModel()
 	_ = obj.(presets.SlugEncoder)
 	_ = obj.(presets.SlugDecoder)
-	_ = obj.(L10nInterface)
+	_ = obj.(LocaleInterface)
 
 	m.Listing().Field("Locale")
 	m.Editing().Field("Locale")
@@ -315,18 +319,11 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	pb.FieldDefaults(presets.WRITE).
 		FieldType(Locale{}).
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
-			var value string
-			id, err := reflectutils.Get(obj, "ID")
-			if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-				value = field.Value(obj).(Locale).GetLocale()
-			} else {
-				value = b.GetCorrectLocaleCode(ctx.R)
-			}
-
+			value := b.localeValue(obj, field, ctx)
 			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			value := field.Value(obj).(Locale).GetLocale()
+			value := EmbedLocale(obj).LocaleCode
 			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}

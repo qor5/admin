@@ -4,10 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -69,10 +66,9 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 }
 
 func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("BrandGrid"))+"_%v", data.ID), data.AnchorID, "container-brand_grid",
+	body = ContainerWrapper(data.AnchorID, "container-brand_grid",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "", input,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),

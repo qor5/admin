@@ -3,15 +3,13 @@ package containers
 import (
 	"strings"
 
-	"github.com/qor5/admin/v3/pagebuilder"
-
 	"github.com/qor5/admin/v3/media/media_library"
 
 	. "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
-	v "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 )
 
 const (
@@ -33,10 +31,10 @@ var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.Event
 	return v.VTextarea().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).Variant(v.FieldVariantUnderlined)
 }
 
-func ContainerWrapper(containerDataID, anchorID, classes,
+func ContainerWrapper(anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
-	isEditor bool, isReadonly bool, style string, input *pagebuilder.RenderInput, comp ...HTMLComponent,
+	style string, comp ...HTMLComponent,
 ) HTMLComponent {
 	return Div(comp...).
 		Id(anchorID).

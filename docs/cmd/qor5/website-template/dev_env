@@ -1,0 +1,3 @@
+export DB_PARAMS="user=website password=123 dbname=website_dev sslmode=disable host=localhost port=6432"
+export PORT="9000"
+export PUBLISH_URL="http://localhost:9001"

@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  db:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=docs"
+      - "POSTGRES_PASSWORD=docs"
+      - "POSTGRES_DB=docs"
+    ports:
+      - 6532:5432

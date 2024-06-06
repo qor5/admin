@@ -13,10 +13,10 @@ import (
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
-	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -103,7 +103,7 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 			var seoNames []string
 			for name := range b.registeredSEO {
 				if name, ok := name.(string); ok {
@@ -233,7 +233,7 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 		fieldPrefix string
 		setting     Setting
 		db          = b.db
-		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _   = l10n.IsLocalizableFromContext(ctx.R.Context())
 	)
 	seo := b.GetSEO(obj)
 	if seo == nil {
@@ -482,7 +482,7 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 		fieldPrefix string
 		setting     Setting
 		db          = b.db
-		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _   = l10n.IsLocalizableFromContext(ctx.R.Context())
 	)
 	seo := b.GetSEO(obj)
 	if seo == nil {
