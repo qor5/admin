@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,15 +218,18 @@
 <h1 class='mb-8'>Slug</h1>
 
 <div class='border-t'><p>Slug provides an easy way to create pretty URLs for your model.</p>
-<h2 id="usage">Usage</h2>
+<h2><a name="usage" class="anchor" href="#usage" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Usage</h2>
+
 <p>If the source field called <code>Name</code>, Use <code>*WithSlug</code> which is <code>NameWithSlug</code> as the slug field name, the field type should be <code>slug.Slug</code>. Then the pretty URL would be derived from <code>Name</code> automatically on editing.</p>
-<pre><code class="language-go">
+
+<div class="highlight highlight-go"><pre>
 type User struct {
 	gorm.Model
 	Name            string
 	NameWithSlug    slug.Slug
 }
-</code></pre>
+</pre></div>
 </div>
 </div>
 </div>
@@ -240,7 +242,6 @@ type User struct {
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

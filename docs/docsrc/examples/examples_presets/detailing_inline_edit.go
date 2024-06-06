@@ -1,10 +1,10 @@
 package examples_presets
 
 import (
+	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/docs/v3/docsrc/examples"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"

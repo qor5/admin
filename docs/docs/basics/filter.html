@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,7 +217,7 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Filters</h1>
 
-<div class='border-t'><p>Assume we have a <code>status</code> filed in Post. It has 2 possible values, &quot;draft&quot; and &quot;online&quot;. If we want to filter posts by its status. We can add a filter like this:</p>
+<div class='border-t'><p>Assume we have a <code>status</code> filed in Post. It has 2 possible values, &#34;draft&#34; and &#34;online&#34;. If we want to filter posts by its status. We can add a filter like this:</p>
 
 <highlightjs :language='"go"' :code='"import (\n\t\"time\"\n\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/admin/v3/presets/gorm2op\"\n\t\"github.com/qor5/web/v3\"\n\t\"github.com/qor5/x/v3/ui/vuetifyx\"\n\t\"gorm.io/gorm\"\n)\n\ntype Post struct {\n\tID        uint\n\tTitle     string\n\tBody      string\n\tUpdatedAt time.Time\n\tCreatedAt time.Time\n\tDisabled  bool\n\n\tStatus string\n\n\tCategoryID uint\n}\n\nfunc PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tb.DataOperator(gorm2op.DataOperator(db))\n\terr := db.AutoMigrate(\u0026Post{})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\t// create a ModelBuilder\n\tpostBuilder := b.Model(\u0026Post{})\n\n\t// get its ListingBuilder\n\tlisting := postBuilder.Listing()\n\n\t// Call FilterDataFunc\n\tlisting.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {\n\t\t// Prepare filter options, it is a two dimension array: [][]string{\"text\", \"value\"}\n\t\toptions := []*vuetifyx.SelectItem{\n\t\t\t{Text: \"Draft\", Value: \"draft\"},\n\t\t\t{Text: \"Online\", Value: \"online\"},\n\t\t}\n\n\t\treturn []*vuetifyx.FilterItem{\n\t\t\t{\n\t\t\t\tKey:      \"status\",\n\t\t\t\tLabel:    \"Status\",\n\t\t\t\tItemType: vuetifyx.ItemTypeSelect,\n\t\t\t\t// %s is the condition. e.g. \u003e, \u003e=, =, \u003c, \u003c=, like，\n\t\t\t\t// ? is the value of selected option\n\t\t\t\tSQLCondition: `status %s ?`,\n\t\t\t\tOptions:      options,\n\t\t\t},\n\t\t}\n\t})\n\treturn\n}\n"'></highlightjs>
 
@@ -226,42 +225,54 @@
 <div class='demo'>
 <a href='/samples/presets-basic-filter/posts' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/filter.go#L3-L67' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/filter.go#L3-L67' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<h3 id="qor5-now-supports-7-types-of-filter-option">QOR5 now supports 7 types of filter option.</h3>
+<h3><a name="qor5-now-supports-7-types-of-filter-option" class="anchor" href="#qor5-now-supports-7-types-of-filter-option" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>QOR5 now supports 7 types of filter option.</h3>
+
 <p>PLEASE NOTE THAT all below sample are required you to provide the <code>SQLCondition</code> you want to perform.</p>
-<h2 id="1-filter-by-string">1. Filter by String</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeString</code>. No <code>Options</code> needed.<br />
+<h2><a name="1-filter-by-string" class="anchor" href="#1-filter-by-string" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+1. Filter by String</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeString</code>. No <code>Options</code> needed.
 Under this mode, the filter would work in 2 ways,</p>
+
 <ol>
 <li>the target value equal to the input string</li>
 <li>the target value contains the input string</li>
 </ol>
-<h2 id="2-filter-by-number">2. Filter by Number</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeNumber</code>. No <code>Options</code> needed.<br />
+<h2><a name="2-filter-by-number" class="anchor" href="#2-filter-by-number" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+2. Filter by Number</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeNumber</code>. No <code>Options</code> needed.
 Under this mode, the filter would work in 4 ways</p>
+
 <ol>
 <li>the target value equal to the input number</li>
 <li>the target value is between the input numbers</li>
 <li>the target value is greater than the input number</li>
 <li>the target value is less than the input number</li>
 </ol>
-<h2 id="3-filter-by-date">3. Filter by Date</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDate</code>. No <code>Options</code> needed.<br />
+<h2><a name="3-filter-by-date" class="anchor" href="#3-filter-by-date" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>3. Filter by Date</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDate</code>. No <code>Options</code> needed.
 Under this mode, the filter would render a date picker for users to select.</p>
-<h2 id="4-filter-by-date-range">4. Filter by Date Range</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDateRange</code>. No <code>Options</code> needed.<br />
-Under this mode, the filter would render 2 date pickers, &quot;from&quot; and &quot;to&quot; for users to select.</p>
-<h2 id="5-filter-by-datetime-range">5. Filter by Datetime Range</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDatetimeRange</code>. No <code>Options</code> needed.<br />
-Under this mode, the filter would render 2 <em>date time</em> pickers, &quot;from&quot; and &quot;to&quot; for users to select.</p>
-<h2 id="6-filter-by-selectable-items">6. Filter by Selectable Items</h2>
+<h2><a name="4-filter-by-date-range" class="anchor" href="#4-filter-by-date-range" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>4. Filter by Date Range</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDateRange</code>. No <code>Options</code> needed.
+Under this mode, the filter would render 2 date pickers, &#34;from&#34; and &#34;to&#34; for users to select.</p>
+<h2><a name="5-filter-by-datetime-range" class="anchor" href="#5-filter-by-datetime-range" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>5. Filter by Datetime Range</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeDatetimeRange</code>. No <code>Options</code> needed.
+Under this mode, the filter would render 2 <em>date time</em> pickers, &#34;from&#34; and &#34;to&#34; for users to select.</p>
+<h2><a name="6-filter-by-selectable-items" class="anchor" href="#6-filter-by-selectable-items" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>6. Filter by Selectable Items</h2>
+
 <p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeSelect</code>. You need to provide <code>Options</code> like this. The <code>Text</code> is the text users can see in the selector, the <code>Value</code> is the value of the selector.</p>
 
 <highlightjs :language='"go"' :code='"Options: []*vuetifyx.SelectItem{\n\t\t{Text: \"Active\", Value: \"active\"},\n\t\t{Text: \"Inactive\", Value: \"inactive\"},\n\t},"'></highlightjs>
-<h2 id="7-filter-by-multiple-select">7. Filter by Multiple Select</h2>
-<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeMultipleSelect</code>. You need to provide <code>Options</code> like above &quot;Selectable Items&quot;. But in this mode, the filter would render the options as multi-selectable checkboxes and the query of this filter becomes <code>IN</code> and <code>NOT IN</code>.</p>
+<h2><a name="7-filter-by-multiple-select" class="anchor" href="#7-filter-by-multiple-select" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>7. Filter by Multiple Select</h2>
+
+<p>Set the <code>ItemType</code> as <code>vuetifyx.ItemTypeMultipleSelect</code>. You need to provide <code>Options</code> like above &#34;Selectable Items&#34;. But in this mode, the filter would render the options as multi-selectable checkboxes and the query of this filter becomes <code>IN</code> and <code>NOT IN</code>.</p>
 </div>
 </div>
 </div>
@@ -274,7 +285,6 @@ Under this mode, the filter would render 2 <em>date time</em> pickers, &quot;fro
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

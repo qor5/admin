@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,7 +217,7 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Listing Customizations</h1>
 
-<div class='border-t'><p>We get a default listing page with default columns, But default columns from database<br />
+<div class='border-t'><p>We get a default listing page with default columns, But default columns from database
 columns rarely fit the needs for any real application.</p>
 
 <h2 id='change-list-columns-and-component-of-field'>Change List Columns and Component of Field
@@ -232,10 +231,11 @@ columns rarely fit the needs for any real application.</p>
 <div class='demo'>
 <a href='/samples/presets-listing-customization-fields/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/listing.go#L68-L173' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L68-L173' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <p>What we did with above code:</p>
+
 <ul>
 <li>Added a new field to listing table that not exists on the struct <code>Customer</code></li>
 <li>Define the listing display for the listing table by using the <code>Td()</code> and fetch the company data from a different table with associated column value</li>
@@ -243,7 +243,7 @@ columns rarely fit the needs for any real application.</p>
 <li>Limit the edit drawer field to only have <code>Name</code> and <code>CompanyID</code></li>
 <li>Made the <code>CompanyID</code> field a vuetify <code>VSelect</code> component</li>
 <li>Add companies as a new navigation item, that you can manage companies data</li>
-<li><code>.SearchColumns(&quot;name&quot;, &quot;email&quot;)</code> configure the top navigation search box searches which columns with sql like operation</li>
+<li><code>.SearchColumns(&#34;name&#34;, &#34;email&#34;)</code> configure the top navigation search box searches which columns with sql like operation</li>
 </ul>
 
 <h2 id='filters-panel'>Filters Panel
@@ -257,13 +257,15 @@ columns rarely fit the needs for any real application.</p>
 <div class='demo'>
 <a href='/samples/presets-listing-customization-filters/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/listing.go#L175-L226' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L175-L226' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<p><code>FilterDataFunc</code> of <code>presets.ListingBuilder</code> setup to have the filter menu or not.<br />
-And how it will combine the sql conditions when doing query. the filter menu will<br />
+<p><code>FilterDataFunc</code> of <code>presets.ListingBuilder</code> setup to have the filter menu or not.
+And how it will combine the sql conditions when doing query. the filter menu will
 change the url query strings with the filter values.</p>
+
 <p>Current we support these types</p>
+
 <ul>
 <li><code>ItemTypeDate</code>: set it as a date filter item, which have many switches to support date and date range</li>
 <li><code>ItemTypeNumber</code>: set it to a number filter item, which have switches to support number and number range</li>
@@ -274,8 +276,8 @@ change the url query strings with the filter values.</p>
 <h2 id='filter-tabs'>Filter Tabs
 <a href='#filter-tabs' class='anchor'></a>
 </h2>
-<p>Filter tabs is based on Filters configuration. But display as tabs above the list,<br />
-You can think it as a short cut that used very frequently to filter something instead of<br />
+<p>Filter tabs is based on Filters configuration. But display as tabs above the list,
+You can think it as a short cut that used very frequently to filter something instead of
 use the pop up panel of filter.</p>
 
 <highlightjs :language='"go"' :code='"\nfunc PresetsListingCustomizationTabs(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tmb, cl, ce, dp = PresetsListingCustomizationFilters(b, db)\n\n\tcl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {\n\t\tvar c Company\n\t\tdb.First(\u0026c)\n\t\treturn []*presets.FilterTab{\n\t\t\t{\n\t\t\t\tLabel: \"Felix\",\n\t\t\t\tQuery: url.Values{\"name.ilike\": []string{\"felix\"}},\n\t\t\t},\n\t\t\t{\n\t\t\t\tLabel: \"The Plant\",\n\t\t\t\tQuery: url.Values{\"company\": []string{fmt.Sprint(c.ID)}},\n\t\t\t},\n\t\t\t{\n\t\t\t\tLabel: \"Approved\",\n\t\t\t\tQuery: url.Values{\"approved.gt\": []string{fmt.Sprint(1)}},\n\t\t\t},\n\t\t\t{\n\t\t\t\tLabel: \"All\",\n\t\t\t\tQuery: url.Values{\"all\": []string{\"1\"}},\n\t\t\t},\n\t\t}\n\t})\n\treturn\n}\n"'></highlightjs>
@@ -284,16 +286,17 @@ use the pop up panel of filter.</p>
 <div class='demo'>
 <a href='/samples/presets-listing-customization-tabs/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/listing.go#L228-L263' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L228-L263' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<p><code>Query</code> string name must be from the Filter's item configuration key field.</p>
+<p><code>Query</code> string name must be from the Filter&#39;s item configuration key field.</p>
 
 <h2 id='bulk-actions'>Bulk Actions
 <a href='#bulk-actions' class='anchor'></a>
 </h2>
-<p>Bulk actions makes the list row show checkboxes, and you can select one or many rows,<br />
+<p>Bulk actions makes the list row show checkboxes, and you can select one or many rows,
 Later do an bulk update data for all of them.</p>
+
 <p>Here is how to use it:</p>
 
 <highlightjs :language='"go"' :code='"\nfunc PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tmb, cl, ce, _ = PresetsListingCustomizationTabs(b, db)\n\n\tcl.BulkAction(\"Approve\").Label(\"Approve\").\n\t\tUpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {\n\t\t\tcomment := ctx.R.FormValue(\"ApprovalComment\")\n\t\t\tif len(comment) \u003c 10 {\n\t\t\t\tctx.Flash = \"comment should larger than 10\"\n\t\t\t\treturn\n\t\t\t}\n\t\t\terr = db.Model(\u0026Customer{}).\n\t\t\t\tWhere(\"id IN (?)\", selectedIds).\n\t\t\t\tUpdates(map[string]interface{}{\"approved_at\": time.Now(), \"approval_comment\": comment}).Error\n\t\t\tif err != nil {\n\t\t\t\tctx.Flash = err.Error()\n\t\t\t}\n\t\t\treturn\n\t\t}).\n\t\tComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {\n\t\t\tcomment := ctx.R.FormValue(\"ApprovalComment\")\n\t\t\terrorMessage := \"\"\n\t\t\tif ctx.Flash != nil {\n\t\t\t\terrorMessage = ctx.Flash.(string)\n\t\t\t}\n\t\t\treturn v.VTextField().\n\t\t\t\tVariant(\"underlined\").\n\t\t\t\tAttr(web.VField(\"ApprovalComment\", comment)...).\n\t\t\t\tLabel(\"Comment\").\n\t\t\t\tErrorMessages(errorMessage)\n\t\t})\n\n\tcl.BulkAction(\"Delete\").Label(\"Delete\").\n\t\tUpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {\n\t\t\terr = db.Where(\"id IN (?)\", selectedIds).Delete(\u0026Customer{}).Error\n\t\t\treturn\n\t\t}).\n\t\tComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {\n\t\t\treturn h.Div().Text(fmt.Sprintf(\"Are you sure you want to delete %s ?\", selectedIds)).Class(\"title deep-orange--text\")\n\t\t})\n\n\treturn\n}\n"'></highlightjs>
@@ -302,7 +305,7 @@ Later do an bulk update data for all of them.</p>
 <div class='demo'>
 <a href='/samples/presets-listing-customization-bulk-actions/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/listing.go#L265-L315' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L265-L315' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
@@ -313,10 +316,11 @@ Later do an bulk update data for all of them.</p>
 <h2 id='search-func'>Search Func
 <a href='#search-func' class='anchor'></a>
 </h2>
-<p><code>SearchFunc</code> defines a data processing function for <code>ListingBuilder</code>.<br />
-This function searches for a model based on the specified search parameters.<br />
-It returns the search results along with the total count of matching records.<br />
+<p><code>SearchFunc</code> defines a data processing function for <code>ListingBuilder</code>.
+This function searches for a model based on the specified search parameters.
+It returns the search results along with the total count of matching records.
 You can process the data displayed on the listing page here based on context or custom conditions before pagination.</p>
+
 <p>In the following example, the listing page only displays approved customers.</p>
 
 <highlightjs :language='"go"' :code='"\nfunc PresetsListingCustomizationSearcher(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tb.DataOperator(gorm2op.DataOperator(db))\n\tmb = b.Model(\u0026Customer{})\n\tmb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {\n\t\t// only display approved customers\n\t\tqdb := db.Where(\"approved_at IS NOT NULL\")\n\t\treturn gorm2op.DataOperator(qdb).Search(model, params, ctx)\n\t})\n\treturn\n}\n"'></highlightjs>
@@ -325,7 +329,7 @@ You can process the data displayed on the listing page here based on context or 
 <div class='demo'>
 <a href='/samples/presets-listing-customization-searcher/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/listing.go#L317-L335' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L317-L335' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -340,7 +344,6 @@ You can process the data displayed on the listing page here based on context or 
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

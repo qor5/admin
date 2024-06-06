@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/qor5/docs/v3/docsrc"
-	"github.com/qor5/docs/v3/docsrc/assets"
+	"github.com/qor5/admin/v3/docs/docsrc"
+	"github.com/qor5/admin/v3/docs/docsrc/assets"
 	"github.com/theplant/docgo"
 )
 

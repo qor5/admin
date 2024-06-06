@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/qor5/docs/v3/docsrc/examples/examples_vuetify"
-	"github.com/qor5/docs/v3/docsrc/examples/examples_vuetifyx"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetify"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/theplant/osenv"
 )

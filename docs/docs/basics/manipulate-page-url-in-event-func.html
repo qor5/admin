@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,32 +217,39 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Manipulate Page URL in Event Func</h1>
 
-<div class='border-t'><p>Encode page state into query strings in url is useful. because user can paste the link to another person,<br />
+<div class='border-t'><p>Encode page state into query strings in url is useful. because user can paste the link to another person,
 That can open the page to the exact state of the page being sent, Not the initial state of the page.</p>
+
 <p>For example:</p>
 
-<highlightjs :language='"go"' :code='"import (\n\t\"net/url\"\n\n\t\"github.com/qor5/docs/v3/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t. \"github.com/theplant/htmlgo\"\n)\n\ntype multiStateFormData struct {\n\tName string\n\tDate string\n}\n\nvar multiStateFd = multiStateFormData{\n\tName: \"Felix\",\n\tDate: \"2021-01-01\",\n}\n\nfunc MultiStatePage(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\ttitle := \"Multi State Page\"\n\tif len(ctx.R.URL.Query().Get(\"title\")) \u003e 0 {\n\t\ttitle = ctx.R.URL.Query().Get(\"title\")\n\t}\n\tvar panel HTMLComponent\n\tif len(ctx.R.URL.Query().Get(\"panel\")) \u003e 0 {\n\t\tpanel = Div(\n\t\t\tweb.Scope(\n\t\t\t\tFieldset(\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Name\"),\n\t\t\t\t\t\tInput(\"\").Type(\"text\").Attr(\"v-model\", \"form.Name\"),\n\t\t\t\t\t),\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Date\"),\n\t\t\t\t\t\tInput(\"\").Type(\"date\").Attr(\"v-model\", \"form.Date\"),\n\t\t\t\t\t),\n\t\t\t\t),\n\t\t\t\tButton(\"Update\").Attr(\"@click\", web.POST().EventFunc(\"update5\").Go()),\n\t\t\t).VSlot(\"{ locals, form }\").FormInit(JSONString(multiStateFd)),\n\t\t).Style(\"border: 5px solid orange; height: 200px;\")\n\t}\n\n\tpr.Body = Div(\n\t\tH1(title),\n\t\tOl(\n\t\t\tLi(\n\t\t\t\tA().Text(\"change page title\").Href(\"javascript:;\").\n\t\t\t\t\tAttr(\"@click\", web.POST().Queries(url.Values{\"title\": []string{\"Hello\"}}).Go()),\n\t\t\t),\n\t\t),\n\t\tpanel,\n\n\t\tTable(\n\t\t\tThead(\n\t\t\t\tTh(\"Name\"),\n\t\t\t\tTh(\"Date\"),\n\t\t\t),\n\t\t\tTbody(\n\t\t\t\tTr(\n\t\t\t\t\tTd(Text(multiStateFd.Name)),\n\t\t\t\t\tTd(Text(multiStateFd.Date)),\n\t\t\t\t\tTd(A().Text(\"Edit with Panel\").Href(\"javascript:;\").Attr(\"@click\",\n\t\t\t\t\t\tweb.POST().EventFunc(\"openPanel\").Go())),\n\t\t\t\t),\n\t\t\t),\n\t\t),\n\t)\n\treturn\n}\n\nfunc openPanel(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.PushState = web.Location(url.Values{\"panel\": []string{\"1\"}}).MergeQuery(true)\n\treturn\n}\n\nfunc update5(ctx *web.EventContext) (er web.EventResponse, err error) {\n\tctx.MustUnmarshalForm(\u0026multiStateFd)\n\ter.PushState = web.Location(url.Values{\"panel\": []string{\"\"}}).MergeQuery(true)\n\treturn\n}\n\nvar MultiStatePagePB = web.Page(MultiStatePage).\n\tEventFunc(\"openPanel\", openPanel).\n\tEventFunc(\"update5\", update5)\n\nvar MultiStatePagePath = examples.URLPathByFunc(MultiStatePage)\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"import (\n\t\"net/url\"\n\n\t\"github.com/qor5/admin/v3/docs/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t. \"github.com/theplant/htmlgo\"\n)\n\ntype multiStateFormData struct {\n\tName string\n\tDate string\n}\n\nvar multiStateFd = multiStateFormData{\n\tName: \"Felix\",\n\tDate: \"2021-01-01\",\n}\n\nfunc MultiStatePage(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\ttitle := \"Multi State Page\"\n\tif len(ctx.R.URL.Query().Get(\"title\")) \u003e 0 {\n\t\ttitle = ctx.R.URL.Query().Get(\"title\")\n\t}\n\tvar panel HTMLComponent\n\tif len(ctx.R.URL.Query().Get(\"panel\")) \u003e 0 {\n\t\tpanel = Div(\n\t\t\tweb.Scope(\n\t\t\t\tFieldset(\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Name\"),\n\t\t\t\t\t\tInput(\"\").Type(\"text\").Attr(\"v-model\", \"form.Name\"),\n\t\t\t\t\t),\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Date\"),\n\t\t\t\t\t\tInput(\"\").Type(\"date\").Attr(\"v-model\", \"form.Date\"),\n\t\t\t\t\t),\n\t\t\t\t),\n\t\t\t\tButton(\"Update\").Attr(\"@click\", web.POST().EventFunc(\"update5\").Go()),\n\t\t\t).VSlot(\"{ locals, form }\").FormInit(JSONString(multiStateFd)),\n\t\t).Style(\"border: 5px solid orange; height: 200px;\")\n\t}\n\n\tpr.Body = Div(\n\t\tH1(title),\n\t\tOl(\n\t\t\tLi(\n\t\t\t\tA().Text(\"change page title\").Href(\"javascript:;\").\n\t\t\t\t\tAttr(\"@click\", web.POST().Queries(url.Values{\"title\": []string{\"Hello\"}}).Go()),\n\t\t\t),\n\t\t),\n\t\tpanel,\n\n\t\tTable(\n\t\t\tThead(\n\t\t\t\tTh(\"Name\"),\n\t\t\t\tTh(\"Date\"),\n\t\t\t),\n\t\t\tTbody(\n\t\t\t\tTr(\n\t\t\t\t\tTd(Text(multiStateFd.Name)),\n\t\t\t\t\tTd(Text(multiStateFd.Date)),\n\t\t\t\t\tTd(A().Text(\"Edit with Panel\").Href(\"javascript:;\").Attr(\"@click\",\n\t\t\t\t\t\tweb.POST().EventFunc(\"openPanel\").Go())),\n\t\t\t\t),\n\t\t\t),\n\t\t),\n\t)\n\treturn\n}\n\nfunc openPanel(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.PushState = web.Location(url.Values{\"panel\": []string{\"1\"}}).MergeQuery(true)\n\treturn\n}\n\nfunc update5(ctx *web.EventContext) (er web.EventResponse, err error) {\n\tctx.MustUnmarshalForm(\u0026multiStateFd)\n\ter.PushState = web.Location(url.Values{\"panel\": []string{\"\"}}).MergeQuery(true)\n\treturn\n}\n\nvar MultiStatePagePB = web.Page(MultiStatePage).\n\tEventFunc(\"openPanel\", openPanel).\n\tEventFunc(\"update5\", update5)\n\nvar MultiStatePagePath = examples.URLPathByFunc(MultiStatePage)\n"'></highlightjs>
 
 <div>
 <div class='demo'>
 <a href='/samples/multi-state-page' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/manipulate-page-url.go#L3-L91' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/manipulate-page-url.go#L3-L91' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <p>This page have several state that encoded in the url:</p>
+
 <ul>
 <li>Page title have a default value, but if provided with a <code>title</code> query string, it will use that value</li>
 <li>The edit panel can be open, or closed based on having the <code>panel</code> query string or not</li>
 </ul>
-<p><code>web.Location(url.Values{&quot;panel&quot;: []string{&quot;1&quot;}}).MergeQuery(true)</code> means it will do a push state request to current page, with panel query string panel=1.<br />
+
+<p><code>web.Location(url.Values{&#34;panel&#34;: []string{&#34;1&#34;}}).MergeQuery(true)</code> means it will do a push state request to current page, with panel query string panel=1.
 <code>MergeQuery</code> means that it will not touch other query strings like <code>title=1</code> we mentioned above.</p>
-<p>In <code>update5</code> event func, which is when you click the update button after open the panel, <code>web.Location(url.Values{&quot;panel&quot;: []string{&quot;&quot;}}).MergeQuery(true)</code> basically removes the query string panel=1, and won't touch any other query strings.</p>
-<p>Don't have to be in event func to use push state query, can use a simple <code>web.Bind</code> to directly change the query string like:</p>
-<pre><code class="language-go">A().Text(&quot;change page title&quot;).Href(&quot;javascript:;&quot;).
-	Attr(&quot;@click&quot;, web.POST().Queries(url.Values{&quot;title&quot;: []string{&quot;Hello&quot;}}).Go()),
-</code></pre>
-<p>This don't have <code>.MergeQuery(true)</code>, So it will replace the whole query string to only <code>title=Hello</code></p>
+
+<p>In <code>update5</code> event func, which is when you click the update button after open the panel, <code>web.Location(url.Values{&#34;panel&#34;: []string{&#34;&#34;}}).MergeQuery(true)</code> basically removes the query string panel=1, and won&#39;t touch any other query strings.</p>
+
+<p>Don&#39;t have to be in event func to use push state query, can use a simple <code>web.Bind</code> to directly change the query string like:</p>
+
+<div class="highlight highlight-go"><pre>A().Text(&#34;change page title&#34;).Href(&#34;javascript:;&#34;).
+	Attr(&#34;@click&#34;, web.POST().Queries(url.Values{&#34;title&#34;: []string{&#34;Hello&#34;}}).Go()),
+</pre></div>
+
+<p>This don&#39;t have <code>.MergeQuery(true)</code>, So it will replace the whole query string to only <code>title=Hello</code></p>
 </div>
 </div>
 </div>
@@ -256,7 +262,6 @@ That can open the page to the exact state of the page being sent, Not the initia
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

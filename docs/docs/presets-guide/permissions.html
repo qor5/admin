@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,23 +217,28 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Permissions</h1>
 
-<div class='border-t'><p>QOR5 permission is based on <a href="https://github.com/ory/ladon">https://github.com/ory/ladon</a>.<br />
-A piece of policy looks like this:<br />
+<div class='border-t'><p>QOR5 permission is based on <a href="https://github.com/ory/ladon" rel="nofollow">https://github.com/ory/ladon</a>.<br>
+A piece of policy looks like this:<br>
 <strong>Who</strong> is <strong>able</strong> to do <strong>what</strong> on <strong>something</strong> (with given some <strong>context</strong>)</p>
 
 <highlightjs :language='"go"' :code='"perm.PolicyFor(Who).WhoAre(Able).ToDo(What).On(Something).Given(Context)"'></highlightjs>
-<h2 id="who---subject">Who - Subject</h2>
-<p>Typically in admin system, they are roles like <code>Admin</code>, <code>Super Admin</code>.<br />
+<h2><a name="who-subject" class="anchor" href="#who-subject" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Who - Subject</h2>
+
+<p>Typically in admin system, they are roles like <code>Admin</code>, <code>Super Admin</code>.<br>
 Use <code>SubjectsFunc</code> to fetch current subjects:</p>
 
 <highlightjs :language='"go"' :code='"permBuilder.SubjectsFunc(func(r *http.Request) []string {\n\treturn subjects_like_user_roles\n})"'></highlightjs>
-<h2 id="able---effect">Able - Effect</h2>
+<h2><a name="able-effect" class="anchor" href="#able-effect" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Able - Effect</h2>
+
 <ul>
 <li>perm.Allowed</li>
 <li>perm.Denied</li>
 </ul>
-<h2 id="what---action">What - Action</h2>
+<h2><a name="what-action" class="anchor" href="#what-action" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+What - Action</h2>
+
 <p>presets has a list of actions:</p>
+
 <ul>
 <li>presets.PermList</li>
 <li>presets.PermGet</li>
@@ -242,40 +246,48 @@ Use <code>SubjectsFunc</code> to fetch current subjects:</p>
 <li>presets.PermUpdate</li>
 <li>presets.PermDelete</li>
 </ul>
+
 <p>And you can define other specific actions if needed.</p>
-<h2 id="something---resource">Something - Resource</h2>
-<p>An arbitrary unique resource name.<br />
-The presets builtin resource format is <code>:presets:mg_menu_group:uri:resource_rn:f_field:</code>.<br />
-For example <code>:presets:user_management:users:1:</code> represents the user record with id 1 under uri user_management.<br />
+<h2><a name="something-resource" class="anchor" href="#something-resource" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Something - Resource</h2>
+
+<p>An arbitrary unique resource name.<br>
+The presets builtin resource format is <code>:presets:mg_menu_group:uri:resource_rn:f_field:</code>.<br>
+For example <code>:presets:user_management:users:1:</code> represents the user record with id 1 under uri user_management.<br>
 Use <code>*</code> as wildcard.</p>
-<h2 id="context---condition">Context - Condition</h2>
-<p>Optional.<br />
-The current context that containing condition information about the resource.<br />
+<h2><a name="context-condition" class="anchor" href="#context-condition" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Context - Condition</h2>
+
+<p>Optional.<br>
+The current context that containing condition information about the resource.<br>
 Use <code>ContextFunc</code> to set the context:</p>
 
 <highlightjs :language='"go"' :code='"permBuilder.ContextFunc(func(r *http.Request, objs []interface{}) perm.Context {\n\tc := make(perm.Context)\n\tfor _, obj := range objs {\n\t\tswitch v := obj.(type) {\n\t\tcase resource1:\n\t\t\tc[\"owner\"] = v.Owner\n\t\t\t// ...other resource cases\n\t\t}\n\t}\n\treturn c\n})"'></highlightjs>
 <p>Policy uses <code>Given</code> to set conditions:</p>
 
 <highlightjs :language='"go"' :code='"perm.PolicyFor(Who).WhoAre(Able).ToDo(What).On(\"*:resource1:*\").Given(perm.Conditions{\n\t\"owner\": \u0026ladon.EqualsSubjectCondition{},\n})"'></highlightjs>
-<h2 id="custom-action">Custom Action</h2>
-<p>Let's say there is a button on User detailing page used to ban the user. And only <code>super_admin</code> users have permission to execute this action.<br />
+<h2><a name="custom-action" class="anchor" href="#custom-action" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom Action</h2>
+
+<p>Let&#39;s say there is a button on User detailing page used to ban the user. And only <code>super_admin</code> users have permission to execute this action.<br>
 First, create a verifier</p>
 
 <highlightjs :language='"go"' :code='"verifier := perm.NewVerifier(\"module_users\", presetsBuilder.GetPermission())"'></highlightjs>
 <p>Then inject this verifier to relevant logic, such as</p>
+
 <ul>
 <li>whether to show the ban button.</li>
-<li>validate permission before execute the ban action.</li>
+<li>validate permission before execute the ban action.
+<br></li>
 </ul>
 
 <highlightjs :language='"go"' :code='"if verifier.Do(\"ban\").ObjectOn(user).WithReq(r).IsAllowed() == nil {\n\t// ui: show the ban button\n\t// action: can execute the ban action\n}"'></highlightjs>
 <p>Finally, add policy</p>
 
 <highlightjs :language='"go"' :code='"perm.PolicyFor(\"super_admin\").WhoAre(perm.Allowed).ToDo(\"ban\").On(\":module_users:*\")"'></highlightjs>
-<h2 id="example">Example</h2>
+<h2><a name="example" class="anchor" href="#example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.Permission(\n\tperm.New().Policies(\n\t\t// admin can do anything\n\t\tperm.PolicyFor(\"admin\").WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),\n\t\t// viewer can view anything except users\n\t\tperm.PolicyFor(\"viewer\").WhoAre(perm.Allowed).ToDo(presets.PermRead...).On(perm.Anything),\n\t\tperm.PolicyFor(\"viewer\").WhoAre(perm.Denied).ToDo(perm.Anything).On(\"*:users:*\"),\n\t\t// editor can edit their own articles\n\t\tperm.PolicyFor(\"editor\").WhoAre(perm.Allowed).ToDo(perm.Anything).On(\"*:articles:*\").Given(perm.Conditions{\n\t\t\t\"owner_id\": \u0026ladon.EqualsSubjectCondition{},\n\t\t}),\n\t).SubjectsFunc(func(r *http.Request) (ss []string) {\n\t\tuser := getCurrentUser(r)\n\t\tss = append(ss, user.ID)\n\t\tss = append(ss, user.Roles...)\n\t\treturn ss\n\t}).ContextFunc(func(r *http.Request, objs []interface{}) perm.Context {\n\t\tc := make(perm.Context)\n\t\tfor _, obj := range objs {\n\t\t\tswitch v := obj.(type) {\n\t\t\tcase *Article:\n\t\t\t\tc[\"owner_id\"] = v.OwnerID\n\t\t\t}\n\t\t}\n\t\treturn c\n\t}),\n)"'></highlightjs>
-<h2 id="debug">Debug</h2>
+<h2><a name="debug" class="anchor" href="#debug" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Debug</h2>
 
 <highlightjs :language='"go"' :code='"perm.Verbose = true"'></highlightjs>
 <p>prints permission logs which is very helpful for debugging the permission policies:</p>
@@ -293,7 +305,6 @@ First, create a verifier</p>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

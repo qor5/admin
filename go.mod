@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.53.12
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
+	github.com/fatih/color v1.17.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/google/go-cmp v0.6.0
@@ -17,6 +18,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.9
+	github.com/manifoldco/promptui v0.9.0
 	github.com/markbates/goth v1.80.0
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/ory/ladon v1.3.0
@@ -26,9 +28,12 @@ require (
 	github.com/qor5/web/v3 v3.0.4-0.20240605034223-bef26c49d0cf
 	github.com/qor5/x/v3 v3.0.3
 	github.com/samber/lo v1.39.0
+	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.4
+	github.com/sunfmin/snippetgo v0.0.2
 	github.com/theplant/bimg v1.1.1
+	github.com/theplant/docgo v0.0.16
 	github.com/theplant/gofixtures v1.1.2
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.1
@@ -38,6 +43,7 @@ require (
 	github.com/tnclong/go-que v0.0.0-20240226030728-4e1f3c8ec781
 	github.com/ua-parser/uap-go v0.0.0-20240113215029-33f8e6d47f38
 	github.com/wcharczuk/go-chart/v2 v2.1.1
+	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/text v0.15.0
@@ -55,12 +61,14 @@ require (
 	github.com/Microsoft/hcsshim v0.12.3 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/blend/go-sdk v1.20220411.3 // indirect
 	github.com/bodgit/plumbing v1.3.0 // indirect
 	github.com/bodgit/sevenzip v1.5.1 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/containerd/containerd v1.7.16 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
@@ -75,12 +83,14 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
+	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/go-playground/form/v4 v4.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
@@ -98,7 +108,10 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20240408141607-282e7b5d6b74 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/markbates/going v1.0.3 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.16 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
@@ -112,9 +125,19 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/qor5/web v1.2.3 // indirect
+	github.com/rs/xid v1.5.0 // indirect
+	github.com/russross/blackfriday v1.6.0 // indirect
+	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/shurcooL/github_flavored_markdown v0.0.0-20210228213109-c3a9aa474629 // indirect
+	github.com/shurcooL/highlight_diff v0.0.0-20181222201841-111da2e7d480 // indirect
+	github.com/shurcooL/highlight_go v0.0.0-20191220051317-782971ddf21b // indirect
+	github.com/shurcooL/octicon v0.0.0-20191102190552-cbb32d6a785c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
+	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
 	github.com/testcontainers/testcontainers-go v0.31.0 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
@@ -130,6 +153,7 @@ require (
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/image v0.16.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
@@ -142,6 +166,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/qor5/web/v3 => ../web
+replace github.com/qor5/web/v3 => ../web
 
 replace github.com/qor5/x/v3 => ../x

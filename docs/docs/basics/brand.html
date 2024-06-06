@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,7 +218,9 @@
 <h1 class='mb-8'>Brand</h1>
 
 <div class='border-t'><p>Brand refers to the top area of the left menu bar, we provide two functions <code>BrandTitle</code> and <code>BrandFunc</code> to customize it.</p>
-<h2 id="simple-customization">Simple customization</h2>
+<h2><a name="simple-customization" class="anchor" href="#simple-customization" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Simple customization</h2>
+
 <p>If you want only to change the brand string, you can use <code>BrandTitle</code> to set the string, the string will be displayed in the brand area with <code>&lt;H1&gt;</code> tag.</p>
 
 <highlightjs :language='"go"' :code='"b.BrandTitle(\"QOR5 Admin\")"'></highlightjs>
@@ -228,10 +229,11 @@
 <div class='demo'>
 <a href='/samples/presets-brand-title/brands' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/brand.go#L19-L21' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/brand.go#L19-L21' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<h2 id="full-customization">Full customization</h2>
+<h2><a name="full-customization" class="anchor" href="#full-customization" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Full customization</h2>
+
 <p>When you opt-in to full brand customization, you can use <code>BrandFunc</code> to be responsible for drawing for the entire brand area, such as you can put your own logo image in it.</p>
 
 <highlightjs :language='"go"' :code='"b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {\n\treturn vuetify.VCardText(\n\t\th.H1(\"Admin\").Style(\"color: red;\"),\n\t).Class(\"pa-0\")\n})"'></highlightjs>
@@ -240,11 +242,12 @@
 <div class='demo'>
 <a href='/samples/presets-brand-func/brands' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/brand.go#L35-L41' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/brand.go#L35-L41' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<h2 id="profile">Profile</h2>
-<p>Profile is below the brand area, where you can put the current user's information or others. We provide <code>ProfileFunc</code> to customize it.</p>
+<h2><a name="profile" class="anchor" href="#profile" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Profile</h2>
+
+<p>Profile is below the brand area, where you can put the current user&#39;s information or others. We provide <code>ProfileFunc</code> to customize it.</p>
 
 <highlightjs :language='"go"' :code='"func PresetsProfile(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tb.BrandTitle(\"Admin\").\n\t\tProfileFunc(func(ctx *web.EventContext) h.HTMLComponent {\n\t\t\t// Demo\n\t\t\tname := \"QOR5\"\n\t\t\t// account := \"hello@getqor.com\"\n\t\t\troles := []string{\"Developer\"}\n\t\t\treturn VRow(\n\t\t\t\tVCol(\n\t\t\t\t\tVCard().Class(\"text-grey-darken-1\").Variant(\"text\").Title(name).Subtitle(roles[0]).Children(\n\t\t\t\t\t\tweb.Slot(\n\t\t\t\t\t\t\tVAvatar().Class(\"ml-1 rounded-lg\").Color(\"blue\").Size(48).Children(\n\t\t\t\t\t\t\t\th.Span(string(name[0])).Class(\"text-white text-h5\")),\n\t\t\t\t\t\t).Name(\"prepend\"),\n\t\t\t\t\t),\n\t\t\t\t\t// VAvatar(\n\t\t\t\t\t//\th.Span(\"QO\").Class(\"text-h5\"),\n\t\t\t\t\t// ).Attr(\"color\", \"blue\").Attr(\"size\", \"48\").Class(\"rounded-lg\"),\n\t\t\t\t\t// h.Span(name).Class(\"text-h6 mx-2 text-grey-darken-1\"),\n\t\t\t\t).Attr(\"cols\", \"8\"),\n\t\t\t\tVCol(\n\t\t\t\t\tVBtn(\"\").Attr(\"density\", \"compact\").\n\t\t\t\t\t\tAttr(\"variant\", \"text\").\n\t\t\t\t\t\tAttr(\"icon\", \"mdi-chevron-right\").\n\t\t\t\t\t\tClass(\"text-grey-darken-1\"),\n\t\t\t\t).Attr(\"cols\", \"2\").Class(\"d-flex justify-center align-center\").Attr(\"@click\", \"(e) =\u003e {e.view.window.alert(&#39;logout&#39;)}\"),\n\t\t\t\tVCol(\n\t\t\t\t\tVBtn(\"\").Attr(\"density\", \"compact\").\n\t\t\t\t\t\tAttr(\"variant\", \"text\").\n\t\t\t\t\t\tAttr(\"icon\", \"mdi-bell-outline\").\n\t\t\t\t\t\tClass(\"text-grey-darken-1\"),\n\t\t\t\t).Attr(\"cols\", \"2\").Class(\"d-flex align-center justify-center\"),\n\t\t\t).Attr(\"align\", \"center\", \"justify\", \"center\")\n\t\t})\n\n\t// VMenu().Children(\n\t//\th.Template().Attr(\"v-slot:activator\", \"{isActive,props}\").Children(\n\t//\t\tVList(\n\t//\t\t\tVListItem(\n\t//\t\t\t\th.Template().Attr(\"v-slot:prepend\", \"{ isActive}\").Children(\n\t//\t\t\t\t\tVAvatar().Class(\"ml-1\").Color(\"surface-variant\").Size(40).Children(\n\t//\t\t\t\t\t\th.Span(string(name[0])).Class(\"text-white text-h5\")),\n\t//\t\t\t\t),\n\t//\t\t\t).Title(name).Subtitle(strings.Join(roles, \", \")).Class(\"pa-0 mb-2\"),\n\t//\t\t\tVListItem(\n\t//\t\t\t\th.Template().Attr(\"v-slot:append\", \"{ isActive}\").Children(\n\t//\t\t\t\t\tVIcon(\"mdi-logout\").Size(\"small\").Attr(\"@click\", web.Plaid().URL(logoutURL).Go()),\n\t//\t\t\t\t),\n\t//\t\t\t).Title(account).Class(\"pa-0 my-n2 ml-1\"),\n\t//\t\t).Class(\"pa-0 ma-n4\"),\n\t//\t),\n\t// )\n\tb.Model(\u0026brand{}).Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {\n\t\tr.Body = VContainer()\n\t\treturn\n\t})\n\treturn\n}\n"'></highlightjs>
 
@@ -252,7 +255,7 @@
 <div class='demo'>
 <a href='/samples/presets-profile/brands' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/profile.go#L11-L76' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/profile.go#L11-L76' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -267,7 +270,6 @@
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

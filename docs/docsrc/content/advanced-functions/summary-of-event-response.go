@@ -1,7 +1,7 @@
 package advanced_functions
 
 import (
-	"github.com/qor5/docs/v3/docsrc/generated"
+	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
 )

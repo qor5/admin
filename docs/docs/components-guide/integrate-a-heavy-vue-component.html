@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,34 +217,43 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Integrate a heavy Vue Component</h1>
 
-<div class='border-t'><p>We can abstract any complicated of server side render component with <a href="https://github.com/theplant/htmlgo">htmlgo</a>.<br />
-But a lots of components in the modern web have done many things on the client side. means there are many logic<br />
+<div class='border-t'><p>We can abstract any complicated of server side render component with <a href="https://github.com/theplant/htmlgo" rel="nofollow">htmlgo</a>.
+But a lots of components in the modern web have done many things on the client side. means there are many logic
 happens before the it interact with server side.</p>
-<p>Here is an example, a rich text editor. you have a toolbar of buttons that you can interact, most of them won't<br />
-need to communicate with server. We are going to integrate the fantastic rich text editor <a href="https://tiptap.dev/">tiptap</a><br />
+
+<p>Here is an example, a rich text editor. you have a toolbar of buttons that you can interact, most of them won&#39;t
+need to communicate with server. We are going to integrate the fantastic rich text editor <a href="https://tiptap.dev/" rel="nofollow">tiptap</a>
 to be used as any <code>htmlgo.HTMLComponent</code>.</p>
-<p><strong>Step 1</strong>: <a href="https://vuejs.org/guide/quick-start.html">Create a vue3 project</a>:</p>
+
+<p><strong>Step 1</strong>: <a href="https://vuejs.org/guide/quick-start.html" rel="nofollow">Create a vue3 project</a>:</p>
+
 <pre><code>$ pnpm create vue@latest
 </code></pre>
+
 <p>Modify or add a separate <code>vite.config.ts</code> config file,</p>
 
 <highlightjs :language='"javascript"' :code='"rollupOptions: {\n    external: [&#39;vue&#39;],\n    output: {\n        assetFileNames: (assetInfo) =\u003e {\n            return &#39;tiptap.css&#39;\n        },\n        globals: {\n            vue: &#39;Vue&#39;,\n        }\n    }\n}"'></highlightjs>
 <ul>
-<li>Made <code>Vue</code> as externals so that it won't be packed to the dist production js file,<br />
+<li>Made <code>Vue</code> as externals so that it won&#39;t be packed to the dist production js file,
 Since we will be sharing one Vue.js for in one page with other libraries.</li>
 <li>Config svg module to inline the svg icons used by tiptap</li>
 </ul>
+
 <p><strong>Step 2</strong>: Create a vue component that use tiptap</p>
+
 <p>Install <code>tiptap</code> and <code>tiptap-extensions</code> first</p>
+
 <pre><code>$ pnpm install tiptap tiptap-extensions
 </code></pre>
+
 <p>And write the <code>editor.vue</code> something like this, We omitted the template at here.</p>
 
 <highlightjs :language='"javascript"' :code='"\u003cscript setup lang=\"ts\"\u003e\nimport \"@/lib/sass/main.scss\";\nimport { Editor, EditorContent } from \"@tiptap/vue-3\";\nimport Blockquote from \"@tiptap/extension-blockquote\";\nimport Bold from \"@tiptap/extension-bold\";\nimport BulletList from \"@tiptap/extension-bullet-list\";\nimport Code from \"@tiptap/extension-code\";\nimport CodeBlock from \"@tiptap/extension-code-block\";\nimport HardBreak from \"@tiptap/extension-hard-break\";\nimport Heading from \"@tiptap/extension-heading\";\nimport History from \"@tiptap/extension-history\";\nimport Italic from \"@tiptap/extension-italic\";\nimport Link from \"@tiptap/extension-link\";\nimport ListItem from \"@tiptap/extension-list-item\";\nimport OrderedList from \"@tiptap/extension-ordered-list\";\nimport Strike from \"@tiptap/extension-strike\";\nimport Table from \"@tiptap/extension-table\";\nimport TableCell from \"@tiptap/extension-table-cell\";\nimport TableHeader from \"@tiptap/extension-table-header\";\nimport TableRow from \"@tiptap/extension-table-row\";\nimport Underline from \"@tiptap/extension-underline\";\n\nimport Document from \"@tiptap/extension-document\";\nimport Paragraph from \"@tiptap/extension-paragraph\";\nimport Text from \"@tiptap/extension-text\";\n\nimport Icon from \"./Icon.vue\";\n\nimport { onMounted, ref } from \"vue\";\n\nconst emit = defineEmits([\"update:modelValue\"]);\nconst props = defineProps({ modelValue: String });\nconst editor = ref();\n\nonMounted(() =\u003e {\n  editor.value = new Editor({\n    content: props.modelValue,\n    extensions: [\n      Blockquote,\n      Bold,\n      BulletList,\n      Code,\n      CodeBlock,\n      HardBreak,\n      Heading,\n      History,\n      Document,\n      Paragraph,\n      Text,\n      Italic,\n      Link,\n      ListItem,\n      OrderedList,\n      Strike,\n      Table.configure({\n        resizable: true,\n      }),\n      TableCell,\n      TableHeader,\n      TableRow,\n      Underline,\n    ],\n    onUpdate: () =\u003e {\n      emit(\"update:modelValue\", editor.value.getHTML());\n    },\n  });\n});\n\u003c/script\u003e\n\n\u003ctemplate\u003e\n  \u003cdiv class=\"tiptap-editor\"\u003e\n    \u003cdiv class=\"menubar\" v-if=\"editor\"\u003e\n      \u003cdiv class=\"toolbar\"\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 1 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 1 }) }\"\n        \u003e\n          H1\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 2 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 2 }) }\"\n        \u003e\n          H2\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleHeading({ level: 3 }).run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;heading&#39;, { level: 3 }) }\"\n        \u003e\n          H3\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBulletList().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;bulletList&#39;) }\"\n        \u003e\n          \u003cicon name=\"ul\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleOrderedList().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;orderedList&#39;) }\"\n        \u003e\n          \u003cicon name=\"ol\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBold().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleBold().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;bold&#39;) }\"\n        \u003e\n          \u003cicon name=\"bold\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleItalic().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleItalic().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;italic&#39;) }\"\n        \u003e\n          \u003cicon name=\"italic\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleStrike().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleStrike().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;strike&#39;) }\"\n        \u003e\n          \u003cicon name=\"strike\" /\u003e\n        \u003c/button\u003e\n\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleUnderline().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleUnderline().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;underline&#39;) }\"\n        \u003e\n          \u003cicon name=\"underline\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleCode().run()\"\n          :disabled=\"!editor.can().chain().focus().toggleCode().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;code&#39;) }\"\n        \u003e\n          \u003cicon name=\"code\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().setParagraph().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;paragraph&#39;) }\"\n        \u003e\n          \u003cicon name=\"paragraph\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().setParagraph().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;paragraph&#39;) }\"\n        \u003e\n          \u003cicon name=\"paragraph\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleBlockquote().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;blockquote&#39;) }\"\n        \u003e\n          \u003cicon name=\"quote\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"editor.chain().focus().toggleCodeBlock().run()\"\n          :class=\"{ &#39;is-active&#39;: editor.isActive(&#39;codeBlock&#39;) }\"\n        \u003e\n          \u003cicon name=\"code_block\" /\u003e\n        \u003c/button\u003e\n        \u003cbutton\n          @click=\"\n            editor\n              .chain()\n              .focus()\n              .insertTable({ rows: 3, cols: 3, withHeaderRow: false })\n              .run()\n          \"\n        \u003e\n          \u003cicon name=\"table\" /\u003e\n        \u003c/button\u003e\n        \u003cspan v-if=\"editor.isActive(&#39;table&#39;)\"\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteTable().run()\"\n            :disabled=\"!editor.can().deleteTable()\"\n          \u003e\n            \u003cicon name=\"delete_table\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addColumnBefore().run()\"\n            :disabled=\"!editor.can().addColumnBefore()\"\n          \u003e\n            \u003cicon name=\"add_col_before\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addColumnAfter().run()\"\n            :disabled=\"!editor.can().addColumnAfter()\"\n          \u003e\n            \u003cicon name=\"add_col_after\" /\u003e\n          \u003c/button\u003e\n\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteColumn().run()\"\n            :disabled=\"!editor.can().deleteColumn()\"\n          \u003e\n            \u003cicon name=\"delete_col\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addRowBefore().run()\"\n            :disabled=\"!editor.can().addRowBefore()\"\n          \u003e\n            \u003cicon name=\"add_row_before\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().addRowAfter().run()\"\n            :disabled=\"!editor.can().addRowAfter()\"\n          \u003e\n            \u003cicon name=\"add_row_after\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().deleteRow().run()\"\n            :disabled=\"!editor.can().deleteRow()\"\n          \u003e\n            \u003cicon name=\"delete_row\" /\u003e\n          \u003c/button\u003e\n          \u003cbutton\n            @click=\"editor.chain().focus().mergeCells().run()\"\n            :disabled=\"!editor.can().mergeCells()\"\n          \u003e\n            \u003cicon name=\"combine_cells\" /\u003e\u003c/button\n        \u003e\u003c/span\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n    \u003ceditor-content :editor=\"editor\" class=\"tiptap-editor__content\" /\u003e\n  \u003c/div\u003e\n\u003c/template\u003e"'></highlightjs>
 <p><strong>Step 3</strong>: At <code>main.js</code>, Use a special hook to register the component to <code>web/corejs</code></p>
 
 <highlightjs :language='"javascript"' :code='"import { type App } from \"vue\";\nimport TipTapEditor from \"@/lib/Editor.vue\";\n\ndeclare const window: any;\nwindow.__goplaidVueComponentRegisters =\n  window.__goplaidVueComponentRegisters || [];\nwindow.__goplaidVueComponentRegisters.push((app: App, vueOptions: any): any =\u003e {\n  app.component(\"tiptap-editor\", TipTapEditor);\n});"'></highlightjs>
-<p><strong>Step 4</strong>: Use standard <a href="https://pkg.go.dev/embed">Go embed</a> to pack the dist folder</p>
+<p><strong>Step 4</strong>: Use standard <a href="https://pkg.go.dev/embed" rel="nofollow">Go embed</a> to pack the dist folder</p>
+
 <p>We write a packr box inside <code>tiptapjs.go</code> along side the tiptapjs folder.</p>
 
 <highlightjs :language='"go"' :code='"import (\n\t\"embed\"\n\n\t\"github.com/qor5/web/v3\"\n)\n\n//go:embed tiptapjs/dist\nvar box embed.FS\n\nfunc JSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptapjs.umd.cjs\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n\nfunc CSSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptap.css\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n"'></highlightjs>
@@ -256,6 +264,7 @@ Since we will be sharing one Vue.js for in one page with other libraries.</li>
 
 <highlightjs :language='"go"' :code='"import (\n\t\"context\"\n\n\th \"github.com/theplant/htmlgo\"\n)\n\ntype TipTapEditorBuilder struct {\n\ttag *h.HTMLTagBuilder\n}\n\nfunc TipTapEditor() (r *TipTapEditorBuilder) {\n\tr = \u0026TipTapEditorBuilder{\n\t\ttag: h.Tag(\"tiptap-editor\"),\n\t}\n\n\treturn\n}\n\nfunc (b *TipTapEditorBuilder) Attr(vs ...interface{}) (r *TipTapEditorBuilder) {\n\tb.tag.Attr(vs...)\n\treturn b\n}\n\nfunc (b *TipTapEditorBuilder) MarshalHTML(ctx context.Context) (r []byte, err error) {\n\treturn b.tag.MarshalHTML(ctx)\n}\n"'></highlightjs>
 <p><strong>Step 6</strong>: Use it in your web app</p>
+
 <p>To use it, first we have to mount the assets into our app</p>
 
 <highlightjs :language='"go"' :code='"mux.Handle(\"/assets/tiptap.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\ttiptap.JSComponentsPack(),\n\t),\n)\n\nmux.Handle(\"/assets/tiptap.css\",\n\tweb.PacksHandler(\"text/css\",\n\t\ttiptap.CSSComponentsPack(),\n\t),\n)"'></highlightjs>
@@ -264,14 +273,14 @@ Since we will be sharing one Vue.js for in one page with other libraries.</li>
 <highlightjs :language='"go"' :code='"func tiptapLayout(in web.PageFunc) (out web.PageFunc) {\n\treturn func(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\t\texamples.AddGA(ctx)\n\n\t\tctx.Injector.HeadHTML(`\n\t\t\t\u003clink rel=\"stylesheet\" href=\"/assets/tiptap.css\"\u003e\n\t\t\t\u003cscript src=&#39;/assets/vue.js&#39;\u003e\u003c/script\u003e\n\t\t`)\n\n\t\tctx.Injector.TailHTML(`\n\u003cscript src=&#39;/assets/tiptap.js&#39;\u003e\u003c/script\u003e\n\u003cscript src=&#39;/assets/main.js&#39;\u003e\u003c/script\u003e\n`)\n\t\tctx.Injector.HeadHTML(`\n\t\t\u003cstyle\u003e\n\t\t\t[v-cloak] {\n\t\t\t\tdisplay: none;\n\t\t\t}\n\t\t\u003c/style\u003e\n\t\t`)\n\n\t\tvar innerPr web.PageResponse\n\t\tinnerPr, err = in(ctx)\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\n\t\tpr.Body = innerPr.Body\n\n\t\treturn\n\t}\n}\n"'></highlightjs>
 <p>And we write a page func to use it like any other component:</p>
 
-<highlightjs :language='"go"' :code='"import (\n\t\"github.com/qor5/docs/v3/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t\"github.com/qor5/x/v3/ui/tiptap\"\n\t. \"github.com/theplant/htmlgo\"\n\t\"github.com/yosssi/gohtml\"\n)\n\nfunc HelloWorldTipTap(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tdefaultValue := ctx.R.FormValue(\"Content1\")\n\tif len(defaultValue) == 0 {\n\t\tdefaultValue = `\n\t\t\t\u003ch1\u003eHello\u003c/h1\u003e\n\t\t\t\u003cp\u003e\n\t\t\t\tThis is a nice editor\n\t\t\t\u003c/p\u003e\n\t\t\t\u003cul\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  123\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  456\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  789\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t\u003c/ul\u003e\n`\n\t}\n\n\tpr.Body = Div(\n\t\ttiptap.TipTapEditor().\n\t\t\tAttr(\"v-model\", \"form.Content1\"),\n\t\tHr(),\n\t\tPre(\n\t\t\tgohtml.Format(ctx.R.FormValue(\"Content1\")),\n\t\t).Style(\"background-color: #f8f8f8; padding: 20px;\"),\n\t\tButton(\"Submit\").Style(\"font-size: 24px\").\n\t\t\tAttr(\"@click\", web.POST().EventFunc(\"refresh\").Go()),\n\t)\n\n\treturn\n}\n\nfunc refresh(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.Reload = true\n\treturn\n}\n\nvar HelloWorldTipTapPB = web.Page(HelloWorldTipTap).\n\tEventFunc(\"refresh\", refresh)\n\nvar HelloWorldTipTapPath = examples.URLPathByFunc(HelloWorldTipTap)\n"'></highlightjs>
-<p>And now let's check out our fruits:</p>
+<highlightjs :language='"go"' :code='"import (\n\t\"github.com/qor5/admin/v3/docs/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t\"github.com/qor5/x/v3/ui/tiptap\"\n\t. \"github.com/theplant/htmlgo\"\n\t\"github.com/yosssi/gohtml\"\n)\n\nfunc HelloWorldTipTap(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tdefaultValue := ctx.R.FormValue(\"Content1\")\n\tif len(defaultValue) == 0 {\n\t\tdefaultValue = `\n\t\t\t\u003ch1\u003eHello\u003c/h1\u003e\n\t\t\t\u003cp\u003e\n\t\t\t\tThis is a nice editor\n\t\t\t\u003c/p\u003e\n\t\t\t\u003cul\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  123\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  456\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t  \u003cli\u003e\n\t\t\t\t\u003cp\u003e\n\t\t\t\t  789\n\t\t\t\t\u003c/p\u003e\n\t\t\t  \u003c/li\u003e\n\t\t\t\u003c/ul\u003e\n`\n\t}\n\n\tpr.Body = Div(\n\t\ttiptap.TipTapEditor().\n\t\t\tAttr(\"v-model\", \"form.Content1\"),\n\t\tHr(),\n\t\tPre(\n\t\t\tgohtml.Format(ctx.R.FormValue(\"Content1\")),\n\t\t).Style(\"background-color: #f8f8f8; padding: 20px;\"),\n\t\tButton(\"Submit\").Style(\"font-size: 24px\").\n\t\t\tAttr(\"@click\", web.POST().EventFunc(\"refresh\").Go()),\n\t)\n\n\treturn\n}\n\nfunc refresh(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.Reload = true\n\treturn\n}\n\nvar HelloWorldTipTapPB = web.Page(HelloWorldTipTap).\n\tEventFunc(\"refresh\", refresh)\n\nvar HelloWorldTipTapPath = examples.URLPathByFunc(HelloWorldTipTap)\n"'></highlightjs>
+<p>And now let&#39;s check out our fruits:</p>
 
 <div>
 <div class='demo'>
 <a href='/samples/hello-world-tip-tap' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/use-tiptap-editor.go#L3-L64' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/use-tiptap-editor.go#L3-L64' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -286,7 +295,6 @@ Since we will be sharing one Vue.js for in one page with other libraries.</li>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

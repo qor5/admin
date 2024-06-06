@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,24 +217,30 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Layout</h1>
 
-<div class='border-t'><p>Presets comes with a built-in layout that works out of the box.<br />
+<div class='border-t'><p>Presets comes with a built-in layout that works out of the box.<br>
 And there are some ways to customzie the layout/theme.</p>
-<h2 id="theme">Theme</h2>
-<p>Presets UI is based on <a href="https://v2.vuetifyjs.com/en/">Vuetify</a>, you can modify the Admin theme by configuring the <a href="https://v2.vuetifyjs.com/en/features/presets/#default-preset">Vuetify options</a></p>
+<h2><a name="theme" class="anchor" href="#theme" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Theme</h2>
+
+<p>Presets UI is based on <a href="https://v2.vuetifyjs.com/en/" rel="nofollow">Vuetify</a>, you can modify the Admin theme by configuring the <a href="https://v2.vuetifyjs.com/en/features/presets/#default-preset" rel="nofollow">Vuetify options</a></p>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.VuetifyOptions(`\n       {\n           icons: {\n               iconfont: &#39;md&#39;,\n           },\n           theme: {\n               themes: {\n                   light: {\n                       primary: \"#673ab7\",\n                       secondary: \"#009688\",\n                       accent: \"#ff5722\",\n                       error: \"#f44336\",\n                       warning: \"#ff9800\",\n                       info: \"#8bc34a\",\n                       success: \"#4caf50\"\n                   },\n               },\n           },\n       }\n   `)"'></highlightjs>
-<h2 id="assets">Assets</h2>
-<p>If you need third-party front-end libraries to achieve some functions,<br />
+<h2><a name="assets" class="anchor" href="#assets" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Assets</h2>
+
+<p>If you need third-party front-end libraries to achieve some functions,
 you can inject them via the <em>ExtraAsset</em> method, and they will be automatically served.</p>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.ExtraAsset(\"/redactor.js\", \"text/javascript\", richeditor.JSComponentsPack())\npresetsBuilder.ExtraAsset(\"/redactor.css\", \"text/css\", richeditor.CSSComponentsPack())"'></highlightjs>
 <p>you can also call Injector in AssetFunc to add meta, add custom HTML in HEAD and TAIL.</p>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.AssetFunc(func(ctx *web.EventContext) {\n\tctx.Injector.Meta(web.MetaKey(\"charset\"), \"charset\", \"utf8\")\n\tctx.Injector.HeadHTML(`\u003cscript src=\"https://cdn.example.com/hello.js\"\u003e\u003c/script\u003e`)\n})"'></highlightjs>
-<h2 id="layout">Layout</h2>
-<p>You can change the entire layout via <em>LayoutFunc</em>. The default layout is <a href="https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L860-L969">https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L860-L969</a></p>
-<h3 id="plain-layout">Plain Layout</h3>
-<p>And We provide <a href="https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L972">PlainLayout</a> which has no UI content except necessary assets.<br />
+<h2><a name="layout" class="anchor" href="#layout" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Layout</h2>
+
+<p>You can change the entire layout via <em>LayoutFunc</em>. The default layout is <a href="https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L860-L969" rel="nofollow">https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L860-L969</a></p>
+<h3><a name="plain-layout" class="anchor" href="#plain-layout" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Plain Layout</h3>
+
+<p>And We provide <a href="https://github.com/qor5/admin/blob/1e97c0dd45615fb7593245575ab0fea4f98c58b3/presets/presets.go#L972" rel="nofollow">PlainLayout</a> which has no UI content except necessary assets.
 It will be helpful when there are some pages completely independent of Presets layout but still need to be consistent with the Presets theme.</p>
 </div>
 </div>
@@ -249,7 +254,6 @@ It will be helpful when there are some pages completely independent of Presets l
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

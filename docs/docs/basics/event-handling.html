@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,7 +218,8 @@
 <h1 class='mb-8'>Event Handling</h1>
 
 <div class='border-t'><p>We extend vue to support the following types of event handling, so you can simply use go code to implement some complex logic.</p>
-<p>Using the <code>Plaid()</code> method will create an event handler that defaults to using the current <code>vars</code> and <code>plaidForm</code>.<br />
+
+<p>Using the <code>Plaid()</code> method will create an event handler that defaults to using the current <code>vars</code> and <code>plaidForm</code>.
 The default http request method is <code>Post</code>, if you want to use the <code>Get</code> method, you can also use the <code>Get()</code> method directly to create an event handler</p>
 
 <h2 id='url'>URL
@@ -233,7 +233,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=url' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L17-L28' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L17-L28' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -248,7 +248,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=pushstate' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L30-L41' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L30-L41' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -263,7 +263,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=reload' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L43-L55' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L43-L55' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -278,7 +278,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L57-L68' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L57-L68' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -293,7 +293,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=merge_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L70-L81' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L70-L81' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -308,7 +308,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=clear_merge_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L83-L94' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L83-L94' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -323,7 +323,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=string_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L96-L107' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L96-L107' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -338,7 +338,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=queries' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -353,7 +353,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=pushstateurl' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -368,7 +368,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=location' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L135-L146' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L135-L146' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -383,7 +383,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=fieldvalue' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L148-L159' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L148-L159' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -398,7 +398,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=eventfunc' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L161-L169' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L161-L169' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -413,7 +413,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=script' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L171-L193' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L171-L193' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -428,7 +428,7 @@ The default http request method is <code>Post</code>, if you want to use the <co
 <div class='demo'>
 <a href='/samples/event-handling-page?api=raw' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/event-handling.go#L195-L206' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L195-L206' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -443,7 +443,6 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

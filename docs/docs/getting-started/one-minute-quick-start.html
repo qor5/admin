@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,40 +217,53 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>1 Minute Quick Start</h1>
 
-<div class='border-t'><p>This brief tutorial aims to give you a rapid taste of QOR5's capabilities in the shortest possible time. One standout feature of QOR5 is its &quot;presets&quot; module, which swiftly generates <a href="/samples/presets-detail-page-cards/customers">fully functional admin interfaces</a> like those you see below.</p>
+<div class='border-t'><p>This brief tutorial aims to give you a rapid taste of QOR5&#39;s capabilities in the shortest possible time. One standout feature of QOR5 is its &#34;presets&#34; module, which swiftly generates <a href="/samples/presets-detail-page-cards/customers" rel="nofollow">fully functional admin interfaces</a> like those you see below.</p>
+
 <p>To get started right away:</p>
+
 <ol>
-<li><strong>Install the Command Line Tool</strong>: Run the following command to install the latest version of the QOR5 CLI tool:</li>
-</ol>
-<pre><code>$ go install github.com/qor5/docs/v3/cmd/qor5@latest
-</code></pre>
-<ol start="2">
-<li><strong>Launch QOR5</strong>: Execute the qor5 command:</li>
-</ol>
+<li><p><strong>Install the Command Line Tool</strong>: Run the following command to install the latest version of the QOR5 CLI tool:</p>
+
+<pre><code>$ go install github.com/qor5/admin/v3/docs/cmd/qor5@latest
+</code></pre></li>
+
+<li><p><strong>Launch QOR5</strong>: Execute the qor5 command:</p>
+
 <pre><code>$ qor5
-</code></pre>
-<p>You'll be prompted to enter a Go package name.</p>
+</code></pre></li>
+</ol>
+
+<p>You&#39;ll be prompted to enter a Go package name.</p>
+
 <p>And then there are these template options,</p>
+
 <ul>
 <li>Admin: Content Management System</li>
 <li>Website: Content Management System with Website Examples</li>
 <li>Bare: Simplest Workable Web App</li>
 </ul>
+
 <p>Here we select Admin, The tool will then create an admin app within your current working directory.</p>
-<ol start="3">
-<li><strong>Set Up the Database</strong>: Navigate to the newly created package directory and start the database using Docker Compose:</li>
-</ol>
+
+<ol>
+<li><p><strong>Set Up the Database</strong>: Navigate to the newly created package directory and start the database using Docker Compose:</p>
+
 <pre><code>$ cd &lt;your_package_name&gt;
 $ docker-compose up
-</code></pre>
-<p>This command launches the necessary database services</p>
-<ol start="4">
-<li><strong>Run the Admin App</strong>: Open a new terminal window and execute the following commands to load the development environment variables and run the admin application:</li>
+</code></pre></li>
 </ol>
+
+<p>This command launches the necessary database services</p>
+
+<ol>
+<li><p><strong>Run the Admin App</strong>: Open a new terminal window and execute the following commands to load the development environment variables and run the admin application:</p>
+
 <pre><code>$ source dev_env
 $ go run main.go
-</code></pre>
-<p>With these quick steps, you'll have a fully operational QOR5 admin interface up and running, showcasing the remarkable speed and efficiency at which QOR5 empowers you to build sophisticated web applications. Explore the interface to witness firsthand the extent of QOR5's power and versatility, all within just one minute!</p>
+</code></pre></li>
+</ol>
+
+<p>With these quick steps, you&#39;ll have a fully operational QOR5 admin interface up and running, showcasing the remarkable speed and efficiency at which QOR5 empowers you to build sophisticated web applications. Explore the interface to witness firsthand the extent of QOR5&#39;s power and versatility, all within just one minute!</p>
 </div>
 </div>
 </div>
@@ -264,7 +276,6 @@ $ go run main.go
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

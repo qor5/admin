@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,12 +218,15 @@
 <h1 class='mb-8'>Publish</h1>
 
 <div class='border-t'><p>Publish controls the online/offline status of records. It generalizes publishing using 3 main modules:</p>
+
 <ul>
 <li><code>Status</code>: to flag a record be online/offline</li>
 <li><code>Schedule</code>: to schedule records to be online/offline automatically</li>
 <li><code>Version</code>: to allow a record to have more than one copies and chain them together</li>
 </ul>
-<h2 id="usage">Usage</h2>
+<h2><a name="usage" class="anchor" href="#usage" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Usage</h2>
+
 <p>Inject modules to the resource model.</p>
 
 <highlightjs :language='"go"' :code='"type WithPublishProduct struct {\n\tgorm.Model\n\n\tName  string\n\tPrice int\n\n\tpublish.Status\n\tpublish.Schedule\n\tpublish.Version\n}\n"'></highlightjs>
@@ -242,27 +244,32 @@
 <div class='demo'>
 <a href='/samples/publish-example/with-publish-products' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_admin/publish.go#L57-L73' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/publish.go#L57-L73' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<h2 id="modules">Modules</h2>
-<h3 id="status">Status</h3>
+<h2><a name="modules" class="anchor" href="#modules" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Modules</h2>
+<h3><a name="status" class="anchor" href="#status" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Status</h3>
+
 <p><code>Status</code> module stores the status of the record.</p>
 
 <highlightjs :language='"go"' :code='"const (\n\tStatusDraft   = \"draft\"\n\tStatusOnline  = \"online\"\n\tStatusOffline = \"offline\"\n)\n\ntype Status struct {\n\tStatus    string `gorm:\"default:&#39;draft&#39;\"`\n\tOnlineUrl string\n}\n"'></highlightjs>
 <p>The initial status is <strong>draft</strong>, after publishing it becomes <strong>online</strong>, and after unpublishing it becomes <strong>offline</strong>.</p>
-<h3 id="schedule">Schedule</h3>
+<h3><a name="schedule" class="anchor" href="#schedule" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Schedule</h3>
+
 <p><code>Schedule</code> module schedules records to be online/offline automatically with the publisher job.</p>
 
 <highlightjs :language='"go"' :code='"type Schedule struct {\n\tScheduledStartAt *time.Time `gorm:\"index\"`\n\tScheduledEndAt   *time.Time `gorm:\"index\"`\n\n\tActualStartAt *time.Time\n\tActualEndAt   *time.Time\n}\n"'></highlightjs>
-<p>If a record has <code>ScheduledStartAt</code> set, and the current time is larger than this value, the record will be published and the <code>ActualStartAt</code> will be set to the actual published time, the <code>ScheduledStartAt</code> will be cleared.<br />
+<p>If a record has <code>ScheduledStartAt</code> set, and the current time is larger than this value, the record will be published and the <code>ActualStartAt</code> will be set to the actual published time, the <code>ScheduledStartAt</code> will be cleared.<br>
 If a record has <code>ScheduledEndAt</code> set, and the current time is larger than this value, the record will be unpublished and the <code>ActualEndAt</code> will be set to the actual unpublished time, the <code>ScheduledEndAt</code> will be cleared.</p>
-<h3 id="version">Version</h3>
+<h3><a name="version" class="anchor" href="#version" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Version</h3>
+
 <p><code>Version</code> module allows one record to have multiple copies, with Schedule, you can even schedule different prices of a product for a whole year.</p>
 
 <highlightjs :language='"go"' :code='"type Version struct {\n\tVersion       string `gorm:\"primary_key;size:128;not null;\"`\n\tVersionName   string\n\tParentVersion string\n}\n"'></highlightjs>
 <p>The <code>Version</code> will be the primary key. By default, the <code>Version</code> value will be <code>YYYY-MM-DD-vSeq</code>, e.g. <code>2006-01-02-v01</code>. And you can rename a version on interface, which will modify the value of <code>VersionName</code>.</p>
-<h3 id="list">List</h3>
+<h3><a name="list" class="anchor" href="#list" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>List</h3>
+
 <p><code>List</code> module publishes list page of resource.</p>
 
 <highlightjs :language='"go"' :code='"type List struct {\n\tPageNumber  int\n\tPosition    int\n\tListDeleted bool\n\tListUpdated bool\n}\n"'></highlightjs>
@@ -278,7 +285,6 @@ If a record has <code>ScheduledEndAt</code> set, and the current time is larger 
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

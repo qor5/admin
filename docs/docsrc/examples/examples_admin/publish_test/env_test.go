@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/docs/v3/docsrc/examples/examples_admin"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )

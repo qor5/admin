@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,6 +218,7 @@
 <h1 class='mb-8'>Activity Log</h1>
 
 <div class='border-t'><p>QOR5 provides a built-in activity module for recording model operations that may be important for admin users of CMS. These records are designed to be easily queried and audited, and the activity module supports the following features:</p>
+
 <ul>
 <li>Detailed change logging functionality for model data modifications.</li>
 <li>Allow certain fields to be ignored when comparing modified data, such as the update time.</li>
@@ -228,22 +228,33 @@
 <li>Provide flexibility to customize the actions other than default CRUD.</li>
 <li>An page for querying the activity log via QOR5 admin</li>
 </ul>
-<h2 id="initialize-the-activity-package">Initialize the activity package</h2>
+<h2><a name="initialize-the-activity-package" class="anchor" href="#initialize-the-activity-package" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Initialize the activity package</h2>
+
 <p>To initialize activity package with the default configuration, you need to pass a <code>presets.Builder</code> instance and a database instance.</p>
 
 <highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\nactivityBuilder := activity.New(db)\nb.Use(activityBuilder)"'></highlightjs>
-<p>By default, the activity package uses QOR5 login package's <code>login.UserKey</code> as the default key to fetch the current user from the context. If you want to use your own key, you can use the <code>CreatorContextKey</code> function.</p>
+<p>By default, the activity package uses QOR5 login package&#39;s <code>login.UserKey</code> as the default key to fetch the current user from the context. If you want to use your own key, you can use the <code>CreatorContextKey</code> function.</p>
+
 <p>Same with above, the activity package uses the db instance that passed in during initialization to perform db operations. If you need another db to do the work, you can use <code>DBContextKey</code> method.</p>
-<h2 id="register-the-models-that-require-activity-tracking">Register the models that require activity tracking</h2>
+<h2><a name="register-the-models-that-require-activity-tracking" class="anchor" href="#register-the-models-that-require-activity-tracking" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Register the models that require activity tracking</h2>
+
 <p>This example demonstrates how to register <code>Product</code> into the activity. The activities on the product model will be automatically recorded when it is created, updated, or deleted.</p>
 
 <highlightjs :language='"go"' :code='"type WithActivityProduct struct {\n\tgorm.Model\n\tTitle string\n\tCode  string\n\tPrice float64\n}\nerr := db.AutoMigrate(\u0026WithActivityProduct{})\nif err != nil {\n\tpanic(err)\n}\nproductModel := b.Model(\u0026WithActivityProduct{}).Use(activityBuilder)\n\nbt := productModel.Detailing(\"Content\", activity.Timeline).Drawer(true)\nbt.Section(\"Content\").\n\tViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {\n\t\treturn Div().Text(\"text\")\n\t}).Editing(\"Title\", \"Code\", \"Price\")\n\nactivityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys(\"Title\").AddIgnoredFields(\"Code\").SkipDelete()"'></highlightjs>
 <p>By default, the activity package will use the primary key as the key to indentify the current model data. You can use <code>SetKeys</code> and <code>AddKeys</code> methods to customize it.</p>
+
 <p>When diffing the modified data, the activity package will ignore the <code>ID</code>, <code>CreatedAt</code>, <code>UpdatedAt</code>, <code>DeletedAt</code> fields. You can either use <code>AddIgnoredFields</code> to append your own fields to the default ignored fields. Or <code>SetIgnoredFields</code> method to replace the default ignored fields.</p>
+
 <p>For special fields like <code>time.Time</code> or media files handled by QOR5 media_library, activity package already handled them. You can use <code>AddTypeHanders</code> method to handle your own field types.</p>
+
 <p>If you want to skip the automatic recording, you can use <code>SkipCreate</code>, <code>SkipUpdate</code> and <code>SkipDelete</code> methods.</p>
-<p>The Activity package allows for displaying the activities of a record on its editing page. Simply use the <code>EnableActivityInfoTab</code> method to enable this feature. Once enabled, you can customize the format of each activity's display text using the <code>TabHeading</code> method. Additionally, you can make each activity a link to the corresponding record using the <code>SetLink</code> method.</p>
-<h2 id="record-the-activity-log-manually">Record the activity log manually</h2>
+
+<p>The Activity package allows for displaying the activities of a record on its editing page. Simply use the <code>EnableActivityInfoTab</code> method to enable this feature. Once enabled, you can customize the format of each activity&#39;s display text using the <code>TabHeading</code> method. Additionally, you can make each activity a link to the corresponding record using the <code>SetLink</code> method.</p>
+<h2><a name="record-the-activity-log-manually" class="anchor" href="#record-the-activity-log-manually" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Record the activity log manually</h2>
+
 <p>If you register a preset model into the activity, the activity package will automatically record the activity log for CRUD operations. However, if you need to manually record the activity log for other operations or if you want to register a non-preset model, you can use the following sample code.</p>
 
 <highlightjs :language='"go"' :code='"currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, \"user1\")\n\nactivityBuilder.AddRecords(\"Publish\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 100})\n\nactivityBuilder.AddRecords(\"Update Price\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 200})"'></highlightjs>
@@ -259,7 +270,6 @@
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

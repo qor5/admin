@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,26 +217,29 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Localization</h1>
 
-<div class='border-t'><p>L10n gives your models the ability to localize for different Locales.<br />
+<div class='border-t'><p>L10n gives your models the ability to localize for different Locales.<br>
 It can be a catalyst for the adaptation of a product, application, or document content to meet the language, cultural, and other requirements of a specific target market.</p>
-<h2 id="define-a-struct">Define a struct</h2>
-<p>Define a struct that requires embed <code>l10n.Locale</code>.<br />
+<h2><a name="define-a-struct" class="anchor" href="#define-a-struct" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Define a struct</h2>
+
+<p>Define a struct that requires embed <code>l10n.Locale</code>.<br>
 Also this struct must implement <code>PrimarySlug() string</code> and <code>PrimaryColumnValuesBySlug(slug string) map[string]string</code>.</p>
 
 <highlightjs :language='"go"' :code='"type L10nModel struct {\n\tgorm.Model\n\tTitle string\n\n\tl10n.Locale\n}\n\nfunc (lm *L10nModel) PrimarySlug() string {\n\treturn fmt.Sprintf(\"%v_%v\", lm.ID, lm.LocaleCode)\n}\n\nfunc (lm *L10nModel) PrimaryColumnValuesBySlug(slug string) map[string]string {\n\tsegs := strings.Split(slug, \"_\")\n\tif len(segs) != 2 {\n\t\tpanic(\"wrong slug\")\n\t}\n\n\treturn map[string]string{\n\t\t\"id\":                segs[0],\n\t\tl10n.SlugLocaleCode: segs[1],\n\t}\n}\n"'></highlightjs>
-<h2 id="init-a-l10n-builder">Init a l10n builder</h2>
-<p>Register locales here.<br />
+<h2><a name="init-a-l10n-builder" class="anchor" href="#init-a-l10n-builder" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Init a l10n builder</h2>
+
+<p>Register locales here.<br>
 You can use <code>SupportLocalesFunc</code> to determine who can use which locales.</p>
 
 <highlightjs :language='"go"' :code='"l10nBuilder := l10n.New(db)\nl10nBuilder.\n\tRegisterLocales(\"International\", \"international\", \"International\").\n\tRegisterLocales(\"China\", \"cn\", \"China\").\n\tRegisterLocales(\"Japan\", \"jp\", \"Japan\").\n\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t})"'></highlightjs>
-<h2 id="configure-the-model-builder">Configure the model builder</h2>
-<p>Use <code>l10n_view.Configure()</code> func to configure l10n view.<br />
-The <code>Switch Locale</code> ui will appear below the <code>Brand</code>.<br />
-The <code>Localize</code> ui will appear in the <code>RowMenuItem</code> under the <code>Edit</code> and the <code>Delete</code>.<br />
+<h2><a name="configure-the-model-builder" class="anchor" href="#configure-the-model-builder" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configure the model builder</h2>
+
+<p>Use <code>l10n_view.Configure()</code> func to configure l10n view.<br>
+The <code>Switch Locale</code> ui will appear below the <code>Brand</code>.<br>
+The <code>Localize</code> ui will appear in the <code>RowMenuItem</code> under the <code>Edit</code> and the <code>Delete</code>.<br>
 <code>Localize</code> button is used to copy a piece of data from the current locale to the other locales.</p>
 
 <highlightjs :language='"go"' :code='"mb := b.Model(\u0026L10nModel{}).URIName(\"l10n-models\")\nb.Use(l10nBuilder)\nmb.Use(l10nBuilder)\nmb.Listing(\"ID\", \"Title\", \"Locale\")"'></highlightjs>
-<h2 id="full-example">Full Example</h2>
+<h2><a name="full-example" class="anchor" href="#full-example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Full Example</h2>
 
 <highlightjs :language='"go"' :code='"import (\n\t\"fmt\"\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/qor5/admin/v3/l10n\"\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/admin/v3/presets/gorm2op\"\n\t\"gorm.io/gorm\"\n)\n\ntype L10nModel struct {\n\tgorm.Model\n\tTitle string\n\n\tl10n.Locale\n}\n\nfunc (lm *L10nModel) PrimarySlug() string {\n\treturn fmt.Sprintf(\"%v_%v\", lm.ID, lm.LocaleCode)\n}\n\nfunc (lm *L10nModel) PrimaryColumnValuesBySlug(slug string) map[string]string {\n\tsegs := strings.Split(slug, \"_\")\n\tif len(segs) != 2 {\n\t\tpanic(\"wrong slug\")\n\t}\n\n\treturn map[string]string{\n\t\t\"id\":                segs[0],\n\t\tl10n.SlugLocaleCode: segs[1],\n\t}\n}\n\n\nfunc LocalizationExample(b *presets.Builder, db *gorm.DB) http.Handler {\n\tif err := db.AutoMigrate(\u0026L10nModel{}); err != nil {\n\t\tpanic(err)\n\t}\n\n\tb.DataOperator(gorm2op.DataOperator(db))\n\n\tl10nBuilder := l10n.New(db)\n\tl10nBuilder.\n\t\tRegisterLocales(\"International\", \"international\", \"International\").\n\t\tRegisterLocales(\"China\", \"cn\", \"China\").\n\t\tRegisterLocales(\"Japan\", \"jp\", \"Japan\").\n\t\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t\t})\n\n\tmb := b.Model(\u0026L10nModel{}).URIName(\"l10n-models\")\n\tb.Use(l10nBuilder)\n\tmb.Use(l10nBuilder)\n\tmb.Listing(\"ID\", \"Title\", \"Locale\")"'></highlightjs>
 
@@ -245,7 +247,7 @@ The <code>Localize</code> ui will appear in the <code>RowMenuItem</code> under t
 <div class='demo'>
 <a href='/samples/localization-example/l10n-models' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_admin/localization.go#L3-L65' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/localization.go#L3-L65' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -260,7 +262,6 @@ The <code>Localize</code> ui will appear in the <code>RowMenuItem</code> under t
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

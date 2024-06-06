@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,10 +217,10 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Internationalization</h1>
 
-<div class='border-t'><p>The <a href="https://github.com/qor5/x/tree/master/i18n">i18n package</a> provides support for internationalization (i18n) in Go applications.<br />
-With the package, you can support multiple languages,<br />
-register messages for each module in each language, and serve multilingual content<br />
-based on the user's preferences.</p>
+<div class='border-t'><p>The <a href="https://github.com/qor5/x/tree/master/i18n" rel="nofollow">i18n package</a> provides support for internationalization (i18n) in Go applications.
+With the package, you can support multiple languages,
+register messages for each module in each language, and serve multilingual content
+based on the user&#39;s preferences.</p>
 
 <br>
 
@@ -229,63 +228,72 @@ based on the user's preferences.</p>
 <div class='demo'>
 <a href='/samples/internationalization-example/home' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_admin/internationalization.go' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/internationalization.go' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<h2 id="getting-started">Getting Started</h2>
+<h2><a name="getting-started" class="anchor" href="#getting-started" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting Started</h2>
+
 <p>To use the i18n package, you first need to import it into your Go application:</p>
 
 <highlightjs :language='"go"' :code='"import \"github.com/qor5/x/v3/i18n\""'></highlightjs>
-<p>Next, create a new <code>Builder</code> instance using the <code>New()</code> function.<br />
+<p>Next, create a new <code>Builder</code> instance using the <code>New()</code> function.
 If you want to use it with QOR5, use the <code>I18n()</code> on <code>presets.Builder</code>:</p>
 
 <highlightjs :language='"go"' :code='"i18nB := b.I18n()"'></highlightjs>
-<p>The <code>Builder</code> struct is the central point of the i18n package.<br />
-It holds the supported languages, the messages for each module in each language,<br />
+<p>The <code>Builder</code> struct is the central point of the i18n package.
+It holds the supported languages, the messages for each module in each language,
 and the configuration for retrieving the language preference.</p>
-<h2 id="adding-support-languages">Adding Support Languages</h2>
-<p>To support multiple languages in your web application, you need to define the languages that you support.<br />
+<h2><a name="adding-support-languages" class="anchor" href="#adding-support-languages" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Adding Support Languages</h2>
+
+<p>To support multiple languages in your web application, you need to define the languages that you support.
 You can do this by calling the <code>SupportLanguages</code> function on the <code>Builder</code> struct:</p>
 
 <highlightjs :language='"go"' :code='"i18nB.SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)"'></highlightjs>
 <p>The i18n package uses English as the default language. You can add other languages by the <code>SupportLanguages</code> function.</p>
-<h2 id="registering-module-messages">Registering Module Messages</h2>
-<p>Once you have defined the languages, you need to register messages for each module.<br />
+<h2><a name="registering-module-messages" class="anchor" href="#registering-module-messages" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Registering Module Messages</h2>
+
+<p>Once you have defined the languages, you need to register messages for each module.
 You can do this by the <code>RegisterForModule</code> function on the <code>Builder</code> struct:</p>
 
 <highlightjs :language='"go"' :code='"i18nB.\n\tRegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).\n\tRegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).\n\tRegisterForModule(language.English, I18nExampleKey, Messages_en_US).\n\tRegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).\n\tRegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).\n\tGetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {\n\t\treturn b.I18n().GetSupportLanguages()\n\t})"'></highlightjs>
-<p>The <code>RegisterForModule</code> function takes three arguments: the language tag, the module key,<br />
-and a pointer to a struct that implements the Messages interface.<br />
+<p>The <code>RegisterForModule</code> function takes three arguments: the language tag, the module key,
+and a pointer to a struct that implements the Messages interface.
 The Messages interface is an empty interface that you can use to define your own messages.</p>
+
 <p>Such a struct might look like this:</p>
 
 <highlightjs :language='"go"' :code='"const I18nExampleKey i18n.ModuleKey = \"I18nExampleKey\"\n\ntype Messages struct {\n\tAdmin   string\n\tWelcome string\n}\n\nvar Messages_en_US = \u0026Messages{\n\tAdmin:   \"Admin\",\n\tWelcome: \"Welcome\",\n}\n\nvar Messages_zh_CN = \u0026Messages{\n\tAdmin:   \"管理系统\",\n\tWelcome: \"欢迎\",\n}\n\nvar Messages_ja_JP = \u0026Messages{\n\tAdmin:   \"管理システム\",\n\tWelcome: \"ようこそ\",\n}\n"'></highlightjs>
-<p>If you want to define messages inside the system,<br />
-you can add new variables to the message structure associated with <code>presets.ModelsI18nModuleKey</code>,<br />
+<p>If you want to define messages inside the system,
+you can add new variables to the message structure associated with <code>presets.ModelsI18nModuleKey</code>,
 and the variable name definitions follow the camel case.</p>
+
 <p>Such a struct might look like this:</p>
 
 <highlightjs :language='"go"' :code='"\ntype Messages_ModelsI18nModuleKey struct {\n\tHomes             string\n\tVideos            string\n\tVideosName        string\n\tVideosDescription string\n}\n\nvar Messages_zh_CN_ModelsI18nModuleKey = \u0026Messages_ModelsI18nModuleKey{\n\tHomes:             \"主页\",\n\tVideos:            \"视频\",\n\tVideosName:        \"视频名称\",\n\tVideosDescription: \"视频描述\",\n}\n\nvar Messages_ja_JP_ModelsI18nModuleKey = \u0026Messages_ModelsI18nModuleKey{\n\tHomes:             \"ホーム\",\n\tVideos:            \"ビデオ\",\n\tVideosName:        \"ビデオの名前\",\n\tVideosDescription: \"ビデオの説明\",\n}\n"'></highlightjs>
-<p>The <code>GetSupportLanguagesFromRequestFunc</code> is a method of the <code>Builder</code> struct in the i18n package.<br />
-It allows you to set a function that retrieves the list of supported languages<br />
-from an HTTP request, which can be useful in scenarios where the list of supported<br />
+<p>The <code>GetSupportLanguagesFromRequestFunc</code> is a method of the <code>Builder</code> struct in the i18n package.
+It allows you to set a function that retrieves the list of supported languages
+from an HTTP request, which can be useful in scenarios where the list of supported
 languages varies based on the request context.</p>
+
 <p>If you create a separate page, you need to use the <code>EnsureLanguage</code> to get i18n to work on this page.</p>
-<p>The <code>EnsureLanguage</code> function is an HTTP middleware that ensures the request's language<br />
-is properly set and stored. It does this by first checking the query parameters for<br />
-a language value, and if found, setting a cookie with that value. If no language<br />
+
+<p>The <code>EnsureLanguage</code> function is an HTTP middleware that ensures the request&#39;s language
+is properly set and stored. It does this by first checking the query parameters for
+a language value, and if found, setting a cookie with that value. If no language
 value is present in the query parameters, it looks for the language value in the cookie.</p>
-<p>The middleware then determines the best-matching language from the supported languages<br />
-based on the &quot;Accept-Language&quot; header of the request. If no match is found,<br />
-it defaults to the first supported language. It then sets the language context for<br />
+
+<p>The middleware then determines the best-matching language from the supported languages
+based on the &#34;Accept-Language&#34; header of the request. If no match is found,
+it defaults to the first supported language. It then sets the language context for
 the request, which can be retrieved later by calling the <code>MustGetModuleMessages</code> function.</p>
-<h2 id="retrieving-messages">Retrieving Messages</h2>
+<h2><a name="retrieving-messages" class="anchor" href="#retrieving-messages" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Retrieving Messages</h2>
+
 <p>To retrieve module messages in your HTTP handler, you can use the <code>MustGetModuleMessages</code> function:</p>
 
 <highlightjs :language='"go"' :code='"msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)\nr.Body = v.VContainer(\n\th.Div(\n\t\th.H1(msgr.Welcome),\n\t).Class(\"text-center mt-8\"),\n)"'></highlightjs>
-<p>The <code>MustGetModuleMessages</code> function takes three arguments:<br />
-the HTTP request, the module key, and a pointer to a struct<br />
-that implements the Messages interface. The function retrieves the messages<br />
+<p>The <code>MustGetModuleMessages</code> function takes three arguments:
+the HTTP request, the module key, and a pointer to a struct
+that implements the Messages interface. The function retrieves the messages
 for the specified module in the language set by the i18n middleware.</p>
 </div>
 </div>
@@ -299,7 +307,6 @@ for the specified module in the language set by the i18n middleware.</p>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

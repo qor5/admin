@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,19 +217,23 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Confirm Dialog</h1>
 
-<div class='border-t'><p><code>presets.OpenConfirmDialog</code><br />
-is a pre-defined event used to show a confirm dialog for user to do confirm before executing the actual action.</p>
-<h3 id="queries">Queries</h3>
-<p><code>presets.ConfirmDialogConfirmEvent</code><br />
-required<br />
+<div class='border-t'><p><code>presets.OpenConfirmDialog</code>
+ is a pre-defined event used to show a confirm dialog for user to do confirm before executing the actual action.</p>
+<h3><a name="queries" class="anchor" href="#queries" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Queries</h3>
+
+<p><code>presets.ConfirmDialogConfirmEvent</code><br>
+required<br>
 Usually the value will be <em>web.Plaid().EventFunc(the actual action event)....Go()</em>.</p>
-<p><code>presets.ConfirmDialogPromptText</code><br />
-optional<br />
+
+<p><code>presets.ConfirmDialogPromptText</code><br>
+optional<br>
 To customize the prompt text.</p>
-<p><code>presets.ConfirmDialogDialogPortalName</code><br />
-optional<br />
+
+<p><code>presets.ConfirmDialogDialogPortalName</code><br>
+optional<br>
 To use a custom portal for dialog.</p>
-<h2 id="example">Example</h2>
+<h2><a name="example" class="anchor" href="#example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
 
 <highlightjs :language='"go"' :code='"vuetify.VBtn(\"Delete File\").\n\tAttr(\"@click\",\n\t\tweb.Plaid().\n\t\t\tEventFunc(presets.OpenConfirmDialog).\n\t\t\tQuery(presets.ConfirmDialogConfirmEvent,\n\t\t\t\t`alert(\"file deleted\")`,\n\t\t\t).\n\t\t\tGo(),\n\t),"'></highlightjs>
 
@@ -238,7 +241,7 @@ To use a custom portal for dialog.</p>
 <div class='demo'>
 <a href='/samples/presets-confirm-dialog/confirm-dialog' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/confirm-dialog.go#L43-L53' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/confirm-dialog.go#L43-L53' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -253,7 +256,6 @@ To use a custom portal for dialog.</p>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

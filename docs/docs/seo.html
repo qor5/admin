@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,292 +217,333 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>SEO</h1>
 
-<div class='border-t'><h2 id="introduction">Introduction</h2>
+<div class='border-t'><h2><a name="introduction" class="anchor" href="#introduction" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h2>
+
 <p>The seo package allows for the management and injection of dynamic data into HTML tags for the purpose of Search Engine Optimization.</p>
-<h2 id="create-a-seo-builder">Create a SEO builder</h2>
+<h2><a name="create-a-seo-builder" class="anchor" href="#create-a-seo-builder" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Create a SEO builder</h2>
+
 <ul>
-<li>
-<p>Create a builder and register global seo by default. <code>db</code> is an instance of gorm.DB</p>
-<pre><code class="language-go">builder := seo.NewBuilder(db)
-</code></pre>
-</li>
-<li>
-<p>The default global seo name is <code>Global SEO</code>, if you want to customize the name, passing the name through <code>WithGlobalSEOName</code> option to the <code>NewBuilder</code> function.</p>
-<pre><code class="language-go">builder := seo.NewBuilder(db, seo.WithGlobalSEOName(&quot;My Global SEO&quot;))
-</code></pre>
-</li>
-<li>
-<p>Turn off the default inherit the upper level SEO data when the current SEO data is missing</p>
-<pre><code class="language-go">builder := seo.NewBuilder(db, seo.WithInherited(false))
-</code></pre>
-</li>
-<li>
-<p>The seo package supports localization. you can pass the localization code you want to support through the <code>WithLocales</code> option to the <code>NewBuilder</code> function. if no localization is set, it defaults to empty.</p>
-<pre><code class="language-go">builder := seo.NewBuilder(db, seo.WithLocales('zh', 'en', 'jp'))
-</code></pre>
-</li>
-<li>
-<p><strong>You can pass multiple options at once</strong></p>
-<pre><code class="language-go">builder := seo.NewBuilder(db, seo.WithLocales('zh'), seo.WithInherited(false), seo.WithGlobalSEOName(&quot;My Global SEO&quot;))
-</code></pre>
-</li>
+<li><p>Create a builder and register global seo by default. <code>db</code> is an instance of gorm.DB</p>
+
+<div class="highlight highlight-go"><pre>builder := seo.NewBuilder(db)
+</pre></div></li>
+
+<li><p>The default global seo name is <code>Global SEO</code>, if you want to customize the name, passing the name through <code>WithGlobalSEOName</code> option to the <code>NewBuilder</code> function.</p>
+
+<div class="highlight highlight-go"><pre>builder := seo.NewBuilder(db, seo.WithGlobalSEOName(&#34;My Global SEO&#34;))
+</pre></div></li>
+
+<li><p>Turn off the default inherit the upper level SEO data when the current SEO data is missing</p>
+
+<div class="highlight highlight-go"><pre>builder := seo.NewBuilder(db, seo.WithInherited(false))
+</pre></div></li>
+
+<li><p>The seo package supports localization. you can pass the localization code you want to support through the <code>WithLocales</code> option to the <code>NewBuilder</code> function. if no localization is set, it defaults to empty.</p>
+
+<div class="highlight highlight-go"><pre>builder := seo.NewBuilder(db, seo.WithLocales(&#39;zh&#39;, &#39;en&#39;, &#39;jp&#39;))
+</pre></div></li>
+
+<li><p><strong>You can pass multiple options at once</strong></p>
+
+<div class="highlight highlight-go"><pre>builder := seo.NewBuilder(db, seo.WithLocales(&#39;zh&#39;), seo.WithInherited(false), seo.WithGlobalSEOName(&#34;My Global SEO&#34;))
+</pre></div></li>
 </ul>
-<h2 id="register-and-remove-seo">Register and remove SEO</h2>
+<h2><a name="register-and-remove-seo" class="anchor" href="#register-and-remove-seo" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Register and remove SEO</h2>
+
 <p>All registered SEO names are unique, If you have already registered a SEO named <code>Test</code>, attempting to register SEO with the same name <code>Test</code> will cause the program to panic.</p>
-<p>The second parameter named <code>model</code> in the <code>RegisterSEO(name string, model ...interface{})</code> method is an<br />
-instance of a type that has a field of type <code>Setting</code>. If you pass a  <code>model</code> whose type<br />
+
+<p>The second parameter named <code>model</code> in the <code>RegisterSEO(name string, model ...interface{})</code> method is an
+instance of a type that has a field of type <code>Setting</code>. If you pass a  <code>model</code> whose type
 does not have such a field, the program will panic.</p>
+
 <p>For Example:</p>
-<pre><code class="language-go">builder.RegisterSEO(&quot;Test&quot;)
+
+<div class="highlight highlight-go"><pre>builder.RegisterSEO(&#34;Test&#34;)
 type Test struct {
     ...
-    // doesn't have a field of type Setting
+    // doesn&#39;t have a field of type Setting
 }
-builder.RegisterSEO(&quot;Test&quot;, &amp;Test{}) // will panic
-</code></pre>
-<p>There are two types of SEOs, one is SEO with model, the other is SEO without model.<br />
+builder.RegisterSEO(&#34;Test&#34;, &amp;Test{}) // will panic
+</pre></div>
+
+<p>There are two types of SEOs, one is SEO with model, the other is SEO without model.
 if you want to register a no model SEO, you can call RegisterSEO method like this:</p>
-<pre><code class="language-go">seoBuilder.RegisterSEO(&quot;About Us&quot;)
-</code></pre>
+
+<div class="highlight highlight-go"><pre>seoBuilder.RegisterSEO(&#34;About Us&#34;)
+</pre></div>
+
 <p>if you want to register a SEO with model, you can call RegisterSEO method like this:</p>
-<pre><code class="language-go">seoBuilder.RegisterSEO(&quot;Product&quot;, &amp;Product{})
-</code></pre>
+
+<div class="highlight highlight-go"><pre>seoBuilder.RegisterSEO(&#34;Product&#34;, &amp;Product{})
+</pre></div>
+
 <ul>
-<li>
-<p>Remove a SEO</p>
+<li>Remove a SEO</li>
+</ul>
+
 <p><strong>NOTE: The global seo cannot be removed</strong></p>
-<pre><code class="language-go">builder.RemoveSEO(&amp;Product{}).RemoveSEO(&quot;Not Found&quot;)
-</code></pre>
+
+<div class="highlight highlight-go"><pre>  builder.RemoveSEO(&amp;Product{}).RemoveSEO(&#34;Not Found&#34;)
+</pre></div>
+
 <p>When you remove an SEO, the new parent of its child SEO becomes the parent of the seo.</p>
-</li>
-<li>
-<p>The seo supports hierarchy, and you can use the <code>SetParent</code> or <code>AppendChild</code> methods of <code>SEO</code> to configure the hierarchy.</p>
-<p><strong>With <code>AppendChildren</code> method</strong></p>
-<pre><code class="language-go">builder.RegisterSEO(&quot;A&quot;).AppendChildren(
-    builder.RegisterSEO(&quot;B&quot;),
-    builder.RegisterSEO(&quot;C&quot;),
-    builder.RegisterSEO(&quot;D&quot;),
-)
-</code></pre>
-<p><strong>With <code>SetParent</code> Method</strong></p>
-<pre><code class="language-go">seoA := builder.RegisterSEO(&quot;A&quot;)
-builder.RegisterSEO(&quot;B&quot;).SetParent(seoA)
-builder.RegisterSEO(&quot;C&quot;).SetParent(seoA)
-builder.RegisterSEO(&quot;D&quot;).SetParent(seoA)
-</code></pre>
-<p>The final seo structure is as follows:</p>
-<pre><code class="language-txt">Global SEO
-├── A
-    ├── B
-    └── C
-    └── D
-</code></pre>
-</li>
-</ul>
-<h2 id="configure-seo">Configure SEO</h2>
+
 <ul>
-<li>
-<p>Register setting variables</p>
-<pre><code class="language-go">builder := NewBuilder(dbForTest)
-builder.RegisterSEO(&amp;Product{}).
-  RegisterSettingVariables(&quot;Type&quot;, &quot;Place of Origin&quot;)
-</code></pre>
-</li>
-<li>
-<p>Register context variables</p>
-<pre><code class="language-go">seoBuilder = seo.NewBuilder(db)
-seoBuilder.RegisterSEO(&amp;models.Post{}).
-    RegisterContextVariable(
-        &quot;Title&quot;,
-        func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-            if article, ok := object.(models.Post); ok {
-                return article.Title
-            }
-            return &quot;&quot;
-        },
-    )
-</code></pre>
-</li>
-<li>
-<p>Register Meta Property</p>
-<pre><code class="language-go">seoBuilder = seo.NewBuilder(db)
-seoBuilder.RegisterSEO(&amp;models.Post{}).
-    RegisterMetaProperty(
-        &quot;og:audio&quot;,
-        func(object interface{}, _ *seo.Setting, _ *http.Request) string {
-            if article, ok := object.(models.Post); ok {
-                return article.audio
-            }
-            return &quot;&quot;
-        },
-    )
-</code></pre>
-</li>
+<li>The seo supports hierarchy, and you can use the <code>SetParent</code> or <code>AppendChild</code> methods of <code>SEO</code> to configure the hierarchy.</li>
 </ul>
-<h2 id="render-seo-html-data">Render SEO html data</h2>
-<h3 id="render-a-single-seo">Render a single seo</h3>
-<h4 id="render-a-single-seo-with-model">Render a single seo with model</h4>
+
+<p><strong>With <code>AppendChildren</code> method</strong></p>
+
+<div class="highlight highlight-go"><pre>  builder.RegisterSEO(&#34;A&#34;).AppendChildren(
+      builder.RegisterSEO(&#34;B&#34;),
+      builder.RegisterSEO(&#34;C&#34;),
+      builder.RegisterSEO(&#34;D&#34;),
+  )
+</pre></div>
+
+<p><strong>With <code>SetParent</code> Method</strong></p>
+
+<div class="highlight highlight-go"><pre>  seoA := builder.RegisterSEO(&#34;A&#34;)
+  builder.RegisterSEO(&#34;B&#34;).SetParent(seoA)
+  builder.RegisterSEO(&#34;C&#34;).SetParent(seoA)
+  builder.RegisterSEO(&#34;D&#34;).SetParent(seoA)
+</pre></div>
+
+<p>The final seo structure is as follows:</p>
+
+<div class="highlight highlight-txt"><pre>  Global SEO
+  ├── A
+      ├── B
+      └── C
+      └── D
+</pre></div>
+<h2><a name="configure-seo" class="anchor" href="#configure-seo" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Configure SEO</h2>
+
+<ul>
+<li><p>Register setting variables</p>
+
+<div class="highlight highlight-go"><pre>builder := NewBuilder(dbForTest)
+builder.RegisterSEO(&amp;Product{}).
+RegisterSettingVariables(&#34;Type&#34;, &#34;Place of Origin&#34;)
+</pre></div></li>
+
+<li><p>Register context variables</p>
+
+<div class="highlight highlight-go"><pre>seoBuilder = seo.NewBuilder(db)
+seoBuilder.RegisterSEO(&amp;models.Post{}).
+  RegisterContextVariable(
+      &#34;Title&#34;,
+      func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+          if article, ok := object.(models.Post); ok {
+              return article.Title
+          }
+          return &#34;&#34;
+      },
+  )
+</pre></div></li>
+
+<li><p>Register Meta Property</p>
+
+<div class="highlight highlight-go"><pre>seoBuilder = seo.NewBuilder(db)
+seoBuilder.RegisterSEO(&amp;models.Post{}).
+  RegisterMetaProperty(
+      &#34;og:audio&#34;,
+      func(object interface{}, _ *seo.Setting, _ *http.Request) string {
+          if article, ok := object.(models.Post); ok {
+              return article.audio
+          }
+          return &#34;&#34;
+      },
+  )
+</pre></div></li>
+</ul>
+<h2><a name="render-seo-html-data" class="anchor" href="#render-seo-html-data" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render SEO html data</h2>
+<h3><a name="render-a-single-seo" class="anchor" href="#render-a-single-seo" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render a single seo</h3>
+<h4><a name="render-a-single-seo-with-model" class="anchor" href="#render-a-single-seo-with-model" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render a single seo with model</h4>
+
 <p>To call <code>Render(obj interface{}, req *http.Request)</code> for rendering a single seo.</p>
+
 <p>NOTE: <code>obj</code> must be of type <code>*NameObj</code> or a pointer to a struct that has a field of type <code>Setting</code>.</p>
-<pre><code class="language-go">type Post struct {
-    Title   string
-    Author  string
-    Content string
-    SEO     Setting
-}
 
-post := &amp;Post{
-    Title:   &quot;TestRender&quot;,
-    Author:  &quot;iBakuman&quot;,
-    Content: &quot;Hello, Qor5 SEO&quot;,
-    SEO: Setting{
-        Title:            &quot;{.{Title}}&quot;,
-        Description:      &quot;post for testing&quot;,
-        EnabledCustomize: true,
-    },
-}
-builder := NewBuilder(dbForTest)
-builder.RegisterSEO(&amp;Post{}).RegisterContextVariable(
-    &quot;Title&quot;,
-    func(post interface{}, _ *Setting, _ *http.Request) string {
-        if p, ok := post.(*Post); ok {
-            return p.Title
-        }
-        return &quot;No title&quot;
-    },
-).RegisterMetaProperty(&quot;og:title&quot;,
-    func(post interface{}, _ *Setting, _ *http.Request) string {
-        return &quot;Title for og:title&quot;
-    },
-)
+<div class="highlight highlight-go"><pre>  type Post struct {
+      Title   string
+      Author  string
+      Content string
+      SEO     Setting
+  }
 
-defaultReq, _ := http.NewRequest(&quot;POST&quot;, &quot;http://www.demo.qor5.com&quot;, nil)
-res, err := builder.Render(post, defaultReq).MarshalHTML(context.TODO())
-if err != nil {
-    panic(err)
-}
-fmt.Println(string(res))
-</code></pre>
+  post := &amp;Post{
+      Title:   &#34;TestRender&#34;,
+      Author:  &#34;iBakuman&#34;,
+      Content: &#34;Hello, Qor5 SEO&#34;,
+      SEO: Setting{
+          Title:            &#34;{.{Title}}&#34;,
+          Description:      &#34;post for testing&#34;,
+          EnabledCustomize: true,
+      },
+  }
+  builder := NewBuilder(dbForTest)
+  builder.RegisterSEO(&amp;Post{}).RegisterContextVariable(
+      &#34;Title&#34;,
+      func(post interface{}, _ *Setting, _ *http.Request) string {
+          if p, ok := post.(*Post); ok {
+              return p.Title
+          }
+          return &#34;No title&#34;
+      },
+  ).RegisterMetaProperty(&#34;og:title&#34;,
+      func(post interface{}, _ *Setting, _ *http.Request) string {
+          return &#34;Title for og:title&#34;
+      },
+  )
+
+  defaultReq, _ := http.NewRequest(&#34;POST&#34;, &#34;http://www.demo.qor5.com&#34;, nil)
+  res, err := builder.Render(post, defaultReq).MarshalHTML(context.TODO())
+  if err != nil {
+      panic(err)
+  }
+  fmt.Println(string(res))
+</pre></div>
+
 <p>The output of the above code is as follows:</p>
-<pre><code class="language-txt">&lt;title&gt;TestRender&lt;/title&gt;
 
-&lt;meta name='description' content='post for testing'&gt;
+<div class="highlight highlight-txt"><pre>  &lt;title&gt;TestRender&lt;/title&gt;
 
-&lt;meta name='keywords'&gt;
+  &lt;meta name=&#39;description&#39; content=&#39;post for testing&#39;&gt;
 
-&lt;meta property='og:description' name='og:description'&gt;
+  &lt;meta name=&#39;keywords&#39;&gt;
 
-&lt;meta property='og:url' name='og:url'&gt;
+  &lt;meta property=&#39;og:description&#39; name=&#39;og:description&#39;&gt;
 
-&lt;meta property='og:type' name='og:type' content='website'&gt;
+  &lt;meta property=&#39;og:url&#39; name=&#39;og:url&#39;&gt;
 
-&lt;meta property='og:image' name='og:image'&gt;
+  &lt;meta property=&#39;og:type&#39; name=&#39;og:type&#39; content=&#39;website&#39;&gt;
 
-&lt;meta property='og:title' name='og:title' content='Title for og:title'&gt;
-</code></pre>
-<h4 id="render-a-single-seo-without-model">Render a single seo without model</h4>
-<pre><code class="language-go">  seoBuilder.Render(&amp;NameObj{&quot;About US&quot;, Locale: &quot;en&quot;})
-</code></pre>
-<h3 id="render-multiple-seos-at-once">Render multiple SEOs at once</h3>
-<h4 id="render-multiple-seos-with-model">Render multiple SEOs with model</h4>
+  &lt;meta property=&#39;og:image&#39; name=&#39;og:image&#39;&gt;
+
+  &lt;meta property=&#39;og:title&#39; name=&#39;og:title&#39; content=&#39;Title for og:title&#39;&gt;
+</pre></div>
+<h4><a name="render-a-single-seo-without-model" class="anchor" href="#render-a-single-seo-without-model" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render a single seo without model</h4>
+
+<div class="highlight highlight-go"><pre>    seoBuilder.Render(&amp;NameObj{&#34;About US&#34;, Locale: &#34;en&#34;})
+</pre></div>
+<h3><a name="render-multiple-seos-at-once" class="anchor" href="#render-multiple-seos-at-once" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render multiple SEOs at once</h3>
+<h4><a name="render-multiple-seos-with-model" class="anchor" href="#render-multiple-seos-with-model" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render multiple SEOs with model</h4>
+
 <p>To call <code>BatchRender(objs []interface, req *http.Request)</code> for batch rendering.</p>
+
 <p><strong>NOTE: You need to ensure that all elements in <code>objs</code> are of the same type.</strong></p>
-<p><code>BatchRender</code> does not check if all elements in <code>objs</code> are of the same type, as this can be performance-intensive. Therefore,<br />
-it is the responsibility of the caller to ensure that all elements in <code>objs</code> are of the same type.<br />
-If you pass <code>objs</code> with various types of SEO, it will only take the type of the first element as the standard to obtain the SEO configuration used in the rendering process.</p>
-<pre><code class="language-go">type Post struct {
-    Title   string
-    Author  string
-    Content string
-    SEO     Setting
-    l10n.Locale
-}
 
-posts := []interface{}{
-    &amp;Post{
-        Title:   &quot;TestRenderA&quot;,
-        Author:  &quot;iBakuman&quot;,
-        Content: &quot;Hello, Qor5 SEO&quot;,
-        SEO: Setting{
-            Title:            &quot;{.{Title}}&quot;,
-            Description:      &quot;postA for testing&quot;,
-            EnabledCustomize: true,
-        },
-    },
-    &amp;Post{
-        Title:   &quot;TestB&quot;,
-        Author:  &quot;iBakuman&quot;,
-        Content: &quot;Hello, Qor5 SEO&quot;,
-        SEO: Setting{
-            Title:            &quot;{.{Title}}&quot;,
-            Description:      &quot;postB for testing&quot;,
-            EnabledCustomize: true,
-        },
-    },
-}
-builder := NewBuilder(dbForTest, WithLocales(&quot;en&quot;))
-builder.RegisterSEO(&amp;Post{}).RegisterContextVariable(
-    &quot;Title&quot;,
-    func(post interface{}, _ *Setting, _ *http.Request) string {
-        if p, ok := post.(*Post); ok {
-            return p.Title
-        }
-        return &quot;No title&quot;
-    },
-).RegisterMetaProperty(&quot;og:title&quot;,
-    func(post interface{}, _ *Setting, _ *http.Request) string {
-        return &quot;Title for og:title&quot;
-    },
-)
+<p><code>BatchRender</code> does not check if all elements in <code>objs</code> are of the same type, as this can be performance-intensive. Therefore,
+  it is the responsibility of the caller to ensure that all elements in <code>objs</code> are of the same type.
+  If you pass <code>objs</code> with various types of SEO, it will only take the type of the first element as the standard to obtain the SEO configuration used in the rendering process.</p>
 
-defaultReq, _ := http.NewRequest(&quot;POST&quot;, &quot;http://www.demo.qor5.com&quot;, nil)
-SEOs := builder.BatchRender(posts, defaultReq)
-for _, seo := range SEOs {
-    html, _ := seo.MarshalHTML(context.TODO())
-    fmt.Println(string(html))
-    fmt.Println(&quot;----------------------------&quot;)
-}
-</code></pre>
+<div class="highlight highlight-go"><pre>  type Post struct {
+      Title   string
+      Author  string
+      Content string
+      SEO     Setting
+      l10n.Locale
+  }
+
+  posts := []interface{}{
+      &amp;Post{
+          Title:   &#34;TestRenderA&#34;,
+          Author:  &#34;iBakuman&#34;,
+          Content: &#34;Hello, Qor5 SEO&#34;,
+          SEO: Setting{
+              Title:            &#34;{.{Title}}&#34;,
+              Description:      &#34;postA for testing&#34;,
+              EnabledCustomize: true,
+          },
+      },
+      &amp;Post{
+          Title:   &#34;TestB&#34;,
+          Author:  &#34;iBakuman&#34;,
+          Content: &#34;Hello, Qor5 SEO&#34;,
+          SEO: Setting{
+              Title:            &#34;{.{Title}}&#34;,
+              Description:      &#34;postB for testing&#34;,
+              EnabledCustomize: true,
+          },
+      },
+  }
+  builder := NewBuilder(dbForTest, WithLocales(&#34;en&#34;))
+  builder.RegisterSEO(&amp;Post{}).RegisterContextVariable(
+      &#34;Title&#34;,
+      func(post interface{}, _ *Setting, _ *http.Request) string {
+          if p, ok := post.(*Post); ok {
+              return p.Title
+          }
+          return &#34;No title&#34;
+      },
+  ).RegisterMetaProperty(&#34;og:title&#34;,
+      func(post interface{}, _ *Setting, _ *http.Request) string {
+          return &#34;Title for og:title&#34;
+      },
+  )
+
+  defaultReq, _ := http.NewRequest(&#34;POST&#34;, &#34;http://www.demo.qor5.com&#34;, nil)
+  SEOs := builder.BatchRender(posts, defaultReq)
+  for _, seo := range SEOs {
+      html, _ := seo.MarshalHTML(context.TODO())
+      fmt.Println(string(html))
+      fmt.Println(&#34;----------------------------&#34;)
+  }
+</pre></div>
+
 <p>The output of the above code is as follows:</p>
-<pre><code class="language-txt">&lt;title&gt;TestRenderA&lt;/title&gt;
 
-&lt;meta name='description' content='postA for testing'&gt;
+<div class="highlight highlight-txt"><pre>  &lt;title&gt;TestRenderA&lt;/title&gt;
 
-&lt;meta name='keywords'&gt;
+  &lt;meta name=&#39;description&#39; content=&#39;postA for testing&#39;&gt;
 
-&lt;meta property='og:description' name='og:description'&gt;
+  &lt;meta name=&#39;keywords&#39;&gt;
 
-&lt;meta property='og:url' name='og:url'&gt;
+  &lt;meta property=&#39;og:description&#39; name=&#39;og:description&#39;&gt;
 
-&lt;meta property='og:type' name='og:type' content='website'&gt;
+  &lt;meta property=&#39;og:url&#39; name=&#39;og:url&#39;&gt;
 
-&lt;meta property='og:image' name='og:image'&gt;
+  &lt;meta property=&#39;og:type&#39; name=&#39;og:type&#39; content=&#39;website&#39;&gt;
 
-&lt;meta property='og:title' name='og:title' content='Title for og:title'&gt;
+  &lt;meta property=&#39;og:image&#39; name=&#39;og:image&#39;&gt;
 
-----------------------------
+  &lt;meta property=&#39;og:title&#39; name=&#39;og:title&#39; content=&#39;Title for og:title&#39;&gt;
 
-&lt;title&gt;TestB&lt;/title&gt;
+  ----------------------------
 
-&lt;meta name='description' content='postB for testing'&gt;
+  &lt;title&gt;TestB&lt;/title&gt;
 
-&lt;meta name='keywords'&gt;
+  &lt;meta name=&#39;description&#39; content=&#39;postB for testing&#39;&gt;
 
-&lt;meta property='og:url' name='og:url'&gt;
+  &lt;meta name=&#39;keywords&#39;&gt;
 
-&lt;meta property='og:type' name='og:type' content='website'&gt;
+  &lt;meta property=&#39;og:url&#39; name=&#39;og:url&#39;&gt;
 
-&lt;meta property='og:image' name='og:image'&gt;
+  &lt;meta property=&#39;og:type&#39; name=&#39;og:type&#39; content=&#39;website&#39;&gt;
 
-&lt;meta property='og:title' name='og:title' content='Title for og:title'&gt;
+  &lt;meta property=&#39;og:image&#39; name=&#39;og:image&#39;&gt;
 
-&lt;meta property='og:description' name='og:description'&gt;
+  &lt;meta property=&#39;og:title&#39; name=&#39;og:title&#39; content=&#39;Title for og:title&#39;&gt;
 
-----------------------------
-</code></pre>
-<h4 id="render-multiple-seos-without-model">Render multiple SEOs without model</h4>
-<pre><code class="language-go">seoBuilder.BatchRender(NewNonModelSEOSlice(&quot;Product&quot;, &quot;en&quot;, &quot;zh&quot;))
-</code></pre>
+  &lt;meta property=&#39;og:description&#39; name=&#39;og:description&#39;&gt;
+
+  ----------------------------
+</pre></div>
+<h4><a name="render-multiple-seos-without-model" class="anchor" href="#render-multiple-seos-without-model" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Render multiple SEOs without model</h4>
+
+<div class="highlight highlight-go"><pre>  seoBuilder.BatchRender(NewNonModelSEOSlice(&#34;Product&#34;, &#34;en&#34;, &#34;zh&#34;))
+</pre></div>
 </div>
 </div>
 </div>
@@ -516,7 +556,6 @@ for _, seo := range SEOs {
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

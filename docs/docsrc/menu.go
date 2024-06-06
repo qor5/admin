@@ -1,12 +1,12 @@
 package docsrc
 
 import (
-	"github.com/qor5/docs/v3/docsrc/content"
-	advanced_functions "github.com/qor5/docs/v3/docsrc/content/advanced-functions"
-	"github.com/qor5/docs/v3/docsrc/content/basics"
-	digging_deeper "github.com/qor5/docs/v3/docsrc/content/digging-deeper"
-	getting_started "github.com/qor5/docs/v3/docsrc/content/getting-started"
-	"github.com/qor5/docs/v3/docsrc/utils"
+	"github.com/qor5/admin/v3/docs/docsrc/content"
+	advanced_functions "github.com/qor5/admin/v3/docs/docsrc/content/advanced-functions"
+	"github.com/qor5/admin/v3/docs/docsrc/content/basics"
+	digging_deeper "github.com/qor5/admin/v3/docs/docsrc/content/digging-deeper"
+	getting_started "github.com/qor5/admin/v3/docs/docsrc/content/getting-started"
+	"github.com/qor5/admin/v3/docs/docsrc/utils"
 	"github.com/theplant/docgo"
 )
 

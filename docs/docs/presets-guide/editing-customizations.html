@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,14 +217,14 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Editing</h1>
 
-<div class='border-t'><p>Editing an object will be always in a drawer popup. select which fields can edit for each model<br />
-by using the <code>.Only</code> func of <code>EditingBuilder</code>, There are different ways to configure the type<br />
+<div class='border-t'><p>Editing an object will be always in a drawer popup. select which fields can edit for each model
+by using the <code>.Only</code> func of <code>EditingBuilder</code>, There are different ways to configure the type
 of component that is used to do the editing.</p>
 
 <h2 id='configure-field-for-a-single-model'>Configure field for a single model
 <a href='#configure-field-for-a-single-model' class='anchor'></a>
 </h2>
-<p>Use a customized component is as simple as add the extra asset to the preset instance.<br />
+<p>Use a customized component is as simple as add the extra asset to the preset instance.
 And configure the component func on the field:</p>
 
 <highlightjs :language='"go"' :code='"//\n//go:embed assets\nvar assets embed.FS\n\nfunc PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tjs, _ := assets.ReadFile(\"assets/fontcolor.min.js\")\n\tricheditor.Plugins = []string{\"alignment\", \"table\", \"video\", \"imageinsert\", \"fontcolor\"}\n\tricheditor.PluginsJS = [][]byte{js}\n\tb.ExtraAsset(\"/redactor.js\", \"text/javascript\", richeditor.JSComponentsPack())\n\tb.ExtraAsset(\"/redactor.css\", \"text/css\", richeditor.CSSComponentsPack())\n\n\tmb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)\n\n\tce.Only(\"Name\", \"CompanyID\", \"Description\")\n\n\tce.Field(\"Description\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\treturn richeditor.RichEditor(db, \"Body\").Plugins([]string{\"alignment\", \"video\", \"imageinsert\", \"fontcolor\"}).Value(obj.(*Customer).Description).Label(field.Label)\n\t})\n\treturn\n}\n"'></highlightjs>
@@ -234,7 +233,7 @@ And configure the component func on the field:</p>
 <div class='demo'>
 <a href='/samples/presets-editing-customization-description/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/editing.go#L19-L46' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L19-L46' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
@@ -254,18 +253,19 @@ And configure the component func on the field:</p>
 <div class='demo'>
 <a href='/samples/presets-editing-customization-file-type/products' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/editing.go#L48-L122' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L48-L122' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
 <li>We define <code>MyFile</code> to actually be a string</li>
 <li>We set <code>FieldDefaults</code> for writing, which is the editing drawer popup to be a customized component</li>
-<li>The component show an img tag with the string as src if it's not empty</li>
+<li>The component show an img tag with the string as src if it&#39;s not empty</li>
 <li>The component add a file input for user to upload new file</li>
-<li>The <code>SetterFunc</code> is called before save the object, it uploads the file to transfer.sh, and get the url back,<br />
+<li>The <code>SetterFunc</code> is called before save the object, it uploads the file to transfer.sh, and get the url back,
 then set the value to <code>MainImage</code> field</li>
 </ul>
-<p>With <code>FieldDefaults</code> we can write libraries that add customized type for different models to reuse. It can take care<br />
+
+<p>With <code>FieldDefaults</code> we can write libraries that add customized type for different models to reuse. It can take care
 of how to display the edit controls, and How to save the object.</p>
 
 <h2 id='tabs'>Tabs
@@ -279,14 +279,14 @@ of how to display the edit controls, and How to save the object.</p>
 <div class='demo'>
 <a href='/samples/presets-editing-customization-tabs/companies' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/editing.go#L146-L168' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L146-L168' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
 <h2 id='validation'>Validation
 <a href='#validation' class='anchor'></a>
 </h2>
-<p>Field level validation and display on field can be added by implement <code>ValidateFunc</code>,<br />
+<p>Field level validation and display on field can be added by implement <code>ValidateFunc</code>,
 and set the <code>web.ValidationErrors</code> result:</p>
 
 <highlightjs :language='"go"' :code='"\nfunc PresetsEditingCustomizationValidation(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tmb, cl, ce, _ = PresetsEditingCustomizationDescription(b, db)\n\n\tce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {\n\t\tcus := obj.(*Customer)\n\t\tif len(cus.Name) \u003c 10 {\n\t\t\terr.FieldError(\"Name\", \"name is too short\")\n\t\t}\n\t\treturn\n\t})\n\treturn\n}\n"'></highlightjs>
@@ -295,7 +295,7 @@ and set the <code>web.ValidationErrors</code> result:</p>
 <div class='demo'>
 <a href='/samples/presets-editing-customization-validation/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_presets/editing.go#L124-L144' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L124-L144' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
@@ -314,7 +314,6 @@ and set the <code>web.ValidationErrors</code> result:</p>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

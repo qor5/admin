@@ -3,7 +3,7 @@ package examples_vuetifyx
 // @snippet_begin(VuetifyComponentsLinkageSelect)
 
 import (
-	"github.com/qor5/docs/v3/docsrc/examples"
+	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"

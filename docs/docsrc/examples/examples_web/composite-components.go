@@ -4,7 +4,7 @@ package examples_web
 import (
 	"fmt"
 
-	"github.com/qor5/docs/v3/docsrc/examples"
+	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )

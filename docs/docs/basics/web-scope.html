@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,13 +217,15 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>web.Scope</h1>
 
-<div class='border-t'><h2 id="initialize-form-and-locals-vue-variables">Initialize form and locals vue variables</h2>
-<p>Since we we don't write vue javascript code,<br />
-It's not easy to add reactive object to that can be used in vue templates. which is returned from the server.<br />
-reactive object are used to trigger view updates,<br />
-We pre-set the <code>locals</code> and <code>form</code> object as a reactive object,<br />
-and then we can initialize various types of values and slot it into <code>locals</code>.<br />
+<div class='border-t'><h2><a name="initialize-form-and-locals-vue-variables" class="anchor" href="#initialize-form-and-locals-vue-variables" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initialize form and locals vue variables</h2>
+
+<p>Since we we don&#39;t write vue javascript code,
+It&#39;s not easy to add reactive object to that can be used in vue templates. which is returned from the server.
+reactive object are used to trigger view updates,
+We pre-set the <code>locals</code> and <code>form</code> object as a reactive object,
+and then we can initialize various types of values and slot it into <code>locals</code>.
 And the valid scopes of these values are all inside web.Scope().</p>
+
 <p>For example:</p>
 
 <highlightjs :language='"go"' :code='"func WebScopeUseLocals(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVIcon(\"home\"),\n\t\tVBtn(\"Test Can Not Change Other Scope\").\n\t\t\tPrependIcon(\"mdi-home\").\n\t\t\tAttr(\"@click\", `locals.btnLabel = \"YES\"`),\n\t\tweb.Scope(\n\t\t\tVCard(\n\t\t\t\tVList(\n\t\t\t\t\tVListSubheader(\n\t\t\t\t\t\tText(\"REPORTS\"),\n\t\t\t\t\t),\n\t\t\t\t\tVListItem(\n\t\t\t\t\t\tweb.Slot(\n\t\t\t\t\t\t\tVIcon(\"\").Attr(\":icon\", \"item.icon\"),\n\t\t\t\t\t\t).Name(\"prepend\"),\n\t\t\t\t\t\tVListItemTitle().Attr(\"v-text\", \"item.text\"),\n\t\t\t\t\t).Attr(\"v-for\", \"(item, i) in locals.items\").\n\t\t\t\t\t\tAttr(\":key\", \"i\").\n\t\t\t\t\t\tAttr(\":value\", \"i\").\n\t\t\t\t\t\tAttr(\"color\", \"red\"),\n\t\t\t\t).Attr(\"dense\", true).Attr(\"v-model:selected\", \"locals.selectedItem\"),\n\n\t\t\t\tVCardActions(\n\t\t\t\t\tVBtn(\"\").\n\t\t\t\t\t\tVariant(\"text\").\n\t\t\t\t\t\tAttr(\"v-text\", \"locals.btnLabel + locals.selectedItem\").\n\t\t\t\t\t\tAttr(\"@click\", `\nif (locals.btnLabel == \"Add\") {\n\tlocals.items.push({text: \"B\", icon: \"mdi-check\"});\n\tlocals.btnLabel = \"Remove\";\n} else {\n\tlocals.items.splice(locals.selectedItem, 1)\n\tlocals.btnLabel = \"Add\";\n}`),\n\t\t\t\t),\n\t\t\t).Class(\"mx-auto\").\n\t\t\t\tAttr(\"max-width\", \"300\").\n\t\t\t\tAttr(\"tile\", \"\"),\n\t\t).Init(`{ selectedItem: 0, btnLabel:\"Add\", items: [{text: \"A\", icon: \"mdi-clock\"}]}`).\n\t\t\tVSlot(\"{ locals }\"),\n\t)\n\treturn\n}\n\nvar UseLocalsPB = web.Page(WebScopeUseLocals)\n"'></highlightjs>
@@ -233,18 +234,24 @@ And the valid scopes of these values are all inside web.Scope().</p>
 <div class='demo'>
 <a href='/samples/web-scope-use-locals' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/web-scope.go#L11-L59' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/web-scope.go#L11-L59' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<p>Use <code>web.Scope()</code> to determine the effective scope of the variable, then use <code>.Init(...).VSlot(&quot;{ locals }&quot;)</code> to initialize the variable and slot it into the <code>locals</code> object.</p>
-<p>In <code>VBtn(&quot;&quot;)</code>, you can use the <code>click</code> event to change the variable value in <code>locals</code> to achieve the effect that the page changes with the click.</p>
-<p>In <code>VBtn(&quot;Test Can Not Change Other Scope&quot;)</code>, values in <code>locals</code> will not change with the click, because the button is not in <code>web.Scope()</code>.</p>
-<p>Video Tutorial (<a href="https://www.youtube.com/watch?v=UPuBvVRhUr0">https://www.youtube.com/watch?v=UPuBvVRhUr0</a>)</p>
-<h2 id="use-form">Use form</h2>
-<p>The main use of <code>form</code> is to submit one form which is inside another form,<br />
+<p>Use <code>web.Scope()</code> to determine the effective scope of the variable, then use <code>.Init(...).VSlot(&#34;{ locals }&#34;)</code> to initialize the variable and slot it into the <code>locals</code> object.</p>
+
+<p>In <code>VBtn(&#34;&#34;)</code>, you can use the <code>click</code> event to change the variable value in <code>locals</code> to achieve the effect that the page changes with the click.</p>
+
+<p>In <code>VBtn(&#34;Test Can Not Change Other Scope&#34;)</code>, values in <code>locals</code> will not change with the click, because the button is not in <code>web.Scope()</code>.</p>
+
+<p>Video Tutorial (<a href="https://www.youtube.com/watch?v=UPuBvVRhUr0" rel="nofollow">https://www.youtube.com/watch?v=UPuBvVRhUr0</a>)</p>
+<h2><a name="use-form" class="anchor" href="#use-form" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Use form</h2>
+
+<p>The main use of <code>form</code> is to submit one form which is inside another form,
 and the two forms are completely independent forms.</p>
-<p>In the following example, each color represents a completely separate form. The <code>Material Form</code> contains the <code>Raw Material Form</code>. You can submit the <code>Raw Material Form</code> to the server first. After receiving it, server will save the <code>Raw Material data</code> and return the <code>ID</code>.<br />
+
+<p>In the following example, each color represents a completely separate form. The <code>Material Form</code> contains the <code>Raw Material Form</code>. You can submit the <code>Raw Material Form</code> to the server first. After receiving it, server will save the <code>Raw Material data</code> and return the <code>ID</code>.
 In this way, you can submit <code>Raw Material ID</code> directly in the <code>Material Form</code>.</p>
+
 <p>For example:</p>
 
 <highlightjs :language='"go"' :code='"var materialID, materialName, rawMaterialID, rawMaterialName, countryID, countryName, productName string\n\nfunc WebScopeUseForm(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH3(\"Form Content\"),\n\t\tutils.PrettyFormAsJSON(ctx),\n\t\tweb.Scope(\n\n\t\t\tDiv(\n\t\t\t\tDiv(\n\t\t\t\t\tFieldset(\n\t\t\t\t\t\tLegend(\"Product Form\"),\n\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\tLabel(\"Product Name\"),\n\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\tType(\"text\").\n\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.ProductName\"),\n\t\t\t\t\t\t),\n\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\tLabel(\"Material ID\"),\n\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\tType(\"text\").Disabled(true).\n\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.MaterialID\"),\n\t\t\t\t\t\t),\n\n\t\t\t\t\t\tweb.Scope(\n\t\t\t\t\t\t\tFieldset(\n\t\t\t\t\t\t\t\tLegend(\"Material Form\"),\n\n\t\t\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\t\t\tLabel(\"Material Name\"),\n\t\t\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\t\t\tType(\"text\").\n\t\t\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.MaterialName\"),\n\t\t\t\t\t\t\t\t),\n\t\t\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\t\t\tLabel(\"Raw Material ID\"),\n\t\t\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\t\t\tType(\"text\").Disabled(true).\n\t\t\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.RawMaterialID\"),\n\t\t\t\t\t\t\t\t),\n\t\t\t\t\t\t\t\tweb.Scope(\n\t\t\t\t\t\t\t\t\tFieldset(\n\t\t\t\t\t\t\t\t\t\tLegend(\"Raw Material Form\"),\n\n\t\t\t\t\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\t\t\t\t\tLabel(\"Raw Material Name\"),\n\t\t\t\t\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\t\t\t\t\tType(\"text\").\n\t\t\t\t\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.RawMaterialName\"),\n\t\t\t\t\t\t\t\t\t\t),\n\n\t\t\t\t\t\t\t\t\t\tButton(\"Send\").Style(`background: orange;`).Attr(\"@click\", web.POST().EventFunc(\"updateValue\").Go()),\n\t\t\t\t\t\t\t\t\t).Style(`background: orange;`),\n\t\t\t\t\t\t\t\t).VSlot(\"{ form, locals }\").FormInit(struct{ RawMaterialName string }{RawMaterialName: rawMaterialName}),\n\n\t\t\t\t\t\t\t\tButton(\"Send\").Style(`background: brown;`).Attr(\"@click\", web.POST().EventFunc(\"updateValue\").Go()),\n\t\t\t\t\t\t\t).Style(`background: brown;`),\n\t\t\t\t\t\t).VSlot(\"{ form, locals }\"),\n\n\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\tLabel(\"Country ID\"),\n\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\tType(\"text\").Disabled(true).\n\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.CountryID\"),\n\t\t\t\t\t\t),\n\n\t\t\t\t\t\tweb.Scope(\n\t\t\t\t\t\t\tFieldset(\n\t\t\t\t\t\t\t\tLegend(\"Country Of Origin Form\"),\n\n\t\t\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\t\t\tLabel(\"Country Name\"),\n\t\t\t\t\t\t\t\t\tInput(\"\").\n\t\t\t\t\t\t\t\t\t\tType(\"text\").\n\t\t\t\t\t\t\t\t\t\tAttr(\"v-model\", \"form.CountryName\"),\n\t\t\t\t\t\t\t\t),\n\n\t\t\t\t\t\t\t\tButton(\"Send\").Style(`background: red;`).Attr(\"@click\", web.POST().EventFunc(\"updateValue\").Go()),\n\t\t\t\t\t\t\t).Style(`background: red;`),\n\t\t\t\t\t\t).VSlot(\"{ form, locals }\").FormInit(struct{ CountryName string }{CountryName: countryName}),\n\n\t\t\t\t\t\tDiv(\n\t\t\t\t\t\t\tButton(\"Send\").Style(`background: grey;`).Attr(\"@click\", web.POST().EventFunc(\"updateValue\").Go())),\n\t\t\t\t\t).Style(`background: grey;`)),\n\t\t\t).Style(`width:600px;`),\n\t\t).VSlot(\"{ locals, form }\").FormInit(\"{ProductName: &#39;Product1&#39;, MaterialID: &#39;55&#39;, MaterialName: &#39;Material1&#39;, RawMaterialID: &#39;77&#39;, RawMaterialName: &#39;RawMaterial1&#39;, CountryID: &#39;88&#39;, CountryName: &#39;Country1&#39;}\"),\n\t)\n\n\treturn\n}\n\nfunc updateValue(ctx *web.EventContext) (er web.EventResponse, err error) {\n\tctx.R.ParseForm()\n\tif v := ctx.R.Form.Get(\"ProductName\"); v != \"\" {\n\t\tproductName = v\n\t}\n\tif v := ctx.R.Form.Get(\"MaterialName\"); v != \"\" {\n\t\tmaterialName = v\n\t\tmaterialID = \"66\"\n\t}\n\tif v := ctx.R.Form.Get(\"RawMaterialName\"); v != \"\" {\n\t\trawMaterialName = v\n\t\trawMaterialID = \"88\"\n\t}\n\tif v := ctx.R.Form.Get(\"CountryName\"); v != \"\" {\n\t\tcountryName = v\n\t\tcountryID = \"99\"\n\t}\n\ter.Reload = true\n\treturn\n}\n\nvar UsePlaidFormPB = web.Page(WebScopeUseForm).\n\tEventFunc(\"updateValue\", updateValue)\n"'></highlightjs>
@@ -253,10 +260,10 @@ In this way, you can submit <code>Raw Material ID</code> directly in the <code>M
 <div class='demo'>
 <a href='/samples/web-scope-use-form' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/web-scope.go#L61-L178' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/web-scope.go#L61-L178' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<p>Use <code>web.Scope().VSlot(&quot;{ form }&quot;)</code> to determine the scope of a form.</p>
+<p>Use <code>web.Scope().VSlot(&#34;{ form }&#34;)</code> to determine the scope of a form.</p>
 </div>
 </div>
 </div>
@@ -269,7 +276,6 @@ In this way, you can submit <code>Raw Material ID</code> directly in the <code>M
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

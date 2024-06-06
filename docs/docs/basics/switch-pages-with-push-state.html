@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -219,16 +218,20 @@
 <h1 class='mb-8'>Switch Pages with Push State</h1>
 
 <div class='border-t'><p>Ways that page transition (between <code>web.PageFunc</code>) in QOR5 web app:</p>
+
 <ul>
 <li>Use a traditional link to a new page by url</li>
 <li>Use a push state link to a new page that only change the current page body to new page body and browser url</li>
 <li>Use a button etc to trigger post to an <code>web.EventFunc</code> that do some logic, then go to a new page</li>
 </ul>
+
 <p>Inside <code>web.EventFunc</code>, two ways go to a new page:</p>
+
 <ul>
-<li>Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/History_API#Examples">push state</a> to only reload the body of the new page, This won't reload javascript and css assets.</li>
-<li>Use redirect url to reload the whole new page, This will reload target new page's javascript and css assets.</li>
+<li>Use <a href="https://developer.mozilla.org/en-US/docs/Web/API/History_API#Examples" rel="nofollow">push state</a> to only reload the body of the new page, This won&#39;t reload javascript and css assets.</li>
+<li>Use redirect url to reload the whole new page, This will reload target new page&#39;s javascript and css assets.</li>
 </ul>
+
 <p>This example demonstrated the above:</p>
 
 <highlightjs :language='"go"' :code='"\nconst (\n\tPage1Path = \"/samples/page_1\"\n\tPage2Path = \"/samples/page_2\"\n)\n\nfunc Page1(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH1(page1Title),\n\t\tUl(\n\t\t\tLi(\n\t\t\t\tA().Href(Page2Path).\n\t\t\t\t\tText(\"To Page 2 With Normal Link\"),\n\t\t\t),\n\t\t\tLi(\n\t\t\t\tA().Href(\"javascript:;\").\n\t\t\t\t\tText(\"To Page 2 With Push State Link\").\n\t\t\t\t\tAttr(\"@click\", web.POST().PushStateURL(Page2Path).Go()),\n\t\t\t),\n\t\t),\n\t\tfromParam(ctx),\n\t).Style(\"color: green; font-size: 24px;\")\n\treturn\n}\n\nfunc Page2(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH1(\"Page 2\"),\n\t\tUl(\n\t\t\tLi(\n\t\t\t\tA().Href(\"javascript:;\").\n\t\t\t\t\tText(\"To Page 1 With Normal Link\").\n\t\t\t\t\tAttr(\"@click\", web.POST().\n\t\t\t\t\t\tPushStateURL(Page1Path).\n\t\t\t\t\t\tQueries(url.Values{\"from\": []string{\"page 2 link 1\"}}).\n\t\t\t\t\t\tGo()),\n\t\t\t),\n\t\t\tLi(\n\t\t\t\tButton(\"Do an action then go to Page 1 with push state and parameters\").\n\t\t\t\t\tAttr(\"@click\", web.POST().EventFunc(\"doAction2\").Query(\"id\", \"42\").Go()),\n\t\t\t),\n\t\t\tLi(\n\t\t\t\tButton(\"Do an action then go to Page 1 with redirect url\").\n\t\t\t\t\tAttr(\"@click\", web.POST().EventFunc(\"doAction1\").Query(\"id\", \"41\").Go()),\n\t\t\t),\n\t\t),\n\t).Style(\"color: orange; font-size: 24px;\")\n\treturn\n}\n\nfunc fromParam(ctx *web.EventContext) HTMLComponent {\n\tvar from HTMLComponent\n\tval := ctx.R.FormValue(\"from\")\n\tif len(val) \u003e 0 {\n\t\tfrom = Components(\n\t\t\tB(\"from:\"),\n\t\t\tText(val),\n\t\t)\n\t}\n\treturn from\n}\n\nfunc doAction1(ctx *web.EventContext) (er web.EventResponse, err error) {\n\tupdateDatabase(ctx.ParamAsInt(\"id\"))\n\ter.RedirectURL = Page1Path + \"?\" + url.Values{\"from\": []string{\"page2 with redirect\"}}.Encode()\n\treturn\n}\n\nfunc doAction2(ctx *web.EventContext) (er web.EventResponse, err error) {\n\tupdateDatabase(ctx.ParamAsInt(\"id\"))\n\ter.PushState = web.Location(url.Values{\"from\": []string{\"page2\"}}).\n\t\tURL(Page1Path)\n\treturn\n}\n\nvar Page1PB = web.Page(Page1)\n\nvar Page2PB = web.Page(Page2).\n\tEventFunc(\"doAction1\", doAction1).\n\tEventFunc(\"doAction2\", doAction2)\n"'></highlightjs>
@@ -237,18 +240,21 @@
 <div class='demo'>
 <a href='/samples/page_1' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_web/page-transition.go#L13-L95' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/page-transition.go#L13-L95' target='_blank'>Source on GitHub</a>
 </div>
 </div>
-<p>When running the above demo, If you check Chrome Developer Tools about Network requests,<br />
+<p>When running the above demo, If you check Chrome Developer Tools about Network requests,
 You will see that the Location link and the Button is actually doing an AJAX request to the other page.</p>
+
 <p>Look like this:</p>
+
 <pre><code>POST /samples/page_2?__execute_event__=__reload__ HTTP/1.1
 </code></pre>
-<p>The result is an JSON object with page's html inside.<br />
-<code>__reload__</code> is another <code>web.EventFunc</code> that is the same as <code>doAction2</code>,<br />
-But it is default added to every <code>web.PageFunc</code>. So that the web page can<br />
-both respond to normal HTTP request from Browser, Search Engine, Or from<br />
+
+<p>The result is an JSON object with page&#39;s html inside.
+<code>__reload__</code> is another <code>web.EventFunc</code> that is the same as <code>doAction2</code>,
+But it is default added to every <code>web.PageFunc</code>. So that the web page can
+both respond to normal HTTP request from Browser, Search Engine, Or from
 other pages in the same web app that can do push state link.</p>
 
 <h2 id='summary'>Summary
@@ -258,14 +264,15 @@ other pages in the same web app that can do push state link.</p>
 <li>Write once with PageFunc, you get both normal html page render, and AJAX JSON page render</li>
 <li>EventFunc is always called with AJAX request, and you can return to a different page, or rerender the current page,</li>
 <li>EventFunc is not wrapped with layout function.</li>
-<li>EventFunc is used to do data operations, triggered by page's html element. and it's result can be:
+<li>EventFunc is used to do data operations, triggered by page&#39;s html element. and it&#39;s result can be:
+
 <ol>
 <li>Go to a new page</li>
 <li>Reload the whole current page</li>
 <li>Update partial of the current page</li>
-</ol>
-</li>
+</ol></li>
 </ul>
+
 <p>Next we will talk about how to reload the whole current page, and update partial of the current page.</p>
 </div>
 </div>
@@ -279,7 +286,6 @@ other pages in the same web app that can do push state link.</p>
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

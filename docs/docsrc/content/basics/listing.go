@@ -1,10 +1,10 @@
 package basics
 
 import (
-	"github.com/qor5/docs/v3/docsrc/examples"
-	"github.com/qor5/docs/v3/docsrc/examples/examples_admin"
-	"github.com/qor5/docs/v3/docsrc/generated"
-	"github.com/qor5/docs/v3/docsrc/utils"
+	"github.com/qor5/admin/v3/docs/docsrc/examples"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
+	"github.com/qor5/admin/v3/docs/docsrc/generated"
+	"github.com/qor5/admin/v3/docs/docsrc/utils"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
 )

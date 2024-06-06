@@ -35,7 +35,7 @@ func DemoWithSnippetLocation(title string, demoPath string, location parse.Locat
 
 func Demo(title string, demoPath string, sourcePath string) HTMLComponent {
 	if sourcePath != "" {
-		sourcePath = fmt.Sprintf("https://github.com/qor5/docs/tree/%s/docsrc/%s", envGitBranch, sourcePath)
+		sourcePath = fmt.Sprintf("https://github.com/qor5/admin/tree/%s/docs/docsrc/%s", envGitBranch, sourcePath)
 	}
 	ex := &Example{
 		Title:      title,

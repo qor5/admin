@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,25 +217,25 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Summary of Event Response</h1>
 
-<div class='border-t'><p>The behaviour of <code>web.EventFunc</code> is controlled by it's return type <code>web.EventResponse</code></p>
+<div class='border-t'><p>The behaviour of <code>web.EventFunc</code> is controlled by it&#39;s return type <code>web.EventResponse</code></p>
 
 <highlightjs :language='"go"' :code='"type EventResponse struct {\n\tPageTitle     string           `json:\"pageTitle,omitempty\"`\n\tBody          h.HTMLComponent  `json:\"body,omitempty\"`\n\tReload        bool             `json:\"reload,omitempty\"`\n\tPushState     *LocationBuilder `json:\"pushState\"`             // This we don&#39;t omitempty, So that {} can be kept when use url.Values{}\n\tRedirectURL   string           `json:\"redirectURL,omitempty\"` // change window url without push state\n\tReloadPortals []string         `json:\"reloadPortals,omitempty\"`\n\tUpdatePortals []*PortalUpdate  `json:\"updatePortals,omitempty\"`\n\tData          interface{}      `json:\"data,omitempty\"`      // used for return collection data like TagsInput data source\n\tRunScript     string           `json:\"runScript,omitempty\"` // used with InitContextVars to set values for example vars.show to used by v-model\n}\n"'></highlightjs>
 <ul>
-<li><code>PageTitle</code> set the html head title, It not only set when render html page directly which is<br />
-request the url directly from the browser. Also use javascript to set the page title when you do<br />
+<li><code>PageTitle</code> set the html head title, It not only set when render html page directly which is
+request the url directly from the browser. Also use javascript to set the page title when you do
 push state AJAX request to load the page</li>
-<li><code>Body</code> is the set to <code>web.PageResponse</code>'s body when <code>Reload = true</code> is set, Or set to the partial<br />
-html component when using <code>ReloadPortals</code> together with <code>web.Portal().EventFunc(&quot;related&quot;)</code></li>
-<li><code>Reload</code> is to reload the <code>web.PageFunc</code>, before reload, you can set <code>ctx.Flash</code> object to let the<br />
+<li><code>Body</code> is the set to <code>web.PageResponse</code>&#39;s body when <code>Reload = true</code> is set, Or set to the partial
+html component when using <code>ReloadPortals</code> together with <code>web.Portal().EventFunc(&#34;related&#34;)</code></li>
+<li><code>Reload</code> is to reload the <code>web.PageFunc</code>, before reload, you can set <code>ctx.Flash</code> object to let the
 event func render the page differently (flash message, validation errors, etc)</li>
 <li><code>Location</code> is to change the browser url with push state, and AJAX load the page of that url</li>
-<li><code>RedirectURL</code> is to change the browser url without AJAX, reload the whole page html includes it's<br />
+<li><code>RedirectURL</code> is to change the browser url without AJAX, reload the whole page html includes it&#39;s
 head script, css assets</li>
-<li><code>ReloadPortals</code> is for reload the portal that uses <code>web.Portal().EventFunc(&quot;related&quot;)</code></li>
-<li><code>UpdatePortals</code> update the portal specified by the name <code>web.Portal().Name(&quot;hello&quot;)</code>, <code>pu.AfterLoaded</code><br />
-set the javascript function that execute after the portal is updated, for example:<br />
-<code>VarsScript: &quot;setTimeout(function(){ comp.vars.drawer2 = true }, 100)&quot;</code></li>
-<li><code>Data</code> is for any AJAX call that want pure JSON, you can set <code>er.Data = myobj</code> to any object that<br />
+<li><code>ReloadPortals</code> is for reload the portal that uses <code>web.Portal().EventFunc(&#34;related&#34;)</code></li>
+<li><code>UpdatePortals</code> update the portal specified by the name <code>web.Portal().Name(&#34;hello&#34;)</code>, <code>pu.AfterLoaded</code>
+set the javascript function that execute after the portal is updated, for example:
+<code>VarsScript: &#34;setTimeout(function(){ comp.vars.drawer2 = true }, 100)&#34;</code></li>
+<li><code>Data</code> is for any AJAX call that want pure JSON, you can set <code>er.Data = myobj</code> to any object that
 will marshals to JSON, and on the client side use javascript to utilize them</li>
 </ul>
 </div>
@@ -251,7 +250,6 @@ will marshals to JSON, and on the client side use javascript to utilize them</li
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>

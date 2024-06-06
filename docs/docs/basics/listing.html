@@ -15,11 +15,10 @@
 
 <body>
 <div id='app' v-cloak>
-<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
-<div class='flex h-screen'>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
 <div class='flex-1 flex flex-col overflow-hidden'>
 <div class='flex h-full'>
-<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
 <div class='h-12'><search></search></div>
 
 <ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
@@ -203,7 +202,7 @@
 <div id='docContentBox' class='flex flex-row w-full'>
 <div class='flex flex-grow flex-col w-2/3'>
 <div class='flex flex-row'>
-<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
 <div class='w-4 h-4 fill-current text-gray-300'>
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
@@ -218,7 +217,8 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Listing</h1>
 
-<div class='border-t'><p>By the <a href="/getting-started/one-minute-quick-start.html">1 Minute Quick Start</a>, We get a default listing page with default columns, But default columns from database columns rarely fit the needs for any real application. Here we will introduce common customizations on the list page.</p>
+<div class='border-t'><p>By the <a href="/getting-started/one-minute-quick-start.html" rel="nofollow">1 Minute Quick Start</a>, We get a default listing page with default columns, But default columns from database columns rarely fit the needs for any real application. Here we will introduce common customizations on the list page.</p>
+
 <ul>
 <li>Configure fields that displayed on the page</li>
 <li>Modify the display value</li>
@@ -226,28 +226,34 @@
 <li>Default scope</li>
 <li>Extend the dot menu</li>
 </ul>
+
 <p>There would be a runable example at the last.</p>
-<h2 id="configure-fields-that-displayed-on-the-page">Configure fields that displayed on the page</h2>
+<h2><a name="configure-fields-that-displayed-on-the-page" class="anchor" href="#configure-fields-that-displayed-on-the-page" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Configure fields that displayed on the page</h2>
+
 <p>Suppose we added a new model called <code>Category</code>, the <code>Post</code> belongs to <code>Category</code>. Then we want to display <code>CategoryID</code> on the list page.</p>
 
 <highlightjs :language='"go"' :code='"\ntype Post struct {\n\tID    uint\n\tTitle string\n\tBody  string\n\n\tCategoryID uint\n\n\tUpdatedAt time.Time\n\tCreatedAt time.Time\n}\n\ntype Category struct {\n\tID   uint\n\tName string\n\n\tUpdatedAt time.Time\n\tCreatedAt time.Time\n}\n\npostModelBuilder.Listing(\"ID\", \"Title\", \"Body\", \"CategoryID\")\n"'></highlightjs>
-<h2 id="modify-the-display-value">Modify the display value</h2>
-<p>To display the category name rather than category id in the post listing page. The <code>ComponentFunc</code> would do the work.<br />
+<h2><a name="modify-the-display-value" class="anchor" href="#modify-the-display-value" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Modify the display value</h2>
+
+<p>To display the category name rather than category id in the post listing page. The <code>ComponentFunc</code> would do the work.
 The <code>obj</code> is the <code>Post</code> record, and <code>field</code> is the <code>CategoryID</code> field of this <code>Post</code> record. You can get the value by <code>field.Value(obj)</code> function.</p>
 
 <highlightjs :language='"go"' :code='"postModelBuilder.Listing().Field(\"CategoryID\").Label(\"Category\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\tc := models.Category{}\n\tcid, _ := field.Value(obj).(uint)\n\tif err := db.Where(\"id = ?\", cid).Find(\u0026c).Error; err != nil {\n\t\t// ignore err in the example\n\t}\n\treturn h.Td(h.Text(c.Name))\n})\n"'></highlightjs>
-<h2 id="display-virtual-fields">Display virtual fields</h2>
+<h2><a name="display-virtual-fields" class="anchor" href="#display-virtual-fields" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Display virtual fields</h2>
 
 <highlightjs :language='"go"' :code='"postModelBuilder.Listing(\"ID\", \"Title\", \"Body\", \"CategoryID\", \"VirtualField\")\npostModelBuilder.Listing().Field(\"VirtualField\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn h.Td(h.Text(\"virtual field\"))\n})\n"'></highlightjs>
-<h2 id="defaultscope">DefaultScope</h2>
+<h2><a name="defaultscope" class="anchor" href="#defaultscope" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>DefaultScope</h2>
+
 <p>If we want to display <code>Post</code> with <code>disabled=false</code> only. Use the <code>Listing().SearcherFunc(...)</code> to apply SQL conditions.</p>
 
 <highlightjs :language='"go"' :code='"postModelBuilder.Listing().SearcherFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error){\n\tqdb := db.Where(\"disabled != true\")\n\treturn gorm2op.DataOperator(qdb).Search(model, params, ctx)\n})\n"'></highlightjs>
-<h2 id="extend-the-dot-menu">Extend the dot menu</h2>
+<h2><a name="extend-the-dot-menu" class="anchor" href="#extend-the-dot-menu" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Extend the dot menu</h2>
+
 <p>You can extend the dot menu by calling the <code>RowMenuItem</code> function. If you want to overwrite the default <code>Edit</code> and <code>Delete</code> link, you can pass the items you wanted to <code>Listing().RowMenu()</code></p>
 
 <highlightjs :language='"go"' :code='"rmn := postModelBuilder.Listing().RowMenu()\nrmn.RowMenuItem(\"Show\").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {\n\treturn h.Text(\"Fake Show\")\n})\n"'></highlightjs>
-<h2 id="full-example">Full Example</h2>
+<h2><a name="full-example" class="anchor" href="#full-example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Full Example</h2>
 
 <highlightjs :language='"go"' :code='"\ntype Post struct {\n\tID        uint\n\tTitle     string\n\tBody      string\n\tUpdatedAt time.Time\n\tCreatedAt time.Time\n\tDisabled  bool\n\n\tStatus string\n\n\tCategoryID uint\n}\n\ntype Category struct {\n\tID   uint\n\tName string\n\n\tUpdatedAt time.Time\n\tCreatedAt time.Time\n}\n\nfunc ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {\n\t// Setup the project name, ORM and Homepage\n\tb.DataOperator(gorm2op.DataOperator(db))\n\n\t// Register Post into the builder\n\t// Use m to customize the model, Or config more models here.\n\tpostModelBuilder := b.Model(\u0026Post{})\n\tpostModelBuilder.Listing(\"ID\", \"Title\", \"Body\", \"CategoryID\", \"VirtualField\")\n\n\tpostModelBuilder.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {\n\t\tqdb := db.Where(\"disabled != true\")\n\t\treturn gorm2op.DataOperator(qdb).Search(model, params, ctx)\n\t})\n\n\trmn := postModelBuilder.Listing().RowMenu()\n\trmn.RowMenuItem(\"Show\").\n\t\tComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {\n\t\t\treturn v.VListItem(\n\t\t\t\tweb.Slot(\n\t\t\t\t\tv.VIcon(\"mdi-menu\"),\n\t\t\t\t).Name(\"prepend\"),\n\t\t\t\tv.VListItemTitle(\n\t\t\t\t\th.Text(\"Show\"),\n\t\t\t\t),\n\t\t\t)\n\t\t})\n\tpostModelBuilder.Listing().ActionsAsMenu(true)\n\tpostModelBuilder.Listing().Action(\"Action0\")\n\n\tpostModelBuilder.Editing().Field(\"CategoryID\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\tcategories := []Category{}\n\t\tif err := db.Find(\u0026categories).Error; err != nil {\n\t\t\t// ignore err for now\n\t\t}\n\n\t\treturn v.VAutocomplete().\n\t\t\tChips(true).\n\t\t\tAttr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).\n\t\t\tItems(categories).\n\t\t\tItemTitle(\"Name\").\n\t\t\tItemValue(\"ID\")\n\t})\n\n\tpostModelBuilder.Listing().Field(\"CategoryID\").Label(\"Category\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\tc := Category{}\n\t\tcid, _ := field.Value(obj).(uint)\n\t\tif err := db.Where(\"id = ?\", cid).Find(\u0026c).Error; err != nil {\n\t\t\t// ignore err in the example\n\t\t}\n\t\treturn h.Td(h.Text(c.Name))\n\t})\n\n\tpostModelBuilder.Listing().Field(\"VirtualField\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\treturn h.Td(h.Text(\"virtual field\"))\n\t})\n\n\tb.Model(\u0026Category{})\n\t// Use m to customize the model, Or config more models here.\n\treturn b\n}\n"'></highlightjs>
 
@@ -255,7 +261,7 @@ The <code>obj</code> is the <code>Post</code> record, and <code>field</code> is 
 <div class='demo'>
 <a href='/samples/listing-example/posts' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_admin/listing.go#L44-L128' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/listing.go#L44-L128' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>
@@ -270,7 +276,6 @@ The <code>obj</code> is the <code>Post</code> record, and <code>field</code> is 
 </div>
 </div>
 </div>
-</go-plaid-scope>
 </div>
 </body>
 </html>
