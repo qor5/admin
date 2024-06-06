@@ -4,3 +4,4 @@ go.work*
 dev_env_local
 __*
 coverage.txt
+.vscode
