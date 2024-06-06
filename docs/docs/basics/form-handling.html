@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Web Application - Form Handling - QOR5 Document</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/docs/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
+<div class='flex-1 flex flex-col overflow-hidden'>
+<div class='flex h-full'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<div class='h-12'><search></search></div>
+
+<ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
+<li class='m-0'>
+<a href='index.html' id='index.html' onclick='window.storeMenuState("index.html")' class='inline-block px-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Introduction</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Getting Started</li>
+
+<li class='m-0'>
+<a href='getting-started/one-minute-quick-start.html' id='getting-started/one-minute-quick-start.html' onclick='window.storeMenuState("getting-started/one-minute-quick-start.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>1 Minute Quick Start</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
+
+<li class='m-0'>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing.html' id='basics/listing.html' onclick='window.storeMenuState("basics/listing.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing-customizations.html' id='basics/listing-customizations.html' onclick='window.storeMenuState("basics/listing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing Customizations</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/filter.html' id='basics/filter.html' onclick='window.storeMenuState("basics/filter.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Filters</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/editing-customizations.html' id='presets-guide/editing-customizations.html' onclick='window.storeMenuState("presets-guide/editing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Editing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/brand.html' id='basics/brand.html' onclick='window.storeMenuState("basics/brand.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Brand</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/menu.html' id='basics/menu.html' onclick='window.storeMenuState("basics/menu.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Menu</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/detail-page-for-complex-object.html' id='presets-guide/detail-page-for-complex-object.html' onclick='window.storeMenuState("presets-guide/detail-page-for-complex-object.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Detailing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout.html' id='basics/layout.html' onclick='window.storeMenuState("basics/layout.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/login.html' id='basics/login.html' onclick='window.storeMenuState("basics/login.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Login</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/permissions.html' id='presets-guide/permissions.html' onclick='window.storeMenuState("presets-guide/permissions.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Permissions</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/role.html' id='presets-guide/role.html' onclick='window.storeMenuState("presets-guide/role.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Role</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/shortcut.html' id='basics/shortcut.html' onclick='window.storeMenuState("basics/shortcut.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Keyboard Shortcut</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
+</li>
+
+<li class='m-0'>
+<a href='slug.html' id='slug.html' onclick='window.storeMenuState("slug.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Slug</a>
+</li>
+
+<li class='m-0'>
+<a href='seo.html' id='seo.html' onclick='window.storeMenuState("seo.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>SEO</a>
+</li>
+
+<li class='m-0'>
+<a href='activity-log.html' id='activity-log.html' onclick='window.storeMenuState("activity-log.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Activity Log</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/worker.html' id='basics/worker.html' onclick='window.storeMenuState("basics/worker.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Worker</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/publish.html' id='basics/publish.html' onclick='window.storeMenuState("basics/publish.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Publish</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/i18n.html' id='basics/i18n.html' onclick='window.storeMenuState("basics/i18n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Internationalization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
+
+<li class='m-0'>
+<a href='advanced-functions/the-go-html-builder.html' id='advanced-functions/the-go-html-builder.html' onclick='window.storeMenuState("advanced-functions/the-go-html-builder.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>The Go HTML builder</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/page-func-and-event-func.html' id='basics/page-func-and-event-func.html' onclick='window.storeMenuState("basics/page-func-and-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Page Func and Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout-function-and-page-injector.html' id='basics/layout-function-and-page-injector.html' onclick='window.storeMenuState("basics/layout-function-and-page-injector.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout Function and Page Injector</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/lazy-portals.html' id='vuetify-components/lazy-portals.html' onclick='window.storeMenuState("vuetify-components/lazy-portals.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Lazy Portals</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/switch-pages-with-push-state.html' id='basics/switch-pages-with-push-state.html' onclick='window.storeMenuState("basics/switch-pages-with-push-state.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Switch Pages with Push State</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/reload-page-with-a-flash.html' id='basics/reload-page-with-a-flash.html' onclick='window.storeMenuState("basics/reload-page-with-a-flash.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Reload Page with a Flash</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/partial-refresh-with-portal.html' id='basics/partial-refresh-with-portal.html' onclick='window.storeMenuState("basics/partial-refresh-with-portal.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Partial Refresh with Portal</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/manipulate-page-url-in-event-func.html' id='basics/manipulate-page-url-in-event-func.html' onclick='window.storeMenuState("basics/manipulate-page-url-in-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Manipulate Page URL in Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/summary-of-event-response.html' id='basics/summary-of-event-response.html' onclick='window.storeMenuState("basics/summary-of-event-response.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Summary of Event Response</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/web-scope.html' id='basics/web-scope.html' onclick='window.storeMenuState("basics/web-scope.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>web.Scope</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/event-handling.html' id='basics/event-handling.html' onclick='window.storeMenuState("basics/event-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Event Handling</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/form-handling.html' id='basics/form-handling.html' onclick='window.storeMenuState("basics/form-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Form Handling</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>UI Components</li>
+
+<li class='m-0'>
+<a href='vuetify-components/basic-inputs.html' id='vuetify-components/basic-inputs.html' onclick='window.storeMenuState("vuetify-components/basic-inputs.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Basic Inputs</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/a-taste-of-using-vuetify-in-go.html' id='vuetify-components/a-taste-of-using-vuetify-in-go.html' onclick='window.storeMenuState("vuetify-components/a-taste-of-using-vuetify-in-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>A Taste of using Vuetify in Go</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/linkage-select.html' id='vuetify-components/linkage-select.html' onclick='window.storeMenuState("vuetify-components/linkage-select.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Linkage Select</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/composite-new-component-with-go.html' id='components-guide/composite-new-component-with-go.html' onclick='window.storeMenuState("components-guide/composite-new-component-with-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Composite new Component With Go</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/integrate-a-heavy-vue-component.html' id='components-guide/integrate-a-heavy-vue-component.html' onclick='window.storeMenuState("components-guide/integrate-a-heavy-vue-component.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Integrate a heavy Vue Component</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Appendix</li>
+
+<li class='m-0'>
+<a href='appendix/all-demo-examples.html' id='appendix/all-demo-examples.html' onclick='window.storeMenuState("appendix/all-demo-examples.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>All Demo Examples</a>
+</li>
+</ul>
+</aside>
+
+<main class='flex flex-col w-full bg-white overflow-x-hidden overflow-y-auto'>
+<div id='docContentBox' class='flex flex-row w-full'>
+<div class='flex flex-grow flex-col w-2/3'>
+<div class='flex flex-row'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
+<div class='w-4 h-4 fill-current text-gray-300'>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2 12 L 2 11 L 14 11 L 14 12 Z M 2 8.5 L 2 7.5 L 14 7.5 L 14 8.5 Z M 2 5 L 2 4 L 14 4 L 14 5 Z M 2 5 "/>
+</g>
+</svg>
+</div>
+</button>
+</div>
+
+<div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
+<h1 class='mb-8'>Form Handling</h1>
+
+<div class='border-t'><p>Form handling is an important part of web development. to make handling form easy,
+we have a global form that always be submitted with any event func. What you need to do
+is just to give an input a name.</p>
+
+<p>For example:</p>
+
+<highlightjs :language='"go"' :code='"import (\n\t\"fmt\"\n\t\"io\"\n\t\"mime/multipart\"\n\n\t\"github.com/qor5/admin/v3/docs/docsrc/examples\"\n\t\"github.com/qor5/admin/v3/docs/docsrc/utils\"\n\t\"github.com/qor5/web/v3\"\n\t. \"github.com/theplant/htmlgo\"\n)\n\ntype MyData struct {\n\tText1          string\n\tCheckbox1      string\n\tColor1         string\n\tEmail1         string\n\tRadio1         string\n\tRange1         int\n\tUrl1           string\n\tTel1           string\n\tMonth1         string\n\tTime1          string\n\tWeek1          string\n\tDatetimeLocal1 string\n\tFile1          []*multipart.FileHeader\n\tHiddenValue1   string\n}\n\ntype NestForm2 struct {\n\tEmail1 string\n}\n\nfunc FormHandlingPage(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tvar fv MyData\n\tctx.MustUnmarshalForm(\u0026fv)\n\n\tif fv.Text1 == \"\" {\n\t\tfv.Text1 = `Hello &#39;1\nWorld`\n\t}\n\tif fv.HiddenValue1 == \"\" {\n\t\tfv.HiddenValue1 = `hidden value\n&#39;123`\n\t}\n\tif fv.Color1 == \"\" {\n\t\tfv.Color1 = \"#ff0000\"\n\t}\n\n\tvar nf2 NestForm2\n\tctx.MustUnmarshalForm(\u0026nf2)\n\n\tpr.Body = Div(\n\t\tweb.Scope(\n\t\t\tH1(\"Form Handling\"),\n\t\t\tH3(\"Form Content\"),\n\t\t\tutils.PrettyFormAsJSON(ctx),\n\t\t\tH3(\"File1 Content\"),\n\t\t\tPre(fv.File1Bytes()).Style(\"width: 400px; white-space: pre-wrap;\"),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Text1\"),\n\t\t\t\tInput(\"\").Type(\"text\").\n\t\t\t\t\tAttr(web.VField(\"Text1\", fv.Text1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Checkbox1\"),\n\t\t\t\tInput(\"\").Type(\"checkbox\").Checked(fv.Checkbox1 == \"1\").\n\t\t\t\t\tAttr(web.VField(\"Checkbox1\", fv.Checkbox1)...),\n\t\t\t),\n\n\t\t\tweb.Scope(\n\t\t\t\tFieldset(\n\t\t\t\t\tLegend(\"Nested Form\"),\n\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Color1\"),\n\t\t\t\t\t\tInput(\"\").Type(\"color\").\n\t\t\t\t\t\t\tAttr(web.VField(\"Color1\", fv.Color1)...),\n\t\t\t\t\t),\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Email1\"),\n\t\t\t\t\t\tInput(\"\").Type(\"email\").\n\t\t\t\t\t\t\tAttr(web.VField(\"Email1\", fv.Email1)...),\n\t\t\t\t\t),\n\n\t\t\t\t\tInput(\"\").Type(\"checkbox\").\n\t\t\t\t\t\tAttr(web.VField(\"Checked123\", \"\")...),\n\n\t\t\t\t\tButton(\"Uncheck it\").Attr(\"@click\", \"locals.checked = false\"),\n\t\t\t\t\tHr(),\n\t\t\t\t\tButton(\"Send\").Attr(\"@click\", web.POST().\n\t\t\t\t\t\tEventFunc(\"checkvalue\").\n\t\t\t\t\t\tQuery(\"id\", 123).\n\t\t\t\t\t\tFieldValue(\"name\", \"azuma\").\n\t\t\t\t\t\tGo()),\n\t\t\t\t),\n\t\t\t).VSlot(\"{ form, locals }\"),\n\t\t\tweb.Scope(\n\t\t\t\tFieldset(\n\t\t\t\t\tLegend(\"Nested Form 2\"),\n\n\t\t\t\t\tDiv(\n\t\t\t\t\t\tLabel(\"Email1\"),\n\t\t\t\t\t\tInput(\"\").Type(\"email\").\n\t\t\t\t\t\t\tAttr(web.VField(\"Email1\", fv.Email1)...),\n\t\t\t\t\t),\n\n\t\t\t\t\tButton(\"Send\").Attr(\"@click\", web.POST().\n\t\t\t\t\t\tEventFunc(\"checkvalue\").\n\t\t\t\t\t\tGo()),\n\t\t\t\t),\n\t\t\t).VSlot(\"{ form, locals }\"),\n\t\t\tDiv(\n\t\t\t\tFieldset(\n\t\t\t\t\tLegend(\"Radio\"),\n\t\t\t\t\tLabel(\"Radio Value 1\"),\n\t\t\t\t\tInput(\"Radio1\").Type(\"radio\").\n\t\t\t\t\t\tAttr(web.VField(\"Radio1\", fv.Radio1)...).\n\t\t\t\t\t\tValue(\"1\"),\n\t\t\t\t\tLabel(\"Radio Value 2\"),\n\t\t\t\t\tInput(\"Radio1\").Type(\"radio\").\n\t\t\t\t\t\tAttr(web.VField(\"Radio1\", fv.Radio1)...).\n\t\t\t\t\t\tValue(\"2\"),\n\t\t\t\t),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Range1\"),\n\t\t\t\tInput(\"\").Type(\"range\").\n\t\t\t\t\tAttr(web.VField(\"Range1\", fv.Range1)...),\n\t\t\t),\n\n\t\t\tDiv(\n\t\t\t\tLabel(\"Url1\"),\n\t\t\t\tInput(\"\").Type(\"url\").\n\t\t\t\t\tAttr(web.VField(\"Url1\", fv.Url1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Tel1\"),\n\t\t\t\tInput(\"\").Type(\"tel\").\n\t\t\t\t\tAttr(web.VField(\"Tel1\", fv.Tel1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Month1\"),\n\t\t\t\tInput(\"\").Type(\"month\").\n\t\t\t\t\tAttr(web.VField(\"Month1\", fv.Month1)...),\n\t\t\t),\n\n\t\t\tDiv(\n\t\t\t\tLabel(\"Time1\"),\n\t\t\t\tInput(\"\").Type(\"time\").\n\t\t\t\t\tAttr(web.VField(\"Time1\", fv.Time1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Week1\"),\n\t\t\t\tInput(\"\").Type(\"week\").\n\t\t\t\t\tAttr(web.VField(\"Week1\", fv.Week1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"DatetimeLocal1\"),\n\t\t\t\tInput(\"\").Type(\"datetime-local\").\n\t\t\t\t\tAttr(web.VField(\"DatetimeLocal1\", fv.DatetimeLocal1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"File1\"),\n\t\t\t\tInput(\"\").Type(\"file\").\n\t\t\t\t\tAttr(\"multiple\", true).\n\t\t\t\t\tAttr(\"@change\", \"form.File1 = $event.target.files\"),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tLabel(\"Hidden values with default\"),\n\t\t\t\tInput(\"\").Type(\"hidden\").\n\t\t\t\t\tAttr(web.VField(\"HiddenValue1\", fv.HiddenValue1)...),\n\t\t\t),\n\t\t\tDiv(\n\t\t\t\tButton(\"Submit\").Attr(\"@click\", web.POST().EventFunc(\"checkvalue\").Go()),\n\t\t\t),\n\t\t).VSlot(\"{ locals, form }\"),\n\t)\n\treturn\n}\n\nfunc checkvalue(ctx *web.EventContext) (er web.EventResponse, err error) {\n\ter.Reload = true\n\treturn\n}\n\nfunc (m *MyData) File1Bytes() string {\n\tif m.File1 == nil || len(m.File1) == 0 {\n\t\treturn \"\"\n\t}\n\tf, err := m.File1[0].Open()\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tb := make([]byte, 200)\n\t_, err = io.ReadFull(f, b)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\treturn fmt.Sprintf(\"%+v ...\", b)\n}\n\nvar FormHandlingPagePB = web.Page(FormHandlingPage).\n\tEventFunc(\"checkvalue\", checkvalue)\n\nvar FormHandlingPagePath = examples.URLPathByFunc(FormHandlingPage)\n"'></highlightjs>
+
+<div>
+<div class='demo'>
+<a href='/samples/form-handling-page' target='_blank'>Check the demo</a>
+ | 
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/form-handling.go#L3-L210' target='_blank'>Source on GitHub</a>
+</div>
+</div>
+<p>Use <code>.Attr(web.VField(&#34;Abc&#34;)...)</code> to set the field name, make the name matches your data struct field name.
+So that you can <code>ctx.UnmarshalForm(&amp;fv)</code> to set the values to data object. value of input must be set manually to set the initial value of form field.</p>
+
+<p>The fields which are bind with <code>.Attr(web.VField(&#34;Abc&#34;)...)</code> are always submitted with every event func. A browser refresh, new page load will clear the form value.</p>
+
+<p><code>web.Scope(...).VSlot(&#34;{ plaidForm }&#34;)</code> to nest a new form inside outside form, EventFunc inside will only post form values inside the scope.</p>
+</div>
+</div>
+</div>
+
+<div class='font-medium text-base hidden xl:block text-gray-600 pt-4'>
+<div class='sticky top-4 w-52'>On This Page<toc></toc></div>
+</div>
+</div>
+<search-result></search-result></main>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/qor5/admin/v3/presets"
-	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )

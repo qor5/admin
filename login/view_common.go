@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
+	. "github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 )
 

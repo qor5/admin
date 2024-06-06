@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
-	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
