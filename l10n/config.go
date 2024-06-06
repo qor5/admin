@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"slices"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -43,7 +43,7 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 		allLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 		var otherLocales []string
 		for _, locale := range allLocales {
-			if utils.Contains(existLocales, locale) {
+			if slices.Contains(existLocales, locale) {
 				otherLocales = append(otherLocales, locale)
 			}
 		}
