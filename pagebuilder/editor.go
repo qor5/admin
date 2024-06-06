@@ -74,6 +74,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			tabContent                           web.PageResponse
 			pageAppbarContent                    []h.HTMLComponent
 			exitHref                             string
+			readonly                             bool
 
 			containerDataID = ctx.R.FormValue(paramContainerDataID)
 			obj             = m.mb.NewModel()
@@ -97,6 +98,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
+			readonly = p.EmbedStatus().Status == publish.StatusDraft
 		}
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
@@ -118,16 +120,18 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					pageAppbarContent...,
 				).Class("d-flex align-center  justify-space-between  w-100 px-6").Style("height: 36px"),
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
-			VNavigationDrawer(
-				navigatorDrawer,
-			).Location(LocationLeft).
-				Permanent(true).
-				Width(350),
-			VNavigationDrawer(
-				web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
-			).Location(LocationRight).
-				Permanent(true).
-				Width(350),
+			h.If(readonly,
+				VNavigationDrawer(
+					navigatorDrawer,
+				).Location(LocationLeft).
+					Permanent(true).
+					Width(350),
+				VNavigationDrawer(
+					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
+				).Location(LocationRight).
+					Permanent(true).
+					Width(350),
+			),
 			VMain(
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
@@ -185,22 +189,24 @@ func (b *Builder) renderNavigator(ctx *web.EventContext, m *ModelBuilder) (r h.H
 		}
 	}
 	r = h.Components(
-		VTabs(
-			VTab().Text("Add").
-				Value(EditorTabElements).Attr("@click",
-				web.Plaid().PushState(true).MergeQuery(true).
-					Query(paramTab, EditorTabElements).RunPushState()),
-			VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
-				web.Plaid().PushState(true).MergeQuery(true).
-					Query(paramTab, EditorTabLayers).RunPushState()+
-					";"+
-					web.Plaid().
-						URL(ctx.R.URL.Path).
-						EventFunc(ShowSortedContainerDrawerEvent).
-						Query(paramStatus, ctx.Param(paramStatus)).
-						MergeQuery(true).
-						Go()),
-		).Attr("v-model", "vars.containerTab").FixedTabs(true),
+		web.Slot(
+			VTabs(
+				VTab().Text("Add").
+					Value(EditorTabElements).Attr("@click",
+					web.Plaid().PushState(true).MergeQuery(true).
+						Query(paramTab, EditorTabElements).RunPushState()),
+				VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
+					web.Plaid().PushState(true).MergeQuery(true).
+						Query(paramTab, EditorTabLayers).RunPushState()+
+						";"+
+						web.Plaid().
+							URL(ctx.R.URL.Path).
+							EventFunc(ShowSortedContainerDrawerEvent).
+							Query(paramStatus, ctx.Param(paramStatus)).
+							MergeQuery(true).
+							Go()),
+			).Attr("v-model", "vars.containerTab").FixedTabs(true),
+		).Name(VSlotPrepend),
 		VTabsWindow(
 			VTabsWindowItem(m.renderContainersList(ctx)).Value(EditorTabElements),
 			VTabsWindowItem(web.Portal(listContainers).Name(pageBuilderLayerContainerPortal)).Value(EditorTabLayers),

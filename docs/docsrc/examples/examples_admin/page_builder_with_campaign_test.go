@@ -17,6 +17,8 @@ INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, sta
 INSERT INTO public.products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+
 `, []string{"campaigns", "products", "my_contents", "campaign_contents", "page_builder_containers"}))
 
 func TestPageBuilderCampaign(t *testing.T) {
@@ -129,7 +131,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var container pagebuilder.Container
-				if err := TestDB.First(&container).Error; err != nil {
+				if err := TestDB.Order("id desc").First(&container).Error; err != nil {
 					t.Error("containers not add", er)
 				}
 				if container.ModelName != "CampaignContent" {
@@ -140,8 +142,52 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
-	}
 
+		{
+			Name:  "Add a new campaigns",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns?__execute_event__=presets_Update").
+					AddField("Title", "Hello 4").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var campaign Campaign
+				if err := TestDB.First(&campaign, "title = ?", "Hello 4").Error; err != nil {
+					t.Error(err)
+				}
+			},
+		},
+
+		{
+			Name:  "Page Builder Editor Duplicate A Campaign",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var campaigns []*Campaign
+				TestDB.Order("id DESC, version DESC").Find(&campaigns)
+				if len(campaigns) != 2 {
+					t.Fatal("Campaign not duplicated", campaigns)
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", campaigns[0].ID,
+					campaigns[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			RunCase(t, c, b)
