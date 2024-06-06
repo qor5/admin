@@ -8,8 +8,8 @@ import (
 	. "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
-	v "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 )
 
 const (

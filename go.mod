@@ -23,7 +23,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/ui/v3 v3.0.3
 	github.com/qor5/web/v3 v3.0.4-0.20240605034223-bef26c49d0cf
 	github.com/qor5/x/v3 v3.0.3
 	github.com/samber/lo v1.39.0
@@ -145,5 +144,4 @@ require (
 
 //replace github.com/qor5/web/v3 => ../web
 
-//replace github.com/qor5/ui/v3 => ../ui
-//replace github.com/qor5/x/v3 => ../x
+replace github.com/qor5/x/v3 => ../x

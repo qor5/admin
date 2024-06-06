@@ -6,11 +6,11 @@ import (
 
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
-	. "github.com/qor5/ui/v3/vuetify"
-	vx "github.com/qor5/ui/v3/vuetifyx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 )
 
