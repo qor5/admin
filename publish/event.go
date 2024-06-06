@@ -33,8 +33,8 @@ func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publis
 	mb.RegisterEventFunc(EventRepublish, publishAction(db, mb, publisher, ab, ActivityRepublish))
 	mb.RegisterEventFunc(EventUnpublish, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 
-	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(db, mb, publisher))
-	mb.RegisterEventFunc(eventSelectVersion, selectVersion(mb))
+	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(mb, db))
+	mb.RegisterEventFunc(eventSelectVersion, selectVersion(mb, db))
 	mb.RegisterEventFunc(eventSchedulePublishDialog, schedulePublishDialog(db, mb))
 	mb.RegisterEventFunc(eventSchedulePublish, schedulePublish(db, mb))
 }

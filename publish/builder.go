@@ -94,23 +94,23 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	return nil
 }
 
-func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelBuilder, db *gorm.DB) {
-	ed := m.Editing()
+func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.ModelBuilder, db *gorm.DB) {
+	ed := mb.Editing()
 	creating := ed.Creating().Except(VersionsPublishBar)
 	var detailing *presets.DetailingBuilder
-	if !m.HasDetailing() {
-		detailing = m.Detailing().Drawer(true)
+	if !mb.HasDetailing() {
+		detailing = mb.Detailing().Drawer(true)
 	} else {
-		detailing = m.Detailing()
+		detailing = mb.Detailing()
 	}
 
 	fb := detailing.GetField(VersionsPublishBar)
 	if fb != nil && fb.GetCompFunc() == nil {
-		fb.ComponentFunc(DefaultVersionComponentFunc(m))
+		fb.ComponentFunc(DefaultVersionComponentFunc(mb))
 	}
 
-	m.Listing().WrapSearchFunc(makeSearchFunc(m, db))
-	m.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+	mb.Listing().WrapSearchFunc(makeSearchFunc(mb, db))
+	mb.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
 	})
@@ -119,10 +119,10 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, m *presets.ModelB
 	ed.WrapSetterFunc(setter)
 	creating.WrapSetterFunc(setter)
 
-	m.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(db))
-	m.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
+	mb.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
+	mb.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
 
-	configureVersionListDialog(db, pb, m)
+	configureVersionListDialog(db, pb, mb)
 }
 
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {

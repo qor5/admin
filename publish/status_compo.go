@@ -16,7 +16,7 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 )
 
-func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
+func draftCountFunc(mb *presets.ModelBuilder, db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var count int64
 		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
@@ -26,7 +26,7 @@ func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
 		setPrimaryKeysConditionWithoutVersion(db.Model(reflect.New(modelSchema.ModelType).Interface()), obj, modelSchema).
 			Where("status = ?", StatusDraft).Count(&count)
 
-		return h.Td(h.Text(fmt.Sprint(count)))
+		return web.Scope(h.Td(h.Text(fmt.Sprint(count))))
 	}
 }
 

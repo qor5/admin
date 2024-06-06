@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
-	"strings"
 
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -21,13 +20,14 @@ import (
 
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
-	PublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	UnPublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	RePublishEvent func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	Top            bool
+	PublishEvent     func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	UnPublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	RePublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	Top              bool
+	DisableObservers bool
 }
 
-func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
+func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
 	var config VersionComponentConfig
 	if len(cfg) > 0 {
 		config = cfg[0]
@@ -61,10 +61,10 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
-					URL(b.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
+					URL(mb.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
 					Query("select_id", primarySlugger.PrimarySlug()).
-					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplayID)).
-					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplayID, primarySlugger.PrimarySlug())).
+					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
+					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
@@ -125,7 +125,7 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(fmt.Sprintf("%s/%s", b.Info().PresetsPrefix(), b.Info().URIName())).Go()
+				URL(fmt.Sprintf("%s/%s", mb.Info().PresetsPrefix(), mb.Info().URIName())).Go()
 			if config.Top {
 				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
@@ -140,23 +140,12 @@ func DefaultVersionComponentFunc(b *presets.ModelBuilder, cfg ...VersionComponen
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		return web.Scope(div).
-			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`)).
-			// TODO: juts a example now
-			Observer(
-				NoticationAfterDuplicateVersion,
-				fmt.Sprintf(
-					`if (payload.parentSlug == %q) {
-						%s
-					}`,
-					primarySlugger.PrimarySlug(),
-					strings.Join([]string{
-						// TODO: also need check where the compo is via js
-						presets.CloseRightDrawerVarScript,
-						web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.duplicatedSlug")).Go(),
-					}, ";"),
-				),
-			)
+		r := web.Scope(div).
+			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
+		if !config.DisableObservers {
+			r.Observers(ObserverVersionSelected(mb, primarySlugger.PrimarySlug()))
+		}
+		return r
 	}
 }
 
@@ -338,7 +327,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
 					Query("version_name", versionName).
-					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplayID)).
+					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplaySlug)).
 					Go(),
 				),
 		)

@@ -3,7 +3,6 @@ package publish
 import (
 	"cmp"
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
 
@@ -23,20 +22,15 @@ const (
 	PortalSchedulePublishDialog = "publish_PortalSchedulePublishDialog"
 	PortalPublishCustomDialog   = "publish_PortalPublishCustomDialog"
 
-	VarCurrentDisplayID = "vars.publish_VarCurrentDisplayID"
+	VarCurrentDisplaySlug = "vars.publish_VarCurrentDisplaySlug"
 )
 
-const (
-	NoticationAfterDuplicateVersion = "publish_AfterDuplicateVersion"
-)
-
-type PayloadAfterDuplicateVersion struct {
-	ParentSlug     string `json:"parentSlug"`
-	DuplicatedSlug string `json:"duplicatedSlug"`
-}
-
-func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) web.EventFunc {
+func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		if mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil {
+			return r, perm.PermissionDenied
+		}
+
 		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
@@ -78,70 +72,40 @@ func duplicateVersionAction(db *gorm.DB, mb *presets.ModelBuilder, _ *Builder) w
 				return
 			}
 		}
-		err = nil
 
-		parentSlug := slug
 		slug = obj.(presets.SlugEncoder).PrimarySlug()
 		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
 			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
 
-		// if !mb.HasDetailing() {
-		// 	// close dialog and open editing
-		// 	web.AppendRunScripts(&r,
-		// 		presets.CloseListingDialogVarScript,
-		// 		web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, slug).Go(),
-		// 	)
-		// 	return
-		// }
-		// if !mb.Detailing().GetDrawer() {
-		// 	// open detailing without drawer
-		// 	// jump URL to support referer
-		// 	r.PushState = web.Location(nil).URL(mb.Info().DetailingHref(slug))
-		// 	return
-		// }
-		// // close dialog and open detailingDrawer
-		// web.AppendRunScripts(&r,
-		// 	presets.CloseListingDialogVarScript,
-		// 	presets.CloseRightDrawerVarScript,
-		// 	web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, slug).Go(),
-		// )
-
 		web.AppendRunScripts(&r,
 			"locals.commonConfirmDialog = false",
-			web.NotifyScript(NoticationAfterDuplicateVersion, PayloadAfterDuplicateVersion{ParentSlug: parentSlug, DuplicatedSlug: slug}),
+			Notify(PayloadVersionSelected{
+				ToPayloadItem(obj, mb.Info().Label()),
+			}),
 		)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
-
-		// r.RunScript = web.Plaid().ThenScript(r.RunScript).Go()
 		return
 	}
 }
 
-func selectVersion(pm *presets.ModelBuilder) web.EventFunc {
+func selectVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.R.FormValue("select_id")
+		slug := cmp.Or(ctx.R.FormValue("select_id"), ctx.R.FormValue("f_select_id"))
 
-		if !pm.HasDetailing() {
-			// close dialog and open editing
-			web.AppendRunScripts(&r,
-				presets.CloseListingDialogVarScript,
-				web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, id).Go(),
-			)
+		obj := mb.NewModel()
+		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
 			return
 		}
-		if !pm.Detailing().GetDrawer() {
-			// open detailing without drawer
-			// jump URL to support referer
-			r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(id))
-			return
-		}
-		// close dialog and open detailingDrawer
+
 		web.AppendRunScripts(&r,
 			presets.CloseListingDialogVarScript,
-			fmt.Sprintf("if (!!%s && %s != %q) { %s }", VarCurrentDisplayID, VarCurrentDisplayID, id, presets.CloseRightDrawerVarScript+";"+web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, id).Go()),
+			Notify(PayloadVersionSelected{
+				ToPayloadItem(obj, mb.Info().Label()),
+			}),
 		)
 		return
 	}
@@ -175,7 +139,7 @@ func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 								Color("primary").
 								Variant(v.VariantFlat).
 								Theme(v.ThemeDark).
-								Attr("@click", "locals.renameVersionDialog = false; "+okAction),
+								Attr("@click", okAction),
 						),
 					),
 				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
@@ -208,6 +172,13 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
+		web.AppendRunScripts(&r,
+			"locals.renameVersionDialog = false",
+			Notify(PayloadItemUpdated{
+				ToPayloadItem(obj, mb.Info().Label()),
+			}),
+		)
+
 		listQueries := ctx.Queries().Get(presets.ParamListingQueries)
 		r.RunScript = web.Plaid().URL(ctx.R.URL.Path).StringQuery(listQueries).EventFunc(actions.UpdateListingDialog).Go()
 		return
@@ -225,7 +196,7 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 			Name: presets.DeleteConfirmPortalName,
 			Body: utils.DeleteDialog(
 				msgr.DeleteVersionConfirmationText(versionName),
-				"locals.deleteConfirmation = false;"+web.Plaid().
+				web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersion).
 					Queries(ctx.Queries()).Go(),
@@ -254,6 +225,11 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 			return r, err
 		}
 
+		web.AppendRunScripts(&r,
+			"locals.deleteConfirmation = false",
+			Notify(PayloadItemDeleted{mb.Info().Label(), slug}),
+		)
+
 		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
 		if slug == currentDisplaySlug {
 			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
@@ -277,22 +253,11 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 			}
 
 			currentDisplaySlug = version.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r, fmt.Sprintf("%s = %q", VarCurrentDisplayID, currentDisplaySlug))
-
-			if !pm.HasDetailing() {
-				web.AppendRunScripts(&r,
-					web.Plaid().EventFunc(actions.Edit).Query(presets.ParamID, currentDisplaySlug).Go(),
-				)
-			} else {
-				if !pm.Detailing().GetDrawer() {
-					r.PushState = web.Location(nil).URL(pm.Info().DetailingHref(currentDisplaySlug))
-					return r, nil
-				}
-				web.AppendRunScripts(&r,
-					presets.CloseRightDrawerVarScript,
-					web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, currentDisplaySlug).Go(),
-				)
-			}
+			web.AppendRunScripts(&r,
+				Notify(PayloadVersionSelected{
+					ToPayloadItem(version, mb.Info().Label()),
+				}),
+			)
 		}
 
 		listQuery, err := url.ParseQuery(ctx.Queries().Get(presets.ParamListingQueries))
