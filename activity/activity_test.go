@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/web"
-	"gorm.io/driver/postgres"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -48,16 +48,21 @@ type (
 	}
 )
 
-func init() {
-	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
 
-	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
+	db = env.DB
+	db.Logger = db.Logger.LogMode(logger.Info)
+
+	if err = db.AutoMigrate(&TestActivityModel{}, &TestActivityLog{}); err != nil {
 		panic(err)
 	}
+
+	m.Run()
 }
 
 func resetDB() {
@@ -66,9 +71,11 @@ func resetDB() {
 }
 
 func TestModelKeys(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
-	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
+
+	builder := New(db, &TestActivityLog{})
+	pb.Use(builder)
+	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := builder.NewLogModelData().(ActivityLogInterface)
 	if err := db.First(record).Error; err != nil {
@@ -91,8 +98,9 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
-	builder.RegisterModel(pageModel).SetLink(func(v interface{}) string {
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+	builder.RegisterModel(pageModel).LinkFunc(func(v interface{}) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
 	})
@@ -109,7 +117,8 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
 		nowWidgets := now.(Widgets)
@@ -161,13 +170,16 @@ func TestModelTypeHanders(t *testing.T) {
 
 	resetDB()
 	builder.AddEditRecordWithOld("a",
-		Page{ID: 1, VersionName: "v1", Title: "test",
+		Page{
+			ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
 				{Name: "Text 01", Title: "test1"},
 				{Name: "HeroBanner 02", Title: "banner 1"},
 				{Name: "Card 03", Title: "cards 1"},
-			}},
-		Page{ID: 1, VersionName: "v2", Title: "test1",
+			},
+		},
+		Page{
+			ID: 1, VersionName: "v2", Title: "test1",
 			Widgets: []Widget{
 				{Name: "Text 011", Title: "test1"},
 				{Name: "HeroBanner 022", Title: "banner 1"},
@@ -186,7 +198,9 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestCreator(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel)
 	resetDB()
 	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -199,17 +213,20 @@ func TestCreator(t *testing.T) {
 	}
 }
 
-type user struct {
-}
+type user struct{}
 
 func (u user) GetID() uint {
 	return 10
 }
+
 func (u user) GetName() string {
 	return "user a"
 }
+
 func TestCreatorInferface(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel)
 	resetDB()
 
@@ -227,7 +244,9 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{})
+	builder.Install(pb)
+
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	resetDB()
 
@@ -257,19 +276,19 @@ func TestGetActivityLogs(t *testing.T) {
 	if (*testlogs)[2].Action != "Edit" || (*testlogs)[2].ModelName != "Page" || (*testlogs)[2].ModelKeys != "1:v1" || (*testlogs)[2].Creator != "creator a" {
 		t.Errorf("want the logs %v, but got %v", "Edit:Page:1:v1:creator a", (*testlogs)[2])
 	}
-
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(pb, db, &TestActivityLog{}).SetCreatorContextKey("creator")
+	builder := New(db, &TestActivityLog{}).CreatorContextKey("creator")
+	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 
 	pageModel2 := pb.Model(&TestActivityModel{}).URIName("page-02").Label("Page-02")
 	pageModel3 := pb.Model(&TestActivityModel{}).URIName("page-03").Label("Page-03")
 
-	builder.RegisterModel(&TestActivityModel{}).SetKeys("ID")
-	builder.RegisterModel(pageModel2).SetKeys("ID").SkipDelete().AddIgnoredFields("VersionName")
-	builder.RegisterModel(pageModel3).SetKeys("ID").SkipCreate().AddIgnoredFields("Description")
+	builder.RegisterModel(&TestActivityModel{}).Keys("ID")
+	builder.RegisterModel(pageModel2).Keys("ID").SkipDelete().AddIgnoredFields("VersionName")
+	builder.RegisterModel(pageModel3).Keys("ID").SkipCreate().AddIgnoredFields("Description")
 
 	data1 := &TestActivityModel{ID: 1, VersionName: "v1", Title: "test1", Description: "Description1"}
 	data2 := &TestActivityModel{ID: 2, VersionName: "v2", Title: "test2", Description: "Description3"}

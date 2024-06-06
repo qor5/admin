@@ -1,6 +1,6 @@
 package pagebuilder
 
-import "github.com/qor5/x/i18n"
+import "github.com/qor5/x/v3/i18n"
 
 const I18nPageBuilderKey i18n.ModuleKey = "I18nPageBuilderKey"
 
@@ -21,11 +21,11 @@ type Messages struct {
 	NotDescribed                   string
 	Blank                          string
 	NewPage                        string
-	Duplicate                      string
 	FilterTabAllVersions           string
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
 	Rename                         string
+	PageOverView                   string
 }
 
 var Messages_en_US = &Messages{
@@ -45,11 +45,11 @@ var Messages_en_US = &Messages{
 	NotDescribed:                   "Not Described",
 	Blank:                          "Blank",
 	NewPage:                        "New Page",
-	Duplicate:                      "Duplicate",
 	FilterTabAllVersions:           "All Versions",
-	FilterTabOnlineVersion:         "Online Version",
+	FilterTabOnlineVersion:         "Online Versions",
 	FilterTabNamedVersions:         "Named Versions",
 	Rename:                         "Rename",
+	PageOverView:                   "Page Overview",
 }
 
 var Messages_zh_CN = &Messages{
@@ -69,11 +69,11 @@ var Messages_zh_CN = &Messages{
 	NotDescribed:                   "未描述",
 	Blank:                          "空白",
 	NewPage:                        "新页面",
-	Duplicate:                      "复制",
 	FilterTabAllVersions:           "所有版本",
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
 	Rename:                         "重命名",
+	PageOverView:                   "页面概览",
 }
 
 var Messages_ja_JP = &Messages{
@@ -97,4 +97,5 @@ var Messages_ja_JP = &Messages{
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名付け済みバージョン",
 	Rename:                         "名前の変更",
+	PageOverView:                   "ページ概要",
 }

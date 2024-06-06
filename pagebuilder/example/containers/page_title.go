@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -52,7 +50,7 @@ func (*PageTitle) TableName() string {
 }
 
 func RegisterPageTitleContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("PageTitle").
+	vb := pb.RegisterContainer("PageTitle").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*PageTitle)
 			return PageTitleBody(v, input)
@@ -91,9 +89,9 @@ func PageTitleBody(data *PageTitle, input *pagebuilder.RenderInput) (body HTMLCo
 	).Class("container-page_title-wrap")
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("PageTitle"))+"_%v", data.ID), data.AnchorID, "container-page_title container-lottie",
+		data.AnchorID, "container-page_title container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		image, wraper,
 	)
 	return

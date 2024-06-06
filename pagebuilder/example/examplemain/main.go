@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/qor5/admin/pagebuilder/example"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder/example"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 		DataOperator(gorm2op.DataOperator(db))
 	pb := example.ConfigPageBuilder(db, "/page_builder", `<link rel="stylesheet" href="/frontstyle.css">`, p.I18n())
 
-	pb.Configure(p, db, nil, nil, nil, nil)
+	pb.Install(p)
 
 	mux := http.NewServeMux()
 
@@ -31,7 +31,9 @@ div {
 	background-color:orange;
 }
 `)))
+	mux.Handle("/admin", p)
 	mux.Handle("/admin/", p)
+	mux.Handle("/page_builder", pb)
 	mux.Handle("/page_builder/", pb)
 	log.Println("Listen on http://localhost:9600")
 	log.Fatal(http.ListenAndServe(":9600", mux))

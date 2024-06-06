@@ -9,9 +9,9 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
 )
 
 type ModelBuilder struct {
@@ -38,6 +38,7 @@ type ModelBuilder struct {
 	layoutConfig        *LayoutConfig
 	modelInfo           *ModelInfo
 	singleton           bool
+	plugins             []ModelPlugin
 	web.EventsHub
 }
 
@@ -60,6 +61,14 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	return
 }
 
+func (mb *ModelBuilder) HasDetailing() bool {
+	return mb.hasDetailing
+}
+
+func (mb *ModelBuilder) GetSingleton() bool {
+	return mb.singleton
+}
+
 func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {
 	mb.rightDrawerWidth = v
 	return mb
@@ -80,9 +89,17 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoListingAction, mb.listing.doListingAction)
 	mb.RegisterEventFunc(actions.OpenBulkActionDialog, mb.listing.openBulkActionDialog)
 	mb.RegisterEventFunc(actions.OpenActionDialog, mb.listing.openActionDialog)
+
 	mb.RegisterEventFunc(actions.Action, mb.detailing.formDrawerAction)
 	mb.RegisterEventFunc(actions.DoAction, mb.detailing.doAction)
 	mb.RegisterEventFunc(actions.DetailingDrawer, mb.detailing.showInDrawer)
+	mb.RegisterEventFunc(actions.DoSaveDetailingField, mb.detailing.SaveDetailField)
+	mb.RegisterEventFunc(actions.DoEditDetailingField, mb.detailing.EditDetailField)
+	mb.RegisterEventFunc(actions.DoEditDetailingListField, mb.detailing.EditDetailListField)
+	mb.RegisterEventFunc(actions.DoSaveDetailingListField, mb.detailing.SaveDetailListField)
+	mb.RegisterEventFunc(actions.DoDeleteDetailingListField, mb.detailing.DeleteDetailListField)
+	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
+
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
 	mb.RegisterEventFunc(actions.UpdateListingDialog, mb.listing.updateListingDialog)
@@ -105,14 +122,13 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	mb.listing = &ListingBuilder{
 		mb:            mb,
 		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
-		dialogWidth:   "1200px",
 	}
 	if mb.p.dataOperator != nil {
 		mb.listing.SearchFunc(mb.p.dataOperator.Search)
 	}
 
 	rmb := mb.listing.RowMenu()
-	rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
 	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
 	return
 }
@@ -129,7 +145,13 @@ func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 }
 
 func (mb *ModelBuilder) newDetailing() (r *DetailingBuilder) {
-	mb.detailing = &DetailingBuilder{mb: mb, FieldsBuilder: *mb.p.detailFieldDefaults.InspectFields(mb.model)}
+	mb.detailing = &DetailingBuilder{
+		mb: mb,
+		SectionsBuilder: SectionsBuilder{
+			mb:            mb,
+			FieldsBuilder: *mb.p.detailFieldDefaults.InspectFields(mb.model),
+		},
+	}
 	if mb.p.dataOperator != nil {
 		mb.detailing.FetchFunc(mb.p.dataOperator.Fetch)
 	}

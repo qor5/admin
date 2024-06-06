@@ -1,25 +1,31 @@
 package presets
 
 import (
+	"errors"
+	"fmt"
 	"net/url"
+	"reflect"
+	"strconv"
 
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"goji.io/pat"
 )
 
 type DetailingBuilder struct {
-	mb        *ModelBuilder
-	actions   []*ActionBuilder
-	pageFunc  web.PageFunc
-	fetcher   FetchFunc
-	tabPanels []ObjectComponentFunc
-	drawer    bool
-	FieldsBuilder
+	mb                 *ModelBuilder
+	actions            []*ActionBuilder
+	pageFunc           web.PageFunc
+	fetcher            FetchFunc
+	tabPanels          []TabComponentFunc
+	sidePanel          ObjectComponentFunc
+	afterTitleCompFunc ObjectComponentFunc
+	drawer             bool
+	SectionsBuilder
 }
 
 type pageTitle interface {
@@ -29,7 +35,12 @@ type pageTitle interface {
 // string / []string / *FieldsSection
 func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	r = mb.detailing
+	if !mb.hasDetailing && len(vs) == 0 {
+		vs = mb.editing.FieldNames()
+	}
+
 	mb.hasDetailing = true
+
 	if len(vs) == 0 {
 		return
 	}
@@ -38,10 +49,20 @@ func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	return r
 }
 
+func (b *DetailingBuilder) GetDrawer() bool {
+	return b.drawer
+}
+
 // string / []string / *FieldsSection
 func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	r = b
 	r.FieldsBuilder = *r.FieldsBuilder.Only(vs...)
+	return
+}
+
+func (b *DetailingBuilder) Prepend(vs ...interface{}) (r *DetailingBuilder) {
+	r = b
+	r.FieldsBuilder = *r.FieldsBuilder.Prepend(vs...)
 	return
 }
 
@@ -61,12 +82,25 @@ func (b *DetailingBuilder) FetchFunc(v FetchFunc) (r *DetailingBuilder) {
 	return b
 }
 
+func (b *DetailingBuilder) WrapFetchFunc(w func(in FetchFunc) FetchFunc) (r *DetailingBuilder) {
+	b.fetcher = w(b.fetcher)
+	return b
+}
+
 func (b *DetailingBuilder) GetFetchFunc() FetchFunc {
 	return b.fetcher
 }
 
 func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 	b.drawer = v
+	return b
+}
+
+func (b *DetailingBuilder) AfterTitleCompFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.afterTitleCompFunc = v
 	return b
 }
 
@@ -77,39 +111,38 @@ func (b *DetailingBuilder) GetPageFunc() web.PageFunc {
 	return b.defaultPageFunc
 }
 
-func (b *DetailingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
+func (b *DetailingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *DetailingBuilder) {
 	b.tabPanels = append(b.tabPanels, v)
 	return b
 }
 
-func (b *DetailingBuilder) TabsPanelFunc() (r []ObjectComponentFunc) {
+func (b *DetailingBuilder) TabsPanelFunc() (r []TabComponentFunc) {
 	return b.tabPanels
 }
 
-func (b *DetailingBuilder) CleanTabsPanels() (r *DetailingBuilder) {
-	b.tabPanels = nil
+func (b *DetailingBuilder) TabsPanels(vs ...TabComponentFunc) (r *DetailingBuilder) {
+	b.tabPanels = vs
+	return b
+}
+
+func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
+	b.sidePanel = v
 	return b
 }
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
-
-	var id string
-	if b.drawer {
-		id = ctx.R.FormValue(ParamID)
-	} else {
-		id = pat.Param(ctx.R, "id")
-	}
+	id := ctx.Param(ParamID)
 	r.Body = VContainer(h.Text(id))
 
-	var obj = b.mb.NewModel()
+	obj := b.mb.NewModel()
 
 	if id == "" {
 		panic("not found")
 	}
 
-	obj, err = b.fetcher(obj, id, ctx)
+	obj, err = b.GetFetchFunc()(obj, id, ctx)
 	if err != nil {
-		if err == ErrRecordNotFound {
+		if errors.Is(err, ErrRecordNotFound) {
 			return b.mb.p.DefaultNotFoundPageFunc(ctx)
 		}
 		return
@@ -122,33 +155,21 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	msgr := MustGetMessages(ctx.R)
 	r.PageTitle = msgr.DetailingObjectTitle(inflection.Singular(b.mb.label), getPageTitle(obj, id))
+	if b.afterTitleCompFunc != nil {
+		ctx.WithContextValue(ctxDetailingAfterTitleComponent, b.afterTitleCompFunc(obj, ctx))
+	}
 
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
-		notice = VSnackbar(h.Text(msg)).Value(true).Top(true).Color("success").Value(true)
+		notice = VSnackbar(h.Text(msg)).ModelValue(true).Location("top").Color("success")
 	}
 
-	comp := b.ToComponent(b.mb.Info(), obj, ctx)
-
-	var tabsContent h.HTMLComponent = comp
-
-	if len(b.tabPanels) != 0 {
-		var tabs []h.HTMLComponent
-		for _, panelFunc := range b.tabPanels {
-			value := panelFunc(obj, ctx)
-			if value != nil {
-				tabs = append(tabs, value)
-			}
-		}
-
-		if len(tabs) != 0 {
-			tabsContent = VTabs(
-				VTab(h.Text(msgr.FormTitle)),
-				VTabItem(web.Scope(comp).VSlot("{plaidForm}")),
-				h.Components(tabs...),
-			).Class("v-tabs--fixed-tabs")
-		}
-	}
+	comp := web.Scope(b.ToComponent(b.mb.Info(), obj, ctx)).VSlot("{form}")
+	var tabsContent h.HTMLComponent = defaultToPage(commonPageConfig{
+		formContent: comp,
+		tabPanels:   b.tabPanels,
+		sidePanel:   b.sidePanel,
+	}, obj, ctx)
 
 	r.Body = VContainer(
 		notice,
@@ -169,26 +190,33 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	closeBtnVarScript := closeRightDrawerVarScript
+	closeBtnVarScript := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
+
+	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
+	if v, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
+		title.AppendChildren(VSpacer(), v)
+	}
+
 	comp := web.Scope(
-		VAppBar(
-			VToolbarTitle("").Class("pl-2").
-				Children(h.Text(pr.PageTitle)),
-			VSpacer(),
-			VBtn("").Icon(true).Children(
-				VIcon("close"),
-			).Attr("@click.stop", closeBtnVarScript),
-		).Color("white").Elevation(0).Dense(true),
+		VLayout(
+			VAppBar(
+				VAppBarTitle(title).Class("pl-2"),
+				VBtn("").Icon("mdi-close").
+					Attr("@click.stop", closeBtnVarScript),
+			).Color("white").Elevation(0),
 
-		VSheet(
-			VCard(pr.Body).Flat(true).Class("pa-1"),
-		).Class("pa-2"),
-	).VSlot("{ plaidForm }")
+			VMain(
+				VSheet(
+					VCard(pr.Body).Flat(true).Class("pa-1"),
+				).Class("pa-2"),
+			),
+		),
+	).VSlot("{ form }")
 
-	b.mb.p.overlay(overlayType, &r, comp, b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, comp, b.mb.rightDrawerWidth)
 	return
 }
 
@@ -212,14 +240,14 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: rightDrawerContentPortalName,
+			Name: RightDrawerContentPortalName,
 			Body: b.actionForm(action, ctx),
 		})
 		return r, nil
 	}
 
 	r.PushState = web.Location(url.Values{})
-	r.VarsScript = closeRightDrawerVarScript
+	r.RunScript = CloseRightDrawerVarScript
 
 	return
 }
@@ -250,7 +278,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 			VCardActions(
 				VSpacer(),
 				VBtn(msgr.Update).
-					Dark(true).
+					Theme("dark").
 					Color(ColorPrimary).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.DoAction).
@@ -261,4 +289,241 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 			),
 		).Flat(true),
 	).Fluid(true)
+}
+
+// EditDetailField EventFunc: click detail field component edit button
+func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	key := ctx.Queries().Get(SectionFieldName)
+
+	f := b.Section(key)
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.editComponent(obj, &FieldContext{
+			FormKey: f.name,
+			Name:    f.name,
+		}, ctx),
+	})
+	return r, nil
+}
+
+// SaveDetailField EventFunc: click save button
+func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	key := ctx.Queries().Get(SectionFieldName)
+
+	f := b.Section(key)
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.viewComponent(obj, &FieldContext{
+			FormKey: f.name,
+			Name:    f.name,
+		}, ctx),
+	})
+	return r, nil
+}
+
+// EditDetailListField Event: click detail list field element edit button
+func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName          string
+		index, deleteIndex int64
+	)
+
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+	deleteIndex = -1
+	if ctx.Queries().Get(f.DeleteBtnKey()) != "" {
+		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
+		if err != nil {
+			return
+		}
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, int(deleteIndex), int(index), -1),
+	})
+
+	return
+}
+
+// SaveDetailListField Event: click detail list field element Save button
+func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName string
+		index     int64
+	)
+
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.SaveBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, -1, -1, int(index)),
+	})
+
+	return
+}
+
+// DeleteDetailListField Event: click detail list field element Delete button
+func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		fieldName string
+		index     int64
+	)
+
+	fieldName = ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
+
+	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	// delete from slice
+	var list any
+	if list, err = reflectutils.Get(obj, f.name); err != nil {
+		return
+	}
+	listValue := reflect.ValueOf(list)
+	if listValue.Kind() != reflect.Slice {
+		err = errors.New("field is not a slice")
+		return
+	}
+	newList := reflect.MakeSlice(reflect.TypeOf(list), 0, 0)
+	for i := 0; i < listValue.Len(); i++ {
+		if i != int(index) {
+			newList = reflect.Append(newList, listValue.Index(i))
+		}
+	}
+	if err = reflectutils.Set(obj, f.name, newList.Interface()); err != nil {
+		return
+	}
+
+	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, int(index), -1, -1),
+	})
+
+	return
+}
+
+// CreateDetailListField Event: click detail list field element Add row button
+func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	fieldName := ctx.Queries().Get(SectionFieldName)
+	f := b.Section(fieldName)
+
+	obj := b.mb.NewModel()
+	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if f.setter != nil {
+		f.setter(obj, ctx)
+	}
+
+	var list any
+	if list, err = reflectutils.Get(obj, f.name); err != nil {
+		return
+	}
+
+	listLen := 0
+	if list != nil {
+		listValue := reflect.ValueOf(list)
+		if listValue.Kind() != reflect.Slice {
+			err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
+			return
+		}
+		listLen = listValue.Len()
+	}
+
+	if err = reflectutils.Set(obj, f.name+"[]", f.editingFB.model); err != nil {
+		return
+	}
+
+	if err = f.saver(obj, ctx.Queries().Get(ParamID), ctx); err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: f.FieldPortalName(),
+		Body: f.listComponent(obj, nil, ctx, -1, listLen, -1),
+	})
+
+	return
 }

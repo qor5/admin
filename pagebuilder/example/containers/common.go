@@ -1,15 +1,15 @@
 package containers
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/v3/media/media_library"
 
-	"github.com/qor5/admin/presets"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
 	. "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 )
 
 const (
@@ -28,14 +28,15 @@ const LINK_ARROW_SVG = RawHTML(`<svg height=".7em" viewBox="0 0 10 12" fill="non
 </svg>`)
 
 var TextArea = func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-	return v.VTextarea().FieldName(field.Name).Label(field.Label).Value(field.Value(obj))
+	return v.VTextarea().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).Variant(v.FieldVariantUnderlined)
 }
 
-func ContainerWrapper(containerID, anchorID, classes,
+func ContainerWrapper(anchorID, classes,
 	backgroundColor, transitionBackgroundColor, fontColor,
 	imagePosition string, addTopSpace, addBottomSpace bool,
-	isEditor bool, isReadonly bool, style string, comp ...HTMLComponent) HTMLComponent {
-	r := Div(comp...).
+	style string, comp ...HTMLComponent,
+) HTMLComponent {
+	return Div(comp...).
 		Id(anchorID).
 		Class("container-instance").ClassIf(classes, classes != "").
 		AttrIf("data-background-color", backgroundColor, backgroundColor != "").
@@ -44,17 +45,7 @@ func ContainerWrapper(containerID, anchorID, classes,
 		AttrIf("data-image-position", imagePosition, imagePosition != "").
 		AttrIf("data-container-top-space", "true", addTopSpace).
 		AttrIf("data-container-bottom-space", "true", addBottomSpace).
-		Attr("data-container-id", containerID).Style("position:relative;").StyleIf(style, style != "")
-
-	if isEditor {
-		if isReadonly {
-			r.AppendChildren(RawHTML(`<div class="wrapper-shadow"></div>`))
-		} else {
-			r.AppendChildren(RawHTML(fmt.Sprintf(`<div class="wrapper-shadow" onclick="window.parent.postMessage('%s', '*');"><button><i aria-hidden="true" class="material-icons">edit</i></button></div>`, containerID)))
-		}
-	}
-	return r
-
+		Style("position:relative;").StyleIf(style, style != "")
 }
 
 func LinkTextWithArrow(text, link string, class ...string) HTMLComponent {

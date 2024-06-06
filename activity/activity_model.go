@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	vuetify "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -20,8 +20,8 @@ import (
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
-	typ      reflect.Type     // model type
-	activity *ActivityBuilder // activity builder
+	typ      reflect.Type // model type
+	activity *Builder     // activity builder
 
 	presetModel *presets.ModelBuilder // preset model builder
 	skip        uint8                 // skip the prefined data operator of the presetModel
@@ -33,11 +33,6 @@ type ModelBuilder struct {
 }
 
 // @snippet_end
-
-// GetType get ModelBuilder type
-func (mb *ModelBuilder) GetType() reflect.Type {
-	return mb.typ
-}
 
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
@@ -57,13 +52,13 @@ func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 }
 
 // SetKeys set keys for the model builder
-func (mb *ModelBuilder) SetKeys(keys ...string) *ModelBuilder {
+func (mb *ModelBuilder) Keys(keys ...string) *ModelBuilder {
 	mb.keys = keys
 	return mb
 }
 
 // SetLink set the link that linked to the modified record
-func (mb *ModelBuilder) SetLink(f func(interface{}) string) *ModelBuilder {
+func (mb *ModelBuilder) LinkFunc(f func(interface{}) string) *ModelBuilder {
 	mb.link = f
 	return mb
 }
@@ -104,7 +99,6 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-
 // EnableActivityInfoTab enable activity info tab on the given model's editing page
 func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 	if mb.presetModel == nil {
@@ -112,7 +106,7 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 	}
 
 	editing := mb.presetModel.Editing()
-	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
+	editing.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		logs := mb.activity.GetCustomizeActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 
@@ -129,17 +123,29 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 			}
 
 			panels = append(panels, vuetify.VExpansionPanel(
-				vuetify.VExpansionPanelHeader(h.Span(headerText)),
-				vuetify.VExpansionPanelContent(DiffComponent(log.GetModelDiffs(), ctx.R)),
+				vuetify.VExpansionPanelTitle().Children(
+					web.Slot(
+						vuetify.VRow().Attr("no-gutters").Children(
+							vuetify.VCol().Class("justify-start ma-1").Children(
+								DiffComponent(log.GetModelDiffs(), ctx.R),
+							),
+						),
+					).Name("default"),
+				),
+				vuetify.VExpansionPanelText().Children(
+					h.Span(headerText),
+				),
 			))
 		}
 
-		return h.Components(
-			vuetify.VTab(h.Text(msgr.Activities)),
-			vuetify.VTabItem(
-				vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
-			),
+		const tabKey = "activityTab"
+		tab = vuetify.VTab().Value(tabKey).Children(
+			h.Text(msgr.Activities),
 		)
+		content = vuetify.VTabsWindowItem().Value(tabKey).Children(
+			vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
+		)
+		return
 	})
 
 	return mb
@@ -316,7 +322,7 @@ func (mb *ModelBuilder) Diff(old, now interface{}) ([]Diff, error) {
 
 // save log into db
 func (mb *ModelBuilder) save(creator interface{}, action string, v interface{}, db *gorm.DB, diffs string) error {
-	var m = mb.activity.NewLogModelData()
+	m := mb.activity.NewLogModelData()
 	log, ok := m.(ActivityLogInterface)
 	if !ok {
 		return fmt.Errorf("model %T is not implement ActivityLogInterface", m)

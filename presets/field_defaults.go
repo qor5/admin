@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
@@ -176,9 +176,8 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VCheckbox().
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
 		Label(field.Label).
-		InputValue(reflectutils.MustGet(obj, field.Name).(bool)).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
@@ -186,9 +185,9 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("number").
-		FieldName(field.FormKey).
+		Variant(FieldVariantUnderlined).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
-		Value(fmt.Sprint(reflectutils.MustGet(obj, field.Name))).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
@@ -208,12 +207,13 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 	}
 	return vuetifyx.VXDateTimePicker().
 		Label(field.Label).
-		FieldName(field.FormKey).
+		Attr(web.VField(field.FormKey, val)...).
 		Value(val).
 		TimePickerProps(vuetifyx.TimePickerProps{
 			Format:     "24hr",
 			Scrollable: true,
 		}).
+		DialogWidth(640).
 		ClearText(msgr.Clear).
 		OkText(msgr.OK)
 }
@@ -233,9 +233,9 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return VTextField().
 		Type("text").
-		FieldName(field.FormKey).
+		Variant(FieldVariantUnderlined).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
-		Value(fmt.Sprint(reflectutils.MustGet(obj, field.Name))).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }

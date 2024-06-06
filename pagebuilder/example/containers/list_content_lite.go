@@ -4,15 +4,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/richeditor"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/richeditor"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -67,8 +64,10 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	)
 
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return v.VAutocomplete().FieldName(field.Name).
-			Label(field.Label).Value(field.Value(obj)).
+		return v.VAutocomplete().
+			Attr(web.VField(field.Name, field.Value(obj))...).
+			Variant(v.FieldVariantUnderlined).
+			Label(field.Label).
 			Items([]string{White, Grey})
 	})
 
@@ -83,9 +82,9 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ListContentLiteBody(data *ListContentLite, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContentLite"))+"_%v", data.ID), data.AnchorID, "container-list_content_lite",
+		data.AnchorID, "container-list_content_lite",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(LiteItemsBody(data.Items)).Class("container-wrapper"),
 	)
 	return

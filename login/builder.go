@@ -3,10 +3,10 @@ package login
 import (
 	"fmt"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
 )
 
 const (
@@ -41,16 +41,17 @@ func registerChangePasswordEvents(b *login.Builder, pb *presets.Builder) {
 			Body: changePasswordDialog(vh, ctx, showVar, defaultChangePasswordDialogContent(vh, pb)(ctx)),
 		})
 
-		web.AppendVarsScripts(&r, fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar))
-		web.AppendVarsScripts(&r, fmt.Sprintf(`
+		web.AppendRunScripts(&r, fmt.Sprintf(`
 (function(){
 var tag = document.createElement("script");
 tag.src = "%s";
+tag.onload= function(){
+	vars.meter_score = function(x){return zxcvbn(x).score+1};
+}
 document.getElementsByTagName("head")[0].appendChild(tag);
 })()
         `, login.ZxcvbnJSURL))
 		return
-
 	})
 
 	pb.GetWebBuilder().RegisterEventFunc("login_changePassword", func(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -95,7 +96,7 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 		}
 
 		presets.ShowMessage(&r, msgr.InfoPasswordSuccessfullyChanged, "info")
-		web.AppendVarsScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
+		web.AppendRunScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
 		return r, nil
 	})
 }

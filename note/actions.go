@@ -1,14 +1,14 @@
 package note
 
 import (
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"gorm.io/gorm"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 )
 
-func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := b.db
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
 
@@ -45,16 +45,19 @@ func createNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			Body: notesSection,
 		})
 
-		if err = AfterCreateFunc(db); err != nil {
-			return
+		if b.afterCreateFunc != nil {
+			if err = b.afterCreateFunc(db); err != nil {
+				return
+			}
 		}
 
 		return
 	}
 }
 
-func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		db := b.db
 		ri := ctx.R.FormValue("resource_id")
 		rt := ctx.R.FormValue("resource_type")
 
@@ -76,8 +79,10 @@ func updateUserNoteAction(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		if err = AfterCreateFunc(db); err != nil {
-			return
+		if b.afterCreateFunc != nil {
+			if err = b.afterCreateFunc(db); err != nil {
+				return
+			}
 		}
 
 		// notify notification center after note read. if notification center is not enabled, this one would just do nothing

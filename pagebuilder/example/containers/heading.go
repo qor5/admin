@@ -1,16 +1,11 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/richeditor"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -42,7 +37,7 @@ func (*Heading) TableName() string {
 }
 
 func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("Heading").
+	vb := pb.RegisterContainer("Heading").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*Heading)
 			return HeadingBody(v, input)
@@ -55,50 +50,49 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(FontColors).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Variant(vuetify.FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(BackgroundColors).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Variant(vuetify.FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items(LinkDisplayOptions).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Variant(vuetify.FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 }
 
 func HeadingBody(data *Heading, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	headingBody :=
+	headingBody := Div(
 		Div(
-			Div(
-				If(data.Heading != "",
-					If(data.Link != "",
-						A(H2(data.Heading).Class("container-heading-title")).Class("container-heading-title-link").Href(data.Link),
-					),
-					If(data.Link == "",
-						H2(data.Heading).Class("container-heading-title"),
-					),
+			If(data.Heading != "",
+				If(data.Link != "",
+					A(H2(data.Heading).Class("container-heading-title")).Class("container-heading-title-link").Href(data.Link),
 				),
-				If(data.Text != "", Div(RawHTML(data.Text)).Class("container-heading-content")),
-			).Class("container-heading-wrap"),
-			If(data.LinkText != "" && data.Link != "",
-				Div(
-					LinkTextWithArrow(data.LinkText, data.Link),
-				).Class("container-heading-link").Attr("data-display", data.LinkDisplayOption),
+				If(data.Link == "",
+					H2(data.Heading).Class("container-heading-title"),
+				),
 			),
-		).Class("container-heading-inner")
+			If(data.Text != "", Div(RawHTML(data.Text)).Class("container-heading-content")),
+		).Class("container-heading-wrap"),
+		If(data.LinkText != "" && data.Link != "",
+			Div(
+				LinkTextWithArrow(data.LinkText, data.Link),
+			).Class("container-heading-link").Attr("data-display", data.LinkDisplayOption),
+		),
+	).Class("container-heading-inner")
 
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Heading"))+"_%v", data.ID), data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		data.AnchorID, "container-heading", data.BackgroundColor, "", data.FontColor,
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(headingBody).Class("container-wrapper"),
 	)
 	return

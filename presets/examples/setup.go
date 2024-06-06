@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/admin/presets/gorm2op"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -131,10 +131,11 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 	p.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return h.Components(
-			VIcon("directions_boat").Class("pr-2"),
+			VIcon("mdi-directions-boat").Class("pr-2"),
 			VToolbarTitle("My Admin"),
 		)
-	}).BrandTitle("My Admin")
+	})
+	// .BrandTitle("My Admin")
 
 	writeFieldDefaults := p.FieldDefaults(presets.WRITE)
 	writeFieldDefaults.FieldType(&Thumb{}).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -171,7 +172,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		).HeaderTitle(field.Label).
 			Actions(
 				VBtn("Add Event").
-					Depressed(true).Attr("@click",
+					Variant(VariantFlat).Attr("@click",
 					web.Plaid().EventFunc(actions.New).
 						Query("model", typeName).
 						Query("model_id", objId).
@@ -237,8 +238,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			errorMessage = ctx.Flash.(string)
 		}
 		return VTextField().
-			FieldName("ApprovalComment").
-			Value(comment).
+			Attr(web.VField("ApprovalComment", comment)...).
 			Label("Comment").
 			ErrorMessages(errorMessage)
 	})
@@ -328,13 +328,12 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 		return VAutocomplete().
-			FieldName(field.Name).
+			Attr(web.VField(field.Name, u.LanguageCode)...).
 			Label(field.Label).
 			Items(langs).
-			ItemText("Name").
+			ItemTitle("Name").
 			ItemValue("Code").
-			Multiple(false).
-			Value(u.LanguageCode)
+			Multiple(false)
 	})
 
 	ef.Field("CompanyID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -345,19 +344,18 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			panic(err)
 		}
 		return VSelect().
-			FieldName("CompanyID").
+			Attr(web.VField("CompanyID", u.CompanyID)...).
 			Label(field.Label).
 			Items(companies).
-			ItemText("Name").
+			ItemTitle("Name").
 			ItemValue("ID").
-			Multiple(false).
-			Value(u.CompanyID)
+			Multiple(false)
 	})
 
 	dp := m.Detailing("MainInfo", "Details", "Cards", "Events")
 
 	dp.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		var cus = &Customer{}
+		cus := &Customer{}
 		err = db.Find(cus, id).Error
 		if err != nil {
 			return
@@ -374,7 +372,6 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	})
 
 	dp.Field("MainInfo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-
 		cu := obj.(*Customer)
 
 		title := cu.Name
@@ -396,7 +393,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			n := obj.(*Note)
 			return h.Td(h.Div(
 				h.Div(
-					VIcon("comment").Color("blue").Small(true).Class("pr-2"),
+					VIcon("comment").Color("blue").Size(SizeSmall).Class("pr-2"),
 					h.Text(n.Content),
 				).Class("body-1"),
 				h.Div(
@@ -415,7 +412,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		).HeaderTitle(title).
 			Actions(
 				VBtn("Add Note").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click",
 						web.Plaid().EventFunc(actions.New).
 							Query("model", "Customer").
@@ -454,7 +451,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
 				VBtn("Agree Terms").
-					Depressed(true).Class("mr-2").
+					Variant(VariantFlat).Class("mr-2").
 					Attr("@click", web.Plaid().
 						EventFunc(actions.Action).
 						Query(presets.ParamAction, "AgreeTerms").
@@ -462,7 +459,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 						Go()),
 
 				VBtn("Update details").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.Edit).
 						Query("customerID", cusID).
@@ -507,7 +504,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
 				VBtn("Add Card").
-					Depressed(true).
+					Variant(VariantFlat).
 					Attr("@click",
 						web.Plaid().EventFunc(
 							actions.New).Query("customerID", cusID).
@@ -534,13 +531,14 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			alert = VAlert(h.Text(ve.GetGlobalError())).Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 
 		return h.Components(
 			alert,
-			VCheckbox().FieldName("Agree").Value(ctx.R.FormValue("Agree")).Label("Agree the terms"),
+			VCheckbox().
+				Attr(web.VField("Agree", ctx.R.FormValue("Agree"))...).
+				Label("Agree the terms"),
 		)
 	})
 
@@ -549,7 +547,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		Editing("Content").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			note := obj.(*Note)
-			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})
 
@@ -558,7 +556,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		Editing("Type", "Description").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			note := obj.(*Event)
-			note.SourceID = ctx.QueryAsInt("model_id")
+			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})
 
@@ -568,7 +566,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	ccedit := cc.Editing("ExpireYearMonth", "Phone", "Email").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
 			card := obj.(*CreditCard)
-			card.CustomerID = ctx.QueryAsInt("customerID")
+			card.CustomerID = ctx.ParamAsInt("customerID")
 		})
 
 	ccedit.Creating("Number")

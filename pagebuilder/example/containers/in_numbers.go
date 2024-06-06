@@ -4,15 +4,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
-
-	"github.com/qor5/admin/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -65,14 +61,13 @@ func RegisterInNumbersContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&InNumbersItem{}).Only("Heading", "Text")
 
 	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
-
 }
 
 func InNumbersBody(data *InNumbers, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("InNumbers"))+"_%v", data.ID), data.AnchorID, "container-in_numbers container-corner",
+		data.AnchorID, "container-in_numbers container-corner",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			H2(data.Heading).Class("container-in_numbers-heading"),
 			InNumbersItemsBody(data.Items),

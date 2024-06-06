@@ -3,11 +3,8 @@ package containers
 import (
 	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -28,14 +25,12 @@ func RegisterFooter(pb *pagebuilder.Builder) {
 			return FooterTemplate(footer, input)
 		})
 
-	footer.Model(&WebFooter{}).URIName(inflection.Plural(strcase.ToKebab("Footer"))).Editing("EnglishUrl", "JapaneseUrl")
-
+	footer.Model(&WebFooter{}).Editing("EnglishUrl", "JapaneseUrl")
 }
 
 func FooterTemplate(data *WebFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Footer"))+"_%v", data.ID), "", "container-footer", "", "", "",
-		"", false, false, input.IsEditor, input.IsReadonly, "",
+	body = ContainerWrapper("", "container-footer", "", "", "",
+		"", false, false, "",
 		Div(RawHTML(fmt.Sprintf(`
 <div class='container-footer-main'>
 <div class='container-footer-primary'>

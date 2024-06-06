@@ -8,30 +8,35 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
+	Timeline                       = "Timeline"
 )
 
-func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
+func (ab *Builder) Install(b *presets.Builder) error {
 	b.I18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
 	if permB := b.GetPermission(); permB != nil {
-		permB.CreatePolicies(permPolicy)
+		permB.CreatePolicies(ab.permPolicy)
 	}
+	mb := b.Model(ab.logModel).MenuIcon("mdi-book-edit")
 
+	return ab.logModelInstall(b, mb)
+}
+
+func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		mb        = b.Model(ab.logModel).MenuIcon("receipt_long")
 		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		detailing = mb.Detailing("ModelDiffs")
 	)
@@ -151,14 +156,14 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 			)
 
 			var detailElems []h.HTMLComponent
-			detailElems = append(detailElems, vuetify.VCard(
-				vuetify.VCardTitle(
-					vuetify.VBtn("").Children(
-						vuetify.VIcon("arrow_back").Class("pr-2").Small(true),
+			detailElems = append(detailElems, VCard(
+				VCardTitle(
+					VBtn("").Children(
+						VIcon("arrow_back").Class("pr-2").Size(SizeSmall),
 					).Icon(true).Attr("@click", "window.history.back()"),
 					h.Text(msgr.DiffDetail),
 				),
-				vuetify.VSimpleTable(
+				VTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
 						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
@@ -179,6 +184,7 @@ func (ab *ActivityBuilder) configureAdmin(b *presets.Builder) {
 			return h.Components(detailElems...)
 		},
 	)
+	return nil
 }
 
 func fixSpecialChars(str string) string {
@@ -226,13 +232,16 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(newdiffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range newdiffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Now)))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Now)),
+			))
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffNew)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffNew)),
+				VTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -242,13 +251,16 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(deletediffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range deletediffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Old)),
+			))
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffDelete)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffDelete)),
+				VTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
 				),
@@ -258,13 +270,17 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	if len(changediffs) > 0 {
 		var elems []h.HTMLComponent
 		for _, d := range changediffs {
-			elems = append(elems, h.Tr(h.Td(h.Text(d.Field)), h.Td(h.Text(fixSpecialChars(d.Old)), h.Td(h.Text(fixSpecialChars(d.Now))))))
+			elems = append(elems, h.Tr(
+				h.Td().Text(d.Field),
+				h.Td().Text(fixSpecialChars(d.Old)),
+				h.Td().Text(fixSpecialChars(d.Now)),
+			))
 		}
 
 		diffsElems = append(diffsElems,
-			vuetify.VCard(
-				vuetify.VCardTitle(h.Text(msgr.DiffChanges)),
-				vuetify.VSimpleTable(
+			VCard(
+				VCardTitle(h.Text(msgr.DiffChanges)),
+				VTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
 					h.Tbody(elems...),
 				),

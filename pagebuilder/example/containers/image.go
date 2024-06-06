@@ -1,15 +1,11 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -30,35 +26,34 @@ func (*ImageContainer) TableName() string {
 }
 
 func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("Image").
+	vb := pb.RegisterContainer("Image").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ImageContainer)
 			return ImageContainerBody(v, input)
 		})
-	mb := vb.Model(&ImageContainer{}).URIName(inflection.Plural(strcase.ToKebab("Image")))
+	mb := vb.Model(&ImageContainer{})
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "TransitionBackgroundColor", "Image")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"white", "blue", "grey"}).
-			Value(field.Value(obj)).
+			Variant(vuetify.FieldVariantUnderlined).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	eb.Field("TransitionBackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"white", "blue", "grey"}).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Variant(vuetify.FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
-
 }
 
 func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("Image"))+"_%v", data.ID), data.AnchorID, "container-image",
+		data.AnchorID, "container-image",
 		data.BackgroundColor, data.TransitionBackgroundColor, "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			ImageHtml(data.Image),
 			Div().Class("container-image-corner"),

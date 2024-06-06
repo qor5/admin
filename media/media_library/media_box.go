@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/v3/media/base"
 )
 
 const (
@@ -30,9 +30,13 @@ type MediaBox struct {
 
 // MediaBoxConfig configure MediaBox metas
 type MediaBoxConfig struct {
-	Sizes     map[string]*media.Size
+	Sizes     map[string]*base.Size
 	Max       uint
 	AllowType string
+	// the background color of MediaBox
+	BackgroundColor string
+	// disable crop
+	DisableCrop bool
 }
 
 func (mediaBox *MediaBox) Scan(data interface{}) (err error) {
@@ -57,15 +61,15 @@ func (mediaBox MediaBox) Value() (driver.Value, error) {
 
 // IsImage return if it is an image
 func (mediaBox *MediaBox) IsImage() bool {
-	return media.IsImageFormat(mediaBox.Url)
+	return base.IsImageFormat(mediaBox.Url)
 }
 
 func (mediaBox *MediaBox) IsVideo() bool {
-	return media.IsVideoFormat(mediaBox.Url)
+	return base.IsVideoFormat(mediaBox.Url)
 }
 
 func (mediaBox *MediaBox) IsSVG() bool {
-	return media.IsSVGFormat(mediaBox.Url)
+	return base.IsSVGFormat(mediaBox.Url)
 }
 
 func (mediaBox *MediaBox) URL(styles ...string) string {

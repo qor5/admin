@@ -8,22 +8,23 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/presets"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const (
-	I18nSeoKey i18n.ModuleKey = "I18nSeoKey"
+	I18nSeoKey         i18n.ModuleKey = "I18nSeoKey"
+	SeoDetailFieldName                = "SEO"
 )
 
 var permVerifier *perm.Verifier
@@ -43,7 +44,7 @@ func (mtd *myTd) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return mtd.td.MarshalHTML(ctx)
 }
 
-func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder) {
+func (b *Builder) Install(pb *presets.Builder) error {
 	// The registration of FieldDefaults for writing Setting here
 	// must be executed before `pb.Model(&QorSEOSetting{})...`,
 	pb.FieldDefaults(presets.WRITE).
@@ -51,7 +52,7 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 		ComponentFunc(b.EditingComponentFunc).
 		SetterFunc(EditSetterFunc)
 
-	seoModel = pb.Model(&QorSEOSetting{}).PrimaryField("Name").
+	seoModel := pb.Model(&QorSEOSetting{}).PrimaryField("Name").
 		Label("SEO").
 		RightDrawerWidth("1000").
 		LayoutConfig(&presets.LayoutConfig{
@@ -63,14 +64,14 @@ func (b *Builder) Configure(pb *presets.Builder) (seoModel *presets.ModelBuilder
 	b.configListing(seoModel)
 	// Configure Editing Page
 	b.configEditing(seoModel)
+	// b.ConfigDetailing(pb)
 
 	pb.I18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSeoKey, Messages_zh_CN)
 
-	pb.ExtraAsset("/vue-seo.js", "text/javascript", SeoJSComponentsPack())
 	permVerifier = perm.NewVerifier("seo", pb.GetPermission())
-	return
+	return nil
 }
 
 func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
@@ -88,40 +89,41 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 	listing.Field("Name").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			seoSetting := obj.(*QorSEOSetting)
-			icon := "folder"
+			icon := "mdi-folder"
 			priority := b.GetSEOPriority(seoSetting.Name)
 			return &myTd{
 				td: h.Td(),
 				child: h.Div(
-					VIcon(icon).Small(true).Class("mb-1"),
+					VIcon(icon).Size(SizeSmall).Class("mb-1"),
 					h.Text(seoSetting.Name),
 				).Style(fmt.Sprintf("padding-left: %dpx;", 32*(priority-1))),
 			}
 		},
 	)
 
-	oldSearcher := listing.Searcher
-	listing.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-		locale, _ := l10n.IsLocalizableFromCtx(ctx.R.Context())
-		var seoNames []string
-		for name := range b.registeredSEO {
-			if name, ok := name.(string); ok {
-				seoNames = append(seoNames, name)
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+			var seoNames []string
+			for name := range b.registeredSEO {
+				if name, ok := name.(string); ok {
+					seoNames = append(seoNames, name)
+				}
 			}
-		}
-		cond := presets.SQLCondition{
-			Query: "locale_code = ? and name in (?)",
-			Args:  []interface{}{locale, seoNames},
-		}
+			cond := presets.SQLCondition{
+				Query: "locale_code = ? and name in (?)",
+				Args:  []interface{}{locale, seoNames},
+			}
 
-		params.SQLConditions = append(params.SQLConditions, &cond)
-		r, totalCount, err = oldSearcher(model, params, ctx)
-		if totalCount == 0 {
-			panic("The localization of SEO is not configured correctly. " +
-				"Please check if you correctly configured the `WithLocales` option when initializing the SEO Builder.")
+			params.SQLConditions = append(params.SQLConditions, &cond)
+			r, totalCount, err = in(model, params, ctx)
+			if totalCount == 0 {
+				panic("The localization of SEO is not configured correctly. " +
+					"Please check if you correctly configured the `WithLocales` option when initializing the SEO Builder.")
+			}
+			b.SortSEOs(r.([]*QorSEOSetting))
+			return
 		}
-		b.SortSEOs(r.([]*QorSEOSetting))
-		return
 	})
 }
 
@@ -130,7 +132,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 	// Customize the Saver to trigger the invocation of the `afterSave` hook function (if available)
 	// when updating the global seo.
-	editing.Saver = func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		seoSetting := obj.(*QorSEOSetting)
 		if err = b.db.Updates(obj).Error; err != nil {
 			return err
@@ -141,7 +143,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 			}
 		}
 		return nil
-	}
+	})
 
 	// configure variables field
 	{
@@ -156,9 +158,8 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 					variablesComps = append(variablesComps, h.H3(msgr.Variable).Style("margin-top:15px;font-weight: 500"))
 					for varName := range settingVars {
 						fieldComp := VTextField().
-							FieldName(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName)).
-							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName)).
-							Value(seoSetting.Variables[varName])
+							Attr(web.VField(fmt.Sprintf("%s.%s", formKeyForVariablesField, varName), seoSetting.Variables[varName])...).
+							Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, "Seo Variable", varName))
 						variablesComps = append(variablesComps, fieldComp)
 					}
 				}
@@ -195,7 +196,7 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 	var setting Setting
-	var mediaBox = media_library.MediaBox{}
+	mediaBox := media_library.MediaBox{}
 	for fieldWithPrefix := range ctx.R.Form {
 		// make sure OpenGraphImageFromMediaLibrary.Description set after OpenGraphImageFromMediaLibrary.Values
 		if fieldWithPrefix == fmt.Sprintf("%s.%s", field.Name, "OpenGraphImageFromMediaLibrary.Values") {
@@ -232,7 +233,7 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 		fieldPrefix string
 		setting     Setting
 		db          = b.db
-		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
+		locale, _   = l10n.IsLocalizableFromContext(ctx.R.Context())
 	)
 	seo := b.GetSEO(obj)
 	if seo == nil {
@@ -263,19 +264,19 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 
 	return web.Scope(
 		h.Div(
-			h.Label(msgr.Seo).Class("v-label theme--light"),
+			h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 			VExpansionPanels(
 				VExpansionPanel(
-					VExpansionPanelHeader(
-						h.HTMLComponents{
-							VSwitch().
-								Label(msgr.Customize).Attr("ref", "switchComp").
-								Bind("input-value", "locals.enabledCustomize").
-								FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")),
-						}).
+
+					VExpansionPanelTitle(
+						VSwitch().
+							Label(msgr.Customize).Attr("ref", "switchComp").Color("primary").
+							Bind("input-value", "locals.enabledCustomize").
+							Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize"), setting.EnabledCustomize)...),
+					).
 						Attr("style", "padding: 0px 24px;").HideActions(hideActions).
 						Attr("@click", "locals.enabledCustomize=!locals.enabledCustomize;$refs.switchComp.$emit('change', locals.enabledCustomize)"),
-					VExpansionPanelContent(
+					VExpansionPanelText(
 						VCardText(
 							b.vseo(fieldPrefix, seo, &setting, ctx.R),
 						),
@@ -285,6 +286,13 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 		).Class("pb-4"),
 	).Init(fmt.Sprintf(`{enabledCustomize: %t, openCustomizePanel: %d}`, setting.EnabledCustomize, openCustomizePanel)).
 		VSlot("{ locals }")
+}
+
+func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) {
+	return h.Div(
+		h.Div(h.Text(label)).Class("text-subtitle-2").Style("width:200px;height:20px"),
+		h.Div(showComp).Class("text-body-1 ml-2 w-100"),
+	).Class("d-flex align-center ma-2").Style("height:40px")
 }
 
 func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
@@ -297,9 +305,9 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	for varName := range seo.getAvailableVars() {
 		varComps = append(varComps,
 			VChip(
-				VIcon("add_box").Class("mr-2"),
+				VIcon("mdi-plus-box").Class("mr-2"),
 				h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", varName)),
-			).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Outlined(true),
+			).Variant(VariantText).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Variant(VariantOutlined),
 		)
 	}
 	var variablesEle []h.HTMLComponent
@@ -317,33 +325,33 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 		),
 		VCard(
 			VCardText(
-				VTextField().Attr("counter", true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Title")).Label(msgr.Title).Value(setting.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
-				VTextField().Attr("counter", true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Description")).Label(msgr.Description).Value(setting.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
-				VTextarea().Attr("counter", true).Rows(2).AutoGrow(true).FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords")).Label(msgr.Keywords).Value(setting.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
+				VTextField().Variant(FieldVariantUnderlined).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Title"), setting.Title)...).Label(msgr.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
+				VTextField().Variant(FieldVariantUnderlined).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Description"), setting.Description)...).Label(msgr.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
+				VTextarea().Variant(FieldVariantUnderlined).Attr("counter", true).Rows(2).AutoGrow(true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords"), setting.Keywords)...).Label(msgr.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 			),
-		).Outlined(true).Flat(true),
+		).Variant(VariantOutlined).Flat(true),
 
 		h.H4(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;font-weight: 500"),
 		VCard(
 			VCardText(
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle")).Label(msgr.OpenGraphTitle).Value(setting.OpenGraphTitle).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix))).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription")).Label(msgr.OpenGraphDescription).Value(setting.OpenGraphDescription).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix))).Cols(6),
+					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle"), setting.OpenGraphTitle)...).Label(msgr.OpenGraphTitle).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix))).Cols(6),
+					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription"), setting.OpenGraphDescription)...).Label(msgr.OpenGraphDescription).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix))).Cols(6),
 				),
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL")).Label(msgr.OpenGraphURL).Value(setting.OpenGraphURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix))).Cols(6),
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType")).Label(msgr.OpenGraphType).Value(setting.OpenGraphType).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_type", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_type", refPrefix))).Cols(6),
+					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL"), setting.OpenGraphURL)...).Label(msgr.OpenGraphURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix))).Cols(6),
+					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType"), setting.OpenGraphType)...).Label(msgr.OpenGraphType).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_type", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_type", refPrefix))).Cols(6),
 				),
 				VRow(
-					VCol(VTextField().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL")).Label(msgr.OpenGraphImageURL).Value(setting.OpenGraphImageURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix))).Cols(12),
+					VCol(VTextField().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL"), setting.OpenGraphImageURL)...).Label(msgr.OpenGraphImageURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix))).Cols(12),
 				),
 				VRow(
-					VCol(views.QMediaBox(db).Label(msgr.OpenGraphImage).
+					VCol(media.QMediaBox(db).Label(msgr.OpenGraphImage).
 						FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
 						Value(image).
 						Config(&media_library.MediaBoxConfig{
 							AllowType: "image",
-							Sizes: map[string]*media.Size{
+							Sizes: map[string]*base.Size{
 								"og": {
 									Width:  1200,
 									Height: 630,
@@ -359,9 +367,153 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 							},
 						})).Cols(12)),
 				VRow(
-					VCol(VTextarea().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString")).Label(msgr.OpenGraphMetadata).Value(GetOpenGraphMetadataString(setting.OpenGraphMetadata)).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix))).Cols(12),
+					VCol(VTextarea().Variant(FieldVariantUnderlined).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString"), GetOpenGraphMetadataString(setting.OpenGraphMetadata))...).Label(msgr.OpenGraphMetadata).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix))).Cols(12),
 				),
 			),
-		).Outlined(true).Flat(true),
+		).Variant(VariantOutlined).Flat(true),
 	).Attr("ref", "seo")
+}
+
+func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
+	var (
+		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
+		db   = b.db
+	)
+
+	var varComps []h.HTMLComponent
+	for varName := range seo.getAvailableVars() {
+		varComps = append(varComps,
+			VChip(
+				VIcon("mdi-plus-box").Class("mr-2"),
+				h.Text(i18n.PT(req, presets.ModelsI18nModuleKey, "Seo Variable", varName)),
+			).Variant(VariantText).Attr("@click", fmt.Sprintf("$refs.seo.addTags('%s')", varName)).Label(true).Variant(VariantOutlined),
+		)
+	}
+
+	image := &setting.OpenGraphImageFromMediaLibrary
+	if image.ID.String() == "0" {
+		image.ID = json.Number("")
+	}
+	return h.Components(
+		VCard(
+			h.Span(msgr.Basic).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(60),
+		h.Div(h.Span("Search Result Preview")).Class("mt-6"),
+		VCard(
+			VCardText(
+				h.Span(setting.Title).Class("text-subtitle-1"),
+			),
+			VCardText(
+				h.Span(setting.Keywords).Class("mt-2"),
+			),
+			VCardText(
+				h.Span(setting.Description).Class("text-body-2 mt-2"),
+			),
+		).Class("pa-6").Variant(VariantTonal),
+
+		detailingRow(msgr.Title, h.Text(setting.Title)),
+		detailingRow(msgr.Description, h.Text(setting.Description)),
+		detailingRow(msgr.Keywords, h.Text(setting.Keywords)),
+
+		VCard(
+			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(200),
+		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
+		VCard(
+			VCardText(h.Span(setting.OpenGraphTitle).Class("text-subtitle-1")),
+			VCardText(h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2")),
+			VCardText(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2")),
+		).Class("pa-6").Variant(VariantTonal),
+
+		detailingRow(msgr.OpenGraphTitle, h.Text(setting.OpenGraphTitle)),
+		detailingRow(msgr.OpenGraphDescription, h.Text(setting.OpenGraphDescription)),
+		detailingRow(msgr.OpenGraphURL, h.Text(setting.OpenGraphURL)),
+		detailingRow(msgr.OpenGraphType, h.Text(setting.OpenGraphType)),
+		detailingRow(msgr.OpenGraphImageURL, h.Text(setting.OpenGraphImageURL)),
+
+		VCard(
+			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(160),
+		VRow(
+			VCol(media.QMediaBox(db).
+				Readonly(true).
+				FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+				Value(image).
+				Config(&media_library.MediaBoxConfig{
+					AllowType: "image",
+					Sizes: map[string]*base.Size{
+						"og": {
+							Width:  1200,
+							Height: 630,
+						},
+						"twitter-large": {
+							Width:  1200,
+							Height: 600,
+						},
+						"twitter-small": {
+							Width:  630,
+							Height: 630,
+						},
+					},
+				})).Cols(12)),
+		VCard(
+			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1"),
+		).Class("px-2 py-1").Variant(VariantTonal).Width(184),
+		h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata)),
+	)
+}
+
+func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
+	b.configDetailing(mb.Detailing())
+	return nil
+}
+
+func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
+	pd.Section(SeoDetailFieldName).
+		Editing("SEO").
+		SaveFunc(b.detailSaver).
+		ViewComponentFunc(b.detailShowComponent).
+		EditComponentFunc(b.EditingComponentFunc)
+}
+
+func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	var (
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		fieldPrefix string
+		setting     Setting
+		db          = b.db
+		locale, _   = l10n.IsLocalizableFromContext(ctx.R.Context())
+	)
+	seo := b.GetSEO(obj)
+	if seo == nil {
+		return h.Div()
+	}
+
+	value := reflect.Indirect(reflect.ValueOf(obj))
+	for i := 0; i < value.NumField(); i++ {
+		if s, ok := value.Field(i).Interface().(Setting); ok {
+			setting = s
+			fieldPrefix = value.Type().Field(i).Name
+		}
+	}
+	if !setting.EnabledCustomize && setting.IsEmpty() {
+		modelSetting := &QorSEOSetting{}
+		db.Where("name = ? AND locale_code = ?", seo.name, locale).First(modelSetting)
+		setting = modelSetting.Setting
+	}
+
+	return h.Div(
+		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
+		b.vseoReadonly(fieldPrefix, seo, &setting, ctx.R),
+	).Class("pb-4")
+}
+
+func (b *Builder) detailSaver(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	if err = EditSetterFunc(obj, &presets.FieldContext{Name: SeoDetailFieldName}, ctx); err != nil {
+		return
+	}
+	if err = b.db.Updates(obj).Error; err != nil {
+		return err
+	}
+	return
 }

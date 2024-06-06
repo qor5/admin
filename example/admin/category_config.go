@@ -3,16 +3,17 @@ package admin
 import (
 	"strconv"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/presets"
-	v "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/publish"
+	v "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	p := b.Model(&models.Category{})
+func configCategory(b *presets.Builder, db *gorm.DB, publisher *publish.Builder) *presets.ModelBuilder {
+	p := b.Model(&models.Category{}).Use(publisher)
 
 	eb := p.Editing("StatusBar", "ScheduleBar", "Name", "Products")
 	p.Listing("Name")
@@ -29,7 +30,7 @@ func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 
 	eb.Field("Products").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var selectedItems = []productItem{}
+			selectedItems := []productItem{}
 			c, ok := obj.(*models.Category)
 			if ok {
 				var ps []models.Product
@@ -51,7 +52,7 @@ func configCategory(b *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 
 			return v.VXSelectMany().Label(field.Label).AddItemLabel("add").
 				ItemText("name").
-				FieldName(field.Name).
+				// TODO (fix it ) FieldName(field.Name).
 				SelectedItems(selectedItems).
 				SearchItemsFunc("products_selector")
 		})

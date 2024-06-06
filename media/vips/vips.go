@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/disintegration/imaging"
-	"github.com/qor5/admin/media"
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/theplant/bimg"
 )
 
@@ -32,12 +32,12 @@ type Config struct {
 
 type bimgImageHandler struct{}
 
-func (bimgImageHandler) CouldHandle(media media.Media) bool {
+func (bimgImageHandler) CouldHandle(media base.Media) bool {
 	return media.IsImage()
 }
 
 // Crop & Resize
-func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *media.Option) (err error) {
+func (bimgImageHandler) Handle(m base.Media, file base.FileInterface, option *base.Option) (err error) {
 	buffer := new(bytes.Buffer)
 	if _, err := io.Copy(buffer, file); err != nil {
 		return err
@@ -48,7 +48,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 	// Auto Rotate by EXIF
 	img := copyImage(buffer.Bytes())
 	metaData, _ := img.Metadata()
-	media.SetWeightHeight(m, metaData.Size.Width, metaData.Size.Height)
+	base.SetWeightHeight(m, metaData.Size.Width, metaData.Size.Height)
 	if metaData.EXIF.Orientation > 1 {
 		rotatedBuf, err := img.AutoRotate()
 		if err != nil {
@@ -82,8 +82,8 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 		if err = generateWebp(m, option, bimgOption, img); err != nil {
 			return err
 		}
-		for key, _ := range m.GetSizes() {
-			if key == media.DefaultSizeKey {
+		for key := range m.GetSizes() {
+			if key == base.DefaultSizeKey {
 				continue
 			}
 			img := copyImage(buffer.Bytes())
@@ -95,7 +95,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 				return err
 			}
 		}
-		media.SetFileSizes(m, fileSizes)
+		base.SetFileSizes(m, fileSizes)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 		img := copyImage(buffer.Bytes())
 		bimgOption := bimg.Options{Quality: quality, Palette: true, Compression: PNGCompression}
 		// Crop original image if specified
-		if cropOption := m.GetCropOption(media.DefaultSizeKey); cropOption != nil {
+		if cropOption := m.GetCropOption(base.DefaultSizeKey); cropOption != nil {
 			options := bimg.Options{
 				Quality:    100, // Don't compress twice
 				Top:        cropOption.Min.Y,
@@ -126,7 +126,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 			if err = m.Store(m.URL(), option, bytes.NewReader(buf)); err != nil {
 				return err
 			}
-			fileSizes[media.DefaultSizeKey] = len(buf)
+			fileSizes[base.DefaultSizeKey] = len(buf)
 		} else {
 			return err
 		}
@@ -137,7 +137,7 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 
 	// Handle size images
 	for key, size := range m.GetSizes() {
-		if key == media.DefaultSizeKey {
+		if key == base.DefaultSizeKey {
 			continue
 		}
 		img := copyImage(buffer.Bytes())
@@ -178,11 +178,11 @@ func (bimgImageHandler) Handle(m media.Media, file media.FileInterface, option *
 			return err
 		}
 	}
-	media.SetFileSizes(m, fileSizes)
+	base.SetFileSizes(m, fileSizes)
 	return
 }
 
-func generateWebp(m media.Media, option *media.Option, bimgOption bimg.Options, img *bimg.Image, size ...string) (err error) {
+func generateWebp(m base.Media, option *base.Option, bimgOption bimg.Options, img *bimg.Image, size ...string) (err error) {
 	if !EnableGenerateWebp {
 		return
 	}
@@ -209,7 +209,7 @@ func copyImage(buffer []byte) (img *bimg.Image) {
 }
 
 func getQualityByImageType(url string) int {
-	imgType, err := media.GetImageFormat(url)
+	imgType, err := base.GetImageFormat(url)
 	if err != nil {
 		return 0
 	}
@@ -223,7 +223,7 @@ func getQualityByImageType(url string) int {
 }
 
 func getWebpQualityByImageType(url string) int {
-	imgType, err := media.GetImageFormat(url)
+	imgType, err := base.GetImageFormat(url)
 	if err != nil {
 		return 0
 	}
@@ -239,7 +239,7 @@ func getWebpQualityByImageType(url string) int {
 }
 
 func isGif(url string) bool {
-	imgType, err := media.GetImageFormat(url)
+	imgType, err := base.GetImageFormat(url)
 	return err == nil && *imgType == imaging.GIF
 }
 
@@ -264,5 +264,5 @@ func UseVips(cfg Config) {
 	}
 	bimg.VipsCacheSetMax(0)
 	bimg.VipsCacheSetMaxMem(0)
-	media.RegisterMediaHandler("image_handler", bimgImageHandler{})
+	base.RegisterMediaHandler("image_handler", bimgImageHandler{})
 }

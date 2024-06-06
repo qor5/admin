@@ -1,12 +1,8 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -40,7 +36,6 @@ func RegisterContactFormContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return ContactFormBody(v, input)
 		})
 	vb.Model(&ContactForm{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "Text", "SendButtonText", "FormButtonText", "MessagePlaceholder", "NamePlaceholder", "EmailPlaceholder", "ThankyouMessage", "ActionUrl", "PrivacyPolicy")
-
 }
 
 const (
@@ -48,7 +43,7 @@ const (
 )
 
 func ContactFormBody(data *ContactForm, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	var n = Div(
+	n := Div(
 		CONTACT_FORM_ICON,
 		Div(
 			H2(data.Heading),
@@ -86,11 +81,10 @@ func ContactFormBody(data *ContactForm, input *pagebuilder.RenderInput) (body HT
 			).Class("container-contact_form-submit"),
 		).Class("container-contact_form-form").Action(data.ActionUrl).Method("POST"),
 	).Class("container-contact_form-inner")
-
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ContactForm"))+"_%v", data.ID), data.AnchorID, "container-contact_form container-lottie",
+		data.AnchorID, "container-contact_form container-lottie",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			n,
 		).Class("container-wrapper"),

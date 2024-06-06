@@ -1,28 +1,34 @@
 package presets
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 )
 
-type ComponentFunc func(ctx *web.EventContext) h.HTMLComponent
-type ObjectComponentFunc func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
-type EditingTitleComponentFunc func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent
+type (
+	ComponentFunc             func(ctx *web.EventContext) h.HTMLComponent
+	ObjectComponentFunc       func(obj interface{}, ctx *web.EventContext) h.HTMLComponent
+	TabComponentFunc          func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent)
+	EditingTitleComponentFunc func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent
+)
 
 type FieldComponentFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent
 
-type ActionComponentFunc func(id string, ctx *web.EventContext) h.HTMLComponent
-type ActionUpdateFunc func(id string, ctx *web.EventContext) (err error)
+type (
+	ActionComponentFunc func(id string, ctx *web.EventContext) h.HTMLComponent
+	ActionUpdateFunc    func(id string, ctx *web.EventContext) (err error)
+)
 
-type BulkActionComponentFunc func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
-type BulkActionUpdateFunc func(selectedIds []string, ctx *web.EventContext) (err error)
-type BulkActionSelectedIdsProcessorFunc func(selectedIds []string, ctx *web.EventContext) (processedSelectedIds []string, err error)
-type BulkActionSelectedIdsProcessorNoticeFunc func(selectedIds []string, processedSelectedIds []string, unactionableIds []string) string
+type (
+	BulkActionComponentFunc                  func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
+	BulkActionUpdateFunc                     func(selectedIds []string, ctx *web.EventContext) (err error)
+	BulkActionSelectedIdsProcessorFunc       func(selectedIds []string, ctx *web.EventContext) (processedSelectedIds []string, err error)
+	BulkActionSelectedIdsProcessorNoticeFunc func(selectedIds []string, processedSelectedIds []string, unactionableIds []string) string
+)
 
 type MessagesFunc func(r *http.Request) *Messages
 
@@ -35,14 +41,19 @@ type DataOperator interface {
 	Delete(obj interface{}, id string, ctx *web.EventContext) (err error)
 }
 
-type SetterFunc func(obj interface{}, ctx *web.EventContext)
-type FieldSetterFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error)
-type ValidateFunc func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors)
+type (
+	SetterFunc         func(obj interface{}, ctx *web.EventContext)
+	FieldSetterFunc    func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error)
+	ValidateFunc       func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors)
+	OnChangeActionFunc func(id string, ctx *web.EventContext) (s string)
+)
 
-type SearchFunc func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
-type FetchFunc func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
-type SaveFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
-type DeleteFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
+type (
+	SearchFunc func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	FetchFunc  func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
+	SaveFunc   func(obj interface{}, id string, ctx *web.EventContext) (err error)
+	DeleteFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
+)
 
 type SQLCondition struct {
 	Query string
@@ -63,17 +74,6 @@ type SlugDecoder interface {
 	PrimaryColumnValuesBySlug(slug string) map[string]string
 }
 
-func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[string]string, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			r = nil
-			err = fmt.Errorf("wrong slug: %v", slug)
-		}
-	}()
-	r = dec.PrimaryColumnValuesBySlug(slug)
-	return r, nil
-}
-
 type SlugEncoder interface {
 	PrimarySlug() string
 }
@@ -89,3 +89,16 @@ type FilterTab struct {
 }
 
 type FilterTabsFunc func(ctx *web.EventContext) []*FilterTab
+
+type Plugin interface {
+	Install(pb *Builder) (err error)
+}
+
+type ModelPlugin interface {
+	ModelInstall(pb *Builder, mb *ModelBuilder) (err error)
+}
+
+type (
+	ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error
+	InstallFunc      func(pb *Builder) error
+)

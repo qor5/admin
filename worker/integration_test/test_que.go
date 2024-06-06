@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/qor5/admin/worker"
-	"github.com/qor5/admin/worker/mock"
+	"github.com/qor5/admin/v3/worker"
+	"github.com/qor5/admin/v3/worker/mock"
 )
 
 var items []worker.QueJobInterface
@@ -16,7 +16,6 @@ var items []worker.QueJobInterface
 var Que = &mock.QueueMock{
 	AddFunc: func(ctx context.Context, job worker.QueJobInterface) error {
 		jobInfo, err := job.GetJobInfo()
-
 		if err != nil {
 			return err
 		}

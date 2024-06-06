@@ -3,15 +3,13 @@ package admin
 import (
 	"fmt"
 	"net/http"
-	"net/url"
-	"os"
 
-	plogin "github.com/qor5/admin/login"
-	"github.com/qor5/admin/presets"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
+	plogin "github.com/qor5/admin/v3/login"
+	"github.com/qor5/admin/v3/presets"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
@@ -30,8 +28,8 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		i18nBuilder := vh.I18n()
 		var langs []languageItem
 		var currLangVal string
+		qn := i18nBuilder.GetQueryName()
 		if ls := i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
-			qn := i18nBuilder.GetQueryName()
 			lang := ctx.R.FormValue(qn)
 			if lang == "" {
 				lang = i18nBuilder.GetCurrentLangFromCookie(ctx.R)
@@ -39,16 +37,13 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			accept := ctx.R.Header.Get("Accept-Language")
 			_, mi := language.MatchStrings(language.NewMatcher(ls), lang, accept)
 			for i, l := range ls {
-				u, _ := url.Parse(ctx.R.RequestURI)
-				qs := u.Query()
-				qs.Set(qn, l.String())
-				u.RawQuery = qs.Encode()
 				if i == mi {
-					currLangVal = u.String()
+					currLangVal = l.String()
 				}
+
 				langs = append(langs, languageItem{
 					Label: display.Self.Name(l),
-					Value: u.String(),
+					Value: l.String(),
 				})
 			}
 		}
@@ -61,9 +56,9 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 				ul.AppendChildren(
 					v.VBtn("").
 						Block(true).
-						Large(true).
+						Size(v.SizeLarge).
 						Class("mt-4").
-						Outlined(true).
+						Variant(v.VariantOutlined).
 						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
 						Children(
 							Div(
@@ -128,22 +123,23 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
-				v.VSelect().
-					Items(langs).
-					ItemText("Label").
-					ItemValue("Value").
-					Attr(web.InitContextVars, fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).
-					Attr("v-model", `vars.currLangVal`).
-					Attr("@change", `window.location.href=vars.currLangVal`).
-					Outlined(true).
-					Dense(true).
-					Class("mt-12").
-					HideDetails(true),
+				web.Scope(
+					v.VSelect().
+						Items(langs).
+						ItemTitle("Label").
+						ItemValue("Value").
+						Attr("v-model", `selectLocals.currLangVal`).
+						Attr("@update:model-value", web.Plaid().Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()).
+						Variant(v.VariantOutlined).
+						Density(v.DensityCompact).
+						Class("mt-12").
+						HideDetails(true),
+				).VSlot("{locals:selectLocals}").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)),
 			),
 		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 
-		username := os.Getenv("LOGIN_INITIAL_USER_EMAIL")
-		password := os.Getenv("LOGIN_INITIAL_USER_PASSWORD")
+		username := loginInitialUserEmail
+		password := loginInitialUserPassword
 		isDemo := username != "" && password != ""
 		demoTips := Div(
 			Div(

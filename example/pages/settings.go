@@ -3,13 +3,13 @@ package pages
 import (
 	"log"
 
-	"github.com/qor5/ui/cropper"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/richeditor"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/ui/v3/cropper"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -24,12 +24,12 @@ func Settings(db *gorm.DB) web.PageFunc {
 				VRow(
 					VCol(
 						h.H1("Example of use QMediaBox in any page").Class("text-h5 pt-4 pl-2"),
-						media_view.QMediaBox(db).
+						media.QMediaBox(db).
 							FieldName("test").
 							Value(&media_library.MediaBox{}).
 							Config(&media_library.MediaBoxConfig{
 								AllowType: "image",
-								Sizes: map[string]*media.Size{
+								Sizes: map[string]*base.Size{
 									"thumb": {
 										Width:  400,
 										Height: 300,
@@ -53,7 +53,7 @@ func Settings(db *gorm.DB) web.PageFunc {
 				VRow(
 					cropper.Cropper().
 						Src("https://agontuk.github.io/assets/images/berserk.jpg").
-						Value(cropper.Value{X: 1141, Y: 540, Width: 713, Height: 466}).
+						ModelValue(cropper.Value{X: 1141, Y: 540, Width: 713, Height: 466}).
 						AspectRatio(713, 466).
 						Attr("@input", web.Plaid().
 							FieldValue("CropperEvent", web.Var("JSON.stringify($event)")).EventFunc(LogInfoEvent).Go()),

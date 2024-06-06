@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/v3/l10n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -50,7 +50,7 @@ func WithGlobalSEOName(name string) Option {
 	}
 }
 
-func NewBuilder(db *gorm.DB, ops ...Option) *Builder {
+func New(db *gorm.DB, ops ...Option) *Builder {
 	globalSEO := &SEO{name: defaultGlobalSEOName}
 	globalSEO.RegisterSettingVariables("SiteName")
 	b := &Builder{
@@ -231,10 +231,10 @@ func (b *Builder) AfterSave(v func(ctx context.Context, settingName string, loca
 // For Example:
 // b.Render(NewNonModelSEO("About Us", "en"))
 // or
-// b.render(NewNonModelSEO("About Us")) when the locales passed to NewBuilder method is only one.
+// b.render(NewNonModelSEO("About Us")) when the locales passed to New method is only one.
 type NonModelSEO interface {
 	GetName() string
-	l10n.L10nInterface
+	l10n.LocaleInterface
 }
 
 type nonModelSEO struct {
@@ -252,14 +252,14 @@ func (n *nonModelSEO) GetName() string {
 // For Example:
 // If you register a SEO like this: b.RegisterSEO("About Us"),
 // when you want render "About US" SEO, you must pass "About Us" to NewNonModelSEO method like this:
-// b := NewBuilder(db, []string{"en", "zh"})
+// b := New(db, []string{"en", "zh"})
 // b.Render(NewNonModelSEO("About Us", "en")).
 //
 // For convenience, you can call NewNonModelSEO function without passing the locale parameter when
-// the locales passed to NewBuilder method is only one.
+// the locales passed to New method is only one.
 // For Example:
-// b := newBuilder(db, []string{"en"}) // only one locale(en) is passed to NewBuilder method.
-// b.render(NewNonModelSEO("About Us")) // the only locale(en) passed to NewBuilder method will be used.
+// b := newBuilder(db, []string{"en"}) // only one locale(en) is passed to New method.
+// b.render(NewNonModelSEO("About Us")) // the only locale(en) passed to New method will be used.
 func NewNonModelSEO(name string, locale ...string) NonModelSEO {
 	var loc string
 	if len(locale) > 0 {
@@ -293,11 +293,11 @@ func NewNonModelSEOSlice(name string, locales ...string) []NonModelSEO {
 // For Example: following code will render the non-model SEO named "About Us" with locale "en".
 // b.render(NewNonModelSEO("About Us", "en"))
 //
-// When the locales passed to NewBuilder method is only one,
+// When the locales passed to New method is only one,
 // you can call NewNonModelSEO without passing the locale parameter.
-// in this case, the only locale passed to NewBuilder method will be used.
+// in this case, the only locale passed to New method will be used.
 // For Example: following code will render the non-model SEO named "About Us" with locale "en".
-// b := NewBuilder(db, []string{"en"})
+// b := New(db, []string{"en"})
 // b.Render(NewNonModelSEO("About Us"))
 func (b *Builder) Render(obj interface{}, req *http.Request) h.HTMLComponent {
 	var seo *SEO
@@ -316,8 +316,8 @@ func (b *Builder) Render(obj interface{}, req *http.Request) h.HTMLComponent {
 	if seo == nil {
 		return h.RawHTML("")
 	}
-	if v, ok := obj.(l10n.L10nInterface); ok {
-		locale = v.GetLocale()
+	if v, ok := obj.(l10n.LocaleInterface); ok {
+		locale = v.EmbedLocale().LocaleCode
 	}
 	if locale == "" && len(b.locales) == 1 {
 		locale = b.locales[0]
@@ -368,7 +368,7 @@ func (b *Builder) BatchRender(objs interface{}, req *http.Request) []h.HTMLCompo
 		var locale string
 		if isNonModelSEO {
 			obj = objV.Interface()
-			locale = obj.(NonModelSEO).GetLocale()
+			locale = obj.(NonModelSEO).EmbedLocale().LocaleCode
 		} else {
 			// the purpose of objV.addr().Interface() is to get the pointer of the element in objs.
 			// if the element in objs is a pointer, it will return the pointer itself.
@@ -378,8 +378,8 @@ func (b *Builder) BatchRender(objs interface{}, req *http.Request) []h.HTMLCompo
 			// For Example:
 			// b.BatchRender([]Product{...}) // []Product is a slice of value type.
 			obj = objV.Addr().Interface()
-			if v, ok := obj.(l10n.L10nInterface); ok {
-				locale = v.GetLocale()
+			if v, ok := obj.(l10n.LocaleInterface); ok {
+				locale = v.EmbedLocale().LocaleCode
 			}
 		}
 		if locale == "" && len(b.locales) == 1 {

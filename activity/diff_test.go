@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/v3/media/media_library"
 )
 
 type (
@@ -58,7 +58,8 @@ func TestDiff(t *testing.T) {
 					Field: "Content",
 					Old:   "",
 					Now:   "124",
-				}},
+				},
+			},
 		},
 		{
 			description:  "Default type handles",

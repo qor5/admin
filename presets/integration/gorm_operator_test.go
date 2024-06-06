@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 	"github.com/theplant/gofixtures"
 )
 
@@ -36,7 +36,7 @@ func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string 
 }
 
 func TestPrimarySlugger(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&TestVariant{})
 	rawDB, _ := db.DB()
 	emptyData.TruncatePut(rawDB)
@@ -70,5 +70,4 @@ func TestPrimarySlugger(t *testing.T) {
 	if err != presets.ErrRecordNotFound {
 		t.Error("didn't return not found after delete", tv, err)
 	}
-
 }

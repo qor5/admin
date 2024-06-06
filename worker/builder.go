@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/presets"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -32,7 +32,7 @@ type Builder struct {
 	jbs                  []*JobBuilder
 	mb                   *presets.ModelBuilder
 	getCurrentUserIDFunc func(r *http.Request) string
-	ab                   *activity.ActivityBuilder
+	ab                   *activity.Builder
 }
 
 func New(db *gorm.DB) *Builder {
@@ -74,7 +74,7 @@ func (b *Builder) GetCurrentUserIDFunc(f func(r *http.Request) string) *Builder 
 }
 
 // Activity sets Activity Builder to log activities
-func (b *Builder) Activity(ab *activity.ActivityBuilder) *Builder {
+func (b *Builder) Activity(ab *activity.Builder) *Builder {
 	b.ab = ab
 	return b
 }
@@ -132,7 +132,7 @@ func (b *Builder) setStatus(id uint, status string) error {
 
 var permVerifier *perm.Verifier
 
-func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) error {
 	b.pb = pb
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
 	pb.I18n().
@@ -142,7 +142,7 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	mb := pb.Model(&QorJob{}).
 		Label("Workers").
 		URIName("workers").
-		MenuIcon("smart_toy")
+		MenuIcon("mdi-briefcase")
 
 	b.mb = mb
 	mb.RegisterEventFunc("worker_selectJob", b.eventSelectJob)
@@ -313,7 +313,7 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 				}
 			} else {
 				scheduledJobDetailing = []HTMLComponent{
-					VAlert().Dense(true).Type("warning").Children(
+					VAlert().Density(DensityCompact).Type("warning").Children(
 						Text(msgr.NoticeJobWontBeExecuted),
 					),
 					Div(Text("args: " + inst.Args)),
@@ -326,15 +326,15 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 			If(inst.Status == JobStatusScheduled,
 				scheduledJobDetailing...,
 			).Else(
-				Div(
+				web.Scope(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
 							URL(eURL).
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 							Query("job", qorJob.Job),
 						).
-						AutoReloadInterval("vars.worker_updateJobProgressingInterval"),
-				).Attr(web.InitContextVars, "{worker_updateJobProgressingInterval: 2000}"),
+						AutoReloadInterval("loaderLocals.worker_updateJobProgressingInterval"),
+				).VSlot(" { locals : loaderLocals }").Init("{worker_updateJobProgressingInterval: 2000}"),
 			),
 			web.Portal().Name("worker_snackbar"),
 		)
@@ -366,7 +366,7 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 			})
 	}
 
-	return mb
+	return nil
 }
 
 func (b *Builder) Listen() {
@@ -419,7 +419,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 	}
 
 	// encode context
-	var context = make(map[string]interface{})
+	context := make(map[string]interface{})
 	for key, v := range DefaultOriginalPageContextHandler(ctx) {
 		context[key] = v
 	}
@@ -468,7 +468,7 @@ func (b *Builder) eventSelectJob(ctx *web.EventContext) (er web.EventResponse, e
 func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -490,14 +490,14 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		}
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
-			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+			Body: VSnackbar().ModelValue(true).Timeout(3000).Color("warning").Children(
 				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		action := "Abort"
@@ -536,7 +536,7 @@ func (b *Builder) doAbortJob(ctx context.Context, inst *QorJobInstance) (err err
 }
 
 func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, err error) {
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -566,7 +566,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		b.ab.AddCustomizedRecord("Rerun", false, ctx.R.Context(), &QorJob{
@@ -581,7 +581,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
@@ -594,7 +594,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		return er, errors.New("invalid arguments")
 	}
 
-	var contexts = make(map[string]interface{})
+	contexts := make(map[string]interface{})
 	for key, v := range DefaultOriginalPageContextHandler(ctx) {
 		contexts[key] = v
 	}
@@ -617,7 +617,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 		}
 		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 			Name: "worker_snackbar",
-			Body: VSnackbar().Value(true).Timeout(3000).Color("warning").Children(
+			Body: VSnackbar().ModelValue(true).Timeout(3000).Color("warning").Children(
 				Text(msgr.NoticeJobCannotBeAborted),
 			),
 		})
@@ -635,7 +635,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	}
 
 	er.Reload = true
-	er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	if b.ab != nil {
 		b.ab.AddEditRecordWithOldAndContext(
 			ctx.R.Context(),
@@ -659,7 +659,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nWorkerKey, Messages_en_US).(*Messages)
 
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
 	qorJobName := ctx.R.FormValue("job")
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
@@ -699,16 +699,16 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, logs, hasMoreLogs, inst.ProgressText)
 	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning && inst.Status != JobStatusKilled {
-		er.VarsScript = "vars.worker_updateJobProgressingInterval = 0"
+		er.RunScript = "vars.worker_updateJobProgressingInterval = 0"
 	} else {
-		er.VarsScript = "vars.worker_updateJobProgressingInterval = 2000"
+		er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	}
 	return er, nil
 }
 
 func (b *Builder) eventLoadHiddenLogs(ctx *web.EventContext) (er web.EventResponse, err error) {
-	qorJobID := uint(ctx.QueryAsInt("jobID"))
-	currentCount := ctx.QueryAsInt("currentCount")
+	qorJobID := uint(ctx.ParamAsInt("jobID"))
+	currentCount := ctx.ParamAsInt("currentCount")
 
 	inst, err := getModelQorJobInstance(b.db, qorJobID)
 	if err != nil {
@@ -756,8 +756,8 @@ func (b *Builder) jobProgressing(
 			VBtn("Load hidden logs").Attr("@click", web.Plaid().EventFunc("worker_loadHiddenLogs").
 				Query("jobID", id).
 				Query("currentCount", len(logs)).Go()).
-				Small(true).
-				Depressed(true).
+				Size(SizeSmall).
+				Variant(VariantFlat).
 				Class("mb-3"),
 		).Name("worker_hiddenLogs"))
 	}
@@ -782,7 +782,7 @@ func (b *Builder) jobProgressing(
 			Div().Style("width: 120px").Children(
 				Text(fmt.Sprintf("%s (%d%%)", getTStatus(msgr, status), progress)),
 			),
-			VProgressLinear().Value(int(progress)),
+			VProgressLinear().ModelValue(int(progress)),
 		),
 
 		Div(Text(msgr.DetailTitleLog)).Class("text-caption"),
@@ -853,22 +853,23 @@ func (b *Builder) jobSelectList(
 		label := getTJob(ctx.R, jb.name)
 		if editIsAllowed(ctx.R, jb.name) == nil {
 			items = append(items,
-				VListItem(VListItemContent(VListItemTitle(
-					A(Text(label)).Attr("@click",
-						web.Plaid().EventFunc("worker_selectJob").
-							Query("jobName", jb.name).
-							Go(),
-					),
-				))),
+				VListItem(
+					VListItemTitle(
+						A(Text(label)).Attr("@click",
+							web.Plaid().EventFunc("worker_selectJob").
+								Query("jobName", jb.name).
+								Go(),
+						),
+					)),
 			)
 		}
 	}
 
 	return Div(
-		Input("").Type("hidden").Value(job).Attr(web.VFieldName("Job")...),
+		Input("").Type("hidden").Attr(web.VField("Job", job)...),
 		If(job == "",
 			alert,
-			VList(items...).Nav(true).Dense(true),
+			VList(items...).Nav(true).Density(DensityCompact),
 		).Else(
 			Div(
 				VIcon("arrow_back").Attr("@click",

@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
-	goji "goji.io"
-	"goji.io/middleware"
-	"goji.io/pat"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -28,7 +25,7 @@ import (
 type Builder struct {
 	prefix                                string
 	models                                []*ModelBuilder
-	mux                                   *goji.Mux
+	handler                               http.Handler
 	builder                               *web.Builder
 	i18nBuilder                           *i18n.Builder
 	logger                                *zap.Logger
@@ -61,6 +58,7 @@ type Builder struct {
 	menuGroups                            MenuGroups
 	menuOrder                             []interface{}
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
+	plugins                               []Plugin
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -105,7 +103,6 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
-
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
@@ -206,6 +203,7 @@ func (b *Builder) ProfileFunc(v ComponentFunc) (r *Builder) {
 	b.profileFunc = v
 	return b
 }
+
 func (b *Builder) GetProfileFunc() ComponentFunc {
 	return b.profileFunc
 }
@@ -250,6 +248,7 @@ func (b *Builder) ProgressBarColor(v string) (r *Builder) {
 	b.progressBarColor = v
 	return b
 }
+
 func (b *Builder) GetProgressBarColor() string {
 	return b.progressBarColor
 }
@@ -326,10 +325,6 @@ func modelNames(ms []*ModelBuilder) (r []string) {
 	return
 }
 
-func (b *Builder) defaultBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-	return
-}
-
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
 	if !b.isMenuGroupInOrder(mgb) {
@@ -354,7 +349,6 @@ func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
 			break
 		}
 	}
-
 }
 
 // item can be Slug name, model name, *MenuGroupBuilder
@@ -393,27 +387,27 @@ type defaultMenuIconRE struct {
 
 var defaultMenuIconREs = []defaultMenuIconRE{
 	// user
-	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "person"},
+	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "mdi-account"},
 	// store
-	{re: regexp.MustCompile(`\bstores?\b`), icon: "store"},
+	{re: regexp.MustCompile(`\bstores?\b`), icon: "mdi-store"},
 	// order
-	{re: regexp.MustCompile(`\borders?\b`), icon: "shopping_cart"},
+	{re: regexp.MustCompile(`\borders?\b`), icon: "mdi-cart"},
 	// product
-	{re: regexp.MustCompile(`\bproducts?\b`), icon: "format_list_bulleted"},
+	{re: regexp.MustCompile(`\bproducts?\b`), icon: "mdi-format-list-bulleted"},
 	// post
-	{re: regexp.MustCompile(`\bposts?|articles?\b`), icon: "article"},
+	{re: regexp.MustCompile(`\bposts?|articles?\b`), icon: "mdi-note"},
 	// web
-	{re: regexp.MustCompile(`\bweb|site\b`), icon: "web"},
+	{re: regexp.MustCompile(`\bweb|site\b`), icon: "mdi-web"},
 	// seo
-	{re: regexp.MustCompile(`\bseo\b`), icon: "travel_explore"},
+	{re: regexp.MustCompile(`\bseo\b`), icon: "mdi-search-web"},
 	// i18n
-	{re: regexp.MustCompile(`\bi18n|translations?\b`), icon: "language"},
+	{re: regexp.MustCompile(`\bi18n|translations?\b`), icon: "mdi-translate"},
 	// chart
-	{re: regexp.MustCompile(`\banalytics?|charts?|statistics?\b`), icon: "analytics"},
+	{re: regexp.MustCompile(`\banalytics?|charts?|statistics?\b`), icon: "mdi-google-analytics"},
 	// dashboard
-	{re: regexp.MustCompile(`\bdashboard\b`), icon: "dashboard"},
+	{re: regexp.MustCompile(`\bdashboard\b`), icon: "mdi-view-dashboard"},
 	// setting
-	{re: regexp.MustCompile(`\bsettings?\b`), icon: "settings"},
+	{re: regexp.MustCompile(`\bsettings?\b`), icon: "mdi-cog"},
 }
 
 func defaultMenuIcon(mLabel string) string {
@@ -424,24 +418,25 @@ func defaultMenuIcon(mLabel string) string {
 		}
 	}
 
-	return "widgets"
+	return "mdi-alert-octagon-outline"
 }
 
-const menuFontWeight = "500"
-const subMenuFontWeight = "400"
+const (
+	menuFontWeight    = "500"
+	subMenuFontWeight = "400"
+)
 
 func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (r h.HTMLComponent) {
 	menuIcon := m.menuIcon
-	fontWeight := subMenuFontWeight
+	// fontWeight := subMenuFontWeight
 	if isSub {
 		// menuIcon = ""
 	} else {
-		fontWeight = menuFontWeight
+		// fontWeight = menuFontWeight
 		if menuIcon == "" {
 			menuIcon = defaultMenuIcon(m.label)
 		}
 	}
-
 	href := m.Info().ListingHref()
 	if m.link != "" {
 		href = m.link
@@ -450,19 +445,22 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
 	}
 	item := VListItem(
-		VListItemAction(
-			VIcon(menuIcon),
-		).Attr("style", "margin-right: 16px"),
-		VListItemContent(
-			VListItemTitle(
-				h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
-			).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", fontWeight)),
+		// VRow(
+		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
+		// 	VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+
+		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
+		VListItemTitle(
+			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
 		),
-	)
+	).Class("rounded-lg").
+		Value(m.label)
+	// .ActiveClass("bg-red")
+	// Attr("color", "primary")
 
 	item.Href(href)
 	if strings.HasPrefix(href, "/") {
-		funcStr := fmt.Sprintf(`function(e) {
+		funcStr := fmt.Sprintf(`(e) => {
 	if (e.metaKey || e.ctrlKey) { return; }
 	e.stopPropagation();
 	e.preventDefault();
@@ -471,10 +469,9 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 `, web.Plaid().PushStateURL(href).Go())
 		item.Attr("@click", funcStr)
 	}
-
-	if b.isMenuItemActive(ctx, m) {
-		item = item.Class("v-list-item--active")
-	}
+	// if b.isMenuItemActive(ctx, m) {
+	//	item = item.Class("v-list-item--active text-primary")
+	// }
 	return item
 }
 
@@ -505,7 +502,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	for _, m := range b.models {
 		mMap[m.uriName] = m
 	}
-
+	var (
+		activeMenuItem string
+		selection      string
+	)
 	inOrderMap := make(map[string]struct{})
 	var menus []h.HTMLComponent
 	for _, om := range b.menuOrder {
@@ -519,19 +519,21 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if groupIcon == "" {
 				groupIcon = defaultMenuIcon(v.name)
 			}
-			var subMenus = []h.HTMLComponent{
-				VListItem(
-					VListItemAction(
-						VIcon(groupIcon),
-					).Attr("style", "margin-right: 16px;"),
-					VListItemContent(
-						VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-							Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-					),
-				).Slot("activator").Class("pa-0"),
+			subMenus := []h.HTMLComponent{
+				h.Template(
+					VListItem(
+						web.Slot(
+							VIcon(groupIcon),
+						).Name("prepend"),
+						VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
+						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+					).Attr("v-bind", "props").
+						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
+						Class("rounded-lg"),
+					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+				).Attr("v-slot:activator", "{ props }"),
 			}
 			subCount := 0
-			hasActiveMenuItem := false
 			for _, subOm := range v.subMenuItems {
 				m, ok := mMap[subOm]
 				if !ok {
@@ -551,7 +553,9 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
 				if b.isMenuItemActive(ctx, m) {
-					hasActiveMenuItem = true
+					// activeMenuItem = m.label
+					activeMenuItem = v.name
+					selection = m.label
 				}
 			}
 			if subCount == 0 {
@@ -561,9 +565,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				continue
 			}
 
-			menus = append(menus, VListGroup(
-				subMenus...).
-				Value(hasActiveMenuItem),
+			menus = append(menus,
+				VListGroup(subMenus...).Value(v.name),
 			)
 		case string:
 			m, ok := mMap[v]
@@ -580,9 +583,13 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if m.notInMenu {
 				continue
 			}
-
-			menus = append(menus, b.menuItem(ctx, m, false))
+			menuItem := b.menuItem(ctx, m, false)
+			menus = append(menus, menuItem)
 			inOrderMap[m.uriName] = struct{}{}
+
+			if b.isMenuItemActive(ctx, m) {
+				selection = m.label
+			}
 		}
 	}
 
@@ -599,12 +606,26 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 		if m.notInMenu {
 			continue
 		}
+
+		if b.isMenuItemActive(ctx, m) {
+			selection = m.label
+		}
 		menus = append(menus, b.menuItem(ctx, m, false))
 	}
 
 	r = h.Div(
-		VList(menus...).Class("primary--text").Dense(true),
-	)
+		web.Scope(
+			VList(menus...).
+				OpenStrategy("single").
+				Class("primary--text").
+				Density(DensityCompact).
+				Attr("v-model:opened", "locals.menuOpened").
+				Attr("v-model:selected", "locals.selection"),
+			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
+		).VSlot("{ locals }").Init(
+			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
+			fmt.Sprintf(`{ selection:  ["%s"]}`, selection),
+		))
 	return
 }
 
@@ -613,7 +634,7 @@ func (b *Builder) RunBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 		return b.brandFunc(ctx)
 	}
 
-	return VRow(h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))).Class("text-button")
+	return h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle)).Class("text-h6")
 }
 
 func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponent) {
@@ -621,35 +642,31 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		return b.switchLanguageFunc(ctx)
 	}
 
-	var supportLanguages = b.I18n().GetSupportLanguagesFromRequest(ctx.R)
+	supportLanguages := b.I18n().GetSupportLanguagesFromRequest(ctx.R)
 
 	if len(b.I18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
 		return nil
 	}
-
 	queryName := b.I18n().GetQueryName()
 	msgr := MustGetMessages(ctx.R)
-
 	if len(supportLanguages) == 1 {
 		return h.Template().Children(
 			h.Div(
 				VList(
 					VListItem(
-						VListItemIcon(
-							VIcon("translate").Small(true).Class("ml-1"),
-						).Attr("style", "margin-right: 16px"),
-						VListItemContent(
-							VListItemTitle(
-								h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
-							),
+						web.Slot(
+							VIcon("mdi-widget-translate").Size(SizeSmall).Class("mr-4 ml-1"),
+						).Name("prepend"),
+						VListItemTitle(
+							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
 						),
-					).Class("pa-0").Dense(true),
+					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
 			).Attr("@click", web.Plaid().Query(queryName, supportLanguages[0].String()).Go()),
 		)
 	}
 
-	var matcher = language.NewMatcher(supportLanguages)
+	matcher := language.NewMatcher(supportLanguages)
 
 	lang := ctx.R.FormValue(queryName)
 	if lang == "" {
@@ -667,40 +684,45 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		languages = append(languages,
 			h.Div(
 				VListItem(
-					VListItemContent(
-						VListItemTitle(
-							h.Div(h.Text(display.Self.Name(tag))),
-						),
+					VListItemTitle(
+						h.Div(h.Text(display.Self.Name(tag))),
 					),
 				).Attr("@click", web.Plaid().Query(queryName, tag.String()).Go()),
 			),
 		)
 	}
 
-	return VMenu().OffsetY(true).Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+	oldIcon := VMenu().Children(
+		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VList(
 					VListItem(
-						VListItemIcon(
-							VIcon("translate").Small(true).Class("ml-1"),
-						).Attr("style", "margin-right: 16px"),
-						VListItemContent(
-							VListItemTitle(
-								h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
-							),
-						),
-						VListItemIcon(
-							VIcon("arrow_drop_down").Small(false).Class("mr-1"),
-						),
-					).Class("pa-0").Dense(true),
+						VListItemTitle(
+							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
+						).Class("text-subtitle-2 font-weight-regular"),
+						web.Slot(
+							VIcon("mdi-translate-variant").Size(SizeSmall).Class(""),
+						).Name("append"),
+					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("v-bind", "attrs").Attr("v-on", "on"),
+			).Attr("v-bind", "props"),
 		),
-
 		VList(
 			languages...,
-		).Dense(true),
+		).Density(DensityCompact),
+	)
+	_ = oldIcon
+	return VMenu().Children(
+		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
+			VRow(
+				VCol(
+					VIcon("mdi-translate")).Cols(1),
+				VCol(VIcon("mdi-menu-down")).Cols(1),
+			).Attr("v-bind", "props"),
+		),
+		VList(
+			languages...,
+		).Density(DensityCompact),
 	)
 }
 
@@ -729,7 +751,7 @@ func (b *Builder) RunBrandProfileSwitchLanguageDisplayFunc(brand, profile, switc
 		h.If(switchLanguage != nil,
 			VListItem(
 				VCardText(switchLanguage),
-			).Dense(true),
+			).Density(DensityCompact),
 		),
 	)
 	for _, v := range b.menuTopItems {
@@ -750,22 +772,30 @@ func MustGetMessages(r *http.Request) *Messages {
 	return i18n.MustGetModuleMessages(r, CoreI18nModuleKey, Messages_en_US).(*Messages)
 }
 
-const RightDrawerPortalName = "presets_RightDrawerPortalName"
-const rightDrawerContentPortalName = "presets_RightDrawerContentPortalName"
-const DialogPortalName = "presets_DialogPortalName"
-const dialogContentPortalName = "presets_DialogContentPortalName"
-const NotificationCenterPortalName = "notification-center"
-const DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
-const ListingDialogPortalName = "presets_listingDialogPortalName"
-const singletonEditingPortalName = "presets_SingletonEditingPortalName"
+const (
+	RightDrawerPortalName          = "presets_RightDrawerPortalName"
+	RightDrawerContentPortalName   = "presets_RightDrawerContentPortalName"
+	DialogPortalName               = "presets_DialogPortalName"
+	dialogContentPortalName        = "presets_DialogContentPortalName"
+	NotificationCenterPortalName   = "notification-center"
+	DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
+	ListingDialogPortalName        = "presets_listingDialogPortalName"
+	singletonEditingPortalName     = "presets_SingletonEditingPortalName"
+)
 
-const closeRightDrawerVarScript = "vars.presetsRightDrawer = false"
-const closeDialogVarScript = "vars.presetsDialog = false"
-const CloseListingDialogVarScript = "vars.presetsListingDialog = false"
+const (
+	CloseRightDrawerVarScript   = "vars.presetsRightDrawer = false"
+	closeDialogVarScript        = "vars.presetsDialog = false"
+	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
+)
 
-func (b *Builder) overlay(overlayType string, r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
+	overlayType := ctx.Param(ParamOverlay)
 	if overlayType == actions.Dialog {
 		b.dialog(r, comp, width)
+		return
+	} else if overlayType == actions.Content {
+		b.contentDrawer(ctx, r, comp, width)
 		return
 	}
 	b.rightDrawer(r, comp, width)
@@ -779,22 +809,37 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
 			web.GlobalEvents().Attr("@keyup.esc", "vars.presetsRightDrawer = false"),
-			web.Portal(comp).Name(rightDrawerContentPortalName),
+			web.Portal(comp).Name(RightDrawerContentPortalName),
 		).
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
 			Class("v-navigation-drawer--temporary").
 			Attr("v-model", "vars.presetsRightDrawer").
-			Right(true).
-			Fixed(true).
-			Attr("width", width).
-			Bottom(false).
+			Location(LocationRight).
+			Temporary(true).
+			// Fixed(true).
+			Width(width).
 			Attr(":height", `"100%"`),
 		// Temporary(true),
 		// HideOverlay(true).
 		// Floating(true).
 
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
+}
+
+func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
+	if width == "" {
+		width = b.rightDrawerWidth
+	}
+	portalName := ctx.Param(ParamPortalName)
+	p := RightDrawerContentPortalName
+	if portalName != "" {
+		p = portalName
+	}
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: p,
+		Body: comp,
+	})
 }
 
 // 				Attr("@input", "alert(plaidForm.dirty) && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsDialog = true : vars.presetsDialog = $event").
@@ -811,9 +856,9 @@ func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width strin
 			).
 				Attr("v-model", "vars.presetsDialog").
 				Width(width),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
 }
 
 type LayoutConfig struct {
@@ -824,20 +869,22 @@ type LayoutConfig struct {
 func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventResponse, err error) {
 	total := b.notificationCountFunc(ctx)
 	content := b.notificationContentFunc(ctx)
-
-	icon := VIcon("notifications").Color("white")
-	er.Body = VMenu().OffsetY(true).Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
+	icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
+	er.Body = VMenu().Children(
+		h.Template().Attr("v-slot:activator", "{ props }").Children(
 			VBtn("").Icon(true).Children(
 				h.If(total > 0,
 					VBadge(
 						icon,
-					).Content(total).Overlap(true).Color("red"),
+					).Content(total).Floating(true).Color("red"),
 				).Else(icon),
-			).Attr("v-bind", "attrs").Attr("v-on", "on").Class("ml-1"),
+			).Attr("v-bind", "props").
+				Density(DensityCompact).
+				Variant(VariantText),
+			// .Class("ml-1")
 		),
-		VCard(content))
-
+		VCard(content),
+	)
 	return
 }
 
@@ -864,33 +911,31 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
 		portal = v
 	}
-	showVar := fmt.Sprintf("show_%s", portal)
 
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 		Name: portal,
-		Body: VDialog(
+		Body: web.Scope(VDialog(
 			VCard(
 				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
-						Depressed(true).
+						Variant(VariantFlat).
 						Class("ml-2").
-						On("click", fmt.Sprintf("vars.%s = false", showVar)),
+						On("click", "locals.show = false"),
 
 					VBtn(msgr.OK).
 						Color("primary").
-						Depressed(true).
-						Dark(true).
-						Attr("@click", fmt.Sprintf("%s;vars.%s = false", confirmEvent, showVar)),
+						Variant(VariantFlat).
+						Theme(ThemeDark).
+						Attr("onclick", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
 				),
 			),
 		).MaxWidth("600px").
-			Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, showVar)),
+			Attr("v-model", "locals.show"),
+		).VSlot("{ locals }").Init("{show: true}"),
 	})
 
-	er.VarsScript = fmt.Sprintf("setTimeout(function(){ vars.%s = true }, 100)", showVar)
 	return
 }
 
@@ -900,6 +945,25 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 		menu := b.CreateMenus(ctx)
+		toolbar := VContainer(
+			VRow(
+				VCol(b.RunBrandFunc(ctx)).Cols(8),
+				VCol(
+					b.RunSwitchLanguageFunc(ctx),
+					// VBtn("").Children(
+					//	languageSwitchIcon,
+					//	VIcon("mdi-menu-down"),
+					// ).Attr("variant", "plain").
+					//	Attr("icon", ""),
+				).Cols(2),
+
+				VCol(
+					VAppBarNavIcon().Attr("icon", "mdi-menu").
+						Class("text-grey-darken-1").
+						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+				).Cols(2),
+			).Attr("align", "center").Attr("justify", "center"),
+		)
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
@@ -913,93 +977,99 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		var profile h.HTMLComponent
 		if b.profileFunc != nil {
-			profile = b.profileFunc(ctx)
+			profile = VAppBar(
+				b.profileFunc(ctx),
+			).Location("bottom").Class("border-t-sm border-b-0").Elevation(0)
 		}
 
-		showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
-		var notifier h.HTMLComponent
-		if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
-			notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
-		}
+		// showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
+		// var notifier h.HTMLComponent
+		// if b.notificationCountFunc != nil && b.notificationContentFunc != nil {
+		//	notifier = web.Portal().Name(NotificationCenterPortalName).Loader(web.GET().EventFunc(actions.NotificationCenter))
+		// }
+		// ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxNotifyCenter, notifier))
 
-		showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
+		// showSearchBox := cfg == nil || !cfg.SearchBoxInvisible
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
-			VNavigationDrawer(
-				b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-				VDivider(),
-				menu,
-			).App(true).
-				// Clipped(true).
-				Fixed(true).
-				Value(true).
-				Attr("v-model", "vars.navDrawer").
-				Attr(web.InitContextVars, `{navDrawer: null}`),
-
-			VAppBar(
-				VAppBarNavIcon().On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				h.Span(innerPr.PageTitle).Class("text-h6 font-weight-regular"),
-				VSpacer(),
-				h.If(showSearchBox,
-					VLayout(
-						// h.Form(
-						VTextField().
-							SoloInverted(true).
-							PrependIcon("search").
-							Label(msgr.Search).
-							Flat(true).
-							Clearable(true).
-							HideDetails(true).
-							Value(ctx.R.URL.Query().Get("keyword")).
-							Attr("@keyup.enter", web.Plaid().
-								ClearMergeQuery("page").
-								Query("keyword", web.Var("[$event.target.value]")).
-								MergeQuery(true).
-								PushState(true).
-								Go()).
-							Attr("@click:clear", web.Plaid().
-								Query("keyword", "").
-								PushState(true).
-								Go()),
-						// ).Method("GET"),
-					).AlignCenter(true).Attr("style", "max-width: 650px"),
-				),
-				h.If(showNotificationCenter,
-					notifier,
-				),
-			).Dark(true).
-				Color(ColorPrimary).
-				App(true).
-				Fixed(true),
-			// ClippedLeft(true),
-
 			web.Portal().Name(RightDrawerPortalName),
+
+			// App(true).
+			// Fixed(true),
+			// ClippedLeft(true),
 			web.Portal().Name(DialogPortalName),
 			web.Portal().Name(DeleteConfirmPortalName),
 			web.Portal().Name(DefaultConfirmDialogPortalName),
 			web.Portal().Name(ListingDialogPortalName),
 
-			VProgressLinear().
-				Attr(":active", "isFetching").
-				Attr("style", "position: fixed; z-index: 99").
-				Indeterminate(true).
-				Height(2).
-				Color(b.progressBarColor),
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(2000).
-					Top(true),
+					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
-			VMain(
-				innerPr.Body.(h.HTMLComponent),
+			VLayout(
+				VMain(
+					VNavigationDrawer(
+						// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+						// b.RunBrandFunc(ctx),
+						// profile,
+						VLayout(
+							VMain(
+								toolbar,
+								VCard(
+									menu,
+								).Class("ma-4").Variant(VariantText),
+							),
+							// VDivider(),
+							profile,
+						).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
+							"height: calc(100% - 16px);"),
+						// ).Class("ma-2").
+						// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
+					).
+						Width(320).
+						// App(true).
+						// Clipped(true).
+						// Fixed(true).
+						Attr("v-model", "vars.navDrawer").
+						// Attr("style", "border-right: 1px solid grey ").
+						Permanent(true).
+						Floating(true).
+						Elevation(0),
+					VAppBar(
+						h.Div(
+							VProgressLinear().
+								Attr(":active", "isFetching").
+								Class("ml-4").
+								Attr("style", "position: fixed; z-index: 99;").
+								Indeterminate(true).
+								Height(2).
+								Color(b.progressBarColor),
+
+							VAppBarNavIcon().
+								Density("compact").
+								Class("mr-2").
+								Attr("v-if", "!vars.navDrawer").
+								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+							h.Div(
+								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+							).Class("mr-auto"),
+							GetActionsComponent(ctx),
+						).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
+					).
+						Elevation(0),
+					innerPr.Body,
+				).Class(""),
 			),
-		).Id("vt-app").
-			Attr(web.InitContextVars, `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
+		).Attr("id", "vt-app").
+			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
+navDrawer: true
+}`)...)
 
 		return
 	}
@@ -1037,13 +1107,15 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(2000).
-					Top(true),
+					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
 				innerPr.Body.(h.HTMLComponent),
 			),
-		).Id("vt-app").
-			Attr(web.InitContextVars, `{presetsDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)
+		).
+			Attr("id", "vt-app").
+			Attr(web.VAssign("vars", `{presetsDialog: false, presetsMessage: {show: false, color: "success", 
+message: ""}}`)...)
 
 		return
 	}
@@ -1051,10 +1123,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(strings.Replace(`
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
-			<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-			<link rel="stylesheet" href="{{prefix}}/assets/main.css">
+			<link rel="stylesheet" href="{{prefix}}/vuetify/assets/index.css" async>
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
 				[v-cloak] {
@@ -1084,19 +1153,9 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 	b.InjectExtraAssets(ctx)
 
-	if len(os.Getenv("DEV_PRESETS")) > 0 {
-		ctx.Injector.TailHTML(`
-<script src='http://localhost:3080/js/chunk-vendors.js'></script>
-<script src='http://localhost:3080/js/app.js'></script>
-<script src='http://localhost:3100/js/chunk-vendors.js'></script>
-<script src='http://localhost:3100/js/app.js'></script>
-			`)
-
-	} else {
-		ctx.Injector.TailHTML(strings.Replace(`
+	ctx.Injector.TailHTML(strings.Replace(`
 			<script src='{{prefix}}/assets/main.js'></script>
 			`, "{{prefix}}", b.prefix, -1))
-	}
 
 	if b.assetFunc != nil {
 		b.assetFunc(ctx)
@@ -1145,10 +1204,7 @@ func (b *Builder) getNotFoundPageFunc() web.PageFunc {
 	if b.notFoundFunc != nil {
 		pf = b.notFoundFunc
 	}
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		ctx.W.WriteHeader(http.StatusNotFound)
-		return pf(ctx)
-	}
+	return pf
 }
 
 func (b *Builder) extraFullPath(ea *extraAsset) string {
@@ -1157,51 +1213,46 @@ func (b *Builder) extraFullPath(ea *extraAsset) string {
 
 func (b *Builder) initMux() {
 	b.logger.Info("initializing mux for", zap.Reflect("models", modelNames(b.models)), zap.String("prefix", b.prefix))
-	mux := goji.NewMux()
+	mux := http.NewServeMux()
 	ub := b.builder
 
 	mainJSPath := b.prefix + "/assets/main.js"
-	mux.Handle(pat.Get(mainJSPath),
+	mux.Handle("GET "+mainJSPath,
 		ub.PacksHandler("text/javascript",
-			Vuetify(b.vuetifyOptions),
+			Vuetify(),
 			JSComponentsPack(),
 			vuetifyx.JSComponentsPack(),
 			web.JSComponentsPack(),
 		),
 	)
-	log.Println("mounted url", mainJSPath)
+	log.Println("mounted url:", mainJSPath)
 
 	vueJSPath := b.prefix + "/assets/vue.js"
-	mux.Handle(pat.Get(vueJSPath),
+	mux.Handle("GET "+vueJSPath,
 		ub.PacksHandler("text/javascript",
 			web.JSVueComponentsPack(),
 		),
 	)
-	log.Println("mounted url", vueJSPath)
 
-	mainCSSPath := b.prefix + "/assets/main.css"
-	mux.Handle(pat.Get(mainCSSPath),
-		ub.PacksHandler("text/css",
-			CSSComponentsPack(),
-		),
-	)
-	log.Println("mounted url", mainCSSPath)
+	HandleMaterialDesignIcons(b.prefix, mux)
+
+	log.Println("mounted url:", vueJSPath)
 
 	for _, ea := range b.extraAssets {
 		fullPath := b.extraFullPath(ea)
-		mux.Handle(pat.Get(fullPath), ub.PacksHandler(
+		mux.Handle("GET "+fullPath, ub.PacksHandler(
 			ea.contentType,
 			ea.body,
 		))
-		log.Println("mounted url", fullPath)
+		log.Println("mounted url:", fullPath)
 	}
 
 	homeURL := b.prefix
 	if homeURL == "" {
-		homeURL = "/"
+		homeURL = "/{$}"
 	}
 	mux.Handle(
-		pat.New(homeURL),
+		homeURL,
 		b.wrap(nil, b.layoutFunc(b.getHomePageFunc(), b.homePageLayoutConfig)),
 	)
 
@@ -1218,38 +1269,64 @@ func (b *Builder) initMux() {
 			m.layoutConfig.SearchBoxInvisible = true
 		}
 		mux.Handle(
-			pat.New(routePath),
+			routePath,
 			b.wrap(m, b.layoutFunc(inPageFunc, m.layoutConfig)),
 		)
-		log.Println("mounted url", routePath)
+		log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
 		if m.hasDetailing {
-			routePath = fmt.Sprintf("%s/%s/:id", b.prefix, pluralUri)
+			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)
 			mux.Handle(
-				pat.New(routePath),
+				routePath,
 				b.wrap(m, b.detailLayoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
 			)
-			log.Println("mounted url", routePath)
+			log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
 		}
 	}
 
+	// b.handler = mux
 	// Handle 404
-	mux.Use(func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasPrefix(r.RequestURI, b.prefix) || middleware.Handler(r.Context()) != nil {
-				handler.ServeHTTP(w, r)
-				return
-			}
-
-			b.wrap(
-				nil,
-				b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
-			).ServeHTTP(w, r)
-			return
-		})
-	})
-
-	b.mux = mux
+	b.handler = b.notFound(mux)
 }
+
+type responseWriterWrapper struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriterWrapper) WriteHeader(code int) {
+	rw.statusCode = code
+	if code == http.StatusNotFound {
+		// default 404 will use http.Error to set Content-Type to text/plain,
+		// So we have to set it to html before WriteHeader
+		rw.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+	}
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
+	// don't write content, because we use customized page body
+	if rw.statusCode == http.StatusNotFound {
+		return 0, nil
+	}
+	return rw.ResponseWriter.Write(b)
+}
+
+func (b *Builder) notFound(handler http.Handler) http.Handler {
+	notFoundHandler := b.wrap(
+		nil,
+		b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedResponse := &responseWriterWrapper{w, http.StatusOK}
+		handler.ServeHTTP(capturedResponse, r)
+		if capturedResponse.statusCode == http.StatusNotFound {
+			// If no other handler wrote to the response, assume 404 and write our custom response.
+			notFoundHandler.ServeHTTP(w, r)
+		}
+		return
+	})
+}
+
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }
@@ -1271,14 +1348,22 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 	return handlers
 }
 
-func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if b.mux == nil {
-		b.initMux()
+func (b *Builder) Build() {
+	mns := modelNames(b.models)
+	if len(slices.Compact(mns)) != len(mns) {
+		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
-	RedirectSlashes(b.mux).ServeHTTP(w, r)
+	b.initMux()
 }
 
-func RedirectSlashes(next http.Handler) http.Handler {
+func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if b.handler == nil {
+		b.Build()
+	}
+	redirectSlashes(b.handler).ServeHTTP(w, r)
+}
+
+func redirectSlashes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if len(path) > 1 && path[len(path)-1] == '/' {

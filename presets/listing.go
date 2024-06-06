@@ -1,7 +1,6 @@
 package presets
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,18 +9,19 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 )
 
 type ListingBuilder struct {
 	mb              *ModelBuilder
 	bulkActions     []*BulkActionBuilder
+	footerActions   []*FooterActionBuilder
 	actions         []*ActionBuilder
 	actionsAsMenu   bool
 	rowMenu         *RowMenuBuilder
@@ -105,6 +105,11 @@ func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
 	return b
 }
 
+func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *ListingBuilder) {
+	b.Searcher = w(b.Searcher)
+	return b
+}
+
 func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
 	return b
@@ -172,12 +177,14 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 	return b.defaultPageFunc
 }
 
-const bulkPanelOpenParamName = "bulkOpen"
-const actionPanelOpenParamName = "actionOpen"
-const DeleteConfirmPortalName = "deleteConfirm"
-const dataTablePortalName = "dataTable"
-const dataTableAdditionsPortalName = "dataTableAdditions"
-const listingDialogContentPortalName = "listingDialogContentPortal"
+const (
+	bulkPanelOpenParamName         = "bulkOpen"
+	actionPanelOpenParamName       = "actionOpen"
+	DeleteConfirmPortalName        = "deleteConfirm"
+	dataTablePortalName            = "dataTable"
+	dataTableAdditionsPortalName   = "dataTableAdditions"
+	listingDialogContentPortalName = "listingDialogContentPortal"
+)
 
 func (b *ListingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
@@ -201,7 +208,7 @@ func (b *ListingBuilder) listingComponent(
 	ctx *web.EventContext,
 	inDialog bool,
 ) h.HTMLComponent {
-	ctx.R = ctx.R.WithContext(context.WithValue(ctx.R.Context(), ctxInDialog, inDialog))
+	ctx.WithContextValue(ctxInDialog, inDialog)
 
 	msgr := MustGetMessages(ctx.R)
 
@@ -209,40 +216,15 @@ func (b *ListingBuilder) listingComponent(
 	{
 		filterTabs := b.filterTabs(ctx, inDialog)
 
-		var actionsComponent h.HTMLComponents
-		if v := b.actionsComponent(msgr, ctx, inDialog); v != nil {
-			actionsComponent = append(actionsComponent, v)
+		actionsComponent := b.actionsComponent(msgr, ctx, inDialog)
+		// if v := ; v != nil {
+		//	actionsComponent = append(actionsComponent, v)
+		// }
+		// || len(actionsComponent) > 0
+		if filterTabs != nil {
+			tabsAndActionsBar = filterTabs
 		}
-		if b.newBtnFunc != nil {
-			if btn := b.newBtnFunc(ctx); btn != nil {
-				actionsComponent = append(actionsComponent, b.newBtnFunc(ctx))
-			}
-		} else {
-			disableNewBtn := b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil
-			if !disableNewBtn {
-				onclick := web.Plaid().EventFunc(actions.New)
-				if inDialog {
-					onclick.URL(ctx.R.RequestURI).
-						Query(ParamOverlay, actions.Dialog).
-						Query(ParamInDialog, true).
-						Query(ParamListingQueries, ctx.Queries().Encode())
-				}
-				actionsComponent = append(actionsComponent, VBtn(msgr.New).
-					Color("primary").
-					Depressed(true).
-					Dark(true).Class("ml-2").
-					Disabled(disableNewBtn).
-					Attr("@click", onclick.Go()))
-			}
-		}
-
-		if filterTabs != nil || len(actionsComponent) > 0 {
-			tabsAndActionsBar = VToolbar(
-				filterTabs,
-				VSpacer(),
-				actionsComponent,
-			).Flat(true)
-		}
+		ctx.WithContextValue(ctxActionsComponent, actionsComponent)
 	}
 
 	var filterBar h.HTMLComponent
@@ -251,61 +233,107 @@ func (b *ListingBuilder) listingComponent(
 		fd.SetByQueryString(ctx.R.URL.RawQuery)
 		filterBar = b.filterBar(ctx, msgr, fd, inDialog)
 	}
-
-	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
-
-	var dialogHeaderBar h.HTMLComponent
-	if inDialog {
-		title := msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
-		var searchBox h.HTMLComponent
-		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
-			searchBox = VTextField().
-				PrependInnerIcon("search").
-				Placeholder(msgr.Search).
+	searchBoxDefault := VResponsive(
+		web.Scope(
+			VTextField(
+				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+			).Density(DensityCompact).
+				Variant(FieldVariantOutlined).
+				Label(msgr.Search).
+				Flat(true).
+				Clearable(true).
 				HideDetails(true).
-				Value(ctx.R.URL.Query().Get("keyword")).
+				SingleLine(true).
+				ModelValue(ctx.R.URL.Query().Get("keyword")).
 				Attr("@keyup.enter", web.Plaid().
-					URL(ctx.R.RequestURI).
+					ClearMergeQuery("page").
 					Query("keyword", web.Var("[$event.target.value]")).
 					MergeQuery(true).
-					EventFunc(actions.UpdateListingDialog).
+					PushState(true).
 					Go()).
 				Attr("@click:clear", web.Plaid().
-					URL(ctx.R.RequestURI).
 					Query("keyword", "").
-					MergeQuery(true).
-					EventFunc(actions.UpdateListingDialog).
+					PushState(true).
 					Go()).
-				Class("ma-0 pa-0 mr-6")
+				Class("mr-4"),
+		).VSlot("{ locals }").Init(`{isFocus: false}`),
+	).MaxWidth(200).MinWidth(200)
+	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
+
+	var (
+		dialogHeaderBar  h.HTMLComponent
+		footerCardAction h.HTMLComponent
+	)
+	if len(b.footerActions) > 0 {
+		var footerActions []h.HTMLComponent
+		footerActions = append(footerActions, VSpacer())
+		for _, action := range b.footerActions {
+			footerActions = append(footerActions, action.buttonCompFunc(ctx))
+		}
+		footerCardAction = VCardActions(footerActions...)
+	}
+	if inDialog {
+		title := b.title
+		if title == "" {
+			title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+		}
+		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
+			searchBoxDefault = VResponsive(
+				web.Scope(
+					VTextField(
+						web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+					).Density(DensityCompact).
+						Variant(FieldVariantOutlined).
+						Label(msgr.Search).
+						Flat(true).
+						Clearable(true).
+						HideDetails(true).
+						SingleLine(true).
+						ModelValue(ctx.R.URL.Query().Get("keyword")).
+						Attr("@keyup.enter", web.Plaid().
+							URL(ctx.R.RequestURI).
+							Query("keyword", web.Var("[$event.target.value]")).
+							MergeQuery(true).
+							EventFunc(actions.UpdateListingDialog).
+							Go()).
+						Attr("@click:clear", web.Plaid().
+							URL(ctx.R.RequestURI).
+							Query("keyword", "").
+							MergeQuery(true).
+							EventFunc(actions.UpdateListingDialog).
+							Go()).
+						Class("ma-0 pa-0 mr-6"),
+				).VSlot("{ locals }").Init(`{isFocus: false}`),
+			).Width(100)
 		}
 		dialogHeaderBar = VAppBar(
 			VToolbarTitle("").
 				Children(h.Text(title)),
 			VSpacer(),
-			searchBox,
 			VBtn("").Icon(true).
-				Children(VIcon("close")).
-				Large(true).
+				Children(VIcon("mdi-close")).
+				Size(SizeLarge).
 				Attr("@click.stop", CloseListingDialogVarScript),
-		).Color("white").Elevation(0).Dense(true)
+		).Color("white").Elevation(0).Density(DensityCompact)
 	}
-
-	return VContainer(
+	return web.Scope(VLayout(
 		dialogHeaderBar,
-		tabsAndActionsBar,
-		h.Div(
+		VMain(
+			tabsAndActionsBar,
 			VCard(
-				filterBar,
-				VDivider(),
+				VToolbar(
+					searchBoxDefault,
+					filterBar,
+				).Flat(true).Color("surface").AutoHeight(true).Class("pa-2"),
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
-				).Class("pa-0"),
+				).Class("pa-2"),
 			),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
-		).Class("mt-2"),
-	).Fluid(true).
-		Class("white").
-		Attr(web.InitContextVars, `{currEditingListItemID: ''}`)
+			footerCardAction,
+		),
+	),
+	).VSlot("{ locals }").Init(`{currEditingListItemID: ""}`)
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
@@ -336,8 +364,7 @@ func (b *ListingBuilder) bulkPanel(
 			errComp = VAlert(h.Text(gErr)).
 				Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 	}
 	var processSelectedIdsNotice h.HTMLComponent
@@ -391,14 +418,14 @@ func (b *ListingBuilder) bulkPanel(
 		VCardActions(
 			VSpacer(),
 			VBtn(msgr.Cancel).
-				Depressed(true).
+				Variant(VariantFlat).
 				Class("ml-2").
 				Attr("@click", closeDialogVarScript),
 
 			VBtn(msgr.OK).
 				Color("primary").
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Attr("@click", onOK.Go()),
 		),
 	)
@@ -413,8 +440,7 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 			errComp = VAlert(h.Text(gErr)).
 				Border("left").
 				Type("error").
-				Elevation(2).
-				ColoredBorder(true)
+				Elevation(2)
 		}
 	}
 
@@ -441,14 +467,14 @@ func (b *ListingBuilder) actionPanel(action *ActionBuilder, ctx *web.EventContex
 		VCardActions(
 			VSpacer(),
 			VBtn(msgr.Cancel).
-				Depressed(true).
+				Variant(VariantFlat).
 				Class("ml-2").
 				Attr("@click", closeDialogVarScript),
 
 			VBtn(msgr.OK).
 				Color("primary").
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				Theme(ThemeDark).
 				Attr("@click", onOK.Go()),
 		),
 	)
@@ -464,20 +490,20 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
-		Body: VDialog(
+		Body: web.Scope(VDialog(
 			VCard(
 				VCardTitle(h.Text(msgr.DeleteConfirmationText(promptID))),
 				VCardActions(
 					VSpacer(),
 					VBtn(msgr.Cancel).
-						Depressed(true).
+						Variant(VariantFlat).
 						Class("ml-2").
-						On("click", "vars.deleteConfirmation = false"),
+						On("click", "locals.deleteConfirmation = false"),
 
 					VBtn(msgr.Delete).
 						Color("primary").
-						Depressed(true).
-						Dark(true).
+						Variant(VariantFlat).
+						Theme(ThemeDark).
 						Attr("@click", web.Plaid().
 							EventFunc(actions.DoDelete).
 							Queries(ctx.Queries()).
@@ -486,11 +512,9 @@ func (b *ListingBuilder) deleteConfirmation(ctx *web.EventContext) (r web.EventR
 				),
 			),
 		).MaxWidth("600px").
-			Attr("v-model", "vars.deleteConfirmation").
-			Attr(web.InitContextVars, `{deleteConfirmation: false}`),
+			Attr("v-model", "locals.deleteConfirmation"),
+		).VSlot("{ locals }").Init(`{deleteConfirmation:true}`),
 	})
-
-	r.VarsScript = "setTimeout(function(){ vars.deleteConfirmation = true }, 100)"
 	return
 }
 
@@ -600,7 +624,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 		qs := ctx.Queries()
 		qs.Del(bulkPanelOpenParamName)
 		qs.Del(ParamBulkActionName)
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			closeDialogVarScript,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
@@ -649,7 +673,7 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		qs := ctx.Queries()
 		qs.Del(actionPanelOpenParamName)
 		qs.Del(ParamListingActionName)
-		web.AppendVarsScripts(&r,
+		web.AppendRunScripts(&r,
 			closeDialogVarScript,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
@@ -676,7 +700,12 @@ func (b *ListingBuilder) filterTabs(
 
 	qs := ctx.R.URL.Query()
 
-	tabs := VTabs().ShowArrows(true)
+	tabs := VTabs().
+		Class("mb-2").
+		ShowArrows(true).
+		Color("primary").
+		Density(DensityCompact)
+
 	tabsData := b.filterTabsFunc(ctx)
 	for i, tab := range tabsData {
 		if tab.ID == "" {
@@ -715,7 +744,7 @@ func (b *ListingBuilder) filterTabs(
 				Attr("@click", onclick.Go()),
 		)
 	}
-	return tabs.Value(value)
+	return tabs.ModelValue(value)
 }
 
 type selectColumns struct {
@@ -880,36 +909,32 @@ func (b *ListingBuilder) selectColumnsBtn(
 			EventFunc(actions.UpdateListingDialog)
 	}
 	// add the HTML component of columns setting into toolbar
-	btn = VMenu(
+	btn = web.Scope(VMenu(
 		web.Slot(
-			VBtn("").Children(VIcon("settings")).Attr("v-on", "on").Text(true).Fab(true).Small(true),
-		).Name("activator").Scope("{ on }"),
-
-		web.Scope(VList(
-			h.Tag("vx-draggable").Attr("v-model", "locals.sortedColumns", "draggable", ".vx_column_item", "animation", "300").Children(
-				h.Div(
+			VBtn("").Icon("mdi-cog").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+		).Name("activator").Scope("{ props }"),
+		VList(
+			h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "locals.sortedColumns", "handle", ".handle", "animation", "300").Children(
+				h.Template(
 					VListItem(
-						VListItemContent(
-							VListItemTitle(
-								VSwitch().Dense(true).Attr("v-model", "locals.displayColumns", ":value", "column.name", ":label", "column.label", "@click", "event.preventDefault()"),
-							),
-						),
-						VListItemIcon(
-							VIcon("reorder"),
-						).Attr("style", "margin-top: 28px"),
+						VListItemTitle(
+							VSwitch().Density(DensityCompact).Attr("v-model", "locals.displayColumns", ":value",
+								"element.name",
+								":label", "element.label").Color("primary").Class(" mt-2 "),
+							VIcon("mdi-reorder-vertical").Class("handle cursor-grab mt-4"),
+						).Class("d-flex justify-space-between "),
+						VDivider(),
 					),
-					VDivider(),
-				).Attr("v-for", "(column, index) in locals.sortedColumns", ":key", "column.name", "class", "vx_column_item"),
+				).Attr("#item", " { element } "),
 			),
 			VListItem(
-				VListItemAction(VBtn(msgr.Cancel).Elevation(0).Attr("@click", `vars.selectColumnsMenu = false`)),
-				VListItemAction(VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `vars.selectColumnsMenu = false;`+onOK.Go()))),
-		).Dense(true)).
-			Init(h.JSONString(selectColumns)).
-			VSlot("{ locals }"),
-	).OffsetY(true).CloseOnClick(false).CloseOnContentClick(false).
-		Attr(web.InitContextVars, `{selectColumnsMenu: false}`).
-		Attr("v-model", "vars.selectColumnsMenu")
+				VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`),
+				VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", `locals.selectColumnsMenu = false ; `+onOK.Go()),
+			).Class("d-flex justify-space-between"),
+		).Density(DensityCompact),
+	).CloseOnContentClick(false).Width(240).
+		Attr("v-model", "locals.selectColumnsMenu")).
+		VSlot("{ locals }").Init(fmt.Sprintf(`{selectColumnsMenu: false,...%s}`, h.JSONString(selectColumns)))
 	return
 }
 
@@ -959,7 +984,7 @@ func (b *ListingBuilder) filterBar(
 
 	filter := vx.VXFilter(fd).Translations(ft)
 	if inDialog {
-		filter.OnChange(web.Plaid().
+		filter.UpdateModelValue(web.Plaid().
 			URL(ctx.R.RequestURI).
 			StringQuery(web.Var("$event.encodedFilterData")).
 			Query("page", 1).
@@ -967,9 +992,7 @@ func (b *ListingBuilder) filterBar(
 			EventFunc(actions.UpdateListingDialog).
 			Go())
 	}
-	return VToolbar(
-		filter,
-	).Flat(true).AutoHeight(true).Class("py-2")
+	return filter
 }
 
 func getLocalPerPage(
@@ -1181,14 +1204,13 @@ func (b *ListingBuilder) getTableComponents(
 	var err error
 
 	objs, totalCount, err = b.Searcher(b.mb.NewModelSlice(), searchParams, ctx)
-
 	if err != nil {
 		panic(err)
 	}
 
 	haveCheckboxes := len(b.bulkActions) > 0
 
-	var cellWraperFunc = func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+	cellWrapperFunc := func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		if b.mb.hasDetailing && !b.mb.detailing.drawer {
 			tdbind.SetAttr("@click.self", web.Plaid().
@@ -1208,22 +1230,22 @@ func (b *ListingBuilder) getTableComponents(
 					Query(ParamListingQueries, ctx.Queries().Encode())
 			}
 			tdbind.SetAttr("@click.self",
-				onclick.Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%s"`, dataTableID, id))
+				onclick.Go()+fmt.Sprintf(`; locals.currEditingListItemID="%s-%s"`, dataTableID, id))
 		}
 		return tdbind
 	}
 	if b.cellWrapperFunc != nil {
-		cellWraperFunc = b.cellWrapperFunc
+		cellWrapperFunc = b.cellWrapperFunc
 	}
 
-	var displayFields = b.fields
+	displayFields := b.fields
 	var selectColumnsBtn h.HTMLComponent
 	if b.selectableColumns {
 		selectColumnsBtn, displayFields = b.selectColumnsBtn(ctx.R.URL, ctx, inDialog)
 	}
 
 	sDataTable := vx.DataTable(objs).
-		CellWrapperFunc(cellWraperFunc).
+		CellWrapperFunc(cellWrapperFunc).
 		HeadCellWrapperFunc(func(cell h.MutableAttrHTMLComponent, field string, title string) h.HTMLComponent {
 			if _, ok := orderableFieldMap[field]; ok {
 				var orderBy string
@@ -1240,15 +1262,15 @@ func (b *ListingBuilder) getTableComponents(
 						h.Span(title).
 							Style("text-decoration: underline;"),
 						h.If(orderBy == "ASC",
-							VIcon("arrow_drop_up").Small(true),
+							VIcon("arrow_drop_up").Size(SizeSmall),
 							h.Span(fmt.Sprint(orderByIdx)),
 						).ElseIf(orderBy == "DESC",
-							VIcon("arrow_drop_down").Small(true),
+							VIcon("arrow_drop_down").Size(SizeSmall),
 							h.Span(fmt.Sprint(orderByIdx)),
 						).Else(
 							// take up place
 							h.Span("").Style("visibility: hidden;").Children(
-								VIcon("arrow_drop_down").Small(true),
+								VIcon("arrow_drop_down").Size(SizeSmall),
 								h.Span(fmt.Sprint(orderByIdx)),
 							),
 						),
@@ -1271,7 +1293,7 @@ func (b *ListingBuilder) getTableComponents(
 			return cell
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-			row.SetAttr(":class", fmt.Sprintf(`{"vx-list-item--active primary--text": vars.presetsRightDrawer && vars.currEditingListItemID==="%s-%s"}`, dataTableID, id))
+			row.SetAttr(":class", fmt.Sprintf(`{"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.currEditingListItemID==="%s-%s"}`, dataTableID, id))
 			return row
 		}).
 		RowMenuItemFuncs(b.RowMenu().listingItemFuncs(ctx)...).
@@ -1356,7 +1378,7 @@ func (b *ListingBuilder) getTableComponents(
 				Go())
 		}
 
-		datatableAdditions = tpb
+		datatableAdditions = h.Div(tpb).Class("mt-2")
 	} else {
 		datatableAdditions = h.Div(h.Text(msgr.ListingNoRecordToShow)).Class("mt-10 text-center grey--text text--darken-2")
 	}
@@ -1410,8 +1432,8 @@ func (b *ListingBuilder) actionsComponent(
 			}
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				// Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1443,8 +1465,8 @@ func (b *ListingBuilder) actionsComponent(
 			}
 			btn = VBtn(b.mb.getLabel(ba.NameLabel)).
 				Color(buttonColor).
-				Depressed(true).
-				Dark(true).
+				Variant(VariantFlat).
+				// Size(SizeSmall).
 				Class("ml-2").
 				Attr("@click", onclick.Go())
 		}
@@ -1452,9 +1474,9 @@ func (b *ListingBuilder) actionsComponent(
 		actionBtns = append(actionBtns, btn)
 	}
 
-	if len(actionBtns) == 0 {
-		return nil
-	}
+	// if len(actionBtns) == 0 {
+	//	return nil
+	// }
 
 	if b.actionsAsMenu {
 		var listItems []h.HTMLComponent
@@ -1464,16 +1486,38 @@ func (b *ListingBuilder) actionsComponent(
 		return h.Components(VMenu(
 			web.Slot(
 				VBtn("Actions").
-					Attr("v-bind", "attrs").
-					Attr("v-on", "on"),
-			).Name("activator").Scope("{ on, attrs }"),
+					Attr("v-bind", "props").
+					Attr("v-on", "on").
+					Size(SizeSmall),
+			).Name("activator").Scope("{ on, props }"),
 			VList(listItems...),
-		).OpenOnHover(true).
-			OffsetY(true).
-			AllowOverflow(true))
+		).OpenOnHover(true))
 	}
 
-	return h.Components(actionBtns...)
+	if b.newBtnFunc != nil {
+		if btn := b.newBtnFunc(ctx); btn != nil {
+			actionBtns = append(actionBtns, b.newBtnFunc(ctx))
+		}
+	} else {
+		disableNewBtn := b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil
+		if !disableNewBtn {
+			onclick := web.Plaid().EventFunc(actions.New)
+			if inDialog {
+				onclick.URL(ctx.R.RequestURI).
+					Query(ParamOverlay, actions.Dialog).
+					Query(ParamInDialog, true).
+					Query(ParamListingQueries, ctx.Queries().Encode())
+			}
+			actionBtns = append(actionBtns, VBtn(msgr.New).
+				Color("primary").
+				Variant(VariantFlat).
+				Theme("dark").Class("ml-2").
+				// Size(SizeSmall).
+				Disabled(disableNewBtn).
+				Attr("@click", onclick.Go()))
+		}
+	}
+	return h.Div(actionBtns...)
 }
 
 func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -1491,9 +1535,9 @@ func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventRe
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: ListingDialogPortalName,
-		Body: web.Scope(dialog).VSlot("{ plaidForm }"),
+		Body: web.Scope(dialog).VSlot("{ form }"),
 	})
-	r.VarsScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
+	r.RunScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
 	return
 }
 
@@ -1503,7 +1547,7 @@ func (b *ListingBuilder) updateListingDialog(ctx *web.EventContext) (r web.Event
 		Body: b.listingComponent(ctx, true),
 	})
 
-	web.AppendVarsScripts(&r, `
+	web.AppendRunScripts(&r, `
 var listingDialogElem = document.getElementById('listingDialog'); 
 if (listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
     listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';

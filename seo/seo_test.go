@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/theplant/testingutils"
 )
 

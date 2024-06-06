@@ -3,12 +3,12 @@ package note
 import (
 	"fmt"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	"github.com/qor5/ui/vuetify"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/ui/v3/vuetify"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -38,7 +38,7 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 		web.Scope(
 			VCardText(
 				h.Text(msgr.NewNote),
-				VRow(VCol(VTextField().Attr(web.VFieldName("Content")...).Clearable(true))),
+				VRow(VCol(VTextField().Attr(web.VField("Content", "")...).Clearable(true))),
 			),
 			VCardActions(h.Components(
 				VSpacer(),
@@ -53,7 +53,7 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 						Go(),
 					),
 			)),
-		).VSlot("{plaidForm}"),
+		).VSlot("{form}"),
 	)
 
 	var notes []QorNote
@@ -62,15 +62,13 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 
 	var panels []h.HTMLComponent
 	for _, note := range notes {
-		panels = append(panels, vuetify.VExpansionPanel(
-			vuetify.VExpansionPanelHeader(h.Span(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
-			vuetify.VExpansionPanelContent(h.Text(note.Content)),
+		panels = append(panels, vuetify.VCard(
+			vuetify.VCardText(
+				h.Div(h.Text(fmt.Sprintf("%v - %v", note.Creator, note.CreatedAt.Format("2006-01-02 15:04:05 MST")))).
+					Class("text-h6"),
+				h.Text(note.Content)),
 		))
 	}
-	c.AppendChildren(vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"))
+	c.AppendChildren(panels...).Class("p-2")
 	return c
-}
-
-var AfterCreateFunc = func(db *gorm.DB) (err error) {
-	return
 }

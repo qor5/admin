@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocarina/gocsv"
-	"github.com/qor5/admin/example/models"
+	"github.com/qor5/admin/v3/example/models"
 	"gorm.io/gorm"
 )
 

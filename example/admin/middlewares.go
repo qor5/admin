@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/note"
-	"github.com/qor5/admin/role"
-	"github.com/qor5/x/login"
+	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/x/v3/login"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +65,7 @@ func withNoteContext() func(next http.Handler) http.Handler {
 	}
 }
 
-func validateSessionToken() func(next http.Handler) http.Handler {
+func validateSessionToken(db *gorm.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user := getCurrentUser(r)
@@ -78,7 +78,7 @@ func validateSessionToken() func(next http.Handler) http.Handler {
 				return
 			}
 
-			valid, err := checkIsTokenValidFromRequest(r, user.ID)
+			valid, err := checkIsTokenValidFromRequest(db, r, user.ID)
 			if err != nil || !valid {
 				if r.URL.Path == logoutURL {
 					next.ServeHTTP(w, r)

@@ -3,10 +3,10 @@ package worker
 import (
 	"fmt"
 
-	"github.com/qor5/admin/activity"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -31,9 +31,9 @@ var (
 type ActionJobBuilder struct {
 	fullname            string
 	shortname           string
-	description         string //optional
+	description         string // optional
 	hasParams           bool
-	displayLog          bool //optional
+	displayLog          bool // optional
 	progressingInterval int
 
 	b  *Builder    // worker builder
@@ -125,7 +125,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), job)
 	}
 
-	r.VarsScript = web.Plaid().
+	r.RunScript = web.Plaid().
 		URL(b.mb.Info().ListingHref()).
 		EventFunc(ActionJobResponse).
 		Query(presets.ParamID, fmt.Sprint(job.ID)).
@@ -149,28 +149,26 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "presets_DialogPortalName",
 		Body: web.Scope(
-			vuetify.VDialog(
-				vuetify.VCard(
-					vuetify.VCardTitle(
+			VDialog(
+				VCard(
+					VCardTitle(
 						h.Text(config.shortname),
-						vuetify.VSpacer(),
-						vuetify.VBtn("").Icon(true).Children(
-							vuetify.VIcon("close"),
-						).Attr("@click.stop", "vars.presetsDialog=false"),
+						VSpacer(),
+						VBtn("").Icon("mdi-close").Attr("@click.stop", "vars.presetsDialog=false"),
 					),
 
-					h.If(config.description != "", vuetify.VCardSubtitle(
+					h.If(config.description != "", VCardSubtitle(
 						h.Text(config.description),
 					)),
 
-					h.If(config.hasParams, vuetify.VCardText(
+					h.If(config.hasParams, VCardText(
 						b.jobEditingContent(ctx, jobName, nil),
 					)),
 
-					vuetify.VCardActions(
-						vuetify.VSpacer(),
-						vuetify.VBtn(msgr.Cancel).Elevation(0).Attr("@click", "vars.presetsDialog=false"),
-						vuetify.VBtn(msgr.OK).Color("primary").Large(true).
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Cancel).Elevation(0).Attr("@click", "vars.presetsDialog=false"),
+						VBtn(msgr.OK).Color("primary").Size(SizeLarge).
 							Attr("@click", web.Plaid().
 								URL(b.mb.Info().ListingHref()).
 								EventFunc(ActionJobCreate).
@@ -180,9 +178,9 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 				)).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
-	r.VarsScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
+	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
 }
 
@@ -200,47 +198,45 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: "presets_DialogPortalName",
 		Body: web.Scope(
-			vuetify.VDialog(
-				vuetify.VAppBar(
-					vuetify.VToolbarTitle(config.shortname).Class("pl-2"),
-					vuetify.VSpacer(),
-					vuetify.VBtn("").Icon(true).Children(
-						vuetify.VIcon("close"),
-					).Attr("@click.stop", web.Plaid().
+			VDialog(
+				VAppBar(
+					VToolbarTitle(config.shortname).Class("pl-2"),
+					VSpacer(),
+					VBtn("").Icon("mdi-close").Attr("@click.stop", web.Plaid().
 						URL(b.mb.Info().ListingHref()).
 						EventFunc(ActionJobClose).
 						Query("jobID", jobID).
 						Query("jobName", jobName).
 						Go()),
-				).Color("white").Elevation(0).Dense(true),
+				).Color("white").Elevation(0).Density(DensityCompact),
 
-				vuetify.VCard(
-					vuetify.VCardText(
-						h.Div(
+				VCard(
+					VCardText(
+						web.Scope(
 							web.Portal().Loader(
 								web.Plaid().EventFunc(ActionJobProgressing).
 									URL(b.mb.Info().ListingHref()).
 									Query("jobID", jobID).
 									Query("jobName", jobName),
-							).AutoReloadInterval("vars.actionJobProgressingInterval"),
-						).Attr(web.InitContextVars, fmt.Sprintf("{actionJobProgressingInterval: %d}", config.progressingInterval)),
+							).AutoReloadInterval("loaderLocals.actionJobProgressingInterval"),
+						).VSlot("{ locals: loaderLocals }").Init(fmt.Sprintf("{actionJobProgressingInterval: %d}", config.progressingInterval)),
 					),
 				).Tile(true).Attr("style", "box-shadow: none;")).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
-		).VSlot("{ plaidForm }"),
+		).VSlot("{ form }"),
 	})
-	r.VarsScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
+	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
 }
 
 func (b *Builder) eventActionJobClose(ctx *web.EventContext) (er web.EventResponse, err error) {
 	var (
-		qorJobID   = uint(ctx.QueryAsInt("jobID"))
+		qorJobID   = uint(ctx.ParamAsInt("jobID"))
 		qorJobName = ctx.R.FormValue("jobName")
 	)
 
-	er.VarsScript = "vars.presetsDialog = false;vars.actionJobProgressingInterval = 0;"
+	er.RunScript = "vars.presetsDialog = false;vars.actionJobProgressingInterval = 0;"
 	if pErr := editIsAllowed(ctx.R, qorJobName); pErr != nil {
 		return er, pErr
 	}
@@ -263,7 +259,7 @@ func (b *Builder) eventActionJobClose(ctx *web.EventContext) (er web.EventRespon
 
 func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.EventResponse, err error) {
 	var (
-		qorJobID   = uint(ctx.QueryAsInt("jobID"))
+		qorJobID   = uint(ctx.ParamAsInt("jobID"))
 		qorJobName = ctx.R.FormValue("jobName")
 		config     = actionJobs[qorJobName]
 	)
@@ -278,9 +274,9 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	}
 
 	er.Body = h.Div(
-		h.Div(vuetify.VProgressLinear(
+		h.Div(VProgressLinear(
 			h.Strong(fmt.Sprintf("%d%%", inst.Progress)),
-		).Value(int(inst.Progress)).Height(20)).Class("mb-5"),
+		).ModelValue(int(inst.Progress)).Height(20)).Class("mb-5"),
 		h.If(config.displayLog, actionJobLog(*config.b, inst)),
 		h.If(inst.ProgressText != "",
 			h.Div().Class("mb-3").Children(
@@ -290,9 +286,9 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 	)
 
 	if inst.Status == JobStatusDone || inst.Status == JobStatusException {
-		er.VarsScript = "vars.actionJobProgressingInterval = 0;"
+		er.RunScript = "vars.actionJobProgressingInterval = 0;"
 	} else {
-		er.VarsScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
+		er.RunScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
 	}
 	return er, nil
 }

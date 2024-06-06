@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/iancoleman/strcase"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -41,7 +41,7 @@ func (b *ListingBuilder) RowMenu(listings ...string) *RowMenuBuilder {
 
 func (b *RowMenuBuilder) Empty() {
 	b.listings = nil
-	b.items = nil
+	b.items = make(map[string]*RowMenuItemBuilder)
 }
 
 func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []vx.RowMenuItemFunc) {
@@ -51,7 +51,10 @@ func (b *RowMenuBuilder) listingItemFuncs(ctx *web.EventContext) (fs []vx.RowMen
 	}
 	for _, li := range listings {
 		if ib, ok := b.items[strcase.ToSnake(li)]; ok {
-			fs = append(fs, ib.getComponentFunc(ctx))
+			comp := ib.getComponentFunc(ctx)
+			if comp != nil {
+				fs = append(fs, comp)
+			}
 		}
 	}
 	return fs
@@ -83,7 +86,7 @@ func (b *RowMenuBuilder) RowMenuItem(name string) *RowMenuItemBuilder {
 	b.lb.mb.RegisterEventFunc(ib.eventID, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue(ParamID)
 		if ib.permAction != "" {
-			var obj = b.lb.mb.NewModel()
+			obj := b.lb.mb.NewModel()
 			obj, err = b.lb.mb.editing.Fetcher(obj, id, ctx)
 			if err != nil {
 				return r, err
@@ -124,7 +127,7 @@ func (b *RowMenuItemBuilder) PermAction(v string) *RowMenuItemBuilder {
 	return b
 }
 
-func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuItemFunc {
+func (b *RowMenuItemBuilder) getComponentFunc(_ *web.EventContext) vx.RowMenuItemFunc {
 	if b.compF != nil {
 		return b.compF
 	}
@@ -134,7 +137,10 @@ func (b *RowMenuItemBuilder) getComponentFunc(ctx *web.EventContext) vx.RowMenuI
 			return nil
 		}
 		return VListItem(
-			VListItemIcon(VIcon(b.icon)),
+			web.Slot(
+				VIcon(b.icon),
+			).Name("prepend"),
+
 			VListItemTitle(h.Text(i18n.PT(ctx.R, ModelsI18nModuleKey, strcase.ToCamel(b.rmb.lb.mb.label+" RowMenuItem"), b.name))),
 		).Attr("@click", web.Plaid().
 			EventFunc(b.eventID).

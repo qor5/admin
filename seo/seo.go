@@ -3,8 +3,9 @@ package seo
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // SEO represents a SEO object for a page

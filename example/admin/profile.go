@@ -3,20 +3,19 @@ package admin
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/dustin/go-humanize"
-	"github.com/qor5/admin/example/models"
-	plogin "github.com/qor5/admin/login"
-	"github.com/qor5/admin/presets"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/login"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/example/models"
+	plogin "github.com/qor5/admin/v3/login"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -25,61 +24,69 @@ const (
 	signOutAllSessionEvent = "signOutAllSessionEvent"
 )
 
-func profile(ctx *web.EventContext) h.HTMLComponent {
-	u := getCurrentUser(ctx.R)
-	if u == nil {
-		return VBtn("Login").Text(true).Href("/auth/login")
-	}
+func profile(db *gorm.DB) presets.ComponentFunc {
+	return func(ctx *web.EventContext) h.HTMLComponent {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return VBtn("Login").Variant(VariantText).Href("/auth/login")
+		}
 
-	var roles []string
-	for _, role := range u.Roles {
-		roles = append(roles, role.Name)
-	}
+		var roles []string
+		for _, role := range u.Roles {
+			roles = append(roles, role.Name)
+		}
 
-	var account string
-	if u.Account != "" {
-		account = u.Account
-	} else {
-		account = u.OAuthIdentifier
+		total := notifierCount(db)(ctx)
+		content := notifierComponent(db)(ctx)
+		icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
+		notification := VMenu().Children(
+			h.Template().Attr("v-slot:activator", "{ props }").Children(
+				VBtn("").Icon(true).Children(
+					h.If(total > 0,
+						VBadge(
+							icon,
+						).Content(total).Dot(true).Color("error"),
+					).Else(icon),
+				).Attr("v-bind", "props").
+					Density(DensityCompact).
+					Variant(VariantText),
+			),
+			VCard(content),
+		)
+		_ = notification
+		profileNewLook := VCard(
+			web.Slot(
+				VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).Size(SizeLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary)),
+			).Name(VSlotPrepend),
+			web.Slot(
+				h.Div(
+					h.Div(h.Text(u.Name)).Class(fmt.Sprintf(`text-subtitle-2 text-%s`, ColorSecondary)),
+					VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
+						Icon(true).Density(DensityCompact).Variant(VariantText).Children(
+						VIcon("mdi-chevron-right").Size(SizeSmall),
+					).Class("mr-8"),
+				).Class("d-flex justify-space-between align-center"),
+			).Name(VSlotTitle),
+			web.Slot(
+				h.Div(h.Text(roles[0])),
+			).Name(VSlotSubtitle),
+			web.Slot(
+				VRow(
+					VCol(
+						notification,
+					),
+				).Class("border-s"),
+			).Name(VSlotAppend),
+		).Class(W100)
+		return profileNewLook
 	}
-
-	return VMenu().OffsetY(true).Children(
-		h.Template().Attr("v-slot:activator", "{on, attrs}").Children(
-			VList(
-				VListItem(
-					VListItemAvatar(
-						VAvatar().Class("ml-1").Color("secondary").Size(40).Children(
-							h.If(u.OAuthAvatar == "",
-								h.Span(getAvatarShortName(u)).Class("white--text text-h5"),
-							).Else(
-								h.Img(u.OAuthAvatar).Alt(u.Name),
-							),
-						),
-					),
-					VListItemContent(
-						VListItemTitle(h.Text(u.Name)),
-						h.Br(),
-						VListItemSubtitle(h.Text(strings.Join(roles, ", "))),
-					),
-				).Class("pa-0 mb-2"),
-				VListItem(
-					VListItemContent(
-						VListItemTitle(h.Text(account)),
-					),
-					VListItemIcon(
-						VIcon("logout").Small(true).Attr("@click", web.Plaid().URL(loginBuilder.LogoutURL).Go()),
-					),
-				).Class("pa-0 my-n4 ml-1").Dense(true),
-			).Class("pa-0 ma-n4"),
-		),
-	)
 }
 
 type Profile struct{}
 
 func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
-		MenuIcon("person").Label("Profile").Singleton(true)
+		MenuIcon("mdi-account").Label("Profile").Singleton(true)
 
 	eb := m.Editing("Info", "Actions", "Sessions")
 
@@ -88,11 +95,11 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 		u := getCurrentUser(ctx.R)
 
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			return r, perm.PermissionDenied
 		}
 
-		if err = expireOtherSessionLogs(ctx.R, u.ID); err != nil {
+		if err = expireOtherSessionLogs(db, ctx.R, u.ID); err != nil {
 			return r, err
 		}
 
@@ -127,7 +134,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		return h.Div(
 			VRow(
 				VCol(
-					VTextField().Label(msgr.Name).Value(u.Name).FieldName("name"),
+					VTextField().Label(msgr.Name).Attr(web.VField("name", u.Name)...),
 				),
 			).Class("my-n6"),
 			VRow(
@@ -158,7 +165,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 
 		// We don't allow public user to change its password
 		u := getCurrentUser(ctx.R)
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			return h.RawHTML("")
 		}
 
@@ -166,8 +173,8 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		if u.OAuthProvider == "" && u.Account != "" {
 			actionBtns = append(actionBtns,
 				VBtn("").
-					Outlined(true).Color("primary").
-					Children(VIcon("lock_outline").Small(true), h.Text(msgr.ChangePassword)).
+					Variant(VariantOutlined).Color("primary").
+					Children(VIcon("lock_outline").Size(SizeSmall), h.Text(msgr.ChangePassword)).
 					Class("mr-2").
 					OnClick(plogin.OpenChangePasswordDialogEvent),
 			)
@@ -188,7 +195,7 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		}
 
 		isPublicUser := false
-		if u.GetAccountName() == os.Getenv("LOGIN_INITIAL_USER_EMAIL") {
+		if u.GetAccountName() == loginInitialUserEmail {
 			isPublicUser = true
 		}
 
@@ -270,14 +277,14 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 					VCol(
 						h.If(!isPublicUser,
 							VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
-								Outlined(true).Color("primary").
-								Children(VIcon("warning").Small(true), h.Text(msgr.SignOutAllOtherSessions))),
+								Variant(VariantOutlined).Color("primary").
+								Children(VIcon("warning").Size(SizeSmall), h.Text(msgr.SignOutAllOtherSessions))),
 					).Class("text-right mt-6 mr-4"),
 				),
 				VDataTable().Headers(sessionTableHeaders).
 					Items(items).
-					ItemsPerPage(-1).
-					HideDefaultFooter(true),
+					ItemsPerPage(-1),
+				// TODO fix it .HideDefaultFooter(true),
 			),
 		).Class("mx-2 mt-12 mb-4")
 	})
@@ -292,5 +299,5 @@ func getAvatarShortName(u *models.User) string {
 		name = string(rs[:1])
 	}
 
-	return name
+	return strings.ToUpper(name)
 }

@@ -3,11 +3,11 @@ package admin
 import (
 	"time"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -84,7 +84,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	lb.Action("Export").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return vuetify.VBtn("Export").
 			Color("primary").
-			Depressed(true).
+			Variant(vuetify.VariantFlat).
 			Class("ml-2").
 			Href(exportOrdersURL)
 	})
@@ -98,9 +98,10 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 		return h.Div(
 			vuetify.VCardText(
 				vuetify.VAutocomplete().Label("Status").
-					FieldName("status").
+					Attr(web.VField("status", "")...).
 					Items(models.OrderStatuses).
-					Attach(false).ErrorMessages(vErr.GetFieldErrors("status")...),
+					// TODO fix it Attach(false).
+					ErrorMessages(vErr.GetFieldErrors("status")...),
 			),
 		)
 	}).UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
@@ -120,9 +121,8 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	})
 
 	// detailing
-	b.RightDrawerWidth("50%")
+	b.RightDrawerWidth("800")
 	orderDetailing := b.Detailing(
-		// ActionsAttr,
 		&presets.FieldsSection{
 			Title: "Basic Information",
 			Rows: [][]string{
@@ -181,5 +181,5 @@ func GetColoredStatus(status models.OrderStatus) h.HTMLComponent {
 		return h.Text(string(status))
 	}
 
-	return vuetify.VChip(h.Text(string(status))).Color(color).Dark(true)
+	return vuetify.VChip(h.Text(string(status))).Color(color).Theme(vuetify.ThemeDark)
 }

@@ -44,7 +44,6 @@ func Contains(a interface{}, b interface{}) bool {
 				}
 			}
 		}
-
 	}
 
 	return false

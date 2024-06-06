@@ -13,9 +13,7 @@ const (
 	PermBulkActions     = "bulk_actions"
 )
 
-var (
-	PermRead = []string{PermList, PermGet}
-)
+var PermRead = []string{PermList, PermGet}
 
 // params
 const (
@@ -30,6 +28,7 @@ const (
 	ParamInDialog                 = "presets_in_dialog"
 	ParamListingQueries           = "presets_listing_queries"
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
+	ParamPortalName               = "portal_name"
 
 	// list editor
 	ParamAddRowFormKey      = "listEditor_AddRowFormKey"
@@ -37,9 +36,4 @@ const (
 	ParamIsStartSort        = "listEditor_IsStartSort"
 	ParamSortSectionFormKey = "listEditor_SortSectionFormKey"
 	ParamSortResultFormKey  = "listEditor_SortResultFormKey"
-)
-
-const (
-	ColorPrimary   = "primary"
-	ColorSecondary = "secondary"
 )

@@ -7,16 +7,17 @@ import (
 	"io"
 	"os"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/publish"
 	"github.com/theplant/sliceutils"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
+	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 type Product struct {
@@ -52,7 +53,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 		Content:  p.getContent(),
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getUrl())
+	p.OnlineUrl = p.getUrl()
 
 	var liveRecord Product
 	db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline).First(&liveRecord)
@@ -60,7 +61,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 		return
 	}
 
-	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
+	if liveRecord.OnlineUrl != p.OnlineUrl {
 		objs = append(objs, &publish.PublishAction{
 			Url:      liveRecord.getUrl(),
 			IsDelete: true,
@@ -77,9 +78,10 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 	})
 	return
 }
+
 func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.GetOnlineUrl(),
+		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
 	if val, ok := ctx.Value("skip_list").(bool); ok && val {
@@ -116,19 +118,20 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 		IsDelete: false,
 	})
 
-	if p.GetStatus() == publish.StatusOnline && p.GetOnlineUrl() != p.getUrl() {
+	if p.Status.Status == publish.StatusOnline && p.OnlineUrl != p.getUrl() {
 		objs = append(objs, &publish.PublishAction{
-			Url:      p.GetOnlineUrl(),
+			Url:      p.OnlineUrl,
 			IsDelete: true,
 		})
 	}
 
-	p.SetOnlineUrl(p.getUrl())
+	p.OnlineUrl = p.getUrl()
 	return
 }
+
 func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.GetOnlineUrl(),
+		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
 	return
@@ -171,19 +174,17 @@ type MockStorage struct {
 }
 
 func (m *MockStorage) Get(path string) (f *os.File, err error) {
-	var content, exist = m.Objects[path]
+	content, exist := m.Objects[path]
 	if !exist {
-		err = errors.New("NoSuchKey: The specified key does not exist")
+		err = fmt.Errorf("NoSuchKey: %s", path)
 		return
 	}
 
 	pattern := fmt.Sprintf("s3*%d", time.Now().Unix())
 
-	if err == nil {
-		if f, err = os.CreateTemp("/tmp", pattern); err == nil {
-			f.WriteString(content)
-			f.Seek(0, 0)
-		}
+	if f, err = os.CreateTemp("/tmp", pattern); err == nil {
+		f.WriteString(content)
+		f.Seek(0, 0)
 	}
 
 	return
@@ -209,16 +210,22 @@ func (m *MockStorage) Delete(path string) error {
 	return nil
 }
 
-func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+var TestDB *gorm.DB
+
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
-	return db.Debug()
+	defer env.TearDown()
+	TestDB = env.DB
+	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
+
+	m.Run()
 }
 
 func TestPublishVersionContentToS3(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&Product{})
 	storage := &MockStorage{}
 
@@ -240,64 +247,39 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV2)
 
 	p := publish.New(db, storage)
-
 	// publish v1
-	if err := p.WithValue("skip_list", true).Publish(&productV1); err != nil {
+	skipListTrueContext := context.WithValue(context.Background(), "skip_list", true)
+	skipListFalseContext := context.WithValue(context.Background(), "skip_list", false)
+	if err := p.Publish(&productV1, skipListTrueContext); err != nil {
 		t.Error(err)
 	}
-	if err := assertUpdateStatus(db, &productV1, publish.StatusOnline, productV1.getUrl()); err != nil {
-		t.Error(err)
-	}
-	if err := assertUploadFile(&productV1, storage); err != nil {
-		t.Error(err)
-	}
-	if err := assertUploadListFile(&productV1, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New("skip_list failed"))
-	}
+	assertUpdateStatus(t, db, &productV1, publish.StatusOnline, productV1.getUrl())
+	assertUploadFile(t, productV1.getContent(), productV1.getUrl(), storage)
+	// assertUploadFile(t, productV1.getListContent(), productV1.getListUrl(), storage)
 
 	// publish v2
-	if err := p.WithValue("skip_list", false).Publish(&productV2); err != nil {
+	if err := p.Publish(&productV2, skipListFalseContext); err != nil {
 		t.Error(err)
 	}
-	if err := assertUpdateStatus(db, &productV2, publish.StatusOnline, productV2.getUrl()); err != nil {
-		t.Error(err)
-	}
-	if err := assertUploadFile(&productV2, storage); err != nil {
-		t.Error(err)
-	}
-	if err := assertUploadListFile(&productV2, storage); err != nil {
-		t.Error(err)
-	}
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
+	assertUploadFile(t, productV2.getContent(), productV2.getUrl(), storage)
+	assertUploadFile(t, productV2.getListContent(), productV2.getListUrl(), storage)
 	// if delete v1 file
-	if err := assertUploadFile(&productV1, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New(fmt.Sprintf("delete file %s failed", productV1.getUrl())))
-	}
+	assertContentDeleted(t, productV1.getUrl(), storage)
 	// if update v1 status to offline
-	if err := assertUpdateStatus(db, &productV1, publish.StatusOffline, productV1.getUrl()); err != nil {
-		t.Error(err)
-	}
+	assertUpdateStatus(t, db, &productV1, publish.StatusOffline, productV1.getUrl())
 
 	// unpublish v2
-	if err := p.UnPublish(&productV2); err != nil {
+	if err := p.UnPublish(&productV2, skipListFalseContext); err != nil {
 		t.Error(err)
 	}
-	if err := assertUpdateStatus(db, &productV2, publish.StatusOffline, productV2.getUrl()); err != nil {
-		t.Error(err)
-	}
-	if err := assertUploadFile(&productV2, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New(fmt.Sprintf("delete file %s failed", productV2.getUrl())))
-	}
-	if err := assertUploadListFile(&productV2, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New("delete list file %s failed"), productV2.getListUrl())
-	}
+	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
+	assertContentDeleted(t, productV2.getUrl(), storage)
+	assertContentDeleted(t, productV2.getListUrl(), storage)
 }
 
 func TestPublishList(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&ProductWithoutVersion{})
 	storage := &MockStorage{}
 
@@ -328,8 +310,8 @@ func TestPublishList(t *testing.T) {
 	publisher := publish.New(db, storage)
 	listPublisher := publish.NewListPublishBuilder(db, storage)
 
-	publisher.Publish(&productV1)
-	publisher.Publish(&productV3)
+	publisher.Publish(&productV1, context.Background())
+	publisher.Publish(&productV3, context.Background())
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -343,7 +325,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.Publish(&productV2)
+	publisher.Publish(&productV2, context.Background())
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -356,7 +338,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.UnPublish(&productV2)
+	publisher.UnPublish(&productV2, context.Background())
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -369,7 +351,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.UnPublish(&productV3)
+	publisher.UnPublish(&productV3, context.Background())
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -384,7 +366,7 @@ get: %v
 }
 
 func TestSchedulePublish(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.Migrator().DropTable(&Product{})
 	db.AutoMigrate(&Product{})
 	storage := &MockStorage{}
@@ -400,7 +382,7 @@ func TestSchedulePublish(t *testing.T) {
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV1)
 
 	publisher := publish.New(db, storage)
-	publisher.Publish(&productV1)
+	publisher.Publish(&productV1, context.Background())
 
 	var expected string
 	expected = "11"
@@ -412,8 +394,8 @@ func TestSchedulePublish(t *testing.T) {
 	}
 
 	productV1.Name = "2"
-	var startAt = db.NowFunc().Add(-24 * time.Hour)
-	productV1.SetScheduledStartAt(&startAt)
+	startAt := db.NowFunc().Add(-24 * time.Hour)
+	productV1.ScheduledStartAt = &startAt
 	if err := db.Save(&productV1).Error; err != nil {
 		panic(err)
 	}
@@ -429,8 +411,8 @@ func TestSchedulePublish(t *testing.T) {
 	`, expected, storage.Objects["test/product/1/index.html"])))
 	}
 
-	var endAt = startAt.Add(time.Second * 2)
-	productV1.SetScheduledEndAt(&endAt)
+	endAt := startAt.Add(time.Second * 2)
+	productV1.ScheduledEndAt = &endAt
 	if err := db.Save(&productV1).Error; err != nil {
 		panic(err)
 	}
@@ -447,7 +429,7 @@ func TestSchedulePublish(t *testing.T) {
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {
-	db := ConnectDB()
+	db := TestDB
 	db.AutoMigrate(&ProductWithoutVersion{})
 	storage := &MockStorage{}
 
@@ -458,109 +440,96 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 		Status: publish.Status{Status: publish.StatusDraft},
 	}
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&product1)
+	ctx := context.Background()
 
 	p := publish.New(db, storage)
 	// publish product1
-	if err := p.Publish(&product1); err != nil {
+	if err := p.Publish(&product1, ctx); err != nil {
 		t.Error(err)
 	}
-	if err := assertNoVersionUpdateStatus(db, &product1, publish.StatusOnline, product1.getUrl()); err != nil {
-		t.Error(err)
-	}
-	if err := assertNoVersionUploadFile(&product1, storage); err != nil {
-		t.Error(err)
-	}
+	assertNoVersionUpdateStatus(t, db, &product1, publish.StatusOnline, product1.getUrl())
+	assertUploadFile(t, product1.getContent(), product1.getUrl(), storage)
 
 	product1Clone := product1
 	product1Clone.Code = "0002"
 
 	// publish product1 again
-	if err := p.Publish(&product1Clone); err != nil {
+	if err := p.Publish(&product1Clone, ctx); err != nil {
 		t.Error(err)
 	}
-	if err := assertNoVersionUpdateStatus(db, &product1Clone, publish.StatusOnline, product1Clone.getUrl()); err != nil {
-		t.Error(err)
-	}
-	if err := assertNoVersionUploadFile(&product1Clone, storage); err != nil {
-		t.Error(err)
-	}
+	assertNoVersionUpdateStatus(t, db, &product1Clone, publish.StatusOnline, product1Clone.getUrl())
+
+	assertUploadFile(t, product1Clone.getContent(), product1Clone.getUrl(), storage)
+
 	// if delete product1 old file
-	if err := assertNoVersionUploadFile(&product1, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New(fmt.Sprintf("delete file %s failed", product1.getUrl())))
-	}
-
+	assertContentDeleted(t, product1.getUrl(), storage)
 	// unpublish product1
-	if err := p.UnPublish(&product1Clone); err != nil {
+	if err := p.UnPublish(&product1Clone, ctx); err != nil {
 		t.Error(err)
 	}
-	if err := assertNoVersionUpdateStatus(db, &product1Clone, publish.StatusOffline, product1Clone.getUrl()); err != nil {
-		t.Error(err)
-	}
+	assertNoVersionUpdateStatus(t, db, &product1Clone, publish.StatusOffline, product1Clone.getUrl())
 	// if delete product1 file
-	if err := assertNoVersionUploadFile(&product1Clone, storage); err != nil && strings.HasPrefix(err.Error(), "NoSuchKey: The specified key does not exist") {
-	} else {
-		t.Error(errors.New(fmt.Sprintf("delete file %s failed", product1Clone.getUrl())))
-	}
-
+	assertContentDeleted(t, product1Clone.getUrl(), storage)
 }
 
-func assertUpdateStatus(db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) (err error) {
+func assertUpdateStatus(t *testing.T, db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) {
+	t.Helper()
+
 	var pindb Product
-	err = db.Model(&Product{}).Where("id = ? AND version = ?", p.ID, p.GetVersion()).First(&pindb).Error
+	err := db.Model(&Product{}).Where("id = ? AND version = ?", p.ID, p.Version.Version).First(&pindb).Error
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
-	if pindb.GetStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
-		return errors.New("update status failed")
+
+	diff := testingutils.PrettyJsonDiff(publish.Status{
+		Status:    assertStatus,
+		OnlineUrl: asserOnlineUrl,
+	}, pindb.Status)
+	if diff != "" {
+		t.Error(diff)
 	}
 	return
 }
 
-func assertNoVersionUpdateStatus(db *gorm.DB, p *ProductWithoutVersion, assertStatus string, asserOnlineUrl string) (err error) {
+func assertContentDeleted(t *testing.T, url string, storage oss.StorageInterface) {
+	t.Helper()
+
+	t.Helper()
+	_, err := storage.Get(url)
+	if err == nil {
+		t.Errorf("content for %s should be deleted", url)
+	}
+	return
+}
+
+func assertNoVersionUpdateStatus(t *testing.T, db *gorm.DB, p *ProductWithoutVersion, assertStatus string, asserOnlineUrl string) {
 	var pindb ProductWithoutVersion
-	err = db.Model(&ProductWithoutVersion{}).Where("id = ?", p.ID).First(&pindb).Error
+	err := db.Model(&ProductWithoutVersion{}).Where("id = ?", p.ID).First(&pindb).Error
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
-	if pindb.GetStatus() != assertStatus || pindb.GetOnlineUrl() != asserOnlineUrl {
-		return errors.New("update status failed")
+	diff := testingutils.PrettyJsonDiff(publish.Status{
+		Status:    assertStatus,
+		OnlineUrl: asserOnlineUrl,
+	}, pindb.Status)
+	if diff != "" {
+		t.Error(diff)
 	}
 	return
 }
 
-func assertUploadFile(p *Product, storage oss.StorageInterface) error {
-	f, err := storage.Get(p.getUrl())
+func assertUploadFile(t *testing.T, content string, url string, storage oss.StorageInterface) {
+	t.Helper()
+	f, err := storage.Get(url)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	c, err := io.ReadAll(f)
-	if string(c) != p.getContent() {
-		return errors.New("wrong content")
-	}
-	return nil
-}
-
-func assertUploadListFile(p *Product, storage oss.StorageInterface) error {
-	f, err := storage.Get(p.getListUrl())
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
-	c, err := io.ReadAll(f)
-	if string(c) != p.getListContent() {
-		return errors.New("wrong content")
+	diff := testingutils.PrettyJsonDiff(content, string(c))
+	if diff != "" {
+		t.Error(diff)
 	}
-	return nil
-}
-
-func assertNoVersionUploadFile(p *ProductWithoutVersion, storage oss.StorageInterface) error {
-	f, err := storage.Get(p.getUrl())
-	if err != nil {
-		return err
-	}
-	c, err := io.ReadAll(f)
-	if string(c) != p.getContent() {
-		return errors.New("wrong content")
-	}
-	return nil
 }

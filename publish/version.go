@@ -3,34 +3,18 @@ package publish
 import (
 	"fmt"
 	"reflect"
+	"time"
 
-	"github.com/qor5/admin/utils"
+	"github.com/qor5/admin/v3/utils"
 	"gorm.io/gorm"
 )
 
-// @snippet_begin(PublishVersion)
-type Version struct {
-	Version       string `gorm:"primary_key;size:128"`
-	VersionName   string
-	ParentVersion string
-}
-
-// @snippet_end
-
-func (version Version) GetVersion() string {
-	return version.Version
-}
-
-func (version *Version) SetVersion(v string) {
-	version.Version = v
-}
-
-func (version Version) GetVersionName() string {
-	return version.VersionName
-}
-
-func (version *Version) SetVersionName(v string) {
-	version.VersionName = v
+func (version *Version) GetNextVersion(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	date := t.Format("2006-01-02")
+	return fmt.Sprintf("%s-v%02v", date, 1)
 }
 
 func (version *Version) CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error) {

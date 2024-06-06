@@ -2,31 +2,47 @@ package l10n
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 	"path"
+	"slices"
 	"time"
 
-	"github.com/qor5/admin/utils"
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
+	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
+	"github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
+var IncorrectLocaleErr = errors.New("incorrect locale")
+
 type Builder struct {
-	supportLocaleCodes                   []string
-	localesPaths                         map[string]string
-	paths                                []string
-	localesLabels                        map[string]string
+	db *gorm.DB
+	ab *activity.Builder
+	// models                               []*presets.ModelBuilder
+	locales                              []*loc
 	getSupportLocaleCodesFromRequestFunc func(R *http.Request) []string
 	cookieName                           string
 	queryName                            string
 }
 
-func New() *Builder {
+type loc struct {
+	code  string
+	path  string
+	label string
+}
+
+func New(db *gorm.DB) *Builder {
 	b := &Builder{
-		supportLocaleCodes: []string{},
-		localesPaths:       make(map[string]string),
-		paths:              []string{},
-		localesLabels:      make(map[string]string),
-		cookieName:         "locale",
-		queryName:          "locale",
+		db:         db,
+		cookieName: "locale",
+		queryName:  "locale",
 	}
 	return b
 }
@@ -43,38 +59,89 @@ func (b *Builder) GetQueryName() string {
 	return b.queryName
 }
 
+func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
+	b.ab = v
+	return b
+}
+
 func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r *Builder) {
-	b.supportLocaleCodes = append(b.supportLocaleCodes, localeCode)
-	b.localesPaths[localeCode] = path.Join("/", localePath)
-	if !utils.Contains(b.paths, localePath) {
-		b.paths = append(b.paths, localePath)
+	if slices.ContainsFunc(b.locales, func(l *loc) bool {
+		return l.code == localeCode
+	}) {
+		return b
 	}
-	b.localesLabels[localeCode] = localeLabel
+
+	b.locales = append(b.locales, &loc{
+		code:  localeCode,
+		path:  path.Join("/", localePath),
+		label: localeLabel,
+	})
 	return b
 }
 
 func (b *Builder) GetLocalePath(localeCode string) string {
-	p, exist := b.localesPaths[localeCode]
-	if exist {
-		return p
+	if b == nil {
+		return ""
+	}
+	for _, l := range b.locales {
+		if l.code == localeCode {
+			return l.path
+		}
 	}
 	return ""
 }
 
-func (b *Builder) GetAllLocalePaths() []string {
-	return b.paths
+type contextKeyType int
+
+const contextKey contextKeyType = iota
+
+func (b *Builder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, b)
+}
+
+func builderFromContext(c context.Context) (b *Builder, ok bool) {
+	b, ok = c.Value(contextKey).(*Builder)
+	return
+}
+
+func LocalePathFromContext(m interface{}, ctx context.Context) (localePath string) {
+	l10nBuilder, ok := builderFromContext(ctx)
+	if !ok {
+		return
+	}
+
+	if locale, ok := IsLocalizableFromContext(ctx); ok {
+		localePath = l10nBuilder.GetLocalePath(locale)
+	}
+
+	if localeCode, err := reflectutils.Get(m, "LocaleCode"); err == nil {
+		localePath = l10nBuilder.GetLocalePath(localeCode.(string))
+	}
+
+	return
+}
+
+func (b *Builder) GetAllLocalePaths() (r []string) {
+	for _, l := range b.locales {
+		r = append(r, l.path)
+	}
+	return
 }
 
 func (b *Builder) GetLocaleLabel(localeCode string) string {
-	label, exist := b.localesLabels[localeCode]
-	if exist {
-		return label
+	for _, l := range b.locales {
+		if l.code == localeCode {
+			return l.label
+		}
 	}
-	return "Unkonw"
+	return "Unknown"
 }
 
-func (b *Builder) GetSupportLocaleCodes() []string {
-	return b.supportLocaleCodes
+func (b *Builder) GetSupportLocaleCodes() (r []string) {
+	for _, l := range b.locales {
+		r = append(r, l.code)
+	}
+	return
 }
 
 func (b *Builder) GetSupportLocaleCodesFromRequest(R *http.Request) []string {
@@ -84,7 +151,7 @@ func (b *Builder) GetSupportLocaleCodesFromRequest(R *http.Request) []string {
 	return b.GetSupportLocaleCodes()
 }
 
-func (b *Builder) GetSupportLocaleCodesFromRequestFunc(v func(R *http.Request) []string) (r *Builder) {
+func (b *Builder) SupportLocalesFunc(v func(R *http.Request) []string) (r *Builder) {
 	b.getSupportLocaleCodesFromRequestFunc = v
 	return b
 }
@@ -124,7 +191,7 @@ func (b *Builder) EnsureLocale(in http.Handler) (out http.Handler) {
 			return
 		}
 
-		var localeCode = b.GetCorrectLocaleCode(r)
+		localeCode := b.GetCorrectLocaleCode(r)
 
 		maxAge := 365 * 24 * 60 * 60
 		http.SetCookie(w, &http.Cookie{
@@ -138,4 +205,137 @@ func (b *Builder) EnsureLocale(in http.Handler) (out http.Handler) {
 
 		in.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (b *Builder) Install(pb *presets.Builder) error {
+	db := b.db
+
+	pb.FieldDefaults(presets.LIST).
+		FieldType(Locale{}).
+		ComponentFunc(localeListFunc(db, b))
+	pb.FieldDefaults(presets.WRITE).
+		FieldType(Locale{}).
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
+			value := b.localeValue(obj, field, ctx)
+			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
+		}).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			value := EmbedLocale(obj).LocaleCode
+			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
+				return IncorrectLocaleErr
+			}
+
+			return nil
+		})
+
+	pb.AddWrapHandler(WrapHandlerKey, b.EnsureLocale)
+	pb.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(b))
+	pb.I18n().
+		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
+	return nil
+}
+
+func (b *Builder) localeValue(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string {
+	var value string
+	id, err := reflectutils.Get(obj, "ID")
+	if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
+		value = EmbedLocale(obj).LocaleCode
+	} else {
+		value = b.GetCorrectLocaleCode(ctx.R)
+	}
+	return value
+}
+
+func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
+	ab := b.ab
+	db := b.db
+	obj := m.NewModel()
+	_ = obj.(presets.SlugEncoder)
+	_ = obj.(presets.SlugDecoder)
+	_ = obj.(LocaleInterface)
+
+	m.Listing().Field("Locale")
+	m.Editing().Field("Locale")
+
+	m.Listing().WrapSearchFunc(func(searcher presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
+				con := presets.SQLCondition{
+					Query: "locale_code = ?",
+					Args:  []interface{}{localeCode},
+				}
+				params.SQLConditions = append(params.SQLConditions, &con)
+			}
+
+			return searcher(model, params, ctx)
+		}
+	})
+
+	m.Editing().WrapSetterFunc(func(setter presets.SetterFunc) presets.SetterFunc {
+		return func(obj interface{}, ctx *web.EventContext) {
+			if ctx.Param(presets.ParamID) == "" {
+				if localeCode := ctx.R.Context().Value(LocaleCode); localeCode != nil {
+					if err := reflectutils.Set(obj, "LocaleCode", localeCode); err != nil {
+						return
+					}
+				}
+			}
+			if setter != nil {
+				setter(obj, ctx)
+			}
+		}
+	})
+
+	m.Editing().WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
+				return
+			}
+			locale := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)["locale_code"]
+			locale = fmt.Sprintf("%s(del:%d)", locale, time.Now().UnixMilli())
+
+			var withoutKeys []string
+			if ctx.R.URL.Query().Get("all_versions") == "true" {
+				withoutKeys = append(withoutKeys, "version")
+			}
+
+			if err = utils.PrimarySluggerWhere(db.Unscoped(), obj, id, withoutKeys...).Update("locale_code", locale).Error; err != nil {
+				return
+			}
+			return
+		}
+	})
+
+	rmb := m.Listing().RowMenu()
+	rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
+
+	registerEventFuncs(db, m, b, ab)
+
+	pb.FieldDefaults(presets.LIST).
+		FieldType(Locale{}).
+		ComponentFunc(localeListFunc(db, b))
+	pb.FieldDefaults(presets.WRITE).
+		FieldType(Locale{}).
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
+			value := b.localeValue(obj, field, ctx)
+			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
+		}).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			value := EmbedLocale(obj).LocaleCode
+			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
+				return IncorrectLocaleErr
+			}
+
+			return nil
+		})
+
+	pb.AddWrapHandler(WrapHandlerKey, b.EnsureLocale)
+	pb.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(b))
+	pb.I18n().
+		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
+	return nil
 }

@@ -14,6 +14,50 @@ type PublishAction struct {
 	IsDelete bool
 }
 
+// @snippet_begin(PublishList)
+type List struct {
+	PageNumber  int
+	Position    int
+	ListDeleted bool
+	ListUpdated bool
+}
+
+// @snippet_end
+
+// @snippet_begin(PublishSchedule)
+type Schedule struct {
+	ScheduledStartAt *time.Time `gorm:"index"`
+	ScheduledEndAt   *time.Time `gorm:"index"`
+
+	ActualStartAt *time.Time
+	ActualEndAt   *time.Time
+}
+
+// @snippet_end
+
+// @snippet_begin(PublishStatus)
+const (
+	StatusDraft   = "draft"
+	StatusOnline  = "online"
+	StatusOffline = "offline"
+)
+
+type Status struct {
+	Status    string `gorm:"default:'draft'"`
+	OnlineUrl string
+}
+
+// @snippet_end
+
+// @snippet_begin(PublishVersion)
+type Version struct {
+	Version       string `gorm:"primary_key;size:128;not null;"`
+	VersionName   string
+	ParentVersion string
+}
+
+// @snippet_end
+
 type PublishInterface interface {
 	GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
 }
@@ -31,41 +75,42 @@ type AfterUnPublishInterface interface {
 }
 
 type StatusInterface interface {
-	GetStatus() string
-	SetStatus(s string)
-	GetOnlineUrl() string
-	SetOnlineUrl(s string)
+	EmbedStatus() *Status
+}
+
+func (s *Status) EmbedStatus() *Status {
+	return s
+}
+
+func EmbedStatus(v any) *Status {
+	return v.(StatusInterface).EmbedStatus()
 }
 
 type VersionInterface interface {
-	GetVersion() string
-	SetVersion(v string)
-	GetVersionName() string
-	SetVersionName(v string)
+	EmbedVersion() *Version
 	CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error)
 }
 
+func (s *Version) EmbedVersion() *Version {
+	return s
+}
+
+func EmbedVersion(v any) *Version {
+	return v.(VersionInterface).EmbedVersion()
+}
+
 type ScheduleInterface interface {
-	GetStatus() string
+	EmbedSchedule() *Schedule
+}
 
-	GetScheduledStartAt() *time.Time
-	GetScheduledEndAt() *time.Time
-	SetScheduledStartAt(v *time.Time)
-	SetScheduledEndAt(v *time.Time)
-
-	GetPublishedAt() *time.Time
-	GetUnPublishedAt() *time.Time
-	SetPublishedAt(v *time.Time)
-	SetUnPublishedAt(v *time.Time)
+func (s *Schedule) EmbedSchedule() *Schedule {
+	return s
 }
 
 type ListInterface interface {
-	GetPageNumber() int
-	SetPageNumber(pageNumber int)
-	GetPosition() int
-	SetPosition(position int)
-	GetListDeleted() bool
-	SetListDeleted(listDeleted bool)
-	GetListUpdated() bool
-	SetListUpdated(listUpdated bool)
+	EmbedList() *List
+}
+
+func (s *List) EmbedList() *List {
+	return s
 }

@@ -2,29 +2,35 @@ package integration_test
 
 import (
 	"embed"
-	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3control"
-	"github.com/qor/oss/s3"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/media/oss"
-	"github.com/qor5/web/multipartestutils"
-	"gorm.io/driver/postgres"
+	"github.com/qor/oss/filesystem"
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
 //go:embed *.png
 var box embed.FS
 
-func setup() (db *gorm.DB) {
-	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+var TestDB *gorm.DB
+
+func TestMain(m *testing.M) {
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
+	TestDB = env.DB
+	m.Run()
+}
+
+func setup() (db *gorm.DB) {
+	var err error
+	db = TestDB
 
 	db = db.Debug()
 	// db.Logger = db.Logger.LogMode(logger.Info)
@@ -35,14 +41,7 @@ func setup() (db *gorm.DB) {
 		panic(err)
 	}
 
-	sess := session.Must(session.NewSession())
-
-	oss.Storage = s3.New(&s3.Config{
-		Bucket:  os.Getenv("S3_Bucket"),
-		Region:  os.Getenv("S3_Region"),
-		ACL:     s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session: sess,
-	})
+	oss.Storage = filesystem.New("/tmp/media_test")
 
 	return
 }
@@ -62,9 +61,8 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = media.SaveUploadAndCropImage(db, &m)
+	err = base.SaveUploadAndCropImage(db, &m)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }

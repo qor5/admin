@@ -5,13 +5,12 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-	syncp "sync"
 
 	"github.com/gosimple/unidecode"
-	"github.com/qor5/admin/presets"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -24,16 +23,21 @@ const (
 	I18nSlugKey i18n.ModuleKey = "I18nSlugKey"
 )
 
-var once = syncp.Once{}
+type Builder struct{}
 
-func Configure(b *presets.Builder, mb *presets.ModelBuilder) {
-	once.Do(func() {
-		b.I18n().
-			RegisterForModule(language.English, I18nSlugKey, Messages_en_US).
-			RegisterForModule(language.SimplifiedChinese, I18nSlugKey, Messages_zh_CN)
-		b.GetWebBuilder().RegisterEventFunc(syncEvent, sync)
-	})
+func New() *Builder {
+	return &Builder{}
+}
 
+func (sb *Builder) Install(b *presets.Builder) error {
+	b.I18n().
+		RegisterForModule(language.English, I18nSlugKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nSlugKey, Messages_zh_CN)
+	b.GetWebBuilder().RegisterEventFunc(syncEvent, sync)
+	return nil
+}
+
+func (sb *Builder) ModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	reflectType := reflect.Indirect(reflect.ValueOf(mb.NewModel())).Type()
 	if reflectType.Kind() != reflect.Struct {
 		panic("slug: model must be struct")
@@ -55,6 +59,7 @@ func Configure(b *presets.Builder, mb *presets.ModelBuilder) {
 			editingBuilder.Field(fieldName).SetterFunc(SlugEditingSetterFunc)
 		}
 	}
+	return nil
 }
 
 func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -64,9 +69,8 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 	return VSheet(
 		VTextField().
 			Type("text").
-			FieldName(field.Name).
+			Attr(web.VField(field.Name, field.Value(obj))...).
 			Label(field.Label).
-			Value(field.Value(obj)).
 			Attr("v-debounce:input", "300").
 			Attr("@input:debounced", web.Plaid().
 				EventFunc(syncEvent).Query("field_name", field.Name).Query("slug_label", slugLabel).Go()),
@@ -76,12 +80,12 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 				web.Portal(
 					VTextField().
 						Type("text").
-						FieldName(slugFieldName).
-						Label(slugLabel).
-						Value(reflectutils.MustGet(obj, slugFieldName).(Slug))).Name(portalName(slugFieldName)),
+						Attr(web.VField(slugFieldName, reflectutils.MustGet(obj, slugFieldName).(Slug))...).
+						Label(slugLabel).Name(portalName(slugFieldName)),
+				),
 			).Cols(8),
 			VCol(
-				VCheckbox().FieldName(checkBoxName(slugFieldName)).InputValue(true).Label(fmt.Sprintf(msgr.Sync,
+				VCheckbox().Attr(web.VField(checkBoxName(slugFieldName), "")...).Value(true).Label(fmt.Sprintf(msgr.Sync,
 					strings.ToLower(field.Label))),
 			).Cols(4),
 		),
@@ -112,9 +116,8 @@ func sync(ctx *web.EventContext) (r web.EventResponse, err error) {
 		Name: portalName(slugFieldName),
 		Body: VTextField().
 			Type("text").
-			FieldName(slugFieldName).
-			Label(ctx.R.FormValue("slug_label")).
-			Value(slug(ctx.R.FormValue(fieldName))),
+			Attr(web.VField(slugFieldName, slug(ctx.R.FormValue(fieldName)))...).
+			Label(ctx.R.FormValue("slug_label")),
 	})
 	return
 }

@@ -6,14 +6,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 
-var (
-	wildcardReg = regexp.MustCompile(`[%_]`)
-)
+var wildcardReg = regexp.MustCompile(`[%_]`)
 
 func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 	r = &DataOperatorBuilder{db: db}

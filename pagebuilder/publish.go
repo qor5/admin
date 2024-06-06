@@ -8,33 +8,38 @@ import (
 	"path/filepath"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/admin/publish"
-	"github.com/qor5/web"
-	"github.com/sunfmin/reflectutils"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/publish"
 	"gorm.io/gorm"
 )
 
+type contextKeyType int
+
+const contextKey contextKeyType = iota
+
+func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, contextKey, b)
+}
+
+func builderFromContext(c context.Context) (b *ModelBuilder, ok bool) {
+	b, ok = c.Value(contextKey).(*ModelBuilder)
+	return
+}
+
 func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	var b *Builder
+	var b *ModelBuilder
 	var ok bool
-	if b, ok = ctx.Value(publish.PublishContextKeyPageBuilder).(*Builder); !ok || b == nil {
+	if b, ok = builderFromContext(ctx); !ok || b == nil {
 		return
 	}
 	content, err := p.getPublishContent(b, ctx)
 	if err != nil {
 		return
 	}
+
 	var localePath string
-	if l10nBuilder, ok := ctx.Value(publish.PublishContextKeyL10nBuilder).(*l10n.Builder); ok && l10nBuilder != nil && l10nON {
-		if eventCtx, ok := ctx.Value(publish.PublishContextKeyEventContext).(*web.EventContext); ok && eventCtx != nil {
-			if locale, ok := l10n.IsLocalizableFromCtx(eventCtx.R.Context()); ok {
-				localePath = l10nBuilder.GetLocalePath(locale)
-			}
-		}
-		if localeCode, err := reflectutils.Get(p, "LocaleCode"); err == nil {
-			localePath = l10nBuilder.GetLocalePath(localeCode.(string))
-		}
+	if b.builder.l10n != nil {
+		localePath = l10n.LocalePathFromContext(p, ctx)
 	}
 
 	var category Category
@@ -47,12 +52,12 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		Content:  content,
 		IsDelete: false,
 	})
-	p.SetOnlineUrl(p.getPublishUrl(localePath, category.Path))
+	p.OnlineUrl = p.getPublishUrl(localePath, category.Path)
 
 	var liveRecord Page
 	{
 		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
-		if l10nON {
+		if b.builder.l10n != nil {
 			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
 		}
 		lrdb.First(&liveRecord)
@@ -61,9 +66,9 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 		return
 	}
 
-	if liveRecord.GetOnlineUrl() != p.GetOnlineUrl() {
+	if liveRecord.OnlineUrl != p.OnlineUrl {
 		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.GetOnlineUrl(),
+			Url:      liveRecord.OnlineUrl,
 			IsDelete: true,
 		})
 	}
@@ -73,7 +78,7 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 
 func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
-		Url:      p.GetOnlineUrl(),
+		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
 	return
@@ -91,11 +96,11 @@ func (p *Page) getAccessUrl(publishUrl string) string {
 	return filepath.Dir(publishUrl)
 }
 
-func (p *Page) getPublishContent(b *Builder, ctx context.Context) (r string, err error) {
+func (p *Page) getPublishContent(b *ModelBuilder, _ context.Context) (r string, err error) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%d&version=%s&locale=%s", p.ID, p.GetVersion(), p.GetLocale()), nil)
-	b.preview.ServeHTTP(w, req)
 
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return
 }

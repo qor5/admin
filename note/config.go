@@ -3,14 +3,13 @@ package note
 import (
 	"fmt"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -21,30 +20,9 @@ const (
 	updateUserNoteEvent = "note_UpdateUserNoteEvent"
 )
 
-func Configure(db *gorm.DB, pb *presets.Builder, models ...*presets.ModelBuilder) {
-	if err := db.AutoMigrate(QorNote{}, UserNote{}); err != nil {
-		panic(err)
-	}
-
-	for _, m := range models {
-		if m.Info().HasDetailing() {
-			m.Detailing().AppendTabsPanelFunc(tabsPanel(db, m))
-		}
-		m.Editing().AppendTabsPanelFunc(tabsPanel(db, m))
-		m.RegisterEventFunc(createNoteEvent, createNoteAction(db, m))
-		m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(db, m))
-		m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
-	}
-
-	pb.I18n().
-		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
-		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
-}
-
-func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFunc {
-	return func(obj interface{}, ctx *web.EventContext) (c h.HTMLComponent) {
-		id := ctx.R.FormValue(presets.ParamID)
+func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.TabComponentFunc {
+	return func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
+		id := ctx.Param(presets.ParamID)
 		if len(id) == 0 {
 			return
 		}
@@ -74,12 +52,15 @@ func tabsPanel(db *gorm.DB, mb *presets.ModelBuilder) presets.ObjectComponentFun
 		if count == 0 {
 			clickEvent = ""
 		}
-		c = h.Components(
-			VTab(notesTab).
-				Attr(web.InitContextLocals, fmt.Sprintf("{unreadNotesCount:%v}", count)).
-				Attr("@click", clickEvent),
-			VTabItem(web.Portal().Name("notes-section").Children(notesSection)),
-		)
+
+		const tabKey = "notesTab"
+
+		tab = VTab(notesTab).
+			Attr(web.VAssign("locals", fmt.Sprintf("{unreadNotesCount:%v}", count))...).
+			Attr("@click", clickEvent).Value(tabKey)
+		content = VTabsWindowItem(
+			web.Portal().Name("notes-section").Children(notesSection),
+		).Value(tabKey)
 
 		return
 	}

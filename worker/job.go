@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/presets"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -27,7 +27,7 @@ type JobBuilder struct {
 	r              interface{}
 	rmb            *presets.ModelBuilder
 	h              JobHandler
-	contextHandler func(*web.EventContext) map[string]interface{} //optional
+	contextHandler func(*web.EventContext) map[string]interface{} // optional
 	global         bool
 }
 
@@ -71,8 +71,7 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 			if t != nil {
 				v = t.Local().Format("2006-01-02 15:04")
 			}
-			return vx.VXDateTimePicker().FieldName(field.Name).Label(msgr.ScheduleTime).
-				Value(v).
+			return vx.VXDateTimePicker().Attr(web.VField(field.Name, v)...).Label(msgr.ScheduleTime).
 				TimePickerProps(vx.TimePickerProps{
 					Format:     "24hr",
 					Scrollable: true,
@@ -388,7 +387,7 @@ func (job *QorJobInstance) getArgument() (interface{}, error) {
 }
 
 func (job *QorJobInstance) getContext() (map[string]interface{}, error) {
-	var context = make(map[string]interface{})
+	context := make(map[string]interface{})
 	err := json.Unmarshal([]byte(job.Context), &context)
 	return context, err
 }

@@ -6,21 +6,23 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/qor5/admin/example/models"
-	"github.com/qor5/admin/media"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/publish"
 
-	"github.com/qor5/admin/worker"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/worker"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
-func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets.ModelBuilder {
-	p := b.Model(&models.Product{})
+func configProduct(b *presets.Builder, _ *gorm.DB, wb *worker.Builder, publisher *publish.Builder) *presets.ModelBuilder {
+	p := b.Model(&models.Product{}).Use(publisher)
 	eb := p.Editing("StatusBar", "ScheduleBar", "Code", "Name", "Price", "Image")
 	listing := p.Listing("Code", "Name", "Price", "Image").SearchColumns("Code", "Name").SelectableColumns(true)
 	listing.ActionsAsMenu(true)
@@ -126,27 +128,27 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets
 	listing.BulkAction("Action Job - No parameters").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - No parameters").Color("secondary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - No parameters").Color("secondary").Variant(vuetify.VariantFlat).Class("ml-2").
 					Attr("@click", noParametersJob.URL())
 			})
 
 	listing.BulkAction("Action Job - Parameter input box").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Parameter input box").Color("secondary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Parameter input box").Color("secondary").Variant(vuetify.VariantFlat).Class("ml-2").
 					Attr("@click", parametersBoxJob.URL())
 			})
 	listing.BulkAction("Action Job - Display log").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Display log").Color("secondary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Display log").Color("secondary").Variant(vuetify.VariantFlat).Class("ml-2").
 					Attr("@click", displayLogJob.URL())
 			})
 
 	listing.BulkAction("Action Job - Get Args").
 		ButtonCompFunc(
 			func(ctx *web.EventContext) h.HTMLComponent {
-				return vuetify.VBtn("Action Job - Get Args").Color("secondary").Depressed(true).Class("ml-2").
+				return vuetify.VBtn("Action Job - Get Args").Color("secondary").Variant(vuetify.VariantFlat).Class("ml-2").
 					Attr("@click", getArgsJob.URL())
 			})
 
@@ -163,10 +165,10 @@ func configProduct(b *presets.Builder, db *gorm.DB, wb *worker.Builder) *presets
 
 	eb.Field("Image").
 		WithContextValue(
-			media_view.MediaBoxConfig,
+			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
 				AllowType: "image",
-				Sizes: map[string]*media.Size{
+				Sizes: map[string]*base.Size{
 					"thumb": {
 						Width:  100,
 						Height: 100,

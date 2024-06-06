@@ -4,15 +4,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/qor5/ui/vuetify"
+	"github.com/qor5/ui/v3/vuetify"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -60,7 +57,7 @@ func (this *ListItems) Scan(value interface{}) error {
 }
 
 func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("ListContent").
+	vb := pb.RegisterContainer("ListContent").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*ListContent)
 			return ListContentBody(v, input)
@@ -69,17 +66,17 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "Items", "Link", "LinkText", "LinkDisplayOption")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
+			Variant(vuetify.FieldVariantUnderlined).
 			Items([]string{"white", "grey"}).
-			Value(field.Value(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 	eb.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VSelect().
 			Items([]string{"desktop", "mobile", "all"}).
-			Value(field.Value(obj)).
+			Variant(vuetify.FieldVariantUnderlined).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItem{}).Only("HeadingIcon", "Heading", "Text", "Link", "LinkText")
@@ -89,9 +86,9 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func ListContentBody(data *ListContent, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContent"))+"_%v", data.ID), data.AnchorID, "container-list_content container-lottie",
+		data.AnchorID, "container-list_content container-lottie",
 		data.BackgroundColor, "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			ListItemsBody(data.Items, input),
 			If(data.LinkText != "" && data.Link != "",

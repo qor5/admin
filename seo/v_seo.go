@@ -12,7 +12,7 @@ type VSeoBuilder struct {
 
 func VSeo(children ...h.HTMLComponent) (r *VSeoBuilder) {
 	r = &VSeoBuilder{
-		tag: h.Tag("v-seo").Children(children...),
+		tag: h.Tag("vx-send-variables").Children(children...),
 	}
 	return
 }

@@ -4,25 +4,24 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
-	"os"
 	"path"
 
-	"github.com/qor5/x/i18n"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers"
+	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
-
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/pagebuilder/example/containers"
-	"github.com/qor5/admin/pagebuilder/example/layouts"
-	"github.com/qor5/admin/richeditor"
+	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+var dbParamsString = osenv.Get("DB_PARAMS", "page builder example database connection string", "")
+
 func ConnectDB() (db *gorm.DB) {
 	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DB_PARAMS")), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dbParamsString), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -57,12 +56,11 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 		pb.PageStyle(h.RawHTML(style))
 	}
 
-	media_view.Configure(pb.GetPresetsBuilder(), db)
-
 	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	pb.PageLayout(layouts.DefaultPageLayoutFunc)
+
+	pb.PageLayout(pagebuilder.DefaultPageLayoutFunc)
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"
 	pb.Images(http.StripPrefix(path.Join(prefix, imagePrefix), http.FileServer(http.FS(fSys))), imagePrefix)

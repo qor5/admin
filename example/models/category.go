@@ -8,7 +8,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/qor/oss"
-	"github.com/qor5/admin/publish"
+	"github.com/qor5/admin/v3/publish"
 	"gorm.io/gorm"
 )
 

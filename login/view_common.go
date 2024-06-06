@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/login"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/login"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -49,8 +49,8 @@ func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("error")
@@ -61,8 +61,8 @@ func (vc *ViewCommon) WarnNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("warning")
@@ -73,8 +73,8 @@ func (vc *ViewCommon) InfoNotice(msg string) HTMLComponent {
 		return nil
 	}
 
-	return v.VAlert(Text(msg)).
-		Dense(true).
+	return VAlert(Text(msg)).
+		Density(DensityCompact).
 		Class("text-center").
 		Icon(false).
 		Type("info")
@@ -90,15 +90,15 @@ func (vc *ViewCommon) Input(
 	id string,
 	placeholder string,
 	val string,
-) *v.VTextFieldBuilder {
-	return v.VTextField().
+) *VTextFieldBuilder {
+	return VTextField().
 		Attr("name", id).
 		Id(id).
 		Placeholder(placeholder).
-		Value(val).
-		Outlined(true).
+		ModelValue(val).
+		Variant(VariantOutlined).
 		HideDetails(true).
-		Dense(true)
+		Density(DensityCompact)
 }
 
 func (vc *ViewCommon) PasswordInput(
@@ -106,65 +106,45 @@ func (vc *ViewCommon) PasswordInput(
 	placeholder string,
 	val string,
 	canReveal bool,
-) *v.VTextFieldBuilder {
+) *VTextFieldBuilder {
 	in := vc.Input(id, placeholder, val)
 	if canReveal {
 		varName := fmt.Sprintf(`show_%s`, id)
-		in.Attr(":append-icon", fmt.Sprintf(`vars.%s ? "visibility_off" : "visibility"`, varName)).
+		in.Attr(":append-inner-icon", fmt.Sprintf(`vars.%s ? "mdi-eye-off" : "mdi-eye"`, varName)).
 			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
-			Attr("@click:append", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
-			Attr(web.InitContextVars, fmt.Sprintf(`{%s: false}`, varName))
+			Attr("@click:append-inner", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
+			Attr(web.VAssign("vars", fmt.Sprintf(`{%s: false}`, varName))...)
 	}
 
 	return in
 }
 
-// need to import zxcvbn js
-// func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
-// 	passVar := fmt.Sprintf(`password_%s`, id)
-// 	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-// 	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-// 		Attr(":loading", fmt.Sprintf(`!!vars.%s`, passVar)).
-// 		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-// 	return Div(
-// 		in.Children(
-// 			RawHTML(fmt.Sprintf(`
-//         <template v-slot:progress>
-//           <v-progress-linear
-//             :value="vars.%s * 20"
-//             :color="['grey', 'red', 'deep-orange', 'amber', 'yellow', 'light-green'][vars.%s]"
-//             absolute
-//           ></v-progress-linear>
-//         </template>
-//             `, meterScoreVar, meterScoreVar)),
-// 		),
-// 	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
-// }
-
 // need to import zxcvbn.js
-func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *v.VTextFieldBuilder, id string, val string) HTMLComponent {
-	passVar := fmt.Sprintf(`password_%s`, id)
-	meterScoreVar := fmt.Sprintf(`meter_score_%s`, id)
-	in.Attr("v-model", fmt.Sprintf(`vars.%s`, passVar)).
-		On("input", fmt.Sprintf(`vars.%s = vars.%s ? zxcvbn(vars.%s).score + 1 : 0`, meterScoreVar, passVar, passVar))
-	return Div(
+func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *VTextFieldBuilder, id string, val string) HTMLComponent {
+	in.Attr("v-model", fmt.Sprintf(`form.%s`, id))
+	return Components(
 		in,
-		v.VProgressLinear().
-			Class("mt-2").
-			Attr(":value", fmt.Sprintf(`vars.%s * 20`, meterScoreVar)).
-			Attr(":color", fmt.Sprintf(`["grey", "red", "deep-orange", "amber", "yellow", "light-green"][vars.%s]`, meterScoreVar)).
-			Attr("v-show", fmt.Sprintf(`!!vars.%s`, passVar)),
-	).Attr(web.InitContextVars, fmt.Sprintf(`{%s: "%s", %s: "%s" ? zxcvbn("%s").score + 1 : 0}`, passVar, val, meterScoreVar, val, val))
+		Div(
+			web.Scope(
+				VProgressLinear().
+					Class("mt-2").
+					Attr(":model-value", fmt.Sprintf(`(vars.meter_score?vars.meter_score(form.%s):0) * 20`, id)).
+					// TODO reset color
+					Attr(":color", fmt.Sprintf(`["secondary", "error-darken-1", "error", "warning", "warning-lighten-1", "success"][(vars.meter_score?vars.meter_score(form.%s):0)]`, id)),
+			).VSlot("{ locals }").
+				Init(fmt.Sprintf(`{ meter_score:  0 }`)),
+		).Id(fmt.Sprintf("password_%s", id)).Attr("v-show", fmt.Sprintf("!!form.%s", id)),
+	)
 }
 
 func (vc *ViewCommon) FormSubmitBtn(
 	label string,
-) *v.VBtnBuilder {
-	return v.VBtn(label).
+) *VBtnBuilder {
+	return VBtn(label).
 		Color("primary").
 		Block(true).
-		Large(true).
-		Type("submit").
+		Size(SizeLarge).
+		Attr("type", "submit").
 		Class("mt-6")
 }
 

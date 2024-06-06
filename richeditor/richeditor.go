@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/ui/redactor"
-	v "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/ui/v3/redactor"
+	v "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -20,9 +20,11 @@ import (
 // how to add own plugins
 // 1. load plugin jss,css to PluginsJS,PluginsCSS
 // 2. add plugin names in Plugins array
-var Plugins = []string{"alignment", "table", "video", "imageinsert"}
-var PluginsJS [][]byte
-var PluginsCSS [][]byte
+var (
+	Plugins    = []string{"alignment", "table", "video", "imageinsert"}
+	PluginsJS  [][]byte
+	PluginsCSS [][]byte
+)
 
 type RichEditorBuilder struct {
 	db          *gorm.DB
@@ -72,7 +74,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	if b.setPlugins {
 		p = b.plugins
 	}
-	redactorB := redactor.New().Value(b.value).Placeholder(b.placeholder).Attr(web.VFieldName(b.name)...)
+	redactorB := redactor.New().Placeholder(b.placeholder).Attr(web.VField(b.name, b.value)...)
 	if b.rawConfig != nil {
 		redactorB.RawConfig(b.rawConfig)
 	} else {
@@ -83,7 +85,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Label(b.label).Class("v-label theme--light"),
 			redactorB,
 			h.Div(
-				media_view.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
+				media.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
 					Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 					AllowType: "image",
 				}),

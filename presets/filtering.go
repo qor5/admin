@@ -3,8 +3,8 @@ package presets
 import (
 	"net/url"
 
-	"github.com/qor5/web"
-	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 )
 
 func (b *ListingBuilder) FilterDataFunc(v FilterDataFunc) {
@@ -32,7 +32,7 @@ func (b *ListingBuilder) FilterTabsFunc(v FilterTabsFunc) {
 		fts := v(ctx)
 		for _, ft := range fts {
 			newQuery := make(url.Values)
-			for k, _ := range ft.Query {
+			for k := range ft.Query {
 				newQuery["f_"+k] = ft.Query[k]
 			}
 			ft.Query = newQuery

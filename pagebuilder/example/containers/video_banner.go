@@ -1,14 +1,9 @@
 package containers
 
 import (
-	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -34,7 +29,7 @@ func (*VideoBanner) TableName() string {
 }
 
 func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
-	vb := pb.RegisterContainer("Video Banner").
+	vb := pb.RegisterContainer("Video Banner").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*VideoBanner)
 			return VideoBannerBody(v, input)
@@ -46,9 +41,9 @@ func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 
 func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("VideoBanner"))+"_%v", data.ID), data.AnchorID, "container-video_banner",
+		data.AnchorID, "container-video_banner",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div().Class("container-video_banner-mask"), VideoBannerHeadBody(data), VideoBannerFootBody(data),
 		// If(data.PopupText != "", VideoBannerPopupBody(data)),
 	)
@@ -74,7 +69,6 @@ func VideoBannerHeadBody(data *VideoBanner) HTMLComponent {
 }
 
 func VideoBannerFootBody(data *VideoBanner) HTMLComponent {
-
 	return Div(
 		Div(
 			P(Text(data.Text)).Class("container-video_banner-text p-large"),

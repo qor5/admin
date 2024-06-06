@@ -4,15 +4,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/media/media_library"
-	media_view "github.com/qor5/admin/media/views"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -52,7 +49,7 @@ func (this *Brands) Scan(value interface{}) error {
 }
 
 func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("BrandGrid").
+	vb := pb.RegisterContainer("BrandGrid").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*BrandGrid)
 			return BrandGridBody(v, input)
@@ -61,7 +58,7 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Brands")
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&Brand{}).Only("Image", "Name")
-	fb.Field("Image").WithContextValue(media_view.MediaBoxConfig, &media_library.MediaBoxConfig{
+	fb.Field("Image").WithContextValue(media.MediaBoxConfig, &media_library.MediaBoxConfig{
 		AllowType: "image",
 	})
 
@@ -69,10 +66,9 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 }
 
 func BrandGridBody(data *BrandGrid, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("BrandGrid"))+"_%v", data.ID), data.AnchorID, "container-brand_grid",
+	body = ContainerWrapper(data.AnchorID, "container-brand_grid",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			BrandsBody(data.Brands, input),
 		).Class("container-wrapper"),

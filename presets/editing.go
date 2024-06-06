@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/presets/actions"
-	. "github.com/qor5/ui/vuetify"
-	vx "github.com/qor5/ui/vuetifyx"
-	"github.com/qor5/web"
-	"github.com/qor5/x/i18n"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets/actions"
+	. "github.com/qor5/ui/v3/vuetify"
+	vx "github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -22,11 +21,12 @@ type EditingBuilder struct {
 	Saver            SaveFunc
 	Deleter          DeleteFunc
 	Validator        ValidateFunc
-	tabPanels        []ObjectComponentFunc
+	tabPanels        []TabComponentFunc
 	hiddenFuncs      []ObjectComponentFunc
-	sidePanel        ComponentFunc
+	sidePanel        ObjectComponentFunc
 	actionsFunc      ObjectComponentFunc
 	editingTitleFunc EditingTitleComponentFunc
+	onChangeAction   OnChangeActionFunc
 	FieldsBuilder
 }
 
@@ -55,6 +55,10 @@ func (b *EditingBuilder) Except(vs ...string) (r *EditingBuilder) {
 }
 
 func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
+	if b.mb.creating != nil && len(vs) == 0 {
+		return b.mb.creating
+	}
+
 	if b.mb.creating == nil {
 		b.mb.creating = &EditingBuilder{
 			mb:        b.mb,
@@ -65,9 +69,16 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 			Validator: b.Validator,
 		}
 	}
-	r = b.mb.creating
 
-	r.FieldsBuilder = *b.mb.writeFields.Only(vs...)
+	b.mb.creating.FieldsBuilder = *b.FieldsBuilder.Clone()
+	r = b.mb.creating
+	if len(vs) == 0 {
+		for _, f := range b.fields {
+			vs = append(vs, f.name)
+		}
+	}
+
+	r.FieldsBuilder = *b.FieldsBuilder.Only(vs...)
 
 	return r
 }
@@ -77,8 +88,18 @@ func (b *EditingBuilder) FetchFunc(v FetchFunc) (r *EditingBuilder) {
 	return b
 }
 
+func (b *EditingBuilder) WrapFetchFunc(w func(in FetchFunc) FetchFunc) (r *EditingBuilder) {
+	b.Fetcher = w(b.Fetcher)
+	return b
+}
+
 func (b *EditingBuilder) SaveFunc(v SaveFunc) (r *EditingBuilder) {
 	b.Saver = v
+	return b
+}
+
+func (b *EditingBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *EditingBuilder) {
+	b.Saver = w(b.Saver)
 	return b
 }
 
@@ -87,8 +108,18 @@ func (b *EditingBuilder) DeleteFunc(v DeleteFunc) (r *EditingBuilder) {
 	return b
 }
 
+func (b *EditingBuilder) WrapDeleteFunc(w func(in DeleteFunc) DeleteFunc) (r *EditingBuilder) {
+	b.Deleter = w(b.Deleter)
+	return b
+}
+
 func (b *EditingBuilder) ValidateFunc(v ValidateFunc) (r *EditingBuilder) {
 	b.Validator = v
+	return b
+}
+
+func (b *EditingBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *EditingBuilder) {
+	b.Validator = w(b.Validator)
 	return b
 }
 
@@ -97,17 +128,27 @@ func (b *EditingBuilder) SetterFunc(v SetterFunc) (r *EditingBuilder) {
 	return b
 }
 
-func (b *EditingBuilder) AppendTabsPanelFunc(v ObjectComponentFunc) (r *EditingBuilder) {
+func (b *EditingBuilder) OnChangeActionFunc(v OnChangeActionFunc) (r *EditingBuilder) {
+	b.onChangeAction = v
+	return b
+}
+
+func (b *EditingBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *EditingBuilder) {
+	b.Setter = w(b.Setter)
+	return b
+}
+
+func (b *EditingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *EditingBuilder) {
 	b.tabPanels = append(b.tabPanels, v)
 	return b
 }
 
-func (b *EditingBuilder) CleanTabsPanels() (r *EditingBuilder) {
-	b.tabPanels = nil
+func (b *EditingBuilder) TabsPanels(vs ...TabComponentFunc) (r *EditingBuilder) {
+	b.tabPanels = vs
 	return b
 }
 
-func (b *EditingBuilder) SidePanelFunc(v ComponentFunc) (r *EditingBuilder) {
+func (b *EditingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *EditingBuilder) {
 	b.sidePanel = v
 	return b
 }
@@ -138,7 +179,7 @@ func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, er
 		creatingB = b.mb.creating
 	}
 
-	b.mb.p.overlay(ctx.R.FormValue(ParamOverlay), &r, creatingB.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, creatingB.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return
 }
 
@@ -147,7 +188,7 @@ func (b *EditingBuilder) formEdit(ctx *web.EventContext) (r web.EventResponse, e
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-	b.mb.p.overlay(ctx.R.FormValue(ParamOverlay), &r, b.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
+	b.mb.p.overlay(ctx, &r, b.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return
 }
 
@@ -176,13 +217,15 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 
 func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 	msgr := MustGetMessages(ctx.R)
-
 	id := ctx.R.FormValue(ParamID)
+	overlayType := ctx.R.FormValue(ParamOverlay)
+	isAutoSave := b.onChangeAction != nil && overlayType == actions.Content
+
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
 
-	var buttonLabel = msgr.Create
+	buttonLabel := msgr.Create
 	var disableUpdateBtn bool
 	var title h.HTMLComponent
 	title = h.Text(msgr.CreatingObjectTitle(
@@ -231,19 +274,19 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			}
 		}
 		if text != "" {
-			showVar := fmt.Sprintf("id%d", uuid.New().ID())
-			notice = VSnackbar().Top(true).Timeout(-1).Color(color).
-				Attr("v-model", fmt.Sprintf("vars.%s", showVar)).
-				Attr(web.InitContextVars, fmt.Sprintf(`{%s: true}`, showVar)).
-				Children(
+			notice = web.Scope(
+				VSnackbar(
 					h.Text(text),
-					h.Template().Attr("v-slot:action", "{ attrs }").Children(
-						VBtn("").Text(true).
-							Attr("v-bind", "attrs").
-							Attr("@click", fmt.Sprintf("vars.%s = false", showVar)).
-							Children(VIcon("close")),
-					),
-				)
+					web.Slot(
+						VBtn("").Variant("text").
+							Attr("@click", "locals.show = false").
+							Children(VIcon("mdi-close")),
+					).Name("actions"),
+				).Location("top").
+					Timeout(-1).
+					Color(color).
+					Attr("v-model", "locals.show"),
+			).VSlot("{ locals }").Init(`{ show: true }`)
 		}
 	}
 
@@ -278,71 +321,47 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		hiddenComps = append(hiddenComps, hf(obj, ctx))
 	}
 
-	formContent := h.Components(
+	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
-		VCardActions(actionButtons),
-	)
+		h.If(!isAutoSave, VCardActions(actionButtons)),
+	))
 
-	var asideContent h.HTMLComponent = formContent
-	if len(b.tabPanels) != 0 {
-		var tabs []h.HTMLComponent
+	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
+		formContent: formContent,
+		tabPanels:   b.tabPanels,
+		sidePanel:   b.sidePanel,
+	}, obj, ctx)
 
-		for _, panelFunc := range b.tabPanels {
-			value := panelFunc(obj, ctx)
-			if value != nil {
-				tabs = append(tabs, value)
-			}
-		}
-
-		if len(tabs) != 0 {
-			asideContent = VTabs(
-				VTab(h.Text(msgr.FormTitle)),
-				VTabItem(web.Scope(formContent).VSlot("{plaidForm}")),
-				h.Components(tabs...),
-			).Class("v-tabs--fixed-tabs")
-		}
-	} else {
-		asideContent = web.Scope(formContent).VSlot("{plaidForm}")
-	}
-
-	if b.sidePanel != nil {
-		sidePanel := b.sidePanel(ctx)
-		if sidePanel != nil {
-			asideContent = VContainer(
-				VRow(
-					VCol(asideContent).Cols(8),
-					VCol(sidePanel).Cols(4),
-				),
-			)
-		}
-	}
-
-	overlayType := ctx.R.FormValue(ParamOverlay)
-	closeBtnVarScript := closeRightDrawerVarScript
+	closeBtnVarScript := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = closeDialogVarScript
 	}
-
-	return web.Scope(
+	scope := web.Scope(
 		notice,
-		h.If(!b.mb.singleton,
-			VAppBar(
-				VToolbarTitle("").Class("pl-2").
-					Children(title),
-				VSpacer(),
-				VBtn("").Icon(true).Children(
-					VIcon("close"),
-				).Attr("@click.stop", closeBtnVarScript),
-			).Color("white").Elevation(0).Dense(true),
-		),
-
-		VSheet(
-			VCard(asideContent).Flat(true),
-		).Class("pa-2"),
-	).VSlot("{ plaidForm }")
+		VLayout(
+			h.If(!b.mb.singleton,
+				VAppBar(
+					VToolbarTitle("").Class("pl-2").
+						Children(title),
+					VSpacer(),
+					h.If(!isAutoSave, VBtn("").Icon(true).Children(
+						VIcon("mdi-close"),
+					).Attr("@click.stop", closeBtnVarScript)),
+				).Color("white").Elevation(0),
+			),
+			VMain(
+				VSheet(
+					VCard(asideContent).Variant(VariantFlat),
+				).Class("pa-2"),
+			),
+		)).VSlot("{ form }")
+	if isAutoSave {
+		scope.OnChange(b.onChangeAction(id, ctx))
+	}
+	return scope
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {
@@ -352,7 +371,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	}
 
 	id := ctx.R.FormValue(ParamID)
-	var obj = b.mb.NewModel()
+	obj := b.mb.NewModel()
 	if len(id) > 0 {
 		err := b.Deleter(obj, id, ctx)
 		if err != nil {
@@ -362,8 +381,8 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	}
 
 	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
-		web.AppendVarsScripts(&r,
-			"vars.deleteConfirmation = false",
+		web.AppendRunScripts(&r,
+			"locals.deleteConfirmation = false",
 			web.Plaid().
 				EventFunc(event).
 				Queries(ctx.Queries()).
@@ -373,8 +392,8 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
 		if isInDialogFromQuery(ctx) {
 			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
-			web.AppendVarsScripts(&r,
-				"vars.deleteConfirmation = false",
+			web.AppendRunScripts(&r,
+				"locals.deleteConfirmation = false",
 				web.Plaid().
 					URL(u).
 					EventFunc(actions.UpdateListingDialog).
@@ -390,7 +409,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 			// r.PushState = web.Location(nil).
 			// 	MergeQuery(true).
 			//  Query(ParamSelectedIds, removeSelectQuery)
-			web.AppendVarsScripts(&r,
+			web.AppendRunScripts(&r,
 				web.Plaid().
 					PushState(true).
 					MergeQuery(true).
@@ -462,7 +481,7 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	script := closeRightDrawerVarScript
+	script := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
 		script = closeDialogVarScript
 	}
@@ -472,7 +491,7 @@ func (b *EditingBuilder) doUpdate(
 
 	afterUpdateScript := ctx.R.FormValue(ParamOverlayAfterUpdateScript)
 	if afterUpdateScript != "" {
-		web.AppendVarsScripts(r, script, strings.NewReplacer(".go()",
+		web.AppendRunScripts(r, script, strings.NewReplacer(".go()",
 			fmt.Sprintf(".query(%s, %s).go()",
 				h.JSONString(ParamOverlayUpdateID),
 				h.JSONString(vx.ObjectID(obj)),
@@ -483,7 +502,7 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	if isInDialogFromQuery(ctx) {
-		web.AppendVarsScripts(r,
+		web.AppendRunScripts(r,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
 				EventFunc(actions.UpdateListingDialog).
@@ -493,7 +512,7 @@ func (b *EditingBuilder) doUpdate(
 	} else {
 		r.PushState = web.Location(nil)
 	}
-	web.AppendVarsScripts(r, script)
+	web.AppendRunScripts(r, script)
 	return
 }
 
@@ -545,16 +564,17 @@ func (b *EditingBuilder) UpdateOverlayContent(
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	p := rightDrawerContentPortalName
-
+	portalName := ctx.R.FormValue(ParamPortalName)
+	p := RightDrawerContentPortalName
 	if overlayType == actions.Dialog {
 		p = dialogContentPortalName
 	}
-
 	if b.mb.singleton {
 		p = singletonEditingPortalName
 	}
-
+	if portalName != "" {
+		p = portalName
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: p,
 		Body: b.editFormFor(obj, ctx),

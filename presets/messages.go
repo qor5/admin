@@ -71,10 +71,12 @@ func (msgr *Messages) EditingObjectTitle(label string, name string) string {
 	return strings.NewReplacer("{id}", name, "{modelName}", label).
 		Replace(msgr.EditingObjectTitleTemplate)
 }
+
 func (msgr *Messages) ListingObjectTitle(label string) string {
 	return strings.NewReplacer("{modelName}", label).
 		Replace(msgr.ListingObjectTitleTemplate)
 }
+
 func (msgr *Messages) DetailingObjectTitle(label string, name string) string {
 	return strings.NewReplacer("{id}", name, "{modelName}", label).
 		Replace(msgr.DetailingObjectTitleTemplate)

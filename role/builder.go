@@ -5,28 +5,30 @@ import (
 	"time"
 
 	"github.com/ory/ladon"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
-	"github.com/qor5/x/perm"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
 type Builder struct {
 	db        *gorm.DB
-	actions   []*vuetify.DefaultOptionItem
-	resources []*vuetify.DefaultOptionItem
+	actions   []*DefaultOptionItem
+	resources []*DefaultOptionItem
 	// editorSubject is the subject that has permission to edit roles
 	// empty value means anyone can edit roles
-	editorSubject string
+	editorSubject    string
+	roleMb           *presets.ModelBuilder
+	AfterInstallFunc presets.ModelInstallFunc
 }
 
 func New(db *gorm.DB) *Builder {
 	return &Builder{
 		db: db,
-		actions: []*vuetify.DefaultOptionItem{
+		actions: []*DefaultOptionItem{
 			{Text: "All", Value: "*"},
 			{Text: "List", Value: presets.PermList},
 			{Text: "Get", Value: presets.PermGet},
@@ -37,12 +39,17 @@ func New(db *gorm.DB) *Builder {
 	}
 }
 
-func (b *Builder) Actions(vs []*vuetify.DefaultOptionItem) *Builder {
+func (b *Builder) Actions(vs []*DefaultOptionItem) *Builder {
 	b.actions = vs
 	return b
 }
 
-func (b *Builder) Resources(vs []*vuetify.DefaultOptionItem) *Builder {
+func (b *Builder) AfterInstall(v presets.ModelInstallFunc) *Builder {
+	b.AfterInstallFunc = v
+	return b
+}
+
+func (b *Builder) Resources(vs []*DefaultOptionItem) *Builder {
 	b.resources = vs
 	return b
 }
@@ -52,7 +59,7 @@ func (b *Builder) EditorSubject(v string) *Builder {
 	return b
 }
 
-func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
+func (b *Builder) Install(pb *presets.Builder) error {
 	if b.editorSubject != "" {
 		permB := pb.GetPermission()
 		if permB == nil {
@@ -86,9 +93,9 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 		)
 	}
 
-	role := pb.Model(&Role{})
+	b.roleMb = pb.Model(&Role{})
 
-	ed := role.Editing(
+	ed := b.roleMb.Editing(
 		"Name",
 		"Permissions",
 	)
@@ -97,31 +104,36 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 	ed.Field("Permissions").Nested(permFb)
 
 	permFb.Field("Effect").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VSelect().
+		return VSelect().
+			Variant(FieldVariantUnderlined).
 			Items([]string{perm.Allowed, perm.Denied}).
 			Value(field.StringValue(obj)).
 			Label(field.Label).
-			FieldName(field.FormKey)
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)
 		p.Effect = ctx.R.FormValue(field.FormKey)
 		return
 	})
 	permFb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VAutocomplete().
-			Value(field.Value(obj)).
+		return VAutocomplete().
+			Variant(FieldVariantUnderlined).
 			Label(field.Label).
-			FieldName(field.FormKey).
-			Multiple(true).Chips(true).DeletableChips(true).
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
+			Multiple(true).
+			Chips(true).
+			ClosableChips(true).
 			Items(b.actions)
 	})
 
 	permFb.Field("Resources").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VAutocomplete().
-			Value(field.Value(obj)).
+		return VAutocomplete().
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
 			Label(field.Label).
-			FieldName(field.FormKey).
-			Multiple(true).Chips(true).DeletableChips(true).
+			Multiple(true).
+			Chips(true).
+			ClosableChips(true).
 			Items(b.resources)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)
@@ -175,5 +187,9 @@ func (b *Builder) Configure(pb *presets.Builder) *presets.ModelBuilder {
 		return
 	})
 
-	return role
+	if b.AfterInstallFunc != nil {
+		return b.AfterInstallFunc(pb, b.roleMb)
+	}
+
+	return nil
 }

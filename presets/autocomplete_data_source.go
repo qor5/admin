@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/web"
-	"github.com/qor5/ui/vuetifyx"
+	"github.com/qor5/ui/v3/vuetifyx"
+	"github.com/qor5/web/v3"
 )
 
 const autocompleteDataSourceEvent = "autocomplete-data-source-event"
@@ -27,7 +27,7 @@ type OptionItem struct {
 
 type AutocompleteDataSourceConfig struct {
 	OptionValue string
-	OptionText  interface{} //func(interface{}) string or string
+	OptionText  interface{} // func(interface{}) string or string
 	OptionIcon  func(interface{}) string
 
 	IsPaging bool
@@ -103,7 +103,7 @@ func (b *ListingBuilder) ConfigureAutocompleteDataSource(config *AutocompleteDat
 		reflectValue := reflect.Indirect(reflect.ValueOf(objs))
 		var items []OptionItem
 		for i := 0; i < reflectValue.Len(); i++ {
-			var value = fmt.Sprintf("%v", reflect.Indirect(reflectValue.Index(i)).FieldByName(config.OptionValue).Interface())
+			value := fmt.Sprintf("%v", reflect.Indirect(reflectValue.Index(i)).FieldByName(config.OptionValue).Interface())
 
 			var text string
 			switch config.OptionText.(type) {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/l10n"
+	"github.com/qor5/admin/v3/l10n"
 	"gorm.io/gorm"
 )
 

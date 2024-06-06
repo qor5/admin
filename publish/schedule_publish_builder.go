@@ -39,6 +39,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 	} else {
 		scope = b.publisher.db
 	}
+	reqCtx := b.publisher.WithContextValues(context.Background())
 
 	// If model is Product{}
 	// Generate a records: []*Product{}
@@ -56,13 +57,13 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		for i := 0; i < needUnpublishReflectValues.Len(); i++ {
 			{
 				record := needUnpublishReflectValues.Index(i).Interface().(ScheduleInterface)
-				if record.GetScheduledStartAt() != nil && record.GetScheduledStartAt().Sub(*record.GetScheduledEndAt()) < 0 {
+				if record.EmbedSchedule().ScheduledStartAt != nil && record.EmbedSchedule().ScheduledStartAt.Sub(*record.EmbedSchedule().ScheduledEndAt) < 0 {
 					unpublishAfterPublishRecords = append(unpublishAfterPublishRecords, record)
 					continue
 				}
 			}
 			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
-				if err2 := b.publisher.UnPublish(record); err2 != nil {
+				if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = multierror.Append(err, err2).ErrorOrNil()
 				}
@@ -79,7 +80,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		needPublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
 			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
-				if err2 := b.publisher.Publish(record); err2 != nil {
+				if err2 := b.publisher.Publish(record, reqCtx); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = multierror.Append(err, err2).ErrorOrNil()
 				}
@@ -90,7 +91,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 	{
 		for _, interfaceRecord := range unpublishAfterPublishRecords {
 			if record, ok := interfaceRecord.(UnPublishInterface); ok {
-				if err2 := b.publisher.UnPublish(record); err2 != nil {
+				if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
 					log.Printf("error: %s\n", err2)
 					err = multierror.Append(err, err2).ErrorOrNil()
 				}

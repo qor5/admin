@@ -9,19 +9,18 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/admin/presets/gorm2op"
-	"github.com/qor5/admin/worker"
-	integration "github.com/qor5/admin/worker/integration_test"
-	. "github.com/qor5/ui/vuetify"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/worker"
+	integration "github.com/qor5/admin/v3/worker/integration_test"
+	. "github.com/qor5/ui/v3/vuetify"
+	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
-	"gorm.io/driver/postgres"
+	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
@@ -31,21 +30,22 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	var err error
-	db, err = gorm.Open(postgres.Open(os.Getenv("DBURL")), &gorm.Config{})
+	env, err := testenv.New().DBEnable(true).SetUp()
 	if err != nil {
 		panic(err)
 	}
+	defer env.TearDown()
+	db = env.DB
 
 	pb = presets.New().
 		DataOperator(gorm2op.DataOperator(db))
 
 	wb := worker.NewWithQueue(db, integration.Que)
-	wb.Configure(pb)
+	pb.Use(wb)
 	addJobs(wb)
 	wb.Listen()
 
-	os.Exit(m.Run())
+	m.Run()
 }
 
 func addJobs(w *worker.Builder) {
@@ -81,7 +81,7 @@ func addJobs(w *worker.Builder) {
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
-		return VTextField().FieldName(field.Name).Label(field.Label).Value(field.Value(obj)).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
+		return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(vErr.GetFieldErrors(field.Name)...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		v := ctx.R.FormValue("F1")
 		obj.(*ArgJobResource).F1 = v

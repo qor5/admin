@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/media/media_library"
-	"github.com/qor5/admin/pagebuilder"
-	"github.com/qor5/admin/presets"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -71,9 +69,9 @@ func RegisterListContentWithImageContainer(pb *pagebuilder.Builder, db *gorm.DB)
 
 func ListContentWithImageBody(data *ListContentWithImage, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	body = ContainerWrapper(
-		fmt.Sprintf(inflection.Plural(strcase.ToKebab("ListContentWithImage"))+"_%v", data.ID), data.AnchorID, "container-list_content_with_image",
+		data.AnchorID, "container-list_content_with_image",
 		"", "", "",
-		"", data.AddTopSpace, data.AddBottomSpace, input.IsEditor, input.IsReadonly, "",
+		"", data.AddTopSpace, data.AddBottomSpace, "",
 		Div(
 			ImageListItemsBody(data.Items),
 		).Class("container-wrapper"),

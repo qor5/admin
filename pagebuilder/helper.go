@@ -5,14 +5,12 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/qor5/admin/l10n"
-	"github.com/qor5/web"
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 
-var (
-	directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
-)
+var directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
 
 const (
 	queryLocaleCodeCategoryPathSlugSQL = `
@@ -42,7 +40,7 @@ type pagePathInfo struct {
 	Slug         string
 }
 
-func pageValidator(ctx context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
@@ -97,7 +95,7 @@ func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (er
 		localePath = l10nB.GetLocalePath(category.LocaleCode)
 	}
 
-	var currentCategoryPathPublishUrl = generatePublishUrl(localePath, categoryPath, "")
+	currentCategoryPathPublishUrl := generatePublishUrl(localePath, categoryPath, "")
 
 	categories := []*Category{}
 	if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
