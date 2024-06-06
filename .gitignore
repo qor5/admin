@@ -4,6 +4,7 @@ go.work*
 dev_env_local
 __*
 coverage.txt
+coverage.html
 .vscode
 _backup
 docs/docsrc/public
