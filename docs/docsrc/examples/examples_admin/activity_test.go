@@ -30,7 +30,7 @@ func TestActivity(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/samples/activity-example/with-activity-products", nil)
+				return httptest.NewRequest("GET", "/with-activity-products", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"P11111111111"},
 		},
@@ -40,11 +40,11 @@ func TestActivity(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/samples/activity-example/with-activity-products?__execute_event__=presets_DetailingDrawer&id=1").
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Price"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 1"},
 		},
 	}
 
