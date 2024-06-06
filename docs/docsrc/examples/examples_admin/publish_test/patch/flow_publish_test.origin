@@ -1,0 +1,197 @@
+package integration_test
+
+import (
+	"encoding/json"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/qor5/admin/v3/utils/testflow"
+	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type FlowPublish struct {
+	*Flow
+}
+
+func TestFlowPublish(t *testing.T) {
+	flowPublish(t, &FlowPublish{
+		Flow: &Flow{
+			db: DB, h: PresetsBuilder,
+		},
+	})
+}
+
+func flowPublish(t *testing.T, f *FlowPublish) {
+	flowPublish_Step00_Event_presets_DetailingDrawer(t, f)
+
+	flowPublish_Step01_Event_publish_EventPublish(t, f)
+
+	flowPublish_Step02_Event_presets_DetailingDrawer(t, f)
+
+	flowPublish_Step03_Event_publish_EventRepublish(t, f)
+
+	flowPublish_Step04_Event_presets_DetailingDrawer(t, f)
+
+	flowPublish_Step05_Event_publish_EventUnpublish(t, f)
+}
+
+func flowPublish_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("presets_DetailingDrawer").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+
+	testflow.Validate(t, w, r,
+		testflow.OpenRightDrawer("WithPublishProduct 6_2024-05-28-v01"),
+	)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowPublish_Step01_Event_publish_EventPublish(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("publish_EventPublish").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	assert.True(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Empty(t, resp.UpdatePortals)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "vars.presetsMessage = { show: true, message: \"success\", color: \"success\"}", resp.RunScript)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowPublish_Step02_Event_presets_DetailingDrawer(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("presets_DetailingDrawer").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+
+	testflow.Validate(t, w, r,
+		testflow.OpenRightDrawer("WithPublishProduct 6_2024-05-28-v01"),
+	)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowPublish_Step03_Event_publish_EventRepublish(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("publish_EventRepublish").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	assert.True(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Empty(t, resp.UpdatePortals)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "vars.presetsMessage = { show: true, message: \"success\", color: \"success\"}", resp.RunScript)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowPublish_Step04_Event_presets_DetailingDrawer(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("presets_DetailingDrawer").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+
+	testflow.Validate(t, w, r,
+		testflow.OpenRightDrawer("WithPublishProduct 6_2024-05-28-v01"),
+	)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowPublish_Step05_Event_publish_EventUnpublish(t *testing.T, f *FlowPublish) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/samples/publish-example/with-publish-products").
+		EventFunc("publish_EventUnpublish").
+		Query("id", "6_2024-05-28-v01").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	assert.True(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Empty(t, resp.UpdatePortals)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, "vars.presetsMessage = { show: true, message: \"success\", color: \"success\"}", resp.RunScript)
+
+	return testflow.NewThen(t, w, r)
+}

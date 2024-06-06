@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Web Application - Lazy Portals - QOR5 Document</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/docs/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
+<div class='flex h-screen'>
+<div class='flex-1 flex flex-col overflow-hidden'>
+<div class='flex h-full'>
+<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<div class='h-12'><search></search></div>
+
+<ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
+<li class='m-0'>
+<a href='index.html' id='index.html' onclick='window.storeMenuState("index.html")' class='inline-block px-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Introduction</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Getting Started</li>
+
+<li class='m-0'>
+<a href='getting-started/one-minute-quick-start.html' id='getting-started/one-minute-quick-start.html' onclick='window.storeMenuState("getting-started/one-minute-quick-start.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>1 Minute Quick Start</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
+
+<li class='m-0'>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing.html' id='basics/listing.html' onclick='window.storeMenuState("basics/listing.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing-customizations.html' id='basics/listing-customizations.html' onclick='window.storeMenuState("basics/listing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing Customizations</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/filter.html' id='basics/filter.html' onclick='window.storeMenuState("basics/filter.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Filters</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/editing-customizations.html' id='presets-guide/editing-customizations.html' onclick='window.storeMenuState("presets-guide/editing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Editing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/brand.html' id='basics/brand.html' onclick='window.storeMenuState("basics/brand.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Brand</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/menu.html' id='basics/menu.html' onclick='window.storeMenuState("basics/menu.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Menu</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/detail-page-for-complex-object.html' id='presets-guide/detail-page-for-complex-object.html' onclick='window.storeMenuState("presets-guide/detail-page-for-complex-object.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Detailing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout.html' id='basics/layout.html' onclick='window.storeMenuState("basics/layout.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/login.html' id='basics/login.html' onclick='window.storeMenuState("basics/login.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Login</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/permissions.html' id='presets-guide/permissions.html' onclick='window.storeMenuState("presets-guide/permissions.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Permissions</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/role.html' id='presets-guide/role.html' onclick='window.storeMenuState("presets-guide/role.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Role</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/shortcut.html' id='basics/shortcut.html' onclick='window.storeMenuState("basics/shortcut.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Keyboard Shortcut</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
+</li>
+
+<li class='m-0'>
+<a href='slug.html' id='slug.html' onclick='window.storeMenuState("slug.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Slug</a>
+</li>
+
+<li class='m-0'>
+<a href='seo.html' id='seo.html' onclick='window.storeMenuState("seo.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>SEO</a>
+</li>
+
+<li class='m-0'>
+<a href='activity-log.html' id='activity-log.html' onclick='window.storeMenuState("activity-log.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Activity Log</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/worker.html' id='basics/worker.html' onclick='window.storeMenuState("basics/worker.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Worker</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/publish.html' id='basics/publish.html' onclick='window.storeMenuState("basics/publish.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Publish</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/i18n.html' id='basics/i18n.html' onclick='window.storeMenuState("basics/i18n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Internationalization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
+
+<li class='m-0'>
+<a href='advanced-functions/the-go-html-builder.html' id='advanced-functions/the-go-html-builder.html' onclick='window.storeMenuState("advanced-functions/the-go-html-builder.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>The Go HTML builder</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/page-func-and-event-func.html' id='basics/page-func-and-event-func.html' onclick='window.storeMenuState("basics/page-func-and-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Page Func and Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout-function-and-page-injector.html' id='basics/layout-function-and-page-injector.html' onclick='window.storeMenuState("basics/layout-function-and-page-injector.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout Function and Page Injector</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/lazy-portals.html' id='vuetify-components/lazy-portals.html' onclick='window.storeMenuState("vuetify-components/lazy-portals.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Lazy Portals</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/switch-pages-with-push-state.html' id='basics/switch-pages-with-push-state.html' onclick='window.storeMenuState("basics/switch-pages-with-push-state.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Switch Pages with Push State</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/reload-page-with-a-flash.html' id='basics/reload-page-with-a-flash.html' onclick='window.storeMenuState("basics/reload-page-with-a-flash.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Reload Page with a Flash</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/partial-refresh-with-portal.html' id='basics/partial-refresh-with-portal.html' onclick='window.storeMenuState("basics/partial-refresh-with-portal.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Partial Refresh with Portal</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/manipulate-page-url-in-event-func.html' id='basics/manipulate-page-url-in-event-func.html' onclick='window.storeMenuState("basics/manipulate-page-url-in-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Manipulate Page URL in Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/summary-of-event-response.html' id='basics/summary-of-event-response.html' onclick='window.storeMenuState("basics/summary-of-event-response.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Summary of Event Response</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/web-scope.html' id='basics/web-scope.html' onclick='window.storeMenuState("basics/web-scope.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>web.Scope</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/event-handling.html' id='basics/event-handling.html' onclick='window.storeMenuState("basics/event-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Event Handling</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/form-handling.html' id='basics/form-handling.html' onclick='window.storeMenuState("basics/form-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Form Handling</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>UI Components</li>
+
+<li class='m-0'>
+<a href='vuetify-components/basic-inputs.html' id='vuetify-components/basic-inputs.html' onclick='window.storeMenuState("vuetify-components/basic-inputs.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Basic Inputs</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/a-taste-of-using-vuetify-in-go.html' id='vuetify-components/a-taste-of-using-vuetify-in-go.html' onclick='window.storeMenuState("vuetify-components/a-taste-of-using-vuetify-in-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>A Taste of using Vuetify in Go</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/linkage-select.html' id='vuetify-components/linkage-select.html' onclick='window.storeMenuState("vuetify-components/linkage-select.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Linkage Select</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/composite-new-component-with-go.html' id='components-guide/composite-new-component-with-go.html' onclick='window.storeMenuState("components-guide/composite-new-component-with-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Composite new Component With Go</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/integrate-a-heavy-vue-component.html' id='components-guide/integrate-a-heavy-vue-component.html' onclick='window.storeMenuState("components-guide/integrate-a-heavy-vue-component.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Integrate a heavy Vue Component</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Appendix</li>
+
+<li class='m-0'>
+<a href='appendix/all-demo-examples.html' id='appendix/all-demo-examples.html' onclick='window.storeMenuState("appendix/all-demo-examples.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>All Demo Examples</a>
+</li>
+</ul>
+</aside>
+
+<main class='flex flex-col w-full bg-white overflow-x-hidden overflow-y-auto'>
+<div id='docContentBox' class='flex flex-row w-full'>
+<div class='flex flex-grow flex-col w-2/3'>
+<div class='flex flex-row'>
+<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<div class='w-4 h-4 fill-current text-gray-300'>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2 12 L 2 11 L 14 11 L 14 12 Z M 2 8.5 L 2 7.5 L 14 7.5 L 14 8.5 Z M 2 5 L 2 4 L 14 4 L 14 5 Z M 2 5 "/>
+</g>
+</svg>
+</div>
+</button>
+</div>
+
+<div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
+<h1 class='mb-8'>Lazy Portals</h1>
+
+<div class='border-t'><p>Use <code>web.Portal().Loader(web.POST().EventFunc(&quot;menuItems&quot;)).Name(&quot;menuContent&quot;)</code> to put a portal place holder inside a part of html, and it will load specified event func's response body inside the place holder after the main page is rendered in a separate AJAX request. Later in an event func, you could also use <code>r.ReloadPortals = []string{&quot;menuContent&quot;}</code> to reload the portal.</p>
+
+<highlightjs :language='"go"' :code='"\nimport (\n\t\"fmt\"\n\t\"time\"\n\n\t\"github.com/qor5/docs/v3/docsrc/examples\"\n\t\"github.com/qor5/web/v3\"\n\t. \"github.com/qor5/x/v3/ui/vuetify\"\n\t. \"github.com/theplant/htmlgo\"\n)\n\ntype mystate struct {\n\tCompany string\n\tError   string\n}\n\nvar listItems = []string{\"Apple\", \"Microsoft\", \"Google\"}\n\nfunc LazyPortalsAndReload(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VApp(\n\t\tVMain(\n\t\t\tVContainer(\n\t\t\t\tVDialog(\n\t\t\t\t\tweb.Slot(\n\t\t\t\t\t\tVBtn(\"Select\").Color(\"primary\").Attr(\"v-bind\", \"activatorProps\"),\n\t\t\t\t\t).Name(\"activator\").Scope(\"{ props: activatorProps }\"),\n\t\t\t\t\tweb.Portal().Loader(web.POST().EventFunc(\"menuItems\")).Name(\"menuContent\"),\n\t\t\t\t),\n\n\t\t\t\tDiv(\n\t\t\t\t\tH1(\"Portal A\"),\n\t\t\t\t\tweb.Portal().Loader(web.POST().EventFunc(\"portal1\")).Name(\"portalA\"),\n\t\t\t\t).Style(\"border: 2px solid blue;\"),\n\n\t\t\t\tDiv(\n\t\t\t\t\tH1(\"Portal B\"),\n\t\t\t\t\tweb.Portal().Loader(web.POST().EventFunc(\"portal1\")).Name(\"portalB\"),\n\t\t\t\t).Style(\"border: 2px solid red;\"),\n\n\t\t\t\tVBtn(\"Reload Portal A and B\").OnClick(\"reloadAB\").Color(\"orange\").Theme(\"dark\"),\n\n\t\t\t\tDiv(\n\t\t\t\t\tH1(\"Portal C\"),\n\t\t\t\t\tweb.Portal().Name(\"portalC\"),\n\t\t\t\t).Style(\"border: 2px solid blue;\"),\n\n\t\t\t\tDiv(\n\t\t\t\t\tH1(\"Portal D\"),\n\t\t\t\t\tweb.Portal().Name(\"portalD\"),\n\t\t\t\t).Style(\"border: 2px solid red;\"),\n\n\t\t\t\tVBtn(\"Update Portal C and D\").OnClick(\"updateCD\").Color(\"primary\").Theme(\"dark\"),\n\t\t\t),\n\t\t),\n\t)\n\treturn\n}\n\nfunc menuItems(ctx *web.EventContext) (r web.EventResponse, err error) {\n\ts := \u0026mystate{}\n\n\tvar items []HTMLComponent\n\tfor _, item := range listItems {\n\t\titems = append(items, VListItem(\n\t\t\tVListItemTitle(Text(item)),\n\t\t))\n\t}\n\n\titems = append(items, VDivider())\n\n\titems = append(items,\n\t\tVDialog(\n\t\t\tweb.Slot(\n\t\t\t\tVListItemAction(\n\t\t\t\t\tVBtn(\"Create New\").Variant(\"text\").Attr(\"v-bind\", \"activatorProps\"),\n\t\t\t\t),\n\t\t\t).Name(\"activator\").Scope(\"{ props: activatorProps }\"),\n\t\t\tweb.Scope(\n\t\t\t\tweb.Portal().Loader(web.POST().EventFunc(\"addItemForm\")).Name(\"addItemForm\").Visible(\"true\"),\n\t\t\t).VSlot(\"{ locals, form }\").FormInit(s),\n\t\t).Width(\"500\"),\n\t)\n\n\tr.Body = VList(items...)\n\treturn\n}\n\nfunc addItemForm(ctx *web.EventContext) (r web.EventResponse, err error) {\n\ts := \u0026mystate{}\n\tctx.MustUnmarshalForm(s)\n\n\ttextField := VTextField().\n\t\tAttr(\"v-model\", \"form.Company\")\n\n\tif len(s.Error) \u003e 0 {\n\t\ttextField.Error(true).ErrorMessages(s.Error)\n\t}\n\n\tr.Body = VCard(\n\t\tVCardText(\n\t\t\ttextField,\n\t\t),\n\t\tVCardActions(\n\t\t\tVBtn(\"Create\").Color(\"bg-primary\").OnClick(\"addItem\"),\n\t\t),\n\t)\n\treturn\n}\n\nfunc addItem(ctx *web.EventContext) (r web.EventResponse, err error) {\n\ts := \u0026mystate{}\n\tctx.MustUnmarshalForm(s)\n\n\tif len(s.Company) \u003c 5 {\n\t\tr.RunScript = \"form.Error = &#39;too short&#39;\"\n\t\tr.ReloadPortals = []string{\"addItemForm\"}\n\t\treturn\n\t}\n\n\tlistItems = append(listItems, s.Company)\n\ts.Company = \"\"\n\ts.Error = \"\"\n\tr.ReloadPortals = []string{\"menuContent\"}\n\treturn\n}\n\nfunc portal1(ctx *web.EventContext) (r web.EventResponse, err error) {\n\tr.Body = Text(fmt.Sprint(time.Now().UnixNano()))\n\treturn\n}\n\nfunc reloadAB(ctx *web.EventContext) (r web.EventResponse, err error) {\n\tr.ReloadPortals = []string{\"portalA\", \"portalB\"}\n\treturn\n}\n\nfunc updateCD(ctx *web.EventContext) (r web.EventResponse, err error) {\n\tr.UpdatePortals = append(r.UpdatePortals,\n\t\t\u0026web.PortalUpdate{\n\t\t\tName: \"portalC\",\n\t\t\tBody: Text(fmt.Sprint(time.Now().UnixNano())),\n\t\t},\n\t\t\u0026web.PortalUpdate{\n\t\t\tName: \"portalD\",\n\t\t\tBody: Text(fmt.Sprint(time.Now().UnixNano())),\n\t\t},\n\t)\n\treturn\n}\n\nvar LazyPortalsAndReloadPB = web.Page(LazyPortalsAndReload).\n\tEventFunc(\"addItem\", addItem).\n\tEventFunc(\"menuItems\", menuItems).\n\tEventFunc(\"addItemForm\", addItemForm).\n\tEventFunc(\"portal1\", portal1).\n\tEventFunc(\"reloadAB\", reloadAB).\n\tEventFunc(\"updateCD\", updateCD)\n\nvar LazyPortalsAndReloadPath = examples.URLPathByFunc(LazyPortalsAndReload)\n"'></highlightjs>
+
+<div>
+<div class='demo'>
+<a href='/samples/lazy-portals-and-reload' target='_blank'>Check the demo</a>
+ | 
+<a href='https://github.com/qor5/docs/tree/main/docsrc/examples/examples_vuetify/lazy_portals_and_reload.go#L3-L164' target='_blank'>Source on GitHub</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class='font-medium text-base hidden xl:block text-gray-600 pt-4'>
+<div class='sticky top-4 w-52'>On This Page<toc></toc></div>
+</div>
+</div>
+<search-result></search-result></main>
+</div>
+</div>
+</div>
+</go-plaid-scope>
+</div>
+</body>
+</html>

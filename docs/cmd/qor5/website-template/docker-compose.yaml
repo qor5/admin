@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=website"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=website_dev"
+    ports:
+      - "6432:5432"

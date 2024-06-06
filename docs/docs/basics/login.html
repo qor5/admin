@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Building Admin - Login - QOR5 Document</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/docs/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<go-plaid-scope v-slot='{ locals }' :init='{hideAside: false}'>
+<div class='flex h-screen'>
+<div class='flex-1 flex flex-col overflow-hidden'>
+<div class='flex h-full'>
+<aside v-if='!locals.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<div class='h-12'><search></search></div>
+
+<ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
+<li class='m-0'>
+<a href='index.html' id='index.html' onclick='window.storeMenuState("index.html")' class='inline-block px-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Introduction</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Getting Started</li>
+
+<li class='m-0'>
+<a href='getting-started/one-minute-quick-start.html' id='getting-started/one-minute-quick-start.html' onclick='window.storeMenuState("getting-started/one-minute-quick-start.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>1 Minute Quick Start</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
+
+<li class='m-0'>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing.html' id='basics/listing.html' onclick='window.storeMenuState("basics/listing.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing-customizations.html' id='basics/listing-customizations.html' onclick='window.storeMenuState("basics/listing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing Customizations</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/filter.html' id='basics/filter.html' onclick='window.storeMenuState("basics/filter.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Filters</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/editing-customizations.html' id='presets-guide/editing-customizations.html' onclick='window.storeMenuState("presets-guide/editing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Editing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/brand.html' id='basics/brand.html' onclick='window.storeMenuState("basics/brand.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Brand</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/menu.html' id='basics/menu.html' onclick='window.storeMenuState("basics/menu.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Menu</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/detail-page-for-complex-object.html' id='presets-guide/detail-page-for-complex-object.html' onclick='window.storeMenuState("presets-guide/detail-page-for-complex-object.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Detailing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout.html' id='basics/layout.html' onclick='window.storeMenuState("basics/layout.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/login.html' id='basics/login.html' onclick='window.storeMenuState("basics/login.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Login</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/permissions.html' id='presets-guide/permissions.html' onclick='window.storeMenuState("presets-guide/permissions.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Permissions</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/role.html' id='presets-guide/role.html' onclick='window.storeMenuState("presets-guide/role.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Role</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/shortcut.html' id='basics/shortcut.html' onclick='window.storeMenuState("basics/shortcut.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Keyboard Shortcut</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
+</li>
+
+<li class='m-0'>
+<a href='slug.html' id='slug.html' onclick='window.storeMenuState("slug.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Slug</a>
+</li>
+
+<li class='m-0'>
+<a href='seo.html' id='seo.html' onclick='window.storeMenuState("seo.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>SEO</a>
+</li>
+
+<li class='m-0'>
+<a href='activity-log.html' id='activity-log.html' onclick='window.storeMenuState("activity-log.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Activity Log</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/worker.html' id='basics/worker.html' onclick='window.storeMenuState("basics/worker.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Worker</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/publish.html' id='basics/publish.html' onclick='window.storeMenuState("basics/publish.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Publish</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/i18n.html' id='basics/i18n.html' onclick='window.storeMenuState("basics/i18n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Internationalization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
+
+<li class='m-0'>
+<a href='advanced-functions/the-go-html-builder.html' id='advanced-functions/the-go-html-builder.html' onclick='window.storeMenuState("advanced-functions/the-go-html-builder.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>The Go HTML builder</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/page-func-and-event-func.html' id='basics/page-func-and-event-func.html' onclick='window.storeMenuState("basics/page-func-and-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Page Func and Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout-function-and-page-injector.html' id='basics/layout-function-and-page-injector.html' onclick='window.storeMenuState("basics/layout-function-and-page-injector.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout Function and Page Injector</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/lazy-portals.html' id='vuetify-components/lazy-portals.html' onclick='window.storeMenuState("vuetify-components/lazy-portals.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Lazy Portals</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/switch-pages-with-push-state.html' id='basics/switch-pages-with-push-state.html' onclick='window.storeMenuState("basics/switch-pages-with-push-state.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Switch Pages with Push State</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/reload-page-with-a-flash.html' id='basics/reload-page-with-a-flash.html' onclick='window.storeMenuState("basics/reload-page-with-a-flash.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Reload Page with a Flash</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/partial-refresh-with-portal.html' id='basics/partial-refresh-with-portal.html' onclick='window.storeMenuState("basics/partial-refresh-with-portal.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Partial Refresh with Portal</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/manipulate-page-url-in-event-func.html' id='basics/manipulate-page-url-in-event-func.html' onclick='window.storeMenuState("basics/manipulate-page-url-in-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Manipulate Page URL in Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/summary-of-event-response.html' id='basics/summary-of-event-response.html' onclick='window.storeMenuState("basics/summary-of-event-response.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Summary of Event Response</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/web-scope.html' id='basics/web-scope.html' onclick='window.storeMenuState("basics/web-scope.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>web.Scope</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/event-handling.html' id='basics/event-handling.html' onclick='window.storeMenuState("basics/event-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Event Handling</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/form-handling.html' id='basics/form-handling.html' onclick='window.storeMenuState("basics/form-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Form Handling</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>UI Components</li>
+
+<li class='m-0'>
+<a href='vuetify-components/basic-inputs.html' id='vuetify-components/basic-inputs.html' onclick='window.storeMenuState("vuetify-components/basic-inputs.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Basic Inputs</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/a-taste-of-using-vuetify-in-go.html' id='vuetify-components/a-taste-of-using-vuetify-in-go.html' onclick='window.storeMenuState("vuetify-components/a-taste-of-using-vuetify-in-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>A Taste of using Vuetify in Go</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/linkage-select.html' id='vuetify-components/linkage-select.html' onclick='window.storeMenuState("vuetify-components/linkage-select.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Linkage Select</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/composite-new-component-with-go.html' id='components-guide/composite-new-component-with-go.html' onclick='window.storeMenuState("components-guide/composite-new-component-with-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Composite new Component With Go</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/integrate-a-heavy-vue-component.html' id='components-guide/integrate-a-heavy-vue-component.html' onclick='window.storeMenuState("components-guide/integrate-a-heavy-vue-component.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Integrate a heavy Vue Component</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Appendix</li>
+
+<li class='m-0'>
+<a href='appendix/all-demo-examples.html' id='appendix/all-demo-examples.html' onclick='window.storeMenuState("appendix/all-demo-examples.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>All Demo Examples</a>
+</li>
+</ul>
+</aside>
+
+<main class='flex flex-col w-full bg-white overflow-x-hidden overflow-y-auto'>
+<div id='docContentBox' class='flex flex-row w-full'>
+<div class='flex flex-grow flex-col w-2/3'>
+<div class='flex flex-row'>
+<button @click='locals.hideAside = !locals.hideAside' class='w-12 h-12 p-4'>
+<div class='w-4 h-4 fill-current text-gray-300'>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2 12 L 2 11 L 14 11 L 14 12 Z M 2 8.5 L 2 7.5 L 14 7.5 L 14 8.5 Z M 2 5 L 2 4 L 14 4 L 14 5 Z M 2 5 "/>
+</g>
+</svg>
+</div>
+</button>
+</div>
+
+<div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
+<h1 class='mb-8'>Login</h1>
+
+<div class='border-t'><p>Login package provides comprehensive login authentication logic and related UI interfaces. It is designed to simplify the process of adding user authentication to QOR5-based backend development project.<br />
+In QOR5 admin development, we recommend using <a href="https://github.com/qor5/admin/tree/main/login">github.com/qor5/admin/login</a>, which wraps <a href="https://github.com/qor5/x/tree/master/login">github.com/qor5/x/login</a> to keep the theme of login UI consistent with Presets and provide more powerful features.</p>
+<h2 id="basic-usage">Basic Usage</h2>
+<p>The example shows how to enable both username/password login and OAuth login.</p>
+
+<highlightjs :language='"go"' :code='"import (\n\t\"net/http\"\n\n\t\"github.com/markbates/goth/providers/github\"\n\t\"github.com/markbates/goth/providers/google\"\n\tplogin \"github.com/qor5/admin/v3/login\"\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/web/v3\"\n\t\"github.com/qor5/x/v3/login\"\n\t. \"github.com/qor5/x/v3/ui/vuetify\"\n\t. \"github.com/theplant/htmlgo\"\n\t\"github.com/theplant/osenv\"\n\t\"gorm.io/gorm\"\n)\n\ntype User struct {\n\tgorm.Model\n\n\tName    string\n\tAddress string\n\n\tlogin.UserPass\n\tlogin.OAuthInfo\n\tlogin.SessionSecure\n}\n\nvar (\n\tbaseURL           = osenv.Get(\"BASE_URL\", \"Base URL for Login\", \"\")\n\tloginSecret       = osenv.Get(\"LOGIN_SECRET\", \"Login secret use to sign session\", \"\")\n\tloginGoogleKey    = osenv.Get(\"LOGIN_GOOGLE_KEY\", \"Google client key for Login with Google\", \"\")\n\tloginGoogleSecret = osenv.Get(\"LOGIN_GOOGLE_SECRET\", \"Google client secret for Login with Google\", \"\")\n\n\tloginGithubKey    = osenv.Get(\"LOGIN_GITHUB_KEY\", \"Github client key for Login with Github\", \"\")\n\tloginGithubSecret = osenv.Get(\"LOGIN_GITHUB_SECRET\", \"Github client secret for Login with Github\", \"\")\n)\n\nfunc serve() {\n\tDB := ExampleDB()\n\n\tpb := presets.New()\n\tlb := plogin.New(pb).\n\t\tDB(DB).\n\t\tUserModel(\u0026User{}).\n\t\tSecret(loginSecret).\n\t\tOAuthProviders(\n\t\t\t\u0026login.Provider{\n\t\t\t\tGoth: google.New(loginGoogleKey, loginGoogleSecret, baseURL+\"/auth/callback?provider=google\"),\n\t\t\t\tKey:  \"google\",\n\t\t\t\tText: \"Google\",\n\t\t\t},\n\t\t\t\u0026login.Provider{\n\t\t\t\tGoth: github.New(loginGithubKey, loginGithubSecret, baseURL+\"/auth/callback?provider=github\"),\n\t\t\t\tKey:  \"github\",\n\t\t\t\tText: \"Login with Github\",\n\t\t\t},\n\t\t)\n\tpb.ProfileFunc(func(ctx *web.EventContext) HTMLComponent {\n\t\treturn A(Text(\"logout\")).Href(lb.LogoutURL)\n\t})\n\n\tr := http.NewServeMux()\n\tr.Handle(\"/\", pb)\n\tlb.Mount(r)\n\n\tmux := http.NewServeMux()\n\tmux.Handle(\"/\", lb.Middleware()(r))\n\thttp.ListenAndServe(\":8080\", nil)\n}\n"'></highlightjs>
+<h2 id="usernamepassword-login">Username/Password Login</h2>
+<p>To enable Username/Password login, the <code>UserModel</code> needs to implement the <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/user_pass.go#L13">UserPasser</a> interface. There is a default implementation - <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/user_pass.go#L44">UserPass</a>.</p>
+
+<highlightjs :language='"go"' :code='"type User struct {\n\tgorm.Model\n\n\tlogin.UserPass\n}"'></highlightjs>
+<h3 id="change-password">Change Password</h3>
+<p>There are three ways to change the password:</p>
+<p>1. Visit the default change password page.</p>
+<p>2. Call the <code>OpenChangePasswordDialogEvent</code> event to change it in dialog.</p>
+
+<highlightjs :language='"go"' :code='"VBtn(\"Change Password\").OnClick(plogin.OpenChangePasswordDialogEvent)"'></highlightjs>
+<p>3. Change the password directly in Editing.</p>
+
+<highlightjs :language='"go"' :code='"userModelBuilder.Editing().Field(\"Password\").\n\tSetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {\n\t\tu := obj.(*User)\n\t\tif v := ctx.R.FormValue(field.Name); v != \"\" {\n\t\t\tu.Password = v\n\t\t\tu.EncryptPassword()\n\t\t}\n\t\treturn nil\n\t})"'></highlightjs>
+<h3 id="maxretrycount">MaxRetryCount</h3>
+<p>By default, it allows 5 login attempts with incorrect credentials, and if the limit is exceeded, the user will be locked for 1 hour. This helps to prevent brute-force attacks on the login system. You can call <code>MaxRetryCount</code> to set the maximum retry count. If you set MaxRetryCount to a value less than or equal to 0, it means there is no limit of login attempts, and the user will not be locked after a certain number of failed login attempts.</p>
+
+<highlightjs :language='"go"' :code='"loginBuilder.MaxRetryCount(count)"'></highlightjs>
+<h3 id="totp">TOTP</h3>
+<p>There is TOTP (Time-based One-time Password) functionality out of the box, which is enabled by default.</p>
+
+<highlightjs :language='"go"' :code='"loginBuilder.TOTP(enable, login.TOTPConfig{\n\tIssuer: \"Issuer\",\n})"'></highlightjs>
+<h3 id="google-recaptcha">Google reCAPTCHA</h3>
+<p>Google reCAPTCHA is disabled by default.</p>
+
+<highlightjs :language='"go"' :code='"loginBuilder.Recaptcha(enable, login.RecaptchaConfig{\n\tSiteKey:   \"SiteKey\",\n\tSecretKey: \"SecretKey\",\n})"'></highlightjs>
+<h2 id="oauth-login">OAuth Login</h2>
+<p>OAuth login is based on <a href="https://github.com/markbates/goth">goth</a>.<br />
+OAuth login does not require a <code>UserModel</code>. If there is a <code>UserModel</code>, it needs to implement the <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/oauth_user.go#L5">OAuthUser</a> interface. There is a default implementation - <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/oauth_user.go#L13">OAuthInfo</a>.</p>
+
+<highlightjs :language='"go"' :code='"type User struct {\n\tgorm.Model\n\n\tlogin.OAuthInfo\n}"'></highlightjs>
+<h2 id="session-secure">Session Secure</h2>
+<p>The <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/session_secure.go#L11">SessionSecurer</a> provides a way to manage unique salt for a user record. There is a default implementation - <a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/session_secure.go#L16">SessionSecure</a>.</p>
+
+<highlightjs :language='"go"' :code='"type User struct {\n\tgorm.Model\n\n\tlogin.UserPass\n\tlogin.OAuthInfo\n\tlogin.SessionSecure\n}"'></highlightjs>
+<p><code>SessionSecurer</code> helps to ensure user security even in the event of secret leakage. When a user logs in, <code>SessionSecurer</code> generates a random salt and associates it with the user's record. This salt is then used to sign the user's session token. When the user makes requests to the server, the server verifies that the session token has been signed with the correct salt. If the salt has been changed, the session token is considered invalid and the user is logged out.</p>
+<h2 id="hooks">Hooks</h2>
+<p><a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/builder.go#L39">Hooks</a> are functions that are called before or after certain events.<br />
+The following hooks are available:</p>
+<h3 id="beforesetpassword">BeforeSetPassword</h3>
+<h4 id="extra-values">Extra Values</h4>
+<ul>
+<li>password</li>
+</ul>
+<p>This hook is called before resetting or changing a password. The hook can be used to validate password formats.</p>
+<h3 id="afterlogin">AfterLogin</h3>
+<p>This hook is called after a successful login.</p>
+<h3 id="afterfailedtologin">AfterFailedToLogin</h3>
+<h4 id="extra-values-1">Extra Values</h4>
+<ul>
+<li>login error</li>
+</ul>
+<p>This hook is called after a failed login. Note that the <code>user</code> parameter may be nil.</p>
+<h3 id="afteruserlocked">AfterUserLocked</h3>
+<p>This hook is called after a user is locked.</p>
+<h3 id="afterlogout">AfterLogout</h3>
+<p>This hook is called after a logout.</p>
+<h3 id="afterconfirmsendresetpasswordlink">AfterConfirmSendResetPasswordLink</h3>
+<h4 id="extra-values-2">Extra Values</h4>
+<ul>
+<li>reset link</li>
+</ul>
+<p>This hook is called after confirming the sending of a password reset link. This is where the code to send the reset link to the user should be written.</p>
+<h3 id="afterresetpassword">AfterResetPassword</h3>
+<p>This hook is called after a password is reset.</p>
+<h3 id="afterchangepassword">AfterChangePassword</h3>
+<p>This hook is called after a password is changed.</p>
+<h3 id="afterextendsession">AfterExtendSession</h3>
+<h4 id="extra-values-3">Extra Values</h4>
+<ul>
+<li>old session token</li>
+</ul>
+<p>This hook is called after a session is extended.</p>
+<h3 id="aftertotpcodereused">AfterTOTPCodeReused</h3>
+<p>This hook is called after a TOTP code has been reused.</p>
+<h3 id="afteroauthcomplete">AfterOAuthComplete</h3>
+<p>This hook is called after an OAuth authentication is completed.</p>
+<h2 id="customize-pages">Customize Pages</h2>
+<p>To customize pages, there are two ways:</p>
+<p>1. Each page has a corresponding <code>xxxPageFunc</code> to rewrite the page content. You can easily customize a page by copying the <a href="https://github.com/qor5/admin/blob/main/login/views.go">default page func</a> and modifying it according to your needs.</p>
+
+<highlightjs :language='"go"' :code='"loginBuilder.LoginPageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {\n\tr.Body = Text(\"This is login page\")\n\treturn\n})"'></highlightjs>
+<p>2. Only mount the API and serve the login pages manually.<br />
+When you want to embed the login form into an existing page, this way can be very useful.</p>
+
+<highlightjs :language='"go"' :code='"loginBuilder.LoginPageURL(\"/custom-login-page\")\nloginBuilder.MountAPI(mux)\nmux.Handle(\"/custom-login-page\", loginPage)"'></highlightjs>
+</div>
+</div>
+</div>
+
+<div class='font-medium text-base hidden xl:block text-gray-600 pt-4'>
+<div class='sticky top-4 w-52'>On This Page<toc></toc></div>
+</div>
+</div>
+<search-result></search-result></main>
+</div>
+</div>
+</div>
+</go-plaid-scope>
+</div>
+</body>
+</html>
