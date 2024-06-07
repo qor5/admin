@@ -75,7 +75,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuil
 			versionComponent,
 			h.Div(
 				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").
-					Style(`height:320px;width:100%;pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 60%, rgba(255, 255, 255, 0.60) 100%), url(<path-to-image>) lightgray 50% / cover no-repeat;`),
+					Style(`height:320px;width:100%;pointer-events: none; background: rgba(0, 0, 0, 0.5)`),
 				h.Div(
 					h.Div(
 						h.Text(se),
