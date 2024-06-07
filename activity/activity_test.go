@@ -100,7 +100,7 @@ func TestModelKeys(t *testing.T) {
 func TestModelLink(t *testing.T) {
 	builder := New(db, &TestActivityLog{})
 	builder.Install(pb)
-	builder.RegisterModel(pageModel).LinkFunc(func(v interface{}) string {
+	builder.RegisterModel(pageModel).LinkFunc(func(v any) string {
 		page := v.(Page)
 		return fmt.Sprintf("/admin/pages/%d?version=%s", page.ID, page.VersionName)
 	})
@@ -119,7 +119,7 @@ func TestModelLink(t *testing.T) {
 func TestModelTypeHanders(t *testing.T) {
 	builder := New(db, &TestActivityLog{})
 	builder.Install(pb)
-	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
+	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now any, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
 		nowWidgets := now.(Widgets)
 

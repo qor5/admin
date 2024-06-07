@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"github.com/qor5/admin/v3/activity/note"
 	"net/http"
 	"net/http/httptest"
 	"testing"

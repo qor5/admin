@@ -13,10 +13,10 @@ type Builder struct {
 }
 
 func New(db *gorm.DB) *Builder {
-	b := &Builder{}
-	b.db = db
-	b.mediaLibraryPerPage = 39
-	return b
+	return &Builder{
+		db:                  db,
+		mediaLibraryPerPage: 39,
+	}
 }
 
 func (b *Builder) MediaLibraryPerPage(v int) *Builder {

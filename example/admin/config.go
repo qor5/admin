@@ -3,6 +3,7 @@ package admin
 import (
 	"embed"
 	"fmt"
+	"github.com/qor5/admin/v3/activity/note"
 	"net/http"
 	"net/url"
 	"slices"
@@ -24,7 +25,6 @@ import (
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/microsite"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"

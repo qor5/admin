@@ -37,25 +37,36 @@ func (ab *Builder) Install(b *presets.Builder) error {
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
+		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName", "Timeline")
 		detailing = mb.Detailing("ModelDiffs")
 	)
 	ab.lmb = mb
 	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST")))
 		},
 	)
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
 	listing.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
 				return h.Td(h.Text("-"))
 			}
 			return h.Td(h.Text(obj.(*ActivityLog).ModelLabel))
 		},
 	)
+	//listing.Field("Timeline").Label(Messages_en_US.Timeline).ComponentFunc(
+	//	func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	//		return VTimeline(
+	//			VTimelineItem(
+	//				VTimelineDivider(),
+	//				VTimelineItemTitle(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST"))),
+	//				VTimelineItemText(h.Text(fmt.Sprintf("%s - %s", obj.(*ActivityLog).Action, obj.(*ActivityLog).Creator))),
+	//			).DotColor("primary").FillDot(true).Icon("mdi-check-circle").IconColor("green"),
+	//		)
+	//	},
+	//)
 
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
@@ -149,7 +160,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	})
 
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
 				record = obj.(ActivityLogInterface)
 				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)

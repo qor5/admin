@@ -2,13 +2,13 @@ package publish
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/activity/note"
 	"net/url"
 	"reflect"
 
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
@@ -290,7 +290,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		rt := pm.Info().Label()
 		ri := p.PrimarySlug()
 		userID, _ := note.GetUserData(ctx)
-		count := note.GetUnreadNotesCount(db, userID, rt, ri)
+		count, _ := note.GetUnreadNotesCount(db, userID, rt, ri)
 
 		return h.Td(
 			h.If(count > 0,

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/activity/note"
 	"net/url"
 	"slices"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"

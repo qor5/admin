@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -23,18 +24,25 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 	return r, nil
 }
 
-func ShowMessage(r *web.EventResponse, msg string, color string) {
+func ShowMessage(r *web.EventResponse, msg string, color string) error {
+	if r == nil {
+		return errors.New("EventResponse is nil")
+	}
 	if msg == "" {
-		return
+		return nil
 	}
 
 	if color == "" {
 		color = "success"
 	}
 
+	msgJSON := h.JSONString(msg)
+	colorJSON := h.JSONString(color)
+
 	web.AppendRunScripts(r, fmt.Sprintf(
 		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
-		h.JSONString(msg), h.JSONString(color)))
+		msgJSON, colorJSON))
+	return nil
 }
 
 func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
@@ -98,16 +106,6 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			VListItemTitle(h.Text(msgr.Delete)),
 		).Attr("@click", onclick.Go())
 	}
-}
-
-func copyURLWithQueriesRemoved(u *url.URL, qs ...string) *url.URL {
-	newU, _ := url.Parse(u.String())
-	newQuery := newU.Query()
-	for _, k := range qs {
-		newQuery.Del(k)
-	}
-	newU.RawQuery = newQuery.Encode()
-	return newU
 }
 
 func isInDialogFromQuery(ctx *web.EventContext) bool {

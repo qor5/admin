@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func findOldWithSlug(obj interface{}, slug string, db *gorm.DB) (interface{}, bool) {
+func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
 	if slug == "" {
 		return findOld(obj, db)
 	}
@@ -36,12 +36,12 @@ func findOldWithSlug(obj interface{}, slug string, db *gorm.DB) (interface{}, bo
 	return old, true
 }
 
-func findOld(obj interface{}, db *gorm.DB) (interface{}, bool) {
+func findOld(obj any, db *gorm.DB) (any, bool) {
 	var (
 		objValue = reflect.Indirect(reflect.ValueOf(obj))
 		old      = reflect.New(objValue.Type()).Interface()
 		sqls     []string
-		vars     []interface{}
+		vars     []any
 	)
 
 	stmt := &gorm.Statement{DB: db}
@@ -100,7 +100,7 @@ func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
 	return context.WithValue(ctx, DBContextKey, db)
 }
 
-func getBasicModel(m interface{}) interface{} {
+func getBasicModel(m any) any {
 	if preset, ok := m.(*presets.ModelBuilder); ok {
 		return preset.NewModel()
 	}

@@ -101,7 +101,7 @@ func TestDiff(t *testing.T) {
 		},
 		{
 			description: "Using model type handles",
-			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
+			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(old, now any, prefixField string) (diffs []Diff) {
 				oldAuthor := old.(Author)
 				nowAuthor := now.(Author)
 				if oldAuthor.Name != nowAuthor.Name {
