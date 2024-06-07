@@ -37,22 +37,22 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			return
 		}
 
-		ver := EmbedVersion(obj)
-		if ver == nil {
+		version := EmbedVersion(obj)
+		if version == nil {
 			err = errInvalidObject
 			return
 		}
 
-		oldVersion := ver.Version
-		newVersion, err := ver.CreateVersion(db, slug, mb.NewModel())
+		oldVersion := version.Version
+		newVersion, err := version.CreateVersion(db, slug, mb.NewModel())
 		if err != nil {
 			return
 		}
-		*ver = Version{newVersion, newVersion, oldVersion}
+		*version = Version{newVersion, newVersion, oldVersion}
 
-		st := EmbedStatus(obj)
-		if st != nil {
-			*st = Status{Status: StatusDraft}
+		status := EmbedStatus(obj)
+		if status != nil {
+			*status = Status{Status: StatusDraft}
 		}
 
 		sched := EmbedSchedule(obj)
@@ -225,41 +225,37 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 			return r, err
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.deleteConfirmation = false",
-			Notify(PayloadItemDeleted{mb.Info().Label(), slug}),
-		)
-
-		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
-		if slug == currentDisplaySlug {
-			deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
-
-			// find the older version first then find the max version
-			version := mb.NewModel()
-			db := utils.PrimarySluggerWhere(db, version, slug, "version").Order("version DESC").WithContext(ctx.R.Context())
-			err := db.Where("version < ?", deletedVersion).First(version).Error
+		// find the older version first then find the max version
+		deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
+		nextVersion := mb.NewModel()
+		db := utils.PrimarySluggerWhere(db, nextVersion, slug, "version").Order("version DESC").WithContext(ctx.R.Context())
+		err := db.Where("version < ?", deletedVersion).First(nextVersion).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return r, err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err := db.First(nextVersion).Error
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return r, err
 			}
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				err := db.First(version).Error
-				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					return r, err
-				}
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					r.PushState = web.Location(nil).URL(pm.Info().ListingHref())
-					return r, nil
-				}
+				nextVersion = nil
 			}
-
-			currentDisplaySlug = version.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r,
-				Notify(PayloadVersionSelected{
-					ToPayloadItem(version, mb.Info().Label()),
-				}),
-			)
 		}
 
+		nextVersionPayload := ToPayloadItem(nextVersion, mb.Info().Label())
+		web.AppendRunScripts(&r,
+			"locals.deleteConfirmation = false",
+			Notify(PayloadItemDeleted{ModelLabel: mb.Info().Label(), Slug: slug, NextVersion: nextVersionPayload}),
+		)
+
+		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
+		if slug == currentDisplaySlug && nextVersion != nil {
+			currentDisplaySlug = nextVersion.(presets.SlugEncoder).PrimarySlug()
+			web.AppendRunScripts(&r,
+				Notify(PayloadVersionSelected{nextVersionPayload}),
+			)
+		}
 		listQuery, err := url.ParseQuery(ctx.Queries().Get(presets.ParamListingQueries))
 		if err != nil {
 			return r, err
@@ -270,7 +266,6 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 
 		web.AppendRunScripts(&r,
 			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
-			// web.Plaid().EventFunc(actions.ReloadList).Go(), // TODO: This will reload the dialog list, I don't know how to reload the main list yet.
 		)
 		return r, nil
 	})

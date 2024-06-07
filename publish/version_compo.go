@@ -143,7 +143,10 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		r := web.Scope(div).
 			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
 		if !config.DisableObservers {
-			r.Observers(ObserverVersionSelected(mb, primarySlugger.PrimarySlug()))
+			r.Observers(
+				ObserverVersionSelected(mb, primarySlugger.PrimarySlug()),
+				ObserverItemDeleted(mb, primarySlugger.PrimarySlug()),
+			)
 		}
 		return r
 	}

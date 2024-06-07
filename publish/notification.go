@@ -5,11 +5,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	"github.com/samber/lo"
 )
 
 func Notification(payload any) string {
@@ -29,13 +28,11 @@ type PayloadItem struct {
 	Schedule   *Schedule
 }
 
-func ToPayloadItem(obj any, label string) PayloadItem {
-	if label == "" {
-		modelstr := reflect.TypeOf(obj).String()
-		modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
-		label = strcase.ToCamel(inflection.Plural(modelName))
+func ToPayloadItem(obj any, label string) *PayloadItem {
+	if lo.IsNil(obj) {
+		return nil
 	}
-	return PayloadItem{
+	return &PayloadItem{
 		ModelLabel: label,
 		Slug:       obj.(presets.SlugEncoder).PrimarySlug(),
 		Status:     EmbedStatus(obj),
@@ -45,16 +42,17 @@ func ToPayloadItem(obj any, label string) PayloadItem {
 }
 
 type PayloadItemUpdated struct {
-	PayloadItem
+	*PayloadItem
 }
 
 type PayloadItemDeleted struct {
-	ModelLabel string
-	Slug       string
+	ModelLabel  string
+	Slug        string
+	NextVersion *PayloadItem
 }
 
 type PayloadVersionSelected struct {
-	PayloadItem
+	*PayloadItem
 }
 
 func ObserverVersionSelected(mb *presets.ModelBuilder, ownerSlug string) web.Observer {
@@ -81,6 +79,25 @@ if (vars.presetsRightDrawer) {
 				web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.Slug")).Go(),
 			}, ";"),
 			web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + '/' + payload.Slug`, mb.Info().ListingHref()))).Go(),
+		),
+	}
+}
+
+func ObserverItemDeleted(mb *presets.ModelBuilder, ownerSlug string) web.Observer {
+	return web.Observer{
+		Name: Notification(PayloadItemDeleted{}),
+		Script: fmt.Sprintf(`
+if (payload.ModelLabel != %q || payload.Slug != %q) {
+	return
+}
+
+if (!payload.NextVersion) {
+	%s
+}
+`,
+			mb.Info().Label(),
+			ownerSlug,
+			web.Plaid().PushState(true).URL(mb.Info().ListingHref()).Go(),
 		),
 	}
 }
