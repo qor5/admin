@@ -113,6 +113,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				versionComponent,
 			).Observers(
 				publish.ObserverItemDeleted(m.mb, ctx.Param(presets.ParamID)),
+				publish.ObserverVersionSelected(m.editor, ctx.Param(presets.ParamID)),
 			),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
