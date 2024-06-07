@@ -278,7 +278,9 @@ func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
 	for _, log := range logs {
 		timelineData = append(timelineData, TimelineItem{
 			Timestamp:   log.CreatedAt,
-			Description: fmt.Sprintf("%s - %s", log.Action, log.Creator),
+			Description: log.Action + ": " + log.Comments,
+			User:        log.Creator,
+			Icon:        "mdi-activity",
 		})
 	}
 

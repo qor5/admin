@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -38,9 +39,9 @@ type ActivityLogInterface interface {
 }
 
 type ActivityLog struct {
-	ID         uint `gorm:"primary_key"`
+	gorm.Model
+
 	UserID     uint
-	CreatedAt  time.Time
 	Creator    string
 	Action     string
 	ModelKeys  string `gorm:"index"`
@@ -50,7 +51,7 @@ type ActivityLog struct {
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
 
-	Comments []Comment `gorm:"polymorphic:Commentable;"`
+	Comments string `gorm:"type:text;"`
 }
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {
