@@ -31,18 +31,18 @@ func ScheduleTimeString(t *time.Time) string {
 	return t.Format(timeFormatSchedule)
 }
 
-func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
+		if err != nil {
+			return r, err
+		}
+
 		sc, ok := obj.(ScheduleInterface)
 		if !ok {
 			return r, errInvalidObject
-		}
-
-		slug := ctx.Param(presets.ParamID)
-		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
-		if err != nil {
-			return
 		}
 
 		valStartAt := ScheduleTimeString(sc.EmbedSchedule().ScheduledStartAt)
@@ -94,13 +94,17 @@ func schedulePublishDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
-	return wrapEventFuncWithShowError(func(ctx *web.EventContext) (web.EventResponse, error) {
-		var r web.EventResponse
+func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		defer func() {
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+			}
+		}()
 
 		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
-		obj, err := mb.Editing().Fetcher(obj, slug, ctx)
+		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
 		if err != nil {
 			return r, err
 		}
@@ -122,7 +126,7 @@ func schedulePublish(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go())
 		}
 		return r, nil
-	})
+	}
 }
 
 func parseScheduleTimeValue(val string) (*time.Time, error) {

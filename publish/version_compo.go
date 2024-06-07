@@ -221,7 +221,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		URIName(pm.Info().URIName() + "-version-list-dialog").
 		InMenu(false)
 
-	registerEventFuncsForVersion(mb, pm, db)
+	registerEventFuncsForVersion(mb, db)
 
 	// TODO: i18n
 	lb := mb.Listing("Version", "State", "StartAt", "EndAt", "Notes", "Option").
