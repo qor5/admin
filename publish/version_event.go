@@ -27,6 +27,13 @@ const (
 
 func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		defer func() {
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				err = nil
+			}
+		}()
+
 		if mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil {
 			return r, perm.PermissionDenied
 		}
@@ -75,7 +82,6 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 
 		slug = obj.(presets.SlugEncoder).PrimarySlug()
 		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
 
@@ -213,6 +219,7 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 		defer func() {
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
+				err = nil
 			}
 		}()
 

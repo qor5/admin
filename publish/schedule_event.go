@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
@@ -99,8 +100,13 @@ func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		defer func() {
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
+				err = nil
 			}
 		}()
+
+		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+			return r, perm.PermissionDenied
+		}
 
 		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()

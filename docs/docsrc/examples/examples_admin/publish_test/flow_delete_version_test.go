@@ -261,7 +261,7 @@ func flowDeleteVersion_Step03_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-31-v01\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v06\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-31-v01\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -368,7 +368,7 @@ func flowDeleteVersion_Step07_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-31-v01\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v04\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v03\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v03\",\"VersionName\":\"2024-05-26-v03\",\"ParentVersion\":\"2024-05-26-v02\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-31-v01\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -475,7 +475,7 @@ func flowDeleteVersion_Step11_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.publish_VarCurrentDisplayID = \"1_2024-05-26-v05\"; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v05\").go(); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v03\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-31-v01\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v03\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -553,7 +553,7 @@ func flowDeleteVersion_Step14_Event_publish_eventSelectVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.presetsListingDialog = false; if (!!vars.publish_VarCurrentDisplayID && vars.publish_VarCurrentDisplayID != \"1_2024-05-26-v03\") { vars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v03\").go() }", resp.RunScript)
+	assert.Equal(t, "vars.presetsListingDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v03\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v03\",\"VersionName\":\"2024-05-26-v03\",\"ParentVersion\":\"2024-05-26-v02\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}})", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -664,7 +664,7 @@ func flowDeleteVersion_Step18_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.publish_VarCurrentDisplayID = \"1_2024-05-26-v02\"; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v02\").go(); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v02\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v03\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v02\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v02\",\"VersionName\":\"2024-05-26-v02\",\"ParentVersion\":\"2024-05-26-v01\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v02\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v02\",\"VersionName\":\"2024-05-26-v02\",\"ParentVersion\":\"2024-05-26-v01\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v02\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -767,7 +767,7 @@ func flowDeleteVersion_Step22_Event_publish_eventSelectVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.presetsListingDialog = false; if (!!vars.publish_VarCurrentDisplayID && vars.publish_VarCurrentDisplayID != \"1_2024-05-26-v01\") { vars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v01\").go() }", resp.RunScript)
+	assert.Equal(t, "vars.presetsListingDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v01\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v01\",\"VersionName\":\"2024-05-26-v01\",\"ParentVersion\":\"\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}})", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -878,7 +878,7 @@ func flowDeleteVersion_Step26_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.publish_VarCurrentDisplayID = \"1_2024-05-26-v05\"; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v05\").go(); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v05\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v01\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v05\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -989,7 +989,7 @@ func flowDeleteVersion_Step30_Event_publish_eventDeleteVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v05\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
+	assert.Equal(t, "locals.deleteConfirmation = false; vars.__sendNotification(\"publish.PayloadItemDeleted\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v02\",\"NextVersion\":{\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}}); plaid().vars(vars).locals(locals).form(form).url(\"/samples/publish-example/with-publish-products-version-list-dialog\").queries({\"select_id\":[\"1_2024-05-26-v05\"]}).eventFunc(\"presets_UpdateListingDialog\").go()", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -1066,16 +1066,12 @@ func flowDeleteVersion_Step33_Event_publish_eventDeleteVersion(t *testing.T, f *
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Empty(t, resp.PageTitle)
 	assert.False(t, resp.Reload)
-	assert.NotNil(t, resp.PushState)
-	assert.False(t, resp.PushState.MyMergeQuery)
-	assert.Equal(t, "/samples/publish-example/with-publish-products", resp.PushState.MyURL)
-	assert.Empty(t, resp.PushState.MyStringQuery)
-	assert.Empty(t, resp.PushState.MyClearMergeQueryKeys)
+	assert.Nil(t, resp.PushState)
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Empty(t, resp.RunScript)
+	assert.Equal(t, `locals.deleteConfirmation = false; vars.__sendNotification("publish.PayloadItemDeleted", {"ModelLabel":"WithPublishProducts","Slug":"1_2024-05-26-v05","NextVersion":null}); plaid().vars(vars).locals(locals).form(form).url("/samples/publish-example/with-publish-products-version-list-dialog").queries({"select_id":["1_2024-05-26-v05"]}).eventFunc("presets_UpdateListingDialog").go()`, resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
