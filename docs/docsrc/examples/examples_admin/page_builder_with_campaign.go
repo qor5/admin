@@ -27,9 +27,9 @@ type (
 		publish.Version
 	}
 
-	Product struct {
-		Name string
+	CampaignProduct struct {
 		gorm.Model
+		Name string
 		publish.Status
 		publish.Schedule
 		publish.Version
@@ -74,15 +74,15 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 }
 
-func (b *Product) GetTitle() string {
+func (b *CampaignProduct) GetTitle() string {
 	return b.Name
 }
 
-func (p *Product) PrimarySlug() string {
+func (p *CampaignProduct) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
 }
 
-func (p *Product) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (p *CampaignProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
@@ -109,7 +109,7 @@ func TestHandler(pageBuilder *pagebuilder.Builder, b *presets.Builder) http.Hand
 func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.DataOperator(gorm2op.DataOperator(db))
 	err := db.AutoMigrate(
-		&Campaign{}, &Product{}, // models
+		&Campaign{}, &CampaignProduct{}, // models
 		&MyContent{}, &CampaignContent{}, &ProductContent{}, // containers
 
 	)
@@ -152,7 +152,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	campaignModelBuilder.Use(pb)
 
 	// Products Menu
-	productModelBuilder := b.Model(&Product{})
+	productModelBuilder := b.Model(&CampaignProduct{})
 	productModelBuilder.Listing("Name")
 
 	detail2 := productModelBuilder.Detailing(
@@ -162,7 +162,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	detail2.Section("ProductDetail").Editing("Name")
 
-	pb.RegisterModelContainer("ProductContent", productModelBuilder).Group("Product").
+	pb.RegisterModelContainer("ProductContent", productModelBuilder).Group("CampaignProduct").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*ProductContent)
 			return Div(Text(c.Name)).Style("height:200px")

@@ -433,7 +433,6 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 
 func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
-		isReadonly   = ctx.Param(paramStatus) != publish.StatusDraft
 		msgr         = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		_, _, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
@@ -464,26 +463,29 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		for _, builder := range group {
 			cover := builder.cover
 			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
 			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
-			listItems = append(listItems, VListItem(
-				VListItemTitle(h.Text(containerName)),
-				VListItemSubtitle(VImg().Src(cover).Height(100)),
-			).Disabled(isReadonly).Attr("@click",
-				web.Plaid().EventFunc(AddContainerEvent).
-					MergeQuery(true).
-					Query(paramModelName, builder.name).
-					Query(paramContainerName, builder.name).
-					Go(),
-			))
+			listItems = append(listItems,
+				VListItem(
+					VListItemTitle(h.Text(containerName)),
+					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2"),
+				).Attr("@click",
+					web.Plaid().EventFunc(AddContainerEvent).
+						MergeQuery(true).
+						Query(paramModelName, builder.name).
+						Query(paramContainerName, builder.name).
+						Go(),
+				))
 		}
 		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
-					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
-			).Name("activator").Scope(" {  props }"),
+					VListItemTitle(
+						h.Text(groupName),
+					).Class("text-body-1"),
+				).Attr("v-bind", "props"),
+			).Name("activator").Scope(" { props}"),
 			h.Components(listItems...),
 		).Value(groupName))
 	}
@@ -510,29 +512,29 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			c := b.builder.ContainerByName(builder.ModelName)
 			cover := c.cover
 			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".svg")
 			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
-			listItems = append(listItems, VListItem(
-				h.Div(
+			listItems = append(listItems,
+				VListItem(
 					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)),
-				).Disabled(isReadonly).Attr("@click", web.Plaid().
-					EventFunc(AddContainerEvent).
-					MergeQuery(true).
-					Query(paramContainerName, builder.ModelName).
-					Query(paramModelName, builder.ModelName).
-					Query(paramModelID, builder.ModelID).
-					Query(paramSharedContainer, "true").
-					Go()),
-			).Value(containerName))
+					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2").
+						Attr("@click", web.Plaid().
+							EventFunc(AddContainerEvent).
+							MergeQuery(true).
+							Query(paramContainerName, builder.ModelName).
+							Query(paramModelName, builder.ModelName).
+							Query(paramModelID, builder.ModelID).
+							Query(paramSharedContainer, "true").
+							Go()),
+				).Value(containerName))
 		}
 
 		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
+				).Attr("v-bind", "props").Class("text-body-1"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
