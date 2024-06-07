@@ -22,17 +22,3 @@ func (b *Builder) Use(vs ...Plugin) (r *Builder) {
 	}
 	return b
 }
-
-type ZeroPlugin struct{}
-
-func NewZeroPlugin() *ZeroPlugin {
-	return &ZeroPlugin{}
-}
-
-func (np *ZeroPlugin) Install(pb *Builder) (err error) {
-	return nil
-}
-
-func (np *ZeroPlugin) ModelInstall(pb *Builder, mb *ModelBuilder) (err error) {
-	return nil
-}

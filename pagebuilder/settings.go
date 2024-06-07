@@ -74,14 +74,15 @@ func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuil
 			onlineHint,
 			versionComponent,
 			h.Div(
-				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").Style(`height:320px;width:100%;pointer-events: none;`),
+				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").
+					Style(`height:320px;width:100%;pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 60%, rgba(255, 255, 255, 0.60) 100%), url(<path-to-image>) lightgray 50% / cover no-repeat;`),
 				h.Div(
 					h.Div(
 						h.Text(se),
 					).Class(fmt.Sprintf("bg-%s", ColorSecondaryLighten2)),
-					VBtn("Page Builder").PrependIcon("mdi-pencil").Color(ColorSecondary).
+					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorSecondary).
 						Class("rounded-sm").Height(40).Variant(VariantFlat),
-				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;top:0;left:0`),
+				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative`).Class("w-100").
 				Attr("@click",
 					web.Plaid().URL(fmt.Sprintf("%s/%s/editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),

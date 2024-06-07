@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +12,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/qor5/admin/v3/presets/gorm2op"
 
 	"github.com/sunfmin/reflectutils"
 
@@ -817,19 +820,18 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			  position: absolute;
 			  z-index: 9998;
 			  opacity: 0;
-			  transition: opacity .5s ease-in-out;
 			  text-align: center;
 			}
 			
 			.editor-add div {
 			  width: 100%;
 			  background-color: #3E63DD;
-			  transition: height .5s ease-in-out;
 			  height: 3px;
 			}
 			
 			.editor-add button {
 			  width: 32px;
+			  cursor: pointer;
               height: 32px;	
 			  color: #FFFFFF;
 			  background-color: #3E63DD;
@@ -866,6 +868,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			}
 			.editor-bar button {
 			  color: #FFFFFF;
+			  cursor: pointer;
 			  background-color: #3E63DD; 
               height: 24px;	
 			}
@@ -1003,4 +1006,211 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 	}
 	r.PushState = web.Location(url.Values{})
 	return
+}
+
+func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, locale, oldPageVersion, newPageVersion string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, locale, pageID, newPageVersion, locale)
+}
+
+func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
+	var cons []*Container
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ? and page_model_name =? ", pageID, pageVersion, locale, b.name).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		newModelID := c.ModelID
+		if !c.Shared {
+			model := b.builder.ContainerByName(c.ModelName).NewModel()
+			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+				return
+			}
+			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+				return
+			}
+			if err = db.Create(model).Error; err != nil {
+				return
+			}
+			newModelID = reflectutils.MustGet(model, "ID").(uint)
+		}
+
+		if err = db.Create(&Container{
+			PageID:        uint(toPageID),
+			PageVersion:   toPageVersion,
+			PageModelName: b.name,
+			ModelName:     c.ModelName,
+			DisplayName:   c.DisplayName,
+			ModelID:       newModelID,
+			DisplayOrder:  c.DisplayOrder,
+			Shared:        c.Shared,
+			Locale: l10n.Locale{
+				LocaleCode: toPageLocale,
+			},
+		}).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
+	var cons []*Container
+	err = db.Order("display_order ASC").
+		Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).
+		Find(&cons).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		newModelID := c.ModelID
+		newDisplayName := c.DisplayName
+		if !c.Shared {
+			model := b.builder.ContainerByName(c.ModelName).NewModel()
+			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+				return
+			}
+			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+				return
+			}
+			if err = db.Create(model).Error; err != nil {
+				return
+			}
+			newModelID = reflectutils.MustGet(model, "ID").(uint)
+		} else {
+			var count int64
+			var sharedCon Container
+			if err = db.Where("model_name = ? AND localize_from_model_id = ? AND locale_code = ? AND shared = ? and page_model_name = ? ",
+				c.ModelName, c.ModelID, toPageLocale, true, b.name).
+				First(&sharedCon).Count(&count).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return
+			}
+
+			if count == 0 {
+				model := b.builder.ContainerByName(c.ModelName).NewModel()
+				if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+					return
+				}
+				if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+					return
+				}
+				if err = db.Create(model).Error; err != nil {
+					return
+				}
+				newModelID = reflectutils.MustGet(model, "ID").(uint)
+			} else {
+				newModelID = sharedCon.ModelID
+				newDisplayName = sharedCon.DisplayName
+			}
+		}
+
+		var newCon Container
+		err = db.Order("display_order ASC").Find(&newCon, "id = ? AND locale_code = ?", c.ID, toPageLocale).Error
+		if err != nil {
+			return
+		}
+
+		newCon.ID = c.ID
+		newCon.PageID = uint(toPageID)
+		newCon.PageVersion = toPageVersion
+		newCon.ModelName = c.ModelName
+		newCon.DisplayName = newDisplayName
+		newCon.ModelID = newModelID
+		newCon.DisplayOrder = c.DisplayOrder
+		newCon.Shared = c.Shared
+		newCon.LocaleCode = toPageLocale
+		newCon.LocalizeFromModelID = c.ModelID
+		newCon.PageModelName = b.name
+
+		if err = db.Save(&newCon).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
+	eb := mb.Editing().Creating()
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		if p, ok := obj.(*Page); ok {
+			if p.Slug != "" {
+				p.Slug = path.Clean(p.Slug)
+			}
+			funcName := ctx.R.FormValue(web.EventFuncIDName)
+			if funcName == publish.EventDuplicateVersion {
+				var fromPage Page
+				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+				p.SEO = fromPage.SEO
+			}
+		}
+		var (
+			pageID                             int
+			version, localeCode, parentVersion string
+		)
+		if id != "" {
+			ctx.R.Form.Set(presets.ParamID, id)
+			pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
+		}
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+
+		if p, ok := obj.(publish.VersionInterface); ok {
+			parentVersion = p.EmbedVersion().ParentVersion
+			version = p.EmbedVersion().Version
+		}
+		if p, ok := obj.(l10n.LocaleInterface); ok {
+			if p.EmbedLocale().LocaleCode == "" {
+				reflectutils.Set(obj, "LocaleCode", locale)
+			}
+			localeCode = p.EmbedLocale().LocaleCode
+		}
+		err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+				if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
+					return
+				}
+				return
+			}
+
+			if v := ctx.R.FormValue(templateSelectedID); v != "" {
+				var tplID int
+				tplID, inerr = strconv.Atoi(v)
+				if inerr != nil {
+					return
+				}
+				if b.builder.l10n == nil {
+					localeCode = ""
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
+					panic(inerr)
+				}
+			}
+			if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+				if p, ok := obj.(*Page); ok {
+					if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+						panic(inerr)
+					}
+				}
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+					panic(inerr)
+				}
+				return
+			}
+			return
+		})
+
+		return err
+	})
 }

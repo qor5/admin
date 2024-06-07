@@ -123,7 +123,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
-			return Div().Text(c.Text)
+			return Div().Text(c.Text).Style("height:200px")
 		})
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
@@ -146,7 +146,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
-			return Div(Text(c.Title))
+			return Div(Text(c.Title)).Style("height:200px")
 		}).Model(&CampaignContent{}).Editing("Title", "Banner")
 
 	campaignModelBuilder.Use(pb)
@@ -165,7 +165,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb.RegisterModelContainer("ProductContent", productModelBuilder).Group("Product").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*ProductContent)
-			return Div(Text(c.Name))
+			return Div(Text(c.Name)).Style("height:200px")
 		}).Model(&ProductContent{}).Editing("Name")
 
 	productModelBuilder.Use(pb)

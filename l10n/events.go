@@ -3,6 +3,7 @@ package l10n
 import (
 	"context"
 	"reflect"
+	"slices"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
@@ -62,7 +63,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 			if locale == fromLocale {
 				continue
 			}
-			if !utils.Contains(existLocales, locale) || vo.Len() == 0 {
+			if !slices.Contains(existLocales, locale) || vo.Len() == 0 {
 				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: locale})
 			}
 		}

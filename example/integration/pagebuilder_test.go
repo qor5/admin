@@ -106,7 +106,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var page pagebuilder.Page
-				TestDB.First(&page, "slug = ?", "/hello4")
+				TestDB.First(&page, "slug = ?", "hello4")
 				if page.LocaleCode != "International" {
 					t.Errorf("wrong locale code, expected International, got %#+v", page)
 				}
