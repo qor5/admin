@@ -25,7 +25,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/web/v3 v3.0.4
+	github.com/qor5/web/v3 v3.0.5-0.20240607064315-49b52a83213c
 	github.com/qor5/x/v3 v3.0.5
 	github.com/samber/lo v1.39.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
@@ -126,7 +126,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/qor5/web v1.3.2 // indirect
-	github.com/rs/xid v1.5.0 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
@@ -166,6 +165,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/qor5/web/v3 => ../web
+// replace github.com/qor5/web/v3 => ../web
 
 // replace github.com/qor5/x/v3 => ../x
