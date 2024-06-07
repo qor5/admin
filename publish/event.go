@@ -35,13 +35,13 @@ func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publis
 
 	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(mb, db))
 	mb.RegisterEventFunc(eventSelectVersion, selectVersion(mb, db))
-	mb.RegisterEventFunc(eventSchedulePublishDialog, schedulePublishDialog(db, mb))
-	mb.RegisterEventFunc(eventSchedulePublish, schedulePublish(db, mb))
+	mb.RegisterEventFunc(eventSchedulePublishDialog, scheduleDialog(db, mb))
+	mb.RegisterEventFunc(eventSchedulePublish, schedule(db, mb))
 }
 
-func registerEventFuncsForVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.DB) {
+func registerEventFuncsForVersion(mb *presets.ModelBuilder, db *gorm.DB) {
 	mb.RegisterEventFunc(eventRenameVersionDialog, renameVersionDialog(mb))
 	mb.RegisterEventFunc(eventRenameVersion, renameVersion(mb))
 	mb.RegisterEventFunc(eventDeleteVersionDialog, deleteVersionDialog(mb))
-	mb.RegisterEventFunc(eventDeleteVersion, deleteVersion(mb, pm, db))
+	mb.RegisterEventFunc(eventDeleteVersion, deleteVersion(mb, db))
 }

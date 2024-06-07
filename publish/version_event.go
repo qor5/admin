@@ -27,6 +27,13 @@ const (
 
 func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		defer func() {
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				err = nil
+			}
+		}()
+
 		if mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil {
 			return r, perm.PermissionDenied
 		}
@@ -75,7 +82,6 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 
 		slug = obj.(presets.SlugEncoder).PrimarySlug()
 		if err = mb.Editing().Creating().Saver(obj, slug, ctx); err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
 			return
 		}
 
@@ -208,9 +214,14 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 
 const paramCurrentDisplaySlug = "current_display_id"
 
-func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
-	return wrapEventFuncWithShowError(func(ctx *web.EventContext) (web.EventResponse, error) {
-		var r web.EventResponse
+func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		defer func() {
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				err = nil
+			}
+		}()
 
 		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil {
 			return r, perm.PermissionDenied
@@ -229,7 +240,7 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 		deletedVersion := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(slug)["version"]
 		nextVersion := mb.NewModel()
 		db := utils.PrimarySluggerWhere(db, nextVersion, slug, "version").Order("version DESC").WithContext(ctx.R.Context())
-		err := db.Where("version < ?", deletedVersion).First(nextVersion).Error
+		err = db.Where("version < ?", deletedVersion).First(nextVersion).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return r, err
 		}
@@ -268,5 +279,5 @@ func deleteVersion(mb *presets.ModelBuilder, pm *presets.ModelBuilder, db *gorm.
 			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
 		)
 		return r, nil
-	})
+	}
 }
