@@ -66,8 +66,8 @@ func ContainsVersionBar(body string) bool {
 }
 
 func EnsureCurrentDisplayID(displayID string) testflow.ValidatorFunc {
-	// Ensure the button that opens the version list sets vars.publish_VarCurrentDisplayID and that the version opened is as expected
-	return testflow.ContainsInOrderAtUpdatePortal(0, "<v-chip", fmt.Sprintf(`vars.publish_VarCurrentDisplayID = %q`, displayID), "</v-chip>")
+	// Ensure the button that opens the version list sets vars.publish_VarCurrentDisplaySlug and that the version opened is as expected
+	return testflow.ContainsInOrderAtUpdatePortal(0, "<v-chip", fmt.Sprintf(`vars.publish_VarCurrentDisplaySlug = %q`, displayID), "</v-chip>")
 }
 
 var reListContent = regexp.MustCompile(`<tr[\s\S]+?<td>[\s\S]+?<v-radio :model-value='([^']+)'\s*:true-value='([^']+)'[\s\S]+?</v-radio>\s*([^<]+)?\s*</div>[\s\S]+?</tr>`)

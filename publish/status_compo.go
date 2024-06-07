@@ -16,7 +16,7 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 )
 
-func draftCountFunc(db *gorm.DB) presets.FieldComponentFunc {
+func draftCountFunc(_ *presets.ModelBuilder, db *gorm.DB) presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var count int64
 		modelSchema, err := schema.Parse(obj, &sync.Map{}, db.NamingStrategy)
