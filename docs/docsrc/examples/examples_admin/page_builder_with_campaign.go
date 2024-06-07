@@ -116,10 +116,12 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n())
 	puBuilder := publish.New(db, nil)
-	pb.Publisher(puBuilder)
-	_ = puBuilder.Install(b)
+	b.Use(puBuilder)
+
+	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
+		Publisher(puBuilder)
+
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)

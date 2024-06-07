@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/admin/v3/docs/cmd/qor5/website-template/admin"
+	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
 	"github.com/theplant/osenv"
 )
 

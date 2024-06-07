@@ -41,23 +41,7 @@ func InitApp() *http.ServeMux {
 func newPB() Config {
 	db := ConnectDB()
 
-	b := presets.New().VuetifyOptions(`
-{
-  theme: {
-    themes: {
-      light: {
-		  primary: "#ed6f2d",
-		  secondary: "#009688",
-		  accent: "#ff5722",
-		  error: "#f44336",
-		  warning: "#ff9800",
-		  info: "#8bc34a",
-		  success: "#4caf50"
-      },
-    },
-  },
-}
-`)
+	b := presets.New()
 
 	b.URIPrefix("/admin").DataOperator(gorm2op.DataOperator(db)).
 		BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
@@ -117,7 +101,7 @@ func newPB() Config {
 		})
 
 	b.MenuOrder(
-		b.MenuGroup("Page Builder").SubItems("pages", "page_templates", "page_categories").Icon("web"),
+		b.MenuGroup("Page Builder").SubItems("pages", "page_templates", "page_categories").Icon("mdi-web"),
 		"shared_containers",
 		"demo_containers",
 		"media-library",
