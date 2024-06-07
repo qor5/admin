@@ -49,6 +49,8 @@ type ActivityLog struct {
 
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
+
+	Comments []Comment `gorm:"polymorphic:Commentable;"`
 }
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {

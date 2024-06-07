@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  db_test:
+    image: postgres:${POSTGRES_IMAGE_VERSION-alpine3.20}
+    container_name: pg-admin
+    ports:
+      - "6514:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER-test}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD-test}
+      POSTGRES_DB: ${POSTGRES_DB-test}
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

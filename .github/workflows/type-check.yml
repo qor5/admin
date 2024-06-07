@@ -1,0 +1,15 @@
+# Docs: https://github.com/kubecub/typecheck/blob/main/README.md
+# Description: This workflow will run the type checker on the Go codebase.
+name: Go Type Check
+
+on: [push, pull_request]
+
+jobs:
+  go-language-code-typechecker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Code Type check Detector
+        uses: kubecub/typecheck@v1.0.0
