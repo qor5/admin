@@ -116,10 +116,14 @@ func newConfig(db *gorm.DB) config {
 
 	b.MenuOrder(
 		b.MenuGroup("Page Builder").
-			SubItems("pages", "page_templates", "page_categories").
+			SubItems(
+				"pages",
+				"page_templates",
+				"page_categories",
+				"shared_containers",
+				"demo_containers",
+			).
 			Icon("mdi-web"),
-		"shared_containers",
-		"demo_containers",
 		"media-library",
 	)
 
