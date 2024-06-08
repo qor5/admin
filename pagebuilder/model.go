@@ -665,6 +665,12 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 
 	return
 }
+func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
+	if builder.l10n == nil {
+		return wh
+	}
+	return wh.Where("locale_code = ?", locale)
+}
 
 func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	model := b.builder.ContainerByName(modelName).NewModel()
@@ -683,8 +689,10 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		maxOrder     sql.NullFloat64
 		displayOrder float64
 	)
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").
-		Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
+	wh := b.db.Model(&Container{}).Select("MAX(display_order)").
+		Where("page_id = ? and page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name)
+
+	err = withLocale(b.builder, wh, locale).Scan(&maxOrder).Error
 	if err != nil {
 		return
 	}
@@ -693,8 +701,12 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
 		if dbErr := b.db.Where("id = ? AND locale_code = ? and page_model_name = ?", cs["id"], locale, b.name).First(&lastContainer).Error; dbErr == nil {
 			displayOrder = lastContainer.DisplayOrder
-			if err = b.db.Model(&Container{}).
-				Where("page_id = ? and page_version = ? and locale_code = ?  and page_model_name = ? and display_order > ? ", pageID, pageVersion, locale, b.name, displayOrder).
+			if err = withLocale(
+				b.builder,
+				b.db.Model(&Container{}).
+					Where("page_id = ? and page_version = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, b.name, displayOrder),
+				locale,
+			).
 				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
 				return
 			}
