@@ -109,7 +109,7 @@ func newConfig(db *gorm.DB) config {
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, MessagesModels_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
 			return b.I18n().GetSupportLanguages()
 		})

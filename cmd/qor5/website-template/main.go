@@ -23,7 +23,12 @@ func main() {
 		Addr:    ":" + port,
 		Handler: cmsMux,
 	}
-	go cmsServer.ListenAndServe()
+	go func() {
+		err := cmsServer.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	fmt.Println("CMS Served at http://localhost:" + port + "/admin")
 
 	// Publish server
