@@ -133,6 +133,18 @@ func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *Fi
 	return b
 }
 
+type FieldPlugin interface {
+	Install(*FieldBuilder) error
+}
+
+func (b *FieldBuilder) Use(plugin FieldPlugin) (r *FieldBuilder) {
+	err := plugin.Install(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 type NestedConfig interface {
 	nested()
 }

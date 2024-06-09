@@ -23,6 +23,7 @@ type ListingComponentStyle string
 const (
 	ListingComponentStylePage   ListingComponentStyle = "page"
 	ListingComponentStyleDialog ListingComponentStyle = "dialog"
+	ListingComponentStyleInline ListingComponentStyle = "inline"
 )
 
 type ListingBuilder struct {
@@ -1465,9 +1466,8 @@ func (b *ListingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRespo
 		return
 	}
 
-	z := ZoneOrCreate[*ListingZone](ctx)
-	z.Style = ListingComponentStylePage
-	// TODO:
+	// z := ZoneOrCreate[*ListingZone](ctx)
+	// z.Style = ListingComponentStylePage
 
 	msgr := MustGetMessages(ctx.R)
 	title := b.title
@@ -1513,12 +1513,7 @@ func (b *ListingBuilder) openListingDialog(ctx *web.EventContext) (r web.EventRe
 
 	z := ZoneOrCreate[*ListingZone](ctx)
 	z.Style = ListingComponentStyleDialog
-
-	// TODO:
-	query := ctx.R.URL.Query()
-	query.Set(QueryKeyZone, h.JSONString(z))
-	ctx.R.URL.RawQuery = query.Encode()
-	ctx.R.RequestURI = ctx.R.URL.String()
+	z.ApplyToRequest(ctx.R)
 
 	title := b.title
 	if title == "" {
@@ -1573,6 +1568,8 @@ func (b *ListingBuilder) reloadList(ctx *web.EventContext) (r web.EventResponse,
 	case ListingComponentStyleDialog:
 		r.UpdatePortals = b.dialogPortalUpdates(ctx)
 		web.AppendRunScripts(&r, fixDialogMinHeightScript(ctx))
+	case ListingComponentStyleInline:
+		r.UpdatePortals = b.inlinePortalUpdates(ctx)
 	default:
 		return r, errors.New("invalid listing style")
 	}

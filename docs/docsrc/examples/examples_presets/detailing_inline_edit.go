@@ -1,7 +1,6 @@
 package examples_presets
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -105,7 +104,7 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 }
 
 func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gorm.DB) (
-	cust *presets.ModelBuilder,
+	mb *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
@@ -116,33 +115,13 @@ func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gor
 	}
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	cust = b.Model(&Customer{})
-	b.URIPrefix(examples.URLPathByFunc(PresetsDetailInlineEditDetailsInspectShowFields))
-	dp = cust.Detailing("Details", "CreditCards").Drawer(true)
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-			var cus Customer
-			db.Find(&cus)
+	mb = b.Model(&Customer{}).RightDrawerWidth("1000")
+	dp = mb.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
 
-			var cc []*CreditCard
-			db.Find(&cc)
-			cus.CreditCards = cc
-			r = cus
-			return
-		}
-	})
-	dp.Section("Details").
-		Editing("Name", "Email2", "Description")
+	ccmb := mb.InlineListing(&CreditCard{}, "CustomerID")
+	dp.Field("CreditCards").Use(ccmb)
 
-	dp.Field("Email2").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div().Text("abc")
-	})
-
-	ccm := b.Model(&CreditCard{}).InMenu(false)
-	ccm.Editing("Number")
-	l := ccm.Listing("Name")
-	l.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div()
-	})
+	ccmb2 := mb.InlineListing(&CreditCard{}, "CustomerID")
+	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }

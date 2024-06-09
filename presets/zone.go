@@ -2,6 +2,7 @@ package presets
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"reflect"
 
@@ -40,8 +41,9 @@ func ZoneOrCreate[T any](ctx *web.EventContext) T {
 }
 
 type ListingZone struct {
-	ID    string                `json:"id,omitempty"`
-	Style ListingComponentStyle `json:"style,omitempty"`
+	ID       string                `json:"id,omitempty"`
+	Style    ListingComponentStyle `json:"style,omitempty"`
+	ParentID string                `json:"parent_id,omitempty"`
 }
 
 func (z *ListingZone) Plaid() *web.VueEventTagBuilder {
@@ -69,4 +71,11 @@ func (z *ListingZone) Portal(name string) string {
 		return name
 	}
 	return z.ID + "." + name
+}
+
+func (z *ListingZone) ApplyToRequest(r *http.Request) {
+	query := r.URL.Query()
+	query.Set(QueryKeyZone, h.JSONString(z))
+	r.URL.RawQuery = query.Encode()
+	r.RequestURI = r.URL.String()
 }
