@@ -396,7 +396,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 				"locals.deleteConfirmation = false",
 				web.Plaid().
 					URL(u).
-					EventFunc(actions.UpdateListingDialog).
+					EventFunc(actions.ReloadList).
 					MergeQuery(true).
 					Queries(ctx.Queries()).
 					Query(ParamSelectedIds, removeSelectQuery).
@@ -505,7 +505,7 @@ func (b *EditingBuilder) doUpdate(
 		web.AppendRunScripts(r,
 			web.Plaid().
 				URL(ctx.R.RequestURI).
-				EventFunc(actions.UpdateListingDialog).
+				EventFunc(actions.ReloadList).
 				StringQuery(ctx.R.URL.Query().Get(ParamListingQueries)).
 				Go(),
 		)

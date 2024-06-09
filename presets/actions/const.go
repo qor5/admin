@@ -21,9 +21,8 @@ const (
 	DoDeleteDetailingListField = "presets_Detailing_List_Field_Delete"
 	DoCreateDetailingListField = "presets_Detailing_List_Field_Create"
 
-	ReloadList          = "presets_ReloadList"
-	OpenListingDialog   = "presets_OpenListingDialog"
-	UpdateListingDialog = "presets_UpdateListingDialog"
+	ReloadList        = "presets_ReloadList"
+	OpenListingDialog = "presets_OpenListingDialog"
 
 	// list editor
 	AddRowEvent    = "listEditor_addRowEvent"

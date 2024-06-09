@@ -781,6 +781,7 @@ const (
 	DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 	ListingDialogPortalName        = "presets_listingDialogPortalName"
 	singletonEditingPortalName     = "presets_SingletonEditingPortalName"
+	DeleteConfirmPortalName        = "deleteConfirm"
 )
 
 const (

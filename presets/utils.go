@@ -117,3 +117,9 @@ func isInDialogFromQuery(ctx *web.EventContext) bool {
 func ptrTime(t time.Time) *time.Time {
 	return &t
 }
+
+func UpdateToPortal(update *web.PortalUpdate) *web.PortalBuilder {
+	return web.Portal().Name(update.Name).Children(
+		update.Body,
+	)
+}

@@ -186,7 +186,9 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		)
 
 		listQueries := ctx.Queries().Get(presets.ParamListingQueries)
-		r.RunScript = web.Plaid().URL(ctx.R.URL.Path).StringQuery(listQueries).EventFunc(actions.UpdateListingDialog).Go()
+		web.AppendRunScripts(&r,
+			web.Plaid().URL(ctx.R.URL.Path).StringQuery(listQueries).EventFunc(actions.ReloadList).Go(),
+		)
 		return
 	}
 }
@@ -276,7 +278,7 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 		}
 
 		web.AppendRunScripts(&r,
-			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
+			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.ReloadList).Go(),
 		)
 		return r, nil
 	}
