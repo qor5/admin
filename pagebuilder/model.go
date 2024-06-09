@@ -586,7 +586,12 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("vars", "{el:$}")...)})
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: editorPreviewContentPortal,
+		Body: h.Div(body).Attr(web.VAssign("vars", "{el:$}")...),
+	})
+
 	return
 }
 
@@ -962,8 +967,14 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 
 func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").
-		Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Error
+	err = withLocale(
+		b.builder,
+		b.db.
+			Order("display_order ASC").
+			Where("page_id = ? AND page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name),
+		locale,
+	).
+		Find(&cons).Error
 	if err != nil {
 		return
 	}
