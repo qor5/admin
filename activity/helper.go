@@ -2,12 +2,13 @@ package activity
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"gorm.io/gorm"
 	"reflect"
 	"strings"
-
-	"github.com/qor5/admin/v3/presets"
-	"gorm.io/gorm"
 )
 
 func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
@@ -106,4 +107,41 @@ func getBasicModel(m any) any {
 	}
 
 	return m
+}
+
+type contextUserIDKey int
+
+const (
+	UserIDKey contextUserIDKey = iota
+	UserKey
+)
+
+func GetUserData(ctx *web.EventContext) (userID uint, creator string) {
+	if v := ctx.R.Context().Value(UserIDKey); v != nil {
+		userID = v.(uint)
+	}
+	if v := ctx.R.Context().Value(UserKey); v != nil {
+		creator = v.(string)
+	}
+	return
+}
+
+func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
+	var total int64
+	if err := db.Model(&QorNote{}).Where("resource_type = ? AND resource_id = ?", resourceType, resourceID).Count(&total).Error; err != nil {
+		return 0, err
+	}
+
+	if total == 0 {
+		return 0, nil
+	}
+
+	var userNote UserNote
+	if err := db.Where("user_id = ? AND resource_type = ? AND resource_id = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, err
+		}
+	}
+
+	return total - userNote.Number, nil
 }

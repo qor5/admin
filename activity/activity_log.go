@@ -17,6 +17,8 @@ type CreatorInterface interface {
 	GetName() string
 }
 
+//TODO: Reconfiguration interface
+
 type ActivityLogInterface interface {
 	SetCreatedAt(time.Time)
 	GetCreatedAt() time.Time
@@ -51,7 +53,7 @@ type ActivityLog struct {
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
 
-	Comments string `gorm:"type:text;"`
+	Comment string `gorm:"type:text;"`
 }
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {

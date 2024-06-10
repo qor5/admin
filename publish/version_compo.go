@@ -2,7 +2,7 @@ package publish
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/activity/note"
+	"github.com/qor5/admin/v3/activity"
 	"net/url"
 	"reflect"
 
@@ -289,8 +289,8 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		p := obj.(presets.SlugEncoder)
 		rt := pm.Info().Label()
 		ri := p.PrimarySlug()
-		userID, _ := note.GetUserData(ctx)
-		count, _ := note.GetUnreadNotesCount(db, userID, rt, ri)
+		userID, _ := activity.GetUserData(ctx)
+		count, _ := activity.GetUnreadNotesCount(db, userID, rt, ri)
 
 		return h.Td(
 			h.If(count > 0,

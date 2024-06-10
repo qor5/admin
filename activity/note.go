@@ -1,4 +1,4 @@
-package note
+package activity
 
 import (
 	"errors"

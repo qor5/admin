@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go4.org/sort"
+	"golang.org/x/text/language"
 	"reflect"
 	"strings"
 	"time"
@@ -42,6 +43,8 @@ type Builder struct {
 	tabHeading        func(ActivityLogInterface) string // tab heading format
 	permPolicy        *perm.PolicyBuilder               // permission policy
 	logModelInstall   presets.ModelInstallFunc          // log model install
+
+	afterCreateFunc AfterCreateFunc
 }
 
 type TimelineItem struct {
@@ -278,7 +281,7 @@ func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
 	for _, log := range logs {
 		timelineData = append(timelineData, TimelineItem{
 			Timestamp:   log.CreatedAt,
-			Description: log.Action + ": " + log.Comments,
+			Description: log.Action + ": " + log.Comment,
 			User:        log.Creator,
 			Icon:        "mdi-activity",
 		})
@@ -430,4 +433,20 @@ func (ab *Builder) getCreatorFromContext(ctx context.Context) any {
 		return creator
 	}
 	return ""
+}
+
+// AfterCreateFunc is a type for functions to be called after creating a record
+type AfterCreateFunc func(db *gorm.DB) error
+
+// AfterCreate sets the after create function and returns the Builder
+func (b *Builder) AfterCreate(f AfterCreateFunc) *Builder {
+	b.afterCreateFunc = f
+	return b
+}
+
+func registerI18n(pb *presets.Builder) {
+	pb.I18n().
+		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
 }

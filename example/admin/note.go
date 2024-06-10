@@ -3,8 +3,7 @@ package admin
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/v3/activity/note"
-
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
@@ -120,7 +119,7 @@ func markAllAsRead(db *gorm.DB) web.EventFunc {
 		}
 
 		if err = db.Transaction(func(tx *gorm.DB) (err1 error) {
-			if err1 = tx.Unscoped().Where("user_id = ?", u.ID).Delete(&note.UserNote{}).Error; err1 != nil {
+			if err1 = tx.Unscoped().Where("user_id = ?", u.ID).Delete(&activity.UserNote{}).Error; err1 != nil {
 				return
 			}
 
@@ -135,9 +134,9 @@ GROUP BY resource_type, resource_id;
 				return
 			}
 
-			var userNotes []note.UserNote
+			var userNotes []activity.UserNote
 			for _, result := range results {
-				un := note.UserNote{
+				un := activity.UserNote{
 					UserID:       u.ID,
 					ResourceType: result.ResourceType,
 					ResourceID:   result.ResourceID,

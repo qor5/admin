@@ -46,6 +46,7 @@ require (
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
+	go4.org v0.0.0-20230225012048-214862532bf5
 	golang.org/x/text v0.16.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/driver/sqlite v1.5.5

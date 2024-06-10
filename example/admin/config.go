@@ -3,7 +3,7 @@ package admin
 import (
 	"embed"
 	"fmt"
-	"github.com/qor5/admin/v3/activity/note"
+	"github.com/qor5/admin/v3/activity"
 	"net/http"
 	"net/url"
 	"slices"
@@ -16,7 +16,6 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -140,7 +139,7 @@ func NewConfig(db *gorm.DB) Config {
 			// return supportedLanguages
 			return b.I18n().GetSupportLanguages()
 		})
-	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
+	nb := activity.New(db).AfterCreate(NoteAfterCreateFunc)
 	mediab := media.New(db)
 
 	l10nBuilder := l10n.New(db)
@@ -507,7 +506,7 @@ func configPost(
 	db *gorm.DB,
 	ab *activity.Builder,
 	publisher *publish.Builder,
-	nb *note.Builder,
+	nb *activity.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
 	m.Use(
