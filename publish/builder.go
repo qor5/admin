@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
@@ -26,6 +27,7 @@ type Builder struct {
 	storage oss.StorageInterface
 	// models            []*presets.ModelBuilder
 	ab                *activity.Builder
+	l10n              *l10n.Builder
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
 }
@@ -41,6 +43,11 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
+	return b
+}
+
+func (b *Builder) L10n(v *l10n.Builder) (r *Builder) {
+	b.l10n = v
 	return b
 }
 
@@ -109,7 +116,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 		fb.ComponentFunc(DefaultVersionComponentFunc(mb))
 	}
 
-	mb.Listing().WrapSearchFunc(makeSearchFunc(mb, db))
+	mb.Listing().WrapSearchFunc(makeSearchFunc(b, mb, db))
 	mb.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
@@ -125,7 +132,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	configureVersionListDialog(db, pb, mb)
 }
 
-func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
+func makeSearchFunc(b *Builder, mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			stmt := &gorm.Statement{DB: db}
@@ -140,10 +147,15 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 				}
 			}
 			for _, f := range stmt.Schema.PrimaryFields {
-				if f.Name != "Version" {
+				if f.Name != "Version" && f.Name != "LocaleCode" {
 					pks = append(pks, f.DBName)
 				}
 			}
+
+			if b.l10n != nil {
+				pks = append(pks, "locale_code")
+			}
+
 			pkc := strings.Join(pks, ",")
 
 			sql := fmt.Sprintf(`
