@@ -41,7 +41,6 @@ INSERT INTO public.my_headers (menu_items, id, created_at, updated_at, deleted_a
 `, []string{"page_builder_pages", "page_builder_containers", "my_headers"}))
 
 func TestAll(t *testing.T) {
-
 	mux := admin.Router(TestDB)
 
 	cases := []multipartestutils.TestCase{
@@ -52,18 +51,6 @@ func TestAll(t *testing.T) {
 				return httptest.NewRequest("GET", "/admin/pages", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"My first page"},
-		},
-		{
-			Name:  "add container to page",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				data.TruncatePut(SqlDB)
-				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/admin/page_builder/pages/editors/2_2024-06-08-v01?__execute_event__=page_builder_AddContainerEvent&containerName=MyHeader&modelName=MyHeader&tab=Elements").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectRunScriptContainsInOrder: []string{"page_builder_ReloadRenderPageOrTemplateEvent"},
 		},
 		{
 			Name:  "add container to page",
