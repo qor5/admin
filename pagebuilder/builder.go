@@ -423,6 +423,7 @@ func (b *Builder) preparePlugins() {
 	publisher := b.publisher
 	if l10nB != nil {
 		l10nB.Activity(b.ab)
+		publisher.L10n(l10nB)
 	}
 	seoBuilder := b.seoBuilder
 	if seoBuilder != nil {
@@ -1616,9 +1617,9 @@ func (b *Builder) getDevices() []Device {
 
 func (b *Builder) setDefaultDevices() {
 	b.devices = []Device{
-		//{Name: DeviceComputer, Width: "", Icon: "mdi-desktop-mac"},
-		//{Name: DevicePhone, Width: "414px", Icon: "mdi-tablet-android"},
-		//{Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
+		// {Name: DeviceComputer, Width: "", Icon: "mdi-desktop-mac"},
+		// {Name: DevicePhone, Width: "414px", Icon: "mdi-tablet-android"},
+		// {Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
 		{Name: DeviceComputer, Width: "", Icon: "mdi-monitor"},
 		{Name: DevicePhone, Width: "414px", Icon: "mdi-cellphone"},
 		{Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
