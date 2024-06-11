@@ -67,12 +67,16 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 		},
 		disableElementDeleteBtn: false,
 		disableElementCreateBtn: false,
-		elementEditBtnFunc:      nil,
-		elementEditBtn:          true,
-		elementHoverFunc:        nil,
-		elementHover:            true,
-		alwaysShowListLabel:     false,
-		isList:                  false,
+		elementEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
+			return true
+		},
+		elementEditBtn: true,
+		elementHoverFunc: func(obj interface{}, ctx *web.EventContext) bool {
+			return true
+		},
+		elementHover:        true,
+		alwaysShowListLabel: false,
+		isList:              false,
 	}
 	r.editingFB.Model(d.mb.model)
 	r.editingFB.defaults = d.mb.writeFields.defaults
@@ -135,12 +139,22 @@ func (d *SectionBuilder) ElementEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	return d
 }
 
+func (b *SectionBuilder) WrapElementEditBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
+	b.elementEditBtnFunc = w(b.elementEditBtnFunc)
+	return b
+}
+
 func (d *SectionBuilder) ElementHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
 	d.elementHoverFunc = v
 	return d
+}
+
+func (b *SectionBuilder) WrapElementHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
+	b.elementHoverFunc = w(b.elementHoverFunc)
+	return b
 }
 
 func (d *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
