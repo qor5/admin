@@ -423,7 +423,6 @@ func (b *Builder) preparePlugins() {
 	publisher := b.publisher
 	if l10nB != nil {
 		l10nB.Activity(b.ab)
-		publisher.L10n(l10nB)
 	}
 	seoBuilder := b.seoBuilder
 	if seoBuilder != nil {
