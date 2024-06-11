@@ -378,48 +378,24 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 			ShowMessage(&r, err.Error(), "warning")
 			return
 		}
+
+		web.AppendRunScripts(&r,
+			web.NotifyScript(
+				b.mb.NotifModelsDeleted(),
+				PayloadModelsDeleted{IDs: []string{id}},
+			),
+		)
 	}
+
+	web.AppendRunScripts(&r, "locals.deleteConfirmation = false")
 
 	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
 		web.AppendRunScripts(&r,
-			"locals.deleteConfirmation = false",
 			web.Plaid().
 				EventFunc(event).
 				Queries(ctx.Queries()).
 				Go(),
 		)
-	} else {
-		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
-		if isInDialogFromQuery(ctx) {
-			qs := ctx.Queries()
-			// If you use valueOp, you must stitch in the URL and use MergeQuery(true) now.
-			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), qs.Get(ParamListingQueries))
-			qs.Del(ParamListingQueries)
-			web.AppendRunScripts(&r,
-				"locals.deleteConfirmation = false",
-				web.Plaid().
-					URL(u).
-					EventFunc(actions.ReloadList).
-					MergeQuery(true).
-					Queries(qs). // I don't know why this is needed, but this is the previous logic and can only be kept
-					Query(ParamSelectedIds, removeSelectQuery).
-					Go(),
-			)
-		} else {
-			// refresh current page
-
-			// TODO: response location does not support `valueOp`
-			// r.PushState = web.Location(nil).
-			// 	MergeQuery(true).
-			//  Query(ParamSelectedIds, removeSelectQuery)
-			web.AppendRunScripts(&r,
-				web.Plaid().
-					PushState(true).
-					MergeQuery(true).
-					Query(ParamSelectedIds, removeSelectQuery).
-					Go(),
-			)
-		}
 	}
 	return
 }
@@ -438,14 +414,6 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 
 	vErr = b.RunSetterFunc(ctx, removeDeletedAndSort, obj)
 	return
-}
-
-type PayloadModelUpdated struct {
-	Model any
-}
-
-func (mb *ModelBuilder) NotifModelUpdated() string {
-	return fmt.Sprintf("PresetsModelUpdated:%s", mb.modelType.String())
 }
 
 func (b *EditingBuilder) doUpdate(
@@ -493,8 +461,8 @@ func (b *EditingBuilder) doUpdate(
 
 	web.AppendRunScripts(r,
 		web.NotifyScript(
-			b.mb.NotifModelUpdated(),
-			PayloadModelUpdated{Model: obj},
+			b.mb.NotifModelsUpdated(),
+			PayloadModelsUpdated{Models: []any{obj}},
 		),
 	)
 

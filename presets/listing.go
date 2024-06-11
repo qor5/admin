@@ -268,9 +268,14 @@ func (b *ListingBuilder) listingComponent(
 
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
-	reloadListScript := Zone[*ListingZone](ctx).Plaid().EventFunc(actions.ReloadList).PushState(true).Go()
-	if inDialog {
-		reloadListScript = Zone[*ListingZone](ctx).Plaid().EventFunc(actions.ReloadList).URL(ctx.R.RequestURI).MergeQuery(true).Go()
+	newReloadCall := func() *web.VueEventTagBuilder {
+		call := Zone[*ListingZone](ctx).Plaid().EventFunc(actions.ReloadList).MergeQuery(true)
+		if inDialog {
+			call.URL(ctx.R.RequestURI)
+		} else {
+			call.PushState(true)
+		}
+		return call
 	}
 	return web.Scope().VSlot("{ locals }").Init(`{currEditingListItemID: ""}`).Children(
 		VCard().Elevation(0).Children(
@@ -282,7 +287,15 @@ func (b *ListingBuilder) listingComponent(
 			),
 			b.footerCardActions(ctx),
 		),
-	).Observer(b.mb.NotifModelUpdated(), reloadListScript)
+	).
+		Observer(b.mb.NotifModelsUpdated(), newReloadCall().Go()).
+		Observer(b.mb.NotifModelsDeleted(), fmt.Sprintf(`
+const b = %s
+if (payload && payload.ids && payload.ids.length > 0) {
+	b.query(%q, {value: payload.ids, add: false, remove: true})
+}
+b.go()
+`, newReloadCall().String(), ParamSelectedIds))
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
