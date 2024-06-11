@@ -79,3 +79,27 @@ func (z *ListingZone) ApplyToRequest(r *http.Request) {
 	r.URL.RawQuery = query.Encode()
 	r.RequestURI = r.URL.String()
 }
+
+func ListingZoneFromContext(ctx *web.EventContext) *ListingZone {
+	zone := Zone[*ListingZone](ctx)
+	if zone != nil {
+		return nil
+	}
+	listingQueries := ctx.R.FormValue(ParamListingQueries)
+	if listingQueries == "" {
+		return nil
+	}
+	qs, err := url.ParseQuery(listingQueries)
+	if err != nil {
+		return nil
+	}
+	z := qs.Get(QueryKeyZone)
+	if z == "" {
+		return nil
+	}
+	if err := json.Unmarshal([]byte(z), &zone); err != nil {
+		panic(err)
+	}
+	ctx.WithContextValue(zoneCtxKey{}, zone)
+	return zone
+}

@@ -48,7 +48,18 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 		}
 	})
 	mb.Detailing().Except(foreignKey).Drawer(true)
-	mb.Editing().Except(foreignKey) // TODO: creating use pid condition
+	mb.Editing().Except(foreignKey).WrapSaveFunc(func(in SaveFunc) SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			z := ListingZoneFromContext(ctx)
+			if z == nil || z.ParentID == "" {
+				return perm.PermissionDenied
+			}
+			if err := reflectutils.Set(obj, foreignKey, z.ParentID); err != nil {
+				return err
+			}
+			return in(obj, id, ctx)
+		}
+	})
 
 	return &InlineListingBuilder{
 		ModelBuilder: mb,
