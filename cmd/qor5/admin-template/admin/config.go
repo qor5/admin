@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"github.com/qor5/admin/v3/docs/cmd/qor5/admin-template/models"
+	"github.com/qor5/admin/v3/cmd/qor5/admin-template/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"

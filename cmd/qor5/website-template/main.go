@@ -6,31 +6,36 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/admin/v3/docs/cmd/qor5/website-template/admin"
+	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
 	"github.com/theplant/osenv"
 )
 
 var (
 	port       = osenv.Get("PORT", "The port to serve on", "9001")
-	publishURL = osenv.Get("PUBLISH_URL", "Publish Target URL", "")
+	publishURL = osenv.Get("PUBLISH_URL", "Publish Target URL", "http://localhost:9002")
 )
 
 func main() {
 	// CMS server
 
-	cmsMux := admin.InitApp()
+	cmsMux := admin.Router(admin.ConnectDB())
 	cmsServer := &http.Server{
 		Addr:    ":" + port,
 		Handler: cmsMux,
 	}
-	go cmsServer.ListenAndServe()
+	go func() {
+		err := cmsServer.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	fmt.Println("CMS Served at http://localhost:" + port + "/admin")
 
 	// Publish server
 	u, _ := url.Parse(publishURL)
 	publishPort := u.Port()
 	if publishPort == "" {
-		publishPort = "9001"
+		publishPort = "9002"
 	}
 	publishMux := http.FileServer(http.Dir(admin.PublishDir))
 	publishServer := &http.Server{

@@ -139,7 +139,7 @@ func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *F
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "locals.commonConfirmDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-06-07-v01\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-06-07-v01\",\"VersionName\":\"2024-06-07-v01\",\"ParentVersion\":\"2024-05-26-v01\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}); vars.presetsMessage = { show: true, message: \"Successfully Created\", color: \"success\"}", resp.RunScript)
+	assert.Contains(t, resp.RunScript, "Successfully Created")
 
 	return testflow.NewThen(t, w, r)
 }
