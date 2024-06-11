@@ -50,7 +50,7 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 	mb.Detailing().Except(foreignKey).Drawer(true)
 	mb.Editing().Except(foreignKey).WrapSaveFunc(func(in SaveFunc) SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			z := ListingZoneFromContext(ctx)
+			z := CompatibleListingZoneFromContext(ctx)
 			if z == nil || z.ParentID == "" {
 				return perm.PermissionDenied
 			}

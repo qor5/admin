@@ -80,7 +80,7 @@ func (z *ListingZone) ApplyToRequest(r *http.Request) {
 	r.RequestURI = r.URL.String()
 }
 
-func ListingZoneFromContext(ctx *web.EventContext) *ListingZone {
+func CompatibleListingZoneFromContext(ctx *web.EventContext) *ListingZone {
 	zone := Zone[*ListingZone](ctx)
 	if zone != nil {
 		return nil
