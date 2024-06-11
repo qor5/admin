@@ -445,7 +445,7 @@ type PayloadModelUpdated struct {
 }
 
 func (mb *ModelBuilder) NotifModelUpdated() string {
-	return fmt.Sprintf("%s:PresetsModelUpdated", mb.modelType.String())
+	return fmt.Sprintf("PresetsModelUpdated:%s", mb.modelType.String())
 }
 
 func (b *EditingBuilder) doUpdate(

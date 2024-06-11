@@ -268,6 +268,10 @@ func (b *ListingBuilder) listingComponent(
 
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
+	reloadListScript := Zone[*ListingZone](ctx).Plaid().EventFunc(actions.ReloadList).PushState(true).Go()
+	if inDialog {
+		reloadListScript = Zone[*ListingZone](ctx).Plaid().EventFunc(actions.ReloadList).URL(ctx.R.RequestURI).MergeQuery(true).Go()
+	}
 	return web.Scope().VSlot("{ locals }").Init(`{currEditingListItemID: ""}`).Children(
 		VCard().Elevation(0).Children(
 			b.filterTabs(ctx, inDialog),
@@ -278,9 +282,7 @@ func (b *ListingBuilder) listingComponent(
 			),
 			b.footerCardActions(ctx),
 		),
-	).Observer(b.mb.NotifModelUpdated(),
-		Zone[*ListingZone](ctx).Plaid().URL(ctx.R.RequestURI).MergeQuery(true).EventFunc(actions.ReloadList).Go(),
-	)
+	).Observer(b.mb.NotifModelUpdated(), reloadListScript)
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
