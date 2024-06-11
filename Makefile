@@ -90,7 +90,7 @@ FIND := find . ! -path './image/*' ! -path './vendor/*' ! -path './bin/*'
 XARGS := xargs -r
 
 # ==============================================================================
-LICENSE_TEMPLATE ?= $(ROOT_DIR)/scripts/LICENSE/license_templates.txt	# MIT License
+LICENSE_TEMPLATE ?= $(ROOT_DIR)/hark/LICENSE/license_templates.txt	# MIT License
 
 # COMMA: Concatenate multiple strings to form a list of strings
 COMMA := ,
@@ -182,13 +182,13 @@ all: copyright-verify tidy build start check #lint cover
 .PHONY: init
 init:
 	@echo "===========> Init openim-chat config"
-	@$(ROOT_DIR)/scripts/init-config.sh
+	@$(ROOT_DIR)/hark/init-config.sh
 
 ## init-githooks: Initialize git hooks ✨
 .PHONY: init-githooks
 init-githooks:
 	@echo "===========> Initializing git hooks"
-	@${ROOT_DIR}/scripts/init-githooks.sh
+	@${ROOT_DIR}/hark/init-githooks.sh
 
 ## build: Build binaries by default.
 .PHONY: build
@@ -230,7 +230,7 @@ build-multiarch: go.build.verify $(foreach p,$(PLATFORMS),$(addprefix go.build.,
 # Targets
 .PHONY: release
 release: release.verify release.ensure-tag
-	@scripts/release.sh
+	@hark/release.sh
 
 .PHONY: install.gsemver
 release.verify: install.git-chglog install.github-release install.coscmd
@@ -241,7 +241,7 @@ release.tag: install.gsemver release.ensure-tag
 
 .PHONY: release.ensure-tag
 release.ensure-tag: install.gsemver
-	@scripts/ensure_tag.sh
+	@hark/ensure_tag.sh
 
 ## tidy: tidy go.mod
 .PHONY: tidy
@@ -287,19 +287,19 @@ cover: test
 .PHONY: start
 start:
 	@echo "===========> Starting the service"
-	@$(ROOT_DIR)/scripts/start-all.sh
+	@$(ROOT_DIR)/hark/start-all.sh
 
 ## check: Check the chat all service.
 .PHONY: check
 check:
 	@echo "===========> Checking the service"
-	@$(ROOT_DIR)/scripts/check-all.sh --print-screen
+	@$(ROOT_DIR)/hark/check-all.sh --print-screen
 
 ## stop: Stop the chat all service.
 .PHONY: stop
 stop:
 	@echo "===========> Stopping the service"
-	@$(ROOT_DIR)/scripts/stop-all.sh
+	@$(ROOT_DIR)/hark/stop-all.sh
 
 ## restart: Restart openim chat
 .PHONY: restart
@@ -433,21 +433,6 @@ install.go-junit-report:
 # Tools that might be used include go gvm, cos
 #
 
-## install.kube-score: Install kube-score, used to check kubernetes yaml files
-.PHONY: install.kube-score
-install.kube-score:
-	@$(GO) install github.com/zegl/kube-score/cmd/kube-score@latest
-
-## install.kubeconform: Install kubeconform, used to check kubernetes yaml files
-.PHONY: install.kubeconform
-install.kubeconform:
-	@$(GO) install github.com/yannh/kubeconform/cmd/kubeconform@latest
-
-## install.gsemver: Install gsemver, used to generate semver
-.PHONY: install.gsemver
-install.gsemver:
-	@$(GO) install github.com/arnaud-deprez/gsemver@latest
-
 ## install.git-chglog: Install git-chglog, used to generate changelog
 .PHONY: install.git-chglog
 install.git-chglog:
@@ -465,7 +450,7 @@ install.github-release:
 # - code/
 # - docs/
 # - images/
-# - scripts/
+# - hark/
 .PHONY: install.coscli
 install.coscli:
 	@wget -q https://github.com/tencentyun/coscli/releases/download/v0.13.0-beta/coscli-linux -O ${TOOLS_DIR}/coscli
@@ -489,61 +474,7 @@ install.air:
 ## install.gvm: Install gvm, gvm is a Go version manager, built on top of the official go tool.
 .PHONY: install.gvm
 install.gvm:
-	@echo "===========> Installing gvm,The default installation path is ~/.gvm/scripts/gvm"
-	@bash < <(curl -s -S -L https://raw.gitee.com/moovweb/gvm/master/binscripts/gvm-installer)
-	@$(shell source /root/.gvm/scripts/gvm)
+	@echo "===========> Installing gvm,The default installation path is ~/.gvm/hark/gvm"
+	@bash < <(curl -s -S -L https://raw.gitee.com/moovweb/gvm/master/binhark/gvm-installer)
+	@$(shell source /root/.gvm/hark/gvm)
 
-## install.golines: Install golines, used to format long lines
-.PHONY: install.golines
-install.golines:
-	@$(GO) install github.com/segmentio/golines@latest
-
-## install.go-mod-outdated: Install go-mod-outdated, used to check outdated dependencies
-.PHONY: install.go-mod-outdated
-install.go-mod-outdated:
-	@$(GO) install github.com/psampaz/go-mod-outdated@latest
-
-## install.mockgen: Install mockgen, used to generate mock functions
-.PHONY: install.mockgen
-install.mockgen:
-	@$(GO) install github.com/golang/mock/mockgen@latest
-
-## install.gotests: Install gotests, used to generate test functions
-.PHONY: install.gotests
-install.gotests:
-	@$(GO) install github.com/cweill/gotests/gotests@latest
-
-## install.protoc-gen-go: Install protoc-gen-go, used to generate go source files from protobuf files
-.PHONY: install.protoc-gen-go
-install.protoc-gen-go:
-	@$(GO) install github.com/golang/protobuf/protoc-gen-go@latest
-
-## install.cfssl: Install cfssl, used to generate certificates
-.PHONY: install.cfssl
-install.cfssl:
-	@$(ROOT_DIR)/scripts/install/install.sh OpenIM::install::install_cfssl
-
-## install.depth: Install depth, used to check dependency tree
-.PHONY: install.depth
-install.depth:
-	@$(GO) install github.com/KyleBanks/depth/cmd/depth@latest
-
-## install.go-callvis: Install go-callvis, used to visualize call graph
-.PHONY: install.go-callvis
-install.go-callvis:
-	@$(GO) install github.com/ofabry/go-callvis@latest
-
-## install.gothanks: Install gothanks, used to thank go dependencies
-.PHONY: install.gothanks
-install.gothanks:
-	@$(GO) install github.com/psampaz/gothanks@latest
-
-## install.richgo: Install richgo
-.PHONY: install.richgo
-install.richgo:
-	@$(GO) install github.com/kyoh86/richgo@latest
-
-## install.rts: Install rts
-.PHONY: install.rts
-install.rts:
-	@$(GO) install github.com/galeone/rts/cmd/rts@latest

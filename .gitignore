@@ -11,6 +11,7 @@
 
 ### Make and Build ###
 _output/
+.env
 
 ### Emacs ###
 # -*- mode: gitignore; -*-

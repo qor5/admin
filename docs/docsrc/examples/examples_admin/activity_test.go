@@ -46,6 +46,33 @@ func TestActivity(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 1"},
 		},
+		{
+			Name:  "Add Note",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products").
+					AddField("resource_id", "1").
+					AddField("resource_type", "WithActivityProduct").
+					AddField("Content", "This is a new note").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"This is a new note"},
+		},
+		{
+			Name:  "Delete Note",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=DeleteNote&id=1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Note deleted"},
+		},
 	}
 
 	for _, c := range cases {

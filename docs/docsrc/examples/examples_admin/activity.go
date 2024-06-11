@@ -13,21 +13,19 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
-	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	activityBuilder := activity.New(db)
 	b.Use(activityBuilder)
-	// @snippet_end
 
-	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
 		gorm.Model
 		Title string
 		Code  string
 		Price float64
+		Notes []activity.UserNote `gorm:"polymorphic:Resource;"`
 	}
-	err := db.AutoMigrate(&WithActivityProduct{})
+	err := db.AutoMigrate(&WithActivityProduct{}, &activity.UserNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -40,14 +38,10 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}).Editing("Title", "Code", "Price")
 
 	activityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
-	// @snippet_end
 
-	// @snippet_begin(ActivityRecordLogSample)
 	currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, "user1")
-
 	activityBuilder.AddRecords("Publish", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-
 	activityBuilder.AddRecords("Update Price", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
-	// @snippet_end
+
 	return b
 }
