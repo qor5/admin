@@ -32,7 +32,12 @@ const (
 	DBContextKey                 = 1 // get the db from context
 )
 
+type AfterCreateFunc func(db *gorm.DB) error
+
+type AfterCreateFuncWrapper func(in AfterCreateFunc) AfterCreateFunc
+
 // @snippet_begin(ActivityBuilder)
+// Builder struct contains all necessary fields
 type Builder struct {
 	db                *gorm.DB                          // global db
 	creatorContextKey any                               // get the creator from context
@@ -43,8 +48,7 @@ type Builder struct {
 	tabHeading        func(ActivityLogInterface) string // tab heading format
 	permPolicy        *perm.PolicyBuilder               // permission policy
 	logModelInstall   presets.ModelInstallFunc          // log model install
-
-	afterCreateFunc AfterCreateFunc
+	afterCreateFunc   AfterCreateFunc
 }
 
 type TimelineItem struct {
@@ -55,6 +59,11 @@ type TimelineItem struct {
 }
 
 // @snippet_end
+
+func (b *Builder) WrapAfterCreateFunc(w AfterCreateFuncWrapper) *Builder {
+	b.afterCreateFunc = w(b.afterCreateFunc)
+	return b
+}
 
 func (ab *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	ab.RegisterModel(m)
@@ -433,15 +442,6 @@ func (ab *Builder) getCreatorFromContext(ctx context.Context) any {
 		return creator
 	}
 	return ""
-}
-
-// AfterCreateFunc is a type for functions to be called after creating a record
-type AfterCreateFunc func(db *gorm.DB) error
-
-// AfterCreate sets the after create function and returns the Builder
-func (b *Builder) AfterCreate(f AfterCreateFunc) *Builder {
-	b.afterCreateFunc = f
-	return b
 }
 
 func registerI18n(pb *presets.Builder) {

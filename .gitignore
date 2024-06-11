@@ -9,6 +9,9 @@
 *.tmp
 *.DS_Store
 
+### Make and Build ###
+_output/
+
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~

@@ -139,7 +139,6 @@ func NewConfig(db *gorm.DB) Config {
 			// return supportedLanguages
 			return b.I18n().GetSupportLanguages()
 		})
-	nb := activity.New(db).AfterCreate(NoteAfterCreateFunc)
 	mediab := media.New(db)
 
 	l10nBuilder := l10n.New(db)
@@ -156,7 +155,11 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
+	ab := activity.New(db).
+		WrapAfterCreateFunc(func(in activity.AfterCreateFunc) activity.AfterCreateFunc {
+			return NoteAfterCreateFunc
+		}).
+		CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		}).
@@ -192,7 +195,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configMenuOrder(b)
 
-	configPost(b, db, ab, publisher, nb)
+	configPost(b, db, ab, publisher, ab)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -322,13 +325,13 @@ func NewConfig(db *gorm.DB) Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, nb, db, publisher)
+	configUser(b, ab, db, publisher)
 	configProfile(b, db)
 
 	b.Use(
 		mediab,
 		microb,
-		nb,
+		ab,
 		publisher,
 		l10nBuilder,
 		roleBuilder,

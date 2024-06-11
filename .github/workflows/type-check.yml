@@ -2,7 +2,7 @@
 # Description: This workflow will run the type checker on the Go codebase.
 name: Go Type Check
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   go-language-code-typechecker:
