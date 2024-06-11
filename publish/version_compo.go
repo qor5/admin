@@ -18,6 +18,8 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
+const versionListDialogURISuffix = "-version-list-dialog"
+
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
 	PublishEvent     func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
@@ -55,13 +57,17 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.Class("pb-4")
 		}
 
+		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
+		z := &presets.ListingZone{
+			ID: urlSuffix,
+		}
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.EmbedVersion().VersionName),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
-				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
-					URL(mb.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
+				On("click", z.Plaid().EventFunc(actions.OpenListingDialog).
+					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query("select_id", primarySlugger.PrimarySlug()).
 					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
 					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
