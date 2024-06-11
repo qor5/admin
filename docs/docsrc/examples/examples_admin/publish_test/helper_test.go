@@ -29,7 +29,7 @@ func MustIDVersion(expr string) (string, string) {
 	return segs[0], segs[1]
 }
 
-func GetNextVersion(currentVersion string) (string, error) {
+func GetNextVersionSlug(currentVersion string) (string, error) {
 	parts := strings.Split(currentVersion, "_")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid version format")

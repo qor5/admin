@@ -59,9 +59,9 @@ func flowDuplicate(t *testing.T, f *FlowDuplicate) {
 	})
 
 	// ensure new not exists
-	nextVersion, err := GetNextVersion(f.ID)
+	nextVersionSlug, err := GetNextVersionSlug(f.ID)
 	assert.NoError(t, err)
-	f.DuplicateID = nextVersion
+	f.DuplicateID = nextVersionSlug
 
 	nid, nver := MustIDVersion(f.DuplicateID)
 	assert.ErrorIs(t, f.db.Where("id = ? AND version = ?", nid, nver).First(&examples_admin.WithPublishProduct{}).Error, gorm.ErrRecordNotFound)
@@ -130,6 +130,9 @@ func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *F
 	w := httptest.NewRecorder()
 	f.h.ServeHTTP(w, r)
 
+	_, duplicateVersionName := MustIDVersion(f.DuplicateID)
+	_, parentVersionName := MustIDVersion(f.ID)
+
 	var resp multipartestutils.TestEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Empty(t, resp.PageTitle)
@@ -139,7 +142,7 @@ func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *F
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Contains(t, resp.RunScript, "Successfully Created")
+	assert.Equal(t, "locals.commonConfirmDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\""+f.DuplicateID+"\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\""+duplicateVersionName+"\",\"VersionName\":\""+duplicateVersionName+"\",\"ParentVersion\":\""+parentVersionName+"\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}}); vars.presetsMessage = { show: true, message: \"Successfully Created\", color: \"success\"}", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
