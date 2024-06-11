@@ -1,6 +1,6 @@
 ROOT_PACKAGE=github.com/qor5/admin
 OUT_DIR=$(REPO_ROOT)/_output
-VERSION_PACKAGE=github.com/OpenIMSDK/chat/pkg/common/version
+#VERSION_PACKAGE=github.com/qor5/admin
 # ==============================================================================
 
 # define the default goal
@@ -11,6 +11,9 @@ DIRS=$(shell ls)
 GO=go
 
 .DEFAULT_GOAL := help
+
+# Minimum supported go version.
+GO_MINIMUM_VERSION ?= 1.22
 
 # include the common makefile
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
@@ -53,9 +56,6 @@ GIT_COMMIT:=$(shell git rev-parse HEAD)
 
 IMG ?= openim_chat:latest
 
-BUILDFILE = "./main.go"
-BUILDAPP = "$(OUTPUT_DIR)/"
-
 # Define the directory you want to copyright
 CODE_DIRS := $(ROOT_DIR)/ #$(ROOT_DIR)/pkg $(ROOT_DIR)/core $(ROOT_DIR)/integrationtest $(ROOT_DIR)/lib $(ROOT_DIR)/mock $(ROOT_DIR)/db $(ROOT_DIR)/openapi
 FINDS := find $(CODE_DIRS)
@@ -90,9 +90,7 @@ FIND := find . ! -path './image/*' ! -path './vendor/*' ! -path './bin/*'
 XARGS := xargs -r
 
 # ==============================================================================
-# TODO: License selection
-# LICENSE_TEMPLATE ?= $(ROOT_DIR)/scripts/LICENSE/license_templates.txt	# MIT License
-LICENSE_TEMPLATE ?= $(ROOT_DIR)/scripts/LICENSE/LICENSE_TEMPLATES  # Apache License
+LICENSE_TEMPLATE ?= $(ROOT_DIR)/scripts/LICENSE/license_templates.txt	# MIT License
 
 # COMMA: Concatenate multiple strings to form a list of strings
 COMMA := ,
@@ -104,7 +102,6 @@ SPACE +=
 # ==============================================================================
 # Build definition
 
-GO_SUPPORTED_VERSIONS ?= 1.19|1.20|1.21|1.22
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitVersion=$(VERSION) \
 	-X $(VERSION_PACKAGE).gitCommit=$(GIT_COMMIT) \
 	-X $(VERSION_PACKAGE).gitTreeState=$(GIT_TREE_STATE) \
@@ -130,7 +127,7 @@ ifeq ($(origin GOBIN), undefined)
 endif
 
 # COMMANDS is Specify all files under ${ROOT_DIR}/cmd/ and ${ROOT_DIR}/tools/ except those ending in.md
-COMMANDS ?= $(filter-out %.md, $(wildcard ${ROOT_DIR}/cmd/*/* ${ROOT_DIR}/tools/*))
+COMMANDS ?= $(filter-out %.md, $(wildcard ${ROOT_DIR}/docs/cmd/qor5/*/* ${ROOT_DIR}/example/cmd/*/*))
 ifeq (${COMMANDS},)
   $(error Could not determine COMMANDS, set ROOT_DIR or run in source dir)
 endif
@@ -165,8 +162,8 @@ ifneq ($(EXTRA_ARGS), )
 _DOCKER_BUILD_EXTRA_ARGS += $(EXTRA_ARGS)
 endif
 
-# Determine image files by looking into build/images/*/Dockerfile
-IMAGES_DIR ?= $(wildcard ${ROOT_DIR}/build/images/*)
+# Determine image files by looking into the docs/images directory
+IMAGES_DIR ?= $(wildcard ${ROOT_DIR}/docs/*)
 # Determine images names by stripping out the dir names, and filter out the undesired directories
 IMAGES ?= $(filter-out Dockerfile, $(foreach image,${IMAGES_DIR},$(notdir ${image})))
 
@@ -204,9 +201,9 @@ build.%:
 	@export CGO_ENABLED=0 && GOOS=linux go build -o $(BUILDAPP)/$*/ -ldflags '-s -w' $*/example/$(BUILDFILE)
 
 .PHONY: go.build.verify
-go.build.verify:
-ifneq ($(shell $(GO) version | grep -q -E '\bgo($(GO_SUPPORTED_VERSIONS))\b' && echo 0 || echo 1), 0)
-	$(error unsupported go version. Please make install one of the following supported version: '$(GO_SUPPORTED_VERSIONS)')
+go.build.verify: ## Verify supported go versions.
+ifneq ($(shell $(GO) version|awk -v min=$(GO_MINIMUM_VERSION) '{gsub(/go/,"",$$3);if($$3 >= min){print 0}else{print 1}}'), 0)
+	$(error unsupported go version. Please install a go version which is greater than or equal to '$(GO_MINIMUM_VERSION)')
 endif
 
 ## go.build: Build the binary file of the specified platform.
