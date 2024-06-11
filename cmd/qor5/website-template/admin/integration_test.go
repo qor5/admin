@@ -48,6 +48,7 @@ func TestAll(t *testing.T) {
 			Name:  "index page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
+				data.TruncatePut(SqlDB)
 				return httptest.NewRequest("GET", "/admin/pages", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"My first page"},
