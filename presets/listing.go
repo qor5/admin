@@ -278,6 +278,8 @@ func (b *ListingBuilder) listingComponent(
 			),
 			b.footerCardActions(ctx),
 		),
+	).Observer(b.mb.NotifModelUpdated(),
+		Zone[*ListingZone](ctx).Plaid().URL(ctx.R.RequestURI).MergeQuery(true).EventFunc(actions.ReloadList).Go(),
 	)
 }
 

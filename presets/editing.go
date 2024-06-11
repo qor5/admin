@@ -440,6 +440,14 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 	return
 }
 
+type PayloadModelUpdated struct {
+	Model any
+}
+
+func (mb *ModelBuilder) NotifModelUpdated() string {
+	return fmt.Sprintf("%s:PresetsModelUpdated", mb.modelType.String())
+}
+
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
@@ -483,6 +491,13 @@ func (b *EditingBuilder) doUpdate(
 		return err1
 	}
 
+	web.AppendRunScripts(r,
+		web.NotifyScript(
+			b.mb.NotifModelUpdated(),
+			PayloadModelUpdated{Model: obj},
+		),
+	)
+
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	script := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
@@ -502,18 +517,6 @@ func (b *EditingBuilder) doUpdate(
 		)
 
 		return
-	}
-
-	if isInDialogFromQuery(ctx) {
-		web.AppendRunScripts(r,
-			web.Plaid().
-				URL(ctx.R.RequestURI).
-				EventFunc(actions.ReloadList).
-				StringQuery(ctx.R.URL.Query().Get(ParamListingQueries)).
-				Go(),
-		)
-	} else {
-		r.PushState = web.Location(nil)
 	}
 	web.AppendRunScripts(r, script)
 	return
