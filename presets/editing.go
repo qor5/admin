@@ -391,14 +391,17 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	} else {
 		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
 		if isInDialogFromQuery(ctx) {
-			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
+			qs := ctx.Queries()
+			// If you use valueOp, you must stitch in the URL and use MergeQuery(true) now.
+			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), qs.Get(ParamListingQueries))
+			qs.Del(ParamListingQueries)
 			web.AppendRunScripts(&r,
 				"locals.deleteConfirmation = false",
 				web.Plaid().
 					URL(u).
 					EventFunc(actions.ReloadList).
 					MergeQuery(true).
-					Queries(ctx.Queries()).
+					Queries(qs). // I don't know why this is needed, but this is the previous logic and can only be kept
 					Query(ParamSelectedIds, removeSelectQuery).
 					Go(),
 			)
