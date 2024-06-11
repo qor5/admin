@@ -86,6 +86,8 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 				}
 				detailField.WrapComponentEditBtnFunc(wrapper)
 				detailField.WrapComponentHoverFunc(wrapper)
+				detailField.WrapElementEditBtnFunc(wrapper)
+				detailField.WrapElementHoverFunc(wrapper)
 			}
 		}
 	}
