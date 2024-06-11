@@ -51,7 +51,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/products/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "iframe", "ProductDetail"},
 		},
