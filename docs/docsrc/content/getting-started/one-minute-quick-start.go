@@ -14,7 +14,7 @@ To get started right away:
 1. **Install the Command Line Tool**: Run the following command to install the latest version of the QOR5 CLI tool:
 
 ~~~
-$ go install github.com/qor5/admin/v3/docs/cmd/qor5@latest
+$ go install github.com/qor5/admin/v3/cmd/qor5@latest
 ~~~
 
 2. **Launch QOR5**: Execute the qor5 command:
