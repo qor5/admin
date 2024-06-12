@@ -1637,7 +1637,11 @@ func (b *Builder) setDefaultDevices() {
 func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	ctx.R.Form.Del(web.EventFuncIDName)
-	for _, d := range b.getDevices() {
+	device := ctx.Param(paramsDevice)
+	for i, d := range b.getDevices() {
+		if device == "" && i == 0 {
+			device = d.Name
+		}
 		comps = append(comps,
 			VBtn("").Icon(d.Icon).Color(ColorPrimary).Value(d.Name).BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2").
 				Attr("@click", fmt.Sprintf(`vars.vxScrollIframeWidth="%s";`, d.Width)+
@@ -1647,5 +1651,5 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		VBtnToggle(
 			comps...,
 		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice"),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, ctx.Param(paramsDevice)))
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, device))
 }

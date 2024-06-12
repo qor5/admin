@@ -859,6 +859,8 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			  align-items: center;	
 			  background-color: #3E63DD;
 			  justify-content: space-between;
+              pointer-events: none;
+
 			}
    			.editor-bar-buttons{
               height: 24px;
@@ -877,6 +879,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			
 			.highlight .editor-bar {
 			  opacity: 1;
+              pointer-events: auto;
 			}
 			
 			.highlight .editor-add {

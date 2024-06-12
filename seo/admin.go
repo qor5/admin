@@ -374,7 +374,7 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	).Attr("ref", "seo")
 }
 
-func (b *Builder) vSeoReadonly(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
+func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
 	var (
 		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
 		db   = b.db
@@ -394,6 +394,15 @@ func (b *Builder) vSeoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 	if image.ID.String() == "0" {
 		image.ID = json.Number("")
 	}
+	localeFinalSeoSetting := seo.getLocaleFinalQorSEOSetting(locale, b.db)
+	variables := localeFinalSeoSetting.Variables
+	finalContextVars := seo.getFinalContextVars()
+	// execute function for context var
+	for varName, varFunc := range finalContextVars {
+		variables[varName] = varFunc(obj, setting, req)
+	}
+	*setting = replaceVariables(*setting, variables)
+
 	return h.Components(
 		VCard(
 			h.Span(msgr.Basic).Class("text-subtitle-1"),
@@ -416,6 +425,7 @@ func (b *Builder) vSeoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 		).Class("px-2 my-1").Variant(VariantTonal).Width(200),
 		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
 		VCard(
+			VCardText(VImg().Src(setting.OpenGraphImageURL).Width(300)),
 			VCardText(h.Span(setting.OpenGraphTitle).Class("text-subtitle-1")),
 			VCardText(h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2")),
 			VCardText(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2")),
@@ -477,6 +487,7 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 		db          = b.db
 		locale, _   = l10n.IsLocalizableFromContext(ctx.R.Context())
 	)
+
 	seo := b.GetSEO(obj)
 	if seo == nil {
 		return h.Div()
@@ -497,7 +508,7 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 
 	return h.Div(
 		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
-		b.vSeoReadonly(fieldPrefix, seo, &setting, ctx.R),
+		b.vSeoReadonly(obj, fieldPrefix, locale, seo, &setting, ctx.R),
 	).Class("pb-4")
 }
 
