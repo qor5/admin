@@ -374,7 +374,7 @@ func (b *Builder) vseo(fieldPrefix string, seo *SEO, setting *Setting, req *http
 	).Attr("ref", "seo")
 }
 
-func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
+func (b *Builder) vSeoReadonly(fieldPrefix string, seo *SEO, setting *Setting, req *http.Request) h.HTMLComponent {
 	var (
 		msgr = i18n.MustGetModuleMessages(req, I18nSeoKey, Messages_en_US).(*Messages)
 		db   = b.db
@@ -411,13 +411,9 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 			),
 		).Class("pa-6").Variant(VariantTonal),
 
-		detailingRow(msgr.Title, h.Text(setting.Title)),
-		detailingRow(msgr.Description, h.Text(setting.Description)),
-		detailingRow(msgr.Keywords, h.Text(setting.Keywords)),
-
 		VCard(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1"),
-		).Class("px-2 py-1").Variant(VariantTonal).Width(200),
+		).Class("px-2 my-1").Variant(VariantTonal).Width(200),
 		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
 		VCard(
 			VCardText(h.Span(setting.OpenGraphTitle).Class("text-subtitle-1")),
@@ -425,15 +421,9 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 			VCardText(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2")),
 		).Class("pa-6").Variant(VariantTonal),
 
-		detailingRow(msgr.OpenGraphTitle, h.Text(setting.OpenGraphTitle)),
-		detailingRow(msgr.OpenGraphDescription, h.Text(setting.OpenGraphDescription)),
-		detailingRow(msgr.OpenGraphURL, h.Text(setting.OpenGraphURL)),
-		detailingRow(msgr.OpenGraphType, h.Text(setting.OpenGraphType)),
-		detailingRow(msgr.OpenGraphImageURL, h.Text(setting.OpenGraphImageURL)),
-
 		VCard(
 			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1"),
-		).Class("px-2 py-1").Variant(VariantTonal).Width(160),
+		).Class("px-2 my-1").Variant(VariantTonal).Width(160),
 		VRow(
 			VCol(media.QMediaBox(db).
 				Readonly(true).
@@ -458,7 +448,7 @@ func (b *Builder) vseoReadonly(fieldPrefix string, seo *SEO, setting *Setting, r
 				})).Cols(12)),
 		VCard(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1"),
-		).Class("px-2 py-1").Variant(VariantTonal).Width(184),
+		).Class("px-2 my-1").Variant(VariantTonal).Width(184),
 		h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata)),
 	)
 }
@@ -469,11 +459,14 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) er
 }
 
 func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
-	pd.Section(SeoDetailFieldName).
-		Editing("SEO").
-		SaveFunc(b.detailSaver).
-		ViewComponentFunc(b.detailShowComponent).
-		EditComponentFunc(b.EditingComponentFunc)
+	fb := pd.GetField(SeoDetailFieldName)
+	if fb != nil && fb.GetCompFunc() == nil {
+		pd.Section(SeoDetailFieldName).
+			Editing("SEO").
+			SaveFunc(b.detailSaver).
+			ViewComponentFunc(b.detailShowComponent).
+			EditComponentFunc(b.EditingComponentFunc)
+	}
 }
 
 func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -504,7 +497,7 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 
 	return h.Div(
 		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
-		b.vseoReadonly(fieldPrefix, seo, &setting, ctx.R),
+		b.vSeoReadonly(fieldPrefix, seo, &setting, ctx.R),
 	).Class("pb-4")
 }
 

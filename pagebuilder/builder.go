@@ -277,19 +277,13 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 	if b.publisher != nil {
 		mb.Use(b.publisher)
 	}
-	if mb.HasDetailing() {
-		fb := mb.Detailing().GetField(PageBuilderPreviewCard)
-		if fb != nil && fb.GetCompFunc() == nil {
-			fb.ComponentFunc(overview(b, nil, mb))
-		}
-	}
 	r := b.Model(mb)
+
 	// register model editors page
 	b.installAsset(pb)
-	if err = b.configEditor(r); err != nil {
-		return
-	}
+	b.configEditor(r)
 	b.configPublish(r)
+	b.configDetail(r)
 	b.pageLayoutFunc = DefaultPageLayoutFunc
 	return nil
 }
@@ -310,24 +304,33 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 
 	b.installAsset(pb)
 	r := b.Model(pb.Model(&Page{}))
-	err = b.configEditor(r)
-	if err != nil {
-		return
-	}
+
+	b.configEditor(r)
 	b.configTemplateAndPage(pb, r)
 	b.configSharedContainer(pb, r)
 	b.configDemoContainer(pb)
+	b.configDetail(r)
+
 	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 	err = b.categoryInstall(pb, categoryM)
 
 	return
 }
 
-func (b *Builder) configEditor(m *ModelBuilder) (err error) {
+func (b *Builder) configEditor(m *ModelBuilder) {
 	b.useAllPlugin(m.editor)
 	md := m.editor.Detailing().Drawer(false)
 	md.PageFunc(b.Editor(m))
-	return
+}
+
+func (b *Builder) configDetail(m *ModelBuilder) {
+	mb := m.mb
+	if mb.HasDetailing() {
+		fb := mb.Detailing().GetField(PageBuilderPreviewCard)
+		if fb != nil && fb.GetCompFunc() == nil {
+			fb.ComponentFunc(overview(m))
+		}
+	}
 }
 
 func (b *Builder) configPublish(r *ModelBuilder) {
@@ -374,18 +377,17 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing(PageBuilderPreviewCard)
+	dp := pm.Detailing(PageBuilderPreviewCard, "Page", seo.SeoDetailFieldName)
 	// register modelBuilder
 
 	// pm detailing overview
-	dp.Field(PageBuilderPreviewCard).ComponentFunc(overview(b, b.templateModel, pm))
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
 	// pm detailing side panel
 	// pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 
-	b.configDetailLayoutFunc(pb, pm, b.templateModel, db)
+	b.configDetailLayoutFunc(pb, pm, db)
 
 	if b.templateEnabled {
 		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
@@ -446,7 +448,6 @@ func (b *Builder) preparePlugins() {
 func (b *Builder) configDetailLayoutFunc(
 	pb *presets.Builder,
 	pm *presets.ModelBuilder,
-	templateM *presets.ModelBuilder,
 	db *gorm.DB,
 ) {
 	oldDetailLayout := pb.GetDetailLayoutFunc()
@@ -454,7 +455,7 @@ func (b *Builder) configDetailLayoutFunc(
 	// change old detail layout
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && templateM != nil && !strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/") {
+			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && b.templateModel != nil && !strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/") {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}
@@ -475,8 +476,8 @@ func (b *Builder) configDetailLayoutFunc(
 			}
 			var isTemplate bool
 			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
-			if templateM != nil {
-				isTemplate = strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+			if b.templateModel != nil {
+				isTemplate = strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/")
 			}
 
 			if isTemplate {
@@ -487,7 +488,7 @@ func (b *Builder) configDetailLayoutFunc(
 			if isPage {
 				dmb = pm
 			} else {
-				dmb = templateM
+				dmb = b.templateModel
 			}
 			obj = dmb.NewModel()
 			if sd, ok := obj.(presets.SlugDecoder); ok {
@@ -1500,12 +1501,14 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
-	editAction := web.Plaid().
-		PushState(true).
-		MergeQuery(true).
-		Query(paramContainerDataID, web.Var("container_data_id")).
-		Query(paramContainerID, web.Var("container_id")).
-		RunPushState() + ";" +
+	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
+		removeVirtualElement() + ";" +
+		web.Plaid().
+			PushState(true).
+			MergeQuery(true).
+			Query(paramContainerDataID, web.Var("container_data_id")).
+			Query(paramContainerID, web.Var("container_id")).
+			RunPushState() + ";" +
 		web.POST().
 			EventFunc(actions.Edit).
 			URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
@@ -1513,12 +1516,12 @@ func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
-	addAction := fmt.Sprintf(`vars.containerTab="%s";`, EditorTabElements) +
+	addAction := web.Plaid().ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState() +
+		fmt.Sprintf(`;%s;vars.containerTab="%s";`, addVirtualELeToContainer(web.Var("container_data_id")), EditorTabAdd) +
 		web.Plaid().
 			PushState(true).
 			MergeQuery(true).
 			Query(paramContainerID, web.Var("container_id")).
-			Query(paramTab, EditorTabElements).
 			RunPushState()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
@@ -1630,10 +1633,9 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	ctx.R.Form.Del(web.EventFuncIDName)
 	for _, d := range b.getDevices() {
 		comps = append(comps,
-			VBtn("").Icon(d.Icon).Color(ColorPrimary).BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2").
-				Attr("@click", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-					PushState(true).Queries(ctx.R.Form).Query(paramsDevice, d.Name).Go()).Value(d.Name),
-		)
+			VBtn("").Icon(d.Icon).Color(ColorPrimary).Value(d.Name).BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2").
+				Attr("@click", fmt.Sprintf(`vars.vxScrollIframeWidth="%s";`, d.Width)+
+					web.Plaid().MergeQuery(true).PushState(true).Query(paramsDevice, d.Name).RunPushState()))
 	}
 	return web.Scope(
 		VBtnToggle(
