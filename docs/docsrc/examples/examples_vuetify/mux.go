@@ -312,6 +312,11 @@ func SamplesHandler(mux examples.Muxer, prefix string) {
 	)
 
 	mux.Handle(
+		examples_web.ZoneExamplePath,
+		examples_web.ZoneExamplePB.Wrap(demoLayout),
+	)
+
+	mux.Handle(
 		examples_web.ShortCutSamplePath,
 		examples_web.ShortCutSamplePB.Wrap(DemoVuetifyLayout),
 	)

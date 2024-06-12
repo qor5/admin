@@ -119,6 +119,9 @@ func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gor
 	dp = mb.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
 
 	ccmb := mb.InlineListing(&CreditCard{}, "CustomerID")
+	ccmb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return in
+	})
 	dp.Field("CreditCards").Use(ccmb)
 
 	ccmb2 := mb.InlineListing(&CreditCard{}, "CustomerID")

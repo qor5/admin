@@ -47,7 +47,7 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 			return in(model, params, ctx)
 		}
 	})
-	mb.Detailing().Except(foreignKey).Drawer(true)
+	// mb.Detailing().Except(foreignKey).Drawer(true)
 	mb.Editing().Except(foreignKey).WrapSaveFunc(func(in SaveFunc) SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			z := CompatibleListingZoneFromContext(ctx)
@@ -68,7 +68,7 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 	}
 }
 
-func (mb *InlineListingBuilder) Install(fb *FieldBuilder) (err error) {
+func (mb *InlineListingBuilder) Install(fb *FieldBuilder) error {
 	mb.URIName(fmt.Sprintf("%s-inline-%s", mb.parent.Info().URIName(), inflection.Plural(strcase.ToKebab(fb.name))))
 
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -82,7 +82,7 @@ func (mb *InlineListingBuilder) Install(fb *FieldBuilder) (err error) {
 		zoneID := fmt.Sprintf("[%s:%s:%s]", mb.Info().ListingHref(), pid, fb.name)
 		compo, err := mb.Listing().inlineListingComponent(ctx, zoneID, pid)
 		if err != nil {
-			return h.Div(h.Text(fmt.Sprintf("Error: %s", err.Error())))
+			panic(err)
 		}
 		return compo
 	})
