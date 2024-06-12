@@ -13,11 +13,16 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
+
+	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	activityBuilder := activity.New(db)
 	b.Use(activityBuilder)
 
+	// @snippet_en
+
+	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
 		gorm.Model
 		Title string
@@ -25,10 +30,12 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		Price float64
 		Notes []activity.UserNote `gorm:"polymorphic:Resource;"`
 	}
-	err := db.AutoMigrate(&WithActivityProduct{}, &activity.UserNote{})
+
+	err := db.AutoMigrate(&WithActivityProduct{})
 	if err != nil {
 		panic(err)
 	}
+
 	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
 
 	bt := productModel.Detailing("Content", activity.Timeline).Drawer(true)
@@ -39,9 +46,14 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	activityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
 
+	// @snippet_end
+
+	// @snippet_begin(ActivityRecordLogSample)
+
 	currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, "user1")
 	activityBuilder.AddRecords("Publish", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
 	activityBuilder.AddRecords("Update Price", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
 
+	// @snippet_end
 	return b
 }

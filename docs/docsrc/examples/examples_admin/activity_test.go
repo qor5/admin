@@ -56,6 +56,7 @@ func TestActivity(t *testing.T) {
 					AddField("resource_id", "1").
 					AddField("resource_type", "WithActivityProduct").
 					AddField("Content", "This is a new note").
+					AddField("event", "createNote").
 					BuildEventFuncRequest()
 				return req
 			},

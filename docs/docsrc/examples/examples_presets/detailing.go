@@ -16,7 +16,7 @@ import (
 
 // @snippet_begin(PresetsDetailPageTopNotesSample)
 
-type Note struct {
+type ActivityNote struct {
 	ID         int
 	SourceType string
 	SourceID   int
@@ -32,7 +32,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 	dp *presets.DetailingBuilder,
 ) {
 	cust, cl, ce, dp = PresetsEditingCustomizationValidation(b, db)
-	err := db.AutoMigrate(&Note{})
+	err := db.AutoMigrate(&ActivityNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 			title = cu.Description
 		}
 
-		var notes []*Note
+		var notes []*ActivityNote
 		err := db.Where("source_type = 'Customer' AND source_id = ?", cu.ID).
 			Order("id DESC").
 			Find(&notes).Error
@@ -59,7 +59,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 		dt := vx.DataTable(notes).WithoutHeader(true).LoadMoreAt(2, "Show More")
 
 		dt.Column("Content").CellComponentFunc(func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-			n := obj.(*Note)
+			n := obj.(*ActivityNote)
 			return h.Td(h.Div(
 				h.Div(
 					VIcon("mdi-message-reply-text").Color("blue").Size(SizeSmall).Class("pr-2"),
@@ -79,7 +79,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 			dt,
 		).HeaderTitle(title).
 			Actions(
-				VBtn("Add Note").
+				VBtn("Add ActivityNote").
 					Attr("@click",
 						web.POST().EventFunc(actions.New).
 							Query("model", "Customer").
@@ -90,11 +90,11 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 			).Class("mb-4").Variant(VariantElevated)
 	})
 
-	b.Model(&Note{}).
+	b.Model(&ActivityNote{}).
 		InMenu(false).
 		Editing("Content").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			note := obj.(*Note)
+			note := obj.(*ActivityNote)
 			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})

@@ -31,8 +31,8 @@ type Customer struct {
 	TermAgreedAt    *time.Time
 	ApprovalComment string
 	Avatar          media_library.MediaBox
-	CreditCards     []*CreditCard `gorm:"-"`
-	Notes           []*Note       `gorm:"-"`
+	CreditCards     []*CreditCard   `gorm:"-"`
+	Notes           []*ActivityNote `gorm:"-"`
 }
 
 type Address struct {

@@ -60,6 +60,11 @@ type TimelineItem struct {
 
 // @snippet_end
 
+func (b *Builder) Use(middleware Middleware) *Builder {
+	b.afterCreateFunc = middleware(b.afterCreateFunc)
+	return b
+}
+
 func (b *Builder) WrapAfterCreateFunc(w AfterCreateFuncWrapper) *Builder {
 	b.afterCreateFunc = w(b.afterCreateFunc)
 	return b
