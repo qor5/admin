@@ -83,12 +83,15 @@ func (s *Status) EmbedStatus() *Status {
 }
 
 func EmbedStatus(v any) *Status {
-	return v.(StatusInterface).EmbedStatus()
+	iface, ok := v.(StatusInterface)
+	if !ok {
+		return nil
+	}
+	return iface.EmbedStatus()
 }
 
 type VersionInterface interface {
 	EmbedVersion() *Version
-	CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error)
 }
 
 func (s *Version) EmbedVersion() *Version {
@@ -96,7 +99,11 @@ func (s *Version) EmbedVersion() *Version {
 }
 
 func EmbedVersion(v any) *Version {
-	return v.(VersionInterface).EmbedVersion()
+	iface, ok := v.(VersionInterface)
+	if !ok {
+		return nil
+	}
+	return iface.EmbedVersion()
 }
 
 type ScheduleInterface interface {
@@ -105,6 +112,14 @@ type ScheduleInterface interface {
 
 func (s *Schedule) EmbedSchedule() *Schedule {
 	return s
+}
+
+func EmbedSchedule(v any) *Schedule {
+	iface, ok := v.(ScheduleInterface)
+	if !ok {
+		return nil
+	}
+	return iface.EmbedSchedule()
 }
 
 type ListInterface interface {

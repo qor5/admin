@@ -40,11 +40,11 @@ func TestMain(m *testing.M) {
 var pageBuilderData = gofixtures.Data(
 	gofixtures.Sql(`
 INSERT INTO page_builder_pages (id, version, locale_code, title, slug) VALUES (1, 'v1','International', '123', '123');
-SELECT setval('page_builder_pages_id_seq', 1, true);
 INSERT INTO container_headers (id, color) VALUES (1, 'black');
-SELECT setval('container_headers_id_seq', 1, true);
-INSERT INTO page_builder_containers (id, page_id, page_version,locale_code, model_name, model_id, display_order) VALUES (1, 1, 'v1','International', 'Header', 1, 1),(2, 1, 'v1','International', 'Header', 1, 2);
-SELECT setval('page_builder_containers_id_seq', 2, true);
+INSERT INTO page_builder_containers (id, page_id, page_model_name, page_version, locale_code, model_name, model_id, 
+display_order) VALUES (1, 1, 'pages', 'v1','International', 'Header', 1, 1),(2, 1, 'pages', 'v1','International', 
+'Header', 1,
+2);
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}),
 )
 
@@ -100,9 +100,9 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/editors/1_v1_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/editors/1_v1_International", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"headers"},
+			ExpectPageBodyContainsInOrder: []string{"Header"},
 		},
 		{
 			Name:  "Add Container",
@@ -110,7 +110,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.AddContainerEvent).
 					AddField("containerName", "Header").
 					AddField("modelName", "Header").
@@ -125,7 +125,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.DeleteContainerConfirmationEvent).
 					AddField("containerID", "1_International").
 					BuildEventFuncRequest()
@@ -138,7 +138,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.DeleteContainerEvent).
 					AddField("containerID", "1_International").
 					BuildEventFuncRequest()
@@ -151,7 +151,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
 					AddField("containerID", "1_International").
 					AddField("moveDirection", "down").
@@ -165,7 +165,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
 					AddField("containerID", "1_International").
 					AddField("moveDirection", "up").
@@ -179,7 +179,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.ReloadRenderPageOrTemplateEvent).
 					BuildEventFuncRequest()
 			},
@@ -191,7 +191,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.RenameContainerEvent).
 					AddField("containerID", "1_International").
 					AddField("DisplayName", "Header0000001").
@@ -212,7 +212,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
 					AddField("status", "draft").
 					BuildEventFuncRequest()
@@ -225,12 +225,12 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.MoveContainerEvent).
 					AddField("moveResult", `[{"container_id":"2","locale":"International"},{"container_id":"1","locale":"International"}]`).
 					BuildEventFuncRequest()
 			},
-			ExpectRunScriptContainsInOrder: []string{"/page_builder/editors/1_v1_International"},
+			ExpectRunScriptContainsInOrder: []string{"/page_builder/pages/editors/1_v1_International"},
 		},
 		{
 			Name:  "Editor Toggle Container Visibility Event",
@@ -238,7 +238,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/page_builder/editors/1_v1_International").
+					PageURL("/page_builder/pages/editors/1_v1_International").
 					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
 					AddField("containerID", "1_International").
 					BuildEventFuncRequest()

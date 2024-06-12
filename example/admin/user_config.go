@@ -3,6 +3,7 @@ package admin
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
@@ -37,7 +37,7 @@ func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *pu
 
 		// If the current user doesn't has 'admin' role, do not allow them to view admin and manager users
 		// We didn't do this on permission because of we are not supporting the permission on listing page
-		if currentRoles := u.GetRoles(); !utils.Contains(currentRoles, models.RoleAdmin) {
+		if currentRoles := u.GetRoles(); !slices.Contains(currentRoles, models.RoleAdmin) {
 			qdb = db.Joins("inner join user_role_join urj on users.id = urj.user_id inner join roles r on r.id = urj.role_id").
 				Group("users.id").
 				Having("COUNT(CASE WHEN r.name in (?) THEN 1 END) = 0", []string{models.RoleAdmin, models.RoleManager})

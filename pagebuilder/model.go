@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,13 +13,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/admin/v3/presets/gorm2op"
+
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/qor5/admin/v3/utils"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -71,8 +73,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		cons                        []*Container
 		status                      = ctx.R.FormValue(paramStatus)
 		isReadonly                  = status != publish.StatusDraft
-		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		activityMsgr                = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
 	wc := map[string]interface{}{
@@ -99,47 +99,36 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
-				Index:          i,
-				Label:          inflection.Plural(strcase.ToKebab(c.ModelName)),
-				ModelName:      c.ModelName,
-				ModelID:        strconv.Itoa(int(c.ModelID)),
-				DisplayName:    displayName,
-				ContainerID:    strconv.Itoa(int(c.ID)),
-				URL:            b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
-				Shared:         c.Shared,
-				VisibilityIcon: vicon,
-				ParamID:        c.PrimarySlug(),
-				Locale:         locale,
-				Hidden:         c.Hidden,
+				Index:           i,
+				Label:           inflection.Plural(strcase.ToKebab(c.ModelName)),
+				ModelName:       c.ModelName,
+				ModelID:         strconv.Itoa(int(c.ModelID)),
+				DisplayName:     displayName,
+				ContainerID:     strconv.Itoa(int(c.ID)),
+				URL:             b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
+				Shared:          c.Shared,
+				VisibilityIcon:  vicon,
+				ParamID:         c.PrimarySlug(),
+				Locale:          locale,
+				Hidden:          c.Hidden,
+				ContainerDataID: fmt.Sprintf(`%s_%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID))),
 			},
 		)
 	}
-	menu := VMenu(
-		web.Slot(
-			VBtn("").Icon("mdi-dots-horizontal").Variant(VariantText).Size(SizeSmall).Attr("v-bind", "props").Attr("v-show", "element.editShow || (isActive || isHovering)"),
-		).Name("activator").Scope("{isActive,props}"),
-		VList(
-			VListItem(
-				VBtn(msgr.Rename).PrependIcon("mdi-pencil").Attr("@click",
-					"element.editShow=!element.editShow",
-				),
-			),
-			VListItem(
-				VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
-					web.Plaid().
-						URL(ctx.R.URL.Path).
-						EventFunc(DeleteContainerConfirmationEvent).
-						Query(paramContainerID, web.Var("element.param_id")).
-						Query(paramContainerName, web.Var("element.display_name")).
-						Go(),
-				),
-			),
-		),
-	)
 	pushState := web.Plaid().PushState(true).MergeQuery(true).
 		Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`))
+	var clickColumnEvent string
 	if !isReadonly {
 		pushState.Query(paramContainerID, web.Var("element.param_id"))
+		clickColumnEvent = fmt.Sprintf(`vars.%s=element.container_data_id;`, paramContainerDataID) +
+			web.Plaid().
+				URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
+				EventFunc(actions.Edit).
+				Query(presets.ParamOverlay, actions.Content).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamID, web.Var("element.model_id")).
+				Go() + ";" + pushState.RunPushState() +
+			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
 	r = web.Scope(
 		VSheet(
@@ -171,7 +160,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/editors", b.builder.prefix)).
+															URL(fmt.Sprintf("%s/%s/editors", b.builder.prefix, b.name)).
 															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
@@ -180,32 +169,32 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 										web.Slot(
 											h.If(!isReadonly,
 												h.Div(
+													VBtn("").Variant(VariantText).Icon("mdi-pencil").Attr("@click",
+														"element.editShow=!element.editShow",
+													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															EventFunc(ToggleContainerVisibilityEvent).
 															Query(paramContainerID, web.Var("element.param_id")).
 															Query(paramStatus, status).
 															Go(),
-													).Attr("v-show", "element.editShow || (element.hidden || isHovering)"),
-
-													VBtn("").Variant(VariantText).Icon("mdi-cog").Size(SizeSmall).Attr("@click",
+													).Attr("v-show", "!element.editShow && (element.hidden || isHovering)"),
+													VBtn("").Variant(VariantText).Icon("mdi-delete").Attr("@click",
 														web.Plaid().
-															URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
-															EventFunc(actions.Edit).
-															Query(presets.ParamOverlay, actions.Content).
-															Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-															Query(presets.ParamID, web.Var("element.model_id")).
+															URL(ctx.R.URL.Path).
+															EventFunc(DeleteContainerConfirmationEvent).
+															Query(paramContainerID, web.Var("element.param_id")).
+															Query(paramContainerName, web.Var("element.display_name")).
 															Go(),
-													).Attr("v-show", "element.editShow || isHovering"),
-													menu,
+													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
 												),
 											),
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
-										Attr("v-bind", "props").
-										Disabled(isReadonly).
-										Attr("@click", pushState.RunPushState()+
-											";"+scrollToContainer(fmt.Sprintf(`%s+"_"+%s`, web.Var("element.label"), web.Var("element.model_id")))),
+										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
+										Attr("v-bind", "props", "@click", clickColumnEvent).
+										Attr(web.VAssign("vars",
+											fmt.Sprintf(`{%s:"%s"}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -237,11 +226,13 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-		Query(paramContainerID, newContainerID).RunPushState() +
+	r.RunScript = fmt.Sprintf(`vars.%s="%s";`, paramContainerDataID, cb.getContainerDataID(modelID)) +
+		web.Plaid().PushState(true).MergeQuery(true).
+			Query(paramContainerDataID, cb.getContainerDataID(modelID)).
+			Query(paramContainerID, newContainerID).RunPushState() +
 		";" + web.Plaid().
 		EventFunc(ReloadRenderPageOrTemplateEvent).
+		MergeQuery(true).
 		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
 		Query(paramContainerID, newContainerID).
 		Go() + ";" +
@@ -392,7 +383,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
 	okAction := web.Plaid().
-		URL(fmt.Sprintf("%s/editors", b.builder.prefix)).
+		URL(fmt.Sprintf("%s/%s/editors", b.builder.prefix, b.name)).
 		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 	portalName := dialogPortalName
 	if ctx.R.FormValue("portal") == "presets" {
@@ -430,7 +421,6 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 
 func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
-		isReadonly   = ctx.Param(paramStatus) != publish.StatusDraft
 		msgr         = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		_, _, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
@@ -461,26 +451,29 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		for _, builder := range group {
 			cover := builder.cover
 			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
 			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
-			listItems = append(listItems, VListItem(
-				VListItemTitle(h.Text(containerName)),
-				VListItemSubtitle(VImg().Src(cover).Height(100)),
-			).Disabled(isReadonly).Attr("@click",
-				web.Plaid().EventFunc(AddContainerEvent).
-					MergeQuery(true).
-					Query(paramModelName, builder.name).
-					Query(paramContainerName, builder.name).
-					Go(),
-			))
+			listItems = append(listItems,
+				VListItem(
+					VListItemTitle(h.Text(containerName)),
+					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2"),
+				).Attr("@click",
+					web.Plaid().EventFunc(AddContainerEvent).
+						MergeQuery(true).
+						Query(paramModelName, builder.name).
+						Query(paramContainerName, builder.name).
+						Go(),
+				))
 		}
 		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
-					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
-			).Name("activator").Scope(" {  props }"),
+					VListItemTitle(
+						h.Text(groupName),
+					).Class("text-body-1"),
+				).Attr("v-bind", "props"),
+			).Name("activator").Scope(" { props}"),
 			h.Components(listItems...),
 		).Value(groupName))
 	}
@@ -507,29 +500,29 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			c := b.builder.ContainerByName(builder.ModelName)
 			cover := c.cover
 			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".png")
+				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".svg")
 			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
-			listItems = append(listItems, VListItem(
-				h.Div(
+			listItems = append(listItems,
+				VListItem(
 					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)),
-				).Disabled(isReadonly).Attr("@click", web.Plaid().
-					EventFunc(AddContainerEvent).
-					MergeQuery(true).
-					Query(paramContainerName, builder.ModelName).
-					Query(paramModelName, builder.ModelName).
-					Query(paramModelID, builder.ModelID).
-					Query(paramSharedContainer, "true").
-					Go()),
-			).Value(containerName))
+					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2").
+						Attr("@click", web.Plaid().
+							EventFunc(AddContainerEvent).
+							MergeQuery(true).
+							Query(paramContainerName, builder.ModelName).
+							Query(paramModelName, builder.ModelName).
+							Query(paramModelID, builder.ModelID).
+							Query(paramSharedContainer, "true").
+							Go()),
+				).Value(containerName))
 		}
 
 		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("bg-light-blue-lighten-5"),
+				).Attr("v-bind", "props").Class("text-body-1"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
@@ -570,18 +563,12 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 
 func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	var (
-		containerDataID = ctx.Param(paramContainerDataID)
-		obj             = b.mb.NewModel()
-	)
+	obj := b.mb.NewModel()
 
-	if containerDataID != "" {
-		r.RunScript = fmt.Sprintf(`setTimeout(function(){%s},100)`, scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID)))
-	}
 	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
 		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body.(*h.HTMLTagBuilder).Attr(web.VAssign("vars", "{el:$}")...)})
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
 	return
 }
 
@@ -661,6 +648,13 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 	return
 }
 
+func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
+	if builder.l10n == nil {
+		return wh
+	}
+	return wh.Where("locale_code = ?", locale)
+}
+
 func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	model := b.builder.ContainerByName(modelName).NewModel()
 	var dc DemoContainer
@@ -678,8 +672,10 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		maxOrder     sql.NullFloat64
 		displayOrder float64
 	)
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").
-		Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
+	wh := b.db.Model(&Container{}).Select("MAX(display_order)").
+		Where("page_id = ? and page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name)
+
+	err = withLocale(b.builder, wh, locale).Scan(&maxOrder).Error
 	if err != nil {
 		return
 	}
@@ -688,8 +684,12 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
 		if dbErr := b.db.Where("id = ? AND locale_code = ? and page_model_name = ?", cs["id"], locale, b.name).First(&lastContainer).Error; dbErr == nil {
 			displayOrder = lastContainer.DisplayOrder
-			if err = b.db.Model(&Container{}).
-				Where("page_id = ? and page_version = ? and locale_code = ?  and page_model_name = ? and display_order > ? ", pageID, pageVersion, locale, b.name, displayOrder).
+			if err = withLocale(
+				b.builder,
+				b.db.Model(&Container{}).
+					Where("page_id = ? and page_version = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, b.name, displayOrder),
+				locale,
+			).
 				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
 				return
 			}
@@ -817,19 +817,18 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			  position: absolute;
 			  z-index: 9998;
 			  opacity: 0;
-			  transition: opacity .5s ease-in-out;
 			  text-align: center;
 			}
 			
 			.editor-add div {
 			  width: 100%;
 			  background-color: #3E63DD;
-			  transition: height .5s ease-in-out;
 			  height: 3px;
 			}
 			
 			.editor-add button {
 			  width: 32px;
+			  cursor: pointer;
               height: 32px;	
 			  color: #FFFFFF;
 			  background-color: #3E63DD;
@@ -866,6 +865,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			}
 			.editor-bar button {
 			  color: #FFFFFF;
+			  cursor: pointer;
 			  background-color: #3E63DD; 
               height: 24px;	
 			}
@@ -927,12 +927,27 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 				).Attr(newCtx.Injector.HTMLLangAttrs()...),
 			}
 			_, width := b.builder.getDevice(ctx)
-			r = h.Tag("vx-scroll-iframe").Attr(
+			scrollIframe := h.Tag("vx-scroll-iframe").Attr(
 				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
 				"iframe-height", iframeValue,
 				"iframe-height-name", iframeHeightName,
-				"width", width,
-				"ref", "scrollIframe")
+				":width", "vars.vxScrollIframeWidth",
+				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
+				"ref", "scrollIframe").
+				Attr(web.VAssign("vars",
+					fmt.Sprintf(`{vxScrollIframeWidth:"%s",hasContainer:%v,el:$}`, width, len(comps)))...)
+			r = scrollIframe
+			if !isReadonly && len(comps) == 0 {
+				r = h.Components(
+					scrollIframe.Attr("v-show", fmt.Sprintf(`vars.containerTab=="%s"`, EditorTabAdd)),
+					h.Div(
+						h.RawHTML(defaultContainerEmptyIcon),
+						h.Div(h.Text("Please add your elements first")),
+					).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh").
+						Attr("v-show", fmt.Sprintf(`vars.containerTab!="%s"`, EditorTabAdd)),
+				)
+				return
+			}
 
 		} else {
 			r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -945,8 +960,14 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 
 func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
-	err = b.db.Order("display_order ASC").
-		Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Error
+	err = withLocale(
+		b.builder,
+		b.db.
+			Order("display_order ASC").
+			Where("page_id = ? AND page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name),
+		locale,
+	).
+		Find(&cons).Error
 	if err != nil {
 		return
 	}
@@ -1003,4 +1024,211 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 	}
 	r.PushState = web.Location(url.Values{})
 	return
+}
+
+func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, locale, oldPageVersion, newPageVersion string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, locale, pageID, newPageVersion, locale)
+}
+
+func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
+	var cons []*Container
+	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ? and page_model_name =? ", pageID, pageVersion, locale, b.name).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		newModelID := c.ModelID
+		if !c.Shared {
+			model := b.builder.ContainerByName(c.ModelName).NewModel()
+			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+				return
+			}
+			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+				return
+			}
+			if err = db.Create(model).Error; err != nil {
+				return
+			}
+			newModelID = reflectutils.MustGet(model, "ID").(uint)
+		}
+
+		if err = db.Create(&Container{
+			PageID:        uint(toPageID),
+			PageVersion:   toPageVersion,
+			PageModelName: b.name,
+			ModelName:     c.ModelName,
+			DisplayName:   c.DisplayName,
+			ModelID:       newModelID,
+			DisplayOrder:  c.DisplayOrder,
+			Shared:        c.Shared,
+			Locale: l10n.Locale{
+				LocaleCode: toPageLocale,
+			},
+		}).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
+	var cons []*Container
+	err = db.Order("display_order ASC").
+		Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).
+		Find(&cons).Error
+	if err != nil {
+		return
+	}
+
+	for _, c := range cons {
+		newModelID := c.ModelID
+		newDisplayName := c.DisplayName
+		if !c.Shared {
+			model := b.builder.ContainerByName(c.ModelName).NewModel()
+			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+				return
+			}
+			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+				return
+			}
+			if err = db.Create(model).Error; err != nil {
+				return
+			}
+			newModelID = reflectutils.MustGet(model, "ID").(uint)
+		} else {
+			var count int64
+			var sharedCon Container
+			if err = db.Where("model_name = ? AND localize_from_model_id = ? AND locale_code = ? AND shared = ? and page_model_name = ? ",
+				c.ModelName, c.ModelID, toPageLocale, true, b.name).
+				First(&sharedCon).Count(&count).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return
+			}
+
+			if count == 0 {
+				model := b.builder.ContainerByName(c.ModelName).NewModel()
+				if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
+					return
+				}
+				if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+					return
+				}
+				if err = db.Create(model).Error; err != nil {
+					return
+				}
+				newModelID = reflectutils.MustGet(model, "ID").(uint)
+			} else {
+				newModelID = sharedCon.ModelID
+				newDisplayName = sharedCon.DisplayName
+			}
+		}
+
+		var newCon Container
+		err = db.Order("display_order ASC").Find(&newCon, "id = ? AND locale_code = ?", c.ID, toPageLocale).Error
+		if err != nil {
+			return
+		}
+
+		newCon.ID = c.ID
+		newCon.PageID = uint(toPageID)
+		newCon.PageVersion = toPageVersion
+		newCon.ModelName = c.ModelName
+		newCon.DisplayName = newDisplayName
+		newCon.ModelID = newModelID
+		newCon.DisplayOrder = c.DisplayOrder
+		newCon.Shared = c.Shared
+		newCon.LocaleCode = toPageLocale
+		newCon.LocalizeFromModelID = c.ModelID
+		newCon.PageModelName = b.name
+
+		if err = db.Save(&newCon).Error; err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
+	eb := mb.Editing().Creating()
+	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		if p, ok := obj.(*Page); ok {
+			if p.Slug != "" {
+				p.Slug = path.Clean(p.Slug)
+			}
+			funcName := ctx.R.FormValue(web.EventFuncIDName)
+			if funcName == publish.EventDuplicateVersion {
+				var fromPage Page
+				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+				p.SEO = fromPage.SEO
+			}
+		}
+		var (
+			pageID                             int
+			version, localeCode, parentVersion string
+		)
+		if id != "" {
+			ctx.R.Form.Set(presets.ParamID, id)
+			pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
+		}
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+
+		if p, ok := obj.(publish.VersionInterface); ok {
+			parentVersion = p.EmbedVersion().ParentVersion
+			version = p.EmbedVersion().Version
+		}
+		if p, ok := obj.(l10n.LocaleInterface); ok {
+			if p.EmbedLocale().LocaleCode == "" {
+				reflectutils.Set(obj, "LocaleCode", locale)
+			}
+			localeCode = p.EmbedLocale().LocaleCode
+		}
+		err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
+			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+				return
+			}
+			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+				if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
+					return
+				}
+				return
+			}
+
+			if v := ctx.R.FormValue(templateSelectedID); v != "" {
+				var tplID int
+				tplID, inerr = strconv.Atoi(v)
+				if inerr != nil {
+					return
+				}
+				if b.builder.l10n == nil {
+					localeCode = ""
+				}
+				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
+					panic(inerr)
+				}
+			}
+			if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+
+				var fromIDInt int
+				fromIDInt, err = strconv.Atoi(fromID)
+				if err != nil {
+					return
+				}
+				if p, ok := obj.(*Page); ok {
+					if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+						panic(inerr)
+					}
+				}
+				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+					panic(inerr)
+				}
+				return
+			}
+			return
+		})
+
+		return err
+	})
 }

@@ -984,18 +984,3 @@ func TestFieldsBuilder(t *testing.T) {
 		})
 	}
 }
-
-func TestGoFunk(t *testing.T) {
-	depts := []*Department{
-		{Name: "1"},
-		{Name: "2"},
-	}
-
-	reflectutils.ForEach(depts, func(obj *Department) {
-		obj.Name = "3"
-	})
-
-	reflectutils.ForEach(depts, func(obj interface{}) {
-		obj.(*Department).Name = "3"
-	})
-}

@@ -1,1 +1,0 @@
-export DBURL="user=test password=test dbname=test sslmode=disable host=localhost port=6514 TimeZone=Asia/Tokyo"

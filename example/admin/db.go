@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var dbParamsString = osenv.Get("DB_PARAMS", "admin example database connection string", "")
+var dbParamsString = osenv.Get("DB_PARAMS", "admin example database connection string", "user=docs password=docs dbname=docs sslmode=disable host=localhost port=6532 TimeZone=Asia/Tokyo")
 
 func ConnectDB() (db *gorm.DB) {
 	var err error

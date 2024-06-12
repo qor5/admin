@@ -328,7 +328,7 @@ func (b *ListingBuilder) listingComponent(
 				VCardText(
 					web.Portal(dataTable).Name(dataTablePortalName),
 				).Class("pa-2"),
-			),
+			).Elevation(0),
 			web.Portal(dataTableAdditions).Name(dataTableAdditionsPortalName),
 			footerCardAction,
 		),

@@ -355,7 +355,7 @@ func flowVersionDialog_Step08_Event_publish_eventSelectVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.presetsListingDialog = false; if (!!vars.publish_VarCurrentDisplayID && vars.publish_VarCurrentDisplayID != \"1_2024-05-26-v06\") { vars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v06\").go() }", resp.RunScript)
+	assert.Equal(t, "vars.presetsListingDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v06\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v06\",\"VersionName\":\"2024-05-26-x06\",\"ParentVersion\":\"2024-05-26-v05\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}})", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }
@@ -429,7 +429,7 @@ func flowVersionDialog_Step11_Event_publish_eventSelectVersion(t *testing.T, f *
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "vars.presetsListingDialog = false; if (!!vars.publish_VarCurrentDisplayID && vars.publish_VarCurrentDisplayID != \"1_2024-05-26-v05\") { vars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v05\").go() }", resp.RunScript)
+	assert.Equal(t, "vars.presetsListingDialog = false; vars.__sendNotification(\"publish.PayloadVersionSelected\", {\"ModelLabel\":\"WithPublishProducts\",\"Slug\":\"1_2024-05-26-v05\",\"Status\":{\"Status\":\"draft\",\"OnlineUrl\":\"\"},\"Version\":{\"Version\":\"2024-05-26-v05\",\"VersionName\":\"2024-05-26-x05\",\"ParentVersion\":\"2024-05-26-v04\"},\"Schedule\":{\"ScheduledStartAt\":null,\"ScheduledEndAt\":null,\"ActualStartAt\":null,\"ActualEndAt\":null}})", resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"strconv"
 
 	"github.com/qor/oss"
@@ -132,7 +133,7 @@ func (b *ListPublishBuilder) Run(model interface{}) (err error) {
 		}
 		for _, item := range oldItems {
 			lp := item.(ListInterface)
-			if position, exist := deleteMap[lp.EmbedList().PageNumber]; exist && utils.Contains(position, lp.EmbedList().Position) {
+			if position, exist := deleteMap[lp.EmbedList().PageNumber]; exist && slices.Contains(position, lp.EmbedList().Position) {
 				continue
 			}
 			newItems = append(newItems, item)

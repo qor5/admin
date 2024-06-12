@@ -47,7 +47,6 @@ const (
 	paramsTpl            = "tpl"
 	paramsDevice         = "device"
 	paramsDisplayName    = "DisplayName"
-	paramTab             = "tab"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -60,8 +59,8 @@ const (
 	EventEdit        = "edit"
 	iframeHeightName = "_iframeHeight"
 
-	EditorTabElements = "Elements"
-	EditorTabLayers   = "Layers"
+	EditorTabAdd    = "Add"
+	EditorTabLayers = "Layers"
 )
 
 const editorPreviewContentPortal = "editorPreviewContentPortal"
@@ -74,6 +73,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			tabContent                           web.PageResponse
 			pageAppbarContent                    []h.HTMLComponent
 			exitHref                             string
+			readonly                             bool
 
 			containerDataID = ctx.R.FormValue(paramContainerDataID)
 			obj             = m.mb.NewModel()
@@ -97,8 +97,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
+			readonly = p.EmbedStatus().Status == publish.StatusDraft
 		}
-		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
+		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableObservers: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -106,8 +107,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go())).Style("transform:rotateY(180deg)").Class("mr-4"),
 				VAppBarTitle().Text("Page Builder"),
 			).Class("d-inline-flex align-center"),
-			h.Div(deviceToggler).Class("text-center  w-25 d-flex justify-space-between ml-8"),
-			versionComponent,
+			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
+			web.Scope(
+				versionComponent,
+			).Observers(
+				publish.ObserverItemDeleted(m.mb, ctx.Param(presets.ParamID)),
+				publish.ObserverVersionSelected(m.editor, ctx.Param(presets.ParamID)),
+			),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
 			return
@@ -118,16 +124,18 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					pageAppbarContent...,
 				).Class("d-flex align-center  justify-space-between  w-100 px-6").Style("height: 36px"),
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
-			VNavigationDrawer(
-				navigatorDrawer,
-			).Location(LocationLeft).
-				Permanent(true).
-				Width(350),
-			VNavigationDrawer(
-				web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
-			).Location(LocationRight).
-				Permanent(true).
-				Width(350),
+			h.If(readonly,
+				VNavigationDrawer(
+					navigatorDrawer,
+				).Location(LocationLeft).
+					Permanent(true).
+					Width(350),
+				VNavigationDrawer(
+					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)).Attr("v-show", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"`, EditorTabLayers)),
+				).Location(LocationRight).
+					Permanent(true).
+					Attr(":width", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"?350:0`, EditorTabLayers)),
+			),
 			VMain(
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
@@ -154,18 +162,19 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 const ContainerToPageLayoutKey = "ContainerToPageLayout"
 
 type ContainerSorterItem struct {
-	Index          int    `json:"index"`
-	Label          string `json:"label"`
-	ModelName      string `json:"model_name"`
-	ModelID        string `json:"model_id"`
-	DisplayName    string `json:"display_name"`
-	ContainerID    string `json:"container_id"`
-	URL            string `json:"url"`
-	Shared         bool   `json:"shared"`
-	Hidden         bool   `json:"hidden"`
-	VisibilityIcon string `json:"visibility_icon"`
-	ParamID        string `json:"param_id"`
-	Locale         string `json:"locale"`
+	Index           int    `json:"index"`
+	Label           string `json:"label"`
+	ModelName       string `json:"model_name"`
+	ModelID         string `json:"model_id"`
+	DisplayName     string `json:"display_name"`
+	ContainerID     string `json:"container_id"`
+	ContainerDataID string `json:"container_data_id"`
+	URL             string `json:"url"`
+	Shared          bool   `json:"shared"`
+	Hidden          bool   `json:"hidden"`
+	VisibilityIcon  string `json:"visibility_icon"`
+	ParamID         string `json:"param_id"`
+	Locale          string `json:"locale"`
 }
 
 type ContainerSorter struct {
@@ -173,38 +182,35 @@ type ContainerSorter struct {
 }
 
 func (b *Builder) renderNavigator(ctx *web.EventContext, m *ModelBuilder) (r h.HTMLComponent, err error) {
-	tab := ctx.Param(paramTab)
-	if tab == "" {
-		tab = EditorTabElements
-	}
-
 	var listContainers h.HTMLComponent
-	if tab == EditorTabLayers {
-		if listContainers, err = m.renderContainersSortedList(ctx); err != nil {
-			return
-		}
+	if listContainers, err = m.renderContainersSortedList(ctx); err != nil {
+		return
 	}
 	r = h.Components(
-		VTabs(
-			VTab().Text("Add").
-				Value(EditorTabElements).Attr("@click",
-				web.Plaid().PushState(true).MergeQuery(true).
-					Query(paramTab, EditorTabElements).RunPushState()),
-			VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
-				web.Plaid().PushState(true).MergeQuery(true).
-					Query(paramTab, EditorTabLayers).RunPushState()+
-					";"+
-					web.Plaid().
-						URL(ctx.R.URL.Path).
-						EventFunc(ShowSortedContainerDrawerEvent).
-						Query(paramStatus, ctx.Param(paramStatus)).
-						MergeQuery(true).
-						Go()),
-		).Attr("v-model", "vars.containerTab").FixedTabs(true),
+		web.Slot(
+			VTabs(
+				VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
+					scrollToContainer(web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID)))+
+						removeVirtualElement()+
+						web.Plaid().
+							EventFunc(ShowSortedContainerDrawerEvent).
+							Query(paramStatus, ctx.Param(paramStatus)).
+							Query(paramContainerDataID, web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID))).
+							MergeQuery(true).
+							Go()),
+				VTab().Text("Add").
+					Value(EditorTabAdd).Attr("@click",
+					appendVirtualElement()+
+						";"+
+						web.Plaid().PushState(true).MergeQuery(true).
+							ClearMergeQuery([]string{paramContainerID}).RunPushState(),
+				),
+			).Attr("v-model", "vars.containerTab").FixedTabs(true),
+		).Name(VSlotPrepend),
 		VTabsWindow(
-			VTabsWindowItem(m.renderContainersList(ctx)).Value(EditorTabElements),
+			VTabsWindowItem(m.renderContainersList(ctx)).Value(EditorTabAdd),
 			VTabsWindowItem(web.Portal(listContainers).Name(pageBuilderLayerContainerPortal)).Value(EditorTabLayers),
-		).Attr("v-model", "vars.containerTab").Attr(web.VAssign("vars", fmt.Sprintf(`{containerTab:"%s"}`, tab))...),
+		).Attr("v-model", "vars.containerTab").Attr(web.VAssign("vars", fmt.Sprintf(`{containerTab:"%s"}`, EditorTabLayers))...),
 	)
 	return
 }
@@ -449,8 +455,19 @@ func scrollToContainer(containerDataID interface{}) string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%v);`, containerDataID)
 }
 
+func addVirtualELeToContainer(containerDataID interface{}) string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.addVirtualElement(%v);`, containerDataID)
+}
+
+func removeVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
+}
+
+func appendVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
+}
+
 func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, isEditor, isReadonly, isFirst, isEnd bool, containerDataID, modelName string, input *RenderInput) h.HTMLComponent {
-	r.Attr("data-container-id", containerDataID)
 	pmb := postMessageBody{
 		ContainerDataID: containerDataID,
 		ContainerId:     input.ContainerId,
@@ -481,6 +498,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 			).Class("wrapper-shadow").ClassIf("highlight", ctx.Param(paramContainerDataID) == containerDataID)
 		}
 	}
+	r.Attr("data-container-id", containerDataID)
 	return r
 }
 

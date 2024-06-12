@@ -15,7 +15,7 @@ import (
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
-	"github.com/theplant/htmlgo"
+	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -215,13 +215,13 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		ComponentFunc(localeListFunc(db, b))
 	pb.FieldDefaults(presets.WRITE).
 		FieldType(Locale{}).
-		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			value := b.localeValue(obj, field, ctx)
-			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
+			return Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := EmbedLocale(obj).LocaleCode
-			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
+			if !slices.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}
 
@@ -318,13 +318,13 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		ComponentFunc(localeListFunc(db, b))
 	pb.FieldDefaults(presets.WRITE).
 		FieldType(Locale{}).
-		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) htmlgo.HTMLComponent {
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			value := b.localeValue(obj, field, ctx)
-			return htmlgo.Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
+			return Input("").Type("hidden").Attr(web.VField("LocaleCode", value)...)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			value := EmbedLocale(obj).LocaleCode
-			if !utils.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
+			if !slices.Contains(b.GetSupportLocaleCodesFromRequest(ctx.R), value) {
 				return IncorrectLocaleErr
 			}
 

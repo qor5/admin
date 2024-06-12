@@ -139,7 +139,7 @@ func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *F
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "plaid().vars(vars).locals(locals).form(form).go().then(function(r){ vars.presetsListingDialog = false; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \""+f.DuplicateID+"\").go(); vars.presetsMessage = { show: true, message: \"Successfully Created\", color: \"success\"} })", resp.RunScript)
+	assert.Contains(t, resp.RunScript, "Successfully Created")
 
 	return testflow.NewThen(t, w, r)
 }

@@ -3,6 +3,7 @@ package examples_admin
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
@@ -91,6 +92,24 @@ func TestLocalization(t *testing.T) {
 				TestDB.Find(&m, "id = ? AND locale_code = ?", 1, "China")
 				if m.Title != "Updated Title" {
 					t.Errorf("title is wrong %#+v", m)
+				}
+			},
+		},
+		{
+			Name:  "Delete China locale",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				l10nDataWithChina.TruncatePut(SqlDB)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/l10n-models?__execute_event__=presets_DoDelete&id=1_China").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var m L10nModel
+				TestDB.Unscoped().Find(&m, "id = ? AND deleted_at IS NOT NULL", 1)
+				if !strings.Contains(m.LocaleCode, "del") {
+					t.Errorf("delete is wrong %#+v", m)
 				}
 			},
 		},
