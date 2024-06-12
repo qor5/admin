@@ -134,7 +134,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)).Attr("v-show", fmt.Sprintf(`vars.containerTab=="%s"`, EditorTabLayers)),
 				).Location(LocationRight).
 					Permanent(true).
-					Width(350),
+					Attr(":width", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"?350:0`, EditorTabLayers)),
 			),
 			VMain(
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),

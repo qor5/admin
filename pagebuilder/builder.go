@@ -1500,9 +1500,15 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
-	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
+func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
+	editAction := fmt.Sprintf(`vars.%s=container_data_id;vars.containerTab="%s";`, paramContainerDataID, EditorTabLayers) +
 		removeVirtualElement() + ";" +
+		web.Plaid().
+			EventFunc(ShowSortedContainerDrawerEvent).
+			Query(paramStatus, ctx.Param(paramStatus)).
+			Query(paramContainerDataID, web.Var("container_data_id")).
+			MergeQuery(true).
+			Go() + ";" +
 		web.Plaid().
 			PushState(true).
 			MergeQuery(true).

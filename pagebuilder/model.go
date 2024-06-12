@@ -568,9 +568,6 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
 		return
 	}
-	if p, ok := body.(*h.HTMLTagBuilder); ok {
-		p.Attr(web.VAssign("vars", "{el:$}")...)
-	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
 	return
 }
@@ -712,12 +709,6 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r we
 	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
 		return
 	}
-	if p, ok := obj.(*h.HTMLTagBuilder); ok {
-		p.Attr(web.VAssign("vars", "{el:$}")...)
-	} else {
-		body = h.Div(body).Attr(web.VAssign("vars", "{el:$}")...)
-	}
-
 	r.Body = web.Portal(
 		body,
 	).Name(editorPreviewContentPortal)
@@ -931,7 +922,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
 				"ref", "scrollIframe").
 				Attr(web.VAssign("vars",
-					fmt.Sprintf(`{vxScrollIframeWidth:"%s"}`, width))...)
+					fmt.Sprintf(`{vxScrollIframeWidth:"%s",hasContainer:%v,el:$}`, width, len(comps)))...)
 			r = scrollIframe
 			if !isReadonly && len(comps) == 0 {
 				r = h.Components(
