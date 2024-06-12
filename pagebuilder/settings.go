@@ -19,7 +19,9 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
-func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuilder) presets.FieldComponentFunc {
+func overview(m *ModelBuilder) presets.FieldComponentFunc {
+	pm := m.mb
+	b := m.builder
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			start, end, se string
@@ -29,8 +31,8 @@ func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuil
 			id             uint
 		)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		if templateM != nil {
-			isTemplate = strings.Contains(ctx.R.RequestURI, "/"+templateM.Info().URIName()+"/")
+		if b.templateModel != nil {
+			isTemplate = strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/")
 		}
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps = v.PrimarySlug()
@@ -51,7 +53,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuil
 			ctx.R.Form.Set(paramsTpl, "1")
 		}
 
-		previewDevelopUrl := b.previewHref(ctx, pm, ps)
+		previewDevelopUrl := m.PreviewHref(ctx, ps)
 
 		if schedule, ok := obj.(publish.ScheduleInterface); ok {
 			if em := schedule.EmbedSchedule().ScheduledStartAt; em != nil {
@@ -75,7 +77,7 @@ func overview(b *Builder, templateM *presets.ModelBuilder, pm *presets.ModelBuil
 			versionComponent,
 			h.Div(
 				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").
-					Style(`height:320px;width:100%;pointer-events: none; background: rgba(0, 0, 0, 0.5)`),
+					Style(`height:320px;width:100%;pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 60%, rgba(255, 255, 255, 0.60) 100%), var(--body-background-color, #F5F5F5);`),
 				h.Div(
 					h.Div(
 						h.Text(se),
