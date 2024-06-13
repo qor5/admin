@@ -1637,15 +1637,26 @@ func (b *Builder) setDefaultDevices() {
 func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	ctx.R.Form.Del(web.EventFuncIDName)
+	device := ctx.Param(paramsDevice)
 	for _, d := range b.getDevices() {
+		if device == "" && d.Name == b.defaultDevice {
+			device = d.Name
+		}
 		comps = append(comps,
-			VBtn("").Icon(d.Icon).Color(ColorPrimary).Value(d.Name).BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2").
-				Attr("@click", fmt.Sprintf(`vars.vxScrollIframeWidth="%s";`, d.Width)+
-					web.Plaid().MergeQuery(true).PushState(true).Query(paramsDevice, d.Name).RunPushState()))
+			VBtn("").Icon(d.Icon).Color(ColorPrimary).Value(d.Name).
+				BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2"),
+		)
+	}
+	if device == "" {
+		device = b.getDevices()[0].Name
 	}
 	return web.Scope(
 		VBtnToggle(
 			comps...,
-		).Class("pa-2 rounded-lg ").Attr("v-model", "toggleLocals.activeDevice"),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, ctx.Param(paramsDevice)))
+		).Class("pa-2 rounded-lg ").
+			Mandatory(true).
+			Attr("v-model", "toggleLocals.activeDevice").
+			Attr("@update:model-value", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+				PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, device))
 }

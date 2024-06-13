@@ -484,7 +484,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 			r = h.Div(
 				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
-					h.H6(input.DisplayName).Class("title"),
+					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(
 						h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventUp)),
 						h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDown)),

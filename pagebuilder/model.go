@@ -852,13 +852,16 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
-			  width: 30%;
+			  width: 32%;
 			  height: 32px;	
 			  opacity: 0;
               display: flex;
 			  align-items: center;	
 			  background-color: #3E63DD;
 			  justify-content: space-between;
+              pointer-events: none;
+              padding : 0 8px;
+
 			}
    			.editor-bar-buttons{
               height: 24px;
@@ -870,13 +873,21 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
               height: 24px;	
 			}
 			
-			.editor-bar h6 {
+			.editor-bar .title {
 			  color: #FFFFFF;
-			  margin-left: 4px;	
+		      width: 30%;
+			  overflow: hidden;	
+			  font-size: 12px;
+			  font-style: normal;
+			  font-weight: 400;
+			  line-height: 16px; 
+              text-overflow: ellipsis;
+			  letter-spacing: 0.04px;	
 			}
 			
 			.highlight .editor-bar {
 			  opacity: 1;
+              pointer-events: auto;
 			}
 			
 			.highlight .editor-add {
@@ -931,11 +942,11 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
 				"iframe-height", iframeValue,
 				"iframe-height-name", iframeHeightName,
-				":width", "vars.vxScrollIframeWidth",
+				"width", width,
 				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
 				"ref", "scrollIframe").
 				Attr(web.VAssign("vars",
-					fmt.Sprintf(`{vxScrollIframeWidth:"%s",hasContainer:%v,el:$}`, width, len(comps)))...)
+					fmt.Sprintf(`{hasContainer:%v,el:$}`, len(comps)))...)
 			r = scrollIframe
 			if !isReadonly && len(comps) == 0 {
 				r = h.Components(
