@@ -5,9 +5,15 @@ import (
 	"fmt"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/compo"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
+
+func init() {
+	compo.RegisterType((*ChildCompo)(nil))
+	compo.RegisterType((*SampleCompo)(nil))
+}
 
 type ChildCompo struct {
 	ID string
@@ -19,18 +25,18 @@ type ChildCompo struct {
 	// clickExtra func(*ChildCompo) string
 }
 
-func (c *ChildCompo) PortalName() string {
+func (c *ChildCompo) CompoName() string {
 	return fmt.Sprintf("ChildCompo:%s", c.ID)
 }
 
 func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	return Div(
+	return compo.Reloadify(c,
 		Text("I'm a child:  "),
 		Br(),
 		Text(fmt.Sprintf("EmailInChildCompo: %s", c.Email)),
 		Br(),
 		Button("ChangeEmailViaChildReloadSelf").Attr("@click",
-			ReloadAction(c, func(cloned *ChildCompo) {
+			compo.ReloadAction(c, func(cloned *ChildCompo) {
 				cloned.Email += "-ChildSelfReloaded"
 			}).Go(),
 		),
@@ -51,43 +57,43 @@ type SampleCompo struct {
 	Child *ChildCompo
 }
 
-func (c *SampleCompo) PortalName() string {
+func (c *SampleCompo) CompoName() string {
 	return fmt.Sprintf("SampleCompo:%s", c.ID)
 }
 
 func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	// c.Child.ClickExtra = Reload(c, func(cloned *SampleCompo) {
+	// c.Child.ClickExtra = ReloadAction(c, func(cloned *SampleCompo) {
 	// 	cloned.Child.ExtraContent += "-ClickedExtra"
-	// })
+	// }).Go()
 	// c.Child.clickExtra = func(child *ChildCompo) string {
 	// 	return Reload(c, func(cloned *SampleCompo) {
 	// 		cloned.Child.ExtraContent += "-ClickedExtra"
 	// 	})
 	// }
-	return Div(
+	return compo.Reloadify(c,
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
 		}),
 		Button("SwitchShowPre").Attr("@click",
-			ReloadAction(c, func(cloned *SampleCompo) {
+			compo.ReloadAction(c, func(cloned *SampleCompo) {
 				cloned.ShowPre = !cloned.ShowPre
 			}).Go(),
 		),
 		Button("DeleteItem").Attr("@click",
-			PlaidAction(c, "DeleteItem", DeleteItemRequest{
+			compo.PlaidAction(c, c.OnDeleteItem, DeleteItemRequest{
 				ModelId: c.ModelId,
 			}).Go(),
 		),
 		Div().Style("border: 1px solid black; padding: 10px; margin: 10px;").Children(
-			Reloadify(c.Child),
+			c.Child,
 		),
 		Button("ChangeEmailViaReloadSelf").Attr("@click",
-			ReloadAction(c, func(cloned *SampleCompo) {
+			compo.ReloadAction(c, func(cloned *SampleCompo) {
 				cloned.Child.Email += "-ParentReloaded"
 			}).Go(),
 		),
 		Button("ChangeEmailViaReloadChild").Attr("@click",
-			ReloadAction(c.Child, func(cloned *ChildCompo) {
+			compo.ReloadAction(c.Child, func(cloned *ChildCompo) {
 				cloned.Email += "-ChildReloaded"
 			}).Go(),
 		),
@@ -105,23 +111,23 @@ func (c *SampleCompo) OnDeleteItem(req DeleteItemRequest) (r web.EventResponse, 
 
 func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 	pr.Body = Components(
-		Reloadify(&SampleCompo{
+		&SampleCompo{
 			ID:      "666",
 			ModelId: "model666",
 			Child: &ChildCompo{
 				ID:    "child666",
 				Email: "666@gmail.com",
 			},
-		}),
+		},
 		Br(), Br(), Br(),
-		Reloadify(&SampleCompo{
+		&SampleCompo{
 			ID:      "888",
 			ModelId: "model888",
 			Child: &ChildCompo{
 				ID:    "child888",
 				Email: "888@gmail.com",
 			},
-		}),
+		},
 	)
 	return
 }
