@@ -202,7 +202,7 @@ const (
 	compoActionReload = "Reload"
 )
 
-func ReloadAction[T Reloadable](compo any, f func(cloned T)) string {
+func ReloadAction[T Reloadable](compo any, f func(cloned T)) *web.VueEventTagBuilder {
 	var cloned T
 	switch c := compo.(type) {
 	case *portalWrapper[T]:
@@ -215,7 +215,7 @@ func ReloadAction[T Reloadable](compo any, f func(cloned T)) string {
 	if f != nil {
 		f(cloned)
 	}
-	return PlaidAction(cloned, compoActionReload, struct{}{}).Go()
+	return PlaidAction(cloned, compoActionReload, struct{}{})
 }
 
 // OnReload default action handler

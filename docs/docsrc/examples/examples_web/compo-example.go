@@ -32,7 +32,7 @@ func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Button("ChangeEmailViaChildReloadSelf").Attr("@click",
 			ReloadAction(c, func(cloned *ChildCompo) {
 				cloned.Email += "-ChildSelfReloaded"
-			}),
+			}).Go(),
 		),
 		Br(),
 		Text(c.ExtraContent),
@@ -68,21 +68,29 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
 		}),
-		Button("SwitchShowPre").Attr("@click", ReloadAction(c, func(cloned *SampleCompo) {
-			cloned.ShowPre = !cloned.ShowPre
-		})),
-		Button("DeleteItem").Attr("@click", PlaidAction(c, "DeleteItem", DeleteItemRequest{
-			ModelId: c.ModelId,
-		}).Go()),
+		Button("SwitchShowPre").Attr("@click",
+			ReloadAction(c, func(cloned *SampleCompo) {
+				cloned.ShowPre = !cloned.ShowPre
+			}).Go(),
+		),
+		Button("DeleteItem").Attr("@click",
+			PlaidAction(c, "DeleteItem", DeleteItemRequest{
+				ModelId: c.ModelId,
+			}).Go(),
+		),
 		Div().Style("border: 1px solid black; padding: 10px; margin: 10px;").Children(
 			Reloadify(c.Child),
 		),
-		Button("ChangeEmailViaReloadSelf").Attr("@click", ReloadAction(c, func(cloned *SampleCompo) {
-			cloned.Child.Email += "-ParentReloaded"
-		})),
-		Button("ChangeEmailViaReloadChild").Attr("@click", ReloadAction(c.Child, func(cloned *ChildCompo) {
-			cloned.Email += "-ChildReloaded"
-		})),
+		Button("ChangeEmailViaReloadSelf").Attr("@click",
+			ReloadAction(c, func(cloned *SampleCompo) {
+				cloned.Child.Email += "-ParentReloaded"
+			}).Go(),
+		),
+		Button("ChangeEmailViaReloadChild").Attr("@click",
+			ReloadAction(c.Child, func(cloned *ChildCompo) {
+				cloned.Email += "-ChildReloaded"
+			}).Go(),
+		),
 	).MarshalHTML(ctx)
 }
 
@@ -97,14 +105,14 @@ func (c *SampleCompo) OnDeleteItem(req DeleteItemRequest) (r web.EventResponse, 
 
 func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 	pr.Body = Components(
-		Reloadify(Reloadify(&SampleCompo{
+		Reloadify(&SampleCompo{
 			ID:      "666",
 			ModelId: "model666",
 			Child: &ChildCompo{
 				ID:    "child666",
 				Email: "666@gmail.com",
 			},
-		})),
+		}),
 		Br(), Br(), Br(),
 		Reloadify(&SampleCompo{
 			ID:      "888",
