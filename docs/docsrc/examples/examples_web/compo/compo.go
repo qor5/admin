@@ -91,19 +91,19 @@ func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err
 		}
 		ctxValue := reflect.ValueOf(ctx.R.Context())
 
-		var result []reflect.Value
-		if numIn == 1 {
-			result = method.Call([]reflect.Value{ctxValue})
-		} else if numIn == 2 {
+		params := []reflect.Value{ctxValue}
+		if numIn == 2 {
 			argType := methodType.In(1)
 			argValue := reflect.New(argType).Interface()
 			err := json.Unmarshal([]byte(action.Request), &argValue)
 			if err != nil {
 				return r, errors.Wrapf(err, "failed to unmarshal action request to %T", argValue)
 			}
-			result = method.Call([]reflect.Value{ctxValue, reflect.ValueOf(argValue).Elem()})
+			params = append(params, reflect.ValueOf(argValue).Elem())
+
 		}
 
+		result := method.Call(params)
 		if len(result) != 2 || !result[0].CanInterface() || !result[1].CanInterface() {
 			return r, errors.Errorf("action method %q has incorrect return values", action.Method)
 		}
