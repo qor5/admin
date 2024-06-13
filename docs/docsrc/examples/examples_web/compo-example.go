@@ -3,6 +3,7 @@ package examples_web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -49,6 +50,9 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Button("DeleteItem").Attr("@click", CompoAction(c, "DeleteItem", DeleteItemRequest{
 			ModelId: c.ModelId,
 		}).Go()),
+		Button("UpdateItem").Attr("@click", CompoAction(c, "UpdateItem", UpdateItemRequest{
+			ModelId: c.ModelId,
+		}).Go()),
 	).MarshalHTML(ctx)
 }
 
@@ -57,9 +61,16 @@ type DeleteItemRequest struct {
 }
 
 func (c *SampleCompo) OnDeleteItem(req DeleteItemRequest) (r web.EventResponse, err error) {
-	// TODO: 直接 alert 和 console.log 都不行
-	r.RunScript = fmt.Sprintf("console.log('Delete item %s')", req.ModelId)
+	r.RunScript = fmt.Sprintf("console.log('Deleted item %s')", req.ModelId)
 	return
+}
+
+type UpdateItemRequest struct {
+	ModelId string
+}
+
+func (c *SampleCompo) OnUpdateItem(req UpdateItemRequest) (r web.EventResponse, err error) {
+	return r, errors.New("not implemented")
 }
 
 func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
@@ -171,10 +182,13 @@ func eventDispatchCompoActionHandler(ctx *web.EventContext) (r web.EventResponse
 
 		// 调用方法并处理返回值
 		result := actionMethod.Call([]reflect.Value{reflect.ValueOf(argValue).Elem()})
-		if len(result) != 2 || result[0].CanInterface() || result[1].CanInterface() {
+		if len(result) != 2 || !result[0].CanInterface() || !result[1].CanInterface() {
 			return r, fmt.Errorf("abnormal action result %v", result)
 		}
 		r = result[0].Interface().(web.EventResponse)
+		if result[1].IsNil() {
+			return r, nil
+		}
 		err = result[1].Interface().(error)
 		return r, err
 	}
