@@ -41,7 +41,11 @@ func (c *ChildCompo) PortalName() string {
 
 func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return Div(
+		Text("I'm a child:  "),
 		Text(fmt.Sprintf("EmailInChildCompo: %s", c.Email)),
+		Button("ChildReloadSelf").Attr("@click", Reload(c, func(cloned *ChildCompo) {
+			cloned.Email += "-ChildSelfReloaded"
+		})),
 	).MarshalHTML(ctx)
 }
 
@@ -72,12 +76,14 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Button("UpdateItem").Attr("@click", CompoAction(c, "UpdateItem", UpdateItemRequest{
 			ModelId: c.ModelId, // returns errors.New("not implemented")
 		}).Go()),
-		Reloadify(c.Child),
-		Button("ReloadSelf").Attr("@click", Reload(c, func(cloned *SampleCompo) {
-			cloned.Child.Email += "-YYYYY"
+		Div(
+			Reloadify(c.Child),
+		).Style("border: 1px solid black; padding: 10px; margin: 10px;"),
+		Button("ChangeEmailViaReloadSelf").Attr("@click", Reload(c, func(cloned *SampleCompo) {
+			cloned.Child.Email += "-ParentReloaded"
 		})),
-		Button("ReloadChild").Attr("@click", Reload(c.Child, func(cloned *ChildCompo) {
-			cloned.Email += "-Reloaded"
+		Button("ChangeEmailViaReloadChild").Attr("@click", Reload(c.Child, func(cloned *ChildCompo) {
+			cloned.Email += "-ChildReloaded"
 		})),
 	).MarshalHTML(ctx)
 }
@@ -105,7 +111,7 @@ func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 			Id: "666", ModelId: "model666",
 			Child: &ChildCompo{Id: "child666", Email: "666@gmail.com"},
 		}),
-		Br(),
+		Br(), Br(), Br(),
 		Reloadify(&SampleCompo{
 			Id: "888", ModelId: "model888",
 			Child: &ChildCompo{Id: "child888", Email: "888@gmail.com"},
