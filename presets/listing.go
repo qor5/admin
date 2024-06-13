@@ -593,7 +593,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 		panic("bulk required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -655,7 +655,7 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		panic("action required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -1426,7 +1426,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render bulk actions
 	for _, ba := range b.bulkActions {
-		if b.mb.Info().Verifier().SnakeDo(PermBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -1458,7 +1458,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render actions
 	for _, ba := range b.actions {
-		if b.mb.Info().Verifier().SnakeDo(PermActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 

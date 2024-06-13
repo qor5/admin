@@ -1,16 +1,19 @@
 package presets
 
 const (
-	PermModule = "presets"
-	PermList   = "presets:list"
-	PermGet    = "presets:get"
-	PermCreate = "presets:create"
-	PermUpdate = "presets:update"
-	PermDelete = "presets:delete"
+	PermModule          = "presets"
+	PermList            = "presets:list"
+	PermGet             = "presets:get"
+	PermCreate          = "presets:create"
+	PermUpdate          = "presets:update"
+	PermDelete          = "presets:delete"
+	PermActions         = "presets:actions:*"
+	PermDoListingAction = "presets:do_listing_action:*"
+	PermBulkActions     = "presets:bulk_actions:*"
 
-	PermActions         = "actions"
-	PermDoListingAction = "do_listing_action"
-	PermBulkActions     = "bulk_actions"
+	permActions         = "actions"
+	permDoListingAction = "do_listing_action"
+	permBulkActions     = "bulk_actions"
 )
 
 var PermRead = []string{PermList, PermGet}
