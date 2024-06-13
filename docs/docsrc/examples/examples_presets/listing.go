@@ -59,11 +59,23 @@ func PresetsHelloWorld(b *presets.Builder, db *gorm.DB) (
 
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
-
+	cl = mb.Listing()
+	ce = mb.Editing()
 	return
 }
 
 // @snippet_end
+
+func PresetsKeywordSearchOff(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	mb, cl, ce, dp = PresetsHelloWorld(b, db)
+	cl.KeywordsSearchOff(true)
+	return
+}
 
 // @snippet_begin(PresetsListingCustomizationFieldsSample)
 
