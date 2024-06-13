@@ -51,7 +51,7 @@ func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 type SampleCompo struct {
 	ID string
 
-	ModelId string
+	ModelID string
 	ShowPre bool
 
 	Child *ChildCompo
@@ -81,7 +81,7 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		),
 		Button("DeleteItem").Attr("@click",
 			compo.PlaidAction(c, c.OnDeleteItem, DeleteItemRequest{
-				ModelId: c.ModelId,
+				Extra: "extra",
 			}).Go(),
 		),
 		Div().Style("border: 1px solid black; padding: 10px; margin: 10px;").Children(
@@ -101,11 +101,11 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 }
 
 type DeleteItemRequest struct {
-	ModelId string
+	Extra string
 }
 
 func (c *SampleCompo) OnDeleteItem(req DeleteItemRequest) (r web.EventResponse, err error) {
-	r.RunScript = fmt.Sprintf("alert('Deleted item %s')", req.ModelId)
+	r.RunScript = fmt.Sprintf("alert('Deleted item %s (%s)')", c.ModelID, req.Extra)
 	return
 }
 
@@ -113,7 +113,7 @@ func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 	pr.Body = Components(
 		&SampleCompo{
 			ID:      "666",
-			ModelId: "model666",
+			ModelID: "model666",
 			Child: &ChildCompo{
 				ID:    "child666",
 				Email: "666@gmail.com",
@@ -122,7 +122,7 @@ func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 		Br(), Br(), Br(),
 		&SampleCompo{
 			ID:      "888",
-			ModelId: "model888",
+			ModelID: "model888",
 			Child: &ChildCompo{
 				ID:    "child888",
 				Email: "888@gmail.com",
