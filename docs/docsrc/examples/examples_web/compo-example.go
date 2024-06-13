@@ -126,7 +126,6 @@ func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 	return
 }
 
-var CompoExamplePB = web.Page(CompoExample).
-	EventFunc(eventDispatchCompoAction, eventDispatchCompoActionHandler)
+var CompoExamplePB = web.Page(CompoExample)
 
 var CompoExamplePath = examples.URLPathByFunc(CompoExample)

@@ -12,6 +12,10 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+func init() {
+	web.Default.RegisterEventFunc(eventDispatchCompoAction, eventDispatchCompoActionHandler)
+}
+
 func Copy(dst, src any) error {
 	data, err := json.Marshal(src)
 	if err != nil {
@@ -76,7 +80,7 @@ func PlaidAction(compo h.HTMLComponent, actionName string, actionPayload any) *w
 	return web.Plaid().EventFunc(eventDispatchCompoAction).StringQuery(vs.Encode())
 }
 
-const eventDispatchCompoAction = "dispatchCompoAction"
+const eventDispatchCompoAction = "__dispatchCompoAction__"
 
 func eventDispatchCompoActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var action CompoAction
