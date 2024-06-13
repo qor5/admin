@@ -32,7 +32,11 @@ func Reload[T Reloadable](c T, f func(cloned T)) string {
 type ChildCompo struct {
 	Id string
 
-	Email string
+	Email        string
+	ExtraContent string
+
+	// ClickExtra string
+	// clickExtra func(*ChildCompo) string
 }
 
 func (c *ChildCompo) PortalName() string {
@@ -42,10 +46,17 @@ func (c *ChildCompo) PortalName() string {
 func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return Div(
 		Text("I'm a child:  "),
+		Br(),
 		Text(fmt.Sprintf("EmailInChildCompo: %s", c.Email)),
-		Button("ChildReloadSelf").Attr("@click", Reload(c, func(cloned *ChildCompo) {
+		Br(),
+		Button("ChangeEmailViaChildReloadSelf").Attr("@click", Reload(c, func(cloned *ChildCompo) {
 			cloned.Email += "-ChildSelfReloaded"
 		})),
+		Br(),
+		Text(c.ExtraContent),
+		Br(),
+		// Button("ClickExtra").Attr("@click", c.ClickExtra), // TODO: 这样信息不会丢失，但是貌似目前序列化有些问题
+		// Button("ClickExtra").Attr("@click", c.clickExtra(c)),  // TODO: 只 reload child 的话，这个信息就会丢失了
 	).MarshalHTML(ctx)
 }
 
@@ -63,6 +74,14 @@ func (c *SampleCompo) PortalName() string {
 }
 
 func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
+	// c.Child.ClickExtra = Reload(c, func(cloned *SampleCompo) {
+	// 	cloned.Child.ExtraContent += "-ClickedExtra"
+	// })
+	// c.Child.clickExtra = func(child *ChildCompo) string {
+	// 	return Reload(c, func(cloned *SampleCompo) {
+	// 		cloned.Child.ExtraContent += "-ClickedExtra"
+	// 	})
+	// }
 	return Div(
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
