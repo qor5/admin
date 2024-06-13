@@ -8,12 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
-
 	h "github.com/theplant/htmlgo"
 )
 
 func init() {
-	web.Default.RegisterEventFunc(eventDispatchCompoAction, eventDispatchCompoActionHandler)
+	Install(web.Default)
+}
+
+func Install(b *web.Builder) {
+	b.RegisterEventFunc(eventDispatchCompoAction, eventDispatchCompoActionHandler)
 }
 
 func Copy(dst, src any) error {
