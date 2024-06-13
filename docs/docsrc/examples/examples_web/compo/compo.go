@@ -1,6 +1,7 @@
 package compo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -50,6 +51,12 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 
 const eventDispatchAction = "__dispatch_compo_action__"
 
+var (
+	outType0 = reflect.TypeOf(web.EventResponse{})
+	outType1 = reflect.TypeOf((*error)(nil)).Elem()
+	inType0  = reflect.TypeOf((*context.Context)(nil)).Elem()
+)
+
 func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var action Action
 	if err = json.Unmarshal([]byte(ctx.R.FormValue(queryKeyAction)), &action); err != nil {
@@ -70,26 +77,31 @@ func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err
 	if method.IsValid() && method.Kind() == reflect.Func {
 		methodType := method.Type()
 		if methodType.NumOut() != 2 ||
-			methodType.Out(0) != reflect.TypeOf(web.EventResponse{}) ||
-			methodType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
+			methodType.Out(0) != outType0 ||
+			methodType.Out(1) != outType1 {
 			return r, errors.Errorf("action method %q has incorrect signature", action.Method)
 		}
 
-		var result []reflect.Value
-
 		numIn := methodType.NumIn()
-		if numIn == 0 {
-			result = method.Call(nil)
-		} else if numIn == 1 {
-			argType := methodType.In(0)
+		if numIn <= 0 || numIn > 2 {
+			return r, errors.Errorf("action method %q has incorrect number of arguments", action.Method)
+		}
+		if methodType.In(0) != inType0 {
+			return r, errors.Errorf("action method %q has incorrect signature", action.Method)
+		}
+		ctxValue := reflect.ValueOf(ctx.R.Context())
+
+		var result []reflect.Value
+		if numIn == 1 {
+			result = method.Call([]reflect.Value{ctxValue})
+		} else if numIn == 2 {
+			argType := methodType.In(1)
 			argValue := reflect.New(argType).Interface()
 			err := json.Unmarshal([]byte(action.Request), &argValue)
 			if err != nil {
 				return r, errors.Wrapf(err, "failed to unmarshal action request to %T", argValue)
 			}
-			result = method.Call([]reflect.Value{reflect.ValueOf(argValue).Elem()})
-		} else {
-			return r, errors.Errorf("action method %q has incorrect number of arguments", action.Method)
+			result = method.Call([]reflect.Value{ctxValue, reflect.ValueOf(argValue).Elem()})
 		}
 
 		if len(result) != 2 || !result[0].CanInterface() || !result[1].CanInterface() {

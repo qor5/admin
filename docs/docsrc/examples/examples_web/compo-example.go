@@ -104,7 +104,7 @@ type DeleteItemRequest struct {
 	Extra string
 }
 
-func (c *SampleCompo) OnDeleteItem(req DeleteItemRequest) (r web.EventResponse, err error) {
+func (c *SampleCompo) OnDeleteItem(ctx context.Context, req DeleteItemRequest) (r web.EventResponse, err error) {
 	r.RunScript = fmt.Sprintf("alert('Deleted item %s (%s)')", c.ModelID, req.Extra)
 	return
 }
