@@ -20,7 +20,7 @@ func PresetsModelBuilderExtensions(b *presets.Builder, db *gorm.DB) (
 	dp *presets.DetailingBuilder,
 ) {
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
-	mb.LayoutConfig(&presets.LayoutConfig{SearchBoxInvisible: true})
+	mb.LayoutConfig(&presets.LayoutConfig{})
 
 	eb := mb.Editing("Actions", "Name").ActionsFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return h.Components(

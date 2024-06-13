@@ -96,9 +96,8 @@ func New() *Builder {
 		brandTitle:           "Admin",
 		rightDrawerWidth:     "600",
 		verifier:             perm.NewVerifier(PermModule, nil),
-		homePageLayoutConfig: &LayoutConfig{SearchBoxInvisible: true},
+		homePageLayoutConfig: &LayoutConfig{},
 		notFoundPageLayoutConfig: &LayoutConfig{
-			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
@@ -862,7 +861,6 @@ func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width strin
 }
 
 type LayoutConfig struct {
-	SearchBoxInvisible          bool
 	NotificationCenterInvisible bool
 }
 
@@ -1266,7 +1264,6 @@ func (b *Builder) initMux() {
 			if m.layoutConfig == nil {
 				m.layoutConfig = &LayoutConfig{}
 			}
-			m.layoutConfig.SearchBoxInvisible = true
 		}
 		mux.Handle(
 			routePath,
