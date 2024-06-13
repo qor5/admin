@@ -56,7 +56,7 @@ type ListingBuilder struct {
 	conditions        []*SQLCondition
 	dialogWidth       string
 	dialogHeight      string
-	keywordsSearchOff bool
+	keywordSearchOff  bool
 	FieldsBuilder
 }
 
@@ -116,8 +116,8 @@ func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) KeywordsSearchOff(v bool) (r *ListingBuilder) {
-	b.keywordsSearchOff = v
+func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
+	b.keywordSearchOff = v
 	return b
 }
 
@@ -241,7 +241,7 @@ func (b *ListingBuilder) listingComponent(
 	}
 	var searchBoxDefault h.HTMLComponent
 
-	if !b.keywordsSearchOff {
+	if !b.keywordSearchOff {
 		searchBoxDefault = VResponsive(
 			web.Scope(
 				VTextField(
@@ -287,7 +287,7 @@ func (b *ListingBuilder) listingComponent(
 		if title == "" {
 			title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		}
-		if !b.keywordsSearchOff {
+		if !b.keywordSearchOff {
 			searchBoxDefault = VResponsive(
 				web.Scope(
 					VTextField(
@@ -1189,7 +1189,7 @@ func (b *ListingBuilder) getTableComponents(
 		SQLConditions:  b.conditions,
 	}
 
-	if b.keywordsSearchOff {
+	if b.keywordSearchOff {
 		searchParams.KeywordColumns = nil
 		searchParams.Keyword = ""
 	}

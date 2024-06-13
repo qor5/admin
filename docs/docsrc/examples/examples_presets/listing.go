@@ -73,7 +73,7 @@ func PresetsKeywordSearchOff(b *presets.Builder, db *gorm.DB) (
 	dp *presets.DetailingBuilder,
 ) {
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
-	cl.KeywordsSearchOff(true)
+	cl.KeywordSearchOff(true)
 	return
 }
 
