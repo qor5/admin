@@ -56,6 +56,7 @@ type ListingBuilder struct {
 	conditions        []*SQLCondition
 	dialogWidth       string
 	dialogHeight      string
+	keywordSearchOff  bool
 	FieldsBuilder
 }
 
@@ -112,6 +113,11 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 
 func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
+	return b
+}
+
+func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
+	b.keywordSearchOff = v
 	return b
 }
 
@@ -233,31 +239,35 @@ func (b *ListingBuilder) listingComponent(
 		fd.SetByQueryString(ctx.R.URL.RawQuery)
 		filterBar = b.filterBar(ctx, msgr, fd, inDialog)
 	}
-	searchBoxDefault := VResponsive(
-		web.Scope(
-			VTextField(
-				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-			).Density(DensityCompact).
-				Variant(FieldVariantOutlined).
-				Label(msgr.Search).
-				Flat(true).
-				Clearable(true).
-				HideDetails(true).
-				SingleLine(true).
-				ModelValue(ctx.R.URL.Query().Get("keyword")).
-				Attr("@keyup.enter", web.Plaid().
-					ClearMergeQuery("page").
-					Query("keyword", web.Var("[$event.target.value]")).
-					MergeQuery(true).
-					PushState(true).
-					Go()).
-				Attr("@click:clear", web.Plaid().
-					Query("keyword", "").
-					PushState(true).
-					Go()).
-				Class("mr-4"),
-		).VSlot("{ locals }").Init(`{isFocus: false}`),
-	).MaxWidth(200).MinWidth(200)
+	var searchBoxDefault h.HTMLComponent
+
+	if !b.keywordSearchOff {
+		searchBoxDefault = VResponsive(
+			web.Scope(
+				VTextField(
+					web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+				).Density(DensityCompact).
+					Variant(FieldVariantOutlined).
+					Label(msgr.Search).
+					Flat(true).
+					Clearable(true).
+					HideDetails(true).
+					SingleLine(true).
+					ModelValue(ctx.R.URL.Query().Get("keyword")).
+					Attr("@keyup.enter", web.Plaid().
+						ClearMergeQuery("page").
+						Query("keyword", web.Var("[$event.target.value]")).
+						MergeQuery(true).
+						PushState(true).
+						Go()).
+					Attr("@click:clear", web.Plaid().
+						Query("keyword", "").
+						PushState(true).
+						Go()).
+					Class("mr-4"),
+			).VSlot("{ locals }").Init(`{isFocus: false}`),
+		).MaxWidth(200).MinWidth(200)
+	}
 	dataTable, dataTableAdditions := b.getTableComponents(ctx, inDialog)
 
 	var (
@@ -277,7 +287,7 @@ func (b *ListingBuilder) listingComponent(
 		if title == "" {
 			title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
 		}
-		if b.mb.layoutConfig == nil || !b.mb.layoutConfig.SearchBoxInvisible {
+		if !b.keywordSearchOff {
 			searchBoxDefault = VResponsive(
 				web.Scope(
 					VTextField(
@@ -583,7 +593,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 		panic("bulk required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -645,7 +655,7 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		panic("action required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -1179,6 +1189,11 @@ func (b *ListingBuilder) getTableComponents(
 		SQLConditions:  b.conditions,
 	}
 
+	if b.keywordSearchOff {
+		searchParams.KeywordColumns = nil
+		searchParams.Keyword = ""
+	}
+
 	searchParams.Page, _ = strconv.ParseInt(qs.Get("page"), 10, 64)
 	if searchParams.Page == 0 {
 		searchParams.Page = 1
@@ -1411,7 +1426,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render bulk actions
 	for _, ba := range b.bulkActions {
-		if b.mb.Info().Verifier().SnakeDo(PermBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -1443,7 +1458,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render actions
 	for _, ba := range b.actions {
-		if b.mb.Info().Verifier().SnakeDo(PermActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 

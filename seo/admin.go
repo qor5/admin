@@ -56,7 +56,6 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		Label("SEO").
 		RightDrawerWidth("1000").
 		LayoutConfig(&presets.LayoutConfig{
-			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
 
