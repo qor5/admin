@@ -20,7 +20,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	activityBuilder := activity.New(db)
 	b.Use(activityBuilder)
 
-	// @snippet_en
+	// @snippet_end
 
 	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
@@ -28,7 +28,6 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		Title string
 		Code  string
 		Price float64
-		Notes []activity.UserNote `gorm:"polymorphic:Resource;"`
 	}
 
 	err := db.AutoMigrate(&WithActivityProduct{})

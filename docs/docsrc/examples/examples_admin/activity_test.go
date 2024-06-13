@@ -1,8 +1,11 @@
 package examples_admin
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
@@ -47,20 +50,38 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 1"},
 		},
 		{
-			Name:  "Add Note",
+			Name:  "Create note",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products").
+					PageURL("/with-activity-products?__execute_event__=note_CreateNoteEvent").
 					AddField("resource_id", "1").
 					AddField("resource_type", "WithActivityProduct").
-					AddField("Content", "This is a new note").
-					AddField("event", "createNote").
+					AddField("Content", "Hello content, I am writing a content").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"This is a new note"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Hello content, I am writing a content"},
+		},
+		{
+			Name:  "create note with invalid data",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=note_CreateNoteEvent").
+					AddField("resource_type", "WithActivityProduct").
+					AddField("Content", "Hello content, I am writing a content").
+					BuildEventFuncRequest()
+				return req
+			},
+			PageMatch: func(t *testing.T, body *bytes.Buffer) {
+				fmt.Println(body.String())
+				if !strings.Contains(body.String(), "Missing required parameter") {
+					t.Error("didn't check correct")
+				}
+			},
 		},
 		{
 			Name:  "Delete Note",
@@ -68,7 +89,7 @@ func TestActivity(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=DeleteNote&id=1").
+					PageURL("/with-activity-products?__execute_event__=note_UpdateUserNoteEvent&id=1").
 					BuildEventFuncRequest()
 				return req
 			},

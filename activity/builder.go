@@ -29,7 +29,7 @@ type contextKey int
 
 const (
 	CreatorContextKey contextKey = iota
-	DBContextKey                 = 1 // get the db from context
+	DBContextKey
 )
 
 type AfterCreateFunc func(db *gorm.DB) error
@@ -60,18 +60,21 @@ type TimelineItem struct {
 
 // @snippet_end
 
-func (b *Builder) Use(middleware Middleware) *Builder {
-	b.afterCreateFunc = middleware(b.afterCreateFunc)
-	return b
-}
-
 func (b *Builder) WrapAfterCreateFunc(w AfterCreateFuncWrapper) *Builder {
 	b.afterCreateFunc = w(b.afterCreateFunc)
 	return b
 }
 
-func (ab *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
-	ab.RegisterModel(m)
+func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
+	// Register the model
+	b.RegisterModel(m)
+
+	db := b.db
+	m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
+	m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
+	m.RegisterEventFunc(deleteNoteEvent, deleteNoteAction(b, m))
+	m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
+
 	return nil
 }
 
@@ -91,16 +94,18 @@ func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
 		db:                db,
 		creatorContextKey: CreatorContextKey,
 		dbContextKey:      DBContextKey,
-		logModel:          &ActivityLog{},
 	}
+
+	ab.logModelInstall = ab.defaultLogModelInstall
 
 	if len(logModel) > 0 {
 		ab.logModel = logModel[0]
+	} else {
+		ab.logModel = &ActivityLog{}
 	}
 
 	if err := db.AutoMigrate(ab.logModel); err != nil {
-		fmt.Printf("failed to migrate log model: %w", err)
-		return nil
+		panic(err)
 	}
 
 	// Default permission policy
@@ -108,6 +113,20 @@ func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
 		ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).On("*:activity_logs").On("*:activity_logs:*")
 
 	return ab
+}
+
+// GetActivityLogs get activity logs
+func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
+	objs := ab.GetCustomizeActivityLogs(m, db)
+	if objs == nil {
+		return nil
+	}
+
+	logs, ok := objs.(*[]*ActivityLog)
+	if !ok {
+		return nil
+	}
+	return *logs
 }
 
 // GetCustomizeActivityLogs get customize activity logs
