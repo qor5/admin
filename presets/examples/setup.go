@@ -239,7 +239,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		}
 		return VTextField().
 			Attr(web.VField("ApprovalComment", comment)...).
-			Label("Comment").
+			Label("Content").
 			ErrorMessages(errorMessage)
 	})
 

@@ -296,7 +296,7 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 			return v.VTextField().
 				Variant("underlined").
 				Attr(web.VField("ApprovalComment", comment)...).
-				Label("Comment").
+				Label("Content").
 				ErrorMessages(errorMessage)
 		})
 

@@ -53,7 +53,9 @@ type ActivityLog struct {
 	ModelLink  string
 	ModelDiffs string `sql:"type:text;"`
 
-	Comment string `gorm:"type:text;"`
+	Content      string `gorm:"type:text;"`
+	ResourceID   uint
+	ResourceType string
 }
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {

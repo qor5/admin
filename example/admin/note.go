@@ -28,10 +28,6 @@ SELECT DISTINCT split_part(resource_id, '_', 1)::integer
 FROM subquery
 ))`
 
-var NoteAfterCreateFunc = func(db *gorm.DB) (err error) {
-	return db.Exec(`DELETE FROM "user_unread_notes";`).Error
-}
-
 type UserUnreadNote struct {
 	gorm.Model
 

@@ -154,10 +154,21 @@ func NewConfig(db *gorm.DB) Config {
 
 	utils.Install(b)
 
+	var NoteAfterCreateFunc = func(db *gorm.DB) (err error) {
+		return db.Exec(`DELETE FROM "user_unread_notes";`).Error
+	}
+
 	// @snippet_begin(ActivityExample)
 	ab := activity.New(db).
-		WrapAfterCreateFunc(func(in activity.AfterCreateFunc) activity.AfterCreateFunc {
-			return NoteAfterCreateFunc
+		WrapSaveFunc(func(in activity.DBOperationFuncWrapper) activity.DBOperationFuncWrapper {
+			return func(next activity.DatabaseOperationFunc) activity.DatabaseOperationFunc {
+				return func(db *gorm.DB) error {
+					if err := in(next)(db); err != nil {
+						return err
+					}
+					return NoteAfterCreateFunc(db)
+				}
+			}
 		}).
 		CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {

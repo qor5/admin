@@ -32,9 +32,34 @@ const (
 	DBContextKey
 )
 
-type AfterCreateFunc func(db *gorm.DB) error
+type ActionFunc func(ctx *web.EventContext) (r web.EventResponse, err error)
 
-type AfterCreateFuncWrapper func(in AfterCreateFunc) AfterCreateFunc
+type Wrapper struct {
+	Before ActionFunc
+	After  ActionFunc
+}
+
+func (w *Wrapper) Wrap(action ActionFunc) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		if w.Before != nil {
+			if r, err = w.Before(ctx); err != nil {
+				return
+			}
+		}
+
+		if r, err = action(ctx); err != nil {
+			return
+		}
+
+		if w.After != nil {
+			if r, err = w.After(ctx); err != nil {
+				return
+			}
+		}
+
+		return
+	}
+}
 
 // @snippet_begin(ActivityBuilder)
 // Builder struct contains all necessary fields
@@ -48,21 +73,16 @@ type Builder struct {
 	tabHeading        func(ActivityLogInterface) string // tab heading format
 	permPolicy        *perm.PolicyBuilder               // permission policy
 	logModelInstall   presets.ModelInstallFunc          // log model install
-	afterCreateFunc   AfterCreateFunc
+	wrapper           Wrapper
 }
+
+// @snippet_end
 
 type TimelineItem struct {
 	Timestamp   time.Time
 	Description string
 	User        string
 	Icon        string
-}
-
-// @snippet_end
-
-func (b *Builder) WrapAfterCreateFunc(w AfterCreateFuncWrapper) *Builder {
-	b.afterCreateFunc = w(b.afterCreateFunc)
-	return b
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
@@ -314,7 +334,7 @@ func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
 	for _, log := range logs {
 		timelineData = append(timelineData, TimelineItem{
 			Timestamp:   log.CreatedAt,
-			Description: log.Action + ": " + log.Comment,
+			Description: log.Action + ": " + log.Content,
 			User:        log.Creator,
 			Icon:        "mdi-activity",
 		})
