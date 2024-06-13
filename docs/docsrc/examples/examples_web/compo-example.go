@@ -14,16 +14,16 @@ import (
 	. "github.com/theplant/htmlgo"
 )
 
-type PortalCompo interface {
+type Reloadable interface {
 	HTMLComponent
 	PortalName() string
 }
 
-func Portalize[T PortalCompo](compo T) HTMLComponent {
+func Reloadify[T Reloadable](compo T) HTMLComponent {
 	return web.Portal(compo).Name(compo.PortalName())
 }
 
-func ReloadPortalize[T PortalCompo](c T, f func(cloned T)) string {
+func Reload[T Reloadable](c T, f func(cloned T)) string {
 	cloned := MustClone(c)
 	f(cloned)
 	return CompoAction(cloned, compoActionReload, struct{}{}).Go()
@@ -63,21 +63,21 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
 		}),
-		Button("SwitchShowPre").Attr("@click", ReloadPortalize(c, func(cloned *SampleCompo) {
+		Button("SwitchShowPre").Attr("@click", Reload(c, func(cloned *SampleCompo) {
 			cloned.ShowPre = !cloned.ShowPre
 		})),
 		Button("DeleteItem").Attr("@click", CompoAction(c, "DeleteItem", DeleteItemRequest{
 			ModelId: c.ModelId,
 		}).Go()),
 		Button("UpdateItem").Attr("@click", CompoAction(c, "UpdateItem", UpdateItemRequest{
-			ModelId: c.ModelId,
+			ModelId: c.ModelId, // returns errors.New("not implemented")
 		}).Go()),
-		Portalize(c.Child),
-		Button("ReloadChild").Attr("@click", ReloadPortalize(c.Child, func(cloned *ChildCompo) {
-			cloned.Email += "-Reloaded"
-		})),
-		Button("ReloadSelf").Attr("@click", ReloadPortalize(c, func(cloned *SampleCompo) {
+		Reloadify(c.Child),
+		Button("ReloadSelf").Attr("@click", Reload(c, func(cloned *SampleCompo) {
 			cloned.Child.Email += "-YYYYY"
+		})),
+		Button("ReloadChild").Attr("@click", Reload(c.Child, func(cloned *ChildCompo) {
+			cloned.Email += "-Reloaded"
 		})),
 	).MarshalHTML(ctx)
 }
@@ -101,12 +101,12 @@ func (c *SampleCompo) OnUpdateItem(req UpdateItemRequest) (r web.EventResponse, 
 
 func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 	pr.Body = Components(
-		Portalize(&SampleCompo{
+		Reloadify(&SampleCompo{
 			Id: "666", ModelId: "model666",
 			Child: &ChildCompo{Id: "child666", Email: "666@gmail.com"},
 		}),
 		Br(),
-		Portalize(&SampleCompo{
+		Reloadify(&SampleCompo{
 			Id: "888", ModelId: "model888",
 			Child: &ChildCompo{Id: "child888", Email: "888@gmail.com"},
 		}),
@@ -156,7 +156,7 @@ func CompoAction(compo HTMLComponent, compoAction any, compoActionPayload any) *
 	case string:
 		actionName = v
 	default:
-		// TODO: 测试了不行，传方法指针进来拿不到原方法名称，只有方法定义
+		// TODO: 测试了不行，传方法指针进来拿不到原方法名称，只有方法定义，需要找其他方法
 		fullName := reflect.TypeOf(v).String()
 		parts := strings.Split(fullName, ".")
 		actionName = parts[len(parts)-1]
@@ -228,7 +228,7 @@ func eventDispatchCompoActionHandler(ctx *web.EventContext) (r web.EventResponse
 	// TODO: 这样写貌似不够优雅
 	switch valCompoAction {
 	case compoActionReload:
-		portalCompo, ok := compo.(PortalCompo)
+		portalCompo, ok := compo.(Reloadable)
 		if !ok {
 			return r, fmt.Errorf("%s cannot handle the Reload action", valCompoType)
 		}
