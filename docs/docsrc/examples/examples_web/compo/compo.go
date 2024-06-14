@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"reflect"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -28,7 +27,7 @@ type Action struct {
 	Request   string `json:"request,omitempty"` // json string
 }
 
-const queryKeyAction = "__compo_action__"
+const fieldKeyAction = "__compo_action__"
 
 func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBuilder {
 	var methodName string
@@ -39,14 +38,14 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 		methodName = GetFuncName(method)
 	}
 
-	vs := url.Values{}
-	vs.Set(queryKeyAction, PrettyJSONString(Action{
-		CompoType: fmt.Sprintf("%T", c),
-		Compo:     h.JSONString(c),
-		Method:    methodName,
-		Request:   h.JSONString(request),
-	}))
-	return web.Plaid().EventFunc(eventDispatchAction).StringQuery(vs.Encode())
+	return web.Plaid().
+		EventFunc(eventDispatchAction).
+		FieldValue(fieldKeyAction, PrettyJSONString(Action{
+			CompoType: fmt.Sprintf("%T", c),
+			Compo:     h.JSONString(c),
+			Method:    methodName,
+			Request:   h.JSONString(request),
+		}))
 }
 
 const eventDispatchAction = "__dispatch_compo_action__"
@@ -59,7 +58,7 @@ var (
 
 func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var action Action
-	if err = json.Unmarshal([]byte(ctx.R.FormValue(queryKeyAction)), &action); err != nil {
+	if err = json.Unmarshal([]byte(ctx.R.FormValue(fieldKeyAction)), &action); err != nil {
 		return r, errors.Wrap(err, "failed to unmarshal compo action")
 	}
 
@@ -100,7 +99,6 @@ func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err
 				return r, errors.Wrapf(err, "failed to unmarshal action request to %T", argValue)
 			}
 			params = append(params, reflect.ValueOf(argValue).Elem())
-
 		}
 
 		result := method.Call(params)
