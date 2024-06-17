@@ -2,6 +2,7 @@ package examples_admin
 
 import (
 	"fmt"
+	"github.com/qor5/x/v3/perm"
 	"net/http"
 	"strings"
 
@@ -117,6 +118,13 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 	puBuilder := publish.New(db, nil)
+	if b.GetPermission() == nil {
+		b.Permission(
+			perm.New().Policies(
+				perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+			),
+		)
+	}
 	b.Use(puBuilder)
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
