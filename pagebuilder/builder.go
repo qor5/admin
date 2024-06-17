@@ -145,7 +145,9 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		URIPrefix(prefix).
 		DetailLayoutFunc(r.pageEditorLayout).
 		SetI18n(i18nB)
-
+	r.ps.Permission(perm.New().Policies(
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+	))
 	return r
 }
 
