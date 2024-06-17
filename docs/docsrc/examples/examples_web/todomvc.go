@@ -11,6 +11,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/rs/xid"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -18,11 +19,14 @@ func init() {
 	compo.RegisterType((*TodoItem)(nil))
 }
 
-// Global storage for todos
-// TODO: 需要重构数据源，线程安全等等
-var (
-	todos     = []*Todo{}
-	todosLock sync.RWMutex
+const NotifTodosChanged = "NotifTodosChanged"
+
+type Visibility string
+
+const (
+	VisibilityAll       Visibility = "all"
+	VisibilityActive    Visibility = "active"
+	VisibilityCompleted Visibility = "completed"
 )
 
 type Todo struct {
@@ -32,47 +36,54 @@ type Todo struct {
 }
 
 type TodoApp struct {
-	ID         string `json:"id"`
-	Visibility string `json:"visibility"`
-	EditedTodo *Todo  `json:"edited_todo"`
+	ID         string     `json:"id"`
+	Visibility Visibility `json:"visibility"`
 }
 
-func (a *TodoApp) CompoName() string {
-	return fmt.Sprintf("TodoApp:%s", a.ID)
+func (c *TodoApp) CompoName() string {
+	return fmt.Sprintf("TodoApp:%s", c.ID)
 }
 
-func (a *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
-	filteredTodos := a.FilteredTodos()
-	remaining := a.Remaining()
+func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
+	todos, err := StorageFromContext(ctx).List()
+	if err != nil {
+		return nil, err
+	}
 
-	filterCompos := make([]h.HTMLComponent, len(filteredTodos))
+	filteredTodos := c.filteredTodos(todos)
+	remaining := len(filterTodos(todos, func(todo *Todo) bool { return !todo.Completed }))
+
+	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
-		filterCompos[i] = &TodoItem{
-			ID:        todo.ID,
-			OnChanged: compo.ReloadAction(a, nil).Go(),
+		filteredTodoItems[i] = &TodoItem{
+			ID:   todo.ID,
+			todo: todo,
+			// OnChanged: compo.ReloadAction(a, nil).Go(),
 		}
 	}
 
-	return compo.Reloadify(a,
+	checkBoxID := fmt.Sprintf("%s-toggle-all", c.ID)
+	return compo.Reloadify(c,
+		web.Scope().Observer(NotifTodosChanged, compo.ReloadAction(c, nil).Go()),
 		h.Section().Class("todoapp").Children(
 			h.Header().Class("header").Children(
 				h.H1("Todos"),
-				h.Input("").Class("new-todo").Attr("placeholder", "What needs to be done?").
+				h.Input("").Class("new-todo").Attr("id", fmt.Sprintf("%s-creator", c.ID)).
+					Attr("placeholder", "What needs to be done?").
 					Attr("@keyup.enter", strings.Replace(
-						compo.PlaidAction(a, a.AddTodo, &AddTodoRequest{Title: "_placeholder_"}).Go(),
+						compo.PlaidAction(c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
 						`"_placeholder_"`,
 						"$event.target.value",
 						1,
 					)),
 			),
-			h.Section().Class("main").Attr("v-show", h.JSONString(len(todos) > 0)).
-				Children(
-					h.Input("").Type("checkbox").Attr("id", "toggle-all").Class("toggle-all").
-						Attr("checked", remaining == 0).
-						Attr("@change", compo.PlaidAction(a, a.ToggleAll, nil).Go()),
-					h.Label("Mark all as complete").Attr("for", "toggle-all"),
-					h.Ul().Class("todo-list").Children(filterCompos...),
-				),
+			h.Section().Class("main").Attr("v-show", h.JSONString(len(todos) > 0)).Children(
+				h.Input("").Type("checkbox").Attr("id", checkBoxID).Class("toggle-all").
+					Attr("checked", remaining == 0).
+					Attr("@change", compo.PlaidAction(c, c.ToggleAll, nil).Go()),
+				h.Label("Mark all as complete").Attr("for", checkBoxID),
+				h.Ul().Class("todo-list").Children(filteredTodoItems...),
+			),
 			h.Footer().Class("footer").Attr("v-show", h.JSONString(len(todos) > 0)).Children(
 				h.Span("").Class("todo-count").Children(
 					h.Strong(fmt.Sprintf("%d", remaining)),
@@ -80,141 +91,27 @@ func (a *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 				),
 				h.Ul().Class("filters").Children(
 					h.Li(
-						h.A(h.Text("All")).Attr("@click", compo.ReloadAction(a, func(cloned *TodoApp) {
-							cloned.Visibility = "all"
-						}).Go()),
+						h.A(h.Text("All")).ClassIf("selected", c.Visibility == VisibilityAll).
+							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+								cloned.Visibility = VisibilityAll
+							}).Go()),
 					),
 					h.Li(
-						h.A(h.Text("Active")).Attr("@click", compo.ReloadAction(a, func(cloned *TodoApp) {
-							cloned.Visibility = "active"
-						}).Go()),
+						h.A(h.Text("Active")).ClassIf("selected", c.Visibility == VisibilityActive).
+							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+								cloned.Visibility = VisibilityActive
+							}).Go()),
 					),
 					h.Li(
-						h.A(h.Text("Completed")).Attr("@click", compo.ReloadAction(a, func(cloned *TodoApp) {
-							cloned.Visibility = "completed"
-						}).Go()),
+						h.A(h.Text("Completed")).ClassIf("selected", c.Visibility == VisibilityCompleted).
+							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+								cloned.Visibility = VisibilityCompleted
+							}).Go()),
 					),
 				),
 			),
 		),
 	).MarshalHTML(ctx)
-}
-
-func (a *TodoApp) FilteredTodos() []*Todo {
-	todosLock.RLock()
-	defer todosLock.RUnlock()
-	switch a.Visibility {
-	case "active":
-		return filterTodos(todos, func(todo *Todo) bool { return !todo.Completed })
-	case "completed":
-		return filterTodos(todos, func(todo *Todo) bool { return todo.Completed })
-	default:
-		return todos
-	}
-}
-
-func (a *TodoApp) Remaining() int {
-	todosLock.RLock()
-	defer todosLock.RUnlock()
-	return len(filterTodos(todos, func(todo *Todo) bool { return !todo.Completed }))
-}
-
-func (a *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error) {
-	todosLock.Lock()
-	defer todosLock.Unlock()
-	allCompleted := true
-	for _, todo := range todos {
-		if !todo.Completed {
-			allCompleted = false
-			break
-		}
-	}
-	for _, todo := range todos {
-		todo.Completed = !allCompleted
-	}
-
-	compo.ApplyReloadToResponse(&r, a)
-	return
-}
-
-type AddTodoRequest struct {
-	Title string `json:"title"`
-}
-
-func (a *TodoApp) AddTodo(ctx context.Context, req *AddTodoRequest) (r web.EventResponse, err error) {
-	todosLock.Lock()
-	defer todosLock.Unlock()
-	todos = append(todos, &Todo{
-		ID:        xid.New().String(),
-		Title:     req.Title,
-		Completed: false,
-	})
-
-	compo.ApplyReloadToResponse(&r, a)
-	return
-}
-
-// TODO: 或许需要支持，可 todo 给到，也可 ID 去 fetch。
-type TodoItem struct {
-	ID        string `json:"id"`
-	OnChanged string `json:"on_changed"`
-}
-
-func (t *TodoItem) CompoName() string {
-	return fmt.Sprintf("TodoItem:%s", t.ID)
-}
-
-func (t *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
-	todo := fetchTodo(t.ID)
-	return h.Iff(todo != nil, func() h.HTMLComponent {
-		return h.Li().ClassIf("completed", todo.Completed).Children(
-			h.Div().Class("view").Children(
-				h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
-					Attr("@change", compo.PlaidAction(t, t.Toggle, nil).Go()),
-				h.Label(todo.Title),
-				h.Button("").Class("destroy").
-					Attr("@click", compo.PlaidAction(t, t.Remove, nil).Go()),
-			),
-		)
-	}).MarshalHTML(ctx)
-}
-
-func fetchTodo(id string) *Todo {
-	todosLock.RLock()
-	defer todosLock.RUnlock()
-	for _, v := range todos {
-		if v.ID == id {
-			return v
-		}
-	}
-	return nil
-}
-
-func (t *TodoItem) Toggle(ctx context.Context) (r web.EventResponse, err error) {
-	// TODO: 这样并不会线程安全
-	todo := fetchTodo(t.ID)
-	todo.Completed = !todo.Completed
-
-	r.RunScript = t.OnChanged
-	return
-}
-
-func (t *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) {
-	todosLock.Lock()
-	defer todosLock.Unlock()
-	index := -1
-	for i, todo := range todos {
-		if todo.ID == t.ID {
-			index = i
-			break
-		}
-	}
-	if index != -1 {
-		todos = append(todos[:index], todos[index+1:]...)
-	}
-
-	r.RunScript = t.OnChanged
-	return
 }
 
 func filterTodos(todos []*Todo, predicate func(*Todo) bool) []*Todo {
@@ -234,20 +131,228 @@ func pluralize(count int, singular, plural string) string {
 	return plural
 }
 
-func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
-	pr.Body = h.Components(
-		&TodoApp{
-			ID:         "TodoApp0",
-			Visibility: "all",
-		},
-		h.Br(), h.Br(), h.Br(),
-	)
-	ctx.Injector.HeadHTML(`
-	<link rel="stylesheet" type="text/css" href="https://unpkg.com/todomvc-app-css@2.4.1/index.css">
-		`)
+func (c *TodoApp) filteredTodos(todos []*Todo) []*Todo {
+	switch c.Visibility {
+	case VisibilityActive:
+		return filterTodos(todos, func(todo *Todo) bool { return !todo.Completed })
+	case VisibilityCompleted:
+		return filterTodos(todos, func(todo *Todo) bool { return todo.Completed })
+	default:
+		return todos
+	}
+}
+
+func (c *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error) {
+	s := StorageFromContext(ctx)
+
+	todos, err := s.List()
+	if err != nil {
+		return r, err
+	}
+
+	allCompleted := true
+	for _, todo := range todos {
+		if !todo.Completed {
+			allCompleted = false
+			break
+		}
+	}
+	for _, todo := range todos {
+		todo.Completed = !allCompleted
+		if err := s.Update(todo); err != nil {
+			return r, err
+		}
+	}
+
+	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
+	// compo.ApplyReloadToResponse(&r, a)
 	return
 }
 
-var TodoMVCExamplePB = web.Page(TodoMVCExample)
+type CreateTodoRequest struct {
+	Title string `json:"title"`
+}
+
+func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web.EventResponse, err error) {
+	if err := StorageFromContext(ctx).Create(&Todo{
+		ID:        xid.New().String(),
+		Title:     req.Title,
+		Completed: false,
+	}); err != nil {
+		return r, err
+	}
+	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
+	// compo.ApplyReloadToResponse(&r, a)
+	return
+}
+
+type TodoItem struct {
+	ID   string `json:"id"`
+	todo *Todo  // use this if not nil, otherwise load with ID from Storage
+	// OnChanged string `json:"on_changed"`
+}
+
+func (c *TodoItem) CompoName() string {
+	return fmt.Sprintf("TodoItem:%s", c.ID)
+}
+
+func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
+	todo := c.todo
+	if todo == nil {
+		var err error
+		todo, err = StorageFromContext(ctx).Read(c.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return h.Li().ClassIf("completed", todo.Completed).Children(
+		h.Div().Class("view").Children(
+			h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
+				Attr("@change", compo.PlaidAction(c, c.Toggle, nil).Go()),
+			h.Label(todo.Title),
+			h.Button("").Class("destroy").
+				Attr("@click", compo.PlaidAction(c, c.Remove, nil).Go()),
+		),
+	).MarshalHTML(ctx)
+}
+
+func (c *TodoItem) Toggle(ctx context.Context) (r web.EventResponse, err error) {
+	s := StorageFromContext(ctx)
+
+	todo, err := s.Read(c.ID)
+	if err != nil {
+		return r, err
+	}
+
+	todo.Completed = !todo.Completed
+	if err := s.Update(todo); err != nil {
+		return r, err
+	}
+
+	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
+	// r.RunScript = t.OnChanged
+	return
+}
+
+func (c *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) {
+	if err := StorageFromContext(ctx).Delete(c.ID); err != nil {
+		return r, err
+	}
+
+	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
+	// r.RunScript = t.OnChanged
+	return
+}
+
+func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
+	pr.Body = h.Div().Style("display: flex; justify-content: center;").Children(
+		h.Div().Style("width: 550px; margin-right: 40px;").Children(
+			&TodoApp{
+				ID:         "TodoApp0",
+				Visibility: VisibilityAll,
+			},
+		),
+		h.Div().Style("width: 550px;").Children(
+			&TodoApp{
+				ID:         "TodoApp1",
+				Visibility: VisibilityCompleted,
+			},
+		),
+	)
+	ctx.Injector.HeadHTML(`
+	<link rel="stylesheet" type="text/css" href="https://unpkg.com/todomvc-app-css@2.4.1/index.css">
+	<style>
+		body{
+			max-width: 100%;
+		}
+	</style>
+	`)
+	return
+}
+
+type storageCtxKey struct{}
+
+func StorageFromContext(ctx context.Context) Storage {
+	evCtx := web.MustGetEventContext(ctx)
+	return evCtx.ContextValue(storageCtxKey{}).(Storage)
+}
+
+var TodoMVCExamplePB = web.Page(TodoMVCExample).
+	Wrap(func(in web.PageFunc) web.PageFunc {
+		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
+			ctx.WithContextValue(storageCtxKey{}, memoryStorage)
+			return in(ctx)
+		}
+	}).
+	WrapEventFunc(func(in web.EventFunc) web.EventFunc {
+		return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+			ctx.WithContextValue(storageCtxKey{}, memoryStorage)
+			return in(ctx)
+		}
+	})
 
 var TodoMVCExamplePath = examples.URLPathByFunc(TodoMVCExample)
+
+type Storage interface {
+	List() ([]*Todo, error)
+	Create(todo *Todo) error
+	Read(id string) (*Todo, error)
+	Update(todo *Todo) error
+	Delete(id string) error
+}
+
+var memoryStorage = &MemoryStorage{}
+
+type MemoryStorage struct {
+	mu    sync.RWMutex
+	todos []*Todo
+}
+
+func (m *MemoryStorage) List() ([]*Todo, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return compo.MustClone(m.todos), nil
+}
+
+func (m *MemoryStorage) Create(todo *Todo) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.todos = append(m.todos, todo)
+	return nil
+}
+
+func (m *MemoryStorage) Read(id string) (*Todo, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, todo := range m.todos {
+		if todo.ID == id {
+			return compo.MustClone(todo), nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (m *MemoryStorage) Update(todo *Todo) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, t := range m.todos {
+		if t.ID == todo.ID {
+			m.todos[i] = todo
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *MemoryStorage) Delete(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, todo := range m.todos {
+		if todo.ID == id {
+			m.todos = append(m.todos[:i], m.todos[i+1:]...)
+			return nil
+		}
+	}
+	return nil
+}

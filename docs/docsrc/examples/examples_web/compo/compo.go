@@ -21,10 +21,10 @@ func Install(b *web.Builder) {
 }
 
 type Action struct {
-	CompoType string          `json:"compo_type,omitempty"`
-	Compo     json.RawMessage `json:"compo,omitempty"` // json string
-	Method    string          `json:"method,omitempty"`
-	Request   json.RawMessage `json:"request,omitempty"` // json string
+	CompoType string          `json:"compo_type"`
+	Compo     json.RawMessage `json:"compo"`
+	Method    string          `json:"method"`
+	Request   json.RawMessage `json:"request"`
 }
 
 const fieldKeyAction = "__compo_action__"
