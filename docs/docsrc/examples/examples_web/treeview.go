@@ -23,6 +23,7 @@ type TreeItem struct {
 
 type TreeNode struct {
 	Name     string      `json:"name"`
+	Value    string      `json:"value"`
 	Children []*TreeNode `json:"children"`
 }
 
@@ -51,7 +52,7 @@ func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 				var childComponents h.HTMLComponents
 				for _, child := range t.Model.Children {
 					childComponents = append(childComponents, &TreeItem{
-						ID:    fmt.Sprintf("%s/%s", t.ID, child.Name),
+						ID:    fmt.Sprintf("%s/%s", t.ID, child.Value),
 						Model: child,
 					})
 				}
@@ -90,7 +91,10 @@ func (t *TreeItem) ChangeType() {
 }
 
 func (t *TreeItem) AddChild() {
-	t.Model.Children = append(t.Model.Children, &TreeNode{Name: fmt.Sprintf("new stuff-%s", xid.New().String())})
+	t.Model.Children = append(t.Model.Children, &TreeNode{
+		Name:  "new stuff",
+		Value: xid.New().String(),
+	})
 }
 
 func TreeViewExample(cx *web.EventContext) (pr web.PageResponse, err error) {
@@ -98,27 +102,31 @@ func TreeViewExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 		&TreeItem{
 			ID: "TreeItem0",
 			Model: &TreeNode{
-				Name: "My Tree",
+				Name:  "My Tree",
+				Value: "root",
 				Children: []*TreeNode{
-					{Name: "hello"},
-					{Name: "world"},
+					{Name: "hello", Value: "hello"},
+					{Name: "world", Value: "world"},
 					{
-						Name: "child folder",
+						Name:  "child folder",
+						Value: "child-folder",
 						Children: []*TreeNode{
 							{
-								Name: "child folder1",
+								Name:  "child folder",
+								Value: "child-folder0",
 								Children: []*TreeNode{
-									{Name: "hello"},
-									{Name: "world"},
+									{Name: "hello", Value: "hello1"},
+									{Name: "world", Value: "world1"},
 								},
 							},
-							{Name: "hello"},
-							{Name: "world"},
+							{Name: "hello", Value: "hello2"},
+							{Name: "world", Value: "world2"},
 							{
-								Name: "child folder2",
+								Name:  "child folder",
+								Value: "child-folder1",
 								Children: []*TreeNode{
-									{Name: "hello"},
-									{Name: "world"},
+									{Name: "hello", Value: "hello3"},
+									{Name: "world", Value: "world3"},
 								},
 							},
 						},
