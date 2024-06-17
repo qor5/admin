@@ -18,11 +18,8 @@ func init() {
 type ChildCompo struct {
 	ID string
 
-	Email        string
-	ExtraContent string
-
-	// ClickExtra string
-	// clickExtra func(*ChildCompo) string
+	Email      string
+	ClickExtra string
 }
 
 func (c *ChildCompo) CompoName() string {
@@ -41,20 +38,17 @@ func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			}).Go(),
 		),
 		Br(),
-		Text(c.ExtraContent),
-		Br(),
-		// Button("ClickExtra").Attr("@click", c.ClickExtra), // TODO: 这样信息不会丢失，但是貌似目前序列化有些问题
-		// Button("ClickExtra").Attr("@click", c.clickExtra(c)),  // TODO: 只 reload child 的话，这个信息就会丢失了
+		Button("ClickExtra").Attr("@click", c.ClickExtra),
 	).MarshalHTML(ctx)
 }
 
 type SampleCompo struct {
 	ID string
 
-	ModelID string
-	ShowPre bool
+	ShowPre     bool
+	EmailSuffix string
 
-	Child *ChildCompo
+	ModelID string
 }
 
 func (c *SampleCompo) CompoName() string {
@@ -62,14 +56,13 @@ func (c *SampleCompo) CompoName() string {
 }
 
 func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	// c.Child.ClickExtra = ReloadAction(c, func(cloned *SampleCompo) {
-	// 	cloned.Child.ExtraContent += "-ClickedExtra"
-	// }).Go()
-	// c.Child.clickExtra = func(child *ChildCompo) string {
-	// 	return Reload(c, func(cloned *SampleCompo) {
-	// 		cloned.Child.ExtraContent += "-ClickedExtra"
-	// 	})
-	// }
+	child := &ChildCompo{
+		ID:    fmt.Sprintf("%s-child", c.ID),
+		Email: fmt.Sprintf("%s@gmail.com-%s", c.ID, c.EmailSuffix),
+		ClickExtra: compo.ReloadAction(c, func(cloned *SampleCompo) {
+			cloned.EmailSuffix += "-ClickedExtra"
+		}).Go(),
+	}
 	return compo.Reloadify(c,
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
@@ -85,17 +78,7 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			}).Go(),
 		),
 		Div().Style("border: 1px solid black; padding: 10px; margin: 10px;").Children(
-			c.Child,
-		),
-		Button("ChangeEmailViaReloadSelf").Attr("@click",
-			compo.ReloadAction(c, func(cloned *SampleCompo) {
-				cloned.Child.Email += "-ParentReloaded"
-			}).Go(),
-		),
-		Button("ChangeEmailViaReloadChild").Attr("@click",
-			compo.ReloadAction(c.Child, func(cloned *ChildCompo) {
-				cloned.Email += "-ChildReloaded"
-			}).Go(),
+			child,
 		),
 	).MarshalHTML(ctx)
 }
@@ -114,19 +97,11 @@ func CompoExample(cx *web.EventContext) (pr web.PageResponse, err error) {
 		&SampleCompo{
 			ID:      "666",
 			ModelID: "model666",
-			Child: &ChildCompo{
-				ID:    "child666",
-				Email: "666@gmail.com",
-			},
 		},
 		Br(), Br(), Br(),
 		&SampleCompo{
 			ID:      "888",
 			ModelID: "model888",
-			Child: &ChildCompo{
-				ID:    "child888",
-				Email: "888@gmail.com",
-			},
 		},
 	)
 	return
