@@ -1160,7 +1160,7 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 }
 
 func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
-	eb := mb.Editing().Creating()
+	eb := mb.Editing()
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		if p, ok := obj.(*Page); ok {
 			if p.Slug != "" {

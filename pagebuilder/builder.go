@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/activity"
@@ -380,7 +382,76 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	dp := pm.Detailing(PageBuilderPreviewCard, "Page", seo.SeoDetailFieldName)
 	// register modelBuilder
 
-	// pm detailing overview
+	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Page)
+		err = pageValidator(ctx.R.Context(), c, db, b.l10n)
+		return
+	})
+
+	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+			Prefix("/").
+			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
+	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		m := obj.(*Page)
+		m.Slug = path.Join("/", m.Slug)
+		return nil
+	})
+	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*Page)
+		categories := []*Category{}
+		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
+			panic(err)
+		}
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		return vx.VXAutocomplete().Label(msgr.Category).
+			Attr(web.VField(field.Name, p.CategoryID)...).
+			Multiple(false).Chips(false).
+			Items(categories).ItemText("Path").ItemValue("ID").
+			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+	})
+
+	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		if !b.templateEnabled {
+			return nil
+		}
+
+		p := obj.(*Page)
+
+		selectedID := ctx.R.FormValue(templateSelectedID)
+		body, err := getTplPortalComp(ctx, db, selectedID)
+		if err != nil {
+			panic(err)
+		}
+
+		// Display template selection only when creating a new page
+		if p.ID == 0 {
+			return h.Div(
+				web.Portal().Name(templateSelectPortal),
+				web.Portal(
+					body,
+				).Name(selectedTemplatePortal),
+			).Class("my-2").
+				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...)
+		}
+		return nil
+	})
 
 	// pm detailing page  detail-field
 	detailPageEditor(dp, b.db)
@@ -1079,7 +1150,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		for _, builder := range b.containerBuilders {
 			cover := builder.cover
 			if cover == "" {
-				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".png")
+				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
 			}
 			c := VCol(
 				VCard(
