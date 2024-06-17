@@ -1,9 +1,10 @@
 package integration_test
 
 import (
-	"gorm.io/gorm"
 	"net/http"
 	"testing"
+
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"

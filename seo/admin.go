@@ -401,7 +401,14 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		variables[varName] = varFunc(obj, setting, req)
 	}
 	*setting = replaceVariables(*setting, variables)
+	var keywordsComps []h.HTMLComponent
 
+	for i, keyword := range strings.Split(setting.Keywords, ",") {
+		if i > 0 {
+			keywordsComps = append(keywordsComps, h.Span("·"))
+		}
+		keywordsComps = append(keywordsComps, h.Span(keyword))
+	}
 	return h.Components(
 		VCard(
 			h.Span(msgr.Basic).Class("text-subtitle-1"),
@@ -409,13 +416,9 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		h.Div(h.Span("Search Result Preview")).Class("mt-6"),
 		VCard(
 			VCardText(
-				h.Span(setting.Title).Class("text-subtitle-1"),
-			),
-			VCardText(
-				h.Span(setting.Keywords).Class("mt-2"),
-			),
-			VCardText(
-				h.Span(setting.Description).Class("text-body-2 mt-2"),
+				h.Span(setting.Title).Class("text-subtitle-1").Class(fmt.Sprintf(`text-%s`, ColorPrimary)),
+				h.Div(keywordsComps...).Class("mt-2").Class(fmt.Sprintf(`text-%s`, ColorPrimary)),
+				h.Div(h.Span(setting.Description)).Class("text-body-2 mt-2"),
 			),
 		).Class("pa-6").Variant(VariantTonal),
 
@@ -424,10 +427,12 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("px-2 my-1").Variant(VariantTonal).Width(200),
 		h.Div(h.Span("Open Graph Preview")).Class("mt-6"),
 		VCard(
-			VCardText(VImg().Src(setting.OpenGraphImageURL).Width(300)),
-			VCardText(h.Span(setting.OpenGraphTitle).Class("text-subtitle-1")),
-			VCardText(h.Span(setting.OpenGraphDescription).Class("text-body-2 mt-2")),
-			VCardText(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL).Class("text-body-2 mt-2")),
+			VCardText(
+				VImg().Src(setting.OpenGraphImageURL).Width(300),
+				h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
+				h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
+				h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"),
+			),
 		).Class("pa-6").Variant(VariantTonal),
 
 		VCard(
