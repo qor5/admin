@@ -2,18 +2,16 @@ package examples_admin
 
 import (
 	"fmt"
-	"github.com/qor5/x/v3/perm"
 	"net/http"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/gorm2op"
-
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
-
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
+	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
