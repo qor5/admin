@@ -133,7 +133,7 @@ func (a *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error
 		todo.Completed = !allCompleted
 	}
 
-	r.RunScript = compo.ReloadAction(a, nil).Go() // TODO: 需要直接反馈 portal 结果
+	compo.ApplyReloadToResponse(&r, a)
 	return
 }
 
@@ -150,10 +150,11 @@ func (a *TodoApp) AddTodo(ctx context.Context, req *AddTodoRequest) (r web.Event
 		Completed: false,
 	})
 
-	r.RunScript = compo.ReloadAction(a, nil).Go() // TODO: 需要直接反馈 portal 结果
+	compo.ApplyReloadToResponse(&r, a)
 	return
 }
 
+// TODO: 或许需要支持，可 todo 给到，也可 ID 去 fetch。
 type TodoItem struct {
 	ID        string `json:"id"`
 	OnChanged string `json:"on_changed"`

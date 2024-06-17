@@ -54,6 +54,13 @@ func ReloadAction[T Reloadable](c T, f func(cloned T)) *web.VueEventTagBuilder {
 	return PlaidAction(cloned, actionMethodReload, struct{}{})
 }
 
+func ApplyReloadToResponse(r *web.EventResponse, c Reloadable) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: c.CompoName(),
+		Body: skipPortalize(c),
+	})
+}
+
 func OnReload(c Reloadable) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: c.CompoName(),
