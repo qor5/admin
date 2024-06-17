@@ -41,7 +41,7 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 	return web.Plaid().
 		EventFunc(eventDispatchAction).
 		FieldValue(fieldKeyAction, web.Var(
-			fmt.Sprintf("JSON.stringify(%s)",
+			fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
 				PrettyJSONString(Action{
 					CompoType: fmt.Sprintf("%T", c),
 					Compo:     json.RawMessage(h.JSONString(c)),
