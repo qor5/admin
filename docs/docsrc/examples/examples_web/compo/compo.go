@@ -21,10 +21,10 @@ func Install(b *web.Builder) {
 }
 
 type Action struct {
-	CompoType string `json:"compo_type,omitempty"`
-	Compo     string `json:"compo,omitempty"` // json string
-	Method    string `json:"method,omitempty"`
-	Request   string `json:"request,omitempty"` // json string
+	CompoType string          `json:"compo_type,omitempty"`
+	Compo     json.RawMessage `json:"compo,omitempty"` // json string
+	Method    string          `json:"method,omitempty"`
+	Request   string          `json:"request,omitempty"` // json string
 }
 
 const fieldKeyAction = "__compo_action__"
@@ -42,7 +42,7 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 		EventFunc(eventDispatchAction).
 		FieldValue(fieldKeyAction, PrettyJSONString(Action{
 			CompoType: fmt.Sprintf("%T", c),
-			Compo:     h.JSONString(c),
+			Compo:     json.RawMessage(h.JSONString(c)),
 			Method:    methodName,
 			Request:   h.JSONString(request),
 		}))
@@ -67,7 +67,7 @@ func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err
 		return r, err
 	}
 
-	err = json.Unmarshal([]byte(action.Compo), c)
+	err = json.Unmarshal(action.Compo, c)
 	if err != nil {
 		return r, err
 	}
