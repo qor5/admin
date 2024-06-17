@@ -24,28 +24,11 @@ const (
 	deleteNoteEvent = "note_DeleteNoteEvent"
 )
 
-type QorNote struct {
-	gorm.Model
-	UserID       uint `gorm:"index"`
-	Creator      string
-	ResourceType string `gorm:"index"`
-	ResourceID   string `gorm:"index"`
-	Content      string `sql:"size:5000"`
-}
-
-func (n *QorNote) BeforeCreate(tx *gorm.DB) error {
+func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
 	if strings.TrimSpace(n.Content) == "" {
 		return errors.New("note cannot be empty")
 	}
 	return nil
-}
-
-type UserNote struct {
-	gorm.Model
-	UserID       uint   `gorm:"index"`
-	ResourceType string `gorm:"index"`
-	ResourceID   string `gorm:"index"`
-	Number       int64
 }
 
 func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resourceId string) h.HTMLComponent {
@@ -73,7 +56,7 @@ func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resour
 		).VSlot("{form}"),
 	)
 
-	var notes []QorNote
+	var notes []ActivityLog
 	db.Where("resource_type = ? and resource_id = ?", resourceType, resourceId).
 		Order("id DESC").Find(&notes)
 
@@ -101,8 +84,8 @@ func noteFunc(db *gorm.DB, mb *presets.ModelBuilder) presets.FieldComponentFunc 
 			id = ps.PrimarySlug()
 		}
 
-		latestNote := QorNote{}
-		db.Model(&QorNote{}).Where("resource_type = ? AND resource_id = ?", tn, id).Order("created_at DESC").First(&latestNote)
+		latestNote := ActivityLog{}
+		db.Model(&ActivityLog{}).Where("resource_type = ? AND resource_id = ?", tn, id).Order("created_at DESC").First(&latestNote)
 
 		content := []rune(latestNote.Content)
 		result := string(content[:])

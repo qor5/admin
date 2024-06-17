@@ -26,8 +26,7 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		}
 
 		if err = db.Save(&activity).Error; err != nil {
-			presets.ShowMessage(&r, err.Error(), "error")
-			err = nil
+			handleError(err, &r, "Failed to save activity")
 			return
 		}
 
@@ -71,6 +70,7 @@ func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 
 		var total int64
 		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", rt, ri).Count(&total)
+		userNote.Number = total
 		userNote.Action = fmt.Sprintf("update_note: %d", total)
 
 		if err = db.Save(&userNote).Error; err != nil {
@@ -117,6 +117,7 @@ func deleteNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 
 		var total int64
 		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", rt, ri).Count(&total)
+		userNote.Number = total
 		userNote.Action = fmt.Sprintf("delete_note: %d", total)
 
 		if err = db.Save(&userNote).Error; err != nil {

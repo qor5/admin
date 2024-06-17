@@ -54,8 +54,10 @@ type ActivityLog struct {
 	ModelDiffs string `sql:"type:text;"`
 
 	Content      string `gorm:"type:text;"`
-	ResourceID   uint
-	ResourceType string
+	ResourceID   string `gorm:"index"`
+	ResourceType string `gorm:"index"`
+
+	Number int64
 }
 
 func (al *ActivityLog) SetCreatedAt(t time.Time) {

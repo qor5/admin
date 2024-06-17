@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go4.org/sort"
 	"golang.org/x/text/language"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -321,9 +322,13 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 }
 
 func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
-	var timelineData []TimelineItem
-	db := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
+	db, ok := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
+	if !ok || db == nil {
+		log.Println("fetchTimelineData error: db is nil")
+		panic("db is nil")
+	}
 
+	var timelineData []TimelineItem
 	var logs []ActivityLog
 
 	if err := db.Find(&logs).Error; err != nil {

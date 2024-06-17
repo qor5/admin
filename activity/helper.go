@@ -7,6 +7,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -128,7 +129,7 @@ func GetUserData(ctx *web.EventContext) (userID uint, creator string) {
 
 func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
 	var total int64
-	if err := db.Model(&QorNote{}).Where("resource_type = ? AND resource_id = ?", resourceType, resourceID).Count(&total).Error; err != nil {
+	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, "create_note").Count(&total).Error; err != nil {
 		return 0, err
 	}
 
@@ -136,12 +137,19 @@ func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID stri
 		return 0, nil
 	}
 
-	var userNote UserNote
-	if err := db.Where("user_id = ? AND resource_type = ? AND resource_id = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
+	var userNote ActivityLog
+	if err := db.Where("user_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, err
 		}
 	}
 
 	return total - userNote.Number, nil
+}
+
+func handleError(err error, r *web.EventResponse, errorMessage string) {
+	if err != nil {
+		log.Println(errorMessage, err)
+		presets.ShowMessage(r, errorMessage, "error")
+	}
 }
