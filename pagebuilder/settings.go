@@ -87,7 +87,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative`).Class("w-100").
 				Attr("@click",
-					web.Plaid().URL(fmt.Sprintf("%s/%s/editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),
+					web.Plaid().URL(fmt.Sprintf("%s/%s-editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),
 				),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
