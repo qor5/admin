@@ -33,21 +33,25 @@ func (t *TreeItem) CompoName() string {
 
 func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	isFolder := t.IsFolder()
+	div := h.Div().StyleIf("font-weight: bold;", isFolder).
+		Children(
+			h.Text(t.Model.Name),
+			h.Iff(isFolder, func() h.HTMLComponent {
+				return h.Span(fmt.Sprintf("[%s]", t.toggleSymbol()))
+			}),
+		)
+	if isFolder {
+		div.Attr("@click", compo.ReloadAction(t, func(cloned *TreeItem) {
+			cloned.Toggle()
+		}).Go())
+	} else {
+		div.Attr("@dblclick", compo.ReloadAction(t, func(cloned *TreeItem) {
+			cloned.ChangeType()
+		}).Go())
+	}
 	return compo.Reloadify(t,
 		h.Li(
-			h.Div().StyleIf("font-weight: bold;", isFolder).
-				Attr("@click", compo.ReloadAction(t, func(cloned *TreeItem) {
-					cloned.Toggle()
-				}).Go()).
-				Attr("@dblclick", compo.ReloadAction(t, func(cloned *TreeItem) {
-					cloned.ChangeType()
-				}).Go()).
-				Children(
-					h.Text(t.Model.Name),
-					h.Iff(isFolder, func() h.HTMLComponent {
-						return h.Span(fmt.Sprintf("[%s]", t.toggleSymbol()))
-					}),
-				),
+			div,
 			h.Iff(t.IsOpen && isFolder, func() h.HTMLComponent {
 				var childComponents h.HTMLComponents
 				for _, child := range t.Model.Children {
