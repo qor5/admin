@@ -18,6 +18,7 @@ import (
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
@@ -51,6 +52,11 @@ display_order) VALUES (1, 1, 'pages', 'v1','International', 'Header', 1, 1),(2, 
 func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 	db := TestDB
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).URIPrefix("/admin")
+	b.Permission(
+		perm.New().Policies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+		),
+	)
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {
