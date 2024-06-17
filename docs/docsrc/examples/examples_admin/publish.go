@@ -3,6 +3,7 @@ package examples_admin
 import (
 	"context"
 	"fmt"
+	"github.com/qor5/x/v3/perm"
 	"net/http"
 	"strings"
 
@@ -78,7 +79,11 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 
 	b.DataOperator(gorm2op.DataOperator(db))
-
+	b.Permission(
+		perm.New().Policies(
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+		),
+	)
 	// @snippet_begin(PublishConfigureView)
 	mb := b.Model(&WithPublishProduct{})
 	dp := mb.Detailing(publish.VersionsPublishBar, "Details").Drawer(true)
