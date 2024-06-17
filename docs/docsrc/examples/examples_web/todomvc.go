@@ -165,19 +165,17 @@ func (t *TodoItem) CompoName() string {
 
 func (t *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	todo := fetchTodo(t.ID)
-	return compo.Reloadify(t,
-		h.Iff(todo != nil, func() h.HTMLComponent {
-			return h.Li().ClassIf("completed", todo.Completed).Children(
-				h.Div().Class("view").Children(
-					h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
-						Attr("@change", compo.PlaidAction(t, t.Toggle, nil).Go()),
-					h.Label(todo.Title),
-					h.Button("").Class("destroy").
-						Attr("@click", compo.PlaidAction(t, t.Remove, nil).Go()),
-				),
-			)
-		}),
-	).MarshalHTML(ctx)
+	return h.Iff(todo != nil, func() h.HTMLComponent {
+		return h.Li().ClassIf("completed", todo.Completed).Children(
+			h.Div().Class("view").Children(
+				h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
+					Attr("@change", compo.PlaidAction(t, t.Toggle, nil).Go()),
+				h.Label(todo.Title),
+				h.Button("").Class("destroy").
+					Attr("@click", compo.PlaidAction(t, t.Remove, nil).Go()),
+			),
+		)
+	}).MarshalHTML(ctx)
 }
 
 func fetchTodo(id string) *Todo {
