@@ -160,8 +160,8 @@ func NewConfig(db *gorm.DB) Config {
 
 	// @snippet_begin(ActivityExample)
 	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
+		func(log *activity.ActivityLog) string {
+			return fmt.Sprintf("%s %s at %s", log.Creator, strings.ToLower(log.Action), log.CreatedAt.Format("2006-01-02 15:04:05"))
 		}).
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {

@@ -77,23 +77,23 @@ func TestModelKeys(t *testing.T) {
 	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(ActivityLogInterface)
+	record := builder.NewLogModelData().(*ActivityLog)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.GetModelKeys() != "1:v1" {
-		t.Errorf("want the keys %v, but got %v", "1:v1", record.GetModelKeys())
+	if record.ModelKeys != "1:v1" {
+		t.Errorf("want the keys %v, but got %v", "1:v1", record.ModelKeys)
 	}
 
 	resetDB()
 	builder.RegisterModel(widgetModel).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
-	record2 := builder.NewLogModelData().(ActivityLogInterface)
+	record2 := builder.NewLogModelData().(*ActivityLog)
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record2.GetModelKeys() != "Text 01" {
-		t.Errorf("want the keys %v, but got %v", "Text 01", record2.GetModelKeys())
+	if record2.ModelKeys != "Text 01" {
+		t.Errorf("want the keys %v, but got %v", "Text 01", record2.ModelKeys)
 	}
 }
 
@@ -107,12 +107,12 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(ActivityLogInterface)
+	record := builder.NewLogModelData().(*ActivityLog)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.GetModelLink() != "/admin/pages/1?version=v1" {
-		t.Errorf("want the link %v, but got %v", "/admin/pages/1?version=v1", record.GetModelLink())
+	if record.ModelLink != "/admin/pages/1?version=v1" {
+		t.Errorf("want the link %v, but got %v", "/admin/pages/1?version=v1", record.ModelLink)
 	}
 }
 
@@ -187,29 +187,13 @@ func TestModelTypeHanders(t *testing.T) {
 				{Name: "Video 03", Title: "video 1"},
 			},
 		}, db)
-	record := builder.NewLogModelData().(ActivityLogInterface)
+	record := builder.NewLogModelData().(*ActivityLog)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
 	wants := `[{"Field":"VersionName","Old":"v1","Now":"v2"},{"Field":"Title","Old":"test","Now":"test1"},{"Field":"Widgets.0","Old":"Text 01","Now":"Text 011"},{"Field":"Widgets.1","Old":"HeroBanner 02","Now":"HeroBanner 022"},{"Field":"Widgets.3","Old":"","Now":"Video 03"}]`
-	if record.GetModelDiffs() != wants {
-		t.Errorf("want the diffs %v, but got %v", wants, record.GetModelDiffs())
-	}
-}
-
-func TestCreator(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
-	builder.Install(pb)
-
-	builder.RegisterModel(pageModel)
-	resetDB()
-	builder.AddCreateRecord("user a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(ActivityLogInterface)
-	if err := db.First(record).Error; err != nil {
-		t.Fatal(err)
-	}
-	if record.GetCreator() != "user a" {
-		t.Errorf("want the creator %v, but got %v", "a", record.GetCreator())
+	if record.ModelDiffs != wants {
+		t.Errorf("want the diffs %v, but got %v", wants, record.ModelDiffs)
 	}
 }
 
@@ -231,15 +215,15 @@ func TestCreatorInferface(t *testing.T) {
 	resetDB()
 
 	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(ActivityLogInterface)
+	record := builder.NewLogModelData().(*ActivityLog)
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.GetCreator() != "user a" {
-		t.Errorf("want the creator %v, but got %v", "a", record.GetCreator())
+	if record.Creator != "user a" {
+		t.Errorf("want the creator %v, but got %v", "user a", record.Creator)
 	}
-	if record.GetUserID() != 10 {
-		t.Errorf("want the creator id %v, but got %v", 10, record.GetUserID())
+	if record.UserID != 10 {
+		t.Errorf("want the creator id %v, but got %v", 10, record.UserID)
 	}
 }
 

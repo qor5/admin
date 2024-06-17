@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go4.org/sort"
 	"golang.org/x/text/language"
-	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -65,15 +64,15 @@ func (w *Wrapper) Wrap(action ActionFunc) web.EventFunc {
 // @snippet_begin(ActivityBuilder)
 // Builder struct contains all necessary fields
 type Builder struct {
-	db                *gorm.DB                          // global db
-	creatorContextKey any                               // get the creator from context
-	dbContextKey      any                               // get the db from context
-	lmb               *presets.ModelBuilder             // log model builder
-	logModel          ActivityLogInterface              // log model
-	models            []*ModelBuilder                   // registered model builders
-	tabHeading        func(ActivityLogInterface) string // tab heading format
-	permPolicy        *perm.PolicyBuilder               // permission policy
-	logModelInstall   presets.ModelInstallFunc          // log model install
+	db                *gorm.DB                  // global db
+	creatorContextKey any                       // get the creator from context
+	dbContextKey      any                       // get the db from context
+	lmb               *presets.ModelBuilder     // log model builder
+	logModel          *ActivityLog              // log model
+	models            []*ModelBuilder           // registered model builders
+	tabHeading        func(*ActivityLog) string // tab heading format
+	permPolicy        *perm.PolicyBuilder       // permission policy
+	logModelInstall   presets.ModelInstallFunc  // log model install
 	wrapper           Wrapper
 }
 
@@ -110,7 +109,7 @@ func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 }
 
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
+func New(db *gorm.DB, logModel ...*ActivityLog) *Builder {
 	ab := &Builder{
 		db:                db,
 		creatorContextKey: CreatorContextKey,
@@ -173,7 +172,7 @@ func (ab Builder) GetCustomizeActivityLogs(m any, db *gorm.DB) any {
 
 // NewLogModelData new a log model data
 func (ab Builder) NewLogModelData() any {
-	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
+	return &ActivityLog{}
 }
 
 // NewLogModelSlice new a log model slice
@@ -196,7 +195,7 @@ func (ab *Builder) DBContextKey(key any) *Builder {
 	return ab
 }
 
-func (ab *Builder) TabHeading(f func(log ActivityLogInterface) string) *Builder {
+func (ab *Builder) TabHeading(f func(log *ActivityLog) string) *Builder {
 	ab.tabHeading = f
 	return ab
 }
@@ -322,13 +321,9 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 }
 
 func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
-	db, ok := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
-	if !ok || db == nil {
-		log.Println("fetchTimelineData error: db is nil")
-		panic("db is nil")
-	}
-
 	var timelineData []TimelineItem
+	db := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
+
 	var logs []ActivityLog
 
 	if err := db.Find(&logs).Error; err != nil {

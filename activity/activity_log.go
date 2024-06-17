@@ -19,27 +19,6 @@ type CreatorInterface interface {
 
 //TODO: Reconfiguration interface
 
-type ActivityLogInterface interface {
-	SetCreatedAt(time.Time)
-	GetCreatedAt() time.Time
-	SetUserID(uint)
-	GetUserID() uint
-	SetCreator(string)
-	GetCreator() string
-	SetAction(string)
-	GetAction() string
-	SetModelKeys(string)
-	GetModelKeys() string
-	SetModelName(string)
-	GetModelName() string
-	SetModelLabel(string)
-	GetModelLabel() string
-	SetModelLink(string)
-	GetModelLink() string
-	SetModelDiffs(string)
-	GetModelDiffs() string
-}
-
 type ActivityLog struct {
 	gorm.Model
 

@@ -150,8 +150,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+
 			var (
-				record = obj.(ActivityLogInterface)
+				record = obj.(*ActivityLog)
 				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			)
 

@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
-	"time"
-
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+	"reflect"
+	"strings"
+	"time"
 )
 
 // @snippet_begin(ActivityModelBuilder)
@@ -112,7 +111,7 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 		var panels []h.HTMLComponent
 
 		for i := 0; i < logsvalues.Len(); i++ {
-			log := logsvalues.Index(i).Interface().(ActivityLogInterface)
+			log := logsvalues.Index(i).Interface().(*ActivityLog)
 			var headerText string
 			if mb.activity.tabHeading != nil {
 				headerText = mb.activity.tabHeading(log)
@@ -318,37 +317,36 @@ func (mb *ModelBuilder) Diff(old, now any) ([]Diff, error) {
 	return NewDiffBuilder(mb).Diff(old, now)
 }
 
-// save log into db
 func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, diffs string) error {
 	m := mb.activity.NewLogModelData()
-	log, ok := m.(ActivityLogInterface)
+	log, ok := m.(*ActivityLog)
 	if !ok {
-		return fmt.Errorf("model %T is not implement ActivityLogInterface", m)
+		return fmt.Errorf("model %T is not ActivityLog", m)
 	}
 
-	log.SetCreatedAt(time.Now())
+	log.CreatedAt = time.Now()
 	switch user := creator.(type) {
 	case string:
-		log.SetCreator(user)
+		log.Creator = user
 	case CreatorInterface:
-		log.SetCreator(user.GetName())
-		log.SetUserID(user.GetID())
+		log.Creator = user.GetName()
+		log.UserID = user.GetID()
 	default:
-		log.SetCreator("unknown")
+		log.Creator = "unknown"
 	}
 
-	log.SetAction(action)
-	log.SetModelName(mb.typ.Name())
-	log.SetModelKeys(mb.KeysValue(v))
+	log.Action = action
+	log.ModelName = mb.typ.Name()
+	log.ModelKeys = mb.KeysValue(v)
 
 	if mb.presetModel != nil && mb.presetModel.Info().URIName() != "" {
-		log.SetModelLabel(mb.presetModel.Info().URIName())
+		log.ModelLabel = mb.presetModel.Info().URIName()
 	} else {
-		log.SetModelLabel("-")
+		log.ModelLabel = "-"
 	}
 
 	if f := mb.link; f != nil {
-		log.SetModelLink(f(v))
+		log.ModelLink = f(v)
 	}
 
 	if diffs == "" && action == ActivityEdit {
@@ -356,7 +354,7 @@ func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, dif
 	}
 
 	if action == ActivityEdit {
-		log.SetModelDiffs(diffs)
+		log.ModelDiffs = diffs
 	}
 
 	if db.Save(log).Error != nil {
