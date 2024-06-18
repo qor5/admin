@@ -46,6 +46,10 @@ func (c *TodoApp) CompoName() string {
 	return fmt.Sprintf("TodoApp:%s", c.ID)
 }
 
+func (c *TodoApp) InjectDep(f compo.Dep) {
+	c.b = f.(*TodoAppBuilder)
+}
+
 func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 	todos, err := StorageFromContext(ctx).List()
 	if err != nil {
@@ -177,6 +181,12 @@ type CreateTodoRequest struct {
 }
 
 func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web.EventResponse, err error) {
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
+		r.RunScript = "alert('title can not be empty')"
+		return
+	}
+
 	if err := StorageFromContext(ctx).Create(&Todo{
 		ID:        xid.New().String(),
 		Title:     req.Title,
@@ -197,8 +207,12 @@ type TodoItem struct {
 	// OnChanged string `json:"on_changed"`
 }
 
-func (c *TodoItem) CompoName() string {
-	return fmt.Sprintf("TodoItem:%s", c.ID)
+// func (c *TodoItem) CompoName() string {
+// 	return fmt.Sprintf("TodoItem:%s", c.ID)
+// }
+
+func (c *TodoItem) InjectDep(f compo.Dep) {
+	c.b = f.(*TodoAppBuilder)
 }
 
 func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
@@ -256,48 +270,20 @@ func (c *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) 
 	return
 }
 
-// TODO: 这块需要想办法封装，尽可能通用
 type TodoAppBuilder struct {
-	initial        *TodoApp
-	eventName      string
-	once           sync.Once
+	*compo.CompoDep[*TodoApp]
 	itemTitleCompo func(todo *Todo) h.HTMLComponent
 }
 
 func NewTodoAppBuilder(initial *TodoApp) *TodoAppBuilder {
-	b := &TodoAppBuilder{
-		initial:   initial,
-		eventName: fmt.Sprintf("%s%s__", compo.EventDispatchAction, initial.ID),
-	}
-	initial.b = b
+	b := &TodoAppBuilder{}
+	b.CompoDep = compo.NewDep(b, initial)
 	return b
 }
 
 func (b *TodoAppBuilder) ItemTitleCompo(f func(todo *Todo) h.HTMLComponent) *TodoAppBuilder {
 	b.itemTitleCompo = f
 	return b
-}
-
-func (b *TodoAppBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
-	b.once.Do(func() {
-		TodoMVCExamplePB.RegisterEventFunc(b.eventName, b.eventDispatchActionHandler)
-	})
-	ctx = compo.WithDispatchActionEventName(ctx, b.eventName)
-	return b.initial.MarshalHTML(ctx)
-}
-
-func (b *TodoAppBuilder) eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
-	ctx.R = ctx.R.WithContext(compo.WithDispatchActionEventName(ctx.R.Context(), b.eventName))
-	// TODO: 需要将默认的注册器逻辑接入进来，此处只处理补充 unmarshal 的逻辑
-	return compo.EventDispatchActionHandlerComplex(ctx, func(typeName string) (any, error) {
-		if typeName == fmt.Sprintf("%T", &TodoApp{}) {
-			return &TodoApp{b: b}, nil
-		}
-		if typeName == fmt.Sprintf("%T", &TodoItem{}) {
-			return &TodoItem{b: b}, nil
-		}
-		return nil, fmt.Errorf("unknown compo type: %s", typeName)
-	})
 }
 
 func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
@@ -310,11 +296,6 @@ func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
 			NewTodoAppBuilder(&TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
-			}).ItemTitleCompo(func(todo *Todo) h.HTMLComponent {
-				if todo.Completed {
-					return h.Label(todo.Title).Style("color: red;")
-				}
-				return h.Label(todo.Title).Style("color: green;")
 			}),
 		),
 		h.Div().Style("width: 550px;").Children(
@@ -342,6 +323,10 @@ func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
 type storageCtxKey struct{}
 
 func StorageFromContext(ctx context.Context) Storage {
+	s, ok := ctx.Value(storageCtxKey{}).(Storage)
+	if ok {
+		return s
+	}
 	evCtx := web.MustGetEventContext(ctx)
 	return evCtx.ContextValue(storageCtxKey{}).(Storage)
 }

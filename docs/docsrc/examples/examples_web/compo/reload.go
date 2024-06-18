@@ -7,19 +7,14 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type Reloadable interface {
-	h.HTMLComponent
-	CompoName() string
-}
-
 type portalize struct {
-	c        Reloadable
+	c        Named
 	children []h.HTMLComponent
 }
 
 type skipPortalNameCtxKey struct{}
 
-func skipPortalize(c Reloadable) h.HTMLComponent {
+func skipPortalize(c Named) h.HTMLComponent {
 	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
 		ctx = context.WithValue(ctx, skipPortalNameCtxKey{}, c.CompoName())
 		return c.MarshalHTML(ctx)
@@ -35,7 +30,7 @@ func (p *portalize) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return web.Portal(p.children...).Name(compoName).MarshalHTML(ctx)
 }
 
-func Reloadify[T Reloadable](c T, children ...h.HTMLComponent) h.HTMLComponent {
+func Reloadify[T Named](c T, children ...h.HTMLComponent) h.HTMLComponent {
 	return &portalize{
 		c:        c,
 		children: children,
@@ -46,7 +41,7 @@ const (
 	actionMethodReload = "OnReload"
 )
 
-func ReloadAction[T Reloadable](ctx context.Context, c T, f func(cloned T)) *web.VueEventTagBuilder {
+func ReloadAction[T Named](ctx context.Context, c T, f func(cloned T)) *web.VueEventTagBuilder {
 	cloned := MustClone(c)
 	if f != nil {
 		f(cloned)
@@ -54,14 +49,14 @@ func ReloadAction[T Reloadable](ctx context.Context, c T, f func(cloned T)) *web
 	return PlaidAction(ctx, cloned, actionMethodReload, struct{}{})
 }
 
-func ApplyReloadToResponse(r *web.EventResponse, c Reloadable) {
+func ApplyReloadToResponse(r *web.EventResponse, c Named) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: c.CompoName(),
 		Body: skipPortalize(c),
 	})
 }
 
-func OnReload(c Reloadable) (r web.EventResponse, err error) {
+func OnReload(c Named) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: c.CompoName(),
 		Body: skipPortalize(c),
