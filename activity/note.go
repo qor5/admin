@@ -1,7 +1,6 @@
 package activity
 
 import (
-	"errors"
 	"fmt"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -10,8 +9,6 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"strings"
-
 	"gorm.io/gorm"
 )
 
@@ -23,13 +20,6 @@ const (
 
 	deleteNoteEvent = "note_DeleteNoteEvent"
 )
-
-func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
-	if strings.TrimSpace(n.Content) == "" {
-		return errors.New("note cannot be empty")
-	}
-	return nil
-}
 
 func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resourceId string) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)

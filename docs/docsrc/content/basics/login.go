@@ -64,7 +64,7 @@ The [SessionSecurer](https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717
     `),
 	Markdown(`
 ## Hooks
-[Hooks](https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/builder.go#L39) are functions that are called before or after certain events.   
+[Hooks](https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/log_builder.go#L39) are functions that are called before or after certain events.   
 The following hooks are available:
 ### BeforeSetPassword
 #### Extra Values

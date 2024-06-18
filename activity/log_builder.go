@@ -137,33 +137,9 @@ func New(db *gorm.DB, logModel ...*ActivityLog) *Builder {
 
 // GetActivityLogs get activity logs
 func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
-	objs := ab.GetCustomizeActivityLogs(m, db)
-	if objs == nil {
-		return nil
-	}
-
-	logs, ok := objs.(*[]*ActivityLog)
-	if !ok {
-		return nil
-	}
-	return *logs
-}
-
-// GetCustomizeActivityLogs get customize activity logs
-func (ab Builder) GetCustomizeActivityLogs(m any, db *gorm.DB) any {
-	mb, ok := ab.GetModelBuilder(m)
-
-	if !ok {
-		return nil
-	}
-
-	if db == nil {
-		db = ab.db
-	}
-
-	keys := mb.KeysValue(m)
-	logs := ab.NewLogModelSlice()
-	err := db.Where("model_name = ? AND model_keys = ?", mb.typ.Name(), keys).Find(logs).Error
+	keys := ab.MustGetModelBuilder(m).KeysValue(m)
+	var logs []*ActivityLog
+	err := db.Where("model_name = ? AND model_keys = ?", reflect.TypeOf(m).Name(), keys).Find(&logs).Error
 	if err != nil {
 		return nil
 	}

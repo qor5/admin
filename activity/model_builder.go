@@ -104,19 +104,17 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 
 	editing := mb.presetModel.Editing()
 	editing.AppendTabsPanelFunc(func(obj any, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
-		logs := mb.activity.GetCustomizeActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
+		logs := mb.activity.GetActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 
-		logsvalues := reflect.Indirect(reflect.ValueOf(logs))
 		var panels []h.HTMLComponent
 
-		for i := 0; i < logsvalues.Len(); i++ {
-			log := logsvalues.Index(i).Interface().(*ActivityLog)
+		for _, log := range logs {
 			var headerText string
 			if mb.activity.tabHeading != nil {
 				headerText = mb.activity.tabHeading(log)
 			} else {
-				headerText = fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05 MST"))
+				headerText = fmt.Sprintf("%s %s at %s", log.Creator, strings.ToLower(log.Action), log.CreatedAt.Format("2006-01-02 15:04:05 MST"))
 			}
 
 			panels = append(panels, vuetify.VExpansionPanel(
@@ -124,7 +122,7 @@ func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
 					web.Slot(
 						vuetify.VRow().Attr("no-gutters").Children(
 							vuetify.VCol().Class("justify-start ma-1").Children(
-								DiffComponent(log.GetModelDiffs(), ctx.R),
+								DiffComponent(log.ModelDiffs, ctx.R),
 							),
 						),
 					).Name("default"),

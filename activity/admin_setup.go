@@ -3,6 +3,8 @@ package activity
 import (
 	"encoding/json"
 	"fmt"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -11,15 +13,13 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const (
 	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
-	Timeline                       = "Timeline"
+	Timeline        string         = "Timeline"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -155,25 +155,38 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				record = obj.(*ActivityLog)
 				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			)
-
 			var detailElems []h.HTMLComponent
 			detailElems = append(detailElems, VCard(
 				VCardTitle(
 					VBtn("").Children(
-						VIcon("arrow_back").Class("pr-2").Size(SizeSmall),
+						VIcon("mdi-account").Class("pr-2").Size(SizeSmall),
 					).Icon(true).Attr("@click", "window.history.back()"),
-					h.Text(msgr.DiffDetail),
+					h.Text(" "+msgr.DiffDetail),
+				),
+				VCardText(
+					//vuetif.VAvatar().Class("mr-2").Children(
+					//	VIcon("mdi-account").Size(SizeSmall),
+					//),
+					h.Text(" "+msgr.DiffDetail),
 				),
 				VTable(
 					h.Tbody(
-						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
-						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
-						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
-						h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(record.GetModelLabel()))),
-						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.GetModelKeys()))),
-						h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator))),
+						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))),
+						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.Action))),
+						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
+						h.Tr(
+							h.Td(h.Text(msgr.ModelLabel)),
+							h.Td(h.Text(func() string {
+								if record.ModelLabel == "" {
+									return "-"
+								}
+								return record.ModelLabel
+							}())),
+						),
+						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.ModelKeys))),
+						h.If(record.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.ModelLink)))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
 					),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))

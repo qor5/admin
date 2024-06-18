@@ -1,8 +1,9 @@
 package activity
 
 import (
+	"errors"
 	"gorm.io/gorm"
-	"time"
+	"strings"
 )
 
 const (
@@ -16,8 +17,6 @@ type CreatorInterface interface {
 	GetID() uint
 	GetName() string
 }
-
-//TODO: Reconfiguration interface
 
 type ActivityLog struct {
 	gorm.Model
@@ -39,77 +38,9 @@ type ActivityLog struct {
 	Number int64
 }
 
-func (al *ActivityLog) SetCreatedAt(t time.Time) {
-	al.CreatedAt = t
-}
-
-func (al ActivityLog) GetCreatedAt() time.Time {
-	return al.CreatedAt
-}
-
-func (al *ActivityLog) SetUserID(id uint) {
-	al.UserID = id
-}
-
-func (al ActivityLog) GetUserID() uint {
-	return al.UserID
-}
-
-func (al *ActivityLog) SetCreator(s string) {
-	al.Creator = s
-}
-
-func (al *ActivityLog) GetCreator() string {
-	return al.Creator
-}
-
-func (al *ActivityLog) SetAction(s string) {
-	al.Action = s
-}
-
-func (al *ActivityLog) GetAction() string {
-	return al.Action
-}
-
-func (al *ActivityLog) SetModelKeys(s string) {
-	al.ModelKeys = s
-}
-
-func (al *ActivityLog) GetModelKeys() string {
-	return al.ModelKeys
-}
-
-func (al *ActivityLog) SetModelName(s string) {
-	al.ModelName = s
-}
-
-func (al *ActivityLog) GetModelName() string {
-	return al.ModelName
-}
-
-func (al *ActivityLog) SetModelLabel(s string) {
-	al.ModelLabel = s
-}
-
-func (al *ActivityLog) GetModelLabel() string {
-	if al.ModelLabel == "" {
-		return "-"
+func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
+	if strings.TrimSpace(n.Content) == "" {
+		return errors.New("note cannot be empty")
 	}
-	return al.ModelLabel
-}
-
-func (al *ActivityLog) SetModelLink(s string) {
-	al.ModelLink = s
-}
-
-func (al *ActivityLog) GetModelLink() string {
-	return al.ModelLink
-}
-
-func (al *ActivityLog) SetModelDiffs(s string) {
-	al.ModelDiffs = s
-}
-
-func (al *ActivityLog) GetModelDiffs() string {
-	return al.ModelDiffs
+	return nil
 }
