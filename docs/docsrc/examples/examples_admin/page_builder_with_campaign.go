@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/gorm2op"
-
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
-
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
+	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -117,6 +116,13 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 	puBuilder := publish.New(db, nil)
+	if b.GetPermission() == nil {
+		b.Permission(
+			perm.New().Policies(
+				perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+			),
+		)
+	}
 	b.Use(puBuilder)
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).

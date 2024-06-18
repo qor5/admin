@@ -160,7 +160,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/%s/editors", b.builder.prefix, b.name)).
+															URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
 															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
@@ -383,7 +383,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
 	okAction := web.Plaid().
-		URL(fmt.Sprintf("%s/%s/editors", b.builder.prefix, b.name)).
+		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
 		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 	portalName := dialogPortalName
 	if ctx.R.FormValue("portal") == "presets" {
