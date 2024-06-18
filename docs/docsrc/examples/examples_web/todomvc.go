@@ -14,10 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// func init() {
-// 	compo.RegisterType((*TodoApp)(nil))
-// 	compo.RegisterType((*TodoItem)(nil))
-// }
+func init() {
+	compo.RegisterType((*TodoApp)(nil))
+	compo.RegisterType((*TodoItem)(nil))
+}
 
 const NotifTodosChanged = "NotifTodosChanged"
 
@@ -212,7 +212,7 @@ func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	var itemTitleCompo h.HTMLComponent
-	if c.b.itemTitleCompo != nil {
+	if c.b != nil && c.b.itemTitleCompo != nil {
 		itemTitleCompo = c.b.itemTitleCompo(todo)
 	} else {
 		itemTitleCompo = h.Label(todo.Title)
