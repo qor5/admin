@@ -14,10 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func init() {
-	compo.RegisterType((*TodoApp)(nil))
-	compo.RegisterType((*TodoItem)(nil))
-}
+// func init() {
+// 	compo.RegisterType((*TodoApp)(nil))
+// 	compo.RegisterType((*TodoItem)(nil))
+// }
 
 const NotifTodosChanged = "NotifTodosChanged"
 
@@ -36,6 +36,8 @@ type Todo struct {
 }
 
 type TodoApp struct {
+	b *TodoAppBuilder
+
 	ID         string     `json:"id"`
 	Visibility Visibility `json:"visibility"`
 }
@@ -56,22 +58,23 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
 		filteredTodoItems[i] = &TodoItem{
+			b:    c.b,
 			ID:   todo.ID,
 			todo: todo,
-			// OnChanged: compo.ReloadAction(a, nil).Go(),
+			// OnChanged: compo.ReloadAction(ctx,a, nil).Go(),
 		}
 	}
 
 	checkBoxID := fmt.Sprintf("%s-toggle-all", c.ID)
 	return compo.Reloadify(c,
-		web.Scope().Observer(NotifTodosChanged, compo.ReloadAction(c, nil).Go()),
+		web.Scope().Observer(NotifTodosChanged, compo.ReloadAction(ctx, c, nil).Go()),
 		h.Section().Class("todoapp").Children(
 			h.Header().Class("header").Children(
 				h.H1("Todos"),
 				h.Input("").Class("new-todo").Attr("id", fmt.Sprintf("%s-creator", c.ID)).
 					Attr("placeholder", "What needs to be done?").
 					Attr("@keyup.enter", strings.Replace(
-						compo.PlaidAction(c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
+						compo.PlaidAction(ctx, c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
 						`"_placeholder_"`,
 						"$event.target.value",
 						1,
@@ -80,7 +83,7 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Section().Class("main").Attr("v-show", h.JSONString(len(todos) > 0)).Children(
 				h.Input("").Type("checkbox").Attr("id", checkBoxID).Class("toggle-all").
 					Attr("checked", remaining == 0).
-					Attr("@change", compo.PlaidAction(c, c.ToggleAll, nil).Go()),
+					Attr("@change", compo.PlaidAction(ctx, c, c.ToggleAll, nil).Go()),
 				h.Label("Mark all as complete").Attr("for", checkBoxID),
 				h.Ul().Class("todo-list").Children(filteredTodoItems...),
 			),
@@ -92,19 +95,19 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Ul().Class("filters").Children(
 					h.Li(
 						h.A(h.Text("All")).ClassIf("selected", c.Visibility == VisibilityAll).
-							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityAll
 							}).Go()),
 					),
 					h.Li(
 						h.A(h.Text("Active")).ClassIf("selected", c.Visibility == VisibilityActive).
-							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityActive
 							}).Go()),
 					),
 					h.Li(
 						h.A(h.Text("Completed")).ClassIf("selected", c.Visibility == VisibilityCompleted).
-							Attr("@click", compo.ReloadAction(c, func(cloned *TodoApp) {
+							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityCompleted
 							}).Go()),
 					),
@@ -187,6 +190,8 @@ func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web
 }
 
 type TodoItem struct {
+	b *TodoAppBuilder
+
 	ID   string `json:"id"`
 	todo *Todo  // use this if not nil, otherwise load with ID from Storage
 	// OnChanged string `json:"on_changed"`
@@ -206,13 +211,19 @@ func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 		}
 	}
 
+	var itemTitleCompo h.HTMLComponent
+	if c.b.itemTitleCompo != nil {
+		itemTitleCompo = c.b.itemTitleCompo(todo)
+	} else {
+		itemTitleCompo = h.Label(todo.Title)
+	}
 	return h.Li().ClassIf("completed", todo.Completed).Children(
 		h.Div().Class("view").Children(
 			h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
-				Attr("@change", compo.PlaidAction(c, c.Toggle, nil).Go()),
-			h.Label(todo.Title),
+				Attr("@change", compo.PlaidAction(ctx, c, c.Toggle, nil).Go()),
+			itemTitleCompo,
 			h.Button("").Class("destroy").
-				Attr("@click", compo.PlaidAction(c, c.Remove, nil).Go()),
+				Attr("@click", compo.PlaidAction(ctx, c, c.Remove, nil).Go()),
 		),
 	).MarshalHTML(ctx)
 }
@@ -245,19 +256,76 @@ func (c *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) 
 	return
 }
 
+// TODO: 这块需要想办法封装，尽可能通用
+type TodoAppBuilder struct {
+	initial        *TodoApp
+	eventName      string
+	once           sync.Once
+	itemTitleCompo func(todo *Todo) h.HTMLComponent
+}
+
+func NewTodoAppBuilder(initial *TodoApp) *TodoAppBuilder {
+	b := &TodoAppBuilder{
+		initial:   initial,
+		eventName: fmt.Sprintf("%s%s__", compo.EventDispatchAction, initial.ID),
+	}
+	initial.b = b
+	return b
+}
+
+func (b *TodoAppBuilder) ItemTitleCompo(f func(todo *Todo) h.HTMLComponent) *TodoAppBuilder {
+	b.itemTitleCompo = f
+	return b
+}
+
+func (b *TodoAppBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
+	b.once.Do(func() {
+		TodoMVCExamplePB.RegisterEventFunc(b.eventName, b.eventDispatchActionHandler)
+	})
+	ctx = compo.WithDispatchActionEventName(ctx, b.eventName)
+	return b.initial.MarshalHTML(ctx)
+}
+
+func (b *TodoAppBuilder) eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
+	ctx.R = ctx.R.WithContext(compo.WithDispatchActionEventName(ctx.R.Context(), b.eventName))
+	// TODO: 需要将默认的注册器逻辑接入进来，此处只处理补充 unmarshal 的逻辑
+	return compo.EventDispatchActionHandlerComplex(ctx, func(typeName string) (any, error) {
+		if typeName == fmt.Sprintf("%T", &TodoApp{}) {
+			return &TodoApp{b: b}, nil
+		}
+		if typeName == fmt.Sprintf("%T", &TodoItem{}) {
+			return &TodoItem{b: b}, nil
+		}
+		return nil, fmt.Errorf("unknown compo type: %s", typeName)
+	})
+}
+
 func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
 	pr.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
-			&TodoApp{
+			// &TodoApp{
+			// 	ID:         "TodoApp0",
+			// 	Visibility: VisibilityAll,
+			// },
+			NewTodoAppBuilder(&TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
-			},
+			}).ItemTitleCompo(func(todo *Todo) h.HTMLComponent {
+				if todo.Completed {
+					return h.Label(todo.Title).Style("color: red;")
+				}
+				return h.Label(todo.Title).Style("color: green;")
+			}),
 		),
 		h.Div().Style("width: 550px;").Children(
-			&TodoApp{
+			// &TodoApp{
+			// 	ID:         "TodoApp1",
+			// 	Visibility: VisibilityCompleted,
+			// },
+			NewTodoAppBuilder(&TodoApp{
 				ID:         "TodoApp1",
 				Visibility: VisibilityCompleted,
-			},
+			}),
 		),
 	)
 	ctx.Injector.HeadHTML(`
@@ -281,6 +349,7 @@ func StorageFromContext(ctx context.Context) Storage {
 var TodoMVCExamplePB = web.Page(TodoMVCExample).
 	Wrap(func(in web.PageFunc) web.PageFunc {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
+			// TODO: 模拟最上层给到数据源，其实也可通过 Builder 来处理
 			ctx.WithContextValue(storageCtxKey{}, memoryStorage)
 			return in(ctx)
 		}

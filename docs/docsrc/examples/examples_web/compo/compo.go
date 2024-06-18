@@ -17,7 +17,7 @@ func init() {
 }
 
 func Install(b *web.Builder) {
-	b.RegisterEventFunc(eventDispatchAction, eventDispatchActionHandler)
+	b.RegisterEventFunc(EventDispatchAction, EventDispatchActionHandler)
 }
 
 type Action struct {
@@ -29,7 +29,22 @@ type Action struct {
 
 const fieldKeyAction = "__compo_action__"
 
-func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBuilder {
+const EventDispatchAction = "__dispatch_compo_action__"
+
+type eventNameDispatchActionCtxKey struct{}
+
+func WithDispatchActionEventName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, eventNameDispatchActionCtxKey{}, name)
+}
+
+func GetDispatchActionEventName(ctx context.Context) string {
+	if v := ctx.Value(eventNameDispatchActionCtxKey{}); v != nil {
+		return v.(string)
+	}
+	return EventDispatchAction
+}
+
+func PlaidAction(ctx context.Context, c h.HTMLComponent, method any, request any) *web.VueEventTagBuilder {
 	var methodName string
 	switch m := method.(type) {
 	case string:
@@ -39,7 +54,7 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 	}
 
 	return web.Plaid().
-		EventFunc(eventDispatchAction).
+		EventFunc(GetDispatchActionEventName(ctx)).
 		FieldValue(fieldKeyAction, web.Var(
 			fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
 				PrettyJSONString(Action{
@@ -52,21 +67,23 @@ func PlaidAction(c h.HTMLComponent, method any, request any) *web.VueEventTagBui
 		))
 }
 
-const eventDispatchAction = "__dispatch_compo_action__"
-
 var (
 	outType0 = reflect.TypeOf(web.EventResponse{})
 	outType1 = reflect.TypeOf((*error)(nil)).Elem()
 	inType0  = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
-func eventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
+func EventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
+	return EventDispatchActionHandlerComplex(ctx, newInstance)
+}
+
+func EventDispatchActionHandlerComplex(ctx *web.EventContext, newInstanceFunc func(typeName string) (any, error)) (r web.EventResponse, err error) {
 	var action Action
 	if err = json.Unmarshal([]byte(ctx.R.FormValue(fieldKeyAction)), &action); err != nil {
 		return r, errors.Wrap(err, "failed to unmarshal compo action")
 	}
 
-	c, err := newInstance(action.CompoType)
+	c, err := newInstanceFunc(action.CompoType)
 	if err != nil {
 		return r, err
 	}

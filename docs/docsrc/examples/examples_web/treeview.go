@@ -41,11 +41,11 @@ func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 			}),
 		)
 	if isFolder {
-		div.Attr("@click", compo.ReloadAction(t, func(cloned *TreeItem) {
+		div.Attr("@click", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
 			cloned.Toggle()
 		}).Go())
 	} else {
-		div.Attr("@dblclick", compo.ReloadAction(t, func(cloned *TreeItem) {
+		div.Attr("@dblclick", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
 			cloned.ChangeType()
 		}).Go())
 	}
@@ -61,7 +61,7 @@ func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 					})
 				}
 				childComponents = append(childComponents,
-					h.Li(h.Text("+")).Attr("@click", compo.ReloadAction(t, func(cloned *TreeItem) {
+					h.Li(h.Text("+")).Attr("@click", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
 						cloned.AddChild()
 					}).Go()),
 				)

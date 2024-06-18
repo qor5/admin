@@ -33,7 +33,7 @@ func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		Text(fmt.Sprintf("EmailInChildCompo: %s", c.Email)),
 		Br(),
 		Button("ChangeEmailViaChildReloadSelf").Attr("@click",
-			compo.ReloadAction(c, func(cloned *ChildCompo) {
+			compo.ReloadAction(ctx, c, func(cloned *ChildCompo) {
 				cloned.Email += "-ChildSelfReloaded"
 			}).Go(),
 		),
@@ -59,7 +59,7 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	child := &ChildCompo{
 		ID:    fmt.Sprintf("%s-child", c.ID),
 		Email: fmt.Sprintf("%s@gmail.com-%s", c.ID, c.EmailSuffix),
-		ClickExtra: compo.ReloadAction(c, func(cloned *SampleCompo) {
+		ClickExtra: compo.ReloadAction(ctx, c, func(cloned *SampleCompo) {
 			cloned.EmailSuffix += "-ClickedExtra"
 		}).Go(),
 	}
@@ -68,12 +68,12 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			return Pre(JSONString(c))
 		}),
 		Button("SwitchShowPre").Attr("@click",
-			compo.ReloadAction(c, func(cloned *SampleCompo) {
+			compo.ReloadAction(ctx, c, func(cloned *SampleCompo) {
 				cloned.ShowPre = !cloned.ShowPre
 			}).Go(),
 		),
 		Button("DeleteItem").Attr("@click",
-			compo.PlaidAction(c, c.OnDeleteItem, DeleteItemRequest{
+			compo.PlaidAction(ctx, c, c.OnDeleteItem, DeleteItemRequest{
 				Extra: "extra",
 			}).Go(),
 		),

@@ -46,12 +46,12 @@ const (
 	actionMethodReload = "OnReload"
 )
 
-func ReloadAction[T Reloadable](c T, f func(cloned T)) *web.VueEventTagBuilder {
+func ReloadAction[T Reloadable](ctx context.Context, c T, f func(cloned T)) *web.VueEventTagBuilder {
 	cloned := MustClone(c)
 	if f != nil {
 		f(cloned)
 	}
-	return PlaidAction(cloned, actionMethodReload, struct{}{})
+	return PlaidAction(ctx, cloned, actionMethodReload, struct{}{})
 }
 
 func ApplyReloadToResponse(r *web.EventResponse, c Reloadable) {
