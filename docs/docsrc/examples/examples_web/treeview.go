@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/compo"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/stateful"
 	"github.com/qor5/web/v3"
 	"github.com/rs/xid"
 	h "github.com/theplant/htmlgo"
 )
 
 func init() {
-	compo.RegisterType((*TreeItem)(nil))
+	stateful.RegisterType((*TreeItem)(nil))
 }
 
 type TreeItem struct {
@@ -41,15 +41,15 @@ func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 			}),
 		)
 	if isFolder {
-		div.Attr("@click", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
+		div.Attr("@click", stateful.ReloadAction(ctx, t, func(cloned *TreeItem) {
 			cloned.Toggle()
 		}).Go())
 	} else {
-		div.Attr("@dblclick", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
+		div.Attr("@dblclick", stateful.ReloadAction(ctx, t, func(cloned *TreeItem) {
 			cloned.ChangeType()
 		}).Go())
 	}
-	return compo.Reloadify(t,
+	return stateful.Reloadify(t,
 		h.Li(
 			div,
 			h.Iff(t.IsOpen && isFolder, func() h.HTMLComponent {
@@ -61,7 +61,7 @@ func (t *TreeItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 					})
 				}
 				childComponents = append(childComponents,
-					h.Li(h.Text("+")).Attr("@click", compo.ReloadAction(ctx, t, func(cloned *TreeItem) {
+					h.Li(h.Text("+")).Attr("@click", stateful.ReloadAction(ctx, t, func(cloned *TreeItem) {
 						cloned.AddChild()
 					}).Go()),
 				)

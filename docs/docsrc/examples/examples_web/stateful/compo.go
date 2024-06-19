@@ -1,4 +1,4 @@
-package compo
+package stateful
 
 import h "github.com/theplant/htmlgo"
 

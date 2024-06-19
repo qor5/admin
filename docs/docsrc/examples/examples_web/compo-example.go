@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/compo"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/stateful"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
 
 func init() {
-	compo.RegisterType((*ChildCompo)(nil))
-	compo.RegisterType((*SampleCompo)(nil))
+	stateful.RegisterType((*ChildCompo)(nil))
+	stateful.RegisterType((*SampleCompo)(nil))
 }
 
 type ChildCompo struct {
@@ -27,13 +27,13 @@ func (c *ChildCompo) CompoName() string {
 }
 
 func (c *ChildCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	return compo.Reloadify(c,
+	return stateful.Reloadify(c,
 		Text("I'm a child:  "),
 		Br(),
 		Text(fmt.Sprintf("EmailInChildCompo: %s", c.Email)),
 		Br(),
 		Button("ChangeEmailViaChildReloadSelf").Attr("@click",
-			compo.ReloadAction(ctx, c, func(cloned *ChildCompo) {
+			stateful.ReloadAction(ctx, c, func(cloned *ChildCompo) {
 				cloned.Email += "-ChildSelfReloaded"
 			}).Go(),
 		),
@@ -59,21 +59,21 @@ func (c *SampleCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	child := &ChildCompo{
 		ID:    fmt.Sprintf("%s-child", c.ID),
 		Email: fmt.Sprintf("%s@gmail.com-%s", c.ID, c.EmailSuffix),
-		ClickExtra: compo.ReloadAction(ctx, c, func(cloned *SampleCompo) {
+		ClickExtra: stateful.ReloadAction(ctx, c, func(cloned *SampleCompo) {
 			cloned.EmailSuffix += "-ClickedExtra"
 		}).Go(),
 	}
-	return compo.Reloadify(c,
+	return stateful.Reloadify(c,
 		Iff(c.ShowPre, func() HTMLComponent {
 			return Pre(JSONString(c))
 		}),
 		Button("SwitchShowPre").Attr("@click",
-			compo.ReloadAction(ctx, c, func(cloned *SampleCompo) {
+			stateful.ReloadAction(ctx, c, func(cloned *SampleCompo) {
 				cloned.ShowPre = !cloned.ShowPre
 			}).Go(),
 		),
 		Button("DeleteItem").Attr("@click",
-			compo.PlaidAction(ctx, c, c.OnDeleteItem, DeleteItemRequest{
+			stateful.PlaidAction(ctx, c, c.OnDeleteItem, DeleteItemRequest{
 				Extra: "extra",
 			}).Go(),
 		),

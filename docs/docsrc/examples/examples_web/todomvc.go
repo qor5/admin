@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/compo"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/stateful"
 	"github.com/qor5/web/v3"
 	"github.com/rs/xid"
 	h "github.com/theplant/htmlgo"
@@ -58,20 +58,20 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 			dep:  c.dep,
 			ID:   todo.ID,
 			todo: todo,
-			// OnChanged: compo.ReloadAction(ctx,a, nil).Go(),
+			// OnChanged: stateful.ReloadAction(ctx,a, nil).Go(),
 		}
 	}
 
 	checkBoxID := fmt.Sprintf("%s-toggle-all", c.ID)
-	return compo.Reloadify(c,
-		web.Scope().Observer(NotifTodosChanged, compo.ReloadAction(ctx, c, nil).Go()),
+	return stateful.Reloadify(c,
+		web.Scope().Observer(NotifTodosChanged, stateful.ReloadAction(ctx, c, nil).Go()),
 		h.Section().Class("todoapp").Children(
 			h.Header().Class("header").Children(
 				h.H1("Todos"),
 				h.Input("").Class("new-todo").Attr("id", fmt.Sprintf("%s-creator", c.ID)).
 					Attr("placeholder", "What needs to be done?").
 					Attr("@keyup.enter", strings.Replace(
-						compo.PlaidAction(ctx, c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
+						stateful.PlaidAction(ctx, c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
 						`"_placeholder_"`,
 						"$event.target.value",
 						1,
@@ -80,7 +80,7 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Section().Class("main").Attr("v-show", h.JSONString(len(todos) > 0)).Children(
 				h.Input("").Type("checkbox").Attr("id", checkBoxID).Class("toggle-all").
 					Attr("checked", remaining == 0).
-					Attr("@change", compo.PlaidAction(ctx, c, c.ToggleAll, nil).Go()),
+					Attr("@change", stateful.PlaidAction(ctx, c, c.ToggleAll, nil).Go()),
 				h.Label("Mark all as complete").Attr("for", checkBoxID),
 				h.Ul().Class("todo-list").Children(filteredTodoItems...),
 			),
@@ -92,19 +92,19 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Ul().Class("filters").Children(
 					h.Li(
 						h.A(h.Text("All")).ClassIf("selected", c.Visibility == VisibilityAll).
-							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
+							Attr("@click", stateful.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityAll
 							}).Go()),
 					),
 					h.Li(
 						h.A(h.Text("Active")).ClassIf("selected", c.Visibility == VisibilityActive).
-							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
+							Attr("@click", stateful.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityActive
 							}).Go()),
 					),
 					h.Li(
 						h.A(h.Text("Completed")).ClassIf("selected", c.Visibility == VisibilityCompleted).
-							Attr("@click", compo.ReloadAction(ctx, c, func(cloned *TodoApp) {
+							Attr("@click", stateful.ReloadAction(ctx, c, func(cloned *TodoApp) {
 								cloned.Visibility = VisibilityCompleted
 							}).Go()),
 					),
@@ -163,7 +163,7 @@ func (c *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error
 	}
 
 	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
-	// compo.ApplyReloadToResponse(&r, a)
+	// stateful.ApplyReloadToResponse(&r, a)
 	return
 }
 
@@ -186,7 +186,7 @@ func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web
 		return r, err
 	}
 	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
-	// compo.ApplyReloadToResponse(&r, a)
+	// stateful.ApplyReloadToResponse(&r, a)
 	return
 }
 
@@ -218,10 +218,10 @@ func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return h.Li().ClassIf("completed", todo.Completed).Children(
 		h.Div().Class("view").Children(
 			h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
-				Attr("@change", compo.PlaidAction(ctx, c, c.Toggle, nil).Go()),
+				Attr("@change", stateful.PlaidAction(ctx, c, c.Toggle, nil).Go()),
 			itemTitleCompo,
 			h.Button("").Class("destroy").
-				Attr("@click", compo.PlaidAction(ctx, c, c.Remove, nil).Go()),
+				Attr("@click", stateful.PlaidAction(ctx, c, c.Remove, nil).Go()),
 		),
 	).MarshalHTML(ctx)
 }
@@ -260,12 +260,12 @@ type TodoAppDep struct {
 func init() {
 	// TODO: 是否能自动化 ？ 思考: 如果一个组件需要 PlaidAction 就必须向下传递 scope ，那此时就可以 Register ？但是如果还未注册，eventFunc 就回来了，那就会出现问题吗？
 	// TODO: 貌似确实会出问题， 因为 page 的 eventHandler 那边只会校验 eventFuncID 是否存在，如果不存在则执行 render ，并不会因为 action 没注册执行 render
-	compo.RegisterType((*TodoApp)(nil))
-	compo.RegisterType((*TodoItem)(nil))
-	compo.MustProvide(compo.ScopeTop, func() Storage {
+	stateful.RegisterType((*TodoApp)(nil))
+	stateful.RegisterType((*TodoItem)(nil))
+	stateful.MustProvide(stateful.ScopeTop, func() Storage {
 		return &MemoryStorage{}
 	})
-	compo.MustProvide(compo.ScopeTop, func(storage Storage) *TodoAppDep {
+	stateful.MustProvide(stateful.ScopeTop, func(storage Storage) *TodoAppDep {
 		return &TodoAppDep{
 			db: storage,
 			itemTitleCompo: func(todo *Todo) h.HTMLComponent {
@@ -276,7 +276,7 @@ func init() {
 			},
 		}
 	})
-	compo.MustProvide(compo.Scope("two"), func(storage Storage) *TodoAppDep {
+	stateful.MustProvide(stateful.Scope("two"), func(storage Storage) *TodoAppDep {
 		return &TodoAppDep{
 			db:             storage,
 			itemTitleCompo: nil,
@@ -288,13 +288,13 @@ func TodoMVCExample(ctx *web.EventContext) (r web.PageResponse, err error) {
 	r.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
 			// TODO: 可能叫 MustInject 会更合适？
-			compo.MustScoped(compo.ScopeTop, &TodoApp{
+			stateful.MustScoped(stateful.ScopeTop, &TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
 			}),
 		),
 		h.Div().Style("width: 550px;").Children(
-			compo.MustScoped(compo.Scope("two"), &TodoApp{
+			stateful.MustScoped(stateful.Scope("two"), &TodoApp{
 				ID:         "TodoApp1",
 				Visibility: VisibilityCompleted,
 			}),
@@ -331,7 +331,7 @@ type MemoryStorage struct {
 func (m *MemoryStorage) List() ([]*Todo, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return compo.MustClone(m.todos), nil
+	return stateful.MustClone(m.todos), nil
 }
 
 func (m *MemoryStorage) Create(todo *Todo) error {
@@ -346,7 +346,7 @@ func (m *MemoryStorage) Read(id string) (*Todo, error) {
 	defer m.mu.RUnlock()
 	for _, todo := range m.todos {
 		if todo.ID == id {
-			return compo.MustClone(todo), nil
+			return stateful.MustClone(todo), nil
 		}
 	}
 	return nil, gorm.ErrRecordNotFound
