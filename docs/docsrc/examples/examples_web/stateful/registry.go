@@ -12,9 +12,13 @@ import (
 type Scope string
 
 const (
+	// ScopeTop is the top level scope.
+	// It must be empty because top level dependencies are typically required,
+	// and even if the eventDispatchActionHandler side detects an empty scope, it should still be applied.
 	ScopeTop Scope = ""
 )
 
+// TODO: 如果这个只做 inject 相关的处理的话，这个命名会有点奇怪。
 type Registry struct {
 	mu        sync.RWMutex
 	injectors map[Scope]*inject.Injector
