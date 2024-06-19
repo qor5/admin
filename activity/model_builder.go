@@ -352,8 +352,9 @@ func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, dif
 		log.ModelDiffs = diffs
 	}
 
-	if db.Save(log).Error != nil {
-		return db.Error
+	err := db.Save(log).Error
+	if err != nil {
+		return err
 	}
 	return nil
 }

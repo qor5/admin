@@ -1,9 +1,7 @@
 package activity
 
 import (
-	"errors"
 	"gorm.io/gorm"
-	"strings"
 )
 
 const (
@@ -38,9 +36,9 @@ type ActivityLog struct {
 	Number int64
 }
 
-func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
-	if strings.TrimSpace(n.Content) == "" {
-		return errors.New("note cannot be empty")
-	}
-	return nil
-}
+//func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
+//	if strings.TrimSpace(n.Content) == "" {
+//		return errors.New("note cannot be empty")
+//	}
+//	return nil
+//}

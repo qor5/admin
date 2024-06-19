@@ -75,19 +75,38 @@ func TestModelKeys(t *testing.T) {
 	builder := New(db)
 	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
-	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+
+	var err error
+
+	err = builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	if err != nil {
+		t.Fatalf("failed to add create record: %v", err)
+	}
 	record := &ActivityLog{}
+
+	db.Debug().First(&record)
+
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
 	if record.ModelKeys != "1:v1" {
+		fmt.Println(record.ModelKeys)
 		t.Errorf("want the keys %v, but got %v", "1:v1", record.ModelKeys)
 	}
 
 	resetDB()
+
+	db.Exec("DELETE FROM activity_logs")
+
 	builder.RegisterModel(widgetModel).AddKeys("Name")
-	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
+	err = builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
+	if err != nil {
+		t.Fatalf("failed to add create record: %v", err)
+	}
 	record2 := &ActivityLog{}
+
+	db.Debug().First(&record)
+
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
