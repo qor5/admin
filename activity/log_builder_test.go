@@ -67,10 +67,17 @@ func TestMain(m *testing.M) {
 func resetDB() {
 	db.Exec("delete from test_activity_logs;")
 	db.Exec("delete from test_activity_models;")
+
+	// TODO: rename the table name
+	db.Exec("DELETE FROM activity_logs")
 }
 
 func TestModelKeys(t *testing.T) {
 	resetDB()
+
+	if err := db.AutoMigrate(&ActivityLog{}); err != nil {
+		panic(err)
+	}
 
 	builder := New(db)
 	pb.Use(builder)
@@ -95,8 +102,6 @@ func TestModelKeys(t *testing.T) {
 	}
 
 	resetDB()
-
-	db.Exec("DELETE FROM activity_logs")
 
 	builder.RegisterModel(widgetModel).AddKeys("Name")
 	err = builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
@@ -124,6 +129,7 @@ func TestModelLink(t *testing.T) {
 	})
 
 	resetDB()
+
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {

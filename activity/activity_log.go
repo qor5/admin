@@ -1,6 +1,8 @@
 package activity
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -34,11 +36,20 @@ type ActivityLog struct {
 	ResourceType string `gorm:"index"`
 
 	Number int64
+
+	TableNameOverride string `gorm:"-"`
 }
 
-//func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
-//	if strings.TrimSpace(n.Content) == "" {
-//		return errors.New("note cannot be empty")
-//	}
-//	return nil
-//}
+func (a *ActivityLog) TableName() string {
+	if a.TableNameOverride != "" {
+		return a.TableNameOverride
+	}
+	return "activity_logs"
+}
+
+func (n *ActivityLog) BeforeCreate(tx *gorm.DB) error {
+	if strings.TrimSpace(n.Content) == "" {
+		//return errors.New("note cannot be empty")
+	}
+	return nil
+}
