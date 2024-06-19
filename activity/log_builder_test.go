@@ -72,11 +72,11 @@ func resetDB() {
 func TestModelKeys(t *testing.T) {
 	resetDB()
 
-	builder := New(db, &ActivityLog{})
+	builder := New(db)
 	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(*ActivityLog)
+	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 	builder.RegisterModel(widgetModel).AddKeys("Name")
 	builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
-	record2 := builder.NewLogModelData().(*ActivityLog)
+	record2 := &ActivityLog{}
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := New(db, &ActivityLog{})
+	builder := New(db)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).LinkFunc(func(v any) string {
 		page := v.(Page)
@@ -106,7 +106,7 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(*ActivityLog)
+	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := New(db, &ActivityLog{})
+	builder := New(db)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now any, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
@@ -186,7 +186,7 @@ func TestModelTypeHanders(t *testing.T) {
 				{Name: "Video 03", Title: "video 1"},
 			},
 		}, db)
-	record := builder.NewLogModelData().(*ActivityLog)
+	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -207,14 +207,14 @@ func (u user) GetName() string {
 }
 
 func TestCreatorInferface(t *testing.T) {
-	builder := New(db, &ActivityLog{})
+	builder := New(db)
 	builder.Install(pb)
 
 	builder.RegisterModel(pageModel)
 	resetDB()
 
 	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
-	record := builder.NewLogModelData().(*ActivityLog)
+	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-	builder := New(db, &ActivityLog{})
+	builder := New(db)
 	builder.Install(pb)
 
 	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
@@ -273,7 +273,7 @@ func TestGetActivityLogs(t *testing.T) {
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(db, &ActivityLog{}).CreatorContextKey("creator")
+	builder := New(db).CreatorContextKey("creator")
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 

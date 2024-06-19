@@ -21,7 +21,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -74,8 +73,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		cons                        []*Container
 		status                      = ctx.R.FormValue(paramStatus)
 		isReadonly                  = status != publish.StatusDraft
-		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		activityMsgr                = i18n.MustGetModuleMessages(ctx.R, activity.I18nActivityKey, activity.Messages_en_US).(*activity.Messages)
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
 	wc := map[string]interface{}{
@@ -102,47 +99,36 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
-				Index:          i,
-				Label:          inflection.Plural(strcase.ToKebab(c.ModelName)),
-				ModelName:      c.ModelName,
-				ModelID:        strconv.Itoa(int(c.ModelID)),
-				DisplayName:    displayName,
-				ContainerID:    strconv.Itoa(int(c.ID)),
-				URL:            b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
-				Shared:         c.Shared,
-				VisibilityIcon: vicon,
-				ParamID:        c.PrimarySlug(),
-				Locale:         locale,
-				Hidden:         c.Hidden,
+				Index:           i,
+				Label:           inflection.Plural(strcase.ToKebab(c.ModelName)),
+				ModelName:       c.ModelName,
+				ModelID:         strconv.Itoa(int(c.ModelID)),
+				DisplayName:     displayName,
+				ContainerID:     strconv.Itoa(int(c.ID)),
+				URL:             b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
+				Shared:          c.Shared,
+				VisibilityIcon:  vicon,
+				ParamID:         c.PrimarySlug(),
+				Locale:          locale,
+				Hidden:          c.Hidden,
+				ContainerDataID: fmt.Sprintf(`%s_%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID))),
 			},
 		)
 	}
-	menu := VMenu(
-		web.Slot(
-			VBtn("").Icon("mdi-dots-horizontal").Variant(VariantText).Size(SizeSmall).Attr("v-bind", "props").Attr("v-show", "element.editShow || (isActive || isHovering)"),
-		).Name("activator").Scope("{isActive,props}"),
-		VList(
-			VListItem(
-				VBtn(msgr.Rename).PrependIcon("mdi-pencil").Attr("@click",
-					"element.editShow=!element.editShow",
-				),
-			),
-			VListItem(
-				VBtn(activityMsgr.ActionDelete).PrependIcon("mdi-delete").Attr("@click",
-					web.Plaid().
-						URL(ctx.R.URL.Path).
-						EventFunc(DeleteContainerConfirmationEvent).
-						Query(paramContainerID, web.Var("element.param_id")).
-						Query(paramContainerName, web.Var("element.display_name")).
-						Go(),
-				),
-			),
-		),
-	)
 	pushState := web.Plaid().PushState(true).MergeQuery(true).
 		Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`))
+	var clickColumnEvent string
 	if !isReadonly {
 		pushState.Query(paramContainerID, web.Var("element.param_id"))
+		clickColumnEvent = fmt.Sprintf(`vars.%s=element.container_data_id;`, paramContainerDataID) +
+			web.Plaid().
+				URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
+				EventFunc(actions.Edit).
+				Query(presets.ParamOverlay, actions.Content).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamID, web.Var("element.model_id")).
+				Go() + ";" + pushState.RunPushState() +
+			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
 	r = web.Scope(
 		VSheet(
@@ -174,7 +160,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false").
 														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/editors", b.builder.prefix)).
+															URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
 															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
@@ -183,32 +169,32 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 										web.Slot(
 											h.If(!isReadonly,
 												h.Div(
+													VBtn("").Variant(VariantText).Icon("mdi-pencil").Attr("@click",
+														"element.editShow=!element.editShow",
+													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
 													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
 														web.Plaid().
 															EventFunc(ToggleContainerVisibilityEvent).
 															Query(paramContainerID, web.Var("element.param_id")).
 															Query(paramStatus, status).
 															Go(),
-													).Attr("v-show", "element.editShow || (element.hidden || isHovering)"),
-
-													VBtn("").Variant(VariantText).Icon("mdi-cog").Size(SizeSmall).Attr("@click",
+													).Attr("v-show", "!element.editShow && (element.hidden || isHovering)"),
+													VBtn("").Variant(VariantText).Icon("mdi-delete").Attr("@click",
 														web.Plaid().
-															URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
-															EventFunc(actions.Edit).
-															Query(presets.ParamOverlay, actions.Content).
-															Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-															Query(presets.ParamID, web.Var("element.model_id")).
+															URL(ctx.R.URL.Path).
+															EventFunc(DeleteContainerConfirmationEvent).
+															Query(paramContainerID, web.Var("element.param_id")).
+															Query(paramContainerName, web.Var("element.display_name")).
 															Go(),
-													).Attr("v-show", "element.editShow || isHovering"),
-													menu,
+													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
 												),
 											),
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
-										Attr("v-bind", "props").
-										Disabled(isReadonly).
-										Attr("@click", pushState.RunPushState()+
-											";"+scrollToContainer(fmt.Sprintf(`%s+"_"+%s`, web.Var("element.label"), web.Var("element.model_id")))),
+										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
+										Attr("v-bind", "props", "@click", clickColumnEvent).
+										Attr(web.VAssign("vars",
+											fmt.Sprintf(`{%s:"%s"}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
@@ -240,11 +226,13 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-		Query(paramContainerID, newContainerID).RunPushState() +
+	r.RunScript = fmt.Sprintf(`vars.%s="%s";`, paramContainerDataID, cb.getContainerDataID(modelID)) +
+		web.Plaid().PushState(true).MergeQuery(true).
+			Query(paramContainerDataID, cb.getContainerDataID(modelID)).
+			Query(paramContainerID, newContainerID).RunPushState() +
 		";" + web.Plaid().
 		EventFunc(ReloadRenderPageOrTemplateEvent).
+		MergeQuery(true).
 		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
 		Query(paramContainerID, newContainerID).
 		Go() + ";" +
@@ -395,7 +383,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 	paramID := ctx.R.FormValue(paramContainerID)
 	name := ctx.R.FormValue(paramContainerName)
 	okAction := web.Plaid().
-		URL(fmt.Sprintf("%s/editors", b.builder.prefix)).
+		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
 		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 	portalName := dialogPortalName
 	if ctx.R.FormValue("portal") == "presets" {
@@ -575,23 +563,12 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 
 func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	var (
-		containerDataID = ctx.Param(paramContainerDataID)
-		obj             = b.mb.NewModel()
-	)
+	obj := b.mb.NewModel()
 
-	if containerDataID != "" {
-		r.RunScript = fmt.Sprintf(`setTimeout(function(){%s},100)`, scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID)))
-	}
 	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
 		return
 	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: editorPreviewContentPortal,
-		Body: h.Div(body).Attr(web.VAssign("vars", "{el:$}")...),
-	})
-
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
 	return
 }
 
@@ -670,6 +647,7 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 
 	return
 }
+
 func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 	if builder.l10n == nil {
 		return wh
@@ -874,13 +852,16 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
-			  width: 30%;
+			  width: 32%;
 			  height: 32px;	
 			  opacity: 0;
               display: flex;
 			  align-items: center;	
 			  background-color: #3E63DD;
 			  justify-content: space-between;
+              pointer-events: none;
+              padding : 0 8px;
+
 			}
    			.editor-bar-buttons{
               height: 24px;
@@ -892,13 +873,21 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
               height: 24px;	
 			}
 			
-			.editor-bar h6 {
+			.editor-bar .title {
 			  color: #FFFFFF;
-			  margin-left: 4px;	
+		      width: 30%;
+			  overflow: hidden;	
+			  font-size: 12px;
+			  font-style: normal;
+			  font-weight: 400;
+			  line-height: 16px; 
+              text-overflow: ellipsis;
+			  letter-spacing: 0.04px;	
 			}
 			
 			.highlight .editor-bar {
 			  opacity: 1;
+              pointer-events: auto;
 			}
 			
 			.highlight .editor-add {
@@ -949,12 +938,27 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 				).Attr(newCtx.Injector.HTMLLangAttrs()...),
 			}
 			_, width := b.builder.getDevice(ctx)
-			r = h.Tag("vx-scroll-iframe").Attr(
+			scrollIframe := h.Tag("vx-scroll-iframe").Attr(
 				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
 				"iframe-height", iframeValue,
 				"iframe-height-name", iframeHeightName,
 				"width", width,
-				"ref", "scrollIframe")
+				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
+				"ref", "scrollIframe").
+				Attr(web.VAssign("vars",
+					fmt.Sprintf(`{hasContainer:%v,el:$}`, len(comps)))...)
+			r = scrollIframe
+			if !isReadonly && len(comps) == 0 {
+				r = h.Components(
+					scrollIframe.Attr("v-show", fmt.Sprintf(`vars.containerTab=="%s"`, EditorTabAdd)),
+					h.Div(
+						h.RawHTML(defaultContainerEmptyIcon),
+						h.Div(h.Text("Please add your elements first")),
+					).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh").
+						Attr("v-show", fmt.Sprintf(`vars.containerTab!="%s"`, EditorTabAdd)),
+				)
+				return
+			}
 
 		} else {
 			r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -1156,7 +1160,7 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 }
 
 func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
-	eb := mb.Editing().Creating()
+	eb := mb.Editing()
 	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		if p, ok := obj.(*Page); ok {
 			if p.Slug != "" {

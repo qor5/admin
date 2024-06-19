@@ -59,6 +59,25 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 				SQLCondition: `status %s ?`,
 				Options:      options,
 			},
+			{
+				Key:                   "title",
+				Label:                 "titleNoChoose",
+				ItemType:              vuetifyx.ItemTypeString,
+				Modifier:              vuetifyx.ModifierEquals, // default modifier is contains
+				SQLCondition:          `title = ?`,
+				DisableChooseModifier: true,
+			},
+			{
+				Key:          "warpBody",
+				Label:        "warpBody",
+				ItemType:     vuetifyx.ItemTypeString,
+				Modifier:     vuetifyx.ModifierEquals,
+				SQLCondition: `body = ?`,
+				Options:      options,
+				WarpInput: func(val string) string {
+					return val + "wrap"
+				},
+			},
 		}
 	})
 	return

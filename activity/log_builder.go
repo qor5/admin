@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go4.org/sort"
-	"golang.org/x/text/language"
 	"reflect"
 	"strings"
 	"time"
+
+	"go4.org/sort"
+	"golang.org/x/text/language"
 
 	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
@@ -68,7 +69,6 @@ type Builder struct {
 	creatorContextKey any                       // get the creator from context
 	dbContextKey      any                       // get the db from context
 	lmb               *presets.ModelBuilder     // log model builder
-	logModel          *ActivityLog              // log model
 	models            []*ModelBuilder           // registered model builders
 	tabHeading        func(*ActivityLog) string // tab heading format
 	permPolicy        *perm.PolicyBuilder       // permission policy
@@ -109,7 +109,7 @@ func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 }
 
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB, logModel ...*ActivityLog) *Builder {
+func New(db *gorm.DB) *Builder {
 	ab := &Builder{
 		db:                db,
 		creatorContextKey: CreatorContextKey,
@@ -118,13 +118,7 @@ func New(db *gorm.DB, logModel ...*ActivityLog) *Builder {
 
 	ab.logModelInstall = ab.defaultLogModelInstall
 
-	if len(logModel) > 0 {
-		ab.logModel = logModel[0]
-	} else {
-		ab.logModel = &ActivityLog{}
-	}
-
-	if err := db.AutoMigrate(ab.logModel); err != nil {
+	if err := db.AutoMigrate(&ActivityLog{}); err != nil {
 		panic(err)
 	}
 
@@ -144,19 +138,6 @@ func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
 		return nil
 	}
 	return logs
-}
-
-// NewLogModelData new a log model data
-func (ab Builder) NewLogModelData() any {
-	return &ActivityLog{}
-}
-
-// NewLogModelSlice new a log model slice
-func (ab Builder) NewLogModelSlice() any {
-	sliceType := reflect.SliceOf(reflect.PointerTo(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()))
-	slice := reflect.New(sliceType)
-	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
-	return slice.Interface()
 }
 
 // CreatorContextKey change the default creator context key

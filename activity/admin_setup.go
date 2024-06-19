@@ -3,12 +3,12 @@ package activity
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/qor5/x/v3/ui/vuetifyx"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
+
+	. "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -30,7 +30,7 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	if permB := b.GetPermission(); permB != nil {
 		permB.CreatePolicies(ab.permPolicy)
 	}
-	mb := b.Model(ab.logModel).MenuIcon("mdi-book-edit")
+	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
 
 	return ab.logModelInstall(b, mb)
 }
@@ -63,27 +63,25 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			contextDB = ab.getDBFromContext(ctx.R.Context())
 		)
 
-		creatorGroups := ab.NewLogModelSlice()
+		creatorGroups := []*ActivityLog{}
 		contextDB.Select("creator").Group("creator").Find(creatorGroups)
-		creatorGroupsValues := reflect.Indirect(reflect.ValueOf(creatorGroups))
 		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < creatorGroupsValues.Len(); i++ {
-			creator := reflect.Indirect(creatorGroupsValues.Index(i)).FieldByName("Creator").String()
+
+		for _, creator := range creatorGroups {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
+				Text:  creator.Creator,
+				Value: creator.Creator,
 			})
 		}
 
-		actionGroups := ab.NewLogModelSlice()
+		actionGroups := []*ActivityLog{}
 		contextDB.Select("action").Group("action").Order("action").Find(actionGroups)
-		actionGroupsValues := reflect.Indirect(reflect.ValueOf(actionGroups))
 		var actionOptions []*vuetifyx.SelectItem
-		for i := 0; i < actionGroupsValues.Len(); i++ {
-			creator := reflect.Indirect(actionGroupsValues.Index(i)).FieldByName("Action").String()
+
+		for _, action := range actionGroups {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
+				Text:  action.Action,
+				Value: action.Action,
 			})
 		}
 

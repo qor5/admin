@@ -2,20 +2,20 @@ package publish
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/activity"
 	"net/url"
 	"reflect"
-
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-
+	
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
 
 type VersionComponentConfig struct {
@@ -220,6 +220,10 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	mb := b.Model(pm.NewModel()).
 		URIName(pm.Info().URIName() + "-version-list-dialog").
 		InMenu(false)
+
+	b.GetPermission().CreatePolicies(
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
+	)
 
 	registerEventFuncsForVersion(mb, db)
 

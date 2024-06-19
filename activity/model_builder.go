@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-	"reflect"
-	"strings"
-	"time"
 )
 
 // @snippet_begin(ActivityModelBuilder)
@@ -316,11 +317,7 @@ func (mb *ModelBuilder) Diff(old, now any) ([]Diff, error) {
 }
 
 func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, diffs string) error {
-	m := mb.activity.NewLogModelData()
-	log, ok := m.(*ActivityLog)
-	if !ok {
-		return fmt.Errorf("model %T is not ActivityLog", m)
-	}
+	log := &ActivityLog{}
 
 	log.CreatedAt = time.Now()
 	switch user := creator.(type) {

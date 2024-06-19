@@ -499,7 +499,6 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 			return
 		}).
 		NotFoundPageLayoutConfig(&presets.LayoutConfig{
-			SearchBoxInvisible:          true,
 			NotificationCenterInvisible: true,
 		})
 }

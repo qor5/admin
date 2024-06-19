@@ -60,7 +60,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/campaigns/editors/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/page_builder/campaigns-editors/1_2024-05-20-v01", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
 			ExpectPageBodyNotContains:     []string{"ProductContent"},
@@ -99,7 +99,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=MyContent").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=MyContent").
 					BuildEventFuncRequest()
 
 				return req
@@ -124,7 +124,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=CampaignContent").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=CampaignContent").
 					BuildEventFuncRequest()
 
 				return req
@@ -168,7 +168,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
 					BuildEventFuncRequest()
 
 				return req

@@ -233,7 +233,7 @@ Initialize the activity package</h2>
 
 <p>To initialize activity package with the default configuration, you need to pass a <code>presets.Builder</code> instance and a database instance.</p>
 
-<highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\nactivityBuilder := activity.New(db)\nb.Use(activityBuilder)"'></highlightjs>
+<highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\nactivityBuilder := activity.New(db)\nb.Use(activityBuilder)\n"'></highlightjs>
 <p>By default, the activity package uses QOR5 login package&#39;s <code>login.UserKey</code> as the default key to fetch the current user from the context. If you want to use your own key, you can use the <code>CreatorContextKey</code> function.</p>
 
 <p>Same with above, the activity package uses the db instance that passed in during initialization to perform db operations. If you need another db to do the work, you can use <code>DBContextKey</code> method.</p>
@@ -242,7 +242,7 @@ Register the models that require activity tracking</h2>
 
 <p>This example demonstrates how to register <code>Product</code> into the activity. The activities on the product model will be automatically recorded when it is created, updated, or deleted.</p>
 
-<highlightjs :language='"go"' :code='"type WithActivityProduct struct {\n\tgorm.Model\n\tTitle string\n\tCode  string\n\tPrice float64\n}\nerr := db.AutoMigrate(\u0026WithActivityProduct{})\nif err != nil {\n\tpanic(err)\n}\nproductModel := b.Model(\u0026WithActivityProduct{}).Use(activityBuilder)\n\nbt := productModel.Detailing(\"Content\", activity.Timeline).Drawer(true)\nbt.Section(\"Content\").\n\tViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {\n\t\treturn Div().Text(\"text\")\n\t}).Editing(\"Title\", \"Code\", \"Price\")\n\nactivityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys(\"Title\").AddIgnoredFields(\"Code\").SkipDelete()"'></highlightjs>
+<highlightjs :language='"go"' :code='"type WithActivityProduct struct {\n\tgorm.Model\n\tTitle string\n\tCode  string\n\tPrice float64\n}\n\nerr := db.AutoMigrate(\u0026WithActivityProduct{})\nif err != nil {\n\tpanic(err)\n}\n\nproductModel := b.Model(\u0026WithActivityProduct{}).Use(activityBuilder)\n\nbt := productModel.Detailing(\"Content\", activity.Timeline).Drawer(true)\nbt.Section(\"Content\").\n\tViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {\n\t\treturn Div().Text(\"text\")\n\t}).Editing(\"Title\", \"Code\", \"Price\")\n\nactivityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys(\"Title\").AddIgnoredFields(\"Code\").SkipDelete()\n"'></highlightjs>
 <p>By default, the activity package will use the primary key as the key to indentify the current model data. You can use <code>SetKeys</code> and <code>AddKeys</code> methods to customize it.</p>
 
 <p>When diffing the modified data, the activity package will ignore the <code>ID</code>, <code>CreatedAt</code>, <code>UpdatedAt</code>, <code>DeletedAt</code> fields. You can either use <code>AddIgnoredFields</code> to append your own fields to the default ignored fields. Or <code>SetIgnoredFields</code> method to replace the default ignored fields.</p>
@@ -257,7 +257,7 @@ Record the activity log manually</h2>
 
 <p>If you register a preset model into the activity, the activity package will automatically record the activity log for CRUD operations. However, if you need to manually record the activity log for other operations or if you want to register a non-preset model, you can use the following sample code.</p>
 
-<highlightjs :language='"go"' :code='"currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, \"user1\")\n\nactivityBuilder.AddRecords(\"Publish\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 100})\n\nactivityBuilder.AddRecords(\"Update Price\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 200})"'></highlightjs>
+<highlightjs :language='"go"' :code='"\n\tcurrentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, \"user1\")\n\tactivityBuilder.AddRecords(\"Publish\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 100})\n\tactivityBuilder.AddRecords(\"Update Price\", currentCtx, \u0026WithActivityProduct{Title: \"Product 1\", Code: \"P1\", Price: 200})\n"'></highlightjs>
 </div>
 </div>
 </div>

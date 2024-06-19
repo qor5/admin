@@ -24,12 +24,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	PublishDir = osenv.Get(
-		"PUBLISH_DIR",
-		"The dir that static files published to",
-		"/tmp/qor5_publish",
-	)
+var PublishDir = osenv.Get(
+	"PUBLISH_DIR",
+	"The dir that static files published to",
+	"/tmp/qor5_publish",
 )
 
 type config struct {

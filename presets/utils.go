@@ -36,7 +36,7 @@ func ShowMessage(r *web.EventResponse, msg string, color string) {
 	colorJSON := h.JSONString(color)
 
 	web.AppendRunScripts(r, fmt.Sprintf(
-		`vars.presetsMessage = { show: true, message: %s, color: %s }`,
+		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
 		msgJSON, colorJSON))
 }
 
