@@ -201,7 +201,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
 			Query("field", field).
-			Query("id", fmt.Sprint(f.ID)).
+			Query("media_id", fmt.Sprint(f.ID)).
 			Query("thumb", thumb).
 			FieldValue("cfg", h.JSONString(cfg)).
 			Go())
@@ -219,7 +219,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue("id")
+		id := ctx.R.FormValue("media_id")
 		cfg := ctx.R.FormValue("cfg")
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -241,7 +241,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 							Attr("@click", web.Plaid().
 								EventFunc(doDeleteEvent).
 								Query("field", field).
-								Query("id", id).
+								Query("media_id", id).
 								FieldValue("cfg", cfg).
 								Go()),
 					),
@@ -260,7 +260,7 @@ func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue("id")
+		id := ctx.R.FormValue("media_id")
 		cfg := ctx.R.FormValue("cfg")
 
 		var obj media_library.MediaLibrary
@@ -472,7 +472,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue("id")
+		id := ctx.R.FormValue("media_id")
 		cfg := ctx.R.FormValue("cfg")
 
 		var obj media_library.MediaLibrary

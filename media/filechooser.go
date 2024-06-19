@@ -235,7 +235,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
 							EventFunc(chooseFileEvent).
 							Query("field", field).
-							Query("id", fmt.Sprint(f.ID)).
+							Query("media_id", fmt.Sprint(f.ID)).
 							FieldValue("cfg", h.JSONString(cfg)).
 							Go(), field != mediaLibraryListField).
 						AttrIf("@click", imgClickVars, field == mediaLibraryListField),
@@ -249,7 +249,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 							Attr("@change", web.Plaid().
 								EventFunc(updateDescriptionEvent).
 								Query("field", field).
-								Query("id", fmt.Sprint(f.ID)).
+								Query("media_id", fmt.Sprint(f.ID)).
 								FieldValue("cfg", h.JSONString(cfg)).
 								FieldValue("CurrentDescription", web.Var("$event.target.value")).
 								Go(),
@@ -267,7 +267,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 									web.Plaid().
 										EventFunc(deleteConfirmationEvent).
 										Query("field", field).
-										Query("id", fmt.Sprint(f.ID)).
+										Query("media_id", fmt.Sprint(f.ID)).
 										FieldValue("cfg", h.JSONString(cfg)).
 										Go(),
 								),
@@ -433,7 +433,7 @@ func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		field := ctx.R.FormValue("field")
-		id := ctx.ParamAsInt("id")
+		id := ctx.ParamAsInt("media_id")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		var m media_library.MediaLibrary
