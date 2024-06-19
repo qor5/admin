@@ -1,11 +1,13 @@
 package inject
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 	"unsafe"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -20,6 +22,8 @@ type Injector struct {
 	values    map[reflect.Type]reflect.Value
 	providers map[reflect.Type]any // value func
 	parent    *Injector
+
+	sfg singleflight.Group
 }
 
 func New() *Injector {
@@ -39,6 +43,8 @@ func (inj *Injector) SetParent(parent *Injector) error {
 	return nil
 }
 
+// TODO: 如果 func 的最后一个返回值是 error 的话，貌似不应该作为 dep 提供
+// TODO: 如果 func 的第一个参数是 ctx 的话，是否应该特殊处理呢？若需要，这个也需要 invoke 和 resolve 都处理
 func (inj *Injector) provide(f any) (err error) {
 	rv := reflect.ValueOf(f)
 	rt := rv.Type()
@@ -107,28 +113,36 @@ func (inj *Injector) resolve(rt reflect.Type) (reflect.Value, error) {
 	inj.mu.RUnlock()
 
 	if ok {
-		results, err := inj.invoke(provider)
+		// ensure that the provider is only executed once same time
+		_, err, _ := inj.sfg.Do(fmt.Sprintf("%p", provider), func() (any, error) {
+			// must recheck the provider, because it may be deleted by prev inj.sfg.Do
+			inj.mu.RLock()
+			_, ok := inj.providers[rt]
+			inj.mu.RUnlock()
+			if !ok {
+				return nil, nil
+			}
+
+			results, err := inj.invoke(provider)
+			if err != nil {
+				return nil, err
+			}
+
+			inj.mu.Lock()
+			for _, result := range results {
+				// TODO: Does need to Apply ?
+				resultType := result.Type()
+				inj.values[resultType] = result
+				delete(inj.providers, resultType)
+			}
+			inj.mu.Unlock()
+
+			return nil, nil
+		})
 		if err != nil {
 			return rv, err
 		}
-
-		inj.mu.Lock()
-		for _, result := range results {
-			resultType := result.Type()
-			inj.values[resultType] = result
-
-			// provider should not be called again
-			delete(inj.providers, resultType)
-
-			if resultType == rt {
-				rv = result
-			}
-		}
-		inj.mu.Unlock()
-
-		if rv.IsValid() {
-			return rv, nil
-		}
+		return inj.resolve(rt)
 	}
 
 	if parent != nil {
@@ -163,6 +177,7 @@ func (inj *Injector) Apply(val any) error {
 			}
 			field.Set(dep)
 		}
+		// TODO: 如果是 embed *Injector 的话，应该把自身塞进去
 	}
 
 	return nil

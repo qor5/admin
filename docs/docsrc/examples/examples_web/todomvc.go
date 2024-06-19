@@ -14,11 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func init() {
-	compo.RegisterType((*TodoApp)(nil))
-	compo.RegisterType((*TodoItem)(nil))
-}
-
 const NotifTodosChanged = "NotifTodosChanged"
 
 type Visibility string
@@ -36,7 +31,7 @@ type Todo struct {
 }
 
 type TodoApp struct {
-	b *TodoAppBuilder
+	dep *TodoAppDep `inject:""`
 
 	ID         string     `json:"id"`
 	Visibility Visibility `json:"visibility"`
@@ -46,12 +41,8 @@ func (c *TodoApp) CompoName() string {
 	return fmt.Sprintf("TodoApp:%s", c.ID)
 }
 
-func (c *TodoApp) InjectDep(f compo.Dep) {
-	c.b = f.(*TodoAppBuilder)
-}
-
 func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
-	todos, err := StorageFromContext(ctx).List()
+	todos, err := c.dep.db.List()
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +52,10 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
+		// TODO: 应该从 compo 里初始化，或者 TodoItem 只要服从某个接口就自动的执行依赖注入？
 		filteredTodoItems[i] = &TodoItem{
-			b:    c.b,
+			db:   c.dep.db,
+			dep:  c.dep,
 			ID:   todo.ID,
 			todo: todo,
 			// OnChanged: compo.ReloadAction(ctx,a, nil).Go(),
@@ -150,9 +143,7 @@ func (c *TodoApp) filteredTodos(todos []*Todo) []*Todo {
 }
 
 func (c *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error) {
-	s := StorageFromContext(ctx)
-
-	todos, err := s.List()
+	todos, err := c.dep.db.List()
 	if err != nil {
 		return r, err
 	}
@@ -166,7 +157,7 @@ func (c *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error
 	}
 	for _, todo := range todos {
 		todo.Completed = !allCompleted
-		if err := s.Update(todo); err != nil {
+		if err := c.dep.db.Update(todo); err != nil {
 			return r, err
 		}
 	}
@@ -187,7 +178,7 @@ func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web
 		return
 	}
 
-	if err := StorageFromContext(ctx).Create(&Todo{
+	if err := c.dep.db.Create(&Todo{
 		ID:        xid.New().String(),
 		Title:     req.Title,
 		Completed: false,
@@ -200,34 +191,27 @@ func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web
 }
 
 type TodoItem struct {
-	b *TodoAppBuilder
+	db  Storage     `inject:""` // try inject db directly
+	dep *TodoAppDep `inject:""`
 
 	ID   string `json:"id"`
 	todo *Todo  // use this if not nil, otherwise load with ID from Storage
 	// OnChanged string `json:"on_changed"`
 }
 
-// func (c *TodoItem) CompoName() string {
-// 	return fmt.Sprintf("TodoItem:%s", c.ID)
-// }
-
-func (c *TodoItem) InjectDep(f compo.Dep) {
-	c.b = f.(*TodoAppBuilder)
-}
-
 func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	todo := c.todo
 	if todo == nil {
 		var err error
-		todo, err = StorageFromContext(ctx).Read(c.ID)
+		todo, err = c.db.Read(c.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var itemTitleCompo h.HTMLComponent
-	if c.b != nil && c.b.itemTitleCompo != nil {
-		itemTitleCompo = c.b.itemTitleCompo(todo)
+	if c.dep.itemTitleCompo != nil {
+		itemTitleCompo = c.dep.itemTitleCompo(todo)
 	} else {
 		itemTitleCompo = h.Label(todo.Title)
 	}
@@ -243,15 +227,13 @@ func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 }
 
 func (c *TodoItem) Toggle(ctx context.Context) (r web.EventResponse, err error) {
-	s := StorageFromContext(ctx)
-
-	todo, err := s.Read(c.ID)
+	todo, err := c.db.Read(c.ID)
 	if err != nil {
 		return r, err
 	}
 
 	todo.Completed = !todo.Completed
-	if err := s.Update(todo); err != nil {
+	if err := c.db.Update(todo); err != nil {
 		return r, err
 	}
 
@@ -261,7 +243,7 @@ func (c *TodoItem) Toggle(ctx context.Context) (r web.EventResponse, err error) 
 }
 
 func (c *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) {
-	if err := StorageFromContext(ctx).Delete(c.ID); err != nil {
+	if err := c.db.Delete(c.ID); err != nil {
 		return r, err
 	}
 
@@ -270,40 +252,49 @@ func (c *TodoItem) Remove(ctx context.Context) (r web.EventResponse, err error) 
 	return
 }
 
-type TodoAppBuilder struct {
-	*compo.CompoDep[*TodoApp]
+type TodoAppDep struct {
+	db             Storage
 	itemTitleCompo func(todo *Todo) h.HTMLComponent
 }
 
-func NewTodoAppBuilder(initial *TodoApp) *TodoAppBuilder {
-	b := &TodoAppBuilder{}
-	b.CompoDep = compo.NewDep(b, initial)
-	return b
+func init() {
+	// TODO: 是否能自动化 ？ 思考: 如果一个组件需要 PlaidAction 就必须向下传递 scope ，那此时就可以 Register ？但是如果还未注册，eventFunc 就回来了，那就会出现问题吗？
+	// TODO: 貌似确实会出问题， 因为 page 的 eventHandler 那边只会校验 eventFuncID 是否存在，如果不存在则执行 render ，并不会因为 action 没注册执行 render
+	compo.RegisterType((*TodoApp)(nil))
+	compo.RegisterType((*TodoItem)(nil))
+	compo.MustProvide(compo.ScopeTop, func() Storage {
+		return &MemoryStorage{}
+	})
+	compo.MustProvide(compo.ScopeTop, func(storage Storage) *TodoAppDep {
+		return &TodoAppDep{
+			db: storage,
+			itemTitleCompo: func(todo *Todo) h.HTMLComponent {
+				if todo.Completed {
+					return h.Label(todo.Title).Style("color: red;")
+				}
+				return h.Label(todo.Title).Style("color: green;")
+			},
+		}
+	})
+	compo.MustProvide(compo.Scope("two"), func(storage Storage) *TodoAppDep {
+		return &TodoAppDep{
+			db:             storage,
+			itemTitleCompo: nil,
+		}
+	})
 }
 
-func (b *TodoAppBuilder) ItemTitleCompo(f func(todo *Todo) h.HTMLComponent) *TodoAppBuilder {
-	b.itemTitleCompo = f
-	return b
-}
-
-func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
-	pr.Body = h.Div().Style("display: flex; justify-content: center;").Children(
+func TodoMVCExample(ctx *web.EventContext) (r web.PageResponse, err error) {
+	r.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
-			// &TodoApp{
-			// 	ID:         "TodoApp0",
-			// 	Visibility: VisibilityAll,
-			// },
-			NewTodoAppBuilder(&TodoApp{
+			// TODO: 可能叫 MustInject 会更合适？
+			compo.MustScoped(compo.ScopeTop, &TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
 			}),
 		),
 		h.Div().Style("width: 550px;").Children(
-			// &TodoApp{
-			// 	ID:         "TodoApp1",
-			// 	Visibility: VisibilityCompleted,
-			// },
-			NewTodoAppBuilder(&TodoApp{
+			compo.MustScoped(compo.Scope("two"), &TodoApp{
 				ID:         "TodoApp1",
 				Visibility: VisibilityCompleted,
 			}),
@@ -320,31 +311,7 @@ func TodoMVCExample(ctx *web.EventContext) (pr web.PageResponse, err error) {
 	return
 }
 
-type storageCtxKey struct{}
-
-func StorageFromContext(ctx context.Context) Storage {
-	s, ok := ctx.Value(storageCtxKey{}).(Storage)
-	if ok {
-		return s
-	}
-	evCtx := web.MustGetEventContext(ctx)
-	return evCtx.ContextValue(storageCtxKey{}).(Storage)
-}
-
-var TodoMVCExamplePB = web.Page(TodoMVCExample).
-	Wrap(func(in web.PageFunc) web.PageFunc {
-		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			// TODO: 模拟最上层给到数据源，其实也可通过 Builder 来处理
-			ctx.WithContextValue(storageCtxKey{}, memoryStorage)
-			return in(ctx)
-		}
-	}).
-	WrapEventFunc(func(in web.EventFunc) web.EventFunc {
-		return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-			ctx.WithContextValue(storageCtxKey{}, memoryStorage)
-			return in(ctx)
-		}
-	})
+var TodoMVCExamplePB = web.Page(TodoMVCExample)
 
 var TodoMVCExamplePath = examples.URLPathByFunc(TodoMVCExample)
 
@@ -355,8 +322,6 @@ type Storage interface {
 	Update(todo *Todo) error
 	Delete(id string) error
 }
-
-var memoryStorage = &MemoryStorage{}
 
 type MemoryStorage struct {
 	mu    sync.RWMutex

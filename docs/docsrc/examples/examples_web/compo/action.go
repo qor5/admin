@@ -17,7 +17,7 @@ func init() {
 }
 
 func Install(b *web.Builder) {
-	b.RegisterEventFunc(EventDispatchAction, EventDispatchActionHandler)
+	b.RegisterEventFunc(eventDispatchAction, eventDispatchActionHandler)
 }
 
 type Action struct {
@@ -27,22 +27,12 @@ type Action struct {
 	Request   json.RawMessage `json:"request"`
 }
 
-const fieldKeyAction = "__compo_action__"
+const eventDispatchAction = "__dispatch_compo_action__"
 
-const EventDispatchAction = "__dispatch_compo_action__"
-
-type eventNameDispatchActionCtxKey struct{}
-
-func WithDispatchActionEventName(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, eventNameDispatchActionCtxKey{}, name)
-}
-
-func GetDispatchActionEventName(ctx context.Context) string {
-	if v := ctx.Value(eventNameDispatchActionCtxKey{}); v != nil {
-		return v.(string)
-	}
-	return EventDispatchAction
-}
+const (
+	fieldKeyAction = "__compo_action__"
+	fieldKeyScope  = "__compo_scope__"
+)
 
 func PlaidAction(ctx context.Context, c h.HTMLComponent, method any, request any) *web.VueEventTagBuilder {
 	var methodName string
@@ -53,18 +43,21 @@ func PlaidAction(ctx context.Context, c h.HTMLComponent, method any, request any
 		methodName = GetFuncName(method)
 	}
 
-	return web.Plaid().
-		EventFunc(GetDispatchActionEventName(ctx)).
-		FieldValue(fieldKeyAction, web.Var(
-			fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
-				PrettyJSONString(Action{
-					CompoType: fmt.Sprintf("%T", c),
-					Compo:     json.RawMessage(h.JSONString(c)),
-					Method:    methodName,
-					Request:   json.RawMessage(h.JSONString(request)),
-				}),
-			),
-		))
+	b := web.Plaid().EventFunc(eventDispatchAction)
+	scope, ok := ctx.Value(scopeCtxKey{}).(Scope)
+	if ok {
+		b = b.FieldValue(fieldKeyScope, scope)
+	}
+	return b.FieldValue(fieldKeyAction, web.Var(
+		fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
+			PrettyJSONString(Action{
+				CompoType: fmt.Sprintf("%T", c),
+				Compo:     json.RawMessage(h.JSONString(c)),
+				Method:    methodName,
+				Request:   json.RawMessage(h.JSONString(request)),
+			}),
+		),
+	))
 }
 
 var (
@@ -73,37 +66,36 @@ var (
 	inType0  = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
-func EventDispatchActionHandler(ctx *web.EventContext) (r web.EventResponse, err error) {
-	return EventDispatchActionHandlerComplex(ctx, nil)
-}
-
-func EventDispatchActionHandlerComplex(
-	ctx *web.EventContext,
-	afterUnmarshal func(ctx context.Context, c any) (any, error),
-) (r web.EventResponse, err error) {
+func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	var action Action
-	if err = json.Unmarshal([]byte(ctx.R.FormValue(fieldKeyAction)), &action); err != nil {
+	if err = json.Unmarshal([]byte(evCtx.R.FormValue(fieldKeyAction)), &action); err != nil {
 		return r, errors.Wrap(err, "failed to unmarshal compo action")
 	}
 
-	c, err := newInstance(action.CompoType)
+	v, err := newInstance(action.CompoType)
 	if err != nil {
 		return r, err
 	}
 
-	err = json.Unmarshal(action.Compo, c)
+	err = json.Unmarshal(action.Compo, v)
 	if err != nil {
 		return r, err
 	}
 
-	if afterUnmarshal != nil {
-		c, err = afterUnmarshal(ctx.R.Context(), c)
+	// TODO: 或许 newInstance 的时候就应该处理好这个问题
+	// TODO: 这块或许需要直接放到 Resigtry 里面去
+	if c, ok := v.(h.HTMLComponent); ok {
+		scope := evCtx.R.FormValue(fieldKeyScope)
+		v, err = Apply(Scope(scope), c)
 		if err != nil {
 			return r, err
 		}
+		evCtx.R = evCtx.R.WithContext(context.WithValue(evCtx.R.Context(), scopeCtxKey{}, Scope(scope)))
+	} else {
+		return r, errors.Errorf("compo %T does not implement HTMLComponent", c)
 	}
 
-	method := reflect.ValueOf(c).MethodByName(action.Method)
+	method := reflect.ValueOf(v).MethodByName(action.Method)
 	if method.IsValid() && method.Kind() == reflect.Func {
 		methodType := method.Type()
 		if methodType.NumOut() != 2 ||
@@ -119,7 +111,7 @@ func EventDispatchActionHandlerComplex(
 		if methodType.In(0) != inType0 {
 			return r, errors.Errorf("action method %q has incorrect signature", action.Method)
 		}
-		ctxValue := reflect.ValueOf(ctx.R.Context())
+		ctxValue := reflect.ValueOf(evCtx.R.Context())
 
 		params := []reflect.Value{ctxValue}
 		if numIn == 2 {
@@ -146,9 +138,9 @@ func EventDispatchActionHandlerComplex(
 
 	switch action.Method {
 	case actionMethodReload:
-		rc, ok := c.(Named)
+		rc, ok := v.(Named)
 		if !ok {
-			return r, errors.Errorf("compo %T does not implement Reloadable", c)
+			return r, errors.Errorf("compo %T does not implement Reloadable", v)
 		}
 		return OnReload(rc)
 	default:
