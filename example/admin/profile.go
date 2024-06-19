@@ -1,14 +1,13 @@
 package admin
 
 import (
-	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 
 	"github.com/dustin/go-humanize"
 	"github.com/qor5/admin/v3/example/models"
-	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -21,11 +20,17 @@ import (
 )
 
 const (
-	signOutAllSessionEvent = "signOutAllSessionEvent"
+	signOutAllSessionEvent  = "signOutAllSessionEvent"
+	loginSessionDialogEvent = "loginSessionDialogEvent"
+	accountRenameEvent      = "accountRenameEvent"
+
+	paramName = "name"
 )
 
 func profile(db *gorm.DB) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return VBtn("Login").Variant(VariantText).Href("/auth/login")
@@ -53,31 +58,94 @@ func profile(db *gorm.DB) presets.ComponentFunc {
 			),
 			VCard(content),
 		)
-		_ = notification
-		profileNewLook := VCard(
+
+		prependProfile := VCard(
 			web.Slot(
 				VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).Size(SizeLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary)),
 			).Name(VSlotPrepend),
 			web.Slot(
 				h.Div(
 					h.Div(h.Text(u.Name)).Class(fmt.Sprintf(`text-subtitle-2 text-%s`, ColorSecondary)),
-					VBtn("").Attr("@click", web.Plaid().URL(logoutURL).Go()).
+					VBtn("").
 						Icon(true).Density(DensityCompact).Variant(VariantText).Children(
 						VIcon("mdi-chevron-right").Size(SizeSmall),
-					).Class("mr-8"),
+					),
 				).Class("d-flex justify-space-between align-center"),
 			).Name(VSlotTitle),
 			web.Slot(
 				h.Div(h.Text(roles[0])),
 			).Name(VSlotSubtitle),
-			web.Slot(
-				VRow(
-					VCol(
-						notification,
+		).Class(W100).Flat(true)
+
+		profileMenuCard := VMenu(
+			web.Slot().Name("activator").Scope(`{props}`).Children(
+				prependProfile.Attr("v-bind", "props"),
+			),
+			VCard(
+				VCardText(
+					web.Scope(
+						VCard(
+							web.Slot(
+								VAvatar().Text(getAvatarShortName(u)).Color(ColorPrimaryLighten2).
+									Size(SizeXLarge).Class(fmt.Sprintf("rounded-lg text-%s", ColorPrimary), "mr-6"),
+							).Name(VSlotPrepend),
+							web.Slot(
+								VTextField(
+									web.Slot(
+										VIcon("mdi-pencil-outline").Attr("@click", "locals.editShow=true"),
+									).Name(VSlotAppend),
+								).HideDetails(true).
+									Autofocus(true).
+									Color(ColorPrimary).
+									Attr(":variant", fmt.Sprintf(`locals.editShow?"%s":"%s"`, VariantOutlined, VariantPlain)).
+									Attr(":readonly", `!locals.editShow`).
+									Attr(web.VField(paramName, u.Name)...).
+									Attr("@blur", "locals.editShow=false").
+									Attr("@keyup.enter", web.Plaid().EventFunc(accountRenameEvent).
+										URL("/profile").Query(presets.ParamID, u.ID).Go()),
+							).Name(VSlotTitle),
+							web.Slot(
+								h.Div(
+									h.Text(roles[0]),
+								),
+								h.Div(
+									VChip(h.Text(u.Status)).Label(true).Density(DensityCompact).Color(ColorSuccess).Class("px-1"),
+								).Class("mt-2"),
+							).Name(VSlotSubtitle),
+						).Variant(VariantTonal).Rounded(false),
+					).VSlot(`{ locals }`).Init(`{editShow:false}`),
+				).Class("pa-0"),
+				VCardText(
+					VRow(
+						VCol(
+							vx.VXReadonlyField().Label(msgr.Email).Value(u.Account),
+						),
+					).Class("my-n6"),
+					VRow(
+						VCol(
+							vx.VXReadonlyField().Label(msgr.Company).Value(u.Company),
+						),
+					).Class("my-n6"),
+					VRow(
+						VBtn("View login sessions").
+							Attr("@click", web.Plaid().URL("/profile").EventFunc(loginSessionDialogEvent).Query(presets.ParamID, u.ID).Go()).
+							Variant(VariantTonal).Color(ColorSecondary).Class(W100, "mt-6"),
 					),
-				).Class("border-s"),
-			).Name(VSlotAppend),
-		).Class(W100)
+					VRow(
+						VBtn("Logout").Attr("@click", web.Plaid().URL(logoutURL).Go()).Variant(VariantTonal).Color(ColorError).Class(W100, "mt-2"),
+					),
+				).Class("my-6 mx-2"),
+			)).Location(LocationEnd).CloseOnContentClick(false).Width(300)
+
+		profileNewLook := VCard(
+			VCardTitle(
+				profileMenuCard,
+				VCardText(
+					h.Div(
+						notification,
+					).Class("border-s-md", "pl-4", H75)),
+			).Class("d-inline-flex align-center justify-space-between  justify-center pa-0", W100),
+		).Class("pa-0").Class(W100)
 		return profileNewLook
 	}
 }
@@ -86,10 +154,7 @@ type Profile struct{}
 
 func configProfile(b *presets.Builder, db *gorm.DB) {
 	m := b.Model(&Profile{}).URIName("profile").
-		MenuIcon("mdi-account").Label("Profile").Singleton(true)
-
-	eb := m.Editing("Info", "Actions", "Sessions")
-
+		MenuIcon("mdi-account").Label("Profile").InMenu(false)
 	m.RegisterEventFunc(signOutAllSessionEvent, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
@@ -107,91 +172,34 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 		r.Reload = true
 		return
 	})
+	m.RegisterEventFunc(loginSessionDialogEvent, loginSession(db))
+	m.RegisterEventFunc(accountRenameEvent, accountRename(m, db))
+}
 
-	eb.FetchFunc(func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-		u := getCurrentUser(ctx.R)
-		if u == nil {
-			return nil, errors.New("cannot get current user")
-		}
-		return u, nil
-	})
+func getAvatarShortName(u *models.User) string {
+	name := u.Name
+	if name == "" {
+		name = u.Account
+	}
+	if rs := []rune(name); len(rs) > 1 {
+		name = string(rs[:1])
+	}
 
-	eb.SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		u := obj.(*models.User)
-		u.Name = ctx.R.FormValue("name")
-		return
-	})
+	return strings.ToUpper(name)
+}
 
-	eb.Field("Info").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func loginSession(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
-
-		u := obj.(*models.User)
-		var roles []string
-		for _, v := range u.Roles {
-			roles = append(roles, v.Name)
+		presetsMsgr := presets.MustGetMessages(ctx.R)
+		uid := ctx.Param(presets.ParamID)
+		u := &models.User{}
+		if err = db.First(&u, uid).Error; err != nil {
+			return
 		}
-
-		return h.Div(
-			VRow(
-				VCol(
-					VTextField().Label(msgr.Name).Attr(web.VField("name", u.Name)...),
-				),
-			).Class("my-n6"),
-			VRow(
-				VCol(
-					vx.VXReadonlyField().Label(msgr.Email).Value(u.Account),
-				),
-			).Class("my-n6"),
-			VRow(
-				VCol(
-					vx.VXReadonlyField().Label(msgr.Company).Value(u.Company),
-				),
-			).Class("my-n6"),
-			VRow(
-				VCol(
-					vx.VXReadonlyField().Label(msgr.Role).Value(strings.Join(roles, ", ")),
-				),
-			).Class("my-n6"),
-			VRow(
-				VCol(
-					vx.VXReadonlyField().Label(msgr.Status).Value(u.Status),
-				),
-			),
-		).Class("mx-2 mt-4")
-	})
-
-	eb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
-
-		// We don't allow public user to change its password
-		u := getCurrentUser(ctx.R)
-		if u.GetAccountName() == loginInitialUserEmail {
-			return h.RawHTML("")
-		}
-
-		var actionBtns h.HTMLComponents
-		if u.OAuthProvider == "" && u.Account != "" {
-			actionBtns = append(actionBtns,
-				VBtn("").
-					Variant(VariantOutlined).Color("primary").
-					Children(VIcon("lock_outline").Size(SizeSmall), h.Text(msgr.ChangePassword)).
-					Class("mr-2").
-					OnClick(plogin.OpenChangePasswordDialogEvent),
-			)
-		}
-
-		return h.Div(
-			actionBtns...,
-		).Class("mx-2 mt-4 text-left")
-	})
-
-	eb.Field("Sessions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
-
-		u := obj.(*models.User)
-		items := []*models.LoginSession{}
-		if err := db.Where("user_id = ?", u.ID).Find(&items).Error; err != nil {
-			panic(err)
+		var items []*models.LoginSession
+		if err = db.Where("user_id = ?", u.ID).Find(&items).Error; err != nil {
+			return
 		}
 
 		isPublicUser := false
@@ -267,37 +275,57 @@ func configProfile(b *presets.Builder, db *gorm.DB) {
 			{"", "Status", "25%", true},
 		}
 
-		return h.Div(
-			VCard(
-				VRow(
-					VCol(
-						VCardTitle(h.Text(msgr.LoginSessions)),
-						VCardSubtitle(h.Text(msgr.LoginSessionsTips)),
+		body := web.Scope().VSlot("{locals}").Init("{dialog:true}").Children(
+			VDialog(
+				VCard(
+					VCardTitle(
+						h.Text(msgr.LoginSessions),
+						VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
+					).Class("d-flex justify-space-between align-center", W100),
+					VRow(
+						VCol(VCardSubtitle(h.Text(msgr.LoginSessionsTips))),
+						VCol(
+							h.If(!isPublicUser,
+								VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
+									Variant(VariantOutlined).Color("primary").
+									Children(VIcon("warning").Size(SizeSmall), h.Text(msgr.SignOutAllOtherSessions))),
+						).Class("text-right mt-6 mr-4"),
 					),
-					VCol(
-						h.If(!isPublicUser,
-							VBtn("").Attr("@click", web.Plaid().EventFunc(signOutAllSessionEvent).Go()).
-								Variant(VariantOutlined).Color("primary").
-								Children(VIcon("warning").Size(SizeSmall), h.Text(msgr.SignOutAllOtherSessions))),
-					).Class("text-right mt-6 mr-4"),
-				),
-				VDataTable().Headers(sessionTableHeaders).
-					Items(items).
-					ItemsPerPage(-1),
-				// TODO fix it .HideDefaultFooter(true),
-			),
-		).Class("mx-2 mt-12 mb-4")
-	})
+					h.Div(
+						VDataTable().Headers(sessionTableHeaders).
+							Items(items).
+							ItemsPerPage(-1).HideDefaultFooter(true),
+						VCardActions(VSpacer(), VBtn(presetsMsgr.Cancel).Variant(VariantOutlined).Attr("@click", "locals.dialog=false")).Class("pa-0"),
+					).Class("pa-6"),
+				).Class("mx-2 mt-12 mb-4"),
+			).Attr("v-model", "locals.dialog").Width(780),
+		)
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: presets.DialogPortalName, Body: body})
+
+		return
+	}
 }
 
-func getAvatarShortName(u *models.User) string {
-	name := u.Name
-	if name == "" {
-		name = u.Account
+func accountRename(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			uid  = ctx.Param(presets.ParamID)
+			name = ctx.Param(paramName)
+			u    = &models.User{}
+		)
+		if err = db.First(u, uid).Error; err != nil {
+			return
+		}
+		if mb.Info().Verifier().Do(presets.PermUpdate).ObjectOn(u).WithReq(ctx.R).IsAllowed() != nil {
+			presets.ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
+			return
+		}
+		u.Name = name
+		if err = db.Save(u).Error; err != nil {
+			return
+		}
+		r.PushState = web.Location(url.Values{})
+		return
 	}
-	if rs := []rune(name); len(rs) > 1 {
-		name = string(rs[:1])
-	}
-
-	return strings.ToUpper(name)
 }
