@@ -1,7 +1,6 @@
 package presets
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -24,12 +23,9 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 	return r, nil
 }
 
-func ShowMessage(r *web.EventResponse, msg string, color string) error {
-	if r == nil {
-		return errors.New("EventResponse is nil")
-	}
-	if msg == "" {
-		return nil
+func ShowMessage(r *web.EventResponse, msg string, color string) {
+	if r == nil || msg == "" {
+		return
 	}
 
 	if color == "" {
@@ -40,9 +36,8 @@ func ShowMessage(r *web.EventResponse, msg string, color string) error {
 	colorJSON := h.JSONString(color)
 
 	web.AppendRunScripts(r, fmt.Sprintf(
-		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
+		`vars.presetsMessage = { show: true, message: %s, color: %s }`,
 		msgJSON, colorJSON))
-	return nil
 }
 
 func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
