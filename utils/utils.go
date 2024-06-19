@@ -24,7 +24,7 @@ func ParseTagOption(str string) map[string]string {
 	return setting
 }
 
-func GetObjName(obj interface{}) string {
+func GetObjectName(obj interface{}) string {
 	modelType := reflect.TypeOf(obj)
 	modelstr := modelType.String()
 	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]

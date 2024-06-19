@@ -21,7 +21,7 @@ func (p *Page) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageI
 		err        error
 		localePath string
 	)
-	builder := ctx.Value(utils.GetObjName(p))
+	builder := ctx.Value(utils.GetObjectName(p))
 
 	b, ok := builder.(*ModelBuilder)
 	if !ok {
@@ -41,7 +41,7 @@ func (p *Page) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageI
 func (p *Page) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	var liveRecord Page
 
-	builder := ctx.Value(utils.GetObjName(p))
+	builder := ctx.Value(utils.GetObjectName(p))
 	mb, ok := builder.(ModelBuilder)
 	if !ok {
 		return

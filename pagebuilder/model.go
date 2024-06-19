@@ -583,7 +583,7 @@ func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 }
 
 func (b *ModelBuilder) setName() {
-	b.name = utils.GetObjName(b.mb.NewModel())
+	b.name = utils.GetObjectName(b.mb.NewModel())
 }
 
 func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
@@ -1238,7 +1238,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	})
 }
 
-func (b *ModelBuilder) HtmlRaw(obj interface{}) (r string) {
+func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
 	p, ok := obj.(PrimarySlugInterface)
 	if !ok {
 		return

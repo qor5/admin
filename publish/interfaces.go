@@ -132,7 +132,7 @@ func (s *List) EmbedList() *List {
 
 type (
 	PreviewBuilderInterface interface {
-		HtmlRaw(obj interface{}) string
+		PreviewHTML(obj interface{}) string
 	}
 	PublishModelInterface interface {
 		PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) string

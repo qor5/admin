@@ -246,12 +246,12 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 		mb PreviewBuilderInterface
 		ok bool
 	)
-	builder := ctx.Value(utils.GetObjName(obj))
+	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok = builder.(PreviewBuilderInterface)
 	if !ok {
 		return
 	}
-	r = mb.HtmlRaw(obj)
+	r = mb.PreviewHTML(obj)
 	return
 }
 
