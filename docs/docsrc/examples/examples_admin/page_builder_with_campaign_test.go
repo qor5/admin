@@ -3,6 +3,8 @@ package examples_admin
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -184,6 +186,52 @@ func TestPageBuilderCampaign(t *testing.T) {
 					campaigns[0].Version.Version)
 				if len(containers) == 0 {
 					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Campaign Detail Publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns/1_2024-05-20-v01?__execute_event__=publish_EventPublish&id=1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				body, err := os.ReadFile("/tmp/publish/campaigns/index.html")
+				if err != nil {
+					t.Error("publish failed!")
+					return
+				}
+				if !strings.Contains(string(body), "Hello Campaign") {
+					t.Errorf("publish failed! %s", string(body))
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Campaign Products Editor Publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01?__execute_event__=publish_EventPublish&id=1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				body, err := os.ReadFile("/tmp/publish/campaign-products/index.html")
+				if err != nil {
+					t.Error("publish failed!")
+					return
+				}
+				if !strings.Contains(string(body), "Hello Product") {
+					t.Errorf("publish failed! %s", string(body))
+					return
 				}
 			},
 		},

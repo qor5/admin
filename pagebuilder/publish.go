@@ -7,54 +7,39 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/l10n"
+
+	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/publish"
 	"gorm.io/gorm"
 )
 
-type contextKeyType int
-
-const contextKey contextKeyType = iota
-
-func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
-	return context.WithValue(in, contextKey, b)
-}
-
-func builderFromContext(c context.Context) (b *ModelBuilder, ok bool) {
-	b, ok = c.Value(contextKey).(*ModelBuilder)
-	return
-}
-
-func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	var b *ModelBuilder
-	var ok bool
-	if b, ok = builderFromContext(ctx); !ok || b == nil {
+func (p *Page) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	var (
+		err        error
+		localePath string
+	)
+	b, ok := builder.(*ModelBuilder)
+	if !ok {
 		return
 	}
-	content, err := p.getPublishContent(b, ctx)
-	if err != nil {
-		return
-	}
-
-	var localePath string
 	if b.builder.l10n != nil {
 		localePath = l10n.LocalePathFromContext(p, ctx)
 	}
 
 	var category Category
-	category, err = p.GetCategory(db)
-	if err != nil {
+	if category, err = p.GetCategory(db); err != nil {
 		return
 	}
-	objs = append(objs, &publish.PublishAction{
-		Url:      p.getPublishUrl(localePath, category.Path),
-		Content:  content,
-		IsDelete: false,
-	})
-	p.OnlineUrl = p.getPublishUrl(localePath, category.Path)
+	return p.getPublishUrl(localePath, category.Path)
+}
 
+func (p *Page) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	var liveRecord Page
+	b, ok := builder.(*ModelBuilder)
+	if !ok {
+		return
+	}
 	{
 		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
 		if b.builder.l10n != nil {
@@ -65,22 +50,6 @@ func (p *Page) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.S
 	if liveRecord.ID == 0 {
 		return
 	}
-
-	if liveRecord.OnlineUrl != p.OnlineUrl {
-		objs = append(objs, &publish.PublishAction{
-			Url:      liveRecord.OnlineUrl,
-			IsDelete: true,
-		})
-	}
-
-	return
-}
-
-func (p *Page) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
-		Url:      p.OnlineUrl,
-		IsDelete: true,
-	})
 	return
 }
 

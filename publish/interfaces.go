@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/qor/oss"
@@ -129,3 +130,13 @@ type ListInterface interface {
 func (s *List) EmbedList() *List {
 	return s
 }
+
+type (
+	PreviewBuilderInterface interface {
+		Preview() http.Handler
+	}
+	PublishModelInterface interface {
+		PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) string
+		LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) string
+	}
+)

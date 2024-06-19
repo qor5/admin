@@ -1,9 +1,14 @@
 package examples_admin
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/qor/oss"
+
+	"github.com/qor/oss/filesystem"
 
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
@@ -57,6 +62,14 @@ func (b *Campaign) GetTitle() string {
 	return b.Title
 }
 
+func (b *Campaign) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	return "campaigns/index.html"
+}
+
+func (b *Campaign) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	return "campaigns/index.html"
+}
+
 func (p *Campaign) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
 }
@@ -71,6 +84,14 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 		presets.ParamID:     segs[0],
 		publish.SlugVersion: segs[1],
 	}
+}
+
+func (b *CampaignProduct) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	return "campaign-products/index.html"
+}
+
+func (b *CampaignProduct) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	return "campaign-products/index.html"
 }
 
 func (b *CampaignProduct) GetTitle() string {
@@ -115,7 +136,10 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	puBuilder := publish.New(db, nil)
+	stroge := filesystem.New("/tmp/publish")
+	stroge.Delete("/tmp/publish/campaigns/index.html")
+	stroge.Delete("/tmp/publish/campaign-products/index.html")
+	puBuilder := publish.New(db, stroge)
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(
@@ -132,7 +156,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
 			return Div().Text(c.Text).Style("height:200px")
-		})
+		}).Cover("https://qor5.com/img/qor-logo.png")
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {

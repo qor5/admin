@@ -2,11 +2,15 @@ package publish
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http/httptest"
 	"reflect"
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/jinzhu/inflection"
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
@@ -240,21 +244,99 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
+func (b *Builder) getObjName(obj interface{}) string {
+	modelType := reflect.TypeOf(obj)
+	modelstr := modelType.String()
+	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
+	return inflection.Plural(strcase.ToKebab(modelName))
+}
+
+func (b *Builder) getPublishContent(mb PreviewBuilderInterface, obj interface{}) (r string, err error) {
+	var primarySlug string
+	if p, ok := obj.(interface{ PrimarySlug() string }); ok {
+		primarySlug = p.PrimarySlug()
+	}
+	if primarySlug == "" {
+		err = errors.New("wrong PrimarySlug")
+		return
+	}
+
+	w := httptest.NewRecorder()
+
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", primarySlug), nil)
+	mb.Preview().ServeHTTP(w, req)
+	r = w.Body.String()
+	return
+}
+
+func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		content string
+		mb      PreviewBuilderInterface
+		p       PublishModelInterface
+		ok      bool
+	)
+	builder := ctx.Value(b.getObjName(obj))
+	mb, ok = builder.(PreviewBuilderInterface)
+	if !ok {
+		return nil, errors.New("wrong PreviewBuilderInterface")
+	}
+	if content, err = b.getPublishContent(mb, obj); err != nil {
+		return
+	}
+
+	p, ok = obj.(PublishModelInterface)
+	if !ok {
+		return nil, errors.New("wrong PublishModelInterface")
+	}
+	if publishUrl := p.PublishUrl(builder, b.db, ctx, b.storage); publishUrl != "" {
+		actions = append(actions, &PublishAction{
+			Url:      publishUrl,
+			Content:  content,
+			IsDelete: false,
+		})
+		if liveUrl := p.LiveUrl(builder, b.db, ctx, b.storage); liveUrl != "" && liveUrl != publishUrl {
+			actions = append(actions, &PublishAction{
+				Url:      liveUrl,
+				IsDelete: true,
+			})
+		}
+	}
+
+	return
+}
+
+func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		p  PublishModelInterface
+		ok bool
+	)
+	builder := ctx.Value(b.getObjName(obj))
+	p, ok = obj.(PublishModelInterface)
+	if !ok {
+		return nil, errors.New("wrong PublishModelInterface")
+	}
+	if liveUrl := p.LiveUrl(builder, b.db, ctx, b.storage); liveUrl != "" {
+		actions = append(actions, &PublishAction{
+			Url:      liveUrl,
+			IsDelete: true,
+		})
+	}
+
+	return
+}
+
 // 幂等
 func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
-		if r, ok := record.(PublishInterface); ok {
-			var objs []*PublishAction
-			objs, err = r.GetPublishActions(b.db, ctx, b.storage)
-			if err != nil {
-				return
-			}
-			if err = UploadOrDelete(objs, b.storage); err != nil {
-				return
-			}
+		var objs []*PublishAction
+		if objs, err = b.getPublishActions(ctx, record); err != nil {
+			return
 		}
-
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
 		// update status
 		if r, ok := record.(StatusInterface); ok {
 			now := b.db.NowFunc()
@@ -311,17 +393,14 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
-		if r, ok := record.(UnPublishInterface); ok {
-			var objs []*PublishAction
-			objs, err = r.GetUnPublishActions(b.db, ctx, b.storage)
-			if err != nil {
-				return
-			}
-			if err = UploadOrDelete(objs, b.storage); err != nil {
-				return
-			}
+		var objs []*PublishAction
+		objs, err = b.getUnPublishActions(ctx, record)
+		if err != nil {
+			return
 		}
-
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
 		// update status
 		if _, ok := record.(StatusInterface); ok {
 			updateMap := make(map[string]interface{})

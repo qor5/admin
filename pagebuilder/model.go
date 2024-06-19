@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -56,7 +57,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
-	b.preview = web.Page(b.previewContent)
+	b.preview = b.Preview()
 }
 
 func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -1242,4 +1243,12 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 
 		return err
 	})
+}
+
+func (b *ModelBuilder) Preview() http.Handler {
+	return web.Page(b.previewContent)
+}
+
+func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, b.name, b)
 }
