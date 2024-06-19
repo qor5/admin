@@ -52,7 +52,9 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
-		// TODO: 应该从 compo 里初始化，或者 TodoItem 只要服从某个接口就自动的执行依赖注入？
+		// TODO: 初始化应该接入依赖注入，或者如何实现只要服从某个接口就自动的执行依赖注入？貌似不太现实
+		// TODO: 但是通常是需要和当前的 Scope 保持一致，这个 Scope 要从 ctx 里取吗？那如果 A->B->C , B 是不需要注入的，貌似 ctx 也能取得到倒是OK。
+		// TODO: 那如果临时要改变 scope 呢？那应该就还是 stateful.MustScoped 了，但是有场景是需要父级 Scope 吗？或者说依赖注入那边需要支持多层吗？
 		filteredTodoItems[i] = &TodoItem{
 			db:   c.dep.db,
 			dep:  c.dep,
