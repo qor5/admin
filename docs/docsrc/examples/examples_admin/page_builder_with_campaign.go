@@ -62,11 +62,11 @@ func (b *Campaign) GetTitle() string {
 	return b.Title
 }
 
-func (b *Campaign) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (b *Campaign) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	return "campaigns/index.html"
 }
 
-func (b *Campaign) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (b *Campaign) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	return "campaigns/index.html"
 }
 
@@ -86,11 +86,11 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 }
 
-func (b *CampaignProduct) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (b *CampaignProduct) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	return "campaign-products/index.html"
 }
 
-func (b *CampaignProduct) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (b *CampaignProduct) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	return "campaign-products/index.html"
 }
 

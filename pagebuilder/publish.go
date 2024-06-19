@@ -7,6 +7,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/qor5/admin/v3/utils"
+
 	"github.com/qor5/admin/v3/l10n"
 
 	"github.com/qor/oss"
@@ -14,11 +16,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func (p *Page) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (p *Page) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	var (
 		err        error
 		localePath string
 	)
+	builder := ctx.Value(utils.GetObjName(p))
+
 	b, ok := builder.(*ModelBuilder)
 	if !ok {
 		return
@@ -34,15 +38,17 @@ func (p *Page) PublishUrl(builder interface{}, db *gorm.DB, ctx context.Context,
 	return p.getPublishUrl(localePath, category.Path)
 }
 
-func (p *Page) LiveUrl(builder interface{}, db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+func (p *Page) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	var liveRecord Page
-	b, ok := builder.(*ModelBuilder)
+
+	builder := ctx.Value(utils.GetObjName(p))
+	mb, ok := builder.(ModelBuilder)
 	if !ok {
 		return
 	}
 	{
 		lrdb := db.Where("id = ? AND status = ?", p.ID, publish.StatusOnline)
-		if b.builder.l10n != nil {
+		if mb.builder.l10n != nil {
 			lrdb = lrdb.Where("locale_code = ?", p.LocaleCode)
 		}
 		lrdb.First(&liveRecord)

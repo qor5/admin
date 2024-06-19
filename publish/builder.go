@@ -4,13 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http/httptest"
 	"reflect"
 	"slices"
 	"strings"
 	"sync"
-
-	"github.com/jinzhu/inflection"
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor/oss"
@@ -244,44 +241,27 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (b *Builder) getObjName(obj interface{}) string {
-	modelType := reflect.TypeOf(obj)
-	modelstr := modelType.String()
-	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
-	return inflection.Plural(strcase.ToKebab(modelName))
-}
-
-func (b *Builder) getPublishContent(mb PreviewBuilderInterface, obj interface{}) (r string, err error) {
-	var primarySlug string
-	if p, ok := obj.(interface{ PrimarySlug() string }); ok {
-		primarySlug = p.PrimarySlug()
-	}
-	if primarySlug == "" {
-		err = errors.New("wrong PrimarySlug")
+func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
+	var (
+		mb PreviewBuilderInterface
+		ok bool
+	)
+	builder := ctx.Value(utils.GetObjName(obj))
+	mb, ok = builder.(PreviewBuilderInterface)
+	if !ok {
 		return
 	}
-
-	w := httptest.NewRecorder()
-
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", primarySlug), nil)
-	mb.Preview().ServeHTTP(w, req)
-	r = w.Body.String()
+	r = mb.HtmlRaw(obj)
 	return
 }
 
-func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) defaultPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		content string
-		mb      PreviewBuilderInterface
 		p       PublishModelInterface
 		ok      bool
 	)
-	builder := ctx.Value(b.getObjName(obj))
-	mb, ok = builder.(PreviewBuilderInterface)
-	if !ok {
-		return nil, errors.New("wrong PreviewBuilderInterface")
-	}
-	if content, err = b.getPublishContent(mb, obj); err != nil {
+	if content, err = b.getPublishContent(ctx, obj); err != nil {
 		return
 	}
 
@@ -289,41 +269,58 @@ func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actio
 	if !ok {
 		return nil, errors.New("wrong PublishModelInterface")
 	}
-	if publishUrl := p.PublishUrl(builder, b.db, ctx, b.storage); publishUrl != "" {
+	if publishUrl := p.PublishUrl(b.db, ctx, b.storage); publishUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      publishUrl,
 			Content:  content,
 			IsDelete: false,
 		})
-		if liveUrl := p.LiveUrl(builder, b.db, ctx, b.storage); liveUrl != "" && liveUrl != publishUrl {
+		if liveUrl := p.LiveUrl(b.db, ctx, b.storage); liveUrl != "" && liveUrl != publishUrl {
 			actions = append(actions, &PublishAction{
 				Url:      liveUrl,
 				IsDelete: true,
 			})
 		}
 	}
-
 	return
 }
 
-func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		p  PublishInterface
+		ok bool
+	)
+	p, ok = obj.(PublishInterface)
+	if ok {
+		return p.GetPublishActions(b.db, ctx, b.storage)
+	}
+	return b.defaultPublishActions(ctx, obj)
+}
+
+func (b *Builder) defaultUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		p  PublishModelInterface
 		ok bool
 	)
-	builder := ctx.Value(b.getObjName(obj))
 	p, ok = obj.(PublishModelInterface)
 	if !ok {
-		return nil, errors.New("wrong PublishModelInterface")
+		return
 	}
-	if liveUrl := p.LiveUrl(builder, b.db, ctx, b.storage); liveUrl != "" {
+	if liveUrl := p.LiveUrl(b.db, ctx, b.storage); liveUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      liveUrl,
 			IsDelete: true,
 		})
 	}
-
 	return
+}
+
+func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	p, ok := obj.(UnPublishInterface)
+	if ok {
+		return p.GetUnPublishActions(b.db, ctx, b.storage)
+	}
+	return b.defaultUnPublishActions(ctx, obj)
 }
 
 // 幂等

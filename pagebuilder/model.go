@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"path"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,7 +57,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
-	b.preview = b.Preview()
+	b.preview = web.Page(b.previewContent)
 }
 
 func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -583,14 +583,7 @@ func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 }
 
 func (b *ModelBuilder) setName() {
-	b.name = b.getModelName(b.mb)
-}
-
-func (b *ModelBuilder) getModelName(mb *presets.ModelBuilder) string {
-	modelType := reflect.TypeOf(mb.NewModel())
-	modelstr := modelType.String()
-	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
-	return inflection.Plural(strcase.ToKebab(modelName))
+	b.name = utils.GetObjName(b.mb.NewModel())
 }
 
 func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
@@ -1245,8 +1238,16 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	})
 }
 
-func (b *ModelBuilder) Preview() http.Handler {
-	return web.Page(b.previewContent)
+func (b *ModelBuilder) HtmlRaw(obj interface{}) (r string) {
+	p, ok := obj.(PrimarySlugInterface)
+	if !ok {
+		return
+	}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	b.preview.ServeHTTP(w, req)
+	r = w.Body.String()
+	return
 }
 
 func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
