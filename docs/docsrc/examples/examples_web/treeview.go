@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	stateful.RegisterType((*TreeItem)(nil))
+	stateful.RegisterActionableType((*TreeItem)(nil))
 }
 
 type TreeItem struct {

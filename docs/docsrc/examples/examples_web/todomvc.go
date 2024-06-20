@@ -256,10 +256,10 @@ type TodoAppDep struct {
 }
 
 func init() {
-	// TODO: 是否能自动化 ？ 思考: 如果一个组件需要 PlaidAction 就必须向下传递 scope ，那此时就可以 Register ？但是如果还未注册，eventFunc 就回来了，那就会出现问题吗？
-	// TODO: 貌似确实会出问题， 因为 page 的 eventHandler 那边只会校验 eventFuncID 是否存在，如果不存在则执行 render ，并不会因为 action 没注册执行 render
-	stateful.RegisterType((*TodoApp)(nil))
-	stateful.RegisterType((*TodoItem)(nil))
+	stateful.RegisterActionableType(
+		(*TodoApp)(nil),
+		(*TodoItem)(nil),
+	)
 	stateful.MustProvide(stateful.ScopeTop, func() Storage {
 		return &MemoryStorage{}
 	})

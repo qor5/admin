@@ -69,7 +69,7 @@ func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, e
 		return r, errors.Wrap(err, "failed to unmarshal compo action")
 	}
 
-	v, err := newInstance(action.CompoType)
+	v, err := newActionableInstance(action.CompoType)
 	if err != nil {
 		return r, err
 	}
@@ -139,17 +139,22 @@ func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, e
 	}
 }
 
-// TODO: 这块可能也是要放到 Registry 里面去？
-// TODO: 最好是使用一个特别的 json 序列化和反序列化方法，可以自动将类型带进去并且注册，并且这样的话 compo 内部就可以支持嵌入动态 HTMLComponent 了
-// TODO: 并且的话，也能让整个上下文在 chrome network panel 里面有绝对的可读性
-var typeRegistry = cmap.New[reflect.Type]()
+var actionableTypeRegistry = cmap.New[reflect.Type]()
 
-func RegisterType(v any) {
-	typeRegistry.SetIfAbsent(fmt.Sprintf("%T", v), reflect.TypeOf(v))
+func RegisterActionableType(vs ...any) {
+	for _, v := range vs {
+		registerActionableType(v)
+	}
 }
 
-func newInstance(typeName string) (any, error) {
-	if t, ok := typeRegistry.Get(typeName); ok {
+func registerActionableType(v any) {
+	if !actionableTypeRegistry.SetIfAbsent(fmt.Sprintf("%T", v), reflect.TypeOf(v)) {
+		panic(fmt.Sprintf("actionable type %T already registered", v))
+	}
+}
+
+func newActionableInstance(typeName string) (any, error) {
+	if t, ok := actionableTypeRegistry.Get(typeName); ok {
 		return reflect.New(t.Elem()).Interface(), nil
 	}
 	return nil, errors.Errorf("type not found: %s", typeName)

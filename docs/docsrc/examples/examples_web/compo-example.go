@@ -11,8 +11,8 @@ import (
 )
 
 func init() {
-	stateful.RegisterType((*ChildCompo)(nil))
-	stateful.RegisterType((*SampleCompo)(nil))
+	stateful.RegisterActionableType((*ChildCompo)(nil))
+	stateful.RegisterActionableType((*SampleCompo)(nil))
 }
 
 type ChildCompo struct {
