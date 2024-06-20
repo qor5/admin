@@ -27,10 +27,12 @@ type Injector struct {
 }
 
 func New() *Injector {
-	return &Injector{
+	inj := &Injector{
 		values:    map[reflect.Type]reflect.Value{},
 		providers: map[reflect.Type]any{},
 	}
+	inj.Provide(func() *Injector { return inj })
+	return inj
 }
 
 func (inj *Injector) SetParent(parent *Injector) error {

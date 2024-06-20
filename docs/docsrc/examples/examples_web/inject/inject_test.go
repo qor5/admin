@@ -41,25 +41,25 @@ func TestProvide(t *testing.T) {
 		injector := New()
 		err := injector.Provide(func() (string, int) { return "test", 0 })
 		require.NoError(t, err)
-		require.Len(t, injector.providers, 2)
+		require.Len(t, injector.providers, 3)
 
 		err = injector.Provide(func() (int64, int) { return 1, 2 })
 		require.ErrorIs(t, err, ErrTypeAlreadyProvided)
-		require.Len(t, injector.providers, 2)
+		require.Len(t, injector.providers, 3)
 	}
 	{
 		injector := New()
 		err := injector.Provide(func() (string, error) { return "test", nil })
 		require.NoError(t, err)
-		require.Len(t, injector.providers, 1)
+		require.Len(t, injector.providers, 2)
 
 		_, err = injector.invoke(func(s string) {})
 		require.NoError(t, err)
-		require.Len(t, injector.providers, 0)
+		require.Len(t, injector.providers, 1)
 
 		err = injector.Provide(func() (int64, string) { return 1, "" })
 		require.ErrorIs(t, err, ErrTypeAlreadyProvided)
-		require.Len(t, injector.providers, 0)
+		require.Len(t, injector.providers, 1)
 	}
 }
 
@@ -150,7 +150,6 @@ func TestApply(t *testing.T) {
 	injector := New()
 	err := injector.Provide(
 		func() string { return "test" },
-		func() *Injector { return injector },
 	)
 	require.NoError(t, err)
 	testStruct := &TestStruct{}
@@ -260,7 +259,6 @@ func TestAutoApply(t *testing.T) {
 	injector := New()
 	err := injector.Provide(
 		func() string { return "test" },
-		func() *Injector { return injector },
 	)
 	require.NoError(t, err)
 	results, err := injector.Invoke(func() *TestStruct {

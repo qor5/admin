@@ -285,7 +285,6 @@ func init() {
 func TodoMVCExample(ctx *web.EventContext) (r web.PageResponse, err error) {
 	r.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
-			// TODO: 可能叫 MustInject 会更合适？
 			stateful.MustScoped(stateful.ScopeTop, &TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
