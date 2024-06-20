@@ -222,3 +222,42 @@ func TestInterfaceType(t *testing.T) {
 	require.Equal(t, "str", structToApply.str)
 	require.Equal(t, "", structToApply.ID)
 }
+
+func TestAutoApply(t *testing.T) {
+	type TestStruct struct {
+		Injector *Injector `inject:""`
+		Value    string    `inject:"" json:"value,omitempty"`
+		value    string    `inject:""`
+		ID       string    `json:"id,omitempty"`
+	}
+	injector := New()
+	err := injector.Provide(
+		func() string { return "test" },
+		func() *Injector { return injector },
+	)
+	require.NoError(t, err)
+	results, err := injector.Invoke(func() *TestStruct {
+		return &TestStruct{
+			ID: "testID",
+		}
+	})
+	require.NoError(t, err)
+	testStruct := results[0].(*TestStruct)
+	require.Equal(t, "test", testStruct.Value)
+	require.Equal(t, "test", testStruct.value)
+	require.Equal(t, "testID", testStruct.ID)
+	require.Equal(t, injector, testStruct.Injector)
+
+	{
+		err = injector.Provide(func() *TestStruct { return &TestStruct{ID: "testID2"} })
+		require.NoError(t, err)
+
+		testStruct := &TestStruct{}
+		err := injector.Resolve(&testStruct)
+		require.NoError(t, err)
+		require.Equal(t, "test", testStruct.Value)
+		require.Equal(t, "test", testStruct.value)
+		require.Equal(t, "testID2", testStruct.ID)
+		require.Equal(t, injector, testStruct.Injector)
+	}
+}

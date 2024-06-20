@@ -106,6 +106,17 @@ func (inj *Injector) invoke(f any) ([]reflect.Value, error) {
 	}
 
 	outs := reflect.ValueOf(f).Call(in)
+
+	// apply if possible
+	for _, out := range outs {
+		unwrapped := unwrapPtr(out)
+		if unwrapped.Kind() == reflect.Struct {
+			if err := inj.applyStruct(unwrapped); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	numOut := len(outs)
 	if numOut > 0 && rt.Out(numOut-1) == typeError {
 		rvErr := outs[numOut-1]
@@ -114,6 +125,7 @@ func (inj *Injector) invoke(f any) ([]reflect.Value, error) {
 			return outs, rvErr.Interface().(error)
 		}
 	}
+
 	return outs, nil
 }
 
@@ -146,7 +158,6 @@ func (inj *Injector) resolve(rt reflect.Type) (reflect.Value, error) {
 
 			inj.mu.Lock()
 			for _, result := range results {
-				// TODO: Does need to Apply ?
 				resultType := result.Type()
 				inj.values[resultType] = result
 				delete(inj.providers, resultType)
@@ -168,15 +179,22 @@ func (inj *Injector) resolve(rt reflect.Type) (reflect.Value, error) {
 	return rv, errors.Wrap(ErrTypeNotProvided, rt.String())
 }
 
-func (inj *Injector) Apply(val any) error {
-	rv := reflect.ValueOf(val)
+func unwrapPtr(rv reflect.Value) reflect.Value {
 	for rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
+	return rv
+}
+
+func (inj *Injector) Apply(val any) error {
+	rv := unwrapPtr(reflect.ValueOf(val))
 	if rv.Kind() != reflect.Struct {
 		panic("Apply only accepts a struct")
 	}
+	return inj.applyStruct(rv)
+}
 
+func (inj *Injector) applyStruct(rv reflect.Value) error {
 	rt := rv.Type()
 
 	for i := 0; i < rv.NumField(); i++ {
