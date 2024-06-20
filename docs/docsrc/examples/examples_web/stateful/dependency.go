@@ -18,19 +18,20 @@ const (
 	ScopeTop Scope = ""
 )
 
-// TODO: 如果这个只做 inject 相关的处理的话，这个命名会有点奇怪。
-type Registry struct {
+var defaultDependencyCenter = NewDependencyCenter()
+
+type DependencyCenter struct {
 	mu        sync.RWMutex
 	injectors map[Scope]*inject.Injector
 }
 
-func NewRegistry() *Registry {
-	return &Registry{
+func NewDependencyCenter() *DependencyCenter {
+	return &DependencyCenter{
 		injectors: map[Scope]*inject.Injector{},
 	}
 }
 
-func (r *Registry) injectorUnlocked(scope Scope) *inject.Injector {
+func (r *DependencyCenter) injectorUnlocked(scope Scope) *inject.Injector {
 	inj, ok := r.injectors[scope]
 	if !ok {
 		inj = inject.New()
@@ -44,62 +45,66 @@ func (r *Registry) injectorUnlocked(scope Scope) *inject.Injector {
 	return inj
 }
 
-func (r *Registry) injector(scope Scope) *inject.Injector {
+func (r *DependencyCenter) injector(scope Scope) *inject.Injector {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.injectorUnlocked(scope)
 }
 
-func (r *Registry) Provide(scope Scope, constructor any) error {
+func (r *DependencyCenter) Provide(scope Scope, ctors ...any) error {
 	inj := r.injector(scope)
-	return inj.Provide(constructor)
+	return inj.Provide(ctors...)
 }
 
-func (r *Registry) Apply(scope Scope, target any) error {
+func (r *DependencyCenter) Apply(scope Scope, target any) error {
 	inj := r.injector(scope)
 	return inj.Apply(target)
 }
 
-// TODO: 这个 Default 应该通过 ctx 向下传递？ 这样就有改变 registry 的能力了？ 貌似不是很有必要
-var DefaultRegistry = NewRegistry()
-
-func Provide(scope Scope, constructor any) error {
-	return DefaultRegistry.Provide(scope, constructor)
+func Provide(scope Scope, ctors ...any) error {
+	return defaultDependencyCenter.Provide(scope, ctors...)
 }
 
-func Apply[T any](scope Scope, target T) (T, error) {
-	err := DefaultRegistry.Apply(scope, target)
-	if err != nil {
-		return target, err
-	}
-	return target, nil
-}
-
-func MustProvide(scope Scope, constructor any) {
-	err := DefaultRegistry.Provide(scope, constructor)
+func MustProvide(scope Scope, ctors ...any) {
+	err := Provide(scope, ctors...)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func MustApply[T any](scope Scope, target T) T {
-	err := DefaultRegistry.Apply(scope, target)
+type scopeCtxKey struct{}
+
+func withScope(ctx context.Context, scope Scope) context.Context {
+	return context.WithValue(ctx, scopeCtxKey{}, scope)
+}
+
+func scopeFromContext(ctx context.Context) Scope {
+	scope, _ := ctx.Value(scopeCtxKey{}).(Scope)
+	return scope
+}
+
+func Apply(ctx context.Context, target any) error {
+	scope := scopeFromContext(ctx)
+	return defaultDependencyCenter.Apply(scope, target)
+}
+
+func MustApply[T any](ctx context.Context, target T) T {
+	err := Apply(ctx, target)
 	if err != nil {
 		panic(err)
 	}
 	return target
 }
 
-func Scoped(scope Scope, target h.HTMLComponent) (h.HTMLComponent, error) {
-	c, err := Apply(scope, target)
-	if err != nil {
+func Scoped(scope Scope, c h.HTMLComponent) (h.HTMLComponent, error) {
+	if err := defaultDependencyCenter.Apply(scope, c); err != nil {
 		return nil, err
 	}
 	return &scopedCompo{HTMLComponent: c, Scope: scope}, nil
 }
 
-func MustScoped(scope Scope, target h.HTMLComponent) h.HTMLComponent {
-	c, err := Scoped(scope, target)
+func MustScoped(scope Scope, c h.HTMLComponent) h.HTMLComponent {
+	c, err := Scoped(scope, c)
 	if err != nil {
 		panic(err)
 	}
@@ -110,8 +115,6 @@ type scopedCompo struct {
 	h.HTMLComponent
 	Scope Scope
 }
-
-type scopeCtxKey struct{}
 
 func (c *scopedCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	ctx = context.WithValue(ctx, scopeCtxKey{}, c.Scope)

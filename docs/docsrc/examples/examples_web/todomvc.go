@@ -52,16 +52,12 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
-		// TODO: 初始化应该接入依赖注入，或者如何实现只要服从某个接口就自动的执行依赖注入？貌似不太现实
-		// TODO: 但是通常是需要和当前的 Scope 保持一致，这个 Scope 要从 ctx 里取吗？那如果 A->B->C , B 是不需要注入的，貌似 ctx 也能取得到倒是OK。
 		// TODO: 那如果临时要改变 scope 呢？那应该就还是 stateful.MustScoped 了，但是有场景是需要父级 Scope 吗？或者说依赖注入那边需要支持多层吗？
-		filteredTodoItems[i] = &TodoItem{
-			db:   c.dep.db,
-			dep:  c.dep,
+		filteredTodoItems[i] = stateful.MustApply(ctx, &TodoItem{
 			ID:   todo.ID,
 			todo: todo,
 			// OnChanged: stateful.ReloadAction(ctx,a, nil).Go(),
-		}
+		})
 	}
 
 	checkBoxID := fmt.Sprintf("%s-toggle-all", c.ID)
@@ -165,7 +161,7 @@ func (c *TodoApp) ToggleAll(ctx context.Context) (r web.EventResponse, err error
 	}
 
 	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
-	// stateful.ApplyReloadToResponse(&r, a)
+	// stateful.AppendReloadToResponse(&r, a)
 	return
 }
 
@@ -188,7 +184,7 @@ func (c *TodoApp) CreateTodo(ctx context.Context, req *CreateTodoRequest) (r web
 		return r, err
 	}
 	web.AppendRunScripts(&r, web.NotifyScript(NotifTodosChanged, nil))
-	// stateful.ApplyReloadToResponse(&r, a)
+	// stateful.AppendReloadToResponse(&r, a)
 	return
 }
 
@@ -267,9 +263,9 @@ func init() {
 	stateful.MustProvide(stateful.ScopeTop, func() Storage {
 		return &MemoryStorage{}
 	})
-	stateful.MustProvide(stateful.ScopeTop, func(storage Storage) *TodoAppDep {
+	stateful.MustProvide(stateful.ScopeTop, func(db Storage) *TodoAppDep {
 		return &TodoAppDep{
-			db: storage,
+			db: db,
 			itemTitleCompo: func(todo *Todo) h.HTMLComponent {
 				if todo.Completed {
 					return h.Label(todo.Title).Style("color: red;")
@@ -278,9 +274,9 @@ func init() {
 			},
 		}
 	})
-	stateful.MustProvide(stateful.Scope("two"), func(storage Storage) *TodoAppDep {
+	stateful.MustProvide(stateful.Scope("two"), func(db Storage) *TodoAppDep {
 		return &TodoAppDep{
-			db:             storage,
+			db:             db,
 			itemTitleCompo: nil,
 		}
 	})

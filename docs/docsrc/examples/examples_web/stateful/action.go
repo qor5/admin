@@ -34,7 +34,7 @@ const (
 	fieldKeyScope  = "__compo_scope__"
 )
 
-func PlaidAction(ctx context.Context, c h.HTMLComponent, method any, request any) *web.VueEventTagBuilder {
+func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEventTagBuilder {
 	var methodName string
 	switch m := method.(type) {
 	case string:
@@ -43,21 +43,18 @@ func PlaidAction(ctx context.Context, c h.HTMLComponent, method any, request any
 		methodName = GetFuncName(method)
 	}
 
-	b := web.Plaid().EventFunc(eventDispatchAction)
-	scope, ok := ctx.Value(scopeCtxKey{}).(Scope)
-	if ok {
-		b = b.FieldValue(fieldKeyScope, scope)
-	}
-	return b.FieldValue(fieldKeyAction, web.Var(
-		fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
-			PrettyJSONString(Action{
-				CompoType: fmt.Sprintf("%T", c),
-				Compo:     json.RawMessage(h.JSONString(c)),
-				Method:    methodName,
-				Request:   json.RawMessage(h.JSONString(request)),
-			}),
-		),
-	))
+	return web.Plaid().EventFunc(eventDispatchAction).
+		FieldValue(fieldKeyScope, scopeFromContext(ctx)).
+		FieldValue(fieldKeyAction, web.Var(
+			fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
+				PrettyJSONString(Action{
+					CompoType: fmt.Sprintf("%T", c),
+					Compo:     json.RawMessage(h.JSONString(c)),
+					Method:    methodName,
+					Request:   json.RawMessage(h.JSONString(request)),
+				}),
+			),
+		))
 }
 
 var (
@@ -82,17 +79,11 @@ func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, e
 		return r, err
 	}
 
-	// TODO: 或许 newInstance 的时候就应该处理好这个问题
-	// TODO: 这块或许需要直接放到 Resigtry 里面去
-	if c, ok := v.(h.HTMLComponent); ok {
-		scope := evCtx.R.FormValue(fieldKeyScope)
-		v, err = Apply(Scope(scope), c)
-		if err != nil {
-			return r, err
-		}
-		evCtx.R = evCtx.R.WithContext(context.WithValue(evCtx.R.Context(), scopeCtxKey{}, Scope(scope)))
-	} else {
-		return r, errors.Errorf("compo %T does not implement HTMLComponent", c)
+	scope := Scope(evCtx.R.FormValue(fieldKeyScope))
+	evCtx.R = evCtx.R.WithContext(withScope(evCtx.R.Context(), scope))
+
+	if err := Apply(evCtx.R.Context(), v); err != nil {
+		return r, err
 	}
 
 	method := reflect.ValueOf(v).MethodByName(action.Method)

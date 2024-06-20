@@ -49,7 +49,7 @@ func ReloadAction[T Named](ctx context.Context, c T, f func(cloned T)) *web.VueE
 	return PlaidAction(ctx, cloned, actionMethodReload, struct{}{})
 }
 
-func ApplyReloadToResponse(r *web.EventResponse, c Named) {
+func AppendReloadToResponse(r *web.EventResponse, c Named) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: c.CompoName(),
 		Body: skipPortalize(c),
