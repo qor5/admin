@@ -100,7 +100,10 @@ func Scoped(scope Scope, c h.HTMLComponent) (h.HTMLComponent, error) {
 	if err := defaultDependencyCenter.Apply(scope, c); err != nil {
 		return nil, err
 	}
-	return &scopedCompo{HTMLComponent: c, Scope: scope}, nil
+	return h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
+		ctx = withScope(ctx, scope)
+		return c.MarshalHTML(ctx)
+	}), nil
 }
 
 func MustScoped(scope Scope, c h.HTMLComponent) h.HTMLComponent {
@@ -109,14 +112,4 @@ func MustScoped(scope Scope, c h.HTMLComponent) h.HTMLComponent {
 		panic(err)
 	}
 	return c
-}
-
-type scopedCompo struct {
-	h.HTMLComponent
-	Scope Scope
-}
-
-func (c *scopedCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	ctx = context.WithValue(ctx, scopeCtxKey{}, c.Scope)
-	return c.HTMLComponent.MarshalHTML(ctx)
 }

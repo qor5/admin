@@ -145,11 +145,14 @@ func TestApply(t *testing.T) {
 		*Injector `inject:""`
 		Value     string `inject:"" json:"value,omitempty"`
 		value     string `inject:""`
+		optional0 *int64 `inject:"optional"`
+		optional1 uint64 `inject:"optional"`
 		ID        string `json:"id,omitempty"`
 	}
 	injector := New()
 	err := injector.Provide(
 		func() string { return "test" },
+		func() uint64 { return 123 },
 	)
 	require.NoError(t, err)
 	testStruct := &TestStruct{}
@@ -157,6 +160,8 @@ func TestApply(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test", testStruct.Value)
 	require.Equal(t, "test", testStruct.value)
+	require.Nil(t, testStruct.optional0)
+	require.Equal(t, uint64(123), testStruct.optional1)
 	require.Equal(t, "", testStruct.ID)
 	require.Equal(t, injector, testStruct.Injector)
 

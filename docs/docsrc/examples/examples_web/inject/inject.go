@@ -3,6 +3,7 @@ package inject
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -196,19 +197,24 @@ func (inj *Injector) Apply(val any) error {
 	return inj.applyStruct(rv)
 }
 
+const tagOptional = "optional"
+
 func (inj *Injector) applyStruct(rv reflect.Value) error {
 	rt := rv.Type()
 
 	for i := 0; i < rv.NumField(); i++ {
 		field := rv.Field(i)
 		structField := rt.Field(i)
-		if _, ok := structField.Tag.Lookup("inject"); ok {
+		if tag, ok := structField.Tag.Lookup("inject"); ok {
 			if !field.CanSet() {
 				// If the field is unexported, we need to create a new field that is settable.
 				field = reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
 			}
 			dep, err := inj.resolve(field.Type())
 			if err != nil {
+				if errors.Is(err, ErrTypeNotProvided) && strings.TrimSpace(tag) == tagOptional {
+					continue
+				}
 				return err
 			}
 			field.Set(dep)
