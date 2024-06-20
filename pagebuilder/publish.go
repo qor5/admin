@@ -35,7 +35,8 @@ func (p *Page) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageI
 	if category, err = p.GetCategory(db); err != nil {
 		return
 	}
-	return p.getPublishUrl(localePath, category.Path)
+	p.OnlineUrl = p.getPublishUrl(localePath, category.Path)
+	return p.OnlineUrl
 }
 
 func (p *Page) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
@@ -56,7 +57,7 @@ func (p *Page) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInte
 	if liveRecord.ID == 0 {
 		return
 	}
-	return
+	return liveRecord.OnlineUrl
 }
 
 func generatePublishUrl(localePath, categoryPath, slug string) string {

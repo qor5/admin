@@ -61,11 +61,18 @@ func (b *Campaign) GetTitle() string {
 }
 
 func (b *Campaign) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	return "campaigns/index.html"
+	b.OnlineUrl = "campaigns/index.html"
+	return b.OnlineUrl
 }
 
 func (b *Campaign) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	return "campaigns/index.html"
+	var liveRecord Campaign
+
+	db.Where("id = ? AND status = ?", b.ID, publish.StatusOnline).First(&liveRecord)
+	if liveRecord.ID == 0 {
+		return
+	}
+	return liveRecord.OnlineUrl
 }
 
 func (p *Campaign) PrimarySlug() string {
@@ -85,11 +92,17 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 }
 
 func (b *CampaignProduct) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	return "campaign-products/index.html"
+	b.OnlineUrl = "campaign-products/index.html"
+	return b.OnlineUrl
 }
 
 func (b *CampaignProduct) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	return "campaign-products/index.html"
+	var liveRecord CampaignProduct
+	db.Where("id = ? AND status = ?", b.ID, publish.StatusOnline).First(&liveRecord)
+	if liveRecord.ID == 0 {
+		return
+	}
+	return liveRecord.OnlineUrl
 }
 
 func (b *CampaignProduct) GetTitle() string {
@@ -134,10 +147,10 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	stroge := filesystem.New("/tmp/publish")
-	stroge.Delete("/tmp/publish/campaigns/index.html")
-	stroge.Delete("/tmp/publish/campaign-products/index.html")
-	puBuilder := publish.New(db, stroge)
+	storage := filesystem.New("/tmp/publish")
+	_ = storage.Delete("/tmp/publish/campaigns/index.html")
+	_ = storage.Delete("/tmp/publish/campaign-products/index.html")
+	puBuilder := publish.New(db, storage)
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(

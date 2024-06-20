@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/qor5/admin/v3/publish"
+
 	"github.com/qor5/admin/v3/pagebuilder"
 
 	"github.com/qor5/admin/v3/presets"
@@ -203,11 +205,21 @@ func TestPageBuilderCampaign(t *testing.T) {
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				body, err := os.ReadFile("/tmp/publish/campaigns/index.html")
 				if err != nil {
-					t.Error("publish failed!")
+					t.Fatalf("publish failed!")
 					return
 				}
 				if !strings.Contains(string(body), "Hello Campaign") {
-					t.Errorf("publish failed! %s", string(body))
+					t.Fatalf("publish failed! %s", string(body))
+					return
+				}
+				var campaigns []*Campaign
+				TestDB.Where("id=? and version=? and status=?", "1", "2024-05-20-v01", publish.StatusOnline).Find(&campaigns)
+				if len(campaigns) != 1 {
+					t.Fatalf("campaign not published, %#+v", campaigns)
+					return
+				}
+				if campaigns[0].OnlineUrl == "" {
+					t.Fatalf("campaign not published, %#+v", campaigns)
 					return
 				}
 			},
@@ -231,6 +243,16 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				if !strings.Contains(string(body), "Hello Product") {
 					t.Errorf("publish failed! %s", string(body))
+					return
+				}
+				var campaignProducts []*CampaignProduct
+				TestDB.Where("id=? and version=? and status=?", "1", "2024-05-20-v01", publish.StatusOnline).Find(&campaignProducts)
+				if len(campaignProducts) != 1 {
+					t.Fatalf("Product not published, %#+v", campaignProducts)
+					return
+				}
+				if campaignProducts[0].OnlineUrl == "" {
+					t.Fatalf("Product not published, %#+v", campaignProducts)
 					return
 				}
 			},
