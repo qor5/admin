@@ -52,7 +52,6 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	filteredTodoItems := make([]h.HTMLComponent, len(filteredTodos))
 	for i, todo := range filteredTodos {
-		// TODO: 那如果临时要改变 scope 呢？那应该就还是 stateful.MustScoped 了，但是有场景是需要父级 Scope 吗？或者说依赖注入那边需要支持多层吗？
 		filteredTodoItems[i] = stateful.MustApply(ctx, &TodoItem{
 			ID:   todo.ID,
 			todo: todo,
@@ -255,15 +254,33 @@ type TodoAppDep struct {
 	itemTitleCompo func(todo *Todo) h.HTMLComponent
 }
 
+const (
+	InjectorTop = "top"
+	InjectorSub = "top/sub"
+)
+
 func init() {
 	stateful.RegisterActionableType(
 		(*TodoApp)(nil),
 		(*TodoItem)(nil),
 	)
-	stateful.MustProvide(stateful.ScopeTop, func() Storage {
-		return &MemoryStorage{}
-	})
-	stateful.MustProvide(stateful.ScopeTop, func(db Storage) *TodoAppDep {
+
+	stateful.RegisterInjector(InjectorTop, "")
+	stateful.RegisterInjector(InjectorSub, InjectorTop)
+
+	stateful.MustInjector(InjectorTop).MustProvide(
+		func() Storage {
+			return &MemoryStorage{}
+		},
+		func(db Storage) *TodoAppDep {
+			return &TodoAppDep{
+				db:             db,
+				itemTitleCompo: nil,
+			}
+		},
+	)
+
+	stateful.MustInjector(InjectorSub).MustProvide(func(db Storage) *TodoAppDep {
 		return &TodoAppDep{
 			db: db,
 			itemTitleCompo: func(todo *Todo) h.HTMLComponent {
@@ -274,24 +291,18 @@ func init() {
 			},
 		}
 	})
-	stateful.MustProvide(stateful.Scope("two"), func(db Storage) *TodoAppDep {
-		return &TodoAppDep{
-			db:             db,
-			itemTitleCompo: nil,
-		}
-	})
 }
 
 func TodoMVCExample(ctx *web.EventContext) (r web.PageResponse, err error) {
 	r.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
-			stateful.MustScoped(stateful.ScopeTop, &TodoApp{
+			stateful.MustInject(InjectorTop, &TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
 			}),
 		),
 		h.Div().Style("width: 550px;").Children(
-			stateful.MustScoped(stateful.Scope("two"), &TodoApp{
+			stateful.MustInject(InjectorSub, &TodoApp{
 				ID:         "TodoApp1",
 				Visibility: VisibilityCompleted,
 			}),

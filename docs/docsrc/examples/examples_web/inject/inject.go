@@ -233,6 +233,12 @@ func (inj *Injector) Provide(fs ...any) error {
 	return nil
 }
 
+func (inj *Injector) MustProvide(fs ...any) {
+	if err := inj.Provide(fs...); err != nil {
+		panic(err)
+	}
+}
+
 func (inj *Injector) Invoke(f any) ([]any, error) {
 	results, err := inj.invoke(f)
 	if err != nil {

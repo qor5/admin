@@ -30,8 +30,8 @@ type Action struct {
 const eventDispatchAction = "__dispatch_compo_action__"
 
 const (
-	fieldKeyAction = "__compo_action__"
-	fieldKeyScope  = "__compo_scope__"
+	fieldKeyAction       = "__compo_action__"
+	fieldKeyInjectorName = "__compo_inject__"
 )
 
 func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEventTagBuilder {
@@ -43,18 +43,23 @@ func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEv
 		methodName = GetFuncName(method)
 	}
 
-	return web.Plaid().EventFunc(eventDispatchAction).
-		FieldValue(fieldKeyScope, scopeFromContext(ctx)).
-		FieldValue(fieldKeyAction, web.Var(
-			fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
-				PrettyJSONString(Action{
-					CompoType: fmt.Sprintf("%T", c),
-					Compo:     json.RawMessage(h.JSONString(c)),
-					Method:    methodName,
-					Request:   json.RawMessage(h.JSONString(request)),
-				}),
-			),
-		))
+	b := web.Plaid().EventFunc(eventDispatchAction)
+
+	injectorName := injectorNameFromContext(ctx)
+	if injectorName != "" {
+		b.FieldValue(fieldKeyInjectorName, injectorNameFromContext(ctx))
+	}
+
+	return b.FieldValue(fieldKeyAction, web.Var(
+		fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
+			PrettyJSONString(Action{
+				CompoType: fmt.Sprintf("%T", c),
+				Compo:     json.RawMessage(h.JSONString(c)),
+				Method:    methodName,
+				Request:   json.RawMessage(h.JSONString(request)),
+			}),
+		),
+	))
 }
 
 var (
@@ -79,11 +84,12 @@ func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, e
 		return r, err
 	}
 
-	scope := Scope(evCtx.R.FormValue(fieldKeyScope))
-	evCtx.R = evCtx.R.WithContext(withScope(evCtx.R.Context(), scope))
-
-	if err := Apply(evCtx.R.Context(), v); err != nil {
-		return r, err
+	injectorName := evCtx.R.FormValue(fieldKeyInjectorName)
+	if injectorName != "" {
+		evCtx.R = evCtx.R.WithContext(withInjectorName(evCtx.R.Context(), injectorName))
+		if err := Apply(evCtx.R.Context(), v); err != nil {
+			return r, err
+		}
 	}
 
 	method := reflect.ValueOf(v).MethodByName(action.Method)

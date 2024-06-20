@@ -2,90 +2,113 @@ package stateful
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/inject"
 
 	h "github.com/theplant/htmlgo"
 )
 
-type Scope string
-
-const (
-	// ScopeTop is the top level scope.
-	// It must be empty because top level dependencies are typically required,
-	// and even if the eventDispatchActionHandler side detects an empty scope, it should still be applied.
-	ScopeTop Scope = ""
-)
+var ErrInjectorNotFound = errors.New("injector not found")
 
 var defaultDependencyCenter = NewDependencyCenter()
 
+// just to make it easier to get the name of the currently applied injector
+type InjectorName string
+
 type DependencyCenter struct {
 	mu        sync.RWMutex
-	injectors map[Scope]*inject.Injector
+	injectors map[string]*inject.Injector
 }
 
 func NewDependencyCenter() *DependencyCenter {
 	return &DependencyCenter{
-		injectors: map[Scope]*inject.Injector{},
+		injectors: map[string]*inject.Injector{},
 	}
 }
 
-func (r *DependencyCenter) injectorUnlocked(scope Scope) *inject.Injector {
-	inj, ok := r.injectors[scope]
-	if !ok {
-		inj = inject.New()
-		if scope != ScopeTop {
-			// TODO: 这样设计的话只能支持两层，是否有必要支持多层？
-			inj.SetParent(r.injectorUnlocked(ScopeTop))
+func (r *DependencyCenter) RegisterInjector(name string, parent string) {
+	name = strings.TrimSpace(name)
+	parent = strings.TrimSpace(parent)
+	if name == "" {
+		panic(fmt.Errorf("name is required"))
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.injectors[name]; ok {
+		panic(fmt.Errorf("injector %q already exists", name))
+	}
+
+	var parentInjector *inject.Injector
+	if parent != "" {
+		var ok bool
+		parentInjector, ok = r.injectors[parent]
+		if !ok {
+			panic(fmt.Errorf("parent injector %q not found", parent))
 		}
-		inj.Provide(func() Scope { return scope })
-		r.injectors[scope] = inj
+	}
+
+	inj := inject.New()
+	inj.Provide(func() InjectorName { return InjectorName(name) })
+	if parentInjector != nil {
+		inj.SetParent(parentInjector)
+	}
+	r.injectors[name] = inj
+}
+
+func (r *DependencyCenter) Injector(name string) (*inject.Injector, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	inj, ok := r.injectors[name]
+	if !ok {
+		return nil, errors.Wrap(ErrInjectorNotFound, name)
+	}
+	return inj, nil
+}
+
+func RegisterInjector(name string, parent string) {
+	defaultDependencyCenter.RegisterInjector(name, parent)
+}
+
+func Injector(name string) (*inject.Injector, error) {
+	return defaultDependencyCenter.Injector(name)
+}
+
+func MustInjector(name string) *inject.Injector {
+	inj, err := Injector(name)
+	if err != nil {
+		panic(err)
 	}
 	return inj
 }
 
-func (r *DependencyCenter) injector(scope Scope) *inject.Injector {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.injectorUnlocked(scope)
+type injectorNameCtxKey struct{}
+
+func withInjectorName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, injectorNameCtxKey{}, name)
 }
 
-func (r *DependencyCenter) Provide(scope Scope, ctors ...any) error {
-	inj := r.injector(scope)
-	return inj.Provide(ctors...)
-}
-
-func (r *DependencyCenter) Apply(scope Scope, target any) error {
-	inj := r.injector(scope)
-	return inj.Apply(target)
-}
-
-func Provide(scope Scope, ctors ...any) error {
-	return defaultDependencyCenter.Provide(scope, ctors...)
-}
-
-func MustProvide(scope Scope, ctors ...any) {
-	err := Provide(scope, ctors...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-type scopeCtxKey struct{}
-
-func withScope(ctx context.Context, scope Scope) context.Context {
-	return context.WithValue(ctx, scopeCtxKey{}, scope)
-}
-
-func scopeFromContext(ctx context.Context) Scope {
-	scope, _ := ctx.Value(scopeCtxKey{}).(Scope)
-	return scope
+func injectorNameFromContext(ctx context.Context) string {
+	name, _ := ctx.Value(injectorNameCtxKey{}).(string)
+	return name
 }
 
 func Apply(ctx context.Context, target any) error {
-	scope := scopeFromContext(ctx)
-	return defaultDependencyCenter.Apply(scope, target)
+	name := injectorNameFromContext(ctx)
+	if name == "" {
+		return nil
+	}
+	inj, err := defaultDependencyCenter.Injector(name)
+	if err != nil {
+		return err
+	}
+	return inj.Apply(target)
 }
 
 func MustApply[T any](ctx context.Context, target T) T {
@@ -96,18 +119,22 @@ func MustApply[T any](ctx context.Context, target T) T {
 	return target
 }
 
-func Scoped(scope Scope, c h.HTMLComponent) (h.HTMLComponent, error) {
-	if err := defaultDependencyCenter.Apply(scope, c); err != nil {
+func Inject(injectorName string, c h.HTMLComponent) (h.HTMLComponent, error) {
+	inj, err := defaultDependencyCenter.Injector(injectorName)
+	if err != nil {
+		return nil, err
+	}
+	if err := inj.Apply(c); err != nil {
 		return nil, err
 	}
 	return h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
-		ctx = withScope(ctx, scope)
+		ctx = withInjectorName(ctx, injectorName)
 		return c.MarshalHTML(ctx)
 	}), nil
 }
 
-func MustScoped(scope Scope, c h.HTMLComponent) h.HTMLComponent {
-	c, err := Scoped(scope, c)
+func MustInject(injectorName string, c h.HTMLComponent) h.HTMLComponent {
+	c, err := Inject(injectorName, c)
 	if err != nil {
 		panic(err)
 	}
