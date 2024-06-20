@@ -255,7 +255,24 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	return
 }
 
-func (b *Builder) defaultPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interface{}) (url string) {
+	builder := ctx.Value(utils.GetObjectName(obj))
+	mb, ok := builder.(PreviewBuilderInterface)
+	if !ok {
+		return
+	}
+	newRecord := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+	id := reflectutils.MustGet(obj, "ID")
+	lrdb := db.Model(newRecord).Select("online_url").Where("id = ? AND status = ?", id, StatusOnline)
+	if mb.ExistedL10n() {
+		localeCode := reflectutils.MustGet(obj, "LocaleCode")
+		lrdb.Where("locale_code = ?", localeCode)
+	}
+	lrdb.Scan(&url)
+	return
+}
+
+func (b *Builder) defaultPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		content string
 		p       PublishModelInterface
@@ -275,7 +292,7 @@ func (b *Builder) defaultPublishActions(ctx context.Context, obj interface{}) (a
 			Content:  content,
 			IsDelete: false,
 		})
-		if liveUrl := p.LiveUrl(b.db, ctx, b.storage); liveUrl != "" && liveUrl != publishUrl {
+		if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" && liveUrl != publishUrl {
 			actions = append(actions, &PublishAction{
 				Url:      liveUrl,
 				IsDelete: true,
@@ -288,25 +305,21 @@ func (b *Builder) defaultPublishActions(ctx context.Context, obj interface{}) (a
 func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		p  PublishInterface
+		m  WrapPublishInterface
 		ok bool
 	)
 	p, ok = obj.(PublishInterface)
 	if ok {
 		return p.GetPublishActions(b.db, ctx, b.storage)
 	}
-	return b.defaultPublishActions(ctx, obj)
+	if m, ok = obj.(WrapPublishInterface); ok {
+		return m.WrapPublishActions(b.defaultPublishActions)(b.db, ctx, b.storage, obj)
+	}
+	return b.defaultPublishActions(b.db, ctx, b.storage, obj)
 }
 
-func (b *Builder) defaultUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
-	var (
-		p  PublishModelInterface
-		ok bool
-	)
-	p, ok = obj.(PublishModelInterface)
-	if !ok {
-		return
-	}
-	if liveUrl := p.LiveUrl(b.db, ctx, b.storage); liveUrl != "" {
+func (b *Builder) defaultUnPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+	if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      liveUrl,
 			IsDelete: true,
@@ -316,11 +329,20 @@ func (b *Builder) defaultUnPublishActions(ctx context.Context, obj interface{}) 
 }
 
 func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
-	p, ok := obj.(UnPublishInterface)
+	var (
+		p  UnPublishInterface
+		m  WrapUnPublishInterface
+		ok bool
+	)
+
+	p, ok = obj.(UnPublishInterface)
 	if ok {
 		return p.GetUnPublishActions(b.db, ctx, b.storage)
 	}
-	return b.defaultUnPublishActions(ctx, obj)
+	if m, ok = obj.(WrapUnPublishInterface); ok {
+		return m.WrapUnPublishActions(b.defaultUnPublishActions)(b.db, ctx, b.storage, obj)
+	}
+	return b.defaultUnPublishActions(b.db, ctx, b.storage, obj)
 }
 
 // 幂等

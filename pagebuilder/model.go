@@ -1253,3 +1253,7 @@ func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
 func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
 	return context.WithValue(in, b.name, b)
 }
+
+func (b *ModelBuilder) ExistedL10n() bool {
+	return b.builder.l10n != nil
+}

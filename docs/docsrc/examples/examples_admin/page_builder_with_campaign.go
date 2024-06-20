@@ -61,18 +61,23 @@ func (b *Campaign) GetTitle() string {
 }
 
 func (b *Campaign) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	b.OnlineUrl = "campaigns/index.html"
+	b.OnlineUrl = fmt.Sprintf("campaigns/%v/index.html", b.ID)
 	return b.OnlineUrl
 }
 
-func (b *Campaign) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	var liveRecord Campaign
+func (b *Campaign) WrapPublishActions(in publish.PublishActionsFunc) publish.PublishActionsFunc {
+	return func(db *gorm.DB, ctx context.Context, storage oss.StorageInterface, obj any) (actions []*publish.PublishAction, err error) {
+		// default actions
+		if actions, err = in(db, ctx, storage, obj); err != nil {
+			return
+		}
+		actions = append(actions, &publish.PublishAction{
+			Url:     "campaigns/index.html",
+			Content: "Campaign List",
+		})
 
-	db.Where("id = ? AND status = ?", b.ID, publish.StatusOnline).First(&liveRecord)
-	if liveRecord.ID == 0 {
 		return
 	}
-	return liveRecord.OnlineUrl
 }
 
 func (p *Campaign) PrimarySlug() string {
@@ -92,17 +97,8 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 }
 
 func (b *CampaignProduct) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	b.OnlineUrl = "campaign-products/index.html"
+	b.OnlineUrl = fmt.Sprintf("campaign-products/%v/index.html", b.ID)
 	return b.OnlineUrl
-}
-
-func (b *CampaignProduct) LiveUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
-	var liveRecord CampaignProduct
-	db.Where("id = ? AND status = ?", b.ID, publish.StatusOnline).First(&liveRecord)
-	if liveRecord.ID == 0 {
-		return
-	}
-	return liveRecord.OnlineUrl
 }
 
 func (b *CampaignProduct) GetTitle() string {
@@ -148,8 +144,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 	storage := filesystem.New("/tmp/publish")
-	_ = storage.Delete("/tmp/publish/campaigns/index.html")
-	_ = storage.Delete("/tmp/publish/campaign-products/index.html")
 	puBuilder := publish.New(db, storage)
 	if b.GetPermission() == nil {
 		b.Permission(
