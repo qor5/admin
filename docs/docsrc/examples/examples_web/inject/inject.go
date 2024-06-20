@@ -43,7 +43,8 @@ func (inj *Injector) SetParent(parent *Injector) error {
 	return nil
 }
 
-// TODO: 如果 func 的最后一个返回值是 error 的话，貌似不应该作为 dep 提供
+var typeError = reflect.TypeOf((*error)(nil)).Elem()
+
 // TODO: 如果 func 的第一个参数是 ctx 的话，是否应该特殊处理呢？若需要，这个也需要 invoke 和 resolve 都处理
 func (inj *Injector) provide(f any) (err error) {
 	rv := reflect.ValueOf(f)
@@ -64,8 +65,14 @@ func (inj *Injector) provide(f any) (err error) {
 		}
 	}()
 
-	for i := 0; i < rt.NumOut(); i++ {
+	numOut := rt.NumOut()
+	for i := 0; i < numOut; i++ {
 		outType := rt.Out(i)
+
+		// skip error type if it is the last return value
+		if i == numOut-1 && outType == typeError {
+			continue
+		}
 
 		if _, ok := inj.values[outType]; ok {
 			return errors.Wrap(ErrTypeAlreadyProvided, outType.String())
@@ -98,7 +105,16 @@ func (inj *Injector) invoke(f any) ([]reflect.Value, error) {
 		in[i] = argValue
 	}
 
-	return reflect.ValueOf(f).Call(in), nil
+	outs := reflect.ValueOf(f).Call(in)
+	numOut := len(outs)
+	if numOut > 0 && rt.Out(numOut-1) == typeError {
+		rvErr := outs[numOut-1]
+		outs = outs[:numOut-1]
+		if !rvErr.IsNil() {
+			return outs, rvErr.Interface().(error)
+		}
+	}
+	return outs, nil
 }
 
 func (inj *Injector) resolve(rt reflect.Type) (reflect.Value, error) {
@@ -177,7 +193,6 @@ func (inj *Injector) Apply(val any) error {
 			}
 			field.Set(dep)
 		}
-		// TODO: 如果是 embed *Injector 的话，应该把自身塞进去
 	}
 
 	return nil

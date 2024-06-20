@@ -1,6 +1,6 @@
 # inject
 
-Reference from [codegangsta/inject](https://github.com/codegangsta/inject)
+Inspired by [codegangsta/inject](https://github.com/codegangsta/inject)
 
 - Implemented `Provide` method
 - Ensured thread safety

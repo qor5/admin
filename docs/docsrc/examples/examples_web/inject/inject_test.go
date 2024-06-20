@@ -1,6 +1,7 @@
 package inject
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -25,9 +26,23 @@ func TestSetParent(t *testing.T) {
 }
 
 func TestProvide(t *testing.T) {
-	injector := New()
-	err := injector.Provide(func() string { return "test" })
-	require.NoError(t, err)
+	{
+		injector := New()
+		err := injector.Provide(func() string { return "test" })
+		require.NoError(t, err)
+	}
+	{
+		injector := New()
+		err := injector.Provide(func() (string, int) { return "test", 0 })
+		require.NoError(t, err)
+		require.Len(t, injector.providers, 2)
+	}
+	{
+		injector := New()
+		err := injector.Provide(func() (string, error) { return "test", nil })
+		require.NoError(t, err)
+		require.Len(t, injector.providers, 1)
+	}
 }
 
 func TestInvoke(t *testing.T) {
@@ -37,6 +52,14 @@ func TestInvoke(t *testing.T) {
 	results, err := injector.invoke(func(s string) string { return s })
 	require.NoError(t, err)
 	require.Equal(t, "test", results[0].Interface())
+
+	{
+		errTemp := errors.New("temp")
+		results, err := injector.invoke(func(s string) (string, error) { return "", errTemp })
+		require.ErrorIs(t, err, errTemp)
+		require.Equal(t, "", results[0].Interface())
+		require.Len(t, results, 1)
+	}
 
 	{
 		results, err := injector.Invoke(func(s string) string { return s })
@@ -71,6 +94,26 @@ func TestResolve(t *testing.T) {
 		err = injector.Resolve(&str)
 		require.NoError(t, err)
 		require.Equal(t, "testPtr", *str)
+	}
+
+	{
+		injector := New()
+
+		errTemp := errors.New("temp")
+		// if error is not nil, the value will be ignored
+		err := injector.Provide(func() (string, error) { return "test", errTemp })
+		require.NoError(t, err)
+		{
+			value, err := injector.resolve(reflect.TypeOf(""))
+			require.ErrorIs(t, err, errTemp)
+			require.True(t, !value.IsValid())
+		}
+		{
+			str := "xxx"
+			err = injector.Resolve(&str)
+			require.ErrorIs(t, err, errTemp)
+			require.Equal(t, "xxx", str)
+		}
 	}
 }
 
