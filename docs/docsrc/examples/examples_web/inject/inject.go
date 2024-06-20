@@ -45,7 +45,7 @@ func (inj *Injector) SetParent(parent *Injector) error {
 
 var typeError = reflect.TypeOf((*error)(nil)).Elem()
 
-// TODO: 如果 func 的第一个参数是 ctx 的话，是否应该特殊处理呢？若需要，这个也需要 invoke 和 resolve 都处理
+// TODO: 如果 func 的第一个参数是 ctx 的话，是否应该特殊处理呢？若需要，invoke 和 resolve 以及 apply 就都需要处理
 func (inj *Injector) provide(f any) (err error) {
 	rv := reflect.ValueOf(f)
 	rt := rv.Type()

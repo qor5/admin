@@ -28,6 +28,12 @@ func TestSetParent(t *testing.T) {
 func TestProvide(t *testing.T) {
 	{
 		injector := New()
+		require.Panics(t, func() {
+			injector.Provide("testNotFunc")
+		})
+	}
+	{
+		injector := New()
 		err := injector.Provide(func() string { return "test" })
 		require.NoError(t, err)
 	}
@@ -36,12 +42,24 @@ func TestProvide(t *testing.T) {
 		err := injector.Provide(func() (string, int) { return "test", 0 })
 		require.NoError(t, err)
 		require.Len(t, injector.providers, 2)
+
+		err = injector.Provide(func() (int64, int) { return 1, 2 })
+		require.ErrorIs(t, err, ErrTypeAlreadyProvided)
+		require.Len(t, injector.providers, 2)
 	}
 	{
 		injector := New()
 		err := injector.Provide(func() (string, error) { return "test", nil })
 		require.NoError(t, err)
 		require.Len(t, injector.providers, 1)
+
+		_, err = injector.invoke(func(s string) {})
+		require.NoError(t, err)
+		require.Len(t, injector.providers, 0)
+
+		err = injector.Provide(func() (int64, string) { return 1, "" })
+		require.ErrorIs(t, err, ErrTypeAlreadyProvided)
+		require.Len(t, injector.providers, 0)
 	}
 }
 
@@ -49,6 +67,11 @@ func TestInvoke(t *testing.T) {
 	injector := New()
 	err := injector.Provide(func() string { return "test" })
 	require.NoError(t, err)
+
+	require.Panics(t, func() {
+		injector.invoke("testNotFunc")
+	})
+
 	results, err := injector.invoke(func(s string) string { return s })
 	require.NoError(t, err)
 	require.Equal(t, "test", results[0].Interface())
@@ -137,6 +160,10 @@ func TestApply(t *testing.T) {
 	require.Equal(t, "test", testStruct.value)
 	require.Equal(t, "", testStruct.ID)
 	require.Equal(t, injector, testStruct.Injector)
+
+	require.Panics(t, func() {
+		injector.Apply("testNotStruct")
+	})
 }
 
 func TestMultipleProviders(t *testing.T) {
