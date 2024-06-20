@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
-	"go4.org/sort"
 	"golang.org/x/text/language"
 
 	"github.com/qor5/x/v3/ui/vuetify"
@@ -130,7 +130,7 @@ func New(db *gorm.DB) *Builder {
 }
 
 // GetActivityLogs get activity logs
-func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
+func (ab Builder) GetActivityLogs(m any, db *gorm.DB) []*ActivityLog {
 	keys := ab.MustGetModelBuilder(m).KeysValue(m)
 	var logs []*ActivityLog
 	err := db.Where("model_name = ? AND model_keys = ?", reflect.TypeOf(m).Name(), keys).Find(&logs).Error
@@ -204,9 +204,11 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	editing := presetModel.Editing()
 	d := presetModel.Detailing()
 
+	db := ab.db
+
 	d.Field(Timeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// Fetch combined timeline data
-		timelineData := fetchTimelineData(ctx)
+		timelineData := fetchTimelineData(ctx, db)
 
 		// Create VTimelineItems
 		var timelineItems []h.HTMLComponent
@@ -277,9 +279,12 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	})
 }
 
-func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
+func fetchTimelineData(ctx *web.EventContext, db *gorm.DB) []TimelineItem {
 	var timelineData []TimelineItem
-	db := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
+
+	if db == nil {
+		panic("db is nil")
+	}
 
 	var logs []ActivityLog
 

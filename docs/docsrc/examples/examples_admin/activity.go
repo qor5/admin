@@ -39,11 +39,11 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	bt := productModel.Detailing("Content", activity.Timeline).Drawer(true)
 	bt.Section("Content").
-		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		ViewComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			return Div().Text("text")
 		}).Editing("Title", "Code", "Price")
 
-	activityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
+	activityBuilder.RegisterModel(productModel).AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
 
 	// @snippet_end
 
