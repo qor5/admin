@@ -119,12 +119,16 @@ func TestResolve(t *testing.T) {
 
 func TestApply(t *testing.T) {
 	type TestStruct struct {
-		Value string `inject:"" json:"value,omitempty"`
-		value string `inject:""`
-		ID    string `json:"id,omitempty"`
+		*Injector `inject:""`
+		Value     string `inject:"" json:"value,omitempty"`
+		value     string `inject:""`
+		ID        string `json:"id,omitempty"`
 	}
 	injector := New()
-	err := injector.Provide(func() string { return "test" })
+	err := injector.Provide(
+		func() string { return "test" },
+		func() *Injector { return injector },
+	)
 	require.NoError(t, err)
 	testStruct := &TestStruct{}
 	err = injector.Apply(testStruct)
@@ -132,6 +136,7 @@ func TestApply(t *testing.T) {
 	require.Equal(t, "test", testStruct.Value)
 	require.Equal(t, "test", testStruct.value)
 	require.Equal(t, "", testStruct.ID)
+	require.Equal(t, injector, testStruct.Injector)
 }
 
 func TestMultipleProviders(t *testing.T) {
