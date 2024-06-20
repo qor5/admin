@@ -13,9 +13,7 @@ import (
 func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return b.wrapper.Wrap(func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
-		ri := ctx.R.FormValue("resource_id")
-		rt := ctx.R.FormValue("resource_type")
-		content := ctx.R.FormValue("Content")
+		ri, rt, content := ctx.R.FormValue("resource_id"), ctx.R.FormValue("resource_type"), ctx.R.FormValue("Content")
 
 		if ri == "" || rt == "" || content == "" {
 			handleError(errors.New("missing required form values"), &r, "Failed to create note")
@@ -39,6 +37,18 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		}
 
 		log.Printf("Activity created with ID: %v", activity.ID)
+
+		var total int64
+		db.Model(&ActivityLog{}).
+			Where("resource_type = ? AND resource_id = ?", rt, ri).
+			Count(&total)
+
+		if err = db.Model(&ActivityLog{}).
+			Where("id = ?", activity.ID).
+			UpdateColumn("Number", total).Error; err != nil {
+			handleError(err, &r, "Failed to update activity number")
+			return
+		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")

@@ -88,7 +88,6 @@ type TimelineItem struct {
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	// Register the model
 	b.RegisterModel(m)
-
 	db := b.db
 	m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
 	m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
