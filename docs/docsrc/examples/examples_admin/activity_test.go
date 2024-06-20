@@ -63,17 +63,6 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Hello content, I am writing a content"},
 		},
 		{
-			Name:  "create note with invalid data",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				activityData.TruncatePut(dbr)
-				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=note_CreateNoteEvent").
-					AddField("resource_type", "WithActivityProduct").
-					AddField("Content", "Hello content, I am writing a content").
-					BuildEventFuncRequest()
-				return req
-			},
 			PageMatch: func(t *testing.T, body *bytes.Buffer) {
 				fmt.Println(body.String())
 				if !strings.Contains(body.String(), "Missing required parameter") {

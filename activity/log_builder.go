@@ -207,6 +207,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	db := ab.db
 
 	d.Field(Timeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+
 		// Fetch combined timeline data
 		timelineData := fetchTimelineData(ctx, db)
 
@@ -220,7 +221,8 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 					),
 					h.Div(
 						h.Div(
-							vuetify.VAvatar().Text(strings.ToUpper(string(item.User[0]))).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
+							//vuetify.VAvatar().Text(strings.ToUpper(string(item.User[0]))).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
+							vuetify.VAvatar().Text(strings.ToUpper("test ...")).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
 							h.Div(
 								h.Strong(item.User).Class("ml-1").Style("width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
 								h.Div(h.Text(item.Description)).Class("text-caption").Style("width: 100%; font-family: SF Pro; font-style: normal; font-weight: 400; font-size: 14px; line-height: 20px; color: #9e9e9e;"),

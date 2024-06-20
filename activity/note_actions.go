@@ -1,11 +1,13 @@
 package activity
 
 import (
+	"errors"
 	"fmt"
+	"log"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"log"
 )
 
 func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
@@ -15,7 +17,13 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		rt := ctx.R.FormValue("resource_type")
 		content := ctx.R.FormValue("Content")
 
+		if ri == "" || rt == "" || content == "" {
+			handleError(errors.New("missing required form values"), &r, "Failed to create note")
+			return
+		}
+
 		userID, creator := GetUserData(ctx)
+
 		activity := ActivityLog{
 			UserID:    userID,
 			Creator:   creator,
@@ -30,6 +38,8 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
+		log.Printf("Activity created with ID: %v", activity.ID)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
@@ -38,6 +48,8 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 			Name: "notes-section",
 			Body: notesSection,
 		})
+
+		log.Printf("Updated portals: %v", r.UpdatePortals)
 
 		return
 	})
