@@ -124,7 +124,7 @@ func Inject(injectorName string, c h.HTMLComponent) (h.HTMLComponent, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := inj.Apply(c); err != nil {
+	if err := inj.Apply(Unwrap(c)); err != nil {
 		return nil, err
 	}
 	return h.ComponentFunc(func(ctx context.Context) ([]byte, error) {

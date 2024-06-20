@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -43,7 +44,9 @@ func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEv
 		methodName = GetFuncName(method)
 	}
 
-	b := web.Plaid().EventFunc(eventDispatchAction)
+	b := web.Plaid().
+		Queries(url.Values{}). // force clear queries
+		EventFunc(eventDispatchAction)
 
 	injectorName := injectorNameFromContext(ctx)
 	if injectorName != "" {

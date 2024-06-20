@@ -34,7 +34,7 @@ type TodoApp struct {
 	dep *TodoAppDep `inject:""`
 
 	ID         string     `json:"id"`
-	Visibility Visibility `json:"visibility"`
+	Visibility Visibility `json:"visibility" query:"visibility"`
 }
 
 func (c *TodoApp) CompoName() string {
@@ -296,10 +296,10 @@ func init() {
 func TodoMVCExample(ctx *web.EventContext) (r web.PageResponse, err error) {
 	r.Body = h.Div().Style("display: flex; justify-content: center;").Children(
 		h.Div().Style("width: 550px; margin-right: 40px;").Children(
-			stateful.MustInject(InjectorTop, &TodoApp{
+			stateful.MustInject(InjectorTop, stateful.SyncQuery(&TodoApp{
 				ID:         "TodoApp0",
 				Visibility: VisibilityAll,
-			}),
+			})),
 		),
 		h.Div().Style("width: 550px;").Children(
 			stateful.MustInject(InjectorSub, &TodoApp{
