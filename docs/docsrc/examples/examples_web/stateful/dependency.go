@@ -31,9 +31,26 @@ func NewDependencyCenter() *DependencyCenter {
 	}
 }
 
-func (r *DependencyCenter) RegisterInjector(name string, parent string) {
+type registerInjectorOptions struct {
+	parent string
+}
+
+type RegisterInjectorOption func(*registerInjectorOptions)
+
+func WithParent(parent string) RegisterInjectorOption {
+	return func(o *registerInjectorOptions) {
+		o.parent = parent
+	}
+}
+
+func (r *DependencyCenter) RegisterInjector(name string, opts ...RegisterInjectorOption) {
+	o := new(registerInjectorOptions)
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	name = strings.TrimSpace(name)
-	parent = strings.TrimSpace(parent)
+	parent := strings.TrimSpace(o.parent)
 	if name == "" {
 		panic(fmt.Errorf("name is required"))
 	}
@@ -72,8 +89,8 @@ func (r *DependencyCenter) Injector(name string) (*inject.Injector, error) {
 	return inj, nil
 }
 
-func RegisterInjector(name string, parent string) {
-	defaultDependencyCenter.RegisterInjector(name, parent)
+func RegisterInjector(name string, opts ...RegisterInjectorOption) {
+	defaultDependencyCenter.RegisterInjector(name, opts...)
 }
 
 func Injector(name string) (*inject.Injector, error) {
@@ -99,24 +116,19 @@ func injectorNameFromContext(ctx context.Context) string {
 	return name
 }
 
-func Apply(ctx context.Context, target any) error {
-	name := injectorNameFromContext(ctx)
-	if name == "" {
-		return nil
-	}
+func Provide(name string, fs ...any) error {
 	inj, err := defaultDependencyCenter.Injector(name)
 	if err != nil {
 		return err
 	}
-	return inj.Apply(target)
+	return inj.Provide(fs...)
 }
 
-func MustApply[T any](ctx context.Context, target T) T {
-	err := Apply(ctx, target)
+func MustProvide(name string, fs ...any) {
+	err := Provide(name, fs...)
 	if err != nil {
 		panic(err)
 	}
-	return target
 }
 
 func Inject(injectorName string, c h.HTMLComponent) (h.HTMLComponent, error) {
@@ -139,4 +151,27 @@ func MustInject(injectorName string, c h.HTMLComponent) h.HTMLComponent {
 		panic(err)
 	}
 	return c
+}
+
+func Apply(ctx context.Context, target any) error {
+	name := injectorNameFromContext(ctx)
+	if name == "" {
+		return nil
+	}
+	inj, err := defaultDependencyCenter.Injector(name)
+	if err != nil {
+		return err
+	}
+	if c, ok := target.(h.HTMLComponent); ok {
+		return inj.Apply(Unwrap(c))
+	}
+	return inj.Apply(target)
+}
+
+func MustApply[T any](ctx context.Context, target T) T {
+	err := Apply(ctx, target)
+	if err != nil {
+		panic(err)
+	}
+	return target
 }

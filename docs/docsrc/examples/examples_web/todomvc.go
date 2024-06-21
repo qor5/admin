@@ -265,10 +265,10 @@ func init() {
 		(*TodoItem)(nil),
 	)
 
-	stateful.RegisterInjector(InjectorTop, "")
-	stateful.RegisterInjector(InjectorSub, InjectorTop)
+	stateful.RegisterInjector(InjectorTop)
+	stateful.RegisterInjector(InjectorSub, stateful.WithParent(InjectorTop))
 
-	stateful.MustInjector(InjectorTop).MustProvide(
+	stateful.MustProvide(InjectorTop,
 		func() Storage {
 			return &MemoryStorage{}
 		},
@@ -280,7 +280,7 @@ func init() {
 		},
 	)
 
-	stateful.MustInjector(InjectorSub).MustProvide(func(db Storage) *TodoAppDep {
+	stateful.MustProvide(InjectorSub, func(db Storage) *TodoAppDep {
 		return &TodoAppDep{
 			db: db,
 			itemTitleCompo: func(todo *Todo) h.HTMLComponent {

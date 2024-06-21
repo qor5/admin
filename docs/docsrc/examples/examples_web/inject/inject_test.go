@@ -63,16 +63,6 @@ func TestProvide(t *testing.T) {
 	}
 }
 
-func TestMustProvide(t *testing.T) {
-	injector := New()
-	require.NotPanics(t, func() {
-		injector.MustProvide(func() (string, int) { return "test", 0 })
-	})
-	require.Panics(t, func() {
-		injector.MustProvide(func() string { return "test" })
-	})
-}
-
 func TestInvoke(t *testing.T) {
 	injector := New()
 	err := injector.Provide(func() string { return "test" })
