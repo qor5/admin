@@ -1,10 +1,13 @@
 package examples_admin
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/qor/oss"
+	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -57,6 +60,26 @@ func (b *Campaign) GetTitle() string {
 	return b.Title
 }
 
+func (b *Campaign) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	b.OnlineUrl = fmt.Sprintf("campaigns/%v/index.html", b.ID)
+	return b.OnlineUrl
+}
+
+func (b *Campaign) WrapPublishActions(in publish.PublishActionsFunc) publish.PublishActionsFunc {
+	return func(db *gorm.DB, ctx context.Context, storage oss.StorageInterface, obj any) (actions []*publish.PublishAction, err error) {
+		// default actions
+		if actions, err = in(db, ctx, storage, obj); err != nil {
+			return
+		}
+		actions = append(actions, &publish.PublishAction{
+			Url:     "campaigns/index.html",
+			Content: "Campaign List",
+		})
+
+		return
+	}
+}
+
 func (p *Campaign) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
 }
@@ -71,6 +94,11 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 		presets.ParamID:     segs[0],
 		publish.SlugVersion: segs[1],
 	}
+}
+
+func (b *CampaignProduct) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	b.OnlineUrl = fmt.Sprintf("campaign-products/%v/index.html", b.ID)
+	return b.OnlineUrl
 }
 
 func (b *CampaignProduct) GetTitle() string {
@@ -115,7 +143,8 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	puBuilder := publish.New(db, nil)
+	storage := filesystem.New("/tmp/publish")
+	puBuilder := publish.New(db, storage)
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(
@@ -132,7 +161,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
 			return Div().Text(c.Text).Style("height:200px")
-		})
+		}).Cover("https://qor5.com/img/qor-logo.png")
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
