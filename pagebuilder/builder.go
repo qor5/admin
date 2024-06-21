@@ -140,6 +140,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
 	r.pageInstall = r.defaultPageInstall
+	r.pageLayoutFunc = defaultPageLayoutFunc
 
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
@@ -181,6 +182,11 @@ func (b *Builder) WrapCategoryInstall(w func(presets.ModelInstallFunc) presets.M
 
 func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	b.pageLayoutFunc = v
+	return b
+}
+
+func (b *Builder) WrapPageLayout(warp func(v PageLayoutFunc) PageLayoutFunc) (r *Builder) {
+	b.pageLayoutFunc = warp(b.pageLayoutFunc)
 	return b
 }
 
@@ -288,7 +294,6 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 	b.configEditor(r)
 	b.configPublish(r)
 	b.configDetail(r)
-	b.pageLayoutFunc = DefaultPageLayoutFunc
 	return nil
 }
 

@@ -155,12 +155,23 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.Use(puBuilder)
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
-		Publisher(puBuilder)
+		Publisher(puBuilder).WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
+		return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
+			input.FreeStyleCss = append(input.FreeStyleCss, `.test-div { width: 200px;background-color:#E1E1E1; }`)
+			input.FreeStyleTopJs = append(input.FreeStyleTopJs, `console.log("free style")`)
+			input.Footer = Components(
+				Style(`.test-div1 { width: 300px;background-color:blue; }`),
+				Style(`.test-div2 { width: 400px;background-color:red; }`),
+				Script("console.log('in footer')"),
+			)
+			return v(body, input, ctx)
+		}
+	})
 
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
-			return Div().Text(c.Text).Style("height:200px")
+			return Div().Text(c.Text).Class("test-div")
 		}).Cover("https://qor5.com/img/qor-logo.png")
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
@@ -183,7 +194,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
-			return Div(Text(c.Title)).Style("height:200px")
+			return Div(Text(c.Title)).Class("test-div1")
 		}).Model(&CampaignContent{}).Editing("Title", "Banner")
 
 	campaignModelBuilder.Use(pb)
@@ -202,7 +213,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb.RegisterModelContainer("ProductContent", productModelBuilder).Group("CampaignProduct").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*ProductContent)
-			return Div(Text(c.Name)).Style("height:200px")
+			return Div(Text(c.Name)).Class("test-div2")
 		}).Model(&ProductContent{}).Editing("Name")
 
 	productModelBuilder.Use(pb)

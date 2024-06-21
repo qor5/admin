@@ -60,7 +60,6 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 
-	pb.PageLayout(pagebuilder.DefaultPageLayoutFunc)
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"
 	pb.Images(http.StripPrefix(path.Join(prefix, imagePrefix), http.FileServer(http.FS(fSys))), imagePrefix)
