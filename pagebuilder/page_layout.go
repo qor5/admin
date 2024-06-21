@@ -8,7 +8,7 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-func DefaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
 	var freeStyleCss h.HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
 		freeStyleCss = h.Style(strings.Join(input.FreeStyleCss, "\n"))
