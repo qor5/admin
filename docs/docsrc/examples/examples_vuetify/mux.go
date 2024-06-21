@@ -312,23 +312,13 @@ func SamplesHandler(mux examples.Muxer, prefix string) {
 	)
 
 	mux.Handle(
-		examples_web.ZoneExamplePath,
-		examples_web.ZoneExamplePB.Wrap(demoLayout),
-	)
-
-	mux.Handle(
-		examples_web.CompoExamplePath,
-		examples_web.CompoExamplePB.Wrap(demoLayout),
+		examples_web.TodoMVCExamplePath,
+		examples_web.TodoMVCExamplePB.Wrap(demoLayout),
 	)
 
 	mux.Handle(
 		examples_web.TreeViewExamplePath,
 		examples_web.TreeViewExamplePB.Wrap(demoLayout),
-	)
-
-	mux.Handle(
-		examples_web.TodoMVCExamplePath,
-		examples_web.TodoMVCExamplePB.Wrap(demoLayout),
 	)
 
 	mux.Handle(

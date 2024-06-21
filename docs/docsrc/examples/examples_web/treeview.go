@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web/stateful"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/stateful"
 	"github.com/rs/xid"
 	h "github.com/theplant/htmlgo"
 )
