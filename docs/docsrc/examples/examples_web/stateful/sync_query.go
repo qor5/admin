@@ -8,32 +8,53 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+var queryDecoder = func() *form.Decoder {
+	decoder := form.NewDecoder()
+	decoder.SetMode(form.ModeExplicit)
+	decoder.SetTagName("query")
+	return decoder
+}()
+
+var queryEncoder = func() *form.Encoder {
+	encoder := form.NewEncoder()
+	encoder.SetMode(form.ModeExplicit)
+	encoder.SetTagName("query")
+	return encoder
+}()
+
+type syncQueryCtxKey struct{}
+
+func withSyncQuery(ctx context.Context) context.Context {
+	return context.WithValue(ctx, syncQueryCtxKey{}, struct{}{})
+}
+
+func IsSyncQuery(ctx context.Context) bool {
+	_, ok := ctx.Value(syncQueryCtxKey{}).(struct{})
+	return ok
+}
+
 type querySyncer struct {
 	h.HTMLComponent
 }
 
-var formDecoder = func() *form.Decoder {
-	decoder := form.NewDecoder()
-	decoder.SetMode(form.ModeExplicit)
-	decoder.SetTagName("query")
-	// decoder.RegisterTagNameFunc(func(field reflect.StructField) string {
-	// 	tag := field.Tag.Get("query")
-	// 	if tag == "" {
-	// 		return strcase.ToLowerCamel(field.Name)
-	// 	}
-	// 	return tag
-	// })
-	return decoder
-}()
-
 func (c *querySyncer) MarshalHTML(ctx context.Context) ([]byte, error) {
-	// TODO: 然后需要在各个 reload action 中，需要将其通过 pushState 同步到 query 中
-	// TODO: 如何保证页面中只会有一个呢？貌似没什么办法？
 	evCtx := web.MustGetEventContext(ctx)
 	query := evCtx.R.URL.Query()
-	if err := formDecoder.Decode(&c.HTMLComponent, query); err != nil {
+
+	// TODO: support prefix ?
+	// const prefix = "main_"
+	// r := url.Values{}
+	// for k, v := range query {
+	// 	if strings.HasPrefix(k, prefix) {
+	// 		r[strings.TrimPrefix(k, prefix)] = v
+	// 	}
+	// }
+	// query = r
+
+	if err := queryDecoder.Decode(&c.HTMLComponent, query); err != nil {
 		return nil, err
 	}
+	ctx = withSyncQuery(ctx)
 	return c.HTMLComponent.MarshalHTML(ctx)
 }
 

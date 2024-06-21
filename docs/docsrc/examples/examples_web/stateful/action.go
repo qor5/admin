@@ -22,17 +22,18 @@ func Install(b *web.Builder) {
 }
 
 type Action struct {
-	CompoType string          `json:"compo_type"`
-	Compo     json.RawMessage `json:"compo"`
-	Method    string          `json:"method"`
-	Request   json.RawMessage `json:"request"`
+	ActionableType string          `json:"actionable_type"`
+	Actionable     json.RawMessage `json:"actionable"`
+	Injector       string          `json:"injector"`
+	SyncQuery      bool            `json:"sync_query"`
+	Method         string          `json:"method"`
+	Request        json.RawMessage `json:"request"`
 }
 
-const eventDispatchAction = "__dispatch_compo_action__"
+const eventDispatchAction = "__dispatch_actionable_action__"
 
 const (
-	fieldKeyAction       = "__compo_action__"
-	fieldKeyInjectorName = "__compo_inject__"
+	fieldKeyAction = "__action__"
 )
 
 func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEventTagBuilder {
@@ -45,23 +46,29 @@ func PlaidAction(ctx context.Context, c any, method any, request any) *web.VueEv
 	}
 
 	b := web.Plaid().
-		Queries(url.Values{}). // force clear queries
-		EventFunc(eventDispatchAction)
+		EventFunc(eventDispatchAction).
+		Queries(url.Values{}) // force clear queries first
 
-	injectorName := injectorNameFromContext(ctx)
-	if injectorName != "" {
-		b.FieldValue(fieldKeyInjectorName, injectorNameFromContext(ctx))
+	action := Action{
+		ActionableType: fmt.Sprintf("%T", c),
+		Actionable:     json.RawMessage(h.JSONString(c)),
+		Injector:       injectorNameFromContext(ctx),
+		Method:         methodName,
+		Request:        json.RawMessage(h.JSONString(request)),
+	}
+
+	if IsSyncQuery(ctx) {
+		action.SyncQuery = true
+
+		queries, err := queryEncoder.Encode(c)
+		if err != nil {
+			panic(err)
+		}
+		b.Queries(queries).MergeQuery(true).PushState(true)
 	}
 
 	return b.FieldValue(fieldKeyAction, web.Var(
-		fmt.Sprintf(`JSON.stringify(%s, null, "\t")`,
-			PrettyJSONString(Action{
-				CompoType: fmt.Sprintf("%T", c),
-				Compo:     json.RawMessage(h.JSONString(c)),
-				Method:    methodName,
-				Request:   json.RawMessage(h.JSONString(request)),
-			}),
-		),
+		fmt.Sprintf(`JSON.stringify(%s, null, "\t")`, PrettyJSONString(action)),
 	))
 }
 
@@ -74,25 +81,28 @@ var (
 func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	var action Action
 	if err = json.Unmarshal([]byte(evCtx.R.FormValue(fieldKeyAction)), &action); err != nil {
-		return r, errors.Wrap(err, "failed to unmarshal compo action")
+		return r, errors.Wrap(err, "failed to unmarshal action")
 	}
 
-	v, err := newActionableInstance(action.CompoType)
+	v, err := newActionable(action.ActionableType)
 	if err != nil {
 		return r, err
 	}
 
-	err = json.Unmarshal(action.Compo, v)
+	err = json.Unmarshal(action.Actionable, v)
 	if err != nil {
 		return r, err
 	}
 
-	injectorName := evCtx.R.FormValue(fieldKeyInjectorName)
-	if injectorName != "" {
-		evCtx.R = evCtx.R.WithContext(withInjectorName(evCtx.R.Context(), injectorName))
+	if action.Injector != "" {
+		evCtx.R = evCtx.R.WithContext(withInjectorName(evCtx.R.Context(), action.Injector))
 		if err := Apply(evCtx.R.Context(), v); err != nil {
 			return r, err
 		}
+	}
+
+	if action.SyncQuery {
+		evCtx.R = evCtx.R.WithContext(withSyncQuery(evCtx.R.Context()))
 	}
 
 	method := reflect.ValueOf(v).MethodByName(action.Method)
@@ -140,7 +150,7 @@ func eventDispatchActionHandler(evCtx *web.EventContext) (r web.EventResponse, e
 	case actionMethodReload:
 		rc, ok := v.(Named)
 		if !ok {
-			return r, errors.Errorf("compo %T does not implement Reloadable", v)
+			return r, errors.Errorf("actionable %T does not implement Reloadable", v)
 		}
 		return OnReload(rc)
 	default:
@@ -162,7 +172,7 @@ func registerActionableType(v any) {
 	}
 }
 
-func newActionableInstance(typeName string) (any, error) {
+func newActionable(typeName string) (any, error) {
 	if t, ok := actionableTypeRegistry.Get(typeName); ok {
 		return reflect.New(t.Elem()).Interface(), nil
 	}
