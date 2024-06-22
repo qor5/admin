@@ -60,15 +60,15 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	checkBoxID := fmt.Sprintf("%s-toggle-all", c.ID)
-	return stateful.Reloadify(c,
-		web.Scope().Observer(NotifTodosChanged, stateful.ReloadAction(ctx, c, nil).Go()),
+	return stateful.Reloadable(c,
+		web.Scope().Observe(NotifTodosChanged, stateful.ReloadAction(ctx, c, nil).Go()),
 		h.Section().Class("todoapp").Children(
 			h.Header().Class("header").Children(
 				h.H1("Todos"),
 				h.Input("").Class("new-todo").Attr("id", fmt.Sprintf("%s-creator", c.ID)).
 					Attr("placeholder", "What needs to be done?").
 					Attr("@keyup.enter", strings.Replace(
-						stateful.PlaidAction(ctx, c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
+						stateful.PostAction(ctx, c, c.CreateTodo, &CreateTodoRequest{Title: "_placeholder_"}).Go(),
 						`"_placeholder_"`,
 						"$event.target.value",
 						1,
@@ -77,7 +77,7 @@ func (c *TodoApp) MarshalHTML(ctx context.Context) ([]byte, error) {
 			h.Section().Class("main").Attr("v-show", h.JSONString(len(todos) > 0)).Children(
 				h.Input("").Type("checkbox").Attr("id", checkBoxID).Class("toggle-all").
 					Attr("checked", remaining == 0).
-					Attr("@change", stateful.PlaidAction(ctx, c, c.ToggleAll, nil).Go()),
+					Attr("@change", stateful.PostAction(ctx, c, c.ToggleAll, nil).Go()),
 				h.Label("Mark all as complete").Attr("for", checkBoxID),
 				h.Ul().Class("todo-list").Children(filteredTodoItems...),
 			),
@@ -215,10 +215,10 @@ func (c *TodoItem) MarshalHTML(ctx context.Context) ([]byte, error) {
 	return h.Li().ClassIf("completed", todo.Completed).Children(
 		h.Div().Class("view").Children(
 			h.Input("").Type("checkbox").Class("toggle").Attr("checked", todo.Completed).
-				Attr("@change", stateful.PlaidAction(ctx, c, c.Toggle, nil).Go()),
+				Attr("@change", stateful.PostAction(ctx, c, c.Toggle, nil).Go()),
 			itemTitleCompo,
 			h.Button("").Class("destroy").
-				Attr("@click", stateful.PlaidAction(ctx, c, c.Remove, nil).Go()),
+				Attr("@click", stateful.PostAction(ctx, c, c.Remove, nil).Go()),
 		),
 	).MarshalHTML(ctx)
 }

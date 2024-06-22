@@ -288,8 +288,8 @@ func (b *ListingBuilder) listingComponent(
 			b.footerCardActions(ctx),
 		),
 	).
-		Observer(b.mb.NotifModelsUpdated(), newReloadCall().Go()).
-		Observer(b.mb.NotifModelsDeleted(), fmt.Sprintf(`
+		Observe(b.mb.NotifModelsUpdated(), newReloadCall().Go()).
+		Observe(b.mb.NotifModelsDeleted(), fmt.Sprintf(`
 const b = %s
 if (payload && payload.ids && payload.ids.length > 0) {
 	b.query(%q, {value: payload.ids, add: false, remove: true})
