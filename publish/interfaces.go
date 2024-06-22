@@ -57,13 +57,22 @@ type Version struct {
 }
 
 // @snippet_end
-
-type PublishInterface interface {
-	GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
-}
+type (
+	PublishActionsFunc func(db *gorm.DB, ctx context.Context, storage oss.StorageInterface, obj any) (actions []*PublishAction, err error)
+	PublishInterface   interface {
+		GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
+	}
+)
 
 type UnPublishInterface interface {
 	GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
+}
+
+type WrapPublishInterface interface {
+	WrapPublishActions(in PublishActionsFunc) PublishActionsFunc
+}
+type WrapUnPublishInterface interface {
+	WrapUnPublishActions(in PublishActionsFunc) PublishActionsFunc
 }
 
 type AfterPublishInterface interface {
@@ -129,3 +138,13 @@ type ListInterface interface {
 func (s *List) EmbedList() *List {
 	return s
 }
+
+type (
+	PreviewBuilderInterface interface {
+		PreviewHTML(obj interface{}) string
+		ExistedL10n() bool
+	}
+	PublishModelInterface interface {
+		PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) string
+	}
+)

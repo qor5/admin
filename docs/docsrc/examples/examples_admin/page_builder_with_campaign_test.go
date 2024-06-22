@@ -3,7 +3,12 @@ package examples_admin
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/qor5/admin/v3/publish"
 
 	"github.com/qor5/admin/v3/pagebuilder"
 
@@ -14,12 +19,46 @@ import (
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Campaign', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
+INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (2, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'UnPublish Campaign', 'online', 'campaigns/2/index.html', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.campaign_products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
 
 `, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "page_builder_containers"}))
+
+func forUnpublishCreateFile(filePath string, content string) {
+	var (
+		err  error
+		file *os.File
+	)
+
+	// Create all necessary directories
+	dir := filepath.Dir(filePath)
+	if err = os.MkdirAll(dir, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	// Create or truncate the file
+	file, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	// Write content to the file
+	if _, err = file.WriteString(content); err != nil {
+		panic(err)
+	}
+}
+
+func forUnpublishFileExists(filePath string) bool {
+	info, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
 
 func TestPageBuilderCampaign(t *testing.T) {
 	pb := presets.New()
@@ -60,7 +99,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/campaigns/editors/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/page_builder/campaigns-editors/1_2024-05-20-v01", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
 			ExpectPageBodyNotContains:     []string{"ProductContent"},
@@ -99,7 +138,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=MyContent").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=MyContent").
 					BuildEventFuncRequest()
 
 				return req
@@ -124,7 +163,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=CampaignContent").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_AddContainerEvent&modelName=CampaignContent").
 					BuildEventFuncRequest()
 
 				return req
@@ -168,14 +207,14 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/editors/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var campaigns []*Campaign
-				TestDB.Order("id DESC, version DESC").Find(&campaigns)
+				TestDB.Where("id=1").Order("id DESC, version DESC").Find(&campaigns)
 				if len(campaigns) != 2 {
 					t.Fatal("Campaign not duplicated", campaigns)
 				}
@@ -184,6 +223,110 @@ func TestPageBuilderCampaign(t *testing.T) {
 					campaigns[0].Version.Version)
 				if len(containers) == 0 {
 					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Campaign Detail Publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns/1_2024-05-20-v01?__execute_event__=publish_EventPublish&id=1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					body []byte
+					err  error
+				)
+				body, err = os.ReadFile("/tmp/publish/campaigns/1/index.html")
+				if err != nil {
+					t.Fatalf("publish failed!")
+					return
+				}
+				if !strings.Contains(string(body), "Hello Campaign") {
+					t.Fatalf("publish failed! %s", string(body))
+					return
+				}
+				var campaigns []*Campaign
+				TestDB.Where("id=? and version=? and status=?", "1", "2024-05-20-v01", publish.StatusOnline).Find(&campaigns)
+				if len(campaigns) != 1 {
+					t.Fatalf("campaign not published, %#+v", campaigns)
+					return
+				}
+				if campaigns[0].OnlineUrl == "" {
+					t.Fatalf("campaign not published, %#+v", campaigns)
+					return
+				}
+				body, err = os.ReadFile("/tmp/publish/campaigns/index.html")
+				if err != nil {
+					t.Fatalf("publish warp content failed! %v", err)
+					return
+				}
+				if !strings.Contains(string(body), "Campaign List") {
+					t.Fatalf("publish warp content failed! %v", string(body))
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Campaign Detail UnPublish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				forUnpublishCreateFile("/tmp/publish/campaigns/2/index.html", "UnPublish Campaign")
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns/2_2024-05-20-v01?__execute_event__=publish_EventUnpublish&id=2_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var campaigns []*Campaign
+				TestDB.Where("id=? and version=? and status=?", "2", "2024-05-20-v01", publish.StatusOffline).Find(&campaigns)
+				if len(campaigns) != 1 {
+					t.Fatalf("campaign not unpublished, %#+v", campaigns)
+					return
+				}
+				if forUnpublishFileExists("/tmp/publish/campaigns/2/index.html") {
+					t.Fatalf("campaign not unpublished, %#+v", campaigns)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Campaign Products Editor Publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01?__execute_event__=publish_EventPublish&id=1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				body, err := os.ReadFile("/tmp/publish/campaign-products/1/index.html")
+				if err != nil {
+					t.Error("publish failed!")
+					return
+				}
+				if !strings.Contains(string(body), "Hello Product") {
+					t.Errorf("publish failed! %s", string(body))
+					return
+				}
+				var campaignProducts []*CampaignProduct
+				TestDB.Where("id=? and version=? and status=?", "1", "2024-05-20-v01", publish.StatusOnline).Find(&campaignProducts)
+				if len(campaignProducts) != 1 {
+					t.Fatalf("Product not published, %#+v", campaignProducts)
+					return
+				}
+				if campaignProducts[0].OnlineUrl == "" {
+					t.Fatalf("Product not published, %#+v", campaignProducts)
+					return
 				}
 			},
 		},

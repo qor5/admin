@@ -59,7 +59,7 @@ func TestAll(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/admin/page_builder/pages/editors/2_2024-06-08-v01?__execute_event__=page_builder_AddContainerEvent&containerName=MyHeader&modelName=MyHeader&tab=Elements").
+					PageURL("/admin/page_builder/pages-editors/2_2024-06-08-v01?__execute_event__=page_builder_AddContainerEvent&containerName=MyHeader&modelName=MyHeader&tab=Elements").
 					BuildEventFuncRequest()
 				return req
 			},

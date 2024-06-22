@@ -11,6 +11,7 @@ import (
 func SamplesHandler(mux examples.Muxer, prefix string) {
 	db := examples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
+	addExample(mux, db, PresetsKeywordSearchOff)
 	addExample(mux, db, PresetsListingCustomizationFields)
 	addExample(mux, db, PresetsListingCustomizationFilters)
 	addExample(mux, db, PresetsListingCustomizationTabs)

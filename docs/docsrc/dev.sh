@@ -3,7 +3,7 @@ then
     echo "snippetgo command not found. Installing..."
 
     # Install snippetgo using 'go install'
-    go install github.com/sunfmin/snippetgo@v0.0.2
+    go install github.com/sunfmin/snippetgo@v0.0.3
 
     # Check if installation was successful
     if command -v snippetgo &> /dev/null
@@ -28,6 +28,7 @@ snippetDirs=(
 )
 echo "${snippetDirs[@]}"
 rm -rf ./generated/*
+mkdir -p ./generated
 gi=1
 for d in "${snippetDirs[@]}"
 do

@@ -64,6 +64,7 @@ type ListingBuilder struct {
 	conditions        []*SQLCondition
 	dialogWidth       string
 	dialogHeight      string
+	keywordSearchOff  bool
 	FieldsBuilder
 }
 
@@ -120,6 +121,11 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 
 func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
+	return b
+}
+
+func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
+	b.keywordSearchOff = v
 	return b
 }
 
@@ -191,6 +197,9 @@ const (
 )
 
 func (b *ListingBuilder) searchBox(ctx *web.EventContext, msgr *Messages, inDialog bool) h.HTMLComponent {
+	if b.keywordSearchOff {
+		return nil
+	}
 	onChanged := func(keyword any) string {
 		r := Zone[*ListingZone](ctx).Plaid().
 			MergeQuery(true).
@@ -229,6 +238,7 @@ func (b *ListingBuilder) searchFilterToolbar(ctx *web.EventContext, msgr *Messag
 		fd.SetByQueryString(ctx.R.URL.RawQuery)
 		filterBar = b.filterBar(ctx, msgr, fd, inDialog)
 	}
+
 	searchBox := VResponsive().Children(
 		b.searchBox(ctx, msgr, inDialog),
 	)
@@ -547,7 +557,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 		panic("bulk required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -609,7 +619,7 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		panic("action required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(PermDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
@@ -1143,6 +1153,11 @@ func (b *ListingBuilder) getTableComponents(
 		SQLConditions:  b.conditions,
 	}
 
+	if b.keywordSearchOff {
+		searchParams.KeywordColumns = nil
+		searchParams.Keyword = ""
+	}
+
 	searchParams.Page, _ = strconv.ParseInt(qs.Get("page"), 10, 64)
 	if searchParams.Page == 0 {
 		searchParams.Page = 1
@@ -1359,7 +1374,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render bulk actions
 	for _, ba := range b.bulkActions {
-		if b.mb.Info().Verifier().SnakeDo(PermBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permBulkActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -1391,7 +1406,7 @@ func (b *ListingBuilder) actionsComponent(
 
 	// Render actions
 	for _, ba := range b.actions {
-		if b.mb.Info().Verifier().SnakeDo(PermActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
 

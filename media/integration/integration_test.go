@@ -66,3 +66,40 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCrop(t *testing.T) {
+	db := setup()
+	f, err := box.ReadFile("testfile.png")
+	if err != nil {
+		panic(err)
+	}
+
+	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
+	m := media_library.MediaLibrary{}
+
+	err = m.File.Scan(fh)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	moption := m.GetMediaOption()
+	if moption.CropOptions == nil {
+		moption.CropOptions = make(map[string]*base.CropOption)
+	}
+	moption.CropOptions["default"] = &base.CropOption{
+		X:      6,
+		Y:      20,
+		Width:  40,
+		Height: 40,
+	}
+	moption.Crop = true
+	err = m.ScanMediaOptions(moption)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = base.SaveUploadAndCropImage(db, &m)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
