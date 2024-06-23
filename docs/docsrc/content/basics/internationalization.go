@@ -3,10 +3,10 @@ package basics
 import (
 	"path"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
 	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	"github.com/qor5/admin/v3/docs/docsrc/utils"
+	"github.com/qor5/web/v3/examples"
 	"github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
 	h "github.com/theplant/htmlgo"

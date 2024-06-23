@@ -5,8 +5,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_presets"
+	"github.com/qor5/web/v3/examples"
 
 	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	"github.com/qor5/admin/v3/docs/docsrc/utils"

@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/qor5/admin/v3/docs/docsrc/assets"
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetify"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/examples"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 )

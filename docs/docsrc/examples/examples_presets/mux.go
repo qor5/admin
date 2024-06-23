@@ -3,13 +3,14 @@ package examples_presets
 import (
 	"fmt"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
+	docsexamples "github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3/examples"
 	"gorm.io/gorm"
 )
 
 func SamplesHandler(mux examples.Muxer, prefix string) {
-	db := examples.ExampleDB()
+	db := docsexamples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
 	addExample(mux, db, PresetsKeywordSearchOff)
 	addExample(mux, db, PresetsListingCustomizationFields)
@@ -52,7 +53,7 @@ type exampleFunc func(b *presets.Builder, db *gorm.DB) (
 
 func addExample(mux examples.Muxer, db *gorm.DB, f exampleFunc) {
 	path := examples.URLPathByFunc(f)
-	p := presets.New().AssetFunc(examples.AddGA).URIPrefix(path)
+	p := presets.New().URIPrefix(path)
 	f(p, db)
 	fmt.Println("Example mounting at: ", path)
 	mux.Handle(
