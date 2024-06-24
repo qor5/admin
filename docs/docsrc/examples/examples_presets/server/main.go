@@ -17,8 +17,8 @@ func main() {
 	fmt.Println("Starting docs at :" + port)
 	mux := http.NewServeMux()
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	examples_presets.SamplesHandler(im, "/samples")
-	mux.Handle("/samples/",
+	examples_presets.SamplesHandler(im, "/examples")
+	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(
 				im.Mux,
