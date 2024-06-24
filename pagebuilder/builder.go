@@ -36,7 +36,6 @@ import (
 )
 
 type RenderInput struct {
-	Page        *Page
 	IsEditor    bool
 	IsReadonly  bool
 	Device      string
@@ -48,23 +47,27 @@ type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext)
 
 type PageLayoutFunc func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent
 
-type SubPageTitleFunc func(ctx *web.EventContext) string
-
-type PageLayoutInput struct {
-	SeoTags           h.HTMLComponent
-	CanonicalLink     h.HTMLComponent
-	StructuredData    h.HTMLComponent
-	FreeStyleCss      []string
-	FreeStyleTopJs    []string
-	FreeStyleBottomJs []string
-	Hreflang          map[string]string
-	Header            h.HTMLComponent
-	Footer            h.HTMLComponent
-	IsEditor          bool
-	LocaleCode        string
-	EditorCss         []h.HTMLComponent
-	IsPreview         bool
-}
+type (
+	SubPageTitleFunc func(ctx *web.EventContext) string
+	WrapCompFunc     func(comps h.HTMLComponents) h.HTMLComponents
+	PageLayoutInput  struct {
+		SeoTags           h.HTMLComponent
+		CanonicalLink     h.HTMLComponent
+		StructuredData    h.HTMLComponent
+		FreeStyleCss      []string
+		FreeStyleTopJs    []string
+		FreeStyleBottomJs []string
+		WrapHead          WrapCompFunc
+		WrapBody          WrapCompFunc
+		Hreflang          map[string]string
+		Header            h.HTMLComponent
+		Footer            h.HTMLComponent
+		IsEditor          bool
+		LocaleCode        string
+		EditorCss         []h.HTMLComponent
+		IsPreview         bool
+	}
+)
 
 type Builder struct {
 	prefix            string
@@ -284,11 +287,11 @@ func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 	defer b.ps.Build()
+
+	r := b.Model(mb)
 	if b.publisher != nil {
 		mb.Use(b.publisher)
 	}
-	r := b.Model(mb)
-
 	// register model editors page
 	b.installAsset(pb)
 	b.configEditor(r)
@@ -309,10 +312,10 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
+	r := b.Model(pb.Model(&Page{}))
 	b.preparePlugins()
 
 	b.installAsset(pb)
-	r := b.Model(pb.Model(&Page{}))
 
 	b.configEditor(r)
 	b.configTemplateAndPage(pb, r)
