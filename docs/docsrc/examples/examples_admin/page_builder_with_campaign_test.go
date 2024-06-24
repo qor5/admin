@@ -202,6 +202,32 @@ func TestPageBuilderCampaign(t *testing.T) {
 		},
 
 		{
+			Name:  "Page Builder Detail Duplicate A Campaign",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var campaigns []*Campaign
+				TestDB.Where("id=1").Order("id DESC, version DESC").Find(&campaigns)
+				if len(campaigns) != 2 {
+					t.Fatal("Campaign not duplicated", campaigns)
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", campaigns[0].ID,
+					campaigns[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+
+		{
 			Name:  "Page Builder Editor Duplicate A Campaign",
 			Debug: true,
 			ReqFunc: func() *http.Request {
