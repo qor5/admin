@@ -1027,6 +1027,11 @@ func setLocalPerPage(
 	})
 }
 
+const (
+	OrderByASC  = "ASC"
+	OrderByDESC = "DESC"
+)
+
 type ColOrderBy struct {
 	FieldName string
 	// ASC, DESC

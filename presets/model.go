@@ -28,6 +28,7 @@ type ModelBuilder struct {
 	fieldLabels         []string
 	placeholders        []string
 	listing             *ListingBuilder
+	listingx            *ListingBuilderX
 	detailing           *DetailingBuilder
 	editing             *EditingBuilder
 	creating            *EditingBuilder
@@ -55,6 +56,7 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb.modelInfo = &ModelInfo{mb: mb}
 	// Be aware the uriName here is still the original struct
 	mb.newListing()
+	mb.newListingX()
 	mb.newDetailing()
 	mb.newEditing()
 
@@ -132,8 +134,25 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	return
 }
 
+func (mb *ModelBuilder) newListingX() (lb *ListingBuilder) {
+	mb.listingx = &ListingBuilderX{
+		mb:            mb,
+		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
+	}
+	if mb.p.dataOperator != nil {
+		mb.listingx.SearchFunc(mb.p.dataOperator.Search)
+	}
+
+	// TODO:
+	// rmb := mb.listingx.RowMenu()
+	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	return
+}
+
 func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 	mb.writeFields, mb.listing.searchColumns = mb.p.writeFieldDefaults.inspectFieldsAndCollectName(mb.model, reflect.TypeOf(""))
+	mb.listingx.searchColumns = mb.listing.searchColumns
 	mb.editing = &EditingBuilder{mb: mb, FieldsBuilder: *mb.writeFields}
 	if mb.p.dataOperator != nil {
 		mb.editing.FetchFunc(mb.p.dataOperator.Fetch)
@@ -167,6 +186,10 @@ type ModelInfo struct {
 
 func (b ModelInfo) ListingHref() string {
 	return fmt.Sprintf("%s/%s", b.mb.p.prefix, b.mb.uriName)
+}
+
+func (b ModelInfo) ListingHrefX() string {
+	return fmt.Sprintf("%s/%s-x", b.mb.p.prefix, b.mb.uriName)
 }
 
 func (b ModelInfo) EditingHref(id string) string {

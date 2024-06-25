@@ -12,6 +12,7 @@ import (
 func SamplesHandler(mux examples.Muxer, prefix string) {
 	db := docsexamples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
+	addExampleX(mux, db, PresetsHelloWorldX)
 	addExample(mux, db, PresetsKeywordSearchOff)
 	addExample(mux, db, PresetsListingCustomizationFields)
 	addExample(mux, db, PresetsListingCustomizationFilters)
@@ -52,6 +53,24 @@ type exampleFunc func(b *presets.Builder, db *gorm.DB) (
 )
 
 func addExample(mux examples.Muxer, db *gorm.DB, f exampleFunc) {
+	path := examples.URLPathByFunc(f)
+	p := presets.New().URIPrefix(path)
+	f(p, db)
+	fmt.Println("Example mounting at: ", path)
+	mux.Handle(
+		path,
+		p,
+	)
+}
+
+type exampleFuncX func(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilderX,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+)
+
+func addExampleX(mux examples.Muxer, db *gorm.DB, f exampleFuncX) {
 	path := examples.URLPathByFunc(f)
 	p := presets.New().URIPrefix(path)
 	f(p, db)

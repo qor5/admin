@@ -77,3 +77,17 @@ func (b *ListingBuilder) BulkAction(name string) (r *BulkActionBuilder) {
 	b.bulkActions = append(b.bulkActions, r)
 	return
 }
+
+func (b *ListingBuilderX) BulkAction(name string) (r *BulkActionBuilder) {
+	builder := getBulkAction(b.bulkActions, name)
+	if builder != nil {
+		return builder
+	}
+
+	r = &BulkActionBuilder{}
+	r.name = name
+	r.buttonColor = "black"
+	r.dialogWidth = defaultBulkActionDialogWidth
+	b.bulkActions = append(b.bulkActions, r)
+	return
+}
