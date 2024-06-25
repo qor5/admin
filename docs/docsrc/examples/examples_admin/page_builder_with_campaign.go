@@ -226,6 +226,8 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}).Model(&ProductContent{}).Editing("Name")
 
 	productModelBuilder.Use(pb)
+
+	// use demo container and media etc. plugins
 	b.Use(pb)
 	return TestHandler(pb, b)
 }
