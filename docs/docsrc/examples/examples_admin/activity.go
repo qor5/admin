@@ -13,7 +13,6 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
-
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
@@ -43,7 +42,10 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return Div().Text("text")
 		}).Editing("Title", "Code", "Price")
 
-	activityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
+	activityBuilder.RegisterModel(productModel).
+		AddKeys("Title").
+		AddIgnoredFields("Code").
+		SkipDelete()
 
 	// @snippet_end
 

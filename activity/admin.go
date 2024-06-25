@@ -7,12 +7,11 @@ import (
 	"net/url"
 	"strings"
 
-	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/qor5/x/v3/ui/vuetifyx"
-
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
@@ -60,11 +59,14 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
 			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			contextDB = ab.getDBFromContext(ctx.R.Context())
+			contextDB = ab.db
 		)
 
 		creatorGroups := []*ActivityLog{}
-		contextDB.Select("creator").Group("creator").Find(creatorGroups)
+		err := contextDB.Select("creator").Group("creator").Find(&creatorGroups).Error
+		if err != nil {
+			panic(err)
+		}
 		var creatorOptions []*vuetifyx.SelectItem
 
 		for _, creator := range creatorGroups {
@@ -75,7 +77,10 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 
 		actionGroups := []*ActivityLog{}
-		contextDB.Select("action").Group("action").Order("action").Find(actionGroups)
+		err = contextDB.Select("action").Group("action").Order("action").Find(&actionGroups).Error
+		if err != nil {
+			panic(err)
+		}
 		var actionOptions []*vuetifyx.SelectItem
 
 		for _, action := range actionGroups {
@@ -148,7 +153,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-
 			var (
 				record = obj.(*ActivityLog)
 				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -162,9 +166,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 					h.Text(" "+msgr.DiffDetail),
 				),
 				VCardText(
-					//vuetif.VAvatar().Class("mr-2").Children(
+					// vuetif.VAvatar().Class("mr-2").Children(
 					//	VIcon("mdi-account").Size(SizeSmall),
-					//),
+					// ),
 					h.Text(" "+msgr.DiffDetail),
 				),
 				VTable(

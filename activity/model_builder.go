@@ -10,10 +10,6 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/ui/vuetify"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -97,56 +93,6 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-// EnableActivityInfoTab enable activity info tab on the given model's editing page
-func (mb *ModelBuilder) EnableActivityInfoTab() *ModelBuilder {
-	if mb.presetModel == nil {
-		return mb
-	}
-
-	editing := mb.presetModel.Editing()
-	editing.AppendTabsPanelFunc(func(obj any, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
-		logs := mb.activity.GetActivityLogs(obj, mb.activity.getDBFromContext(ctx.R.Context()))
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-
-		var panels []h.HTMLComponent
-
-		for _, log := range logs {
-			var headerText string
-			if mb.activity.tabHeading != nil {
-				headerText = mb.activity.tabHeading(log)
-			} else {
-				headerText = fmt.Sprintf("%s %s at %s", log.Creator, strings.ToLower(log.Action), log.CreatedAt.Format("2006-01-02 15:04:05 MST"))
-			}
-
-			panels = append(panels, vuetify.VExpansionPanel(
-				vuetify.VExpansionPanelTitle().Children(
-					web.Slot(
-						vuetify.VRow().Attr("no-gutters").Children(
-							vuetify.VCol().Class("justify-start ma-1").Children(
-								DiffComponent(log.ModelDiffs, ctx.R),
-							),
-						),
-					).Name("default"),
-				),
-				vuetify.VExpansionPanelText().Children(
-					h.Span(headerText),
-				),
-			))
-		}
-
-		const tabKey = "activityTab"
-		tab = vuetify.VTab().Value(tabKey).Children(
-			h.Text(msgr.Activities),
-		)
-		content = vuetify.VTabsWindowItem().Value(tabKey).Children(
-			vuetify.VExpansionPanels(panels...).Attr("style", "padding:10px;"),
-		)
-		return
-	})
-
-	return mb
-}
-
 // AddIgnoredFields append ignored fields to the default ignored fields, this would not overwrite the default ignored fields
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = append(mb.ignoredFields, fields...)
@@ -200,7 +146,7 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 
 	var (
 		creator = mb.activity.getCreatorFromContext(ctx)
-		db      = mb.activity.getDBFromContext(ctx)
+		db      = mb.activity.db
 	)
 
 	switch action {
@@ -241,7 +187,7 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 func (mb *ModelBuilder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
 	var (
 		creator = mb.activity.getCreatorFromContext(ctx)
-		db      = mb.activity.getDBFromContext(ctx)
+		db      = mb.activity.db
 	)
 
 	if !diff {

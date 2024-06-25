@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/web/v3"
-	"gorm.io/gorm"
 	"log"
 	"reflect"
 	"strings"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"gorm.io/gorm"
 )
 
 func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
@@ -96,10 +97,6 @@ func getPrimaryKey(t reflect.Type) (keys []string) {
 
 func ContextWithCreator(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, CreatorContextKey, name)
-}
-
-func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
-	return context.WithValue(ctx, DBContextKey, db)
 }
 
 func getBasicModel(m any) any {

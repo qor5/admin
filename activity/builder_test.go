@@ -65,10 +65,7 @@ func TestMain(m *testing.M) {
 }
 
 func resetDB() {
-	db.Exec("delete from test_activity_logs;")
 	db.Exec("delete from test_activity_models;")
-
-	// TODO: rename the table name
 	db.Exec("DELETE FROM activity_logs")
 }
 
@@ -253,7 +250,7 @@ func TestCreatorInferface(t *testing.T) {
 
 func TestGetActivityLogs(t *testing.T) {
 	builder := New(db)
-	builder.Install(pb)
+	pb.Use(builder)
 
 	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
 	resetDB()
@@ -280,7 +277,7 @@ func TestGetActivityLogs(t *testing.T) {
 		t.Errorf("expected 3 logs, but got %d", len(logs))
 	}
 
-	expectedActions := []string{"Create", "Edit", "Edit"}
+	expectedActions := []string{"Edit", "Edit", "Create"}
 	for i, log := range logs {
 		if log.Action != expectedActions[i] {
 			t.Errorf("expected action %s, but got %s", expectedActions[i], log.Action)

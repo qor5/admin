@@ -6,17 +6,12 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
-
-	"go4.org/sort"
-	"golang.org/x/text/language"
-
-	"github.com/qor5/x/v3/ui/vuetify"
-	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +25,6 @@ type contextKey int
 
 const (
 	CreatorContextKey contextKey = iota
-	DBContextKey
 )
 
 type ActionFunc func(ctx *web.EventContext) (r web.EventResponse, err error)
@@ -67,7 +61,6 @@ func (w *Wrapper) Wrap(action ActionFunc) web.EventFunc {
 type Builder struct {
 	db                *gorm.DB                  // global db
 	creatorContextKey any                       // get the creator from context
-	dbContextKey      any                       // get the db from context
 	lmb               *presets.ModelBuilder     // log model builder
 	models            []*ModelBuilder           // registered model builders
 	tabHeading        func(*ActivityLog) string // tab heading format
@@ -77,13 +70,6 @@ type Builder struct {
 }
 
 // @snippet_end
-
-type TimelineItem struct {
-	Timestamp   time.Time
-	Description string
-	User        string
-	Icon        string
-}
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	// Register the model
@@ -113,7 +99,6 @@ func New(db *gorm.DB) *Builder {
 	ab := &Builder{
 		db:                db,
 		creatorContextKey: CreatorContextKey,
-		dbContextKey:      DBContextKey,
 	}
 
 	ab.logModelInstall = ab.defaultLogModelInstall
@@ -129,11 +114,12 @@ func New(db *gorm.DB) *Builder {
 	return ab
 }
 
-// GetActivityLogs get activity logs
-func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
+func (ab *Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
 	keys := ab.MustGetModelBuilder(m).KeysValue(m)
 	var logs []*ActivityLog
-	err := db.Where("model_name = ? AND model_keys = ?", reflect.TypeOf(m).Name(), keys).Find(&logs).Error
+	err := db.Where("model_name = ? AND model_keys = ?", reflect.TypeOf(m).Name(), keys).
+		Order("created_at DESC").
+		Find(&logs).Error
 	if err != nil {
 		return nil
 	}
@@ -143,17 +129,6 @@ func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
 // CreatorContextKey change the default creator context key
 func (ab *Builder) CreatorContextKey(key any) *Builder {
 	ab.creatorContextKey = key
-	return ab
-}
-
-// DBContextKey change the default db context key
-func (ab *Builder) DBContextKey(key any) *Builder {
-	ab.dbContextKey = key
-	return ab
-}
-
-func (ab *Builder) TabHeading(f func(log *ActivityLog) string) *Builder {
-	ab.tabHeading = f
 	return ab
 }
 
@@ -198,30 +173,37 @@ func (ab *Builder) RegisterModel(m any) (mb *ModelBuilder) {
 	return mb
 }
 
+func humanContent(log *ActivityLog) string {
+	return fmt.Sprintf("%s: %s", log.Action, log.Content)
+}
+
 func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
 	mb.presetModel = presetModel
 
 	editing := presetModel.Editing()
 	d := presetModel.Detailing()
+	db := ab.db
 
-	d.Field(Timeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	d.Field(Timeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		// Fetch combined timeline data
-		timelineData := fetchTimelineData(ctx)
+		logs := ab.GetActivityLogs(obj, db)
 
 		// Create VTimelineItems
-		var timelineItems []h.HTMLComponent
-		for _, item := range timelineData {
+		var timelineItems []HTMLComponent
+		for _, item := range logs {
 			timelineItems = append(timelineItems,
-				h.Div(
-					h.Div(
-						h.Text(item.Timestamp.Format("2 hours ago")),
+				Div(
+					Div(
+						Text(item.CreatedAt.Format("2 hours ago")),
 					),
-					h.Div(
-						h.Div(
-							vuetify.VAvatar().Text(strings.ToUpper(string(item.User[0]))).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
-							h.Div(
-								h.Strong(item.User).Class("ml-1").Style("width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
-								h.Div(h.Text(item.Description)).Class("text-caption").Style("width: 100%; font-family: SF Pro; font-style: normal; font-weight: 400; font-size: 14px; line-height: 20px; color: #9e9e9e;"),
+					Div(
+						Div(
+							VAvatar().Text(strings.ToUpper(item.Creator)).Color("secondary").Class(
+								"text-h6 rounded-lg").Size("x-small"),
+							Div(
+								Strong(item.Creator).Class("ml-1").Style("width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
+								Div(Text(humanContent(item))).Class("text-caption").Style(
+									"width: 100%; font-family: SF Pro; font-style: normal; font-weight: 400; font-size: 14px; line-height: 20px; color: #9e9e9e;"),
 							).Class("detailsStyle").Style("display: flex; flex-direction: column; align-items: flex-start; padding: 0; width: 100%;"),
 						).Class("contentStyle").Style("display: flex; flex-direction: row; align-items: flex-start; padding: 0; gap: 8px; width: 100%;"),
 					),
@@ -229,7 +211,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			)
 		}
 
-		return vuetify.VTimeline(
+		return VTimeline(
 			timelineItems...,
 		)
 	})
@@ -240,7 +222,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
+			old, ok := findOld(obj, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -250,7 +232,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			}
 
 			if ok && id != "" && mb.skip&Update == 0 {
-				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
+				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, db)
 			}
 
 			return
@@ -263,7 +245,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
+			old, ok := findOldWithSlug(obj, id, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -277,35 +259,8 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	})
 }
 
-func fetchTimelineData(ctx *web.EventContext) []TimelineItem {
-	var timelineData []TimelineItem
-	db := ctx.R.Context().Value(DBContextKey).(*gorm.DB)
-
-	var logs []ActivityLog
-
-	if err := db.Find(&logs).Error; err != nil {
-		fmt.Printf("Database query failure: %v", err)
-		return nil
-	}
-
-	for _, log := range logs {
-		timelineData = append(timelineData, TimelineItem{
-			Timestamp:   log.CreatedAt,
-			Description: log.Action + ": " + log.Content,
-			User:        log.Creator,
-			Icon:        "mdi-activity",
-		})
-	}
-
-	sort.Slice(timelineData, func(i, j int) bool {
-		return timelineData[i].Timestamp.Before(timelineData[j].Timestamp)
-	})
-
-	return timelineData
-}
-
 // GetModelBuilder 	get model builder
-func (ab Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
+func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	var isPreset bool
 	if _, ok := v.(*presets.ModelBuilder); ok {
 		isPreset = true
@@ -327,7 +282,7 @@ func (ab Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 }
 
 // GetModelBuilder 	get model builder
-func (ab Builder) MustGetModelBuilder(v any) *ModelBuilder {
+func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	mb, ok := ab.GetModelBuilder(v)
 	if !ok {
 		panic(fmt.Sprintf("model %v is not registered", v))
@@ -336,7 +291,7 @@ func (ab Builder) MustGetModelBuilder(v any) *ModelBuilder {
 }
 
 // GetModelBuilders 	get all model builders
-func (ab Builder) GetModelBuilders() []*ModelBuilder {
+func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 	return ab.models
 }
 
@@ -423,18 +378,10 @@ func (ab *Builder) AddEditRecordWithOld(creator any, old, now any, db *gorm.DB) 
 // AddEditRecordWithOldAndContext add edit record
 func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, now any) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.getDBFromContext(ctx))
+		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.db)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", now)
-}
-
-// GetDB get db from context
-func (ab *Builder) getDBFromContext(ctx context.Context) *gorm.DB {
-	if contextdb := ctx.Value(ab.dbContextKey); contextdb != nil {
-		return contextdb.(*gorm.DB)
-	}
-	return ab.db
 }
 
 // GetDB get creator from context
@@ -443,11 +390,4 @@ func (ab *Builder) getCreatorFromContext(ctx context.Context) any {
 		return creator
 	}
 	return ""
-}
-
-func registerI18n(pb *presets.Builder) {
-	pb.I18n().
-		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
-		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)
 }

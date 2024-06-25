@@ -2,6 +2,7 @@ package activity
 
 import (
 	"fmt"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
@@ -17,8 +18,7 @@ const (
 
 	createNoteEvent     = "note_CreateNoteEvent"
 	updateUserNoteEvent = "note_UpdateUserNoteEvent"
-
-	deleteNoteEvent = "note_DeleteNoteEvent"
+	deleteNoteEvent     = "note_DeleteNoteEvent"
 )
 
 func getNotesTab(ctx *web.EventContext, db *gorm.DB, resourceType string, resourceId string) h.HTMLComponent {
