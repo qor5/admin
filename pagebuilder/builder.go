@@ -93,6 +93,7 @@ type Builder struct {
 	duplicateBtnColor string
 	templateEnabled   bool
 	expendContainers  bool
+	pageEnabled       bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -139,6 +140,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		duplicateBtnColor: "primary",
 		templateEnabled:   true,
 		expendContainers:  true,
+		installPage:       true,
 	}
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
@@ -265,6 +267,11 @@ func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) PageEnabled(v bool) (r *Builder) {
+	b.pageEnabled = v
+	return b
+}
+
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
@@ -312,20 +319,21 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
-	r := b.Model(pb.Model(&Page{}))
-	b.preparePlugins()
-
-	b.installAsset(pb)
-
-	b.configEditor(r)
-	b.configTemplateAndPage(pb, r)
-	b.configSharedContainer(pb, r)
+	if b.installPage {
+		var r *ModelBuilder
+		r = b.Model(pb.Model(&Page{}))
+		b.installAsset(pb)
+		b.configEditor(r)
+		b.configTemplateAndPage(pb, r)
+		b.configSharedContainer(pb, r)
+		b.configDetail(r)
+		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+		if err = b.categoryInstall(pb, categoryM); err != nil {
+			return
+		}
+	}
 	b.configDemoContainer(pb)
-	b.configDetail(r)
-
-	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
-	err = b.categoryInstall(pb, categoryM)
-
+	b.preparePlugins()
 	return
 }
 
@@ -1222,7 +1230,6 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 			),
 		)
 	})
-
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*DemoContainer)
@@ -1395,7 +1402,6 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
-
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")
@@ -1406,6 +1412,9 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.configureRelatedOnlinePagesTab()
 	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
+	if err := b.firstOrCreate(m, "International"); err != nil {
+		panic(err)
+	}
 	return b
 }
 
@@ -1543,6 +1552,27 @@ func (b *ContainerBuilder) registerEventFuncs() {
 
 func (b *ContainerBuilder) getContainerDataID(id int) string {
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
+}
+
+func (b *ContainerBuilder) firstOrCreate(obj interface{}, locale string) (err error) {
+	db := b.builder.db
+	m := DemoContainer{}
+	db.Where("model_name = ?", b.name).First(&m)
+	if m.ID > 0 {
+		return
+	}
+	if err = db.Create(obj).Error; err != nil {
+		return
+	}
+	modelID := reflectutils.MustGet(obj, "ID")
+	m.Locale.LocaleCode = locale
+	m.ModelName = b.name
+	err = db.Model(DemoContainer{}).Create(map[string]interface{}{
+		"locale_code": locale,
+		"model_name":  b.name,
+		"model_id":    modelID,
+	}).Error
+	return
 }
 
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
