@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -50,8 +51,11 @@ SELECT setval('container_list_content_id_seq', 10, true);
 INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
 SELECT setval('container_headers_id_seq', 10, true);
 
+INSERT INTO public.container_in_numbers (id, add_top_space, add_bottom_space, anchor_id, heading, items) VALUES (1, false, false, 'test1', '', 'null');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'International');
 
-`, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers"}))
+
+`, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers", "container_in_numbers", "page_builder_demo_containers"}))
 
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB)
@@ -390,6 +394,76 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"1234567", "list-contents", "headers"},
+		},
+		{
+			Name:  "Add New Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/1_v1_International").
+					EventFunc(pagebuilder.AddContainerEvent).
+					AddField("modelName", "InNumbers").
+					AddField("id", "1").
+					BuildEventFuncRequest()
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var cons []*pagebuilder.Container
+				TestDB.Order("id desc").Find(&cons)
+				if len(cons) != 3 {
+					t.Fatalf("add container failed, expected 3 cons, got %d", len(cons))
+					return
+				}
+				if cons[0].ModelName != "InNumbers" {
+					t.Fatalf("add container failed, expected InNumbers, got %s", cons[0].ModelName)
+					return
+				}
+				var mos []*containers.InNumbers
+				TestDB.Order("id desc").Find(&mos)
+				if len(mos) != 2 {
+					t.Fatalf("add demo container model failed, expected 2 mos, got %d", len(mos))
+					return
+				}
+				if mos[0].AnchorID != "test1" {
+					t.Fatalf("add demo container model failed, expected test1, got %s", mos[0].AnchorID)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Edit Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/in-numbers?__execute_event__=presets_Update&id=1").
+					AddField("AnchorID", "test_in_numbers").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var (
+					mos  []*containers.InNumbers
+					cons []*pagebuilder.DemoContainer
+				)
+				TestDB.Where("model_name = ? and locale_code = ? ", "InNumbers", "International").Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Demo Containers, got %v", len(cons))
+					return
+				}
+				if !cons[0].Filled {
+					t.Fatalf("Expected  Demo Container to be filled ")
+					return
+				}
+				TestDB.Find(&mos)
+				if len(mos) != 1 {
+					t.Fatalf("Expected 1 model contianer, got %v", len(mos))
+					return
+				}
+				if mos[0].AnchorID != "test_in_numbers" {
+					t.Fatalf("Expected AnchorID 'test_in_numbers', got %v", mos[0].AnchorID)
+					return
+				}
+			},
 		},
 	}
 

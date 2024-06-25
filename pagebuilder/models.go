@@ -176,6 +176,7 @@ type DemoContainer struct {
 	gorm.Model
 	ModelName string
 	ModelID   uint
+	Filled    bool
 
 	l10n.Locale
 }
