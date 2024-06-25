@@ -1336,7 +1336,11 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	b.warpSaver()
-	if err := b.firstOrCreate(m, "International"); err != nil {
+	var localeCode string
+	if b.builder.l10n != nil {
+		localeCode = "International"
+	}
+	if err := b.firstOrCreate(m, localeCode); err != nil {
 		panic(err)
 	}
 	return b
