@@ -30,3 +30,4 @@ export RECAPTCHA_SITE_KEY=""
 export RECAPTCHA_SECRET_KEY=""
 
 export RESET_AND_IMPORT_INITIAL_DATA=false
+export CookieSecure=false
