@@ -1,14 +1,15 @@
 package pagebuilder
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"path"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -582,14 +583,7 @@ func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 }
 
 func (b *ModelBuilder) setName() {
-	b.name = b.getModelName(b.mb)
-}
-
-func (b *ModelBuilder) getModelName(mb *presets.ModelBuilder) string {
-	modelType := reflect.TypeOf(mb.NewModel())
-	modelstr := modelType.String()
-	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
-	return inflection.Plural(strcase.ToKebab(modelName))
+	b.name = utils.GetObjectName(b.mb.NewModel())
 }
 
 func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
@@ -1242,4 +1236,24 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 
 		return err
 	})
+}
+
+func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
+	p, ok := obj.(PrimarySlugInterface)
+	if !ok {
+		return
+	}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	b.preview.ServeHTTP(w, req)
+	r = w.Body.String()
+	return
+}
+
+func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
+	return context.WithValue(in, b.name, b)
+}
+
+func (b *ModelBuilder) ExistedL10n() bool {
+	return b.builder.l10n != nil
 }

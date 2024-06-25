@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"reflect"
 	"strings"
+
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 )
 
 // ParseTagOption parse tag options to hash
@@ -18,4 +22,11 @@ func ParseTagOption(str string) map[string]string {
 		}
 	}
 	return setting
+}
+
+func GetObjectName(obj interface{}) string {
+	modelType := reflect.TypeOf(obj)
+	modelstr := modelType.String()
+	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
+	return inflection.Plural(strcase.ToKebab(modelName))
 }

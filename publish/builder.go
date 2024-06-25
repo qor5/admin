@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -240,21 +241,121 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
+func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
+	var (
+		mb PreviewBuilderInterface
+		ok bool
+	)
+	builder := ctx.Value(utils.GetObjectName(obj))
+	mb, ok = builder.(PreviewBuilderInterface)
+	if !ok {
+		return
+	}
+	r = mb.PreviewHTML(obj)
+	return
+}
+
+func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interface{}) (url string) {
+	builder := ctx.Value(utils.GetObjectName(obj))
+	mb, ok := builder.(PreviewBuilderInterface)
+	if !ok {
+		return
+	}
+	newRecord := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
+	id := reflectutils.MustGet(obj, "ID")
+	lrdb := db.Model(newRecord).Select("online_url").Where("id = ? AND status = ?", id, StatusOnline)
+	if mb.ExistedL10n() {
+		localeCode := reflectutils.MustGet(obj, "LocaleCode")
+		lrdb.Where("locale_code = ?", localeCode)
+	}
+	lrdb.Scan(&url)
+	return
+}
+
+func (b *Builder) defaultPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		content string
+		p       PublishModelInterface
+		ok      bool
+	)
+	if content, err = b.getPublishContent(ctx, obj); err != nil {
+		return
+	}
+
+	p, ok = obj.(PublishModelInterface)
+	if !ok {
+		return nil, errors.New("wrong PublishModelInterface")
+	}
+	if publishUrl := p.PublishUrl(b.db, ctx, b.storage); publishUrl != "" {
+		actions = append(actions, &PublishAction{
+			Url:      publishUrl,
+			Content:  content,
+			IsDelete: false,
+		})
+		if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" && liveUrl != publishUrl {
+			actions = append(actions, &PublishAction{
+				Url:      liveUrl,
+				IsDelete: true,
+			})
+		}
+	}
+	return
+}
+
+func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		p  PublishInterface
+		m  WrapPublishInterface
+		ok bool
+	)
+	p, ok = obj.(PublishInterface)
+	if ok {
+		return p.GetPublishActions(b.db, ctx, b.storage)
+	}
+	if m, ok = obj.(WrapPublishInterface); ok {
+		return m.WrapPublishActions(b.defaultPublishActions)(b.db, ctx, b.storage, obj)
+	}
+	return b.defaultPublishActions(b.db, ctx, b.storage, obj)
+}
+
+func (b *Builder) defaultUnPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+	if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" {
+		actions = append(actions, &PublishAction{
+			Url:      liveUrl,
+			IsDelete: true,
+		})
+	}
+	return
+}
+
+func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (actions []*PublishAction, err error) {
+	var (
+		p  UnPublishInterface
+		m  WrapUnPublishInterface
+		ok bool
+	)
+
+	p, ok = obj.(UnPublishInterface)
+	if ok {
+		return p.GetUnPublishActions(b.db, ctx, b.storage)
+	}
+	if m, ok = obj.(WrapUnPublishInterface); ok {
+		return m.WrapUnPublishActions(b.defaultUnPublishActions)(b.db, ctx, b.storage, obj)
+	}
+	return b.defaultUnPublishActions(b.db, ctx, b.storage, obj)
+}
+
 // 幂等
 func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
-		if r, ok := record.(PublishInterface); ok {
-			var objs []*PublishAction
-			objs, err = r.GetPublishActions(b.db, ctx, b.storage)
-			if err != nil {
-				return
-			}
-			if err = UploadOrDelete(objs, b.storage); err != nil {
-				return
-			}
+		var objs []*PublishAction
+		if objs, err = b.getPublishActions(ctx, record); err != nil {
+			return
 		}
-
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
 		// update status
 		if r, ok := record.(StatusInterface); ok {
 			now := b.db.NowFunc()
@@ -311,17 +412,14 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
-		if r, ok := record.(UnPublishInterface); ok {
-			var objs []*PublishAction
-			objs, err = r.GetUnPublishActions(b.db, ctx, b.storage)
-			if err != nil {
-				return
-			}
-			if err = UploadOrDelete(objs, b.storage); err != nil {
-				return
-			}
+		var objs []*PublishAction
+		objs, err = b.getUnPublishActions(ctx, record)
+		if err != nil {
+			return
 		}
-
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
 		// update status
 		if _, ok := record.(StatusInterface); ok {
 			updateMap := make(map[string]interface{})

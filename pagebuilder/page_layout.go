@@ -8,7 +8,7 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-func DefaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
 	var freeStyleCss h.HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
 		freeStyleCss = h.Style(strings.Join(input.FreeStyleCss, "\n"))
@@ -37,15 +37,24 @@ func DefaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		scriptWithCodes(input.FreeStyleTopJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
+	if input.WrapHead != nil {
+		head = input.WrapHead(head)
+	}
 	ctx.Injector.HeadHTML(h.MustString(head, nil))
-
-	return h.Body(
+	bodies := h.Components(
 		// It's required as the body first element!
 		h.If(input.Header != nil, input.Header),
 		body,
 		h.If(input.Footer != nil, input.Footer),
 		h.Script("").Src(js),
 		scriptWithCodes(input.FreeStyleBottomJs),
+	)
+	if input.WrapBody != nil {
+		bodies = input.WrapBody(bodies)
+	}
+
+	return h.Body(
+		bodies,
 	).Attr("data-site-domain", domain)
 }
 
