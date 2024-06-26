@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/qor5/admin/v3/media/media_library"
+
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -44,6 +46,7 @@ type (
 		ID     uint
 		Title  string
 		Banner string
+		Image  media_library.MediaBox
 	}
 	MyContent struct {
 		ID    uint
@@ -172,7 +175,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			}
 			return v(body, input, ctx)
 		}
-	})
+	}).PageEnabled(false)
 
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
@@ -201,7 +204,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
 			return Div(Text(c.Title)).Class("test-div1")
-		}).Model(&CampaignContent{}).Editing("Title", "Banner")
+		}).Model(&CampaignContent{}).Editing("Title", "Banner", "Image")
 
 	campaignModelBuilder.Use(pb)
 
@@ -224,5 +227,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	productModelBuilder.Use(pb)
 
+	// use demo container and media etc. plugins
+	b.Use(pb)
 	return TestHandler(pb, b)
 }

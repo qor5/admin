@@ -3,6 +3,8 @@ package login
 import (
 	"fmt"
 
+	"github.com/theplant/osenv"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -13,8 +15,10 @@ const (
 	OpenChangePasswordDialogEvent = "login_openChangePasswordDialog"
 )
 
+var cookieSecure = osenv.GetBool("CookieSecure", "set to false for localhost", true)
+
 func New(pb *presets.Builder) *login.Builder {
-	r := login.New()
+	r := login.New().CookieSecure(cookieSecure)
 	r.I18n(pb.I18n())
 
 	vh := r.ViewHelper()

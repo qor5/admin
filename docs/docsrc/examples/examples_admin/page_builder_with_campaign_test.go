@@ -23,9 +23,11 @@ INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, sta
 INSERT INTO public.campaign_products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
+INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+INSERT INTO page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'ProductContent', 1, '');
 
-`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "page_builder_containers"}))
+`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers", "page_builder_demo_containers"}))
 
 func forUnpublishCreateFile(filePath string, content string) {
 	var (
@@ -352,6 +354,78 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				if campaignProducts[0].OnlineUrl == "" {
 					t.Fatalf("Product not published, %#+v", campaignProducts)
+					return
+				}
+			},
+		},
+		{
+			Name:  "CampaignProduct Add New Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					EventFunc(pagebuilder.AddContainerEvent).
+					AddField("modelName", "ProductContent").
+					AddField("id", "1").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var cons []*pagebuilder.Container
+				TestDB.Order("id desc").Find(&cons)
+				if len(cons) != 2 {
+					t.Fatalf("add container failed, expected 2 cons, got %d", len(cons))
+					return
+				}
+				if cons[0].ModelName != "ProductContent" {
+					t.Fatalf("add container failed, expected ProductContent, got %s", cons[0].ModelName)
+					return
+				}
+				var mos []*ProductContent
+				TestDB.Order("id desc").Find(&mos)
+				if len(mos) != 2 {
+					t.Fatalf("add demo container model failed, expected 2 mos, got %d", len(mos))
+					return
+				}
+				if mos[0].Name != "demo-product-contents" {
+					t.Fatalf("add demo container model failed, expected demo-product-contents, got %s", mos[0].Name)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Edit Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/product-contents?__execute_event__=presets_Update&id=1").
+					AddField("Name", "demo-product-contents2").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var (
+					mos  []*ProductContent
+					cons []*pagebuilder.DemoContainer
+				)
+				TestDB.Where("model_name = ? and locale_code = ? ", "ProductContent", "").Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Demo Containers, got %v", len(cons))
+					return
+				}
+				if !cons[0].Filled {
+					t.Fatalf("Expected  Demo Container to be filled ")
+					return
+				}
+				TestDB.Find(&mos)
+				if len(mos) != 1 {
+					t.Fatalf("Expected 1 model contianer, got %v", len(mos))
+					return
+				}
+				if mos[0].Name != "demo-product-contents2" {
+					t.Fatalf("Expected name 'demo-product-contents2', got %v", mos[0].Name)
 					return
 				}
 			},

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"reflect"
 	"sort"
@@ -91,6 +92,7 @@ type Builder struct {
 	duplicateBtnColor string
 	templateEnabled   bool
 	expendContainers  bool
+	pageEnabled       bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -137,6 +139,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		duplicateBtnColor: "primary",
 		templateEnabled:   true,
 		expendContainers:  true,
+		pageEnabled:       true,
 	}
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
@@ -258,6 +261,11 @@ func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) PageEnabled(v bool) (r *Builder) {
+	b.pageEnabled = v
+	return b
+}
+
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
@@ -305,20 +313,21 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
-	r := b.Model(pb.Model(&Page{}))
-	b.preparePlugins()
-
-	b.installAsset(pb)
-
-	b.configEditor(r)
-	b.configTemplateAndPage(pb, r)
-	b.configSharedContainer(pb, r)
+	if b.pageEnabled {
+		var r *ModelBuilder
+		r = b.Model(pb.Model(&Page{}))
+		b.installAsset(pb)
+		b.configEditor(r)
+		b.configTemplateAndPage(pb, r)
+		b.configSharedContainer(pb, r)
+		b.configDetail(r)
+		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+		if err = b.categoryInstall(pb, categoryM); err != nil {
+			return
+		}
+	}
 	b.configDemoContainer(pb)
-	b.configDetail(r)
-
-	categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
-	err = b.categoryInstall(pb, categoryM)
-
+	b.preparePlugins()
 	return
 }
 
@@ -1112,110 +1121,50 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 }
 
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
-	db := b.db
-
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
-
-	pm.RegisterEventFunc("addDemoContainer", func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		modelID := ctx.ParamAsInt(presets.ParamOverlayUpdateID)
-		modelName := ctx.R.FormValue("ModelName")
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-		var existID uint
-		{
-			m := DemoContainer{}
-			db.Where("model_name = ?", modelName).First(&m)
-			existID = m.ID
-		}
-		db.Assign(DemoContainer{
-			Model: gorm.Model{
-				ID: existID,
+	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	listing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		return []*vx.FilterItem{
+			{
+				Key:          "all",
+				Invisible:    true,
+				SQLCondition: ``,
 			},
-			ModelID: uint(modelID),
-		}).FirstOrCreate(&DemoContainer{}, map[string]interface{}{
-			"model_name":  modelName,
-			"locale_code": locale,
-		})
-		r.Reload = true
-		return
-	})
-	listing := pm.Listing("ModelName").SearchColumns("ModelName")
-	listing.Field("ModelName").Label("Name")
-	ed := pm.Editing("SelectContainer").ActionsFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent { return nil })
-	ed.Field("ModelName")
-	ed.Field("ModelID")
-	ed.Field("SelectContainer").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		locale, localizable := l10n.IsLocalizableFromContext(ctx.R.Context())
-
-		var demoContainers []DemoContainer
-		db.Find(&demoContainers)
-
-		var containers []h.HTMLComponent
-		for _, builder := range b.containerBuilders {
-			cover := builder.cover
-			if cover == "" {
-				cover = path.Join(b.prefix, b.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
-			}
-			c := VCol(
-				VCard(
-					VImg().Src(cover).Height(200),
-					VCardActions(
-						VCardTitle(h.Text(builder.name)),
-						VSpacer(),
-						VBtn("Select").
-							Variant(VariantText).
-							Color(ColorPrimary).Attr("@click",
-							web.Plaid().
-								EventFunc(actions.New).
-								URL(builder.GetModelBuilder().Info().ListingHref()).
-								Query(presets.ParamOverlayAfterUpdateScript, web.POST().Query("ModelName", builder.name).EventFunc("addDemoContainer").Go()).
-								Go()),
-					),
-				),
-			).Cols(6)
-
-			var isExists bool
-			var modelID uint
-			for _, dc := range demoContainers {
-				if dc.ModelName == builder.name {
-					if localizable && dc.LocaleCode != locale {
-						continue
-					}
-					isExists = true
-					modelID = dc.ModelID
-					break
-				}
-			}
-			if isExists {
-				c = VCol(
-					VCard(
-						VImg().Src(cover).Height(200),
-						VCardActions(
-							VCardTitle(h.Text(builder.name)),
-							VSpacer(),
-							VBtn("Edit").
-								Variant(VariantText).
-								Color(ColorPrimary).Attr("@click",
-								web.Plaid().
-									EventFunc(actions.Edit).
-									URL(builder.GetModelBuilder().Info().ListingHref()).
-									Query(presets.ParamID, fmt.Sprint(modelID)).
-									Go()),
-						),
-					),
-				).Cols(6)
-			}
-
-			containers = append(containers, c)
+			{
+				Key:          "Filled",
+				Invisible:    true,
+				SQLCondition: `filled = true `,
+			},
+			{
+				Key:          "NotFilled",
+				Invisible:    true,
+				SQLCondition: `filled = false`,
+			},
 		}
-		return VSheet(
-			VContainer(
-				VRow(
-					containers...,
-				),
-			),
-		)
 	})
-
+	listing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
+			{
+				Label: "all",
+				ID:    "all",
+			},
+			{
+				Label: "Filled",
+				ID:    "Filled",
+				Query: url.Values{"Filled": []string{"true"}},
+			},
+			{
+				Label: "Not Filled",
+				ID:    "NotFilled",
+				Query: url.Values{"NotFilled": []string{"false"}},
+			},
+		}
+	})
+	listing.Field("ModelName").Label("Name")
+	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	listing.RowMenu().Empty()
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*DemoContainer)
@@ -1229,25 +1178,6 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 
 		return tdbind
 	})
-
-	ed.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		this := obj.(*DemoContainer)
-		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
-				if inerr = b.createModelAfterLocalizeDemoContainer(tx, this); inerr != nil {
-					panic(inerr)
-				}
-			}
-
-			if inerr = gorm2op.DataOperator(tx).Save(this, id, ctx); inerr != nil {
-				return
-			}
-			return
-		})
-
-		return
-	})
-
 	if b.ab != nil {
 		pm.Use(b.ab)
 	}
@@ -1388,7 +1318,6 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
-
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")
@@ -1399,6 +1328,14 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.configureRelatedOnlinePagesTab()
 	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
+	b.warpSaver()
+	var localeCode string
+	if b.builder.l10n != nil {
+		localeCode = "International"
+	}
+	if err := b.firstOrCreate(m, localeCode); err != nil {
+		panic(err)
+	}
 	return b
 }
 
@@ -1412,6 +1349,22 @@ func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 
 func (b *ContainerBuilder) GetModelBuilder() *presets.ModelBuilder {
 	return b.mb
+}
+
+func (b *ContainerBuilder) warpSaver() {
+	b.mb.Editing().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			var demo *DemoContainer
+			db := b.builder.db
+			db.Where("model_name = ? and model_id = ? ", b.name, id).First(&demo)
+			if demo.ID > 0 && !demo.Filled {
+				if err = db.Model(&demo).UpdateColumn("filled", true).Error; err != nil {
+					return
+				}
+			}
+			return in(obj, id, ctx)
+		}
+	})
 }
 
 func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
@@ -1536,6 +1489,28 @@ func (b *ContainerBuilder) registerEventFuncs() {
 
 func (b *ContainerBuilder) getContainerDataID(id int) string {
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
+}
+
+func (b *ContainerBuilder) firstOrCreate(obj interface{}, locale string) (err error) {
+	db := b.builder.db
+	m := DemoContainer{}
+	db.Where("model_name = ?", b.name).First(&m)
+	if m.ID > 0 {
+		return
+	}
+	if err = db.Create(obj).Error; err != nil {
+		return
+	}
+	modelID := reflectutils.MustGet(obj, "ID")
+	m.Locale.LocaleCode = locale
+	m.ModelName = b.name
+	err = db.Model(DemoContainer{}).Create(map[string]interface{}{
+		"locale_code": locale,
+		"model_name":  b.name,
+		"model_id":    modelID,
+		"filled":      false,
+	}).Error
+	return
 }
 
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
