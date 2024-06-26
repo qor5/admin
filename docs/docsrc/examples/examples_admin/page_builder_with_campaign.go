@@ -157,7 +157,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 	b.Use(puBuilder)
 
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
+	pb := pagebuilder.NewWithoutAutoMigration(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
 		Publisher(puBuilder).WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
 		return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
 			input.WrapHead = func(comps HTMLComponents) HTMLComponents {
@@ -177,6 +177,9 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}
 	}).PageEnabled(false)
 
+	if err = pb.AutoMigrate(db); err != nil {
+		panic(err)
+	}
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
