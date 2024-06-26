@@ -21,7 +21,7 @@ based on the user's preferences.
 `),
 	h.Br(),
 	utils.Demo(
-		"GetI18n",
+		"I18n",
 		path.Join(examples.URLPathByFunc(examples_admin.InternationalizationExample), "/home"),
 		"examples/examples_admin/internationalization.go",
 	),
