@@ -95,6 +95,7 @@ type Builder struct {
 	templateEnabled   bool
 	expendContainers  bool
 	pageEnabled       bool
+	autoMigrate       bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -113,25 +114,18 @@ const (
 )
 
 func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
-	err := db.AutoMigrate(
-		&Page{},
-		&Template{},
-		&Container{},
-		&DemoContainer{},
-		&Category{},
-	)
-	if err != nil {
+	r := newBuilder(prefix, db, i18nB)
+	if err := r.AutoMigrate(db); err != nil {
 		panic(err)
 	}
-	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
-	// fxxk: newline is not allowed
-	err = db.Exec(`
-create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
-`).Error
-	if err != nil {
-		panic(err)
-	}
+	return r
+}
 
+func NewWithoutAutoMigration(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
+	return newBuilder(prefix, db, i18nB)
+}
+
+func newBuilder(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -189,6 +183,24 @@ func (b *Builder) WrapCategoryInstall(w func(presets.ModelInstallFunc) presets.M
 func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	b.pageLayoutFunc = v
 	return b
+}
+
+func (b *Builder) AutoMigrate(db *gorm.DB) (err error) {
+	if err = db.AutoMigrate(
+		&Page{},
+		&Template{},
+		&Container{},
+		&Category{},
+		&DemoContainer{},
+	); err != nil {
+		return
+	}
+	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
+	// fxxk: newline is not allowed
+	err = db.Exec(`
+create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
+`).Error
+	return
 }
 
 func (b *Builder) WrapPageLayout(warp func(v PageLayoutFunc) PageLayoutFunc) (r *Builder) {
