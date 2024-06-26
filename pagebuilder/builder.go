@@ -114,11 +114,10 @@ const (
 )
 
 func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
-	r := newBuilder(prefix, db, i18nB)
-	if err := r.AutoMigrate(db); err != nil {
+	if err := AutoMigrate(db); err != nil {
 		panic(err)
 	}
-	return r
+	return newBuilder(prefix, db, i18nB)
 }
 
 func NewWithoutAutoMigration(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
@@ -185,7 +184,7 @@ func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	return b
 }
 
-func (b *Builder) AutoMigrate(db *gorm.DB) (err error) {
+func AutoMigrate(db *gorm.DB) (err error) {
 	if err = db.AutoMigrate(
 		&Page{},
 		&Template{},

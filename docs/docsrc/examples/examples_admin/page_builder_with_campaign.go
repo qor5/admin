@@ -177,7 +177,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}
 	}).PageEnabled(false)
 
-	if err = pb.AutoMigrate(db); err != nil {
+	if err = pagebuilder.AutoMigrate(db); err != nil {
 		panic(err)
 	}
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
