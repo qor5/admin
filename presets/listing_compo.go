@@ -40,6 +40,7 @@ type ListingCompo struct {
 	PerPage            int64           `json:"per_page" query:"per_page"`
 	DisplayColumns     []DisplayColumn `json:"display_columns" query:"display_columns"`
 	ActiveFilterTab    string          `json:"active_filter_tab" query:"active_filter_tab"`
+	FilterQuery        string          `json:"filter_query" query:"filter_query"` // TODO: 如何和以前的 url 保持一致？
 }
 
 func (c *ListingCompo) CompoName() string {
@@ -77,12 +78,15 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 				listingLocalsSelectedIds, listingLocalsSelectedIds,
 			))).
 			// sync to actionsComponent
-			// TODO: 可能还需要一个 OnMount 方法来触发这个事件，否则每次 reload 都要主动触发
 			UseDebounce(1).OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
 				compo_name: %q,
 				locals: locals,
 			})`, notifListingLocalsUpdated, c.CompoName())).
 			Children(
+				web.RunScript(fmt.Sprintf(`function(){ %s; console.log("posted") }`, fmt.Sprintf(`vars.__sendNotification(%q, {
+					compo_name: %q,
+					locals: %s,
+				})`, notifListingLocalsUpdated, c.CompoName(), listingLocals))), // onMount
 				VCard().Elevation(0).Children(
 					c.tabsFilter(ctx),
 					c.toolbarSearch(ctx),
@@ -193,18 +197,16 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.MultipleSelect.In = msgr.FiltersMultipleSelectIn
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
-	return vx.VXFilter(fd).Translations(ft)
-	// TODO:
-	// if inDialog {
-	// 	filter.UpdateModelValue(Zone[*ListingZone](ctx).Plaid().
-	// 		URL(ctx.R.RequestURI).
-	// 		StringQuery(web.Var("$event.encodedFilterData")).
-	// 		Query("page", 1).
-	// 		ClearMergeQuery(web.Var("$event.filterKeys")).
-	// 		EventFunc(actions.ReloadList).
-	// 		Go())
-	// }
-	// return filter
+	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
+		strings.Replace(
+			c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
+				cloned.FilterQuery = ""
+			}),
+			`"filter_query": ""`,
+			`"filter_query": $event.encodedFilterData`,
+			1,
+		),
+	)
 }
 
 func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
@@ -214,7 +216,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	var filterSearch h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
 		fd := c.lb.filterDataFunc(evCtx)
-		fd.SetByQueryString(evCtx.R.URL.RawQuery) // TODO:
+		fd.SetByQueryString(c.FilterQuery)
 		filterSearch = c.filterSearch(ctx, fd)
 	}
 
@@ -316,9 +318,8 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 
 	var fd vx.FilterData
 	if c.lb.filterDataFunc != nil {
-		// TODO: how to stateful?
 		fd = c.lb.filterDataFunc(evCtx)
-		cond, args := fd.SetByQueryString(evCtx.R.URL.RawQuery)
+		cond, args := fd.SetByQueryString(c.FilterQuery)
 		searchParams.SQLConditions = append(searchParams.SQLConditions, &SQLCondition{
 			Query: cond,
 			Args:  args,
@@ -549,6 +550,7 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent) {
 	defer func() {
 		if r != nil {
+			// TODO: 这个同步机制不太好，需要考虑是不是可以让 actionsComponent 通过前端的某个方法来获取到对应 listingCompo 的状态，这样的话就无需 reload 自身了
 			r = web.Scope(r).VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).
 				Init(
 					fmt.Sprintf(`{
