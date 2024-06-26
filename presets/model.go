@@ -143,10 +143,10 @@ func (mb *ModelBuilder) newListingX() (lb *ListingBuilder) {
 		mb.listingx.SearchFunc(mb.p.dataOperator.Search)
 	}
 
-	// TODO:
-	// rmb := mb.listingx.RowMenu()
+	rmb := mb.listingx.RowMenu()
 	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
-	// rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// TODO:
+	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
 	return
 }
 

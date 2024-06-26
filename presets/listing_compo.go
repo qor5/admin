@@ -3,14 +3,16 @@ package presets
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
@@ -31,12 +33,13 @@ type ListingCompo struct {
 
 	CompoID            string          `json:"compo_id"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
-	SelectedIDs        []string        `json:"selected_ids" query:"selected_ids"`
+	SelectedIds        []string        `json:"selected_ids" query:"selected_ids"`
 	Keyword            string          `json:"keyword" query:"keyword"`
 	OrderBys           []ColOrderBy    `json:"order_bys" query:"order_bys"`
 	Page               int64           `json:"page" query:"page"`
 	PerPage            int64           `json:"per_page" query:"per_page"`
 	DisplayColumns     []DisplayColumn `json:"display_columns" query:"display_columns"`
+	ActiveFilterTab    string          `json:"active_filter_tab" query:"active_filter_tab"`
 }
 
 func (c *ListingCompo) CompoName() string {
@@ -45,50 +48,81 @@ func (c *ListingCompo) CompoName() string {
 
 const (
 	listingLocals            = "listingLocals"
-	listingLocalsSelectedIDs = "listingLocals.selected_ids"
+	listingLocalsSelectedIds = "listingLocals.selected_ids"
 )
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	// TODO:
-	// msgr := c.MustGetMessages(ctx)
+	evCtx := web.MustGetEventContext(ctx)
+	// evCtx.WithContextValue(ctxInDialog, inDialog) // TODO:
 
-	// ctx.WithContextValue(ctxInDialog, inDialog)
+	// TODO: 这个方式就不行了，因为是在 MarshalHTML 之前，外界就需要得到 actions 了
+	actionsComponent := c.actionsComponent(ctx)
+	evCtx.WithContextValue(ctxActionsComponent, actionsComponent)
 
-	// actionsComponent := b.actionsComponent(ctx, msgr, inDialog)
-	// ctx.WithContextValue(ctxActionsComponent, actionsComponent)
-
-	dataTable, err := c.dataTable(ctx)
-	if err != nil {
-		return nil, err
+	observerScript := func(prevReload string) string {
+		return fmt.Sprintf(`
+				%s = locals
+				%s
+				%s`,
+			listingLocals,
+			prevReload,
+			c.ReloadActionGo(ctx, nil),
+		)
 	}
-
 	return stateful.Reloadable(c,
-		web.Scope().
-			VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).
-			Init(fmt.Sprintf(`{
+		web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
 				currEditingListItemID: "",
 				selected_ids: %s || [],
-			}`, h.JSONString(c.SelectedIDs))).
-			Observe(c.lb.mb.NotifModelsUpdated(), c.ReloadActionGo(ctx, nil)).
-			Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+			}`, h.JSONString(c.SelectedIds))).
+			Observe(c.lb.mb.NotifModelsUpdated(), observerScript("")).
+			Observe(c.lb.mb.NotifModelsDeleted(), observerScript(fmt.Sprintf(`
 				if (payload && payload.ids && payload.ids.length > 0) {
 					%s = %s.filter(id => !payload.ids.includes(id));
-				}
-				%s`,
-				listingLocalsSelectedIDs, listingLocalsSelectedIDs,
-				c.ReloadActionGo(ctx, nil),
-			)).
+				}`,
+				listingLocalsSelectedIds, listingLocalsSelectedIds,
+			))).
 			Children(
 				VCard().Elevation(0).Children(
-					// b.filterTabs(ctx, inDialog),
+					c.tabsFilter(ctx),
 					c.toolbarSearch(ctx),
 					VCardText().Class("pa-2").Children(
-						dataTable,
+						c.dataTable(ctx),
 					),
-				// b.footerCardActions(ctx),
+					c.cardActionsFooter(ctx),
 				),
 			),
 	).MarshalHTML(ctx)
+}
+
+func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
+	if c.lb.filterTabsFunc == nil {
+		return
+	}
+
+	activeIndex := -1
+	fts := c.lb.filterTabsFunc(web.MustGetEventContext(ctx))
+	tabs := VTabs().Class("mb-2").ShowArrows(true).Color(ColorPrimary).Density(DensityCompact)
+	for i, ft := range fts {
+		if ft.ID == "" {
+			ft.ID = fmt.Sprintf("tab%d", i)
+		}
+		if c.ActiveFilterTab == ft.ID {
+			activeIndex = i
+		}
+		// TODO: ft.Query 需要和 filter 匹配才可
+		tabs.AppendChildren(
+			VTab().Attr("@click", c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
+				cloned.ActiveFilterTab = ft.ID
+			})).Children(
+				h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
+					return ft.AdvancedLabel
+				}).Else(func() h.HTMLComponent {
+					return h.Text(ft.Label)
+				}),
+			),
+		)
+	}
+	return tabs.ModelValue(activeIndex)
 }
 
 func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
@@ -220,9 +254,9 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	return cell
 }
 
-func (c *ListingCompo) dataTable(ctx context.Context) (h.HTMLComponent, error) {
+func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if c.lb.Searcher == nil {
-		return nil, errors.New("function Searcher is not set")
+		panic(errors.New("function Searcher is not set"))
 	}
 
 	evCtx := web.MustGetEventContext(ctx)
@@ -292,7 +326,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) (h.HTMLComponent, error) {
 
 	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
 	if err != nil {
-		return nil, err
+		panic(errors.Wrap(err, "searcher error"))
 	}
 
 	btnConfigColumns, columns := c.displayColumns(ctx)
@@ -351,12 +385,12 @@ func (c *ListingCompo) dataTable(ctx context.Context) (h.HTMLComponent, error) {
 			return row
 		}).
 		RowMenuHead(btnConfigColumns).
-		// RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...). // TODO:
+		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
 		CellWrapperFunc(
 			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc),
 		).
-		VarSelectedIDs(
-			lo.If(len(c.lb.bulkActions) > 0, listingLocalsSelectedIDs).Else(""),
+		VarSelectedIds(
+			lo.If(len(c.lb.bulkActions) > 0, listingLocalsSelectedIds).Else(""),
 		).
 		SelectedCountLabel(msgr.ListingSelectedCountNotice).
 		ClearSelectionLabel(msgr.ListingClearSelection)
@@ -371,7 +405,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) (h.HTMLComponent, error) {
 	}
 
 	if c.lb.disablePagination {
-		return dataTable, nil
+		return dataTable
 	}
 
 	var dataTableAdditions h.HTMLComponent
@@ -403,7 +437,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) (h.HTMLComponent, error) {
 				})),
 		)
 	}
-	return h.Components(dataTable, dataTableAdditions), nil
+	return h.Components(dataTable, dataTableAdditions)
 }
 
 type DisplayColumnWrapper struct {
@@ -499,16 +533,373 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 		wrappers
 }
 
+func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
+	if len(c.lb.footerActions) <= 0 {
+		return nil
+	}
+	evCtx := web.MustGetEventContext(ctx)
+	compos := []h.HTMLComponent{VSpacer()}
+	for _, action := range c.lb.footerActions {
+		compos = append(compos, action.buttonCompFunc(evCtx))
+	}
+	return VCardActions(compos...)
+}
+
+func (c *ListingCompo) actionsComponent(ctx context.Context) h.HTMLComponent {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := c.MustGetMessages(ctx)
+
+	var buttons []h.HTMLComponent
+
+	for _, ba := range c.lb.bulkActions {
+		if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, ba.name).WithReq(evCtx.R).IsAllowed() != nil {
+			continue
+		}
+
+		if ba.buttonCompFunc != nil {
+			buttons = append(buttons, ba.buttonCompFunc(evCtx))
+			continue
+		}
+
+		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
+			Color(cmp.Or(ba.buttonColor, ColorSecondary)).Variant(VariantFlat).Class("ml-2").
+			Attr("@click", stateful.PostAction(ctx, c, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
+				Name: ba.name, // TODO: 可能也需要处理 selected_ids , 但是问题是其可能不在 listingLocals 范围内呢，这貌似不太好搞了
+			}).Go()),
+		)
+	}
+
+	for _, ba := range c.lb.actions {
+		if c.lb.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(evCtx.R).IsAllowed() != nil {
+			continue
+		}
+
+		if ba.buttonCompFunc != nil {
+			buttons = append(buttons, ba.buttonCompFunc(evCtx))
+			continue
+		}
+
+		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
+			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
+			Attr("@click", stateful.PostAction(ctx, c, c.OpenActionDialog, OpenActionDialogRequest{
+				Name: ba.name, // TODO: 可能也需要处理 selected_ids , 但是问题是其可能不在 listingLocals 范围内呢，这貌似不太好搞了
+			}).Go()),
+		)
+	}
+
+	if c.lb.actionsAsMenu {
+		// TODO: no new ? 为什么以前写在这呢？
+		return VMenu().OpenOnHover(true).Children(
+			web.Slot().Name("activator").Scope("{ on, props }").Children(
+				// TODO: i18n ?
+				VBtn("Actions").Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
+			),
+			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
+				return VListItem(item)
+			})...),
+		)
+	}
+
+	if c.lb.newBtnFunc != nil { // TODO: perm ? 即使自己提供了也应该做前置权限判断吧？
+		if button := c.lb.newBtnFunc(evCtx); button != nil {
+			buttons = append(buttons, button)
+		}
+	} else if c.lb.mb.Info().Verifier().Do(PermCreate).WithReq(evCtx.R).IsAllowed() == nil {
+		// TODO:
+		// onclick := web.Plaid().EventFunc(actions.New)
+		// if inDialog {
+		// 	onclick.URL(ctx.R.RequestURI).
+		// 		Query(ParamOverlay, actions.Dialog).
+		// 		Query(ParamInDialog, true).
+		// 		Query(ParamListingQueries, ctx.Queries().Encode())
+		// }
+		buttons = append(buttons, VBtn(msgr.New).
+			Color(ColorPrimary).
+			Variant(VariantFlat).
+			Theme("dark").Class("ml-2"), // TODO: why theme dark ?
+		// .Attr("@click", onclick.Go())
+		)
+	}
+
+	return h.Div(buttons...)
+}
+
+func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, processedSelectedIds []string) (r h.HTMLComponent) {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := c.MustGetMessages(ctx)
+
+	var errCompo h.HTMLComponent
+	if vErr, ok := evCtx.Flash.(*web.ValidationErrors); ok {
+		if gErr := vErr.GetGlobalError(); gErr != "" {
+			errCompo = VAlert(h.Text(gErr)).Border("left").Type("error").Elevation(2)
+		}
+	}
+
+	var alertCompo h.HTMLComponent
+	if len(processedSelectedIds) < len(selectedIds) {
+		unactionables := lo.Without(selectedIds, processedSelectedIds...)
+		if len(unactionables) > 0 {
+			var notice string
+			if bulk.selectedIdsProcessorNoticeFunc != nil {
+				notice = bulk.selectedIdsProcessorNoticeFunc(selectedIds, processedSelectedIds, unactionables)
+			} else {
+				var ids string
+				if len(unactionables) <= 10 {
+					ids = strings.Join(unactionables, ", ")
+				} else {
+					ids = fmt.Sprintf("%s...(+%d)", strings.Join(unactionables[:10], ", "), len(unactionables)-10)
+				}
+				notice = msgr.BulkActionSelectedIdsProcessNotice(ids)
+			}
+			alertCompo = VAlert(h.Text(notice)).Type("warning")
+		}
+	}
+
+	return VCard(
+		VCardTitle(
+			h.Text(bulk.NameLabel.label),
+		),
+		VCardText(
+			errCompo,
+			alertCompo,
+			bulk.compFunc(selectedIds, evCtx),
+		),
+		VCardActions(
+			VSpacer(),
+			VBtn(msgr.Cancel).
+				Variant(VariantFlat).
+				Class("ml-2").
+				Attr("@click", closeDialogVarScript),
+
+			VBtn(msgr.OK).
+				Color("primary").
+				Variant(VariantFlat).
+				Theme(ThemeDark).
+				Attr("@click", stateful.PostAction(ctx, c, c.DoBulkAction, DoBulkActionRequest{
+					Name: bulk.name,
+				}).Go()),
+		),
+	)
+}
+
+func (c *ListingCompo) fetchBulkAction(evCtx *web.EventContext, name string) (*BulkActionBuilder, error) {
+	bulk, exists := lo.Find(c.lb.bulkActions, func(ba *BulkActionBuilder) bool {
+		return ba.name == name
+	})
+	if !exists {
+		return nil, errors.New("cannot find requested bulk action")
+	}
+
+	if len(c.SelectedIds) == 0 {
+		return nil, errors.New("Please select record") // TODO: i18n ?
+	}
+
+	if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(evCtx.R).IsAllowed() != nil {
+		return nil, perm.PermissionDenied
+	}
+
+	return bulk, nil
+}
+
+type OpenBulkActionDialogRequest struct {
+	Name string `json:"name"`
+}
+
+func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkActionDialogRequest) (r web.EventResponse, err error) {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := c.MustGetMessages(ctx)
+
+	bulk, err := c.fetchBulkAction(evCtx, req.Name)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	// If selectedIdsProcessorFunc is not nil, process the request in it and skip the confirmation dialog
+	processedSelectedIds := c.SelectedIds
+	if bulk.selectedIdsProcessorFunc != nil {
+		processedSelectedIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
+		if err != nil {
+			return r, err
+		}
+		if len(processedSelectedIds) == 0 {
+			if bulk.selectedIdsProcessorNoticeFunc != nil {
+				ShowMessage(&r, bulk.selectedIdsProcessorNoticeFunc(c.SelectedIds, processedSelectedIds, c.SelectedIds), "warning")
+			} else {
+				ShowMessage(&r, msgr.BulkActionNoAvailableRecords, "warning")
+			}
+			return r, nil
+		}
+	}
+
+	c.lb.mb.p.dialog(&r, c.bulkPanel(ctx, bulk, c.SelectedIds, processedSelectedIds), bulk.dialogWidth)
+	return r, nil
+}
+
+type DoBulkActionRequest struct {
+	Name string `json:"name"`
+}
+
+func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest) (r web.EventResponse, err error) {
+	evCtx := web.MustGetEventContext(ctx)
+
+	bulk, err := c.fetchBulkAction(evCtx, req.Name)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	processedSelectedIds := c.SelectedIds
+	if bulk.selectedIdsProcessorFunc != nil { // TODO: 这个地方的逻辑和 OpenBulkActionDialog 里的逻辑不重复吗？
+		processedSelectedIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
+	}
+
+	if err == nil {
+		err = bulk.updateFunc(processedSelectedIds, evCtx)
+	}
+
+	if err != nil {
+		if _, ok := err.(*web.ValidationErrors); !ok {
+			vErr := &web.ValidationErrors{}
+			vErr.GlobalError(err.Error())
+			evCtx.Flash = vErr
+		}
+	}
+
+	if evCtx.Flash != nil {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogContentPortalName,
+			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, processedSelectedIds),
+		})
+		return r, nil
+	}
+
+	msgr := c.MustGetMessages(ctx)
+	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
+	web.AppendRunScripts(&r, closeDialogVarScript)
+	stateful.AppendReloadToResponse(&r, c)
+	return r, nil
+}
+
+func (c *ListingCompo) actionPanel(ctx context.Context, action *ActionBuilder) (r h.HTMLComponent) {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := c.MustGetMessages(ctx)
+
+	var errCompo h.HTMLComponent
+	if vErr, ok := evCtx.Flash.(*web.ValidationErrors); ok {
+		if gErr := vErr.GetGlobalError(); gErr != "" {
+			errCompo = VAlert(h.Text(gErr)).Border("left").Type("error").Elevation(2)
+		}
+	}
+
+	return VCard(
+		VCardTitle(
+			h.Text(action.NameLabel.label),
+		),
+		VCardText(
+			errCompo,
+			h.Iff(action.compFunc != nil, func() h.HTMLComponent {
+				return action.compFunc("", evCtx)
+			}),
+		),
+		VCardActions(
+			VSpacer(),
+			VBtn(msgr.Cancel).
+				Variant(VariantFlat).
+				Class("ml-2").
+				Attr("@click", closeDialogVarScript),
+
+			VBtn(msgr.OK).
+				Color("primary").
+				Variant(VariantFlat).
+				Theme(ThemeDark).
+				Attr("@click", stateful.PostAction(ctx, c, c.DoAction, DoActionRequest{
+					Name: action.name,
+				}).Go()),
+		),
+	)
+}
+
+func (c *ListingCompo) fetchAction(evCtx *web.EventContext, name string) (*ActionBuilder, error) {
+	action, exists := lo.Find(c.lb.actions, func(a *ActionBuilder) bool {
+		return a.name == name
+	})
+	if !exists {
+		return nil, errors.New("cannot find requested action")
+	}
+
+	// TODO: 到底应该是 permActions 还是 permListingActions
+	if c.lb.mb.Info().Verifier().SnakeDo(permActions, action.name).WithReq(evCtx.R).IsAllowed() != nil {
+		return nil, perm.PermissionDenied
+	}
+
+	return action, nil
+}
+
+type OpenActionDialogRequest struct {
+	Name string `json:"name"`
+}
+
+func (c *ListingCompo) OpenActionDialog(ctx context.Context, req OpenBulkActionDialogRequest) (r web.EventResponse, err error) {
+	evCtx := web.MustGetEventContext(ctx)
+
+	action, err := c.fetchAction(evCtx, req.Name)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	c.lb.mb.p.dialog(&r, c.actionPanel(ctx, action), action.dialogWidth)
+	return r, nil
+}
+
+type DoActionRequest struct {
+	Name string `json:"name"`
+}
+
+func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web.EventResponse, err error) {
+	evCtx := web.MustGetEventContext(ctx)
+
+	action, err := c.fetchAction(evCtx, req.Name)
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	if err := action.updateFunc("", evCtx); err != nil {
+		// TODO: 最好单独写个方法
+		if _, ok := err.(*web.ValidationErrors); !ok {
+			vErr := &web.ValidationErrors{}
+			vErr.GlobalError(err.Error())
+			evCtx.Flash = vErr
+		}
+	}
+
+	if evCtx.Flash != nil {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: dialogContentPortalName,
+			Body: c.actionPanel(ctx, action),
+		})
+		return r, nil
+	}
+
+	msgr := c.MustGetMessages(ctx)
+	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
+	web.AppendRunScripts(&r, closeDialogVarScript)
+	stateful.AppendReloadToResponse(&r, c)
+	return r, nil
+}
+
 func (c *ListingCompo) ReloadActionGo(ctx context.Context, f func(cloned *ListingCompo)) string {
 	return strings.Replace( // TODO: 这种 replace 的方式会影响到 sync_query 机制，那块需要改进
 		stateful.ReloadAction(ctx, c, func(cloned *ListingCompo) {
-			cloned.SelectedIDs = []string{}
+			cloned.SelectedIds = []string{}
 			if f != nil {
 				f(cloned)
 			}
 		}).Go(),
 		`"selected_ids": []`,
-		`"selected_ids": `+listingLocalsSelectedIDs,
+		`"selected_ids": `+listingLocalsSelectedIds,
 		1,
 	)
 }

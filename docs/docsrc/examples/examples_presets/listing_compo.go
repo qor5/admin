@@ -2,6 +2,7 @@ package examples_presets
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -52,6 +53,22 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
 				return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
 			})
+		cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+			return []*presets.FilterTab{
+				{
+					Label: "All",
+					Query: url.Values{"all": []string{"1"}},
+				},
+				{
+					Label: "Felix",
+					Query: url.Values{"name.ilike": []string{"felix"}},
+				},
+				{
+					Label: "Approved",
+					Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
+				},
+			}
+		})
 		cl.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 			msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, Messages_en_US).(*Messages)
 			var companyOptions []*vuetifyx.SelectItem
@@ -112,6 +129,22 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
 				return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
 			})
+		cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+			return []*presets.FilterTab{
+				{
+					Label: "All",
+					Query: url.Values{"all": []string{"1"}},
+				},
+				{
+					Label: "Felix",
+					Query: url.Values{"name.ilike": []string{"felix"}},
+				},
+				{
+					Label: "Approved",
+					Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
+				},
+			}
+		})
 		cl.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 			msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, Messages_en_US).(*Messages)
 			var companyOptions []*vuetifyx.SelectItem

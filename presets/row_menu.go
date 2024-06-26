@@ -12,7 +12,7 @@ import (
 )
 
 type RowMenuBuilder struct {
-	lb              *ListingBuilder
+	mb              *ModelBuilder
 	listings        []string
 	defaultListings []string
 	items           map[string]*RowMenuItemBuilder
@@ -21,7 +21,28 @@ type RowMenuBuilder struct {
 func (b *ListingBuilder) RowMenu(listings ...string) *RowMenuBuilder {
 	if b.rowMenu == nil {
 		b.rowMenu = &RowMenuBuilder{
-			lb:       b,
+			mb:       b.mb,
+			listings: listings,
+			items:    make(map[string]*RowMenuItemBuilder),
+		}
+	}
+
+	rmb := b.rowMenu
+	if len(listings) == 0 {
+		return rmb
+	}
+	rmb.listings = listings
+	for _, li := range rmb.listings {
+		rmb.RowMenuItem(li)
+	}
+
+	return rmb
+}
+
+func (b *ListingBuilderX) RowMenu(listings ...string) *RowMenuBuilder {
+	if b.rowMenu == nil {
+		b.rowMenu = &RowMenuBuilder{
+			mb:       b.mb,
 			listings: listings,
 			items:    make(map[string]*RowMenuItemBuilder),
 		}
@@ -78,20 +99,20 @@ func (b *RowMenuBuilder) RowMenuItem(name string) *RowMenuItemBuilder {
 	ib := &RowMenuItemBuilder{
 		rmb:     b,
 		name:    name,
-		eventID: fmt.Sprintf("%s_rowMenuItemFunc_%s", b.lb.mb.uriName, name),
+		eventID: fmt.Sprintf("%s_rowMenuItemFunc_%s", b.mb.uriName, name),
 	}
 	b.items[strcase.ToSnake(name)] = ib
 	b.defaultListings = append(b.defaultListings, name)
 
-	b.lb.mb.RegisterEventFunc(ib.eventID, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	b.mb.RegisterEventFunc(ib.eventID, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.R.FormValue(ParamID)
 		if ib.permAction != "" {
-			obj := b.lb.mb.NewModel()
-			obj, err = b.lb.mb.editing.Fetcher(obj, id, ctx)
+			obj := b.mb.NewModel()
+			obj, err = b.mb.editing.Fetcher(obj, id, ctx)
 			if err != nil {
 				return r, err
 			}
-			err = b.lb.mb.Info().Verifier().Do(ib.permAction).ObjectOn(obj).WithReq(ctx.R).IsAllowed()
+			err = b.mb.Info().Verifier().Do(ib.permAction).ObjectOn(obj).WithReq(ctx.R).IsAllowed()
 			if err != nil {
 				return r, err
 			}
@@ -133,7 +154,7 @@ func (b *RowMenuItemBuilder) getComponentFunc(_ *web.EventContext) vx.RowMenuIte
 	}
 
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		if b.permAction != "" && b.rmb.lb.mb.Info().Verifier().Do(b.permAction).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		if b.permAction != "" && b.rmb.mb.Info().Verifier().Do(b.permAction).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
 		}
 		return VListItem(
@@ -141,7 +162,7 @@ func (b *RowMenuItemBuilder) getComponentFunc(_ *web.EventContext) vx.RowMenuIte
 				VIcon(b.icon),
 			).Name("prepend"),
 
-			VListItemTitle(h.Text(i18n.PT(ctx.R, ModelsI18nModuleKey, strcase.ToCamel(b.rmb.lb.mb.label+" RowMenuItem"), b.name))),
+			VListItemTitle(h.Text(i18n.PT(ctx.R, ModelsI18nModuleKey, strcase.ToCamel(b.rmb.mb.label+" RowMenuItem"), b.name))),
 		).Attr("@click", web.Plaid().
 			EventFunc(b.eventID).
 			Query(ParamID, id).

@@ -11,7 +11,7 @@ func (mb *ModelBuilder) NotifModelsUpdated() string {
 }
 
 type PayloadModelsDeleted struct {
-	IDs []string `json:"ids"`
+	Ids []string `json:"ids"`
 }
 
 func (mb *ModelBuilder) NotifModelsDeleted() string {

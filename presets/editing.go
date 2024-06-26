@@ -382,7 +382,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		web.AppendRunScripts(&r,
 			web.NotifyScript(
 				b.mb.NotifModelsDeleted(),
-				PayloadModelsDeleted{IDs: []string{id}},
+				PayloadModelsDeleted{Ids: []string{id}},
 			),
 		)
 	}
