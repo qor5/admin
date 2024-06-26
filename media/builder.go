@@ -16,6 +16,7 @@ type (
 		mediaLibraryPerPage int
 		currentUserID       UserIDFunc
 		searcher            SearchFunc
+		disableAutoMigrate  bool
 	}
 )
 
@@ -23,6 +24,7 @@ func New(db *gorm.DB) *Builder {
 	b := &Builder{}
 	b.db = db
 	b.mediaLibraryPerPage = 39
+	b.disableAutoMigrate = false
 	return b
 }
 
@@ -38,6 +40,11 @@ func (b *Builder) CurrentUserID(v UserIDFunc) *Builder {
 
 func (b *Builder) Searcher(v SearchFunc) *Builder {
 	b.searcher = v
+	return b
+}
+
+func (b *Builder) DisableAutoMigrate() *Builder {
+	b.disableAutoMigrate = true
 	return b
 }
 
