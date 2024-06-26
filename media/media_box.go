@@ -30,11 +30,20 @@ const (
 	I18nMediaLibraryKey i18n.ModuleKey    = "I18nMediaLibraryKey"
 )
 
+func AutoMigrate(db *gorm.DB) (err error) {
+	return db.AutoMigrate(
+		&media_library.MediaLibrary{},
+	)
+}
+
 func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
-	err := db.AutoMigrate(&media_library.MediaLibrary{})
-	if err != nil {
-		panic(err)
+	if !mb.disableAutoMigrate {
+		err := AutoMigrate(db)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	mb.permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
