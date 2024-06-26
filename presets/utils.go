@@ -132,3 +132,12 @@ func ShadowCloneEventContext(ctx *web.EventContext) *web.EventContext {
 	*shadow = *ctx
 	return shadow
 }
+
+func toValidationErrors(err error) *web.ValidationErrors {
+	if vErr, ok := err.(*web.ValidationErrors); ok {
+		return vErr
+	}
+	vErr := &web.ValidationErrors{}
+	vErr.GlobalError(err.Error())
+	return vErr
+}

@@ -51,14 +51,9 @@ const (
 	listingLocalsSelectedIds = "listingLocals.selected_ids"
 )
 
+const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	evCtx := web.MustGetEventContext(ctx)
-	// evCtx.WithContextValue(ctxInDialog, inDialog) // TODO:
-
-	// TODO: 这个方式就不行了，因为是在 MarshalHTML 之前，外界就需要得到 actions 了
-	actionsComponent := c.actionsComponent(ctx)
-	evCtx.WithContextValue(ctxActionsComponent, actionsComponent)
-
 	observerScript := func(prevReload string) string {
 		return fmt.Sprintf(`
 				%s = locals
@@ -81,6 +76,12 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 				}`,
 				listingLocalsSelectedIds, listingLocalsSelectedIds,
 			))).
+			// sync to actionsComponent
+			// TODO: 可能还需要一个 OnMount 方法来触发这个事件，否则每次 reload 都要主动触发
+			UseDebounce(1).OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
+				compo_name: %q,
+				locals: locals,
+			})`, notifListingLocalsUpdated, c.CompoName())).
 			Children(
 				VCard().Elevation(0).Children(
 					c.tabsFilter(ctx),
@@ -545,7 +546,30 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 	return VCardActions(compos...)
 }
 
-func (c *ListingCompo) actionsComponent(ctx context.Context) h.HTMLComponent {
+func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent) {
+	defer func() {
+		if r != nil {
+			r = web.Scope(r).VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).
+				Init(
+					fmt.Sprintf(`{
+						currEditingListItemID: "",
+						selected_ids: %s || [],
+					}`,
+						h.JSONString(c.SelectedIds),
+					),
+				).
+				Observe(notifListingLocalsUpdated, fmt.Sprintf(`
+					if (!payload.compo_name || payload.compo_name != %q) {
+						return
+					}
+					Object.keys(locals).forEach(key => {
+						if (payload.locals.hasOwnProperty(key)) {
+							locals[key] = payload.locals[key];
+						}
+					});
+				`, c.CompoName()))
+		}
+	}()
 	evCtx := web.MustGetEventContext(ctx)
 	msgr := c.MustGetMessages(ctx)
 
@@ -563,9 +587,9 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) h.HTMLComponent {
 
 		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
 			Color(cmp.Or(ba.buttonColor, ColorSecondary)).Variant(VariantFlat).Class("ml-2").
-			Attr("@click", stateful.PostAction(ctx, c, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
-				Name: ba.name, // TODO: 可能也需要处理 selected_ids , 但是问题是其可能不在 listingLocals 范围内呢，这貌似不太好搞了
-			}).Go()),
+			Attr("@click", c.PostActionGo(ctx, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
+				Name: ba.name,
+			})),
 		)
 	}
 
@@ -581,9 +605,9 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) h.HTMLComponent {
 
 		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
 			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
-			Attr("@click", stateful.PostAction(ctx, c, c.OpenActionDialog, OpenActionDialogRequest{
-				Name: ba.name, // TODO: 可能也需要处理 selected_ids , 但是问题是其可能不在 listingLocals 范围内呢，这貌似不太好搞了
-			}).Go()),
+			Attr("@click", c.PostActionGo(ctx, c.OpenActionDialog, OpenActionDialogRequest{
+				Name: ba.name,
+			})),
 		)
 	}
 
@@ -666,18 +690,12 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).
-				Variant(VariantFlat).
-				Class("ml-2").
-				Attr("@click", closeDialogVarScript),
-
-			VBtn(msgr.OK).
-				Color("primary").
-				Variant(VariantFlat).
-				Theme(ThemeDark).
-				Attr("@click", stateful.PostAction(ctx, c, c.DoBulkAction, DoBulkActionRequest{
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", closeDialogVarScript),
+			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
+				stateful.PostAction(ctx, c, c.DoBulkAction, DoBulkActionRequest{
 					Name: bulk.name,
-				}).Go()),
+				}).Go(),
+			),
 		),
 	)
 }
@@ -755,18 +773,12 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	}
 
 	if err == nil {
+		// TODO: 这个方法貌似应该反馈哪些 ids 已经不存在了，便于下面的 reload 之前剔除
 		err = bulk.updateFunc(processedSelectedIds, evCtx)
 	}
 
 	if err != nil {
-		if _, ok := err.(*web.ValidationErrors); !ok {
-			vErr := &web.ValidationErrors{}
-			vErr.GlobalError(err.Error())
-			evCtx.Flash = vErr
-		}
-	}
-
-	if evCtx.Flash != nil {
+		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogContentPortalName,
 			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, processedSelectedIds),
@@ -804,18 +816,12 @@ func (c *ListingCompo) actionPanel(ctx context.Context, action *ActionBuilder) (
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).
-				Variant(VariantFlat).
-				Class("ml-2").
-				Attr("@click", closeDialogVarScript),
-
-			VBtn(msgr.OK).
-				Color("primary").
-				Variant(VariantFlat).
-				Theme(ThemeDark).
-				Attr("@click", stateful.PostAction(ctx, c, c.DoAction, DoActionRequest{
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", closeDialogVarScript),
+			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
+				stateful.PostAction(ctx, c, c.DoAction, DoActionRequest{
 					Name: action.name,
-				}).Go()),
+				}).Go(),
+			),
 		),
 	)
 }
@@ -867,15 +873,7 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 	}
 
 	if err := action.updateFunc("", evCtx); err != nil {
-		// TODO: 最好单独写个方法
-		if _, ok := err.(*web.ValidationErrors); !ok {
-			vErr := &web.ValidationErrors{}
-			vErr.GlobalError(err.Error())
-			evCtx.Flash = vErr
-		}
-	}
-
-	if evCtx.Flash != nil {
+		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogContentPortalName,
 			Body: c.actionPanel(ctx, action),
@@ -898,6 +896,17 @@ func (c *ListingCompo) ReloadActionGo(ctx context.Context, f func(cloned *Listin
 				f(cloned)
 			}
 		}).Go(),
+		`"selected_ids": []`,
+		`"selected_ids": `+listingLocalsSelectedIds,
+		1,
+	)
+}
+
+func (c *ListingCompo) PostActionGo(ctx context.Context, method any, request any) string {
+	cloned := stateful.MustClone(c)
+	cloned.SelectedIds = []string{}
+	return strings.Replace(
+		stateful.PostAction(ctx, cloned, method, request).Go(),
 		`"selected_ids": []`,
 		`"selected_ids": `+listingLocalsSelectedIds,
 		1,

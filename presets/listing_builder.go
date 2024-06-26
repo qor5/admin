@@ -190,24 +190,34 @@ func (b *ListingBuilderX) setup() {
 	})
 }
 
-func (b *ListingBuilderX) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
-	if b.mb.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
+func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageResponse, err error) {
+	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		return r, perm.PermissionDenied
 	}
 
-	msgr := MustGetMessages(ctx.R)
+	msgr := MustGetMessages(evCtx.R)
 	title := b.title
 	if title == "" {
-		title = msgr.ListingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, b.mb.label))
+		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
 	}
 	r.PageTitle = title
 
+	evCtx.WithContextValue(ctxInDialog, false) // TODO:
+
 	injectorName := b.injectorName()
+	listingCompo := &ListingCompo{
+		CompoID: injectorName, // TODO: 这个没准需要再考虑命名
+	}
+	injectedListingCompo := stateful.MustInject(injectorName, listingCompo)
+
+	// TODO: 很尴尬，这个比较特别，目前只能这样做
+	ctx := stateful.WithInjectorName(evCtx.R.Context(), injectorName)
+	actionsCompo := listingCompo.actionsComponent(ctx)
+	evCtx.WithContextValue(ctxActionsComponent, actionsCompo)
+
 	r.Body = VLayout(
 		VMain(
-			stateful.MustInject(injectorName, &ListingCompo{
-				CompoID: injectorName, // TODO: 这个没准需要再考虑命名
-			}),
+			injectedListingCompo,
 		),
 	)
 	return
