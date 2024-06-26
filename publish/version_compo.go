@@ -18,6 +18,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const versionListDialogURISuffix = "-version-list-dialog"
+
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
 	PublishEvent     func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
@@ -55,13 +57,17 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.Class("pb-4")
 		}
 
+		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
+		z := &presets.ListingZone{
+			ID: urlSuffix,
+		}
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.EmbedVersion().VersionName),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
-				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
-					URL(mb.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
+				On("click", z.Plaid().EventFunc(actions.OpenListingDialog).
+					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query("select_id", primarySlugger.PrimarySlug()).
 					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
 					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
@@ -140,8 +146,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		r := web.Scope(div).
-			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
+		r := web.Scope(div).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
 		if !config.DisableObservers {
 			r.Observers(
 				ObserverVersionSelected(mb, primarySlugger.PrimarySlug()),
@@ -265,7 +270,9 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 		queries := ctx.Queries()
 		queries.Set("select_id", p.PrimarySlug())
-		onChange := web.Plaid().URL(ctx.R.URL.Path).Queries(queries).EventFunc(actions.UpdateListingDialog).Go()
+		onChange := presets.Zone[*presets.ListingZone](ctx).Plaid().
+			URL(ctx.R.URL.Path).Queries(queries).
+			EventFunc(actions.ReloadList).Go()
 
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(

@@ -378,45 +378,24 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 			ShowMessage(&r, err.Error(), "warning")
 			return
 		}
+
+		web.AppendRunScripts(&r,
+			web.NotifyScript(
+				b.mb.NotifModelsDeleted(),
+				PayloadModelsDeleted{IDs: []string{id}},
+			),
+		)
 	}
+
+	web.AppendRunScripts(&r, "locals.deleteConfirmation = false")
 
 	if event := ctx.Queries().Get(ParamAfterDeleteEvent); event != "" {
 		web.AppendRunScripts(&r,
-			"locals.deleteConfirmation = false",
 			web.Plaid().
 				EventFunc(event).
 				Queries(ctx.Queries()).
 				Go(),
 		)
-	} else {
-		removeSelectQuery := web.Var(fmt.Sprintf(`{value: %s, add: false, remove: true}`, h.JSONString(id)))
-		if isInDialogFromQuery(ctx) {
-			u := fmt.Sprintf("%s?%s", b.mb.Info().ListingHref(), ctx.Queries().Get(ParamListingQueries))
-			web.AppendRunScripts(&r,
-				"locals.deleteConfirmation = false",
-				web.Plaid().
-					URL(u).
-					EventFunc(actions.UpdateListingDialog).
-					MergeQuery(true).
-					Queries(ctx.Queries()).
-					Query(ParamSelectedIds, removeSelectQuery).
-					Go(),
-			)
-		} else {
-			// refresh current page
-
-			// TODO: response location does not support `valueOp`
-			// r.PushState = web.Location(nil).
-			// 	MergeQuery(true).
-			//  Query(ParamSelectedIds, removeSelectQuery)
-			web.AppendRunScripts(&r,
-				web.Plaid().
-					PushState(true).
-					MergeQuery(true).
-					Query(ParamSelectedIds, removeSelectQuery).
-					Go(),
-			)
-		}
 	}
 	return
 }
@@ -480,6 +459,13 @@ func (b *EditingBuilder) doUpdate(
 		return err1
 	}
 
+	web.AppendRunScripts(r,
+		web.NotifyScript(
+			b.mb.NotifModelsUpdated(),
+			PayloadModelsUpdated{Models: []any{obj}},
+		),
+	)
+
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	script := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
@@ -499,18 +485,6 @@ func (b *EditingBuilder) doUpdate(
 		)
 
 		return
-	}
-
-	if isInDialogFromQuery(ctx) {
-		web.AppendRunScripts(r,
-			web.Plaid().
-				URL(ctx.R.RequestURI).
-				EventFunc(actions.UpdateListingDialog).
-				StringQuery(ctx.R.URL.Query().Get(ParamListingQueries)).
-				Go(),
-		)
-	} else {
-		r.PushState = web.Location(nil)
 	}
 	web.AppendRunScripts(r, script)
 	return

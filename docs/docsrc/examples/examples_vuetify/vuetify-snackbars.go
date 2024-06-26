@@ -2,8 +2,8 @@ package examples_vuetify
 
 // @snippet_begin(VuetifySnackBarsSample)
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/examples"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )

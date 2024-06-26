@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/qor5/admin/v3/utils/pregexp"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,7 @@ func ParseOpenRightDrawerParams(body []byte) ([]any, error) {
 		return nil, errors.Errorf("invalid portal name %q", resp.UpdatePortals[0].Name)
 	}
 	const pattern = `<v-navigation-drawer v-model='vars.presetsRightDrawer'[\s\S]+?(<v-app-bar-title[^>]+>\s*<div[^>]+>(?P<title>.*?)\s*<\/div>\s*<\/v-app-bar-title>|<v-toolbar-title[^>]+>(?P<title>.*?)<\/v-toolbar-title>)[\s\S]+?<\/v-navigation-drawer>`
-	groups, err := MatchOne(pattern, resp.UpdatePortals[0].Body)
+	groups, err := pregexp.MatchOne(pattern, resp.UpdatePortals[0].Body)
 	if err != nil {
 		return nil, err
 	}

@@ -1,9 +1,9 @@
 package advanced_functions
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_web"
 	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	"github.com/qor5/admin/v3/docs/docsrc/utils"
+	examples_web "github.com/qor5/web/v3/examples"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
 	. "github.com/theplant/htmlgo"

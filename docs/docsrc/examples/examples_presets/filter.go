@@ -60,12 +60,13 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 				Options:      options,
 			},
 			{
-				Key:                   "title",
-				Label:                 "titleNoChoose",
-				ItemType:              vuetifyx.ItemTypeString,
-				Modifier:              vuetifyx.ModifierEquals, // default modifier is contains
-				SQLCondition:          `title = ?`,
-				DisableChooseModifier: true,
+				Key:          "title",
+				Label:        "titleNoChoose",
+				ItemType:     vuetifyx.ItemTypeString,
+				Modifier:     vuetifyx.ModifierEquals, // default modifier is contains
+				SQLCondition: `title = ?`,
+				// TODO: 因为当前 x 不兼容所以注释掉
+				// DisableChooseModifier: true,
 			},
 			{
 				Key:          "warpBody",
@@ -74,9 +75,10 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 				Modifier:     vuetifyx.ModifierEquals,
 				SQLCondition: `body = ?`,
 				Options:      options,
-				WarpInput: func(val string) string {
-					return val + "wrap"
-				},
+				// TODO: 因为当前 x 不兼容所以注释掉
+				// WarpInput: func(val string) string {
+				// 	return val + "wrap"
+				// },
 			},
 		}
 	})
