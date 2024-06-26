@@ -2,15 +2,20 @@ package media
 
 import (
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 )
 
-type Builder struct {
-	db                  *gorm.DB
-	permVerifier        *perm.Verifier
-	mediaLibraryPerPage int
-}
+type (
+	GetUserIDFunc func(ctx *web.EventContext) uint
+	Builder       struct {
+		db                  *gorm.DB
+		permVerifier        *perm.Verifier
+		mediaLibraryPerPage int
+		getCurrentUserID    GetUserIDFunc
+	}
+)
 
 func New(db *gorm.DB) *Builder {
 	b := &Builder{}
@@ -21,6 +26,11 @@ func New(db *gorm.DB) *Builder {
 
 func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	b.mediaLibraryPerPage = v
+	return b
+}
+
+func (b *Builder) GetCurrentUserID(v GetUserIDFunc) *Builder {
+	b.getCurrentUserID = v
 	return b
 }
 

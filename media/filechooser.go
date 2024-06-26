@@ -100,7 +100,9 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 
 	var files []*media_library.MediaLibrary
 	wh := db.Model(&media_library.MediaLibrary{})
-
+	if mb.getCurrentUserID != nil {
+		wh = wh.Where("user_id = ? ", mb.getCurrentUserID(ctx))
+	}
 	switch orderByVal {
 	case orderByCreatedAt:
 		wh = wh.Order("created_at")
@@ -403,7 +405,9 @@ func uploadFile(mb *Builder) web.EventFunc {
 			if err != nil {
 				panic(err)
 			}
-
+			if mb.getCurrentUserID != nil {
+				m.UserID = mb.getCurrentUserID(ctx)
+			}
 			err = base.SaveUploadAndCropImage(mb.db, &m)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
