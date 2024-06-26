@@ -100,7 +100,7 @@ func InternationalizationExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.Model(&video{}).MenuIcon("movie")
 
 	// @snippet_begin(I18nNew)
-	i18nB := b.I18n()
+	i18nB := b.GetI18n()
 	// @snippet_end
 
 	// @snippet_begin(I18nSupportLanguages)
@@ -114,7 +114,7 @@ func InternationalizationExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		RegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
-			return b.I18n().GetSupportLanguages()
+			return b.GetI18n().GetSupportLanguages()
 		})
 	// @snippet_end
 	return b

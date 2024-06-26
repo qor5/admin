@@ -217,7 +217,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		FieldType(Status{}).
 		ComponentFunc(StatusListFunc())
 
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPublishKey, Messages_ja_JP)

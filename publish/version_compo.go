@@ -197,7 +197,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
 		)
 		versionIf = nextObj.(VersionInterface)
-		// TODO use nextVersion I18n
+		// TODO use nextVersion GetI18n
 		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
 		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
 		if count >= 2 {

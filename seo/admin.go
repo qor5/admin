@@ -65,7 +65,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	b.configEditing(seoModel)
 	// b.ConfigDetailing(pb)
 
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nSeoKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSeoKey, Messages_zh_CN)
 

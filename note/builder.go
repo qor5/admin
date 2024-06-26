@@ -31,7 +31,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		return err
 	}
 
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nNoteKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nNoteKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nNoteKey, Messages_ja_JP)

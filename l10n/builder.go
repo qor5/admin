@@ -230,7 +230,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 
 	pb.AddWrapHandler(WrapHandlerKey, b.EnsureLocale)
 	pb.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(b))
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
@@ -333,7 +333,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	pb.AddWrapHandler(WrapHandlerKey, b.EnsureLocale)
 	pb.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(b))
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)

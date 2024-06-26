@@ -118,7 +118,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	initPermission(b, db)
 
-	b.I18n().
+	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).
 		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).
@@ -138,7 +138,7 @@ func NewConfig(db *gorm.DB) Config {
 			//	}
 			// }
 			// return supportedLanguages
-			return b.I18n().GetSupportLanguages()
+			return b.GetI18n().GetSupportLanguages()
 		})
 	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
 	mediab := media.New(db).CurrentUserID(func(ctx *web.EventContext) (id uint) {
@@ -267,7 +267,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	b.Use(w.Activity(ab))
 
-	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.I18n())
+	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.GetI18n())
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
