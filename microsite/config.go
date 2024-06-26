@@ -29,7 +29,7 @@ func (mib *Builder) Install(b *presets.Builder) error {
 		panic(err)
 	}
 
-	b.I18n().
+	b.GetI18n().
 		RegisterForModule(language.English, I18nMicrositeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMicrositeKey, Messages_zh_CN)
 

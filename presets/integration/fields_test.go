@@ -448,7 +448,7 @@ func TestFieldsBuilder(t *testing.T) {
 			setup: func(ctx *web.EventContext) {
 				ContextModifiedIndexesBuilder(ctx).
 					AppendDeleted("Departments[0].Employees", 1).
-					SetSorted("Departments[0].Employees", []string{"2", "0", "3", "6"})
+					Sorted("Departments[0].Employees", []string{"2", "0", "3", "6"})
 			},
 
 			expectedHTML: fmt.Sprintf(`

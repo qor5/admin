@@ -14,7 +14,7 @@ import (
 const I18nUtilsKey i18n.ModuleKey = "I18nUtilsKey"
 
 func Install(b *presets.Builder) {
-	b.I18n().
+	b.GetI18n().
 		RegisterForModule(language.English, I18nUtilsKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nUtilsKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nUtilsKey, Messages_ja_JP)

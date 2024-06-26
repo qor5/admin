@@ -55,7 +55,7 @@ func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 
 	registerEventFuncs(b.GetWebBuilder(), mb)
 
-	b.I18n().
+	b.GetI18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)

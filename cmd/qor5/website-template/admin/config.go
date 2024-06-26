@@ -72,7 +72,8 @@ func newConfig(db *gorm.DB) config {
 	publisher := publish.New(db, storage)
 	seoBuilder := seo.New(db)
 
-	pageBuilder := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
+	pageBuilder := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+		AutoMigrate().
 		Publisher(publisher)
 
 	header := pageBuilder.RegisterContainer("MyHeader").Group("Navigation").
@@ -103,13 +104,13 @@ func newConfig(db *gorm.DB) config {
 		publisher,
 	)
 
-	b.I18n().
+	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.English, I18nExampleKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, MessagesModels_zh_CN).
 		GetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {
-			return b.I18n().GetSupportLanguages()
+			return b.GetI18n().GetSupportLanguages()
 		})
 
 	b.MenuOrder(

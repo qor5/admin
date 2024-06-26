@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/activity"
@@ -30,6 +28,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -95,7 +94,6 @@ type Builder struct {
 	templateEnabled   bool
 	expendContainers  bool
 	pageEnabled       bool
-	autoMigrate       bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -113,18 +111,11 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
-	if err := AutoMigrate(db); err != nil {
-		panic(err)
-	}
-	return newBuilder(prefix, db, i18nB)
+func New(prefix string, db *gorm.DB) *Builder {
+	return newBuilder(prefix, db)
 }
 
-func NewWithoutAutoMigration(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
-	return newBuilder(prefix, db, i18nB)
-}
-
-func newBuilder(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
+func newBuilder(prefix string, db *gorm.DB) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -145,8 +136,7 @@ func newBuilder(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
-		DetailLayoutFunc(r.pageEditorLayout).
-		SetI18n(i18nB)
+		DetailLayoutFunc(r.pageEditorLayout)
 	r.ps.Permission(perm.New().Policies(
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 	))
@@ -161,6 +151,14 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) AutoMigrate() (r *Builder) {
+	err := AutoMigrate(b.db)
+	if err != nil {
+		panic(err)
+	}
 	return b
 }
 
@@ -320,7 +318,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 }
 
 func (b *Builder) installAsset(pb *presets.Builder) {
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
@@ -331,6 +329,7 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
+	b.ps.I18n(pb.GetI18n())
 	if b.pageEnabled {
 		var r *ModelBuilder
 		r = b.Model(pb.Model(&Page{}))

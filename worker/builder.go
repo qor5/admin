@@ -135,7 +135,7 @@ var permVerifier *perm.Verifier
 func (b *Builder) Install(pb *presets.Builder) error {
 	b.pb = pb
 	permVerifier = perm.NewVerifier("workers", pb.GetPermission())
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nWorkerKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nWorkerKey, Messages_zh_CN)
 

@@ -30,7 +30,7 @@ func New() *Builder {
 }
 
 func (sb *Builder) Install(b *presets.Builder) error {
-	b.I18n().
+	b.GetI18n().
 		RegisterForModule(language.English, I18nSlugKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nSlugKey, Messages_zh_CN)
 	b.GetWebBuilder().RegisterEventFunc(syncEvent, sync)
