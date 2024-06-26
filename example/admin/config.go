@@ -141,7 +141,22 @@ func NewConfig(db *gorm.DB) Config {
 			return b.I18n().GetSupportLanguages()
 		})
 	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
-	mediab := media.New(db)
+	mediab := media.New(db).CurrentUserID(func(ctx *web.EventContext) (id uint) {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return
+		}
+		return u.ID
+	}).Searcher(func(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return db
+		}
+		if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) && !slices.Contains(rs, models.RoleManager) {
+			return db.Where("user_id = ?", u.ID)
+		}
+		return db
+	})
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.

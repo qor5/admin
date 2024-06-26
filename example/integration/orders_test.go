@@ -9,7 +9,7 @@ import (
 )
 
 func TestOrders(t *testing.T) {
-	h := admin.TestHandler(TestDB)
+	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
 
 	cases := []multipartestutils.TestCase{
