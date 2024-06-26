@@ -8,12 +8,14 @@ import (
 )
 
 type (
-	GetUserIDFunc func(ctx *web.EventContext) uint
-	Builder       struct {
+	UserIDFunc func(ctx *web.EventContext) uint
+	SearchFunc func(db *gorm.DB, ctx *web.EventContext) *gorm.DB
+	Builder    struct {
 		db                  *gorm.DB
 		permVerifier        *perm.Verifier
 		mediaLibraryPerPage int
-		getCurrentUserID    GetUserIDFunc
+		currentUserID       UserIDFunc
+		searcher            SearchFunc
 	}
 )
 
@@ -29,8 +31,13 @@ func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	return b
 }
 
-func (b *Builder) GetCurrentUserID(v GetUserIDFunc) *Builder {
-	b.getCurrentUserID = v
+func (b *Builder) CurrentUserID(v UserIDFunc) *Builder {
+	b.currentUserID = v
+	return b
+}
+
+func (b *Builder) Searcher(v SearchFunc) *Builder {
+	b.searcher = v
 	return b
 }
 
