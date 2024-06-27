@@ -309,8 +309,10 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
 		Body: f.editComponent(obj, &FieldContext{
-			FormKey: f.name,
-			Name:    f.name,
+			ModelInfo: b.mb.modelInfo,
+			FormKey:   f.name,
+			Name:      f.name,
+			Label:     f.label,
 		}, ctx),
 	})
 	return r, nil
@@ -340,8 +342,10 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
 		Body: f.viewComponent(obj, &FieldContext{
-			FormKey: f.name,
-			Name:    f.name,
+			ModelInfo: b.mb.modelInfo,
+			FormKey:   f.name,
+			Name:      f.name,
+			Label:     f.label,
 		}, ctx),
 	})
 	return r, nil

@@ -12,6 +12,7 @@ import (
 
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -384,6 +385,13 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 	content := h.Div()
+	if b.label != "" {
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
+		content.AppendChildren(
+			h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2"),
+		)
+	}
+
 	showComponent := b.componentViewFunc(obj, field, ctx)
 	if showComponent != nil {
 		content.AppendChildren(
@@ -435,21 +443,33 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
+	content := h.Div()
+
+	if b.label != "" {
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
+		label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
+		content.AppendChildren(label)
+	}
+
+	if b.componentEditFunc != nil {
+		content.AppendChildren(
+			VCard(
+				VCardText(
+					h.Div(
+						// detailFields
+						h.Div(b.componentEditFunc(obj, field, ctx)).
+							Class("flex-grow-1"),
+						// save btn
+						h.Div(btn).Class("align-self-end mt-4"),
+					).Class("d-flex flex-column"),
+				),
+			).Variant(VariantOutlined).Class("mb-6"),
+		)
+	}
+
 	return web.Portal(
 		web.Scope(
-			h.Div(
-				VCard(
-					VCardText(
-						h.Div(
-							// detailFields
-							h.Div(b.componentEditFunc(obj, field, ctx)).
-								Class("flex-grow-1"),
-							// save btn
-							h.Div(btn).Class("align-self-end mt-4"),
-						).Class("d-flex flex-column"),
-					),
-				).Variant(VariantOutlined).Class("mb-6"),
-			),
+			content,
 			hiddenComp,
 		).VSlot("{ form }"),
 	).Name(b.FieldPortalName())
@@ -514,7 +534,8 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		panic(err)
 	}
 
-	label := h.Div(h.Span(b.label).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
+	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
+	label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 	rows := h.Div()
 
 	if b.alwaysShowListLabel {
@@ -623,9 +644,10 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 			Go())
 
 	content := b.elementViewFunc(obj, &FieldContext{
-		Name:    b.name,
-		FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-		Label:   b.label,
+		ModelInfo: b.father.mb.modelInfo,
+		Name:      b.name,
+		FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
+		Label:     b.label,
 	}, ctx)
 
 	return web.Portal(
@@ -660,9 +682,10 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 	contentDiv := h.Div(
 		h.Div(
 			b.elementEditFunc(obj, &FieldContext{
-				Name:    fmt.Sprintf("%s[%b]", b.name, index),
-				FormKey: fmt.Sprintf("%s[%b]", b.name, index),
-				Label:   fmt.Sprintf("%s[%b]", b.label, index),
+				ModelInfo: b.father.mb.modelInfo,
+				Name:      fmt.Sprintf("%s[%b]", b.name, index),
+				FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
+				Label:     fmt.Sprintf("%s[%b]", b.label, index),
 			}, ctx),
 		).Class("flex-grow-1"),
 		h.Div(deleteBtn).Class("d-flex pl-3"),
