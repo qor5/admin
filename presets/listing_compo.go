@@ -55,38 +55,31 @@ const (
 const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	observerScript := func(prevReload string) string {
-		return fmt.Sprintf(`
-				%s = locals
-				%s
-				%s`,
-			listingLocals,
-			prevReload,
-			c.ReloadActionGo(ctx, nil),
-		)
-	}
 	return stateful.Reloadable(c,
 		web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
 				currEditingListItemID: "",
 				selected_ids: %s || [],
 			}`, h.JSONString(c.SelectedIds))).
-			Observe(c.lb.mb.NotifModelsUpdated(), observerScript("")).
-			Observe(c.lb.mb.NotifModelsDeleted(), observerScript(fmt.Sprintf(`
-				if (payload && payload.ids && payload.ids.length > 0) {
-					%s = %s.filter(id => !payload.ids.includes(id));
-				}`,
-				listingLocalsSelectedIds, listingLocalsSelectedIds,
-			))).
 			// sync to actionsComponent
 			UseDebounce(1).OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
 				compo_name: %q,
 				locals: locals,
 			})`, notifListingLocalsUpdated, c.CompoName())).
 			Children(
-				web.RunScript(fmt.Sprintf(`function(){ %s; console.log("posted") }`, fmt.Sprintf(`vars.__sendNotification(%q, {
+				// onMount
+				web.RunScript(fmt.Sprintf(`() => vars.__sendNotification(%q, {
 					compo_name: %q,
 					locals: %s,
-				})`, notifListingLocalsUpdated, c.CompoName(), listingLocals))), // onMount
+				})`, notifListingLocalsUpdated, c.CompoName(), listingLocals)),
+				web.Observe(c.lb.mb.NotifModelsUpdated(), c.ReloadActionGo(ctx, nil)),
+				web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+					if (payload && payload.ids && payload.ids.length > 0) {
+						%s = %s.filter(id => !payload.ids.includes(id));
+					}
+					%s`,
+					listingLocalsSelectedIds, listingLocalsSelectedIds,
+					c.ReloadActionGo(ctx, nil),
+				)),
 				VCard().Elevation(0).Children(
 					c.tabsFilter(ctx),
 					c.toolbarSearch(ctx),
@@ -114,10 +107,10 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 		if c.ActiveFilterTab == ft.ID {
 			activeIndex = i
 		}
-		// TODO: ft.Query 需要和 filter 匹配才可
 		tabs.AppendChildren(
 			VTab().Attr("@click", c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
 				cloned.ActiveFilterTab = ft.ID
+				cloned.FilterQuery = ft.Query.Encode()
 			})).Children(
 				h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
 					return ft.AdvancedLabel
@@ -391,6 +384,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		CellWrapperFunc(
 			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc),
 		).
+		// TODO: 这个设计还是很奇怪，应该改成 selected_ids 修改后回调的形式？
 		VarSelectedIds(
 			lo.If(len(c.lb.bulkActions) > 0, listingLocalsSelectedIds).Else(""),
 		).
@@ -551,25 +545,24 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	defer func() {
 		if r != nil {
 			// TODO: 这个同步机制不太好，需要考虑是不是可以让 actionsComponent 通过前端的某个方法来获取到对应 listingCompo 的状态，这样的话就无需 reload 自身了
-			r = web.Scope(r).VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).
-				Init(
-					fmt.Sprintf(`{
-						currEditingListItemID: "",
-						selected_ids: %s || [],
-					}`,
-						h.JSONString(c.SelectedIds),
+			r = web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
+					currEditingListItemID: "",
+					selected_ids: %s || [],
+				}`, h.JSONString(c.SelectedIds))).
+				Children(
+					r,
+					web.Observe(notifListingLocalsUpdated, fmt.Sprintf(`
+							if (!payload.compo_name || payload.compo_name != %q) {
+								return
+							}
+							Object.keys(%s).forEach(key => {
+								if (payload.locals.hasOwnProperty(key)) {
+									%s[key] = payload.locals[key];
+								}
+							});
+						`, c.CompoName(), listingLocals, listingLocals),
 					),
-				).
-				Observe(notifListingLocalsUpdated, fmt.Sprintf(`
-					if (!payload.compo_name || payload.compo_name != %q) {
-						return
-					}
-					Object.keys(locals).forEach(key => {
-						if (payload.locals.hasOwnProperty(key)) {
-							locals[key] = payload.locals[key];
-						}
-					});
-				`, c.CompoName()))
+				)
 		}
 	}()
 	evCtx := web.MustGetEventContext(ctx)

@@ -3,6 +3,7 @@ package examples_presets
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -65,7 +66,7 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 				},
 				{
 					Label: "Approved",
-					Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
+					Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
 				},
 			}
 		})
@@ -79,18 +80,16 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 
 			return []*vuetifyx.FilterItem{
 				{
-					Key:      "created",
-					Label:    msgr.CustomersFilterCreated,
-					ItemType: vuetifyx.ItemTypeDatetimeRange,
-					// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
+					Key:          "created",
+					Label:        msgr.CustomersFilterCreated,
+					ItemType:     vuetifyx.ItemTypeDatetimeRange,
 					SQLCondition: `created_at %s ?`,
 				},
 				{
-					Key:      "approved",
-					Label:    msgr.CustomersFilterApproved,
-					ItemType: vuetifyx.ItemTypeDatetimeRange,
-					// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
-					SQLCondition: `created_at %s ?`,
+					Key:          "approved",
+					Label:        msgr.CustomersFilterApproved,
+					ItemType:     vuetifyx.ItemTypeDatetimeRange,
+					SQLCondition: `approved_at %s ?`,
 				},
 				{
 					Key:          "name",
@@ -141,7 +140,7 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 				},
 				{
 					Label: "Approved",
-					Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
+					Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
 				},
 			}
 		})
@@ -155,18 +154,16 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 
 			return []*vuetifyx.FilterItem{
 				{
-					Key:      "created",
-					Label:    msgr.CustomersFilterCreated,
-					ItemType: vuetifyx.ItemTypeDatetimeRange,
-					// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
+					Key:          "created",
+					Label:        msgr.CustomersFilterCreated,
+					ItemType:     vuetifyx.ItemTypeDatetimeRange,
 					SQLCondition: `created_at %s ?`,
 				},
 				{
-					Key:      "approved",
-					Label:    msgr.CustomersFilterApproved,
-					ItemType: vuetifyx.ItemTypeDatetimeRange,
-					// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
-					SQLCondition: `created_at %s ?`,
+					Key:          "approved",
+					Label:        msgr.CustomersFilterApproved,
+					ItemType:     vuetifyx.ItemTypeDatetimeRange,
+					SQLCondition: `approved_at %s ?`,
 				},
 				{
 					Key:          "name",
