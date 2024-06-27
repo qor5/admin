@@ -1,3 +1,12 @@
+go.work*
+dev_env_local
+__*
+coverage.txt
+coverage.html
+.vscode
+_backup
+docs/docsrc/public
+
 # Created by https://www.toptal.com/developers/gitignore/api/go,git,vim,tags,test,emacs,backup,jetbrains,golang,goland
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,git,vim,tags,test,emacs,backup,jetbrains,golang,goland
 
