@@ -58,7 +58,7 @@ INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, del
 `, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers", "container_in_numbers", "page_builder_demo_containers"}))
 
 func TestPageBuilder(t *testing.T) {
-	h := admin.TestHandler(TestDB)
+	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
 
 	cases := []TestCase{

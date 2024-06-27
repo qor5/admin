@@ -157,25 +157,31 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 	b.Use(puBuilder)
 
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
-		Publisher(puBuilder).WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
-		return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
-			input.WrapHead = func(comps HTMLComponents) HTMLComponents {
-				comps = append(comps,
-					Script("console.log('in head')"),
-					Style(`.test-div { width: 200px;background-color:#E1E1E1; }`),
-				)
-				return comps
+	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+		Publisher(puBuilder).
+		WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
+			return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
+				input.WrapHead = func(comps HTMLComponents) HTMLComponents {
+					comps = append(comps,
+						Script("console.log('in head')"),
+						Style(`.test-div { width: 200px;background-color:#E1E1E1; }`),
+					)
+					return comps
+				}
+				input.WrapBody = func(comps HTMLComponents) HTMLComponents {
+					comps = append(comps, Script("console.log('in body')"),
+						Style(`.test-div1 { width: 300px;background-color:blue; }`),
+						Style(`.test-div2 { width: 400px;background-color:red; }`))
+					return comps
+				}
+				return v(body, input, ctx)
 			}
-			input.WrapBody = func(comps HTMLComponents) HTMLComponents {
-				comps = append(comps, Script("console.log('in body')"),
-					Style(`.test-div1 { width: 300px;background-color:blue; }`),
-					Style(`.test-div2 { width: 400px;background-color:red; }`))
-				return comps
-			}
-			return v(body, input, ctx)
-		}
-	}).PageEnabled(false)
+		}).
+		PageEnabled(false)
+
+	if err = pagebuilder.AutoMigrate(db); err != nil {
+		panic(err)
+	}
 
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {

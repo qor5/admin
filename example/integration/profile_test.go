@@ -17,7 +17,7 @@ INSERT INTO public.users (id, created_at, updated_at, deleted_at, name, company,
 `, []string{"users"}))
 
 func TestProfile(t *testing.T) {
-	h := admin.TestHandler(TestDB)
+	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
 
 	cases := []multipartestutils.TestCase{

@@ -90,7 +90,7 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	b.I18n().
+	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 

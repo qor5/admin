@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/activity"
@@ -29,6 +27,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -110,26 +109,11 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-func New(prefix string, db *gorm.DB, i18nB *i18n.Builder) *Builder {
-	err := db.AutoMigrate(
-		&Page{},
-		&Template{},
-		&Container{},
-		&DemoContainer{},
-		&Category{},
-	)
-	if err != nil {
-		panic(err)
-	}
-	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
-	// fxxk: newline is not allowed
-	err = db.Exec(`
-create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
-`).Error
-	if err != nil {
-		panic(err)
-	}
+func New(prefix string, db *gorm.DB) *Builder {
+	return newBuilder(prefix, db)
+}
 
+func newBuilder(prefix string, db *gorm.DB) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -150,8 +134,7 @@ create unique index if not exists uidx_page_builder_demo_containers_model_name_l
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
-		DetailLayoutFunc(r.pageEditorLayout).
-		SetI18n(i18nB)
+		DetailLayoutFunc(r.pageEditorLayout)
 	r.ps.Permission(perm.New().Policies(
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 	))
@@ -166,6 +149,14 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) AutoMigrate() (r *Builder) {
+	err := AutoMigrate(b.db)
+	if err != nil {
+		panic(err)
+	}
 	return b
 }
 
@@ -187,6 +178,24 @@ func (b *Builder) WrapCategoryInstall(w func(presets.ModelInstallFunc) presets.M
 func (b *Builder) PageLayout(v PageLayoutFunc) (r *Builder) {
 	b.pageLayoutFunc = v
 	return b
+}
+
+func AutoMigrate(db *gorm.DB) (err error) {
+	if err = db.AutoMigrate(
+		&Page{},
+		&Template{},
+		&Container{},
+		&Category{},
+		&DemoContainer{},
+	); err != nil {
+		return
+	}
+	// https://github.com/go-gorm/sqlite/blob/64917553e84d5482e252c7a0c8f798fb672d7668/ddlmod.go#L16
+	// fxxk: newline is not allowed
+	err = db.Exec(`
+create unique index if not exists uidx_page_builder_demo_containers_model_name_locale_code on page_builder_demo_containers (model_name, locale_code) where deleted_at is null;
+`).Error
+	return
 }
 
 func (b *Builder) WrapPageLayout(warp func(v PageLayoutFunc) PageLayoutFunc) (r *Builder) {
@@ -302,7 +311,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 }
 
 func (b *Builder) installAsset(pb *presets.Builder) {
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nPageBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
@@ -313,6 +322,7 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
+	b.ps.I18n(pb.GetI18n())
 	if b.pageEnabled {
 		var r *ModelBuilder
 		r = b.Model(pb.Model(&Page{}))

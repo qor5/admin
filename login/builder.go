@@ -19,7 +19,7 @@ var cookieSecure = osenv.GetBool("CookieSecure", "set to false for localhost", t
 
 func New(pb *presets.Builder) *login.Builder {
 	r := login.New().CookieSecure(cookieSecure)
-	r.I18n(pb.I18n())
+	r.I18n(pb.GetI18n())
 
 	vh := r.ViewHelper()
 	r.LoginPageFunc(defaultLoginPage(vh, pb))

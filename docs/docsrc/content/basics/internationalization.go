@@ -32,7 +32,7 @@ To use the i18n package, you first need to import it into your Go application:
 	ch.Code(`import "github.com/qor5/x/v3/i18n"`).Language("go"),
 	docgo.Markdown(`
 Next, create a new ~Builder~ instance using the ~New()~ function. 
-If you want to use it with QOR5, use the ~I18n()~ on ~presets.Builder~:
+If you want to use it with QOR5, use the ~GetI18n()~ on ~presets.Builder~:
 `),
 	ch.Code(generated.I18nNew).Language("go"),
 	docgo.Markdown(`

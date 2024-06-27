@@ -264,7 +264,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 			for _, i := range result {
 				indexes = append(indexes, fmt.Sprint(i.Index))
 			}
-			ContextModifiedIndexesBuilder(ctx).SetSorted(sortSectionFormKey, indexes)
+			ContextModifiedIndexesBuilder(ctx).Sorted(sortSectionFormKey, indexes)
 		}
 
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
