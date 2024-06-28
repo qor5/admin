@@ -1182,6 +1182,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		return nil
 	})
 	listing.RowMenu().Empty()
+	b.firstOrCreateDemoContainers()
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*DemoContainer)
@@ -1202,6 +1203,18 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		pm.Use(b.l10n)
 	}
 	return
+}
+
+func (b *Builder) firstOrCreateDemoContainers() {
+	var localeCode string
+	if b.l10n != nil {
+		localeCode = "International"
+	}
+	for _, con := range b.containerBuilders {
+		if err := con.firstOrCreate(localeCode); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
@@ -1346,13 +1359,6 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	b.warpSaver()
-	var localeCode string
-	if b.builder.l10n != nil {
-		localeCode = "International"
-	}
-	if err := b.firstOrCreate(m, localeCode); err != nil {
-		panic(err)
-	}
 	return b
 }
 
@@ -1508,10 +1514,13 @@ func (b *ContainerBuilder) getContainerDataID(id int) string {
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
 }
 
-func (b *ContainerBuilder) firstOrCreate(obj interface{}, locale string) (err error) {
-	db := b.builder.db
-	m := DemoContainer{}
-	db.Where("model_name = ?", b.name).First(&m)
+func (b *ContainerBuilder) firstOrCreate(locale string) (err error) {
+	var (
+		db  = b.builder.db
+		obj = b.mb.NewModel()
+		m   = DemoContainer{}
+	)
+	db.Where("model_name = ? and locale_code = ? ", b.name, locale).First(&m)
 	if m.ID > 0 {
 		return
 	}

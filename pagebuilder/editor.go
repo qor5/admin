@@ -31,6 +31,8 @@ const (
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	AutoSaveContainerEvent           = "page_builder_AutoSaveContainerEvent"
+	NewContainerDialogEvent          = "page_builder_NewContainerDialogEvent"
+	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -63,7 +65,11 @@ const (
 	EditorTabLayers = "Layers"
 )
 
-const editorPreviewContentPortal = "editorPreviewContentPortal"
+const (
+	editorPreviewContentPortal      = "editorPreviewContentPortal"
+	addContainerDialogPortal        = "addContainerDialogPortal"
+	addContainerDialogContentPortal = "addContainerDialogContentPortal"
+)
 
 func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -131,10 +137,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
-					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)).Attr("v-show", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"`, EditorTabLayers)),
+					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)),
 				).Location(LocationRight).
 					Permanent(true).
-					Attr(":width", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"?350:0`, EditorTabLayers)),
+					Width(350),
 			),
 			VMain(
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
@@ -182,36 +188,9 @@ type ContainerSorter struct {
 }
 
 func (b *Builder) renderNavigator(ctx *web.EventContext, m *ModelBuilder) (r h.HTMLComponent, err error) {
-	var listContainers h.HTMLComponent
-	if listContainers, err = m.renderContainersSortedList(ctx); err != nil {
+	if r, err = m.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r = h.Components(
-		web.Slot(
-			VTabs(
-				VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
-					scrollToContainer(web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID)))+
-						removeVirtualElement()+
-						web.Plaid().
-							EventFunc(ShowSortedContainerDrawerEvent).
-							Query(paramStatus, ctx.Param(paramStatus)).
-							Query(paramContainerDataID, web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID))).
-							MergeQuery(true).
-							Go()),
-				VTab().Text("Add").
-					Value(EditorTabAdd).Attr("@click",
-					appendVirtualElement()+
-						";"+
-						web.Plaid().PushState(true).MergeQuery(true).
-							ClearMergeQuery([]string{paramContainerID}).RunPushState(),
-				),
-			).Attr("v-model", "vars.containerTab").FixedTabs(true),
-		).Name(VSlotPrepend),
-		VTabsWindow(
-			VTabsWindowItem(m.renderContainersList(ctx)).Value(EditorTabAdd),
-			VTabsWindowItem(web.Portal(listContainers).Name(pageBuilderLayerContainerPortal)).Value(EditorTabLayers),
-		).Attr("v-model", "vars.containerTab").Attr(web.VAssign("vars", fmt.Sprintf(`{containerTab:"%s"}`, EditorTabLayers))...),
-	)
 	return
 }
 
@@ -444,6 +423,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(presets.ListingDialogPortalName),
 			web.Portal().Name(dialogPortalName),
+			web.Portal().Name(addContainerDialogPortal),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)

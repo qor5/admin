@@ -57,6 +57,8 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
+	b.editor.RegisterEventFunc(NewContainerDialogEvent, b.newContainerDialog)
+	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
 	b.preview = web.Page(b.previewContent)
 }
 
@@ -202,6 +204,13 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						),
 					).Attr("#item", " { element } "),
 				),
+				VListItem(
+					web.Slot(
+						VIcon("mdi-plus-circle-outline"),
+					).Name(VSlotPrepend),
+					h.Span("New Element"),
+				).BaseColor(ColorPrimary).Class(W100, "ml-4").
+					Attr("@click", web.Plaid().EventFunc(NewContainerDialogEvent).Go()),
 			),
 		).Class("pa-4 pt-2"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
@@ -450,20 +459,13 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
-			cover := builder.cover
-			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
-			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
 			listItems = append(listItems,
 				VListItem(
 					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2"),
 				).Attr("@click",
-					web.Plaid().EventFunc(AddContainerEvent).
-						MergeQuery(true).
+					web.Plaid().EventFunc(ContainerPreviewEvent).
 						Query(paramModelName, builder.name).
-						Query(paramContainerName, builder.name).
 						Go(),
 				))
 		}
@@ -472,7 +474,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				VListItem(
 					VListItemTitle(
 						h.Text(groupName),
-					).Class("text-body-1"),
+					),
 				).Attr("v-bind", "props"),
 			).Name("activator").Scope(" { props}"),
 			h.Components(listItems...),
@@ -499,23 +501,17 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			c := b.builder.ContainerByName(builder.ModelName)
-			cover := c.cover
-			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".svg")
-			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
 			listItems = append(listItems,
 				VListItem(
-					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2").
-						Attr("@click", web.Plaid().
-							EventFunc(AddContainerEvent).
-							MergeQuery(true).
-							Query(paramContainerName, builder.ModelName).
-							Query(paramModelName, builder.ModelName).
-							Query(paramModelID, builder.ModelID).
-							Query(paramSharedContainer, "true").
-							Go()),
+					VListItemTitle(h.Text(containerName)).Attr("@click", web.Plaid().
+						EventFunc(AddContainerEvent).
+						MergeQuery(true).
+						Query(paramContainerName, builder.ModelName).
+						Query(paramModelName, builder.ModelName).
+						Query(paramModelID, builder.ModelID).
+						Query(paramSharedContainer, "true").
+						Go()),
 				).Value(containerName))
 		}
 
@@ -523,7 +519,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("text-body-1"),
+				).Attr("v-bind", "props"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
@@ -566,7 +562,7 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 	var body h.HTMLComponent
 	obj := b.mb.NewModel()
 
-	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
@@ -713,7 +709,7 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r web.PageResponse, err error) {
 	var body h.HTMLComponent
 
-	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
 		return
 	}
 	r.Body = web.Portal(
@@ -738,7 +734,7 @@ func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (page
 	return
 }
 
-func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface{}, isEditor bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface{}, isEditor, isIframe bool) (r h.HTMLComponent, err error) {
 	var (
 		isTpl                       = ctx.R.FormValue(paramsTpl) != ""
 		status                      = publish.StatusDraft
@@ -775,6 +771,11 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	if err != nil {
 		return
 	}
+	r = b.rendering(comps, ctx, obj, locale, isEditor, isIframe, isReadonly)
+	return
+}
+
+func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
@@ -903,7 +904,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			}
 		}
 
-		if isEditor {
+		if isIframe {
 			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
 			iframeValue := "1000px"
 			_ = iframeValue
@@ -939,8 +940,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 				"width", width,
 				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
 				"ref", "scrollIframe").
-				Attr(web.VAssign("vars",
-					fmt.Sprintf(`{hasContainer:%v,el:$}`, len(comps)))...)
+				Attr(web.VAssign("vars", `{el:$}`)...)
 			r = scrollIframe
 			if !isReadonly && len(comps) == 0 {
 				r = h.Components(
@@ -959,7 +959,6 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			ctx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
 		}
 	}
-
 	return
 }
 
@@ -1004,9 +1003,52 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 	return
 }
 
+func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
+	var (
+		modelName       = ctx.Param(paramModelName)
+		sharedContainer = ctx.Param(paramSharedContainer)
+		modelID         = ctx.ParamAsInt(paramModelID)
+	)
+	if sharedContainer != "true" || modelID == 0 {
+		var con *DemoContainer
+		err = withLocale(
+			b.builder,
+			b.db.
+				Where("model_name = ?", modelName),
+			locale,
+		).
+			First(&con).Error
+		if err != nil {
+			return
+		}
+		modelID = int(con.ModelID)
+	}
+
+	containerBuilder := b.builder.ContainerByName(modelName)
+	device, _ := b.builder.getDevice(ctx)
+
+	displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+	input := RenderInput{
+		IsEditor:    isEditor,
+		IsReadonly:  IsReadonly,
+		Device:      device,
+		ContainerId: "",
+		DisplayName: displayName,
+	}
+	obj := containerBuilder.NewModel()
+	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error
+	if err != nil {
+		return
+	}
+	pure := containerBuilder.renderFunc(obj, &input, ctx)
+	r = b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, IsReadonly, false, false,
+		containerBuilder.getContainerDataID(modelID), modelName, &input)
+	return
+}
+
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	obj := b.mb.NewModel()
-	r.Body, err = b.renderPageOrTemplate(ctx, obj, false)
+	r.Body, err = b.renderPageOrTemplate(ctx, obj, false, false)
 	if err != nil {
 		return
 	}
@@ -1256,4 +1298,60 @@ func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context 
 
 func (b *ModelBuilder) ExistedL10n() bool {
 	return b.builder.l10n != nil
+}
+
+func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	containers := b.renderContainersList(ctx)
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: addContainerDialogPortal,
+		Body: web.Scope(
+			VDialog(
+				VSheet(
+					VCard(
+						VCardTitle(h.Text("New Element")),
+						VCardText(containers),
+					).Width("40%").Class("pa-4", "overflow-y-auto"),
+					VCard(
+						VToolbar(
+							VSpacer(),
+							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
+						).Class("v-card--variant-tonal"),
+						VCardText(
+							web.Portal().Name(addContainerDialogContentPortal),
+						).Class("px-6"),
+					).Variant(VariantTonal).Width("60%").Class(H100),
+				).Class("d-inline-flex"),
+			).Width(665).Height(460).Attr("v-model", "locals.dialog"),
+		).VSlot(`{locals}`).Init(`{dialog:true}`),
+	})
+	return
+}
+
+func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var previewContainer h.HTMLComponent
+	var (
+		ID, _, locale = b.getPrimaryColumnValuesBySlug(ctx)
+		obj           = b.mb.NewModel()
+	)
+	if err = b.db.First(&obj, ID).Error; err != nil {
+		return
+	}
+	previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
+	if err != nil {
+		return
+	}
+	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+		Queries(ctx.R.Form).
+		Go()
+	iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: addContainerDialogContentPortal,
+		Body: VCard(
+			VCardText(
+				h.Div(iframe).Style("pointer-events: none;"),
+			).Class("pa-0"),
+		).Attr("@click", addContainerEvent).
+			Elevation(2).Width("100%").Height(326),
+	})
+	return
 }
