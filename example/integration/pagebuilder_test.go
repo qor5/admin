@@ -125,7 +125,7 @@ func TestPageBuilder(t *testing.T) {
 				var page pagebuilder.Page
 				TestDB.First(&page, "slug = ?", "/hello4")
 				if page.LocaleCode != "International" {
-					t.Errorf("wrong locale code, expected International, got %#+v", page)
+					t.Errorf("wrong locale code, expected International, got %#+v", page.LocaleCode)
 				}
 			},
 		},

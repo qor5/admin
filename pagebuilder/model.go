@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/qor5/admin/v3/utils"
@@ -1185,6 +1184,16 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	eb := mb.Editing()
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+			var localeCode string
+			if p, ok := obj.(l10n.LocaleInterface); ok {
+				if p.EmbedLocale().LocaleCode == "" {
+					if err = reflectutils.Set(obj, "LocaleCode", locale); err != nil {
+						return
+					}
+				}
+				localeCode = p.EmbedLocale().LocaleCode
+			}
 			if err = in(obj, id, ctx); err != nil {
 				return
 			}
@@ -1200,29 +1209,23 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 				}
 			}
 			var (
-				pageID                             int
-				version, localeCode, parentVersion string
+				pageID                 int
+				version, parentVersion string
 			)
+			if p, ok := obj.(PrimarySlugInterface); ok {
+				id = p.PrimarySlug()
+			}
 			if id != "" {
 				ctx.R.Form.Set(presets.ParamID, id)
 				pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
 			}
-			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 
 			if p, ok := obj.(publish.VersionInterface); ok {
 				parentVersion = p.EmbedVersion().ParentVersion
 				version = p.EmbedVersion().Version
 			}
-			if p, ok := obj.(l10n.LocaleInterface); ok {
-				if p.EmbedLocale().LocaleCode == "" {
-					reflectutils.Set(obj, "LocaleCode", locale)
-				}
-				localeCode = p.EmbedLocale().LocaleCode
-			}
+
 			err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
-				if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
-					return
-				}
 				if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
 					if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
 						return

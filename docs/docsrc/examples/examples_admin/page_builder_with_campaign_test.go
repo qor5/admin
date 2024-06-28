@@ -25,6 +25,17 @@ INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
 INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+
+`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers"}))
+
+var pageBuilderDemoData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Campaign', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
+INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (2, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'UnPublish Campaign', 'online', 'campaigns/2/index.html', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
+INSERT INTO public.campaign_products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
+INSERT INTO public.my_contents (id,text) values (1,'my-contents');
+INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
+INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
 INSERT INTO page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'ProductContent', 1, '');
 
 `, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers", "page_builder_demo_containers"}))
@@ -97,14 +108,14 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "iframe", "ProductDetail"},
 		},
 		{
-			Name:  "Campaign editor",
+			Name:  "Campaign editor NewContainerDialog",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/campaigns-editors/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_NewContainerDialogEvent", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
-			ExpectPageBodyNotContains:     []string{"ProductContent"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"MyContent", "CampaignContent"},
+			ExpectPortalUpdate0NotContains:     []string{"ProductContent"},
 		},
 		{
 			Name:  "Campaign My Contents",
@@ -362,7 +373,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Name:  "CampaignProduct Add New Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
+				pageBuilderDemoData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
 					EventFunc(pagebuilder.AddContainerEvent).
@@ -399,7 +410,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Name:  "Edit Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
+				pageBuilderDemoData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/page_builder/product-contents?__execute_event__=presets_Update&id=1").
 					AddField("Name", "demo-product-contents2").
