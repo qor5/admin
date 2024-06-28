@@ -435,18 +435,6 @@ func scrollToContainer(containerDataID interface{}) string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%v);`, containerDataID)
 }
 
-func addVirtualELeToContainer(containerDataID interface{}) string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.addVirtualElement(%v);`, containerDataID)
-}
-
-func removeVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
-}
-
-func appendVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
-}
-
 func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, isEditor, isReadonly, isFirst, isEnd bool, containerDataID, modelName string, input *RenderInput) h.HTMLComponent {
 	pmb := postMessageBody{
 		ContainerDataID: containerDataID,

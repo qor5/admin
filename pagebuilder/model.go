@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/v3/presets/gorm2op"
-
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/qor5/admin/v3/utils"
@@ -1183,86 +1182,91 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 
 func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	eb := mb.Editing()
-	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if p, ok := obj.(*Page); ok {
-			if p.Slug != "" {
-				p.Slug = path.Clean(p.Slug)
-			}
-			funcName := ctx.R.FormValue(web.EventFuncIDName)
-			if funcName == publish.EventDuplicateVersion {
-				var fromPage Page
-				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
-				p.SEO = fromPage.SEO
-			}
-		}
-		var (
-			pageID                             int
-			version, localeCode, parentVersion string
-		)
-		if id != "" {
-			ctx.R.Form.Set(presets.ParamID, id)
-			pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
-		}
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-
-		if p, ok := obj.(publish.VersionInterface); ok {
-			parentVersion = p.EmbedVersion().ParentVersion
-			version = p.EmbedVersion().Version
-		}
-		if p, ok := obj.(l10n.LocaleInterface); ok {
-			if p.EmbedLocale().LocaleCode == "" {
-				reflectutils.Set(obj, "LocaleCode", locale)
-			}
-			localeCode = p.EmbedLocale().LocaleCode
-		}
-		err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
 				return
 			}
-			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
-				if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
-					return
+			if p, ok := obj.(*Page); ok {
+				if p.Slug != "" {
+					p.Slug = path.Clean(p.Slug)
 				}
-				return
-			}
-
-			if v := ctx.R.FormValue(templateSelectedID); v != "" {
-				var tplID int
-				tplID, inerr = strconv.Atoi(v)
-				if inerr != nil {
-					return
-				}
-				if b.builder.l10n == nil {
-					localeCode = ""
-				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
-					panic(inerr)
+				funcName := ctx.R.FormValue(web.EventFuncIDName)
+				if funcName == publish.EventDuplicateVersion {
+					var fromPage Page
+					eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+					p.SEO = fromPage.SEO
 				}
 			}
-			if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n.FromID).(string)
-				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
-				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+			var (
+				pageID                             int
+				version, localeCode, parentVersion string
+			)
+			if id != "" {
+				ctx.R.Form.Set(presets.ParamID, id)
+				pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
+			}
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 
-				var fromIDInt int
-				fromIDInt, err = strconv.Atoi(fromID)
-				if err != nil {
+			if p, ok := obj.(publish.VersionInterface); ok {
+				parentVersion = p.EmbedVersion().ParentVersion
+				version = p.EmbedVersion().Version
+			}
+			if p, ok := obj.(l10n.LocaleInterface); ok {
+				if p.EmbedLocale().LocaleCode == "" {
+					reflectutils.Set(obj, "LocaleCode", locale)
+				}
+				localeCode = p.EmbedLocale().LocaleCode
+			}
+			err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
+				if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
 					return
 				}
-				if p, ok := obj.(*Page); ok {
-					if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+				if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+					if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
+						return
+					}
+					return
+				}
+
+				if v := ctx.R.FormValue(templateSelectedID); v != "" {
+					var tplID int
+					tplID, inerr = strconv.Atoi(v)
+					if inerr != nil {
+						return
+					}
+					if b.builder.l10n == nil {
+						localeCode = ""
+					}
+					if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
 						panic(inerr)
 					}
 				}
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
-					panic(inerr)
+				if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+					fromID := ctx.R.Context().Value(l10n.FromID).(string)
+					fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+					fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+
+					var fromIDInt int
+					fromIDInt, err = strconv.Atoi(fromID)
+					if err != nil {
+						return
+					}
+					if p, ok := obj.(*Page); ok {
+						if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+							panic(inerr)
+						}
+					}
+					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+						panic(inerr)
+					}
+					return
 				}
 				return
-			}
-			return
-		})
+			})
 
-		return err
+			return err
+		}
 	})
 }
 
