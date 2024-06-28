@@ -193,7 +193,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 											),
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
-										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
+										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s && !element.hidden?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
 										Attr("v-bind", "props", "@click", clickColumnEvent).
 										Attr(web.VAssign("vars",
 											fmt.Sprintf(`{%s:"%s"}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
@@ -318,6 +318,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		";" +
 		web.Plaid().
 			EventFunc(ShowSortedContainerDrawerEvent).
+			MergeQuery(true).
 			Query(paramStatus, ctx.Param(paramStatus)).
 			Go()
 	return
