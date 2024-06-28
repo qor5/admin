@@ -1575,15 +1575,8 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := fmt.Sprintf(`vars.%s=container_data_id;vars.containerTab="%s";`, paramContainerDataID, EditorTabLayers) +
-		removeVirtualElement() + ";" +
-		web.Plaid().
-			EventFunc(ShowSortedContainerDrawerEvent).
-			Query(paramStatus, ctx.Param(paramStatus)).
-			Query(paramContainerDataID, web.Var("container_data_id")).
-			MergeQuery(true).
-			Go() + ";" +
+func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
+	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
 		web.Plaid().
 			PushState(true).
 			MergeQuery(true).
@@ -1597,13 +1590,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
-	addAction := web.Plaid().ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState() +
-		fmt.Sprintf(`;%s;vars.containerTab="%s";`, addVirtualELeToContainer(web.Var("container_data_id")), EditorTabAdd) +
-		web.Plaid().
-			PushState(true).
-			MergeQuery(true).
-			Query(paramContainerID, web.Var("container_id")).
-			RunPushState()
+	addAction := web.Plaid().EventFunc(NewContainerDialogEvent).Query(paramContainerID, web.Var("container_id")).Go()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).

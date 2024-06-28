@@ -132,12 +132,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
 			h.If(readonly,
 				VNavigationDrawer(
-					navigatorDrawer,
+					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
 				).Location(LocationLeft).
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
-					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)),
+					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
 					Width(350),

@@ -236,24 +236,10 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-	r.RunScript = fmt.Sprintf(`vars.%s="%s";`, paramContainerDataID, cb.getContainerDataID(modelID)) +
-		web.Plaid().PushState(true).MergeQuery(true).
-			Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-			Query(paramContainerID, newContainerID).RunPushState() +
-		";" + web.Plaid().
-		EventFunc(ReloadRenderPageOrTemplateEvent).
-		MergeQuery(true).
-		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-		Query(paramContainerID, newContainerID).
-		Go() + ";" +
-		web.Plaid().
-			URL(fmt.Sprintf(`%s/%s`, b.builder.prefix, inflection.Plural(strcase.ToKebab(cb.name)))).
-			EventFunc(actions.Edit).
-			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-			Query(presets.ParamOverlay, actions.Content).
-			Query(presets.ParamID, modelID).
-			Go()
 
+	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
+		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
+		Query(paramContainerID, newContainerID).Go()
 	return
 }
 
@@ -1341,6 +1327,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		return
 	}
 	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+		MergeQuery(true).
 		Queries(ctx.R.Form).
 		Go()
 	iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
