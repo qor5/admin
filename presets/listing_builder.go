@@ -208,7 +208,7 @@ func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageRe
 	listingCompo := &ListingCompo{
 		CompoID: injectorName, // TODO: 这个没准需要再考虑命名
 	}
-	injectedListingCompo := stateful.MustInject(injectorName, listingCompo)
+	injectedListingCompo := stateful.MustInject(injectorName, stateful.SyncQuery(listingCompo))
 
 	// TODO: 很尴尬，这个比较特别，目前只能这样做
 	ctx := stateful.WithInjectorName(evCtx.R.Context(), injectorName)

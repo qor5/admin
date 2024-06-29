@@ -28,7 +28,7 @@ require (
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
 	github.com/qor5/web/v3 v3.0.5-0.20240613075003-b4a333886932
 	github.com/qor5/x/v3 v3.0.6-0.20240613091655-4e32c2a3a0c0
-	github.com/samber/lo v1.39.0
+	github.com/samber/lo v1.40.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.5
@@ -139,12 +139,18 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.31.0 // indirect
 	github.com/theplant/inject v0.0.1 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
+	github.com/tidwall/gjson v1.17.1 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
+	github.com/wI2L/jsondiff v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect

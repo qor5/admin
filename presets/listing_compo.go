@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -20,7 +21,7 @@ import (
 )
 
 func init() {
-	stateful.RegisterActionableType((*ListingCompo)(nil))
+	stateful.RegisterActionableCompoType((*ListingCompo)(nil))
 }
 
 type DisplayColumn struct {
@@ -33,62 +34,86 @@ type ListingCompo struct {
 
 	CompoID            string          `json:"compo_id"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
-	SelectedIds        []string        `json:"selected_ids" query:"selected_ids"`
-	Keyword            string          `json:"keyword" query:"keyword"`
-	OrderBys           []ColOrderBy    `json:"order_bys" query:"order_bys"`
-	Page               int64           `json:"page" query:"page"`
-	PerPage            int64           `json:"per_page" query:"per_page"`
-	DisplayColumns     []DisplayColumn `json:"display_columns" query:"display_columns"`
-	ActiveFilterTab    string          `json:"active_filter_tab" query:"active_filter_tab"`
-	FilterQuery        string          `json:"filter_query" query:"filter_query"` // TODO: 如何和以前的 url 保持一致？
+	SelectedIds        []string        `json:"selected_ids" query:",omitempty"`
+	Keyword            string          `json:"keyword" query:",omitempty"`
+	OrderBys           []ColOrderBy    `json:"order_bys" query:",omitempty"`
+	Page               int64           `json:"page" query:",omitempty"`
+	PerPage            int64           `json:"per_page" query:",omitempty"`
+	DisplayColumns     []DisplayColumn `json:"display_columns" query:",omitempty"`
+	ActiveFilterTab    string          `json:"active_filter_tab" query:",omitempty"`
+	FilterQuery        string          `json:"filter_query" query:";method:bare,f_"` // TODO: 如何和以前的 url 保持一致？
 }
 
 func (c *ListingCompo) CompoName() string {
 	return fmt.Sprintf("ListingCompo:%s", c.CompoID)
 }
 
+// const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
+
+func (c *ListingCompo) locals() string {
+	return stateful.LocalsActionable(c)
+}
+
 const (
-	listingLocals            = "listingLocals"
-	listingLocalsSelectedIds = "listingLocals.selected_ids"
+	localsKeySelectedIds      = "selected_ids"
+	localsKeyCurrentEditingId = "current_editing_id"
 )
 
-const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
-
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	return stateful.Reloadable(c,
-		web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
-				currEditingListItemID: "",
-				selected_ids: %s || [],
-			}`, h.JSONString(c.SelectedIds))).
-			// sync to actionsComponent
-			UseDebounce(1).OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
-				compo_name: %q,
-				locals: locals,
-			})`, notifListingLocalsUpdated, c.CompoName())).
-			Children(
-				// onMount
-				web.RunScript(fmt.Sprintf(`() => vars.__sendNotification(%q, {
-					compo_name: %q,
-					locals: %s,
-				})`, notifListingLocalsUpdated, c.CompoName(), listingLocals)),
-				web.Observe(c.lb.mb.NotifModelsUpdated(), c.ReloadActionGo(ctx, nil)),
-				web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
-					if (payload && payload.ids && payload.ids.length > 0) {
-						%s = %s.filter(id => !payload.ids.includes(id));
-					}
-					%s`,
-					listingLocalsSelectedIds, listingLocalsSelectedIds,
-					c.ReloadActionGo(ctx, nil),
-				)),
-				VCard().Elevation(0).Children(
-					c.tabsFilter(ctx),
-					c.toolbarSearch(ctx),
-					VCardText().Class("pa-2").Children(
-						c.dataTable(ctx),
-					),
-					c.cardActionsFooter(ctx),
-				),
+	locals := c.locals()
+	localsSelectedIds := locals + "." + localsKeySelectedIds
+	localsNewAction := locals + "." + stateful.LocalsKeyNewAction
+	onMounted := fmt.Sprintf(`
+		function() {
+			%s.%s = "";
+			%s = %s || [];
+			let orig = %s;
+			%s = function() {
+				let v = orig();
+				v.compo.%s = this.%s;
+				return v
+			}
+		}
+		`,
+		locals, localsKeyCurrentEditingId,
+		localsSelectedIds, h.JSONString(c.SelectedIds),
+		localsNewAction,
+		localsNewAction,
+		localsKeySelectedIds, localsKeySelectedIds,
+	)
+	return stateful.Actionable(ctx, c,
+		web.RunScript(onMounted),
+
+		// TODO: 先移除，再考虑看有没有更好的实现方式。
+
+		// // onMount
+		// web.RunScript(fmt.Sprintf(`() => vars.__sendNotification(%q, {
+		// 	compo_name: %q,
+		// 	locals: %s,
+		// })`, notifListingLocalsUpdated, c.CompoName(), listingLocals)),
+		// // sync to actionsComponent
+		// OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
+		// 	compo_name: %q,
+		// 	locals: locals,
+		// })`, notifListingLocalsUpdated, c.CompoName())).UseDebounce(1).
+		// onMount
+		web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
+		web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+			if (payload && payload.ids && payload.ids.length > 0) {
+				%s = %s.filter(id => !payload.ids.includes(id));
+			}
+			%s`,
+			localsSelectedIds, localsSelectedIds,
+			stateful.ReloadAction(ctx, c, nil).Go(),
+		)),
+		VCard().Elevation(0).Children(
+			c.tabsFilter(ctx),
+			c.toolbarSearch(ctx),
+			VCardText().Class("pa-2").Children(
+				c.dataTable(ctx),
 			),
+			c.cardActionsFooter(ctx),
+		),
 	).MarshalHTML(ctx)
 }
 
@@ -96,6 +121,8 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 	if c.lb.filterTabsFunc == nil {
 		return
 	}
+
+	// TODO: 总感觉需要一个默认的 all 占据第一位，否则的话就不应该用 tabs ，因为其无法失焦
 
 	activeIndex := -1
 	fts := c.lb.filterTabsFunc(web.MustGetEventContext(ctx))
@@ -108,16 +135,18 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 			activeIndex = i
 		}
 		tabs.AppendChildren(
-			VTab().Attr("@click", c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-				cloned.ActiveFilterTab = ft.ID
-				cloned.FilterQuery = ft.Query.Encode()
-			})).Children(
-				h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
-					return ft.AdvancedLabel
-				}).Else(func() h.HTMLComponent {
-					return h.Text(ft.Label)
-				}),
-			),
+			VTab().
+				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+					target.ActiveFilterTab = ft.ID
+					target.FilterQuery = ft.Query.Encode()
+				}).Go()).
+				Children(
+					h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
+						return ft.AdvancedLabel
+					}).Else(func() h.HTMLComponent {
+						return h.Text(ft.Label)
+					}),
+				),
 		)
 	}
 	return tabs.ModelValue(activeIndex)
@@ -128,16 +157,6 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	msgr := c.MustGetMessages(ctx)
-	onChanged := func(quoteKeyword string) string {
-		return strings.Replace(
-			c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-				cloned.Keyword = ""
-			}),
-			`"keyword": ""`,
-			`"keyword": `+quoteKeyword,
-			1,
-		)
-	}
 	// TODO: isFocus 原来的目的是什么来着？
 	return web.Scope().VSlot("{ locals }").Init(`{isFocus: false}`).Children(
 		VTextField().
@@ -149,8 +168,12 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			HideDetails(true).
 			SingleLine(true).
 			ModelValue(c.Keyword).
-			Attr("@keyup.enter", onChanged("$event.target.value")).
-			Attr("@click:clear", onChanged(`""`)).
+			Attr("@keyup.enter", stateful.ReloadAction(ctx, c, nil,
+				stateful.WithAppendFix(`v.compo.keyword = $event.target.value`),
+			).Go()).
+			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				target.Keyword = ""
+			}).Go()).
 			Children(
 				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
 			),
@@ -191,14 +214,9 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
 	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
-		strings.Replace(
-			c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-				cloned.FilterQuery = ""
-			}),
-			`"filter_query": ""`,
-			`"filter_query": $event.encodedFilterData`,
-			1,
-		),
+		stateful.ReloadAction(ctx, c, nil,
+			stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData`),
+		).Go(),
 	)
 }
 
@@ -245,8 +263,12 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	// 		Query(ParamInDialog, true).
 	// 		Query(ParamListingQueries, ctx.Queries().Encode())
 	// }
-	// TODO: 需要更优雅的方式
-	cell.SetAttr("@click.self", fmt.Sprintf(`%s; %s.currEditingListItemID="%s-%s"`, onClick.Go(), listingLocals, dataTableID, id))
+	// TODO: 需要更优雅的方式, 后续发现不可用 click 因为内部有 VCheckBox 会有影响
+	cell.SetAttr("@click.self", fmt.Sprintf(`
+		%s; 
+		%s.%s="%s-%s";`,
+		onClick.Go(),
+		c.locals(), localsKeyCurrentEditingId, dataTableID, id))
 	return cell
 }
 
@@ -347,7 +369,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				icon = "mdi-arrow-up"
 			}
 			return h.Th("").Style("cursor: pointer; white-space: nowrap;").
-				Attr("@click", c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
+				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					if orderBy.OrderBy == OrderByASC {
 						orderBy.OrderBy = OrderByDESC
 					} else {
@@ -355,14 +377,14 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 					}
 					if exists {
 						if orderBy.OrderBy == OrderByASC {
-							cloned.OrderBys = append(cloned.OrderBys[:orderByIdx], cloned.OrderBys[orderByIdx+1:]...)
+							target.OrderBys = append(target.OrderBys[:orderByIdx], target.OrderBys[orderByIdx+1:]...)
 						} else {
-							cloned.OrderBys[orderByIdx] = orderBy
+							target.OrderBys[orderByIdx] = orderBy
 						}
 					} else {
-						cloned.OrderBys = append(cloned.OrderBys, orderBy)
+						target.OrderBys = append(target.OrderBys, orderBy)
 					}
-				})).
+				}).Go()).
 				Children(
 					h.Span(title).Style("text-decoration: underline;"),
 					h.Span("").StyleIf("visibility: hidden;", !exists).Children(
@@ -374,8 +396,8 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 			// TODO: how to cancel active ? 不可能都根据 vars.presetsRightDrawer 去 cancel
 			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.currEditingListItemID==="%s-%s",
-				}`, listingLocals, dataTableID, id,
+					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.%s ==="%s-%s",
+				}`, c.locals(), localsKeyCurrentEditingId, dataTableID, id,
 			))
 			return row
 		}).
@@ -383,13 +405,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
 		CellWrapperFunc(
 			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc),
-		).
-		// TODO: 这个设计还是很奇怪，应该改成 selected_ids 修改后回调的形式？
-		VarSelectedIds(
-			lo.If(len(c.lb.bulkActions) > 0, listingLocalsSelectedIds).Else(""),
-		).
-		SelectedCountLabel(msgr.ListingSelectedCountNotice).
-		ClearSelectionLabel(msgr.ListingClearSelection)
+		)
+
+	if len(c.lb.bulkActions) > 0 {
+		dataTable.SelectedIds(c.SelectedIds).
+			// TODO: 如果是 sync query 的话，此处需要直接同步 URL query ？
+			OnSelectionChanged(fmt.Sprintf("%s.%s = %s", c.locals(), localsKeySelectedIds, vx.ParamDataTableSelectedIds)).
+			SelectedCountLabel(msgr.ListingSelectedCountNotice).
+			ClearSelectionLabel(msgr.ListingClearSelection)
+	}
 
 	for _, col := range columns {
 		if !col.Visible {
@@ -417,20 +441,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
-				OnSelectPerPage(strings.Replace(
-					c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-						cloned.PerPage = -1
-					}),
-					`"per_page": -1`,
-					`"per_page": parseInt($event, 10)`,
-					1,
-				)).
-				OnPrevPage(c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-					cloned.Page = searchParams.Page - 1
-				})).
-				OnNextPage(c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-					cloned.Page = searchParams.Page + 1
-				})),
+				OnSelectPerPage(stateful.ReloadAction(ctx, c, nil,
+					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+				).Go()).
+				OnPrevPage(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+					target.Page = searchParams.Page - 1
+				}).Go()).
+				OnNextPage(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+					target.Page = searchParams.Page + 1
+				}).Go()),
 		)
 	}
 	return h.Components(dataTable, dataTableAdditions)
@@ -445,6 +464,7 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 	evCtx := web.MustGetEventContext(ctx)
 	msgr := c.MustGetMessages(ctx)
 
+	displayColumn := slices.Clone(c.DisplayColumns)
 	var availableColumns []DisplayColumn
 	for _, f := range c.lb.fields {
 		if c.lb.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(evCtx.R).IsAllowed() != nil {
@@ -457,21 +477,20 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 	}
 
 	// if there is abnormal data, restore the default
-	if len(c.DisplayColumns) != len(availableColumns) ||
+	if len(displayColumn) != len(availableColumns) ||
 		// names not match
-		!lo.EveryBy(c.DisplayColumns, func(dc DisplayColumn) bool {
+		!lo.EveryBy(displayColumn, func(dc DisplayColumn) bool {
 			return lo.ContainsBy(availableColumns, func(ac DisplayColumn) bool {
 				return ac.Name == dc.Name
 			})
 		}) {
-		// TODO: 对于状态的修正是否应该在 MarshalHTML 的头部提前统一处理？
-		c.DisplayColumns = availableColumns
+		displayColumn = availableColumns
 	}
 
-	allInvisible := lo.EveryBy(c.DisplayColumns, func(dc DisplayColumn) bool {
+	allInvisible := lo.EveryBy(displayColumn, func(dc DisplayColumn) bool {
 		return !dc.Visible
 	})
-	for _, col := range c.DisplayColumns {
+	for _, col := range displayColumn {
 		if allInvisible {
 			col.Visible = true
 		}
@@ -513,14 +532,9 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 							VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", fmt.Sprintf(`
 								locals.selectColumnsMenu = false; 
 								%s`,
-								strings.Replace(
-									c.ReloadActionGo(ctx, func(cloned *ListingCompo) {
-										cloned.DisplayColumns = []DisplayColumn{}
-									}),
-									`"display_columns": []`,
-									`"display_columns": locals.displayColumns.map(({ label, ...rest }) => rest)`,
-									1,
-								),
+								stateful.ReloadAction(ctx, c, nil,
+									stateful.WithAppendFix(`v.compo.display_columns = locals.displayColumns.map(({ label, ...rest }) => rest)`),
+								).Go(),
 							)),
 						),
 					),
@@ -542,29 +556,29 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 }
 
 func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent) {
-	defer func() {
-		if r != nil {
-			// TODO: 这个同步机制不太好，需要考虑是不是可以让 actionsComponent 通过前端的某个方法来获取到对应 listingCompo 的状态，这样的话就无需 reload 自身了
-			r = web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
-					currEditingListItemID: "",
-					selected_ids: %s || [],
-				}`, h.JSONString(c.SelectedIds))).
-				Children(
-					r,
-					web.Observe(notifListingLocalsUpdated, fmt.Sprintf(`
-							if (!payload.compo_name || payload.compo_name != %q) {
-								return
-							}
-							Object.keys(%s).forEach(key => {
-								if (payload.locals.hasOwnProperty(key)) {
-									%s[key] = payload.locals[key];
-								}
-							});
-						`, c.CompoName(), listingLocals, listingLocals),
-					),
-				)
-		}
-	}()
+	// defer func() {
+	// 	if r != nil {
+	// 		// TODO: 这个同步机制不太好，需要考虑是不是可以让 actionsComponent 通过前端的某个方法来获取到对应 listingCompo 的状态，这样的话就无需 reload 自身了
+	// 		r = web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
+	// 				currEditingListItemID: "",
+	// 				selected_ids: %s || [],
+	// 			}`, h.JSONString(c.SelectedIds))).
+	// 			Children(
+	// 				r,
+	// 				web.Observe(notifListingLocalsUpdated, fmt.Sprintf(`
+	// 						if (!payload.compo_name || payload.compo_name != %q) {
+	// 							return
+	// 						}
+	// 						Object.keys(%s).forEach(key => {
+	// 							if (payload.locals.hasOwnProperty(key)) {
+	// 								%s[key] = payload.locals[key];
+	// 							}
+	// 						});
+	// 					`, c.CompoName(), listingLocals, listingLocals),
+	// 				),
+	// 			)
+	// 	}
+	// }()
 	evCtx := web.MustGetEventContext(ctx)
 	msgr := c.MustGetMessages(ctx)
 
@@ -582,9 +596,9 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 
 		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
 			Color(cmp.Or(ba.buttonColor, ColorSecondary)).Variant(VariantFlat).Class("ml-2").
-			Attr("@click", c.PostActionGo(ctx, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
+			Attr("@click", stateful.PostAction(ctx, c, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
 				Name: ba.name,
-			})),
+			}).Go()),
 		)
 	}
 
@@ -600,9 +614,9 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 
 		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
 			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
-			Attr("@click", c.PostActionGo(ctx, c.OpenActionDialog, OpenActionDialogRequest{
+			Attr("@click", stateful.PostAction(ctx, c, c.OpenActionDialog, OpenActionDialogRequest{
 				Name: ba.name,
-			})),
+			}).Go()),
 		)
 	}
 
@@ -881,31 +895,6 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 	web.AppendRunScripts(&r, closeDialogVarScript)
 	stateful.AppendReloadToResponse(&r, c)
 	return r, nil
-}
-
-func (c *ListingCompo) ReloadActionGo(ctx context.Context, f func(cloned *ListingCompo)) string {
-	return strings.Replace( // TODO: 这种 replace 的方式会影响到 sync_query 机制，那块需要改进
-		stateful.ReloadAction(ctx, c, func(cloned *ListingCompo) {
-			cloned.SelectedIds = []string{}
-			if f != nil {
-				f(cloned)
-			}
-		}).Go(),
-		`"selected_ids": []`,
-		`"selected_ids": `+listingLocalsSelectedIds,
-		1,
-	)
-}
-
-func (c *ListingCompo) PostActionGo(ctx context.Context, method any, request any) string {
-	cloned := stateful.MustClone(c)
-	cloned.SelectedIds = []string{}
-	return strings.Replace(
-		stateful.PostAction(ctx, cloned, method, request).Go(),
-		`"selected_ids": []`,
-		`"selected_ids": `+listingLocalsSelectedIds,
-		1,
-	)
 }
 
 func (c *ListingCompo) MustGetMessages(ctx context.Context) *Messages {
