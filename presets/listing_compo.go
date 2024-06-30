@@ -20,6 +20,11 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+const (
+	PerPageDefault = 50
+	PerPageMax     = 1000
+)
+
 func init() {
 	stateful.RegisterActionableCompoType((*ListingCompo)(nil))
 }
@@ -38,10 +43,10 @@ type ListingCompo struct {
 	Keyword            string          `json:"keyword" query:",omitempty"`
 	OrderBys           []ColOrderBy    `json:"order_bys" query:",omitempty"`
 	Page               int64           `json:"page" query:",omitempty"`
-	PerPage            int64           `json:"per_page" query:",omitempty"`
-	DisplayColumns     []DisplayColumn `json:"display_columns" query:",omitempty"`
+	PerPage            int64           `json:"per_page" query:",omitempty;cookie"`
+	DisplayColumns     []DisplayColumn `json:"display_columns" query:",omitempty;cookie"`
 	ActiveFilterTab    string          `json:"active_filter_tab" query:",omitempty"`
-	FilterQuery        string          `json:"filter_query" query:";method:bare,f_"` // TODO: 如何和以前的 url 保持一致？
+	FilterQuery        string          `json:"filter_query" query:";method:bare,f_"`
 }
 
 func (c *ListingCompo) CompoName() string {
@@ -157,27 +162,24 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	msgr := c.MustGetMessages(ctx)
-	// TODO: isFocus 原来的目的是什么来着？
-	return web.Scope().VSlot("{ locals }").Init(`{isFocus: false}`).Children(
-		VTextField().
-			Density(DensityCompact).
-			Variant(FieldVariantOutlined).
-			Label(msgr.Search).
-			Flat(true).
-			Clearable(true).
-			HideDetails(true).
-			SingleLine(true).
-			ModelValue(c.Keyword).
-			Attr("@keyup.enter", stateful.ReloadAction(ctx, c, nil,
-				stateful.WithAppendFix(`v.compo.keyword = $event.target.value`),
-			).Go()).
-			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-				target.Keyword = ""
-			}).Go()).
-			Children(
-				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-			),
-	)
+	return VTextField().
+		Density(DensityCompact).
+		Variant(FieldVariantOutlined).
+		Label(msgr.Search).
+		Flat(true).
+		Clearable(true).
+		HideDetails(true).
+		SingleLine(true).
+		ModelValue(c.Keyword).
+		Attr("@keyup.enter", stateful.ReloadAction(ctx, c, nil,
+			stateful.WithAppendFix(`v.compo.keyword = $event.target.value`),
+		).Go()).
+		Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+			target.Keyword = ""
+		}).Go()).
+		Children(
+			web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+		)
 }
 
 func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTMLComponent {
@@ -263,7 +265,7 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	// 		Query(ParamInDialog, true).
 	// 		Query(ParamListingQueries, ctx.Queries().Encode())
 	// }
-	// TODO: 需要更优雅的方式, 后续发现不可用 click 因为内部有 VCheckBox 会有影响
+	// TODO: 需要更优雅的方式, 后续发现不可用 click 因为内部有 VCheckBox 这样的控件会有影响
 	cell.SetAttr("@click.self", fmt.Sprintf(`
 		%s; 
 		%s.%s="%s-%s";`,
@@ -323,11 +325,11 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	searchParams.OrderBy = orderBySQL
 
 	if !c.lb.disablePagination {
-		perPage := c.PerPage // TODO: sync cookie ?
-		if perPage > 1000 {
-			perPage = 1000
+		perPage := c.PerPage
+		if perPage > PerPageMax {
+			perPage = PerPageMax
 		}
-		searchParams.PerPage = cmp.Or(perPage, 10) // TODO:
+		searchParams.PerPage = cmp.Or(perPage, PerPageDefault)
 		searchParams.Page = cmp.Or(c.Page, 1)
 	}
 
@@ -408,9 +410,18 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		)
 
 	if len(c.lb.bulkActions) > 0 {
+		syncQuery := ""
+		if stateful.IsSyncQuery(ctx) {
+			syncQuery = web.Plaid().
+				PushState(true).
+				MergeQuery(true).
+				Query("selected_ids", web.Var(`selected_ids`)).RunPushState()
+		}
 		dataTable.SelectedIds(c.SelectedIds).
-			// TODO: 如果是 sync query 的话，此处需要直接同步 URL query ？
-			OnSelectionChanged(fmt.Sprintf("%s.%s = %s", c.locals(), localsKeySelectedIds, vx.ParamDataTableSelectedIds)).
+			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) {
+					%s.%s = selected_ids;
+					%s
+				}`, c.locals(), localsKeySelectedIds, syncQuery)).
 			SelectedCountLabel(msgr.ListingSelectedCountNotice).
 			ClearSelectionLabel(msgr.ListingClearSelection)
 	}
@@ -782,7 +793,7 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	}
 
 	if err == nil {
-		// TODO: 这个方法貌似应该反馈哪些 ids 已经不存在了，便于下面的 reload 之前剔除
+		// TODO: 这个方法貌似应该反馈哪些 ids 已经不存在了，便于下面的 reload 之前剔除，也或许这里压根就不应该直接 reload
 		err = bulk.updateFunc(processedSelectedIds, evCtx)
 	}
 
