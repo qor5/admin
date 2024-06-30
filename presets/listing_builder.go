@@ -182,8 +182,8 @@ func (b *ListingBuilderX) injectorName() string {
 func (b *ListingBuilderX) setup() {
 	b.once.Do(func() {
 		injectorName := b.injectorName()
-		stateful.Install(b.mb.p.builder) // TODO: 为什么还需要这个呢？
-		stateful.RegisterInjector(injectorName)
+		stateful.Install(b.mb.p.builder)        // TODO: 为什么还需要这个呢？
+		stateful.RegisterInjector(injectorName) // TODO: 全局的话貌似有点问题，例如 example 里存在一堆同类型的不同 presets
 		stateful.MustProvide(injectorName, func() *ListingBuilderX {
 			return b
 		})

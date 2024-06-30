@@ -38,6 +38,7 @@ type ListingCompo struct {
 	lb *ListingBuilderX `inject:""`
 
 	CompoID            string          `json:"compo_id"`
+	Popup              bool            `json:"popup"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
 	SelectedIds        []string        `json:"selected_ids" query:",omitempty"`
 	Keyword            string          `json:"keyword" query:",omitempty"`
@@ -50,7 +51,7 @@ type ListingCompo struct {
 }
 
 func (c *ListingCompo) CompoName() string {
-	return fmt.Sprintf("ListingCompo:%s", c.CompoID)
+	return fmt.Sprintf("ListingCompo_%s", c.CompoID)
 }
 
 // const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
@@ -64,12 +65,14 @@ const (
 	localsKeyCurrentEditingId = "current_editing_id"
 )
 
-func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
+func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.HTMLComponent {
+	// for selected_ids front-end autonomy
 	locals := c.locals()
 	localsSelectedIds := locals + "." + localsKeySelectedIds
 	localsNewAction := locals + "." + stateful.LocalsKeyNewAction
 	onMounted := fmt.Sprintf(`
 		function() {
+			console.log("onMounted")
 			%s.%s = "";
 			%s = %s || [];
 			let orig = %s;
@@ -87,21 +90,9 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		localsKeySelectedIds, localsKeySelectedIds,
 	)
 	return stateful.Actionable(ctx, c,
+		web.DataSync(locals, locals), // for sync locals between listing compo and actions compo
 		web.RunScript(onMounted),
-
-		// TODO: 先移除，再考虑看有没有更好的实现方式。
-
-		// // onMount
-		// web.RunScript(fmt.Sprintf(`() => vars.__sendNotification(%q, {
-		// 	compo_name: %q,
-		// 	locals: %s,
-		// })`, notifListingLocalsUpdated, c.CompoName(), listingLocals)),
-		// // sync to actionsComponent
-		// OnChange(fmt.Sprintf(`vars.__sendNotification(%q, {
-		// 	compo_name: %q,
-		// 	locals: locals,
-		// })`, notifListingLocalsUpdated, c.CompoName())).UseDebounce(1).
-		// onMount
+		// TODO: 因为 listing 和 actions 都用了这个 wrapper ，按说是应该 reload 两次的，为什么只有一次呢？有点意外了
 		web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
 		web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 			if (payload && payload.ids && payload.ids.length > 0) {
@@ -111,15 +102,19 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			localsSelectedIds, localsSelectedIds,
 			stateful.ReloadAction(ctx, c, nil).Go(),
 		)),
-		VCard().Elevation(0).Children(
-			c.tabsFilter(ctx),
-			c.toolbarSearch(ctx),
-			VCardText().Class("pa-2").Children(
-				c.dataTable(ctx),
-			),
-			c.cardActionsFooter(ctx),
+		compo,
+	)
+}
+
+func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
+	return c.wrapCompo(ctx, VCard().Elevation(0).Children(
+		c.tabsFilter(ctx),
+		c.toolbarSearch(ctx),
+		VCardText().Class("pa-2").Children(
+			c.dataTable(ctx),
 		),
-	).MarshalHTML(ctx)
+		c.cardActionsFooter(ctx),
+	)).MarshalHTML(ctx)
 }
 
 func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
@@ -258,9 +253,9 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 		event = actions.DetailingDrawer
 	}
 	onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
-	// TODO: how to auto open in dialog ?
-	// if inDialog {
-	// 	onclick.URL(ctx.R.RequestURI).
+	// TODO: should use action ?
+	// if c.Popup {
+	// 	onClick.URL(evCtx.R.RequestURI).
 	// 		Query(ParamOverlay, actions.Dialog).
 	// 		Query(ParamInDialog, true).
 	// 		Query(ParamListingQueries, ctx.Queries().Encode())
@@ -396,9 +391,9 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				)
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
-			// TODO: how to cancel active ? 不可能都根据 vars.presetsRightDrawer 去 cancel
+			// TODO: how to cancel active if not using vars.presetsRightDrawer
 			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.%s ==="%s-%s",
+					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.%s === "%s-%s",
 				}`, c.locals(), localsKeyCurrentEditingId, dataTableID, id,
 			))
 			return row
@@ -567,29 +562,15 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 }
 
 func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent) {
-	// defer func() {
-	// 	if r != nil {
-	// 		// TODO: 这个同步机制不太好，需要考虑是不是可以让 actionsComponent 通过前端的某个方法来获取到对应 listingCompo 的状态，这样的话就无需 reload 自身了
-	// 		r = web.Scope().VSlot(fmt.Sprintf("{ locals: %s }", listingLocals)).Init(fmt.Sprintf(`{
-	// 				currEditingListItemID: "",
-	// 				selected_ids: %s || [],
-	// 			}`, h.JSONString(c.SelectedIds))).
-	// 			Children(
-	// 				r,
-	// 				web.Observe(notifListingLocalsUpdated, fmt.Sprintf(`
-	// 						if (!payload.compo_name || payload.compo_name != %q) {
-	// 							return
-	// 						}
-	// 						Object.keys(%s).forEach(key => {
-	// 							if (payload.locals.hasOwnProperty(key)) {
-	// 								%s[key] = payload.locals[key];
-	// 							}
-	// 						});
-	// 					`, c.CompoName(), listingLocals, listingLocals),
-	// 				),
-	// 			)
-	// 	}
-	// }()
+	defer func() {
+		if r != nil {
+			rr := r
+			r = h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
+				ctx = stateful.WithPortalName(ctx, c.CompoName()+"_actions")
+				return c.wrapCompo(ctx, rr).MarshalHTML(ctx)
+			})
+		}
+	}()
 	evCtx := web.MustGetEventContext(ctx)
 	msgr := c.MustGetMessages(ctx)
 
@@ -649,8 +630,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			buttons = append(buttons, button)
 		}
 	} else if c.lb.mb.Info().Verifier().Do(PermCreate).WithReq(evCtx.R).IsAllowed() == nil {
+		onClick := web.Plaid().EventFunc(actions.New)
 		// TODO:
-		// onclick := web.Plaid().EventFunc(actions.New)
 		// if inDialog {
 		// 	onclick.URL(ctx.R.RequestURI).
 		// 		Query(ParamOverlay, actions.Dialog).
@@ -660,8 +641,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		buttons = append(buttons, VBtn(msgr.New).
 			Color(ColorPrimary).
 			Variant(VariantFlat).
-			Theme("dark").Class("ml-2"), // TODO: why theme dark ?
-		// .Attr("@click", onclick.Go())
+			Theme("dark").Class("ml-2").
+			Attr("@click", onClick.Go()),
 		)
 	}
 
