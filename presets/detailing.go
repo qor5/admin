@@ -234,7 +234,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		panic("action required")
 	}
 	id := ctx.R.FormValue(ParamID)
-	if err := action.updateFunc(id, ctx); err != nil || ctx.Flash != nil {
+	if err := action.updateFunc(id, ctx, &r); err != nil || ctx.Flash != nil {
 		if ctx.Flash == nil {
 			ctx.Flash = err
 		}

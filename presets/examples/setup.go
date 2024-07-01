@@ -218,7 +218,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		)
 	})
 
-	l.BulkAction("Approve").Label("Approve").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+	l.BulkAction("Approve").Label("Approve").UpdateFunc(func(selectedIds []string, ctx *web.EventContext, _ *web.EventResponse) (err error) {
 		comment := ctx.R.FormValue("ApprovalComment")
 		if len(comment) < 10 {
 			ctx.Flash = "comment should larger than 10"
@@ -243,7 +243,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			ErrorMessages(errorMessage)
 	})
 
-	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext, _ *web.EventResponse) (err error) {
 		err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 		return
 	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
@@ -513,7 +513,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext, _ *web.EventResponse) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")

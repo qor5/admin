@@ -573,7 +573,7 @@ func (b *ListingBuilder) doBulkAction(ctx *web.EventContext) (r web.EventRespons
 	}
 
 	if err1 == nil {
-		err1 = bulk.updateFunc(processedSelectedIds, ctx)
+		err1 = bulk.updateFunc(processedSelectedIds, ctx, &r)
 	}
 
 	if err1 != nil {
@@ -619,12 +619,12 @@ func (b *ListingBuilder) doListingAction(ctx *web.EventContext) (r web.EventResp
 		panic("action required")
 	}
 
-	if b.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(ctx.R).IsAllowed() != nil {
+	if b.mb.Info().Verifier().SnakeDo(permActions, action.name).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
 
-	if err := action.updateFunc("", ctx); err != nil {
+	if err := action.updateFunc("", ctx, &r); err != nil {
 		if _, ok := err.(*web.ValidationErrors); !ok {
 			vErr := &web.ValidationErrors{}
 			vErr.GlobalError(err.Error())
@@ -1197,7 +1197,7 @@ func (b *ListingBuilder) getTableComponents(
 	cellWrapperFunc := func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		if b.mb.hasDetailing && !b.mb.detailing.drawer {
-			tdbind.SetAttr("@click.self", web.Plaid().
+			tdbind.SetAttr("@click", web.Plaid().
 				PushStateURL(b.mb.Info().DetailingHref(id)).Go())
 		} else {
 			event := actions.Edit
@@ -1213,7 +1213,7 @@ func (b *ListingBuilder) getTableComponents(
 					Query(ParamInDialog, true).
 					Query(ParamListingQueries, ctx.Queries().Encode())
 			}
-			tdbind.SetAttr("@click.self",
+			tdbind.SetAttr("@click",
 				onclick.Go()+fmt.Sprintf(`; locals.currEditingListItemID="%s-%s"`, dataTableID, id))
 		}
 		return tdbind

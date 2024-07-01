@@ -70,51 +70,53 @@ func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.H
 	locals := c.locals()
 	localsSelectedIds := locals + "." + localsKeySelectedIds
 	localsNewAction := locals + "." + stateful.LocalsKeyNewAction
-	onMounted := fmt.Sprintf(`
-		function() {
-			console.log("onMounted")
-			%s.%s = "";
-			%s = %s || [];
-			let orig = %s;
-			%s = function() {
-				let v = orig();
-				v.compo.%s = this.%s;
-				return v
-			}
-		}
-		`,
-		locals, localsKeyCurrentEditingId,
-		localsSelectedIds, h.JSONString(c.SelectedIds),
-		localsNewAction,
-		localsNewAction,
-		localsKeySelectedIds, localsKeySelectedIds,
-	)
 	return stateful.Actionable(ctx, c,
-		web.DataSync(locals, locals), // for sync locals between listing compo and actions compo
-		web.RunScript(onMounted),
-		// TODO: 因为 listing 和 actions 都用了这个 wrapper ，按说是应该 reload 两次的，为什么只有一次呢？有点意外了
-		web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
-		web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
-			if (payload && payload.ids && payload.ids.length > 0) {
-				%s = %s.filter(id => !payload.ids.includes(id));
-			}
-			%s`,
-			localsSelectedIds, localsSelectedIds,
-			stateful.ReloadAction(ctx, c, nil).Go(),
+		// for sync locals between listing compo and actions compo
+		web.DataSync(locals, locals),
+		// onMounted
+		web.RunScript(fmt.Sprintf(`function() {
+	%s.%s = "";
+	%s = %s || [];
+	let orig = %s;
+	%s = function() {
+		let v = orig();
+		v.compo.%s = this.%s;
+		return v
+	}
+}`,
+			locals, localsKeyCurrentEditingId,
+			localsSelectedIds, h.JSONString(c.SelectedIds),
+			localsNewAction,
+			localsNewAction,
+			localsKeySelectedIds, localsKeySelectedIds,
 		)),
 		compo,
 	)
 }
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	return c.wrapCompo(ctx, VCard().Elevation(0).Children(
-		c.tabsFilter(ctx),
-		c.toolbarSearch(ctx),
-		VCardText().Class("pa-2").Children(
-			c.dataTable(ctx),
+	localsSelectedIds := c.locals() + "." + localsKeySelectedIds
+	return c.wrapCompo(ctx,
+		h.Components(
+			web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
+			web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+if (payload && payload.ids && payload.ids.length > 0) {
+	%s = %s.filter(id => !payload.ids.includes(id));
+}
+%s`,
+				localsSelectedIds, localsSelectedIds,
+				stateful.ReloadAction(ctx, c, nil).Go(),
+			)),
+			VCard().Elevation(0).Children(
+				c.tabsFilter(ctx),
+				c.toolbarSearch(ctx),
+				VCardText().Class("pa-2").Children(
+					c.dataTable(ctx),
+				),
+				c.cardActionsFooter(ctx),
+			),
 		),
-		c.cardActionsFooter(ctx),
-	)).MarshalHTML(ctx)
+	).MarshalHTML(ctx)
 }
 
 func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
@@ -244,7 +246,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 
 func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 	if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
-		cell.SetAttr("@click.self", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
+		cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
 		return cell
 	}
 
@@ -260,8 +262,8 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	// 		Query(ParamInDialog, true).
 	// 		Query(ParamListingQueries, ctx.Queries().Encode())
 	// }
-	// TODO: 需要更优雅的方式, 后续发现不可用 click 因为内部有 VCheckBox 这样的控件会有影响
-	cell.SetAttr("@click.self", fmt.Sprintf(`
+	// TODO: 需要更优雅的方式
+	cell.SetAttr("@click", fmt.Sprintf(`
 		%s; 
 		%s.%s="%s-%s";`,
 		onClick.Go(),
@@ -366,7 +368,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				icon = "mdi-arrow-up"
 			}
 			return h.Th("").Style("cursor: pointer; white-space: nowrap;").
-				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				Attr("@click.stop", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					if orderBy.OrderBy == OrderByASC {
 						orderBy.OrderBy = OrderByDESC
 					} else {
@@ -612,24 +614,13 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		)
 	}
 
-	if c.lb.actionsAsMenu {
-		// TODO: no new ? 为什么以前写在这呢？
-		return VMenu().OpenOnHover(true).Children(
-			web.Slot().Name("activator").Scope("{ on, props }").Children(
-				// TODO: i18n ?
-				VBtn("Actions").Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
-			),
-			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
-				return VListItem(item)
-			})...),
-		)
-	}
-
-	if c.lb.newBtnFunc != nil { // TODO: perm ? 即使自己提供了也应该做前置权限判断吧？
-		if button := c.lb.newBtnFunc(evCtx); button != nil {
-			buttons = append(buttons, button)
+	buttonNew := func() h.HTMLComponent {
+		if c.lb.mb.Info().Verifier().Do(PermCreate).WithReq(evCtx.R).IsAllowed() != nil {
+			return nil
 		}
-	} else if c.lb.mb.Info().Verifier().Do(PermCreate).WithReq(evCtx.R).IsAllowed() == nil {
+		if c.lb.newBtnFunc != nil {
+			return c.lb.newBtnFunc(evCtx)
+		}
 		onClick := web.Plaid().EventFunc(actions.New)
 		// TODO:
 		// if inDialog {
@@ -638,14 +629,27 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		// 		Query(ParamInDialog, true).
 		// 		Query(ParamListingQueries, ctx.Queries().Encode())
 		// }
-		buttons = append(buttons, VBtn(msgr.New).
+		return VBtn(msgr.New).
 			Color(ColorPrimary).
 			Variant(VariantFlat).
 			Theme("dark").Class("ml-2").
-			Attr("@click", onClick.Go()),
+			Attr("@click", onClick.Go())
+	}()
+
+	if c.lb.actionsAsMenu {
+		buttons = append([]h.HTMLComponent{buttonNew}, buttons...)
+		return VMenu().OpenOnHover(true).Children(
+			web.Slot().Name("activator").Scope("{ on, props }").Children(
+				// TODO: i18n ?
+				VBtn("Menu").Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
+			),
+			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
+				return VListItem(item)
+			})...),
 		)
 	}
 
+	buttons = append(buttons, buttonNew)
 	return h.Div(buttons...)
 }
 
@@ -774,8 +778,7 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	}
 
 	if err == nil {
-		// TODO: 这个方法貌似应该反馈哪些 ids 已经不存在了，便于下面的 reload 之前剔除，也或许这里压根就不应该直接 reload
-		err = bulk.updateFunc(processedSelectedIds, evCtx)
+		err = bulk.updateFunc(processedSelectedIds, evCtx, &r)
 	}
 
 	if err != nil {
@@ -790,7 +793,6 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	msgr := c.MustGetMessages(ctx)
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, closeDialogVarScript)
-	stateful.AppendReloadToResponse(&r, c)
 	return r, nil
 }
 
@@ -835,7 +837,6 @@ func (c *ListingCompo) fetchAction(evCtx *web.EventContext, name string) (*Actio
 		return nil, errors.New("cannot find requested action")
 	}
 
-	// TODO: 到底应该是 permActions 还是 permListingActions
 	if c.lb.mb.Info().Verifier().SnakeDo(permActions, action.name).WithReq(evCtx.R).IsAllowed() != nil {
 		return nil, perm.PermissionDenied
 	}
@@ -873,7 +874,7 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 		return r, nil
 	}
 
-	if err := action.updateFunc("", evCtx); err != nil {
+	if err := action.updateFunc("", evCtx, &r); err != nil {
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogContentPortalName,
@@ -885,7 +886,6 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 	msgr := c.MustGetMessages(ctx)
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, closeDialogVarScript)
-	stateful.AppendReloadToResponse(&r, c)
 	return r, nil
 }
 

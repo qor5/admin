@@ -11,9 +11,8 @@ const (
 	PermDoListingAction = "presets:do_listing_action:*"
 	PermBulkActions     = "presets:bulk_actions:*"
 
-	permActions         = "actions"
-	permDoListingAction = "do_listing_action"
-	permBulkActions     = "bulk_actions"
+	permActions     = "actions"
+	permBulkActions = "bulk_actions"
 )
 
 var PermRead = []string{PermList, PermGet}

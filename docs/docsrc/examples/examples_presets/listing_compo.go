@@ -47,7 +47,7 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 		})
 		cl.SelectableColumns(true)
 		cl.BulkAction("Delete").Label("Delete").
-			UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 				return
 			}).
@@ -121,7 +121,7 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 		})
 		cl.SelectableColumns(true)
 		cl.BulkAction("Delete").Label("Delete").
-			UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 				return
 			}).

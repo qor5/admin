@@ -162,7 +162,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext, _ *web.EventResponse) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")
