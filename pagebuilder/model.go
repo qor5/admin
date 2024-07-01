@@ -207,7 +207,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						VIcon("mdi-plus-circle-outline"),
 					).Name(VSlotPrepend),
 					h.Span("New Element"),
-				).BaseColor(ColorPrimary).Class(W100, "ml-4").
+				).BaseColor(ColorPrimary).Class(W100, "ml-4").Class("newContainer").
 					Attr("@click", web.Plaid().EventFunc(NewContainerDialogEvent).Go()),
 			),
 		).Class("pa-4 pt-2"),
@@ -761,6 +761,15 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 }
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
+	if !isReadonly && len(comps) == 0 {
+		r = h.Components(
+			h.Div(
+				h.RawHTML(defaultContainerEmptyIcon),
+				h.Div(h.Text("Please add your elements first")),
+			).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
+		)
+		return
+	}
 	r = h.Components(comps...)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
@@ -775,6 +784,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 		}
 
 		if isEditor {
+
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
@@ -923,21 +933,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				"iframe-height", iframeValue,
 				"iframe-height-name", iframeHeightName,
 				"width", width,
-				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
+				":container-data-id", ctx.Param(paramContainerDataID),
 				"ref", "scrollIframe").
 				Attr(web.VAssign("vars", `{el:$}`)...)
 			r = scrollIframe
-			if !isReadonly && len(comps) == 0 {
-				r = h.Components(
-					scrollIframe.Attr("v-show", fmt.Sprintf(`vars.containerTab=="%s"`, EditorTabAdd)),
-					h.Div(
-						h.RawHTML(defaultContainerEmptyIcon),
-						h.Div(h.Text("Please add your elements first")),
-					).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh").
-						Attr("v-show", fmt.Sprintf(`vars.containerTab!="%s"`, EditorTabAdd)),
-				)
-				return
-			}
 
 		} else {
 			r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
@@ -1296,7 +1295,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogPortal,
 		Body: web.Scope(
-			VDialog(
+			VOverlay(
 				VSheet(
 					VCard(
 						VCardTitle(h.Text("New Element")),
@@ -1311,8 +1310,9 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 							web.Portal().Name(addContainerDialogContentPortal),
 						).Class("px-6"),
 					).Variant(VariantTonal).Width("60%").Class(H100),
-				).Class("d-inline-flex"),
-			).Width(665).Height(460).Attr("v-model", "locals.dialog"),
+				).Class("d-inline-flex").Width(665).Height(460),
+			).Attr("v-model", "locals.dialog").Activator(".newContainer").
+				LocationStrategy("connected").Location(LocationBottom),
 		).VSlot(`{locals}`).Init(`{dialog:true}`),
 	})
 	return

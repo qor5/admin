@@ -60,9 +60,6 @@ const (
 	EventAdd         = "add"
 	EventEdit        = "edit"
 	iframeHeightName = "_iframeHeight"
-
-	EditorTabAdd    = "Add"
-	EditorTabLayers = "Layers"
 )
 
 const (
