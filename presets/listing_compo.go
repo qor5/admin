@@ -652,7 +652,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	return h.Div(buttons...)
 }
 
-func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, processedSelectedIds []string) (r h.HTMLComponent) {
+func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, actionableIds []string) (r h.HTMLComponent) {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var errCompo h.HTMLComponent
@@ -663,12 +663,12 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 	}
 
 	var alertCompo h.HTMLComponent
-	if len(processedSelectedIds) < len(selectedIds) {
-		unactionables := lo.Without(selectedIds, processedSelectedIds...)
+	if len(actionableIds) < len(selectedIds) {
+		unactionables := lo.Without(selectedIds, actionableIds...)
 		if len(unactionables) > 0 {
 			var notice string
 			if bulk.selectedIdsProcessorNoticeFunc != nil {
-				notice = bulk.selectedIdsProcessorNoticeFunc(selectedIds, processedSelectedIds, unactionables)
+				notice = bulk.selectedIdsProcessorNoticeFunc(selectedIds, actionableIds, unactionables)
 			} else {
 				var ids string
 				if len(unactionables) <= 10 {
@@ -706,6 +706,10 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 func (c *ListingCompo) fetchBulkAction(ctx context.Context, name string) (*BulkActionBuilder, error) {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
+	if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, name).WithReq(evCtx.R).IsAllowed() != nil {
+		return nil, perm.PermissionDenied
+	}
+
 	bulk, exists := lo.Find(c.lb.bulkActions, func(ba *BulkActionBuilder) bool {
 		return ba.name == name
 	})
@@ -715,10 +719,6 @@ func (c *ListingCompo) fetchBulkAction(ctx context.Context, name string) (*BulkA
 
 	if len(c.SelectedIds) == 0 {
 		return nil, errors.New(msgr.BulkActionNoRecordsSelected)
-	}
-
-	if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(evCtx.R).IsAllowed() != nil {
-		return nil, perm.PermissionDenied
 	}
 
 	return bulk, nil
@@ -737,16 +737,16 @@ func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkAct
 		return r, nil
 	}
 
-	// If selectedIdsProcessorFunc is not nil, process the request in it and skip the confirmation dialog
-	processedSelectedIds := c.SelectedIds
+	actionableIds := c.SelectedIds
 	if bulk.selectedIdsProcessorFunc != nil {
-		processedSelectedIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
+		actionableIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
 		if err != nil {
 			return r, err
 		}
-		if len(processedSelectedIds) == 0 {
+		// if no actionable ids, skip dialog
+		if len(actionableIds) == 0 {
 			if bulk.selectedIdsProcessorNoticeFunc != nil {
-				ShowMessage(&r, bulk.selectedIdsProcessorNoticeFunc(c.SelectedIds, processedSelectedIds, c.SelectedIds), "warning")
+				ShowMessage(&r, bulk.selectedIdsProcessorNoticeFunc(c.SelectedIds, actionableIds, c.SelectedIds), "warning")
 			} else {
 				ShowMessage(&r, msgr.BulkActionNoAvailableRecords, "warning")
 			}
@@ -754,7 +754,7 @@ func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkAct
 		}
 	}
 
-	c.lb.mb.p.dialog(&r, c.bulkPanel(ctx, bulk, c.SelectedIds, processedSelectedIds), bulk.dialogWidth)
+	c.lb.mb.p.dialog(&r, c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds), bulk.dialogWidth)
 	return r, nil
 }
 
@@ -771,20 +771,20 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 		return r, nil
 	}
 
-	processedSelectedIds := c.SelectedIds
-	if bulk.selectedIdsProcessorFunc != nil { // TODO: 这个地方的逻辑和 OpenBulkActionDialog 里的逻辑不重复吗？
-		processedSelectedIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
+	actionableIds := c.SelectedIds
+	if bulk.selectedIdsProcessorFunc != nil {
+		actionableIds, err = bulk.selectedIdsProcessorFunc(c.SelectedIds, evCtx)
 	}
 
 	if err == nil {
-		err = bulk.updateFunc(processedSelectedIds, evCtx, &r)
+		err = bulk.updateFunc(actionableIds, evCtx, &r)
 	}
 
 	if err != nil {
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogContentPortalName,
-			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, processedSelectedIds),
+			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds),
 		})
 		return r, nil
 	}
