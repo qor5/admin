@@ -1,23 +1,22 @@
 package example_test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/oss"
-	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/login"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -58,10 +57,7 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 		),
 	)
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.GetI18n())
-	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
-		})
+	ab := activity.New(db).CreatorContextKey(login.UserKey)
 	publisher := publish.New(db, oss.Storage)
 	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab)
 	b.Use(pb)

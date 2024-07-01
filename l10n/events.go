@@ -28,13 +28,20 @@ const (
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.Builder) {
-	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb))
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))
+	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb)) // Localization validation
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))     // Execute localization
 }
 
 type SelectLocale struct {
+	// label is a descriptive name used to display the name of a language or region to the user.
+	// It is usually a user-friendly string, such as "English", "French", "Chinese", etc. In the user interface,
+	// it is used to display selectable localization options.
 	Label string
-	Code  string
+
+	// code is an identifier that represents a language or locale.
+	// It is usually a string that represents a specific language or region code, such as "en" (English), "fr" (French), "zh" (Chinese), etc. In code,
+	// it is used to distinguish between different localized versions.
+	Code string
 }
 
 func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) web.EventFunc {

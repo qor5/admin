@@ -56,7 +56,7 @@ type Builder struct {
 	extraAssets                           []*extraAsset
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
-	menuOrder                             []interface{}
+	menuOrder                             []any
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
 }

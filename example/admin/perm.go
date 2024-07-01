@@ -1,10 +1,10 @@
 package admin
 
 import (
+	models2 "github.com/qor5/admin/v3/activity"
 	"net/http"
 
 	"github.com/ory/ladon"
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/x/v3/perm"
@@ -40,9 +40,9 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 			c := make(perm.Context)
 			for _, obj := range objs {
 				switch v := obj.(type) {
-				case *activity.ActivityLog:
+				case *models2.ActivityLog:
 					u := getCurrentUser(r)
-					if u.GetID() == v.GetUserID() {
+					if u.GetID() == v.UserID {
 						c["is_authorized"] = true
 					} else {
 						c["is_authorized"] = false

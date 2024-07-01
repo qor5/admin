@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"

@@ -16,7 +16,7 @@ var (
 
 	// @snippet_begin(ActivityDefaultTypeHandles)
 	DefaultTypeHandles = map[reflect.Type]TypeHandler{
-		reflect.TypeOf(time.Time{}): func(old, now interface{}, prefixField string) []Diff {
+		reflect.TypeOf(time.Time{}): func(old, now any, prefixField string) []Diff {
 			oldString := old.(time.Time).Format(time.RFC3339)
 			nowString := now.(time.Time).Format(time.RFC3339)
 			if oldString != nowString {
@@ -26,7 +26,7 @@ var (
 			}
 			return []Diff{}
 		},
-		reflect.TypeOf(media_library.MediaBox{}): func(old, now interface{}, prefixField string) (diffs []Diff) {
+		reflect.TypeOf(media_library.MediaBox{}): func(old, now any, prefixField string) (diffs []Diff) {
 			oldMediaBox := old.(media_library.MediaBox)
 			nowMediaBox := now.(media_library.MediaBox)
 
@@ -49,7 +49,7 @@ var (
 )
 
 // @snippet_begin(ActivityTypeHandle)
-type TypeHandler func(old, now interface{}, prefixField string) []Diff
+type TypeHandler func(old, now any, prefixField string) []Diff
 
 // @snippet_end
 
@@ -70,7 +70,7 @@ func NewDiffBuilder(mb *ModelBuilder) *DiffBuilder {
 	}
 }
 
-func (db *DiffBuilder) Diff(old, now interface{}) ([]Diff, error) {
+func (db *DiffBuilder) Diff(old, now any) ([]Diff, error) {
 	err := db.diffLoop(reflect.Indirect(reflect.ValueOf(old)), reflect.Indirect(reflect.ValueOf(now)), "")
 	return db.diffs, err
 }
@@ -138,7 +138,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 				continue
 			}
 
-			if f := db.mb.typeHanders[field.Type]; f != nil {
+			if f := db.mb.typeHandlers[field.Type]; f != nil {
 				db.diffs = append(db.diffs, f(old.Field(i).Interface(), now.Field(i).Interface(), newPrefixField)...)
 				continue
 			}

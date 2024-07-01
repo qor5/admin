@@ -16,7 +16,7 @@ import (
 
 type ModelBuilder struct {
 	p                   *Builder
-	model               interface{}
+	model               any
 	primaryField        string
 	modelType           reflect.Type
 	menuGroupName       string

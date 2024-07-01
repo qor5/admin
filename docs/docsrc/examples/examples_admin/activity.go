@@ -18,6 +18,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	activityBuilder := activity.New(db)
 	b.Use(activityBuilder)
+
 	// @snippet_end
 
 	// @snippet_begin(ActivityRegisterPresetsModelsSample)
@@ -27,10 +28,12 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		Code  string
 		Price float64
 	}
+
 	err := db.AutoMigrate(&WithActivityProduct{})
 	if err != nil {
 		panic(err)
 	}
+
 	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
 
 	bt := productModel.Detailing("Content", activity.Timeline).Drawer(true)
@@ -39,15 +42,19 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return Div().Text("text")
 		}).Editing("Title", "Code", "Price")
 
-	activityBuilder.RegisterModel(productModel).EnableActivityInfoTab().AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
+	activityBuilder.RegisterModel(productModel).
+		AddKeys("Title").
+		AddIgnoredFields("Code").
+		SkipDelete()
+
 	// @snippet_end
 
 	// @snippet_begin(ActivityRecordLogSample)
+
 	currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, "user1")
-
 	activityBuilder.AddRecords("Publish", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-
 	activityBuilder.AddRecords("Update Price", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
+
 	// @snippet_end
 	return b
 }

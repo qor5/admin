@@ -25,7 +25,7 @@ You can add all kinds of operations conveniently.
 - ~vx.DataTable~ create a data table, Which the Listing page uses the same component
 - ~LoadMoreAt~ will only show for example 2 rows of data, and you can click load more to display all
 - ~vx.Card~ display a card with toolbar you can setup action buttons
-- We reference the new form drawer that ~b.Model(&Note{})~ creates, but hide notes in the menu
+- We reference the new form drawer that ~b.Model(&ActivityNote{})~ creates, but hide notes in the menu
 `),
 	utils.Anchor(H2(""), "Details Info components and actions"),
 	Markdown(`

@@ -16,7 +16,7 @@ func PresetsDetailSimple(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &ActivityNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +35,7 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &ActivityNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +56,7 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &ActivityNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +91,7 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &ActivityNote{})
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gor
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &ActivityNote{})
 	if err != nil {
 		panic(err)
 	}

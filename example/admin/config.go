@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -24,7 +23,6 @@ import (
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/microsite"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"
@@ -140,7 +138,6 @@ func NewConfig(db *gorm.DB) Config {
 			// return supportedLanguages
 			return b.GetI18n().GetSupportLanguages()
 		})
-	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
 	mediab := media.New(db).CurrentUserID(func(ctx *web.EventContext) (id uint) {
 		u := getCurrentUser(ctx.R)
 		if u == nil {
@@ -172,10 +169,7 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
-		func(log activity.ActivityLogInterface) string {
-			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
-		}).
+	ab := activity.New(db).CreatorContextKey(login.UserKey).
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 				err = in(pb, mb)
@@ -208,7 +202,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configMenuOrder(b)
 
-	configPost(b, db, ab, publisher, nb)
+	configPost(b, db, ab, publisher, ab)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -338,13 +332,13 @@ func NewConfig(db *gorm.DB) Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, nb, db, publisher)
+	configUser(b, ab, db, publisher)
 	configProfile(b, db)
 
 	b.Use(
 		mediab,
 		microb,
-		nb,
+		ab,
 		publisher,
 		l10nBuilder,
 		roleBuilder,
@@ -521,7 +515,7 @@ func configPost(
 	db *gorm.DB,
 	ab *activity.Builder,
 	publisher *publish.Builder,
-	nb *note.Builder,
+	nb *activity.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
 	m.Use(

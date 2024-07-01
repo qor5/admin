@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/qor5/x/v3/ui/vuetify"
-	h "github.com/theplant/htmlgo"
+	"strings"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -25,28 +25,62 @@ type contextKey int
 
 const (
 	CreatorContextKey contextKey = iota
-	DBContextKey
 )
 
+type ActionFunc func(ctx *web.EventContext) (r web.EventResponse, err error)
+
+type Wrapper struct {
+	Before ActionFunc
+	After  ActionFunc
+}
+
+func (w *Wrapper) Wrap(action ActionFunc) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		if w.Before != nil {
+			if r, err = w.Before(ctx); err != nil {
+				return
+			}
+		}
+
+		if r, err = action(ctx); err != nil {
+			return
+		}
+
+		if w.After != nil {
+			if r, err = w.After(ctx); err != nil {
+				return
+			}
+		}
+
+		return
+	}
+}
+
 // @snippet_begin(ActivityBuilder)
+// Builder struct contains all necessary fields
 type Builder struct {
-	db                *gorm.DB    // global db
-	creatorContextKey interface{} // get the creator from context
-	dbContextKey      interface{} // get the db from context
-
-	lmb      *presets.ModelBuilder // log model builder
-	logModel ActivityLogInterface  // log model
-
-	models          []*ModelBuilder                   // registered model builders
-	tabHeading      func(ActivityLogInterface) string // tab heading format
-	permPolicy      *perm.PolicyBuilder               // permission policy
-	logModelInstall presets.ModelInstallFunc
+	db                *gorm.DB                  // global db
+	creatorContextKey any                       // get the creator from context
+	lmb               *presets.ModelBuilder     // log model builder
+	models            []*ModelBuilder           // registered model builders
+	tabHeading        func(*ActivityLog) string // tab heading format
+	permPolicy        *perm.PolicyBuilder       // permission policy
+	logModelInstall   presets.ModelInstallFunc  // log model install
+	wrapper           Wrapper
 }
 
 // @snippet_end
 
-func (ab *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
-	ab.RegisterModel(m)
+func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
+	// Register the model
+	b.RegisterModel(m)
+
+	db := b.db
+	m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
+	m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
+	m.RegisterEventFunc(deleteNoteEvent, deleteNoteAction(b, m))
+	m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
+
 	return nil
 }
 
@@ -60,105 +94,54 @@ func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 	return ab
 }
 
-func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
+// New initializes a new Builder instance with a provided database connection and an optional activity log model.
+func New(db *gorm.DB) *Builder {
 	ab := &Builder{
 		db:                db,
 		creatorContextKey: CreatorContextKey,
-		dbContextKey:      DBContextKey,
 	}
 
 	ab.logModelInstall = ab.defaultLogModelInstall
-	if len(logModel) > 0 {
-		ab.logModel = logModel[0]
-	} else {
-		ab.logModel = &ActivityLog{}
-	}
 
-	if err := db.AutoMigrate(ab.logModel); err != nil {
+	if err := db.AutoMigrate(&ActivityLog{}); err != nil {
 		panic(err)
 	}
 
+	// Default permission policy
 	ab.permPolicy = perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
 		ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).On("*:activity_logs").On("*:activity_logs:*")
 
 	return ab
 }
 
-// GetActivityLogs get activity logs
-func (ab Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
-	objs := ab.GetCustomizeActivityLogs(m, db)
-	if objs == nil {
-		return nil
-	}
-
-	logs, ok := objs.(*[]*ActivityLog)
-	if !ok {
-		return nil
-	}
-	return *logs
-}
-
-// GetCustomizeActivityLogs get customize activity logs
-func (ab Builder) GetCustomizeActivityLogs(m interface{}, db *gorm.DB) interface{} {
-	mb, ok := ab.GetModelBuilder(m)
-
-	if !ok {
-		return nil
-	}
-
-	if db == nil {
-		db = ab.db
-	}
-
-	keys := mb.KeysValue(m)
-	logs := ab.NewLogModelSlice()
-	err := db.Where("model_name = ? AND model_keys = ?", mb.typ.Name(), keys).Find(logs).Error
+func (ab *Builder) GetActivityLogs(m interface{}, db *gorm.DB) []*ActivityLog {
+	keys := ab.MustGetModelBuilder(m).KeysValue(m)
+	var logs []*ActivityLog
+	err := db.Where("model_name = ? AND model_keys = ?", reflect.TypeOf(m).Name(), keys).
+		Order("created_at DESC").
+		Find(&logs).Error
 	if err != nil {
 		return nil
 	}
 	return logs
 }
 
-// NewLogModelData new a log model data
-func (ab Builder) NewLogModelData() interface{} {
-	return reflect.New(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()).Interface()
-}
-
-// NewLogModelSlice new a log model slice
-func (ab Builder) NewLogModelSlice() interface{} {
-	sliceType := reflect.SliceOf(reflect.PtrTo(reflect.Indirect(reflect.ValueOf(ab.logModel)).Type()))
-	slice := reflect.New(sliceType)
-	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
-	return slice.Interface()
-}
-
 // CreatorContextKey change the default creator context key
-func (ab *Builder) CreatorContextKey(key interface{}) *Builder {
+func (ab *Builder) CreatorContextKey(key any) *Builder {
 	ab.creatorContextKey = key
 	return ab
 }
 
-// DBContextKey change the default db context key
-func (ab *Builder) DBContextKey(key interface{}) *Builder {
-	ab.dbContextKey = key
-	return ab
-}
-
-func (ab *Builder) TabHeading(f func(log ActivityLogInterface) string) *Builder {
-	ab.tabHeading = f
-	return ab
-}
-
 // RegisterModels register mutiple models
-func (ab *Builder) RegisterModels(models ...interface{}) *Builder {
+func (ab *Builder) RegisterModels(models ...any) *Builder {
 	for _, model := range models {
 		ab.RegisterModel(model)
 	}
 	return ab
 }
 
-// Model register a model and return model builder
-func (ab *Builder) RegisterModel(m interface{}) (mb *ModelBuilder) {
+// RegisterModel Model register a model and return model builder
+func (ab *Builder) RegisterModel(m any) (mb *ModelBuilder) {
 	if m, exist := ab.GetModelBuilder(m); exist {
 		return m
 	}
@@ -190,25 +173,56 @@ func (ab *Builder) RegisterModel(m interface{}) (mb *ModelBuilder) {
 	return mb
 }
 
+func humanContent(log *ActivityLog) string {
+	return fmt.Sprintf("%s: %s", log.Action, log.Content)
+}
+
 func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
 	mb.presetModel = presetModel
 
 	editing := presetModel.Editing()
 	d := presetModel.Detailing()
+	db := ab.db
 
-	d.Field(Timeline).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return vuetify.VTimeline(
-			vuetify.VTimelineItem(),
+	d.Field(Timeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		// Fetch combined timeline data
+		logs := ab.GetActivityLogs(obj, db)
+
+		// Create VTimelineItems
+		var timelineItems []HTMLComponent
+		for _, item := range logs {
+			timelineItems = append(timelineItems,
+				Div(
+					Div(
+						Text(item.CreatedAt.Format("2 hours ago")),
+					),
+					Div(
+						Div(
+							VAvatar().Text(strings.ToUpper(item.Creator)).Color("secondary").Class(
+								"text-h6 rounded-lg").Size("x-small"),
+							Div(
+								Strong(item.Creator).Class("ml-1").Style("width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
+								Div(Text(humanContent(item))).Class("text-caption").Style(
+									"width: 100%; font-family: SF Pro; font-style: normal; font-weight: 400; font-size: 14px; line-height: 20px; color: #9e9e9e;"),
+							).Class("detailsStyle").Style("display: flex; flex-direction: column; align-items: flex-start; padding: 0; width: 100%;"),
+						).Class("contentStyle").Style("display: flex; flex-direction: row; align-items: flex-start; padding: 0; gap: 8px; width: 100%;"),
+					),
+				).Class("itemStyle").Style("width: 100%; color: #9e9e9e;"),
+			)
+		}
+
+		return VTimeline(
+			timelineItems...,
 		)
 	})
 
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if mb.skip&Update != 0 && mb.skip&Create != 0 {
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOld(obj, ab.getDBFromContext(ctx.R.Context()))
+			old, ok := findOld(obj, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -218,7 +232,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			}
 
 			if ok && id != "" && mb.skip&Update == 0 {
-				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, ab.getDBFromContext(ctx.R.Context()))
+				return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx.R.Context()), old, obj, db)
 			}
 
 			return
@@ -226,12 +240,12 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	})
 
 	editing.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
-		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if mb.skip&Delete != 0 {
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOldWithSlug(obj, id, ab.getDBFromContext(ctx.R.Context()))
+			old, ok := findOldWithSlug(obj, id, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -246,7 +260,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 }
 
 // GetModelBuilder 	get model builder
-func (ab Builder) GetModelBuilder(v interface{}) (*ModelBuilder, bool) {
+func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	var isPreset bool
 	if _, ok := v.(*presets.ModelBuilder); ok {
 		isPreset = true
@@ -268,7 +282,7 @@ func (ab Builder) GetModelBuilder(v interface{}) (*ModelBuilder, bool) {
 }
 
 // GetModelBuilder 	get model builder
-func (ab Builder) MustGetModelBuilder(v interface{}) *ModelBuilder {
+func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	mb, ok := ab.GetModelBuilder(v)
 	if !ok {
 		panic(fmt.Sprintf("model %v is not registered", v))
@@ -277,12 +291,12 @@ func (ab Builder) MustGetModelBuilder(v interface{}) *ModelBuilder {
 }
 
 // GetModelBuilders 	get all model builders
-func (ab Builder) GetModelBuilders() []*ModelBuilder {
+func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 	return ab.models
 }
 
 // AddRecords add records log
-func (ab *Builder) AddRecords(action string, ctx context.Context, vs ...interface{}) error {
+func (ab *Builder) AddRecords(action string, ctx context.Context, vs ...any) error {
 	if len(vs) == 0 {
 		return errors.New("data are empty")
 	}
@@ -299,7 +313,7 @@ func (ab *Builder) AddRecords(action string, ctx context.Context, vs ...interfac
 }
 
 // AddCustomizedRecord add customized record
-func (ab *Builder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj interface{}) error {
+func (ab *Builder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
 	if mb, ok := ab.GetModelBuilder(obj); ok {
 		return mb.AddCustomizedRecord(action, diff, ctx, obj)
 	}
@@ -308,7 +322,7 @@ func (ab *Builder) AddCustomizedRecord(action string, diff bool, ctx context.Con
 }
 
 // AddViewRecord add view record
-func (ab *Builder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+func (ab *Builder) AddViewRecord(creator any, v any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
 		return mb.AddViewRecord(creator, v, db)
 	}
@@ -317,7 +331,7 @@ func (ab *Builder) AddViewRecord(creator interface{}, v interface{}, db *gorm.DB
 }
 
 // AddDeleteRecord	add delete record
-func (ab *Builder) AddDeleteRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+func (ab *Builder) AddDeleteRecord(creator any, v any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
 		return mb.AddDeleteRecord(creator, v, db)
 	}
@@ -326,7 +340,7 @@ func (ab *Builder) AddDeleteRecord(creator interface{}, v interface{}, db *gorm.
 }
 
 // AddSaverRecord will save a create log or a edit log
-func (ab *Builder) AddSaveRecord(creator interface{}, now interface{}, db *gorm.DB) error {
+func (ab *Builder) AddSaveRecord(creator any, now any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
 		return mb.AddSaveRecord(creator, now, db)
 	}
@@ -335,7 +349,7 @@ func (ab *Builder) AddSaveRecord(creator interface{}, now interface{}, db *gorm.
 }
 
 // AddCreateRecord add create record
-func (ab *Builder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.DB) error {
+func (ab *Builder) AddCreateRecord(creator any, v any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
 		return mb.AddCreateRecord(creator, v, db)
 	}
@@ -344,7 +358,7 @@ func (ab *Builder) AddCreateRecord(creator interface{}, v interface{}, db *gorm.
 }
 
 // AddEditRecord add edit record
-func (ab *Builder) AddEditRecord(creator interface{}, now interface{}, db *gorm.DB) error {
+func (ab *Builder) AddEditRecord(creator any, now any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
 		return mb.AddEditRecord(creator, now, db)
 	}
@@ -353,7 +367,7 @@ func (ab *Builder) AddEditRecord(creator interface{}, now interface{}, db *gorm.
 }
 
 // AddEditRecord add edit record
-func (ab *Builder) AddEditRecordWithOld(creator interface{}, old, now interface{}, db *gorm.DB) error {
+func (ab *Builder) AddEditRecordWithOld(creator any, old, now any, db *gorm.DB) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
 		return mb.AddEditRecordWithOld(creator, old, now, db)
 	}
@@ -362,24 +376,16 @@ func (ab *Builder) AddEditRecordWithOld(creator interface{}, old, now interface{
 }
 
 // AddEditRecordWithOldAndContext add edit record
-func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, now interface{}) error {
+func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, now any) error {
 	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.getDBFromContext(ctx))
+		return mb.AddEditRecordWithOld(ab.getCreatorFromContext(ctx), old, now, ab.db)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", now)
 }
 
-// GetDB get db from context
-func (ab *Builder) getDBFromContext(ctx context.Context) *gorm.DB {
-	if contextdb := ctx.Value(ab.dbContextKey); contextdb != nil {
-		return contextdb.(*gorm.DB)
-	}
-	return ab.db
-}
-
 // GetDB get creator from context
-func (ab *Builder) getCreatorFromContext(ctx context.Context) interface{} {
+func (ab *Builder) getCreatorFromContext(ctx context.Context) any {
 	if creator := ctx.Value(ab.creatorContextKey); creator != nil {
 		return creator
 	}

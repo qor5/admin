@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
-
-	"github.com/qor5/admin/v3/note"
+	
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
@@ -293,8 +293,8 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		p := obj.(presets.SlugEncoder)
 		rt := pm.Info().Label()
 		ri := p.PrimarySlug()
-		userID, _ := note.GetUserData(ctx)
-		count := note.GetUnreadNotesCount(db, userID, rt, ri)
+		userID, _ := activity.GetUserData(ctx)
+		count, _ := activity.GetUnreadNotesCount(db, userID, rt, ri)
 
 		return h.Td(
 			h.If(count > 0,

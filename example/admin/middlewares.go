@@ -3,9 +3,9 @@ package admin
 import (
 	"context"
 	"fmt"
+	"github.com/qor5/admin/v3/activity"
 	"net/http"
 
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/x/v3/login"
 	"gorm.io/gorm"
@@ -56,8 +56,8 @@ func withNoteContext() func(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			ctx := context.WithValue(r.Context(), note.UserIDKey, u.ID)
-			ctx = context.WithValue(ctx, note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Account))
+			ctx := context.WithValue(r.Context(), activity.UserIDKey, u.ID)
+			ctx = context.WithValue(ctx, activity.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Account))
 			newR := r.WithContext(ctx)
 
 			next.ServeHTTP(w, newR)

@@ -31,8 +31,8 @@ type Customer struct {
 	TermAgreedAt    *time.Time
 	ApprovalComment string
 	Avatar          media_library.MediaBox
-	CreditCards     []*CreditCard `gorm:"-"`
-	Notes           []*Note       `gorm:"-"`
+	CreditCards     []*CreditCard   `gorm:"-"`
+	Notes           []*ActivityNote `gorm:"-"`
 }
 
 type Address struct {
@@ -315,7 +315,7 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 			return v.VTextField().
 				Variant("underlined").
 				Attr(web.VField("ApprovalComment", comment)...).
-				Label("Comment").
+				Label("Content").
 				ErrorMessages(errorMessage)
 		})
 

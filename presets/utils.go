@@ -24,7 +24,7 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 }
 
 func ShowMessage(r *web.EventResponse, msg string, color string) {
-	if msg == "" {
+	if r == nil || msg == "" {
 		return
 	}
 
@@ -32,9 +32,12 @@ func ShowMessage(r *web.EventResponse, msg string, color string) {
 		color = "success"
 	}
 
+	msgJSON := h.JSONString(msg)
+	colorJSON := h.JSONString(color)
+
 	web.AppendRunScripts(r, fmt.Sprintf(
 		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
-		h.JSONString(msg), h.JSONString(color)))
+		msgJSON, colorJSON))
 }
 
 func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
@@ -98,16 +101,6 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			VListItemTitle(h.Text(msgr.Delete)),
 		).Attr("@click", onclick.Go())
 	}
-}
-
-func copyURLWithQueriesRemoved(u *url.URL, qs ...string) *url.URL {
-	newU, _ := url.Parse(u.String())
-	newQuery := newU.Query()
-	for _, k := range qs {
-		newQuery.Del(k)
-	}
-	newU.RawQuery = newQuery.Encode()
-	return newU
 }
 
 func isInDialogFromQuery(ctx *web.EventContext) bool {

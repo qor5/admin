@@ -17,11 +17,7 @@ term_agreed_at, approval_comment) VALUES (12, 'Felix 1', 'abc@example.com', '', 
 
 INSERT INTO public.credit_cards (id, customer_id, number, expire_year_month, name, type, phone, email) VALUES (2, 12,
 '95550012', '', '', '', '', '');
-
-INSERT INTO public.notes (id, source_type, source_id, content, created_at, updated_at) VALUES (1, 'Customer', 12, 
-'This is my note 1', '2024-05-27 08:13:58.436186 +00:00', '2024-05-27 08:13:58.436186 +00:00');
-
-`, []string{"customers", "credit_cards", "notes"}))
+`, []string{"customers", "credit_cards"}))
 
 func TestPresetsDetailing(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
