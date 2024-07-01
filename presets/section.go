@@ -53,6 +53,7 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 			name:  name,
 			label: name,
 		},
+		validator:         nil,
 		saver:             nil,
 		setter:            nil,
 		componentViewFunc: nil,
@@ -171,6 +172,7 @@ type SectionBuilder struct {
 	// if the field can switch status to edit and show, switchable must be true
 	saver             SaveFunc
 	setter            SetterFunc
+	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
@@ -273,6 +275,14 @@ func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.setter = v
+	return b
+}
+
+func (b *SectionBuilder) Validator(v ValidateFunc) (r *SectionBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.validator = v
 	return b
 }
 
@@ -485,6 +495,11 @@ func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.Ev
 		return
 	}
 
+	if b.validator != nil {
+		if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+			return errors.New(vErr.Error())
+		}
+	}
 	err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
 	return
 }
@@ -510,6 +525,11 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	}
 	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
 
+	if b.validator != nil {
+		if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+			return errors.New(vErr.Error())
+		}
+	}
 	err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
 	return
 }

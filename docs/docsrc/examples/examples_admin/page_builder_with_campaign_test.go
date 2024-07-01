@@ -430,6 +430,19 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Edit section validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/campaigns/2_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&id=2_2024-05-20-v01").
+					Query("detailField", "CampaignDetail").
+					AddField("CampaignDetail.Title", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"title could not be empty"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
