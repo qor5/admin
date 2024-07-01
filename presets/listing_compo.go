@@ -54,48 +54,66 @@ func (c *ListingCompo) CompoName() string {
 	return fmt.Sprintf("ListingCompo_%s", c.CompoID)
 }
 
-func (c *ListingCompo) locals() string {
-	return stateful.LocalsActionable(c)
-}
-
 func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.HTMLComponent {
-	locals := c.locals()
 	return stateful.Actionable(ctx, c,
 		// for sync locals between listing compo and actions compo
-		web.DataSync(locals, locals),
+		web.DataSync("locals", c.CompoName()),
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
-	%s.current_editing_id = "";
-	%s.selected_ids = %s || [];
-	let orig = %s.%s;
-	%s.%s = function() {
+	locals.dialog = true;
+	locals.current_editing_id = "";
+	locals.selected_ids = %s || [];
+	let orig = locals.%s;
+	locals.%s = function() {
 		let v = orig();
 		v.compo.selected_ids = this.selected_ids;
 		return v
 	}
 }`,
-			locals,
-			locals, h.JSONString(c.SelectedIds),
-			locals, stateful.LocalsKeyNewAction,
-			locals, stateful.LocalsKeyNewAction,
+			h.JSONString(c.SelectedIds),
+			stateful.LocalsKeyNewAction,
+			stateful.LocalsKeyNewAction,
 		)),
 		compo,
 	)
 }
 
+func (c *ListingCompo) dialogPortalName() string {
+	return fmt.Sprintf("%s_dialog", c.CompoName())
+}
+
+func (c *ListingCompo) dialogContentPortalName() string {
+	return fmt.Sprintf("%s_dialog_content", c.CompoName())
+}
+
+func (c *ListingCompo) closeDialog() string {
+	return fmt.Sprintf("locals.dialog = false;")
+}
+
+func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: c.dialogPortalName(),
+		Body: web.Scope().VSlot("{ form }").Children(
+			VDialog().Attr("v-model", "locals.dialog").Width(cmp.Or(width, c.lb.mb.rightDrawerWidth)).Children(
+				web.Portal(comp).Name(c.dialogContentPortalName()),
+			),
+		),
+	})
+	web.AppendRunScripts(r, "setTimeout(function(){ locals.dialog = true }, 100);")
+}
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	locals := c.locals()
 	return c.wrapCompo(ctx,
 		h.Components(
 			web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
 			web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 if (payload && payload.ids && payload.ids.length > 0) {
-	%s.selected_ids = %s.selected_ids.filter(id => !payload.ids.includes(id));
+	locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
 }
 %s`,
-				locals, locals,
 				stateful.ReloadAction(ctx, c, nil).Go(),
 			)),
+			web.Portal().Name(c.dialogPortalName()),
 			VCard().Elevation(0).Children(
 				c.tabsFilter(ctx),
 				c.toolbarSearch(ctx),
@@ -257,9 +275,10 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	// TODO: 需要更优雅的方式
 	cell.SetAttr("@click", fmt.Sprintf(`
 		%s; 
-		%s.current_editing_id = "%s-%s";`,
+		locals.current_editing_id = "%s-%s";`,
 		onClick.Go(),
-		c.locals(), dataTableID, id))
+		dataTableID, id,
+	))
 	return cell
 }
 
@@ -386,8 +405,8 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 			// TODO: how to cancel active if not using vars.presetsRightDrawer
 			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.current_editing_id === "%s-%s",
-				}`, c.locals(), dataTableID, id,
+					"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.current_editing_id === "%s-%s",
+				}`, dataTableID, id,
 			))
 			return row
 		}).
@@ -407,9 +426,9 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		}
 		dataTable.SelectedIds(c.SelectedIds).
 			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) {
-					%s.selected_ids = selected_ids;
+					locals.selected_ids = selected_ids;
 					%s
-				}`, c.locals(), syncQuery)).
+				}`, syncQuery)).
 			SelectedCountLabel(msgr.ListingSelectedCountNotice).
 			ClearSelectionLabel(msgr.ListingClearSelection)
 	}
@@ -682,7 +701,7 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", closeDialogVarScript),
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeDialog()),
 			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
 				stateful.PostAction(ctx, c, c.DoBulkAction, DoBulkActionRequest{
 					Name: bulk.name,
@@ -743,7 +762,7 @@ func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkAct
 		}
 	}
 
-	c.lb.mb.p.dialog(&r, c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds), bulk.dialogWidth)
+	c.dialog(&r, c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds), bulk.dialogWidth)
 	return r, nil
 }
 
@@ -773,13 +792,14 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: dialogContentPortalName,
+			// Name: c.dialogContentPortalName(),
 			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds),
 		})
 		return r, nil
 	}
 
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
-	web.AppendRunScripts(&r, closeDialogVarScript)
+	web.AppendRunScripts(&r, c.closeDialog())
 	return r, nil
 }
 
@@ -805,7 +825,7 @@ func (c *ListingCompo) actionPanel(ctx context.Context, action *ActionBuilder) (
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", closeDialogVarScript),
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeDialog()),
 			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
 				stateful.PostAction(ctx, c, c.DoAction, DoActionRequest{
 					Name: action.name,
@@ -843,7 +863,7 @@ func (c *ListingCompo) OpenActionDialog(ctx context.Context, req OpenBulkActionD
 		return r, nil
 	}
 
-	c.lb.mb.p.dialog(&r, c.actionPanel(ctx, action), action.dialogWidth)
+	c.dialog(&r, c.actionPanel(ctx, action), action.dialogWidth)
 	return r, nil
 }
 
@@ -863,14 +883,14 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 	if err := action.updateFunc("", evCtx, &r); err != nil {
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName,
+			Name: c.dialogContentPortalName(),
 			Body: c.actionPanel(ctx, action),
 		})
 		return r, nil
 	}
 
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
-	web.AppendRunScripts(&r, closeDialogVarScript)
+	web.AppendRunScripts(&r, c.closeDialog())
 	return r, nil
 }
 
