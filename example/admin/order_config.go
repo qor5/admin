@@ -104,7 +104,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 					ErrorMessages(vErr.GetFieldErrors("status")...),
 			),
 		)
-	}).UpdateFunc(func(selectedIds []string, ctx *web.EventContext, _ *web.EventResponse) (err error) {
+	}).UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		vErr := &web.ValidationErrors{}
 		status := ctx.R.FormValue("status")
 		if status == "" {
@@ -116,7 +116,12 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 		if err := db.Model(&models.Order{}).Where("id IN (?)", selectedIds).Update("status", status).Error; err != nil {
 			return err
 		}
-
+		web.AppendRunScripts(r,
+			web.NotifyScript(
+				presets.NotifModelsUpdated(&models.Order{}),
+				presets.PayloadModelsUpdated{Ids: selectedIds},
+			),
+		)
 		return
 	})
 

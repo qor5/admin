@@ -49,6 +49,16 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 		cl.BulkAction("Delete").Label("Delete").
 			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+				if err == nil {
+					web.AppendRunScripts(r,
+						web.NotifyScript(
+							presets.NotifModelsDeleted(&Customer{}),
+							presets.PayloadModelsDeleted{
+								Ids: selectedIds,
+							},
+						),
+					)
+				}
 				return
 			}).
 			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
@@ -121,8 +131,19 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 		})
 		cl.SelectableColumns(true)
 		cl.BulkAction("Delete").Label("Delete").
+			// TODO: 因为需要自行处理消息投递了，所以所有使用 UpdateFunc 都需要检查一遍
 			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+				if err == nil {
+					web.AppendRunScripts(r,
+						web.NotifyScript(
+							presets.NotifModelsDeleted(&Customer{}),
+							presets.PayloadModelsDeleted{
+								Ids: selectedIds,
+							},
+						),
+					)
+				}
 				return
 			}).
 			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
