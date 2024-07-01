@@ -54,57 +54,46 @@ func (c *ListingCompo) CompoName() string {
 	return fmt.Sprintf("ListingCompo_%s", c.CompoID)
 }
 
-// const notifListingLocalsUpdated = "NotifListingLocalsUpdated"
-
 func (c *ListingCompo) locals() string {
 	return stateful.LocalsActionable(c)
 }
 
-const (
-	localsKeySelectedIds      = "selected_ids"
-	localsKeyCurrentEditingId = "current_editing_id"
-)
-
 func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.HTMLComponent {
-	// for selected_ids front-end autonomy
 	locals := c.locals()
-	localsSelectedIds := locals + "." + localsKeySelectedIds
-	localsNewAction := locals + "." + stateful.LocalsKeyNewAction
 	return stateful.Actionable(ctx, c,
 		// for sync locals between listing compo and actions compo
 		web.DataSync(locals, locals),
-		// onMounted
+		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
-	%s.%s = "";
-	%s = %s || [];
-	let orig = %s;
-	%s = function() {
+	%s.current_editing_id = "";
+	%s.selected_ids = %s || [];
+	let orig = %s.%s;
+	%s.%s = function() {
 		let v = orig();
-		v.compo.%s = this.%s;
+		v.compo.selected_ids = this.selected_ids;
 		return v
 	}
 }`,
-			locals, localsKeyCurrentEditingId,
-			localsSelectedIds, h.JSONString(c.SelectedIds),
-			localsNewAction,
-			localsNewAction,
-			localsKeySelectedIds, localsKeySelectedIds,
+			locals,
+			locals, h.JSONString(c.SelectedIds),
+			locals, stateful.LocalsKeyNewAction,
+			locals, stateful.LocalsKeyNewAction,
 		)),
 		compo,
 	)
 }
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	localsSelectedIds := c.locals() + "." + localsKeySelectedIds
+	locals := c.locals()
 	return c.wrapCompo(ctx,
 		h.Components(
 			web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
 			web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 if (payload && payload.ids && payload.ids.length > 0) {
-	%s = %s.filter(id => !payload.ids.includes(id));
+	%s.selected_ids = %s.selected_ids.filter(id => !payload.ids.includes(id));
 }
 %s`,
-				localsSelectedIds, localsSelectedIds,
+				locals, locals,
 				stateful.ReloadAction(ctx, c, nil).Go(),
 			)),
 			VCard().Elevation(0).Children(
@@ -233,16 +222,16 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 		filterSearch = c.filterSearch(ctx, fd)
 	}
 
-	tfSearch := VResponsive().Children(
+	textFieldSearch := VResponsive().Children(
 		c.textFieldSearch(ctx),
 	)
 	if filterSearch != nil || !c.LongStyleSearchBox {
-		tfSearch.MaxWidth(200).MinWidth(200).Class("mr-4")
+		textFieldSearch.MaxWidth(200).MinWidth(200).Class("mr-4")
 	} else {
-		tfSearch.Width(100)
+		textFieldSearch.Width(100)
 	}
 	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Children(
-		tfSearch,
+		textFieldSearch,
 		filterSearch,
 	)
 }
@@ -268,9 +257,9 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	// TODO: 需要更优雅的方式
 	cell.SetAttr("@click", fmt.Sprintf(`
 		%s; 
-		%s.%s="%s-%s";`,
+		%s.current_editing_id = "%s-%s";`,
 		onClick.Go(),
-		c.locals(), localsKeyCurrentEditingId, dataTableID, id))
+		c.locals(), dataTableID, id))
 	return cell
 }
 
@@ -397,8 +386,8 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 			// TODO: how to cancel active if not using vars.presetsRightDrawer
 			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.%s === "%s-%s",
-				}`, c.locals(), localsKeyCurrentEditingId, dataTableID, id,
+					"vx-list-item--active primary--text": vars.presetsRightDrawer && %s.current_editing_id === "%s-%s",
+				}`, c.locals(), dataTableID, id,
 			))
 			return row
 		}).
@@ -418,9 +407,9 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		}
 		dataTable.SelectedIds(c.SelectedIds).
 			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) {
-					%s.%s = selected_ids;
+					%s.selected_ids = selected_ids;
 					%s
-				}`, c.locals(), localsKeySelectedIds, syncQuery)).
+				}`, c.locals(), syncQuery)).
 			SelectedCountLabel(msgr.ListingSelectedCountNotice).
 			ClearSelectionLabel(msgr.ListingClearSelection)
 	}
