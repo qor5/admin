@@ -129,9 +129,39 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
-
 		{
 			Name:  "Page Builder Editor Duplicate A Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var pages []*pagebuilder.Page
+				TestDB.Order("id DESC, version DESC").Find(&pages)
+				if len(pages) != 2 {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
+				}
+				if pages[0].Slug != pages[1].Slug {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+					pages[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+
+		{
+			Name:  "Page Builder Detail Duplicate A Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
@@ -146,6 +176,11 @@ func TestPageBuilder(t *testing.T) {
 				TestDB.Order("id DESC, version DESC").Find(&pages)
 				if len(pages) != 2 {
 					t.Fatal("Page not duplicated", pages)
+					return
+				}
+				if pages[0].Slug != pages[1].Slug {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
 				}
 				var containers []*pagebuilder.Container
 				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,

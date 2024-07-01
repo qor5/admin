@@ -1194,9 +1194,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 				}
 				localeCode = p.EmbedLocale().LocaleCode
 			}
-			if err = in(obj, id, ctx); err != nil {
-				return
-			}
+
 			if p, ok := obj.(*Page); ok {
 				if p.Slug != "" {
 					p.Slug = path.Clean(p.Slug)
@@ -1208,23 +1206,22 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 					p.SEO = fromPage.SEO
 				}
 			}
+			if err = in(obj, id, ctx); err != nil {
+				return
+			}
+
 			var (
 				pageID                 int
 				version, parentVersion string
 			)
-			if p, ok := obj.(PrimarySlugInterface); ok {
-				id = p.PrimarySlug()
-			}
 			if id != "" {
 				ctx.R.Form.Set(presets.ParamID, id)
 				pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
 			}
-
 			if p, ok := obj.(publish.VersionInterface); ok {
 				parentVersion = p.EmbedVersion().ParentVersion
 				version = p.EmbedVersion().Version
 			}
-
 			err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
 				if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
 					if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {

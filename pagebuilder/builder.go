@@ -327,12 +327,33 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 }
 
+func (b *Builder) configPageSaver(pb *presets.Builder) (mb *presets.ModelBuilder) {
+	mb = pb.Model(&Page{})
+	eb := mb.Editing()
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			p := obj.(*Page)
+			if p.Slug != "" {
+				p.Slug = path.Clean(p.Slug)
+			}
+			funcName := ctx.R.FormValue(web.EventFuncIDName)
+			if funcName == publish.EventDuplicateVersion {
+				var fromPage Page
+				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+				p.SEO = fromPage.SEO
+			}
+			return in(obj, id, ctx)
+		}
+	})
+	return
+}
+
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
 	b.ps.I18n(pb.GetI18n())
 	if b.pageEnabled {
 		var r *ModelBuilder
-		r = b.Model(pb.Model(&Page{}))
+		r = b.Model(b.configPageSaver(pb))
 		b.installAsset(pb)
 		b.configEditor(r)
 		b.configTemplateAndPage(pb, r)
