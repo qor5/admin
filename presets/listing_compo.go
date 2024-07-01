@@ -124,10 +124,12 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 		return
 	}
 
+	evCtx, _ := c.MustGetEventContext(ctx)
+
 	// TODO: 总感觉需要一个默认的 all 占据第一位，否则的话就不应该用 tabs ，因为其无法失焦
 
 	activeIndex := -1
-	fts := c.lb.filterTabsFunc(web.MustGetEventContext(ctx))
+	fts := c.lb.filterTabsFunc(evCtx)
 	tabs := VTabs().Class("mb-2").ShowArrows(true).Color(ColorPrimary).Density(DensityCompact)
 	for i, ft := range fts {
 		if ft.ID == "" {
@@ -158,7 +160,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 	if c.lb.keywordSearchOff {
 		return nil
 	}
-	msgr := c.MustGetMessages(ctx)
+	_, msgr := c.MustGetEventContext(ctx)
 	return VTextField().
 		Density(DensityCompact).
 		Variant(FieldVariantOutlined).
@@ -189,7 +191,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		return nil
 	}
 
-	msgr := c.MustGetMessages(ctx)
+	_, msgr := c.MustGetEventContext(ctx)
 
 	for _, d := range fd {
 		d.Translations = vx.FilterIndependentTranslations{
@@ -220,8 +222,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 }
 
 func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
-	evCtx := web.MustGetEventContext(ctx)
-	// msgr := c.MustGetMessages(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 
 	var filterSearch h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
@@ -276,8 +277,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.New("function Searcher is not set"))
 	}
 
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	searchParams := &SearchParams{
 		PageURL:       evCtx.R.URL,
@@ -469,8 +469,7 @@ type DisplayColumnWrapper struct {
 }
 
 func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLComponent, wrappers []DisplayColumnWrapper) {
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	displayColumn := slices.Clone(c.DisplayColumns)
 	var availableColumns []DisplayColumn
@@ -555,7 +554,7 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 	if len(c.lb.footerActions) <= 0 {
 		return nil
 	}
-	evCtx := web.MustGetEventContext(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 	compos := []h.HTMLComponent{VSpacer()}
 	for _, action := range c.lb.footerActions {
 		compos = append(compos, action.buttonCompFunc(evCtx))
@@ -573,8 +572,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			})
 		}
 	}()
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var buttons []h.HTMLComponent
 
@@ -640,8 +638,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		buttons = append([]h.HTMLComponent{buttonNew}, buttons...)
 		return VMenu().OpenOnHover(true).Children(
 			web.Slot().Name("activator").Scope("{ on, props }").Children(
-				// TODO: i18n ?
-				VBtn("Menu").Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
+				VBtn(msgr.ButtonLabelActionsMenu).Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
 			),
 			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
 				return VListItem(item)
@@ -654,8 +651,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 }
 
 func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, processedSelectedIds []string) (r h.HTMLComponent) {
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var errCompo h.HTMLComponent
 	if vErr, ok := evCtx.Flash.(*web.ValidationErrors); ok {
@@ -705,7 +701,9 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 	)
 }
 
-func (c *ListingCompo) fetchBulkAction(evCtx *web.EventContext, name string) (*BulkActionBuilder, error) {
+func (c *ListingCompo) fetchBulkAction(ctx context.Context, name string) (*BulkActionBuilder, error) {
+	evCtx, msgr := c.MustGetEventContext(ctx)
+
 	bulk, exists := lo.Find(c.lb.bulkActions, func(ba *BulkActionBuilder) bool {
 		return ba.name == name
 	})
@@ -714,7 +712,7 @@ func (c *ListingCompo) fetchBulkAction(evCtx *web.EventContext, name string) (*B
 	}
 
 	if len(c.SelectedIds) == 0 {
-		return nil, errors.New("Please select record") // TODO: i18n ?
+		return nil, errors.New(msgr.BulkActionNoRecordsSelected)
 	}
 
 	if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, bulk.name).WithReq(evCtx.R).IsAllowed() != nil {
@@ -729,10 +727,9 @@ type OpenBulkActionDialogRequest struct {
 }
 
 func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkActionDialogRequest) (r web.EventResponse, err error) {
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
-	bulk, err := c.fetchBulkAction(evCtx, req.Name)
+	bulk, err := c.fetchBulkAction(ctx, req.Name)
 	if err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
@@ -764,9 +761,9 @@ type DoBulkActionRequest struct {
 }
 
 func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest) (r web.EventResponse, err error) {
-	evCtx := web.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
-	bulk, err := c.fetchBulkAction(evCtx, req.Name)
+	bulk, err := c.fetchBulkAction(ctx, req.Name)
 	if err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
@@ -790,15 +787,13 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 		return r, nil
 	}
 
-	msgr := c.MustGetMessages(ctx)
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, closeDialogVarScript)
 	return r, nil
 }
 
 func (c *ListingCompo) actionPanel(ctx context.Context, action *ActionBuilder) (r h.HTMLComponent) {
-	evCtx := web.MustGetEventContext(ctx)
-	msgr := c.MustGetMessages(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var errCompo h.HTMLComponent
 	if vErr, ok := evCtx.Flash.(*web.ValidationErrors); ok {
@@ -849,7 +844,7 @@ type OpenActionDialogRequest struct {
 }
 
 func (c *ListingCompo) OpenActionDialog(ctx context.Context, req OpenBulkActionDialogRequest) (r web.EventResponse, err error) {
-	evCtx := web.MustGetEventContext(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 
 	action, err := c.fetchAction(evCtx, req.Name)
 	if err != nil {
@@ -866,7 +861,7 @@ type DoActionRequest struct {
 }
 
 func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web.EventResponse, err error) {
-	evCtx := web.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	action, err := c.fetchAction(evCtx, req.Name)
 	if err != nil {
@@ -883,12 +878,12 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 		return r, nil
 	}
 
-	msgr := c.MustGetMessages(ctx)
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, closeDialogVarScript)
 	return r, nil
 }
 
-func (c *ListingCompo) MustGetMessages(ctx context.Context) *Messages {
-	return MustGetMessages(web.MustGetEventContext(ctx).R)
+func (c *ListingCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
+	evCtx := web.MustGetEventContext(ctx)
+	return evCtx, MustGetMessages(evCtx.R)
 }
