@@ -110,9 +110,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 if (payload && payload.ids && payload.ids.length > 0) {
 	locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
 }
-%s`,
-				stateful.ReloadAction(ctx, c, nil).Go(),
-			)),
+%s`, stateful.ReloadAction(ctx, c, nil).Go())),
 			web.Portal().Name(c.dialogPortalName()),
 			VCard().Elevation(0).Children(
 				c.tabsFilter(ctx),
@@ -254,32 +252,27 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	)
 }
 
-func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
-	if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
-		cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
+func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
+	evCtx, _ := c.MustGetEventContext(ctx)
+	return func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
+		if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
+			cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
+			return cell
+		}
+
+		event := actions.Edit
+		if c.lb.mb.hasDetailing {
+			event = actions.DetailingDrawer
+		}
+		onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
+		if c.Popup {
+			onClick.URL(evCtx.R.RequestURI).
+				Query(ParamOverlay, actions.Dialog).
+				Query(ParamListingQueries, evCtx.Queries().Encode())
+		}
+		cell.SetAttr("@click", fmt.Sprintf(`%s; locals.current_editing_id = "%s-%s";`, onClick.Go(), dataTableID, id))
 		return cell
 	}
-
-	event := actions.Edit
-	if c.lb.mb.hasDetailing {
-		event = actions.DetailingDrawer
-	}
-	onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
-	// TODO: should use action ?
-	// if c.Popup {
-	// 	onClick.URL(evCtx.R.RequestURI).
-	// 		Query(ParamOverlay, actions.Dialog).
-	// 		Query(ParamInDialog, true).
-	// 		Query(ParamListingQueries, ctx.Queries().Encode())
-	// }
-	// TODO: 需要更优雅的方式
-	cell.SetAttr("@click", fmt.Sprintf(`
-		%s; 
-		locals.current_editing_id = "%s-%s";`,
-		onClick.Go(),
-		dataTableID, id,
-	))
-	return cell
 }
 
 func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
@@ -413,22 +406,16 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		RowMenuHead(btnConfigColumns).
 		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
 		CellWrapperFunc(
-			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc),
+			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc(ctx)),
 		)
 
 	if len(c.lb.bulkActions) > 0 {
 		syncQuery := ""
 		if stateful.IsSyncQuery(ctx) {
-			syncQuery = web.Plaid().
-				PushState(true).
-				MergeQuery(true).
-				Query("selected_ids", web.Var(`selected_ids`)).RunPushState()
+			syncQuery = web.Plaid().PushState(true).MergeQuery(true).Query("selected_ids", web.Var(`selected_ids`)).RunPushState()
 		}
 		dataTable.SelectedIds(c.SelectedIds).
-			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) {
-					locals.selected_ids = selected_ids;
-					%s
-				}`, syncQuery)).
+			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) { locals.selected_ids = selected_ids; %s }`, syncQuery)).
 			SelectedCountLabel(msgr.ListingSelectedCountNotice).
 			ClearSelectionLabel(msgr.ListingClearSelection)
 	}
@@ -630,13 +617,11 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			return c.lb.newBtnFunc(evCtx)
 		}
 		onClick := web.Plaid().EventFunc(actions.New)
-		// TODO:
-		// if inDialog {
-		// 	onclick.URL(ctx.R.RequestURI).
-		// 		Query(ParamOverlay, actions.Dialog).
-		// 		Query(ParamInDialog, true).
-		// 		Query(ParamListingQueries, ctx.Queries().Encode())
-		// }
+		if c.Popup {
+			onClick.URL(evCtx.R.RequestURI).
+				Query(ParamOverlay, actions.Dialog).
+				Query(ParamListingQueries, evCtx.Queries().Encode())
+		}
 		return VBtn(msgr.New).
 			Color(ColorPrimary).
 			Variant(VariantFlat).
