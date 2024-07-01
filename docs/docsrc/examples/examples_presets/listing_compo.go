@@ -132,7 +132,7 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 			return []*presets.FilterTab{
 				{
 					Label: "All",
-					Query: url.Values{"all": []string{"1"}},
+					Query: url.Values{},
 				},
 				{
 					Label: "Felix",

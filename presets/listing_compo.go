@@ -123,10 +123,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 	if c.lb.filterTabsFunc == nil {
 		return
 	}
-
 	evCtx, _ := c.MustGetEventContext(ctx)
-
-	// TODO: 总感觉需要一个默认的 all 占据第一位，否则的话就不应该用 tabs ，因为其无法失焦
 
 	activeIndex := -1
 	fts := c.lb.filterTabsFunc(evCtx)
@@ -135,14 +132,15 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
 		if ft.ID == "" {
 			ft.ID = fmt.Sprintf("tab%d", i)
 		}
-		if c.ActiveFilterTab == ft.ID {
+		encodedQuery := ft.Query.Encode()
+		if c.ActiveFilterTab == ft.ID && encodedQuery == c.FilterQuery {
 			activeIndex = i
 		}
 		tabs.AppendChildren(
 			VTab().
 				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					target.ActiveFilterTab = ft.ID
-					target.FilterQuery = ft.Query.Encode()
+					target.FilterQuery = encodedQuery
 				}).Go()).
 				Children(
 					h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
@@ -216,7 +214,11 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 
 	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
 		stateful.ReloadAction(ctx, c, nil,
-			stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData`),
+			stateful.WithAppendFix(`
+			if (v.compo.filter_query !== $event.encodedFilterData) {
+				v.compo.filter_query = $event.encodedFilterData; 
+				v.compo.active_filter_tab = "";
+			}`),
 		).Go(),
 	)
 }
