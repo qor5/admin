@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/web/v3"
+
 	"github.com/sunfmin/reflectutils"
 
 	"github.com/qor5/admin/v3/utils"
@@ -25,7 +27,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
 
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
@@ -1295,7 +1296,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogPortal,
 		Body: web.Scope(
-			VOverlay(
+			VDialog(
 				VSheet(
 					VCard(
 						VCardTitle(h.Text("New Element")),
@@ -1309,10 +1310,9 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 						VCardText(
 							web.Portal().Name(addContainerDialogContentPortal),
 						).Class("px-6"),
-					).Variant(VariantTonal).Width("60%").Class(H100),
-				).Class("d-inline-flex").Width(665).Height(460),
-			).Attr("v-model", "locals.dialog").Activator(".newContainer").
-				LocationStrategy("connected").Location(LocationBottom),
+					).Width("60%").Class(H100),
+				).Class("d-inline-flex"),
+			).Attr("v-model", "locals.dialog").Width(665).Height(460),
 		).VSlot(`{locals}`).Init(`{dialog:true}`),
 	})
 	return
