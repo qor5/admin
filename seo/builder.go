@@ -64,16 +64,6 @@ func New(db *gorm.DB, ops ...Option) *Builder {
 	for _, opFunc := range ops {
 		opFunc(b)
 	}
-
-	if err := db.AutoMigrate(&QorSEOSetting{}); err != nil {
-		panic(err)
-	}
-
-	// NOTE: do not replace b.seoRoot.name with defaultGlobalSEOName.
-	// because the name of global seo may be changed by user through WithGlobalSEOName option.
-	if err := insertIfNotExists(db, b.seoRoot.name, b.locales); err != nil {
-		panic(err)
-	}
 	return b
 }
 
@@ -506,4 +496,20 @@ func insertIfNotExists(db *gorm.DB, seoName string, locales []string) error {
 		return err
 	}
 	return nil
+}
+
+func (b *Builder) AutoMigrate() (r *Builder) {
+	if err := AutoMigrate(b.db); err != nil {
+		panic(err)
+	}
+	// NOTE: do not replace b.seoRoot.name with defaultGlobalSEOName.
+	// because the name of global seo may be changed by user through WithGlobalSEOName option.
+	if err := insertIfNotExists(b.db, b.seoRoot.name, b.locales); err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func AutoMigrate(db *gorm.DB) (err error) {
+	return db.AutoMigrate(&QorSEOSetting{})
 }

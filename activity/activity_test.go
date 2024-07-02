@@ -73,7 +73,7 @@ func resetDB() {
 func TestModelKeys(t *testing.T) {
 	resetDB()
 
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 	builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
@@ -98,7 +98,7 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).LinkFunc(func(v interface{}) string {
 		page := v.(Page)
@@ -117,7 +117,7 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
@@ -198,7 +198,7 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestCreator(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	builder.Install(pb)
 
 	builder.RegisterModel(pageModel)
@@ -224,7 +224,7 @@ func (u user) GetName() string {
 }
 
 func TestCreatorInferface(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	builder.Install(pb)
 
 	builder.RegisterModel(pageModel)
@@ -244,7 +244,7 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-	builder := New(db, &TestActivityLog{})
+	builder := New(db, &TestActivityLog{}).AutoMigrate()
 	builder.Install(pb)
 
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
@@ -279,7 +279,7 @@ func TestGetActivityLogs(t *testing.T) {
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(db, &TestActivityLog{}).CreatorContextKey("creator")
+	builder := New(db, &TestActivityLog{}).CreatorContextKey("creator").AutoMigrate()
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 
