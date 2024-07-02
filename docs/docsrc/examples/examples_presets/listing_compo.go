@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -35,6 +37,10 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 
 	{
 		cl := mb.Listing()
+		cl.DialogWidth("900")
+		cl.Action("Dialog").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+			return v.VBtn("Dialog").Elevation(0).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).Go())
+		})
 		cl.OrderableFields([]*presets.OrderableField{
 			{
 				FieldName: "ID",
@@ -50,13 +56,11 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 				if err == nil {
-					web.AppendRunScripts(r,
-						web.NotifyScript(
-							presets.NotifModelsDeleted(&Customer{}),
-							presets.PayloadModelsDeleted{
-								Ids: selectedIds,
-							},
-						),
+					r.Emit(
+						presets.NotifModelsDeleted(&Customer{}),
+						presets.PayloadModelsDeleted{
+							Ids: selectedIds,
+						},
 					)
 				}
 				return
@@ -119,6 +123,10 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 	}
 	{
 		cl := mb.ListingX()
+		cl.DialogWidth("900")
+		cl.Action("Dialog").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+			return v.VBtn("Dialog").Elevation(0).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialogX).Go())
+		})
 		cl.OrderableFields([]*presets.OrderableField{
 			{
 				FieldName: "ID",
@@ -131,17 +139,14 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 		})
 		cl.SelectableColumns(true)
 		cl.BulkAction("Delete").Label("Delete").
-			// TODO: 因为需要自行处理消息投递了，所以所有使用 UpdateFunc 都需要检查一遍
 			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 				if err == nil {
-					web.AppendRunScripts(r,
-						web.NotifyScript(
-							presets.NotifModelsDeleted(&Customer{}),
-							presets.PayloadModelsDeleted{
-								Ids: selectedIds,
-							},
-						),
+					r.Emit(
+						presets.NotifModelsDeleted(&Customer{}),
+						presets.PayloadModelsDeleted{
+							Ids: selectedIds,
+						},
 					)
 				}
 				return

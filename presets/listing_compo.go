@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
@@ -37,7 +36,7 @@ type DisplayColumn struct {
 type ListingCompo struct {
 	lb *ListingBuilderX `inject:""`
 
-	CompoID            string          `json:"compo_id"`
+	ID                 string          `json:"id"`
 	Popup              bool            `json:"popup"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
 	SelectedIds        []string        `json:"selected_ids" query:",omitempty"`
@@ -50,26 +49,26 @@ type ListingCompo struct {
 	FilterQuery        string          `json:"filter_query" query:";method:bare,f_"`
 }
 
-func (c *ListingCompo) CompoName() string {
-	return fmt.Sprintf("ListingCompo_%s", c.CompoID)
+func (c *ListingCompo) CompoID() string {
+	return fmt.Sprintf("ListingCompo_%s", c.ID)
 }
 
-func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.HTMLComponent {
+func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent, immediate bool) h.HTMLComponent {
 	return stateful.Actionable(ctx, c,
 		// for sync locals between listing compo and actions compo
-		web.DataSync("locals", c.CompoName()),
+		web.DataSync("locals", c.CompoID()).Attr("immediate", immediate),
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
-	locals.dialog = true;
-	locals.current_editing_id = "";
-	locals.selected_ids = %s || [];
-	let orig = locals.%s;
-	locals.%s = function() {
-		let v = orig();
-		v.compo.selected_ids = this.selected_ids;
-		return v
-	}
-}`,
+			locals.dialog = false;
+			locals.current_editing_id = "";
+			locals.selected_ids = %s || [];
+			let orig = locals.%s;
+			locals.%s = function() {
+				let v = orig();
+				v.compo.selected_ids = this.selected_ids;
+				return v
+			}
+		}`,
 			h.JSONString(c.SelectedIds),
 			stateful.LocalsKeyNewAction,
 			stateful.LocalsKeyNewAction,
@@ -79,11 +78,11 @@ func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent) h.H
 }
 
 func (c *ListingCompo) dialogPortalName() string {
-	return fmt.Sprintf("%s_dialog", c.CompoName())
+	return fmt.Sprintf("%s_action_dialog", c.CompoID())
 }
 
 func (c *ListingCompo) dialogContentPortalName() string {
-	return fmt.Sprintf("%s_dialog_content", c.CompoName())
+	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
 }
 
 func (c *ListingCompo) closeDialog() string {
@@ -103,14 +102,15 @@ func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width 
 }
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	return c.wrapCompo(ctx,
+	return c.wrapCompo(
+		ctx,
 		h.Components(
-			web.Observe(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()),
-			web.Observe(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
-if (payload && payload.ids && payload.ids.length > 0) {
-	locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
-}
-%s`, stateful.ReloadAction(ctx, c, nil).Go())),
+			web.Listen(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()).Attr("name", c.CompoID()),
+			web.Listen(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+	if (payload && payload.ids && payload.ids.length > 0) {
+		locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
+	}
+	%s`, stateful.ReloadAction(ctx, c, nil).Go())).Attr("name", c.CompoID()),
 			web.Portal().Name(c.dialogPortalName()),
 			VCard().Elevation(0).Children(
 				c.tabsFilter(ctx),
@@ -121,12 +121,13 @@ if (payload && payload.ids && payload.ids.length > 0) {
 				c.cardActionsFooter(ctx),
 			),
 		),
+		true,
 	).MarshalHTML(ctx)
 }
 
-func (c *ListingCompo) tabsFilter(ctx context.Context) (r h.HTMLComponent) {
+func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 	if c.lb.filterTabsFunc == nil {
-		return
+		return nil
 	}
 	evCtx, _ := c.MustGetEventContext(ctx)
 
@@ -564,8 +565,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		if r != nil {
 			rr := r
 			r = h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
-				ctx = stateful.WithPortalName(ctx, c.CompoName()+"_actions")
-				return c.wrapCompo(ctx, rr).MarshalHTML(ctx)
+				ctx = stateful.WithPortalName(ctx, c.CompoID()+"_actions")
+				return c.wrapCompo(ctx, rr, false).MarshalHTML(ctx)
 			})
 		}
 	}()
@@ -645,7 +646,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	return h.Div(buttons...)
 }
 
-func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, actionableIds []string) (r h.HTMLComponent) {
+func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, selectedIds []string, actionableIds []string) h.HTMLComponent {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var errCompo h.HTMLComponent

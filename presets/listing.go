@@ -289,6 +289,14 @@ func (b *ListingBuilder) listingComponent(
 	}
 	return web.Scope().VSlot("{ locals }").Init(`{currEditingListItemID: ""}`).Children(
 		VCard().Elevation(0).Children(
+			web.Listen(b.mb.NotifModelsUpdated(), newReloadCall().Go()),
+			web.Listen(b.mb.NotifModelsDeleted(), fmt.Sprintf(`
+			const b = %s
+			if (payload && payload.ids && payload.ids.length > 0) {
+				b.query(%q, {value: payload.ids, add: false, remove: true})
+			}
+			b.go()
+			`, newReloadCall().String(), ParamSelectedIds)),
 			b.filterTabs(ctx, inDialog),
 			b.searchFilterToolbar(ctx, msgr, inDialog),
 			VCardText().Class("pa-2").Children(
@@ -297,15 +305,7 @@ func (b *ListingBuilder) listingComponent(
 			),
 			b.footerCardActions(ctx),
 		),
-	).
-		Observe(b.mb.NotifModelsUpdated(), newReloadCall().Go()).
-		Observe(b.mb.NotifModelsDeleted(), fmt.Sprintf(`
-const b = %s
-if (payload && payload.ids && payload.ids.length > 0) {
-	b.query(%q, {value: payload.ids, add: false, remove: true})
-}
-b.go()
-`, newReloadCall().String(), ParamSelectedIds))
+	)
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {

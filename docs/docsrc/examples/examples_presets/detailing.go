@@ -173,12 +173,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
 		if err == nil {
-			web.AppendRunScripts(r,
-				web.NotifyScript(
-					presets.NotifModelsUpdated(&Customer{}),
-					presets.PayloadModelsUpdated{Ids: []string{id}},
-				),
-			)
+			r.Emit(presets.NotifModelsUpdated(&Customer{}), presets.PayloadModelsUpdated{Ids: []string{id}})
 		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {

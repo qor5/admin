@@ -104,6 +104,7 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
+	mb.RegisterEventFunc(actions.OpenListingDialogX, mb.listingx.openListingDialog)
 
 	// list editor
 	mb.RegisterEventFunc(actions.AddRowEvent, addListItemRow(mb))

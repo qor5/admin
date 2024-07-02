@@ -297,11 +297,9 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 			if err != nil {
 				ctx.Flash = err.Error()
 			} else {
-				web.AppendRunScripts(r,
-					web.NotifyScript(
-						presets.NotifModelsUpdated(&Customer{}),
-						presets.PayloadModelsUpdated{Ids: selectedIds},
-					),
+				r.Emit(
+					presets.NotifModelsUpdated(&Customer{}),
+					presets.PayloadModelsUpdated{Ids: selectedIds},
 				)
 			}
 			return
@@ -323,13 +321,11 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 		UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 			err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 			if err == nil {
-				web.AppendRunScripts(r,
-					web.NotifyScript(
-						presets.NotifModelsDeleted(&Customer{}),
-						presets.PayloadModelsDeleted{
-							Ids: selectedIds,
-						},
-					),
+				r.Emit(
+					presets.NotifModelsDeleted(&Customer{}),
+					presets.PayloadModelsDeleted{
+						Ids: selectedIds,
+					},
 				)
 			}
 			return

@@ -230,11 +230,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		if err != nil {
 			ctx.Flash = err.Error()
 		} else {
-			web.AppendRunScripts(r,
-				web.NotifyScript(
-					presets.NotifModelsUpdated(&Customer{}),
-					presets.PayloadModelsUpdated{Ids: selectedIds},
-				),
+			r.Emit(
+				presets.NotifModelsUpdated(&Customer{}),
+				presets.PayloadModelsUpdated{Ids: selectedIds},
 			)
 		}
 		return
@@ -253,11 +251,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
 		if err == nil {
-			web.AppendRunScripts(r,
-				web.NotifyScript(
-					presets.NotifModelsDeleted(&Customer{}),
-					presets.PayloadModelsDeleted{Ids: selectedIds},
-				),
+			r.Emit(
+				presets.NotifModelsDeleted(&Customer{}),
+				presets.PayloadModelsDeleted{Ids: selectedIds},
 			)
 		}
 		return
@@ -539,11 +535,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
 		if err == nil {
-			web.AppendRunScripts(r,
-				web.NotifyScript(
-					presets.NotifModelsUpdated(&Customer{}),
-					presets.PayloadModelsUpdated{Ids: []string{id}},
-				),
+			r.Emit(
+				presets.NotifModelsUpdated(&Customer{}),
+				presets.PayloadModelsUpdated{Ids: []string{id}},
 			)
 		}
 		return

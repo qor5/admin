@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"context"
 	"sync"
 
 	"github.com/qor5/web/v3"
@@ -174,6 +175,12 @@ func (b *ListingBuilderX) GetPageFunc() web.PageFunc {
 	return b.defaultPageFunc
 }
 
+func (b *ListingBuilderX) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
+	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
+		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
+	}
+}
+
 func (b *ListingBuilderX) injectorName() string {
 	// TODO: 这个没准需要再考虑命名
 	return b.mb.Info().URIName()
@@ -206,25 +213,75 @@ func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageRe
 
 	injectorName := b.injectorName()
 	listingCompo := &ListingCompo{
-		CompoID: injectorName, // TODO: 这个没准需要再考虑命名
+		ID: injectorName,
 	}
-	injectedListingCompo := stateful.MustInject(injectorName, stateful.SyncQuery(listingCompo))
-
-	// TODO: 很尴尬，这个比较特别，目前只能这样做
-	ctx := stateful.WithInjectorName(evCtx.R.Context(), injectorName)
-	actionsCompo := listingCompo.actionsComponent(ctx)
-	evCtx.WithContextValue(ctxActionsComponent, actionsCompo)
-
-	r.Body = VLayout(
-		VMain(
-			injectedListingCompo,
+	injectedListingCompo := stateful.MustInject(injectorName,
+		stateful.SyncQuery(
+			listingCompo,
 		),
 	)
+
+	// TODO: 这个比较特别，后续需要考虑换成 Teleport 来实现来保证 ListingCompo 的独立性
+	// TODO: 最好即时改掉
+	actionsCompo := listingCompo.actionsComponent(evCtx.R.Context())
+	actionsCompo = h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
+		ctx = stateful.WithInjectorName(ctx, injectorName)
+		return actionsCompo.MarshalHTML(ctx)
+	})
+	evCtx.WithContextValue(ctxActionsComponent, actionsCompo)
+
+	r.Body = VLayout(VMain(injectedListingCompo))
 	return
 }
 
-func (b *ListingBuilderX) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
-	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
+func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
+	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
+		err = perm.PermissionDenied
+		return
 	}
+
+	msgr := MustGetMessages(evCtx.R)
+	title := b.title
+	if title == "" {
+		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	}
+
+	evCtx.WithContextValue(ctxInDialog, true) // TODO:
+
+	injectorName := b.injectorName()
+	listingCompo := &ListingCompo{
+		ID:                 injectorName + "_dialog",
+		Popup:              true,
+		LongStyleSearchBox: true,
+	}
+	injectedListingCompo := stateful.MustInject(injectorName, stateful.ParseQuery(listingCompo))
+	actionsCompo := listingCompo.actionsComponent(evCtx.R.Context()) // TODO: Teleport
+	actionsCompo = h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
+		ctx = stateful.WithInjectorName(ctx, injectorName)
+		return actionsCompo.MarshalHTML(ctx)
+	})
+	content := VCard().Children(
+		VCardTitle().Class("d-flex align-center").Children(
+			h.Text(title),
+			VSpacer(),
+			actionsCompo,
+			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
+		),
+		VCardText().Class("pa-0").Children(
+			injectedListingCompo,
+		),
+	)
+	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
+	if b.dialogWidth != "" {
+		dialog.Width(b.dialogWidth)
+	}
+	if b.dialogHeight != "" {
+		content.Attr("height", b.dialogHeight)
+	}
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: ListingDialogPortalName,
+		Body: web.Scope(dialog).VSlot("{ form }"),
+	})
+	r.RunScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
+	return
 }

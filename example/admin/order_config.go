@@ -116,11 +116,9 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 		if err := db.Model(&models.Order{}).Where("id IN (?)", selectedIds).Update("status", status).Error; err != nil {
 			return err
 		}
-		web.AppendRunScripts(r,
-			web.NotifyScript(
-				presets.NotifModelsUpdated(&models.Order{}),
-				presets.PayloadModelsUpdated{Ids: selectedIds},
-			),
+		r.Emit(
+			presets.NotifModelsUpdated(&models.Order{}),
+			presets.PayloadModelsUpdated{Ids: selectedIds},
 		)
 		return
 	})

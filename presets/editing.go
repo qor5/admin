@@ -379,11 +379,9 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 			return
 		}
 
-		web.AppendRunScripts(&r,
-			web.NotifyScript(
-				b.mb.NotifModelsDeleted(),
-				PayloadModelsDeleted{Ids: []string{id}},
-			),
+		r.Emit(
+			b.mb.NotifModelsDeleted(),
+			PayloadModelsDeleted{Ids: []string{id}},
 		)
 	}
 
@@ -459,11 +457,9 @@ func (b *EditingBuilder) doUpdate(
 		return err1
 	}
 
-	web.AppendRunScripts(r,
-		web.NotifyScript(
-			b.mb.NotifModelsUpdated(),
-			PayloadModelsUpdated{Models: []any{obj}},
-		),
+	r.Emit(
+		b.mb.NotifModelsUpdated(),
+		PayloadModelsUpdated{Models: []any{obj}},
 	)
 
 	overlayType := ctx.R.FormValue(ParamOverlay)

@@ -26,7 +26,7 @@ type VersionComponentConfig struct {
 	UnPublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	RePublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	Top              bool
-	DisableObservers bool
+	DisableListeners bool
 }
 
 func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
@@ -146,14 +146,17 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		r := web.Scope(div).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
-		if !config.DisableObservers {
-			r.Observers(
-				ObserverVersionSelected(mb, primarySlugger.PrimarySlug()),
-				ObserverItemDeleted(mb, primarySlugger.PrimarySlug()),
-			)
+		var listeners []h.HTMLComponent
+		if !config.DisableListeners {
+			slug := primarySlugger.PrimarySlug()
+			listeners = []h.HTMLComponent{
+				NewListenerVersionSelected(mb, slug),
+				NewListenerItemDeleted(mb, slug),
+			}
 		}
-		return r
+		return web.Scope(div).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`).Children(
+			listeners...,
+		)
 	}
 }
 
