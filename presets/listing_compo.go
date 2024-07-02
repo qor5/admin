@@ -53,10 +53,8 @@ func (c *ListingCompo) CompoID() string {
 	return fmt.Sprintf("ListingCompo_%s", c.ID)
 }
 
-func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent, immediate bool) h.HTMLComponent {
+func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	return stateful.Actionable(ctx, c,
-		// for sync locals between listing compo and actions compo
-		web.DataSync("locals", c.CompoID()).Attr("immediate", immediate),
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
 			locals.dialog = false;
@@ -73,55 +71,27 @@ func (c *ListingCompo) wrapCompo(ctx context.Context, compo h.HTMLComponent, imm
 			stateful.LocalsKeyNewAction,
 			stateful.LocalsKeyNewAction,
 		)),
-		compo,
-	)
-}
-
-func (c *ListingCompo) dialogPortalName() string {
-	return fmt.Sprintf("%s_action_dialog", c.CompoID())
-}
-
-func (c *ListingCompo) dialogContentPortalName() string {
-	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
-}
-
-func (c *ListingCompo) closeDialog() string {
-	return fmt.Sprintf("locals.dialog = false;")
-}
-
-func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: c.dialogPortalName(),
-		Body: web.Scope().VSlot("{ form }").Children(
-			VDialog().Attr("v-model", "locals.dialog").Width(cmp.Or(width, c.lb.mb.rightDrawerWidth)).Children(
-				web.Portal(comp).Name(c.dialogContentPortalName()),
-			),
-		),
-	})
-	web.AppendRunScripts(r, "setTimeout(function(){ locals.dialog = true }, 100);")
-}
-
-func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
-	return c.wrapCompo(
-		ctx,
-		h.Components(
-			web.Listen(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()).Attr("name", c.CompoID()),
-			web.Listen(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+		web.Listen(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()).Attr("name", c.CompoID()),
+		web.Listen(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 	if (payload && payload.ids && payload.ids.length > 0) {
 		locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
 	}
 	%s`, stateful.ReloadAction(ctx, c, nil).Go())).Attr("name", c.CompoID()),
-			web.Portal().Name(c.dialogPortalName()),
-			VCard().Elevation(0).Children(
-				c.tabsFilter(ctx),
-				c.toolbarSearch(ctx),
-				VCardText().Class("pa-2").Children(
-					c.dataTable(ctx),
-				),
-				c.cardActionsFooter(ctx),
-			),
+		// the dialog is handled internally so that it can make good use of locals
+		web.Portal().Name(c.actionDialogPortalName()),
+		// user should locate it self
+		// https://vuejs.org/guide/built-ins/teleport.html
+		h.Tag("Teleport").Attr("to", "#"+c.ActionsComponentTeleportToID()).Children(
+			c.actionsComponent(ctx),
 		),
-		true,
+		VCard().Elevation(0).Children(
+			c.tabsFilter(ctx),
+			c.toolbarSearch(ctx),
+			VCardText().Class("pa-2").Children(
+				c.dataTable(ctx),
+			),
+			c.cardActionsFooter(ctx),
+		),
 	).MarshalHTML(ctx)
 }
 
@@ -560,16 +530,35 @@ func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {
 	return VCardActions(compos...)
 }
 
+func (c *ListingCompo) actionDialogPortalName() string {
+	return fmt.Sprintf("%s_action_dialog", c.CompoID())
+}
+
+func (c *ListingCompo) actionDialogContentPortalName() string {
+	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
+}
+
+func (c *ListingCompo) closeActionDialog() string {
+	return fmt.Sprintf("locals.dialog = false;")
+}
+
+func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: c.actionDialogPortalName(),
+		Body: web.Scope().VSlot("{ form }").Children(
+			VDialog().Attr("v-model", "locals.dialog").Width(cmp.Or(width, c.lb.mb.rightDrawerWidth)).Children(
+				web.Portal(comp).Name(c.actionDialogContentPortalName()),
+			),
+		),
+	})
+	web.AppendRunScripts(r, "setTimeout(function(){ locals.dialog = true }, 100);")
+}
+
+func (c *ListingCompo) ActionsComponentTeleportToID() string {
+	return fmt.Sprintf("%s_actions", c.CompoID())
+}
+
 func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent) {
-	defer func() {
-		if r != nil {
-			rr := r
-			r = h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
-				ctx = stateful.WithPortalName(ctx, c.CompoID()+"_actions")
-				return c.wrapCompo(ctx, rr, false).MarshalHTML(ctx)
-			})
-		}
-	}()
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	var buttons []h.HTMLComponent
@@ -687,7 +676,7 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeDialog()),
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeActionDialog()),
 			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
 				stateful.PostAction(ctx, c, c.DoBulkAction, DoBulkActionRequest{
 					Name: bulk.name,
@@ -785,7 +774,7 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	}
 
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
-	web.AppendRunScripts(&r, c.closeDialog())
+	web.AppendRunScripts(&r, c.closeActionDialog())
 	return r, nil
 }
 
@@ -811,7 +800,7 @@ func (c *ListingCompo) actionPanel(ctx context.Context, action *ActionBuilder) (
 		),
 		VCardActions(
 			VSpacer(),
-			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeDialog()),
+			VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", c.closeActionDialog()),
 			VBtn(msgr.OK).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click",
 				stateful.PostAction(ctx, c, c.DoAction, DoActionRequest{
 					Name: action.name,
@@ -869,14 +858,14 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 	if err := action.updateFunc("", evCtx, &r); err != nil {
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: c.dialogContentPortalName(),
+			Name: c.actionDialogContentPortalName(),
 			Body: c.actionPanel(ctx, action),
 		})
 		return r, nil
 	}
 
 	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
-	web.AppendRunScripts(&r, c.closeDialog())
+	web.AppendRunScripts(&r, c.closeActionDialog())
 	return r, nil
 }
 

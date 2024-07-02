@@ -992,6 +992,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
+		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
+
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
@@ -1059,6 +1061,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 							).Class("mr-auto"),
 							GetActionsComponent(ctx),
+							h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
+								return h.Div().Id(actionsComponentTeleportToID)
+							}),
 						).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
 					).
 						Elevation(0),

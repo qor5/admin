@@ -11,6 +11,7 @@ const (
 	ctxInDialog presetsCtx = iota
 	ctxActionsComponent
 	ctxDetailingAfterTitleComponent
+	ctxActionsComponentTeleportToID
 )
 
 func IsInDialog(ctx *web.EventContext) bool {
@@ -23,6 +24,11 @@ func IsInDialog(ctx *web.EventContext) bool {
 
 func GetActionsComponent(ctx *web.EventContext) h.HTMLComponent {
 	v, _ := ctx.ContextValue(ctxActionsComponent).(h.HTMLComponent)
+	return v
+}
+
+func GetActionsComponentTeleportToID(ctx *web.EventContext) string {
+	v, _ := ctx.ContextValue(ctxActionsComponentTeleportToID).(string)
 	return v
 }
 

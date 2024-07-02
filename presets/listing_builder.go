@@ -1,7 +1,6 @@
 package presets
 
 import (
-	"context"
 	"sync"
 
 	"github.com/qor5/web/v3"
@@ -213,24 +212,18 @@ func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageRe
 
 	injectorName := b.injectorName()
 	listingCompo := &ListingCompo{
-		ID: injectorName,
+		ID:                 injectorName,
+		Popup:              false,
+		LongStyleSearchBox: false,
 	}
-	injectedListingCompo := stateful.MustInject(injectorName,
-		stateful.SyncQuery(
-			listingCompo,
+
+	evCtx.WithContextValue(ctxActionsComponentTeleportToID, listingCompo.ActionsComponentTeleportToID())
+
+	r.Body = VLayout(
+		VMain(
+			stateful.MustInject(injectorName, stateful.SyncQuery(listingCompo)),
 		),
 	)
-
-	// TODO: 这个比较特别，后续需要考虑换成 Teleport 来实现来保证 ListingCompo 的独立性
-	// TODO: 最好即时改掉
-	actionsCompo := listingCompo.actionsComponent(evCtx.R.Context())
-	actionsCompo = h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
-		ctx = stateful.WithInjectorName(ctx, injectorName)
-		return actionsCompo.MarshalHTML(ctx)
-	})
-	evCtx.WithContextValue(ctxActionsComponent, actionsCompo)
-
-	r.Body = VLayout(VMain(injectedListingCompo))
 	return
 }
 
@@ -254,21 +247,15 @@ func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.Even
 		Popup:              true,
 		LongStyleSearchBox: true,
 	}
-	injectedListingCompo := stateful.MustInject(injectorName, stateful.ParseQuery(listingCompo))
-	actionsCompo := listingCompo.actionsComponent(evCtx.R.Context()) // TODO: Teleport
-	actionsCompo = h.ComponentFunc(func(ctx context.Context) ([]byte, error) {
-		ctx = stateful.WithInjectorName(ctx, injectorName)
-		return actionsCompo.MarshalHTML(ctx)
-	})
 	content := VCard().Children(
 		VCardTitle().Class("d-flex align-center").Children(
 			h.Text(title),
 			VSpacer(),
-			actionsCompo,
+			h.Div().Id(listingCompo.ActionsComponentTeleportToID()),
 			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
 		),
 		VCardText().Class("pa-0").Children(
-			injectedListingCompo,
+			stateful.MustInject(injectorName, stateful.ParseQuery(listingCompo)),
 		),
 	)
 	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
