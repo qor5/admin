@@ -66,18 +66,6 @@ func (b *ListingBuilder) Action(name string) (r *ActionBuilder) {
 	return
 }
 
-func (b *ListingBuilderX) Action(name string) (r *ActionBuilder) {
-	builder := getAction(b.actions, name)
-	if builder != nil {
-		return builder
-	}
-
-	r = &ActionBuilder{}
-	r.name = name
-	b.actions = append(b.actions, r)
-	return
-}
-
 func (b *DetailingBuilder) Action(name string) (r *ActionBuilder) {
 	builder := getAction(b.actions, name)
 	if builder != nil {

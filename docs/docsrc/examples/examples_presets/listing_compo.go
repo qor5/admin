@@ -18,7 +18,7 @@ import (
 
 func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 	mb *presets.ModelBuilder,
-	cl *presets.ListingBuilderX,
+	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
@@ -34,178 +34,91 @@ func PresetsHelloWorldX(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
 	ce = mb.Editing()
+	cl = mb.Listing()
 
-	{
-		cl := mb.Listing()
-		cl.DialogWidth("900")
-		cl.Action("Dialog").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			return v.VBtn("Dialog").Elevation(0).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).Go())
-		})
-		cl.OrderableFields([]*presets.OrderableField{
-			{
-				FieldName: "ID",
-				DBColumn:  "id",
-			},
-			{
-				FieldName: "Name",
-				DBColumn:  "name",
-			},
-		})
-		cl.SelectableColumns(true)
-		cl.BulkAction("Delete").Label("Delete").
-			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
-				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
-				if err == nil {
-					r.Emit(
-						presets.NotifModelsDeleted(&Customer{}),
-						presets.PayloadModelsDeleted{
-							Ids: selectedIds,
-						},
-					)
-				}
-				return
-			}).
-			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
-				return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
-			})
-		cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-			return []*presets.FilterTab{
-				{
-					Label: "All",
-					Query: url.Values{"all": []string{"1"}},
-				},
-				{
-					Label: "Felix",
-					Query: url.Values{"name.ilike": []string{"felix"}},
-				},
-				{
-					Label: "Approved",
-					Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
-				},
-			}
-		})
-		cl.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-			msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, Messages_en_US).(*Messages)
-			var companyOptions []*vuetifyx.SelectItem
-			err := db.Model(&Company{}).Select("name as text, id as value").Scan(&companyOptions).Error
-			if err != nil {
-				panic(err)
-			}
+	cl.DialogWidth("900")
+	cl.Action("ListingDialog").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return v.VBtn("ListingDialog").Elevation(0).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).Go())
+	})
 
-			return []*vuetifyx.FilterItem{
-				{
-					Key:          "created",
-					Label:        msgr.CustomersFilterCreated,
-					ItemType:     vuetifyx.ItemTypeDatetimeRange,
-					SQLCondition: `created_at %s ?`,
-				},
-				{
-					Key:          "approved",
-					Label:        msgr.CustomersFilterApproved,
-					ItemType:     vuetifyx.ItemTypeDatetimeRange,
-					SQLCondition: `approved_at %s ?`,
-				},
-				{
-					Key:          "name",
-					Label:        msgr.CustomersFilterName,
-					ItemType:     vuetifyx.ItemTypeString,
-					SQLCondition: `name %s ?`,
-				},
-				{
-					Key:          "company",
-					Label:        msgr.CustomersFilterCompany,
-					ItemType:     vuetifyx.ItemTypeSelect,
-					SQLCondition: `company_id %s ?`,
-					Options:      companyOptions,
-				},
+	cl.OrderableFields([]*presets.OrderableField{
+		{
+			FieldName: "ID",
+			DBColumn:  "id",
+		},
+		{
+			FieldName: "Name",
+			DBColumn:  "name",
+		},
+	})
+	cl.SelectableColumns(true)
+	cl.BulkAction("Delete").Label("Delete").
+		UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+			err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+			if err == nil {
+				r.Emit(
+					presets.NotifModelsDeleted(&Customer{}),
+					presets.PayloadModelsDeleted{
+						Ids: selectedIds,
+					},
+				)
 			}
+			return
+		}).
+		ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
 		})
-	}
-	{
-		cl := mb.ListingX()
-		cl.DialogWidth("900")
-		cl.Action("Dialog").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			return v.VBtn("Dialog").Elevation(0).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialogX).Go())
-		})
-		cl.OrderableFields([]*presets.OrderableField{
+	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		return []*presets.FilterTab{
 			{
-				FieldName: "ID",
-				DBColumn:  "id",
+				Label: "All",
+				Query: url.Values{},
 			},
 			{
-				FieldName: "Name",
-				DBColumn:  "name",
+				Label: "Felix",
+				Query: url.Values{"name.ilike": []string{"felix"}},
 			},
-		})
-		cl.SelectableColumns(true)
-		cl.BulkAction("Delete").Label("Delete").
-			UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
-				err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
-				if err == nil {
-					r.Emit(
-						presets.NotifModelsDeleted(&Customer{}),
-						presets.PayloadModelsDeleted{
-							Ids: selectedIds,
-						},
-					)
-				}
-				return
-			}).
-			ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
-				return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
-			})
-		cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-			return []*presets.FilterTab{
-				{
-					Label: "All",
-					Query: url.Values{},
-				},
-				{
-					Label: "Felix",
-					Query: url.Values{"name.ilike": []string{"felix"}},
-				},
-				{
-					Label: "Approved",
-					Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
-				},
-			}
-		})
-		cl.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-			msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, Messages_en_US).(*Messages)
-			var companyOptions []*vuetifyx.SelectItem
-			err := db.Model(&Company{}).Select("name as text, id as value").Scan(&companyOptions).Error
-			if err != nil {
-				panic(err)
-			}
+			{
+				Label: "Approved",
+				Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
+			},
+		}
+	})
+	cl.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, Messages_en_US).(*Messages)
+		var companyOptions []*vuetifyx.SelectItem
+		err := db.Model(&Company{}).Select("name as text, id as value").Scan(&companyOptions).Error
+		if err != nil {
+			panic(err)
+		}
 
-			return []*vuetifyx.FilterItem{
-				{
-					Key:          "created",
-					Label:        msgr.CustomersFilterCreated,
-					ItemType:     vuetifyx.ItemTypeDatetimeRange,
-					SQLCondition: `created_at %s ?`,
-				},
-				{
-					Key:          "approved",
-					Label:        msgr.CustomersFilterApproved,
-					ItemType:     vuetifyx.ItemTypeDatetimeRange,
-					SQLCondition: `approved_at %s ?`,
-				},
-				{
-					Key:          "name",
-					Label:        msgr.CustomersFilterName,
-					ItemType:     vuetifyx.ItemTypeString,
-					SQLCondition: `name %s ?`,
-				},
-				{
-					Key:          "company",
-					Label:        msgr.CustomersFilterCompany,
-					ItemType:     vuetifyx.ItemTypeSelect,
-					SQLCondition: `company_id %s ?`,
-					Options:      companyOptions,
-				},
-			}
-		})
-	}
+		return []*vuetifyx.FilterItem{
+			{
+				Key:          "created",
+				Label:        msgr.CustomersFilterCreated,
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				SQLCondition: `created_at %s ?`,
+			},
+			{
+				Key:          "approved",
+				Label:        msgr.CustomersFilterApproved,
+				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				SQLCondition: `approved_at %s ?`,
+			},
+			{
+				Key:          "name",
+				Label:        msgr.CustomersFilterName,
+				ItemType:     vuetifyx.ItemTypeString,
+				SQLCondition: `name %s ?`,
+			},
+			{
+				Key:          "company",
+				Label:        msgr.CustomersFilterCompany,
+				ItemType:     vuetifyx.ItemTypeSelect,
+				SQLCondition: `company_id %s ?`,
+				Options:      companyOptions,
+			},
+		}
+	})
 	return
 }

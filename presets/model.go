@@ -28,7 +28,6 @@ type ModelBuilder struct {
 	fieldLabels         []string
 	placeholders        []string
 	listing             *ListingBuilder
-	listingx            *ListingBuilderX
 	detailing           *DetailingBuilder
 	editing             *EditingBuilder
 	creating            *EditingBuilder
@@ -56,7 +55,6 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb.modelInfo = &ModelInfo{mb: mb}
 	// Be aware the uriName here is still the original struct
 	mb.newListing()
-	mb.newListingX()
 	mb.newDetailing()
 	mb.newEditing()
 
@@ -84,14 +82,8 @@ func (mb *ModelBuilder) Link(v string) *ModelBuilder {
 func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
-	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
-	mb.RegisterEventFunc(actions.DeleteConfirmationX, mb.listingx.deleteConfirmation)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
-	mb.RegisterEventFunc(actions.DoBulkAction, mb.listing.doBulkAction)
-	mb.RegisterEventFunc(actions.DoListingAction, mb.listing.doListingAction)
-	mb.RegisterEventFunc(actions.OpenBulkActionDialog, mb.listing.openBulkActionDialog)
-	mb.RegisterEventFunc(actions.OpenActionDialog, mb.listing.openActionDialog)
 
 	mb.RegisterEventFunc(actions.Action, mb.detailing.formDrawerAction)
 	mb.RegisterEventFunc(actions.DoAction, mb.detailing.doAction)
@@ -104,8 +96,8 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
 
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
+	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
-	mb.RegisterEventFunc(actions.OpenListingDialogX, mb.listingx.openListingDialog)
 
 	// list editor
 	mb.RegisterEventFunc(actions.AddRowEvent, addListItemRow(mb))
@@ -136,24 +128,9 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	return
 }
 
-func (mb *ModelBuilder) newListingX() (lb *ListingBuilder) {
-	mb.listingx = &ListingBuilderX{
-		mb:            mb,
-		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
-	}
-	if mb.p.dataOperator != nil {
-		mb.listingx.SearchFunc(mb.p.dataOperator.Search)
-	}
-
-	rmb := mb.listingx.RowMenu()
-	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFuncX(mb.Info(), "", url.Values{}))
-	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFuncX(mb.Info(), "", url.Values{}))
-	return
-}
-
 func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 	mb.writeFields, mb.listing.searchColumns = mb.p.writeFieldDefaults.inspectFieldsAndCollectName(mb.model, reflect.TypeOf(""))
-	mb.listingx.searchColumns = mb.listing.searchColumns
+	mb.listing.searchColumns = mb.listing.searchColumns
 	mb.editing = &EditingBuilder{mb: mb, FieldsBuilder: *mb.writeFields}
 	if mb.p.dataOperator != nil {
 		mb.editing.FetchFunc(mb.p.dataOperator.Fetch)
@@ -187,10 +164,6 @@ type ModelInfo struct {
 
 func (b ModelInfo) ListingHref() string {
 	return fmt.Sprintf("%s/%s", b.mb.p.prefix, b.mb.uriName)
-}
-
-func (b ModelInfo) ListingHrefX() string {
-	return fmt.Sprintf("%s/%s-x", b.mb.p.prefix, b.mb.uriName)
 }
 
 func (b ModelInfo) EditingHref(id string) string {

@@ -15,7 +15,12 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type ListingBuilderX struct {
+type OrderableField struct {
+	FieldName string
+	DBColumn  string
+}
+
+type ListingBuilder struct {
 	mb              *ModelBuilder
 	bulkActions     []*BulkActionBuilder
 	footerActions   []*FooterActionBuilder
@@ -59,8 +64,8 @@ type ListingBuilderX struct {
 	once sync.Once
 }
 
-func (mb *ModelBuilder) ListingX(vs ...string) (r *ListingBuilderX) {
-	r = mb.listingx
+func (mb *ModelBuilder) Listing(vs ...string) (r *ListingBuilder) {
+	r = mb.listing
 	if len(vs) == 0 {
 		return
 	}
@@ -69,7 +74,7 @@ func (mb *ModelBuilder) ListingX(vs ...string) (r *ListingBuilderX) {
 	return r
 }
 
-func (b *ListingBuilderX) Only(vs ...string) (r *ListingBuilderX) {
+func (b *ListingBuilder) Only(vs ...string) (r *ListingBuilder) {
 	r = b
 	ivs := make([]interface{}, 0, len(vs))
 	for _, v := range vs {
@@ -79,125 +84,125 @@ func (b *ListingBuilderX) Only(vs ...string) (r *ListingBuilderX) {
 	return
 }
 
-func (b *ListingBuilderX) Except(vs ...string) (r *ListingBuilderX) {
+func (b *ListingBuilder) Except(vs ...string) (r *ListingBuilder) {
 	r = b
 	r.FieldsBuilder = *r.FieldsBuilder.Except(vs...)
 	return
 }
 
-func (b *ListingBuilderX) PageFunc(pf web.PageFunc) (r *ListingBuilderX) {
+func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	b.pageFunc = pf
 	return b
 }
 
-func (b *ListingBuilderX) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilderX) {
+func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilder) {
 	b.cellWrapperFunc = cwf
 	return b
 }
 
-func (b *ListingBuilderX) DisablePagination(v bool) (r *ListingBuilderX) {
+func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
 	b.disablePagination = v
 	return b
 }
 
-func (b *ListingBuilderX) SearchFunc(v SearchFunc) (r *ListingBuilderX) {
+func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
 	b.Searcher = v
 	return b
 }
 
-func (b *ListingBuilderX) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *ListingBuilderX) {
+func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *ListingBuilder) {
 	b.Searcher = w(b.Searcher)
 	return b
 }
 
-func (b *ListingBuilderX) Title(title string) (r *ListingBuilderX) {
+func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
 	return b
 }
 
-func (b *ListingBuilderX) KeywordSearchOff(v bool) (r *ListingBuilderX) {
+func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	b.keywordSearchOff = v
 	return b
 }
 
-func (b *ListingBuilderX) SearchColumns(vs ...string) (r *ListingBuilderX) {
+func (b *ListingBuilder) SearchColumns(vs ...string) (r *ListingBuilder) {
 	b.searchColumns = vs
 	return b
 }
 
-func (b *ListingBuilderX) PerPage(v int64) (r *ListingBuilderX) {
+func (b *ListingBuilder) PerPage(v int64) (r *ListingBuilder) {
 	b.perPage = v
 	return b
 }
 
-func (b *ListingBuilderX) OrderBy(v string) (r *ListingBuilderX) {
+func (b *ListingBuilder) OrderBy(v string) (r *ListingBuilder) {
 	b.orderBy = v
 	return b
 }
 
-func (b *ListingBuilderX) NewButtonFunc(v ComponentFunc) (r *ListingBuilderX) {
+func (b *ListingBuilder) NewButtonFunc(v ComponentFunc) (r *ListingBuilder) {
 	b.newBtnFunc = v
 	return b
 }
 
-func (b *ListingBuilderX) ActionsAsMenu(v bool) (r *ListingBuilderX) {
+func (b *ListingBuilder) ActionsAsMenu(v bool) (r *ListingBuilder) {
 	b.actionsAsMenu = v
 	return b
 }
 
-func (b *ListingBuilderX) OrderableFields(v []*OrderableField) (r *ListingBuilderX) {
+func (b *ListingBuilder) OrderableFields(v []*OrderableField) (r *ListingBuilder) {
 	b.orderableFields = v
 	return b
 }
 
-func (b *ListingBuilderX) SelectableColumns(v bool) (r *ListingBuilderX) {
+func (b *ListingBuilder) SelectableColumns(v bool) (r *ListingBuilder) {
 	b.selectableColumns = v
 	return b
 }
 
-func (b *ListingBuilderX) Conditions(v []*SQLCondition) (r *ListingBuilderX) {
+func (b *ListingBuilder) Conditions(v []*SQLCondition) (r *ListingBuilder) {
 	b.conditions = v
 	return b
 }
 
-func (b *ListingBuilderX) DialogWidth(v string) (r *ListingBuilderX) {
+func (b *ListingBuilder) DialogWidth(v string) (r *ListingBuilder) {
 	b.dialogWidth = v
 	return b
 }
 
-func (b *ListingBuilderX) DialogHeight(v string) (r *ListingBuilderX) {
+func (b *ListingBuilder) DialogHeight(v string) (r *ListingBuilder) {
 	b.dialogHeight = v
 	return b
 }
 
-func (b *ListingBuilderX) GetPageFunc() web.PageFunc {
+func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 	if b.pageFunc != nil {
 		return b.pageFunc
 	}
 	return b.defaultPageFunc
 }
 
-func (b *ListingBuilderX) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
+func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
 	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
 		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
 	}
 }
 
-func (b *ListingBuilderX) injectorName() string {
-	return strcase.ToCamel(b.mb.Info().ListingHrefX())
+func (b *ListingBuilder) injectorName() string {
+	return strcase.ToCamel(b.mb.Info().ListingHref())
 }
 
-func (b *ListingBuilderX) setup() {
+func (b *ListingBuilder) setup() {
 	b.once.Do(func() {
 		injectorName := b.injectorName()
 		stateful.RegisterInjector(injectorName)
-		stateful.MustProvide(injectorName, func() *ListingBuilderX {
+		stateful.MustProvide(injectorName, func() *ListingBuilder {
 			return b
 		})
 	})
 }
 
-func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageResponse, err error) {
+func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		return r, perm.PermissionDenied
 	}
@@ -228,7 +233,7 @@ func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageRe
 	return
 }
 
-func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
+func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		err = perm.PermissionDenied
 		return
@@ -281,7 +286,7 @@ func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.Even
 	return
 }
 
-func (b *ListingBuilderX) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
+func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := MustGetMessages(evCtx.R)
 	id := evCtx.R.FormValue(ParamID)
 	promptID := id
@@ -311,12 +316,21 @@ func (b *ListingBuilderX) deleteConfirmation(evCtx *web.EventContext) (r web.Eve
 							Attr("@click", web.Plaid().
 								EventFunc(actions.DoDelete).
 								Queries(evCtx.Queries()).
-								URL(b.mb.Info().ListingHrefX()).
+								URL(b.mb.Info().ListingHref()).
 								Go()),
 					),
 				),
 			),
 		),
 	})
+	return
+}
+
+func (b *ListingBuilder) notifReloadList() string {
+	return "PresetsReloadList_" + b.injectorName()
+}
+
+func (b *ListingBuilder) reloadList(evCtx *web.EventContext) (r web.EventResponse, err error) {
+	r.Emit(b.notifReloadList())
 	return
 }

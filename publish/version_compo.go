@@ -58,15 +58,12 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		}
 
 		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
-		z := &presets.ListingZone{
-			ID: urlSuffix,
-		}
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.EmbedVersion().VersionName),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
-				On("click", z.Plaid().EventFunc(actions.OpenListingDialog).
+				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query("select_id", primarySlugger.PrimarySlug()).
 					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
@@ -226,7 +223,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
-		URIName(pm.Info().URIName() + "-version-list-dialog").
+		URIName(pm.Info().URIName() + versionListDialogURISuffix).
 		InMenu(false)
 
 	b.GetPermission().CreatePolicies(
@@ -273,7 +270,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 
 		queries := ctx.Queries()
 		queries.Set("select_id", p.PrimarySlug())
-		onChange := presets.Zone[*presets.ListingZone](ctx).Plaid().
+		onChange := web.Plaid().
 			URL(ctx.R.URL.Path).Queries(queries).
 			EventFunc(actions.ReloadList).Go()
 

@@ -1263,7 +1263,7 @@ func (b *Builder) initMux() {
 	)
 
 	for _, m := range b.models {
-		m.listingx.setup()
+		m.listing.setup()
 
 		pluralUri := inflection.Plural(m.uriName)
 		info := m.Info()
@@ -1280,14 +1280,6 @@ func (b *Builder) initMux() {
 			b.wrap(m, b.layoutFunc(inPageFunc, m.layoutConfig)),
 		)
 		log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
-
-		routePathX := info.ListingHrefX()
-		inPageFuncX := m.listingx.GetPageFunc()
-		mux.Handle(
-			routePathX,
-			b.wrap(m, b.layoutFunc(inPageFuncX, m.layoutConfig)),
-		)
-		log.Printf("mounted url: %s, events: %s\n", routePathX, m.EventsHub.String())
 
 		if m.hasDetailing {
 			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)

@@ -39,27 +39,6 @@ func (b *ListingBuilder) RowMenu(listings ...string) *RowMenuBuilder {
 	return rmb
 }
 
-func (b *ListingBuilderX) RowMenu(listings ...string) *RowMenuBuilder {
-	if b.rowMenu == nil {
-		b.rowMenu = &RowMenuBuilder{
-			mb:       b.mb,
-			listings: listings,
-			items:    make(map[string]*RowMenuItemBuilder),
-		}
-	}
-
-	rmb := b.rowMenu
-	if len(listings) == 0 {
-		return rmb
-	}
-	rmb.listings = listings
-	for _, li := range rmb.listings {
-		rmb.RowMenuItem(li)
-	}
-
-	return rmb
-}
-
 func (b *RowMenuBuilder) Empty() {
 	b.listings = nil
 	b.items = make(map[string]*RowMenuItemBuilder)

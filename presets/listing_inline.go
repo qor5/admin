@@ -36,7 +36,7 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 	mb := parent.p.Model(elementModel).InMenu(false)
 
 	foreignQuery := strcase.ToSnake(foreignKey) + " = ?"
-	mb.ListingX().PerPage(10).Except(foreignKey).WrapSearchFunc(func(in SearchFunc) SearchFunc {
+	mb.Listing().PerPage(10).Except(foreignKey).WrapSearchFunc(func(in SearchFunc) SearchFunc {
 		return func(model any, params *SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 			compo := ListingCompoFromContext(ctx.R.Context())
 			if compo == nil || compo.ParentID == "" {
@@ -81,7 +81,7 @@ func (mb *InlineListingBuilder) Install(fb *FieldBuilder) error {
 			pid = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 		}
 
-		compo, err := mb.ListingX().inlineListingComponent(ctx, pid, fb.name)
+		compo, err := mb.Listing().inlineListingComponent(ctx, pid, fb.name)
 		if err != nil {
 			panic(err)
 		}
@@ -101,7 +101,7 @@ func hasField(rt reflect.Type, name string) bool {
 	return false
 }
 
-func (b *ListingBuilderX) inlineListingComponent(evCtx *web.EventContext, parentID, unique string) (r h.HTMLComponent, err error) {
+func (b *ListingBuilder) inlineListingComponent(evCtx *web.EventContext, parentID, unique string) (r h.HTMLComponent, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		err = perm.PermissionDenied
 		return

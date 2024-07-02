@@ -33,8 +33,18 @@ type DisplayColumn struct {
 	Visible bool   `json:"visible"`
 }
 
+const (
+	OrderByASC  = "ASC"
+	OrderByDESC = "DESC"
+)
+
+type ColOrderBy struct {
+	FieldName string
+	OrderBy   string
+}
+
 type ListingCompo struct {
-	lb *ListingBuilderX `inject:""`
+	lb *ListingBuilder `inject:""`
 
 	ID                 string          `json:"id"`
 	Popup              bool            `json:"popup"`
@@ -80,6 +90,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			}`, c.OnMounted))
 		}),
 		web.Listen(
+			c.lb.notifReloadList(), stateful.ReloadAction(ctx, c, nil).Go(),
 			c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
 			c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 	if (payload && payload.ids && payload.ids.length > 0) {
@@ -247,7 +258,7 @@ func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.M
 		}
 		onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
 		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHrefX()).
+			onClick.URL(c.lb.mb.Info().ListingHref()).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamListingQueries, evCtx.Queries().Encode())
 		}
@@ -629,7 +640,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		}
 		onClick := web.Plaid().EventFunc(actions.New)
 		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHrefX()).
+			onClick.URL(c.lb.mb.Info().ListingHref()).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamListingQueries, evCtx.Queries().Encode())
 		}

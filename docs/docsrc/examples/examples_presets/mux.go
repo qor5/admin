@@ -65,7 +65,7 @@ func addExample(mux examples.Muxer, db *gorm.DB, f exampleFunc) {
 
 type exampleFuncX func(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
-	cl *presets.ListingBuilderX,
+	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 )
