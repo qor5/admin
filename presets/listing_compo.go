@@ -38,7 +38,6 @@ type ListingCompo struct {
 
 	ID                 string          `json:"id"`
 	Popup              bool            `json:"popup"`
-	OnMounted          string          `json:"on_mounted"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
 	SelectedIds        []string        `json:"selected_ids" query:",omitempty"`
 	Keyword            string          `json:"keyword" query:",omitempty"`
@@ -48,6 +47,9 @@ type ListingCompo struct {
 	DisplayColumns     []DisplayColumn `json:"display_columns" query:",omitempty;cookie"`
 	ActiveFilterTab    string          `json:"active_filter_tab" query:",omitempty"`
 	FilterQuery        string          `json:"filter_query" query:";method:bare,f_"`
+
+	OnMounted string `json:"on_mounted"`
+	ParentID  string `json:"parent_id,omitempty"`
 }
 
 func (c *ListingCompo) CompoID() string {
@@ -77,12 +79,14 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 				%s
 			}`, c.OnMounted))
 		}),
-		web.Listen(c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go()).Attr("name", c.CompoID()),
-		web.Listen(c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
+		web.Listen(
+			c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
+			c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
 	if (payload && payload.ids && payload.ids.length > 0) {
 		locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
 	}
-	%s`, stateful.ReloadAction(ctx, c, nil).Go())).Attr("name", c.CompoID()),
+	%s`, stateful.ReloadAction(ctx, c, nil).Go()),
+		),
 		// the dialog is handled internally so that it can make good use of locals
 		web.Portal().Name(c.actionDialogPortalName()),
 		// user should locate it self
@@ -243,13 +247,23 @@ func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.M
 		}
 		onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
 		if c.Popup {
-			onClick.URL(evCtx.R.RequestURI).
+			onClick.URL(c.lb.mb.Info().ListingHrefX()).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamListingQueries, evCtx.Queries().Encode())
+		}
+		if c.ParentID != "" {
+			onClick.Query(ParamParentID, c.ParentID)
 		}
 		cell.SetAttr("@click", fmt.Sprintf(`%s; locals.current_editing_id = "%s-%s";`, onClick.Go(), dataTableID, id))
 		return cell
 	}
+}
+
+type ctxKeyListingCompo struct{}
+
+func ListingCompoFromContext(ctx context.Context) *ListingCompo {
+	v, _ := ctx.Value(ctxKeyListingCompo{}).(*ListingCompo)
+	return v
 }
 
 func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
@@ -320,6 +334,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		})
 	}
 
+	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
 	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
@@ -614,9 +629,12 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		}
 		onClick := web.Plaid().EventFunc(actions.New)
 		if c.Popup {
-			onClick.URL(evCtx.R.RequestURI).
+			onClick.URL(c.lb.mb.Info().ListingHrefX()).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamListingQueries, evCtx.Queries().Encode())
+		}
+		if c.ParentID != "" {
+			onClick.Query(ParamParentID, c.ParentID)
 		}
 		return VBtn(msgr.New).
 			Color(ColorPrimary).

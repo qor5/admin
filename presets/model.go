@@ -85,6 +85,7 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
 	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
+	mb.RegisterEventFunc(actions.DeleteConfirmationX, mb.listingx.deleteConfirmation)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
 	mb.RegisterEventFunc(actions.DoBulkAction, mb.listing.doBulkAction)
@@ -145,9 +146,8 @@ func (mb *ModelBuilder) newListingX() (lb *ListingBuilder) {
 	}
 
 	rmb := mb.listingx.RowMenu()
-	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
-	// TODO:
-	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFuncX(mb.Info(), "", url.Values{}))
+	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFuncX(mb.Info(), "", url.Values{}))
 	return
 }
 

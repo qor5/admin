@@ -72,6 +72,33 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 	}
 }
 
+func editRowMenuItemFuncX(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
+	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		msgr := MustGetMessages(ctx.R)
+		if mi.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+
+		onclick := web.Plaid().
+			EventFunc(actions.Edit).
+			Queries(editExtraParams).
+			Query(ParamID, id).
+			URL(url)
+		if IsInDialog(ctx) {
+			onclick.URL(mi.ListingHrefX()).
+				Query(ParamOverlay, actions.Dialog).
+				Query(ParamListingQueries, ctx.Queries().Encode())
+		}
+		return VListItem(
+			web.Slot(
+				VIcon("mdi-pencil"),
+			).Name("prepend"),
+
+			VListItemTitle(h.Text(msgr.Edit)),
+		).Attr("@click", onclick.Go())
+	}
+}
+
 func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		msgr := MustGetMessages(ctx.R)
@@ -88,6 +115,33 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			onclick.URL(ctx.R.RequestURI).
 				Query(ParamOverlay, actions.Dialog).
 				Query(ParamInDialog, true).
+				Query(ParamListingQueries, ctx.Queries().Encode())
+		}
+		return VListItem(
+			web.Slot(
+				VIcon("mdi-delete"),
+			).Name("prepend"),
+
+			VListItemTitle(h.Text(msgr.Delete)),
+		).Attr("@click", onclick.Go())
+	}
+}
+
+func deleteRowMenuItemFuncX(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
+	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		msgr := MustGetMessages(ctx.R)
+		if mi.mb.Info().Verifier().Do(PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+
+		onclick := web.Plaid().
+			EventFunc(actions.DeleteConfirmationX).
+			Queries(editExtraParams).
+			Query(ParamID, id).
+			URL(url)
+		if IsInDialog(ctx) {
+			onclick.URL(mi.ListingHrefX()).
+				Query(ParamOverlay, actions.Dialog).
 				Query(ParamListingQueries, ctx.Queries().Encode())
 		}
 		return VListItem(

@@ -1605,8 +1605,8 @@ func (b *ListingBuilder) reloadList(ctx *web.EventContext) (r web.EventResponse,
 	case ListingComponentStyleDialog:
 		r.UpdatePortals = b.dialogPortalUpdates(ctx)
 		web.AppendRunScripts(&r, fixDialogMinHeightScript(ctx))
-	case ListingComponentStyleInline:
-		r.UpdatePortals = b.inlinePortalUpdates(ctx)
+	// case ListingComponentStyleInline:
+	// 	r.UpdatePortals = b.inlinePortalUpdates(ctx)
 	default:
 		return r, errors.New("invalid listing style")
 	}

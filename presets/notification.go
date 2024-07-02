@@ -1,6 +1,8 @@
 package presets
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type PayloadModelsUpdated struct {
 	Ids    []string `json:"ids"`
@@ -8,11 +10,11 @@ type PayloadModelsUpdated struct {
 }
 
 func (mb *ModelBuilder) NotifModelsUpdated() string {
-	return fmt.Sprintf("PresetsModelsUpdated:%s", mb.modelType.String())
+	return fmt.Sprintf("PresetsModelsUpdated_%s", mb.modelType.String())
 }
 
 func NotifModelsUpdated(v any) string {
-	return fmt.Sprintf("PresetsModelsUpdated:%T", v)
+	return fmt.Sprintf("PresetsModelsUpdated_%T", v)
 }
 
 type PayloadModelsDeleted struct {
@@ -20,9 +22,9 @@ type PayloadModelsDeleted struct {
 }
 
 func (mb *ModelBuilder) NotifModelsDeleted() string {
-	return fmt.Sprintf("PresetsModelsDeleted:%s", mb.modelType.String())
+	return fmt.Sprintf("PresetsModelsDeleted_%s", mb.modelType.String())
 }
 
 func NotifModelsDeleted(v any) string {
-	return fmt.Sprintf("PresetsModelsDeleted:%T", v)
+	return fmt.Sprintf("PresetsModelsDeleted_%T", v)
 }

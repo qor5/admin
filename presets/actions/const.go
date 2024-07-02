@@ -5,6 +5,7 @@ const (
 	Edit                       = "presets_Edit"
 	Action                     = "presets_Action"
 	DeleteConfirmation         = "presets_DeleteConfirmation"
+	DeleteConfirmationX        = "presets_DeleteConfirmationX"
 	Update                     = "presets_Update"
 	DoAction                   = "presets_DoAction"
 	DoDelete                   = "presets_DoDelete"

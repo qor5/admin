@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
@@ -278,5 +279,45 @@ func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.Even
 		Body: web.Scope(dialog).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsListingDialog = true }, 100)"
+	return
+}
+
+func (b *ListingBuilderX) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
+	msgr := MustGetMessages(evCtx.R)
+	id := evCtx.R.FormValue(ParamID)
+	promptID := id
+	if v := evCtx.R.FormValue("prompt_id"); v != "" {
+		promptID = v
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: DeleteConfirmPortalName,
+		Body: web.Scope().VSlot("{ locals }").Init(`{deleteConfirmation:true}`).Children(
+			VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
+				VCard(
+					VCardTitle(
+						h.Text(msgr.DeleteConfirmationText(promptID)),
+					),
+					VCardActions(
+						VSpacer(),
+						VBtn(msgr.Cancel).
+							Variant(VariantFlat).
+							Class("ml-2").
+							On("click", "locals.deleteConfirmation = false"),
+
+						VBtn(msgr.Delete).
+							Color("primary").
+							Variant(VariantFlat).
+							Theme(ThemeDark).
+							Attr("@click", web.Plaid().
+								EventFunc(actions.DoDelete).
+								Queries(evCtx.Queries()).
+								URL(b.mb.Info().ListingHrefX()).
+								Go()),
+					),
+				),
+			),
+		),
+	})
 	return
 }
