@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/iancoleman/strcase"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
@@ -183,15 +184,13 @@ func (b *ListingBuilderX) cellComponentFunc(f *FieldBuilder) vx.CellComponentFun
 }
 
 func (b *ListingBuilderX) injectorName() string {
-	// TODO: 这个没准需要再考虑命名
-	return b.mb.Info().URIName()
+	return strcase.ToCamel(b.mb.Info().ListingHrefX())
 }
 
 func (b *ListingBuilderX) setup() {
 	b.once.Do(func() {
 		injectorName := b.injectorName()
-		stateful.Install(b.mb.p.builder)        // TODO: 为什么还需要这个呢？
-		stateful.RegisterInjector(injectorName) // TODO: 全局的话貌似有点问题，例如 example 里存在一堆同类型的不同 presets
+		stateful.RegisterInjector(injectorName)
 		stateful.MustProvide(injectorName, func() *ListingBuilderX {
 			return b
 		})

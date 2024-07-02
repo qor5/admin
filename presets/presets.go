@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -105,6 +106,7 @@ func New() *Builder {
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
+	stateful.Install(r.builder)
 	return r
 }
 

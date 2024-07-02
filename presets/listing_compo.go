@@ -790,8 +790,7 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 	if err != nil {
 		evCtx.Flash = toValidationErrors(err)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: dialogContentPortalName,
-			// Name: c.dialogContentPortalName(),
+			Name: c.actionDialogContentPortalName(),
 			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds),
 		})
 		return r, nil
