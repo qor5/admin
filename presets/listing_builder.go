@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/qor5/web/v3"
@@ -208,20 +209,20 @@ func (b *ListingBuilderX) defaultPageFunc(evCtx *web.EventContext) (r web.PageRe
 	}
 	r.PageTitle = title
 
-	evCtx.WithContextValue(ctxInDialog, false) // TODO:
+	evCtx.WithContextValue(ctxInDialog, false)
 
 	injectorName := b.injectorName()
-	listingCompo := &ListingCompo{
-		ID:                 injectorName,
+	compo := &ListingCompo{
+		ID:                 injectorName + "_page",
 		Popup:              false,
 		LongStyleSearchBox: false,
 	}
 
-	evCtx.WithContextValue(ctxActionsComponentTeleportToID, listingCompo.ActionsComponentTeleportToID())
+	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
 	r.Body = VLayout(
 		VMain(
-			stateful.MustInject(injectorName, stateful.SyncQuery(listingCompo)),
+			stateful.MustInject(injectorName, stateful.SyncQuery(compo)),
 		),
 	)
 	return
@@ -239,23 +240,30 @@ func (b *ListingBuilderX) openListingDialog(evCtx *web.EventContext) (r web.Even
 		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
 	}
 
-	evCtx.WithContextValue(ctxInDialog, true) // TODO:
+	evCtx.WithContextValue(ctxInDialog, true)
 
 	injectorName := b.injectorName()
-	listingCompo := &ListingCompo{
+	compo := &ListingCompo{
 		ID:                 injectorName + "_dialog",
 		Popup:              true,
 		LongStyleSearchBox: true,
 	}
-	content := VCard().Children(
+
+	compo.OnMounted = fmt.Sprintf(`
+	var listingDialogElem = el.ownerDocument.getElementById(%q); 
+	if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
+		listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
+	};`, compo.CompoID())
+
+	content := VCard().Attr("id", compo.CompoID()).Children(
 		VCardTitle().Class("d-flex align-center").Children(
 			h.Text(title),
 			VSpacer(),
-			h.Div().Id(listingCompo.ActionsComponentTeleportToID()),
+			h.Div().Id(compo.ActionsComponentTeleportToID()),
 			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
 		),
 		VCardText().Class("pa-0").Children(
-			stateful.MustInject(injectorName, stateful.ParseQuery(listingCompo)),
+			stateful.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
 	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
