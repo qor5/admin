@@ -141,7 +141,7 @@ func NewConfig(db *gorm.DB) Config {
 			return b.GetI18n().GetSupportLanguages()
 		})
 	nb := note.New(db).AfterCreate(NoteAfterCreateFunc)
-	mediab := media.New(db).CurrentUserID(func(ctx *web.EventContext) (id uint) {
+	mediab := media.New(db).AutoMigrate().CurrentUserID(func(ctx *web.EventContext) (id uint) {
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return
