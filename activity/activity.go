@@ -74,10 +74,6 @@ func New(db *gorm.DB, logModel ...ActivityLogInterface) *Builder {
 		ab.logModel = &ActivityLog{}
 	}
 
-	if err := db.AutoMigrate(ab.logModel); err != nil {
-		panic(err)
-	}
-
 	ab.permPolicy = perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
 		ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).On("*:activity_logs").On("*:activity_logs:*")
 
@@ -384,4 +380,22 @@ func (ab *Builder) getCreatorFromContext(ctx context.Context) interface{} {
 		return creator
 	}
 	return ""
+}
+
+func (b *Builder) AutoMigrate() (r *Builder) {
+	if err := AutoMigrate(b.db, b.logModel); err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func AutoMigrate(db *gorm.DB, logModel ...ActivityLogInterface) (err error) {
+	var m ActivityLogInterface
+	if len(logModel) > 0 {
+		m = logModel[0]
+	} else {
+		m = &ActivityLog{}
+	}
+
+	return db.AutoMigrate(m)
 }
