@@ -118,15 +118,6 @@ func UpdateToPortal(update *web.PortalUpdate) *web.PortalBuilder {
 	)
 }
 
-func ShadowCloneEventContext(ctx *web.EventContext) *web.EventContext {
-	if ctx == nil {
-		return nil
-	}
-	shadow := new(web.EventContext)
-	*shadow = *ctx
-	return shadow
-}
-
 func toValidationErrors(err error) *web.ValidationErrors {
 	if vErr, ok := err.(*web.ValidationErrors); ok {
 		return vErr

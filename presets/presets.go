@@ -1062,7 +1062,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							h.Div(
 								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 							).Class("mr-auto"),
-							GetActionsComponent(ctx),
 							h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 								return h.Div().Id(actionsComponentTeleportToID)
 							}),

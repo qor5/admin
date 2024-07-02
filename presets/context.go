@@ -9,9 +9,8 @@ type presetsCtx int
 
 const (
 	ctxInDialog presetsCtx = iota
-	ctxActionsComponent
-	ctxDetailingAfterTitleComponent
 	ctxActionsComponentTeleportToID
+	ctxDetailingAfterTitleComponent
 )
 
 func IsInDialog(ctx *web.EventContext) bool {
@@ -19,11 +18,6 @@ func IsInDialog(ctx *web.EventContext) bool {
 	if !ok {
 		return false
 	}
-	return v
-}
-
-func GetActionsComponent(ctx *web.EventContext) h.HTMLComponent {
-	v, _ := ctx.ContextValue(ctxActionsComponent).(h.HTMLComponent)
 	return v
 }
 
