@@ -29,7 +29,7 @@ func ScheduleTimeString(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	return t.Format(timeFormatSchedule)
+	return t.Local().Format(timeFormatSchedule)
 }
 
 func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {

@@ -13,12 +13,12 @@ func (version *Version) GetNextVersion(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
-	date := t.Format("2006-01-02")
+	date := t.Local().Format("2006-01-02")
 	return fmt.Sprintf("%s-v%02v", date, 1)
 }
 
 func (version *Version) CreateVersion(db *gorm.DB, paramID string, obj interface{}) (string, error) {
-	date := db.NowFunc().Format("2006-01-02")
+	date := db.NowFunc().Local().Format("2006-01-02")
 	var count int64
 	if err := utils.PrimarySluggerWhere(db.Unscoped(), obj, paramID, "version").
 		Where("version like ?", date+"%").
