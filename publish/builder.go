@@ -197,7 +197,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 	return func(in presets.SetterFunc) presets.SetterFunc {
 		return func(obj interface{}, ctx *web.EventContext) {
 			if ctx.Param(presets.ParamID) == "" {
-				version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
+				version := fmt.Sprintf("%s-v01", db.NowFunc().Local().Format("2006-01-02"))
 				if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
 					return
 				}
@@ -217,7 +217,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		FieldType(Status{}).
 		ComponentFunc(StatusListFunc())
 
-	pb.I18n().
+	pb.GetI18n().
 		RegisterForModule(language.English, I18nPublishKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nPublishKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPublishKey, Messages_ja_JP)

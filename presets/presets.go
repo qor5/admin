@@ -110,11 +110,11 @@ func New() *Builder {
 	return r
 }
 
-func (b *Builder) I18n() (r *i18n.Builder) {
+func (b *Builder) GetI18n() (r *i18n.Builder) {
 	return b.i18nBuilder
 }
 
-func (b *Builder) SetI18n(v *i18n.Builder) (r *Builder) {
+func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	b.i18nBuilder = v
 	return b
 }
@@ -643,12 +643,12 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		return b.switchLanguageFunc(ctx)
 	}
 
-	supportLanguages := b.I18n().GetSupportLanguagesFromRequest(ctx.R)
+	supportLanguages := b.GetI18n().GetSupportLanguagesFromRequest(ctx.R)
 
-	if len(b.I18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
+	if len(b.GetI18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
 		return nil
 	}
-	queryName := b.I18n().GetQueryName()
+	queryName := b.GetI18n().GetQueryName()
 	msgr := MustGetMessages(ctx.R)
 	if len(supportLanguages) == 1 {
 		return h.Template().Children(
@@ -1345,7 +1345,7 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		p.MergeHub(&m.EventsHub)
 	}
 
-	handlers := b.I18n().EnsureLanguage(
+	handlers := b.GetI18n().EnsureLanguage(
 		p,
 	)
 	for _, wrapHandler := range b.wrapHandlers {

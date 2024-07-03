@@ -57,13 +57,13 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 		),
 	)
-	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.I18n())
-	ab := activity.New(db).CreatorContextKey(login.UserKey).TabHeading(
+	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.GetI18n())
+	ab := activity.New(db).AutoMigrate().CreatorContextKey(login.UserKey).TabHeading(
 		func(log activity.ActivityLogInterface) string {
 			return fmt.Sprintf("%s %s at %s", log.GetCreator(), strings.ToLower(log.GetAction()), log.GetCreatedAt().Format("2006-01-02 15:04:05"))
 		})
 	publisher := publish.New(db, oss.Storage)
-	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab)
+	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International")).AutoMigrate()).Activity(ab)
 	b.Use(pb)
 
 	return db, pb, b

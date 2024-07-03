@@ -34,7 +34,7 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			}
 		}()
 
-		if mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil {
+		if mb.Info().Verifier().Do(presets.PermDuplicate).WithReq(ctx.R).IsAllowed() != nil {
 			return r, perm.PermissionDenied
 		}
 

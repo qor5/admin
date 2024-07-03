@@ -798,7 +798,7 @@ func (b *ModifiedIndexesBuilder) AppendDeleted(sliceFormKey string, index int) (
 	return b
 }
 
-func (b *ModifiedIndexesBuilder) SetSorted(sliceFormKey string, indexes []string) (r *ModifiedIndexesBuilder) {
+func (b *ModifiedIndexesBuilder) Sorted(sliceFormKey string, indexes []string) (r *ModifiedIndexesBuilder) {
 	if b.sortedValues == nil {
 		b.sortedValues = make(map[string][]string)
 	}
@@ -878,7 +878,7 @@ func (b *ModifiedIndexesBuilder) FromHidden(req *http.Request) (r *ModifiedIndex
 	return b
 }
 
-func (b *ModifiedIndexesBuilder) ReversedmodifiedIndexes(sliceFormKey string) (r []int) {
+func (b *ModifiedIndexesBuilder) ReversedModifiedIndexes(sliceFormKey string) (r []int) {
 	if b.deletedValues == nil {
 		return
 	}

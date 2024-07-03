@@ -10,6 +10,7 @@ const (
 	PermActions         = "presets:actions:*"
 	PermDoListingAction = "presets:do_listing_action:*"
 	PermBulkActions     = "presets:bulk_actions:*"
+	PermDuplicate       = "presets:duplicate:*"
 
 	permActions     = "actions"
 	permBulkActions = "bulk_actions"

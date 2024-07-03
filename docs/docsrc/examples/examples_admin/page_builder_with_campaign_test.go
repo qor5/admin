@@ -23,9 +23,24 @@ INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, sta
 INSERT INTO public.campaign_products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
+INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+INSERT INTO page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'ProductContent', 1, '');
 
-`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "page_builder_containers"}))
+`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers", "page_builder_demo_containers"}))
+
+var pageBuilderPageData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, '123', '/12', '', '');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, '123', '/456', '', '');
+SELECT setval('page_builder_categories_id_seq', 1, true);
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01', '', '', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
+SELECT setval('page_builder_pages_id_seq', 1, true);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'pages', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'pages', 'MyContent', 2, 2, false, false, 'MyContent', '', 0);
+INSERT INTO public.my_contents (id,text) values (1,'my-contents');
+INSERT INTO public.my_contents (id,text) values (2,'my-contents2');
+
+`, []string{"page_builder_pages", "page_builder_categories", "page_builder_containers", "my_contents"}))
 
 func forUnpublishCreateFile(filePath string, content string) {
 	var (
@@ -202,6 +217,32 @@ func TestPageBuilderCampaign(t *testing.T) {
 		},
 
 		{
+			Name:  "Page Builder Detail Duplicate A Campaign",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaigns/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var campaigns []*Campaign
+				TestDB.Where("id=1").Order("id DESC, version DESC").Find(&campaigns)
+				if len(campaigns) != 2 {
+					t.Fatal("Campaign not duplicated", campaigns)
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", campaigns[0].ID,
+					campaigns[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
+				}
+			},
+		},
+
+		{
 			Name:  "Page Builder Editor Duplicate A Campaign",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -327,6 +368,141 @@ func TestPageBuilderCampaign(t *testing.T) {
 				if campaignProducts[0].OnlineUrl == "" {
 					t.Fatalf("Product not published, %#+v", campaignProducts)
 					return
+				}
+			},
+		},
+		{
+			Name:  "CampaignProduct Add New Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					EventFunc(pagebuilder.AddContainerEvent).
+					AddField("modelName", "ProductContent").
+					AddField("id", "1").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var cons []*pagebuilder.Container
+				TestDB.Order("id desc").Find(&cons)
+				if len(cons) != 2 {
+					t.Fatalf("add container failed, expected 2 cons, got %d", len(cons))
+					return
+				}
+				if cons[0].ModelName != "ProductContent" {
+					t.Fatalf("add container failed, expected ProductContent, got %s", cons[0].ModelName)
+					return
+				}
+				var mos []*ProductContent
+				TestDB.Order("id desc").Find(&mos)
+				if len(mos) != 2 {
+					t.Fatalf("add demo container model failed, expected 2 mos, got %d", len(mos))
+					return
+				}
+				if mos[0].Name != "demo-product-contents" {
+					t.Fatalf("add demo container model failed, expected demo-product-contents, got %s", mos[0].Name)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Edit Demo Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/product-contents?__execute_event__=presets_Update&id=1").
+					AddField("Name", "demo-product-contents2").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var (
+					mos  []*ProductContent
+					cons []*pagebuilder.DemoContainer
+				)
+				TestDB.Where("model_name = ? and locale_code = ? ", "ProductContent", "").Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Demo Containers, got %v", len(cons))
+					return
+				}
+				if !cons[0].Filled {
+					t.Fatalf("Expected  Demo Container to be filled ")
+					return
+				}
+				TestDB.Find(&mos)
+				if len(mos) != 1 {
+					t.Fatalf("Expected 1 model contianer, got %v", len(mos))
+					return
+				}
+				if mos[0].Name != "demo-product-contents2" {
+					t.Fatalf("Expected name 'demo-product-contents2', got %v", mos[0].Name)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Edit section validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/campaigns/2_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&id=2_2024-05-20-v01").
+					Query("detailField", "CampaignDetail").
+					AddField("CampaignDetail.Title", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"title could not be empty"},
+		},
+		{
+			Name:  "Pages Detail Save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/pages/1_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&detailField=Page&id=1_2024-05-20-v01").
+					AddField("Page.Title", "123").
+					AddField("Page.Slug", "/123").
+					AddField("Page.CategoryID", "2").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var cons []*pagebuilder.Page
+				TestDB.Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Pages, got %v", len(cons))
+					return
+				}
+				if cons[0].Title != "123" {
+					t.Fatalf("Expected Page Title, got %s", cons[0].Title)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Editor Duplicate A Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/1_2024-05-20-v01?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var pages []*pagebuilder.Page
+				TestDB.Order("id DESC, version DESC").Find(&pages)
+				if len(pages) != 2 {
+					t.Fatal("Page not duplicated", pages)
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+					pages[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
 				}
 			},
 		},

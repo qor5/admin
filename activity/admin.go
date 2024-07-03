@@ -23,7 +23,7 @@ const (
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
-	b.I18n().
+	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/qor5/admin/v3/media/media_library"
+
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -44,6 +46,7 @@ type (
 		ID     uint
 		Title  string
 		Banner string
+		Image  media_library.MediaBox
 	}
 	MyContent struct {
 		ID    uint
@@ -154,19 +157,30 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 	b.Use(puBuilder)
 
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b.I18n()).
-		Publisher(puBuilder).WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
-		return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
-			input.FreeStyleCss = append(input.FreeStyleCss, `.test-div { width: 200px;background-color:#E1E1E1; }`)
-			input.FreeStyleTopJs = append(input.FreeStyleTopJs, `console.log("free style")`)
-			input.Footer = Components(
-				Style(`.test-div1 { width: 300px;background-color:blue; }`),
-				Style(`.test-div2 { width: 400px;background-color:red; }`),
-				Script("console.log('in footer')"),
-			)
-			return v(body, input, ctx)
-		}
-	})
+	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+		Publisher(puBuilder).
+		WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
+			return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
+				input.WrapHead = func(comps HTMLComponents) HTMLComponents {
+					comps = append(comps,
+						Script("console.log('in head')"),
+						Style(`.test-div { width: 200px;background-color:#E1E1E1; }`),
+					)
+					return comps
+				}
+				input.WrapBody = func(comps HTMLComponents) HTMLComponents {
+					comps = append(comps, Script("console.log('in body')"),
+						Style(`.test-div1 { width: 300px;background-color:blue; }`),
+						Style(`.test-div2 { width: 400px;background-color:red; }`))
+					return comps
+				}
+				return v(body, input, ctx)
+			}
+		})
+
+	if err = pagebuilder.AutoMigrate(db); err != nil {
+		panic(err)
+	}
 
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
@@ -189,13 +203,20 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		pagebuilder.PageBuilderPreviewCard,
 		"CampaignDetail",
 	)
-	detail.Section("CampaignDetail").Editing("Title")
+	detail.Section("CampaignDetail").Editing("Title").
+		Validator(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			c := obj.(*Campaign)
+			if c.Title == "" {
+				err.GlobalError("title could not be empty")
+			}
+			return
+		})
 
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
 			return Div(Text(c.Title)).Class("test-div1")
-		}).Model(&CampaignContent{}).Editing("Title", "Banner")
+		}).Model(&CampaignContent{}).Editing("Title", "Banner", "Image")
 
 	campaignModelBuilder.Use(pb)
 
@@ -218,5 +239,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	productModelBuilder.Use(pb)
 
+	// use demo container and media etc. plugins
+	b.Use(pb)
 	return TestHandler(pb, b)
 }

@@ -202,7 +202,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
 		)
 		versionIf = nextObj.(VersionInterface)
-		// TODO use nextVersion I18n
+		// TODO use nextVersion GetI18n
 		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
 		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
 		if count >= 2 {
@@ -324,7 +324,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		deniedDelete := mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil
 		return h.Td().Children(
 			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
-				On("click", web.Plaid().
+				On("click.stop", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventRenameVersionDialog).
 					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
@@ -334,7 +334,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Go(),
 				),
 			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
-				On("click", web.Plaid().
+				On("click.stop", web.Plaid().
 					URL(ctx.R.URL.Path).
 					EventFunc(eventDeleteVersionDialog).
 					Query(presets.ParamListingQueries, ctx.Queries().Encode()).

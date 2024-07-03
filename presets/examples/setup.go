@@ -210,7 +210,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		}
 		return h.Td(
 			h.A().Text(comp.Name).
-				Attr("@click",
+				Attr("@click.stop",
 					web.Plaid().URL("/admin/companies").
 						EventFunc(actions.Edit).
 						Query(presets.ParamID, fmt.Sprint(comp.ID)).

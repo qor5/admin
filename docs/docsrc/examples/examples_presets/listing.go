@@ -90,7 +90,7 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	b.I18n().
+	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
 		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
 
@@ -110,7 +110,7 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 			h.A().Text(comp.Name).
 				Class("text-decoration-none", "text-blue").
 				Href("javascript:void(0)").
-				Attr("@click",
+				Attr("@click.stop",
 					web.POST().EventFunc(actions.Edit).
 						Query(presets.ParamID, fmt.Sprint(comp.ID)).
 						URL("companies").
@@ -119,13 +119,20 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 			h.A().Text("(Open in Dialog)").
 				Class("text-decoration-none", "text-blue").
 				Href("javascript:void(0)").
-				Attr("@click",
+				Attr("@click.stop",
 					web.POST().EventFunc(actions.Edit).
 						Query(presets.ParamID, fmt.Sprint(comp.ID)).
 						Query(presets.ParamOverlay, actions.Dialog).
 						URL("companies").
 						Go(),
 				),
+		)
+	})
+
+	cl.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		c := obj.(*Customer)
+		return h.Td(
+			h.Div(h.Text(c.Name + "_" + "customizable")),
 		)
 	})
 

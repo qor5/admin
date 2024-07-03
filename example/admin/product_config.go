@@ -155,7 +155,7 @@ func configProduct(b *presets.Builder, _ *gorm.DB, wb *worker.Builder, publisher
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.Product)
 		if u.Code == "" {
-			err.FieldError("Name", "Code is required")
+			err.FieldError("Code", "Code is required")
 		}
 		if u.Name == "" {
 			err.FieldError("Name", "Name is required")
