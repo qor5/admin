@@ -203,15 +203,16 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						),
 					).Attr("#item", " { element } "),
 				),
-				VListItem(
-					web.Slot(
-						VIcon("mdi-plus-circle-outline"),
-					).Name(VSlotPrepend),
-					h.Span("New Element"),
-				).BaseColor(ColorPrimary).Class(W100, "ml-4").Class("newContainer").
-					Attr("@click", web.Plaid().EventFunc(NewContainerDialogEvent).Go()),
 			),
-		).Class("pa-4 pt-2"),
+		).Class("px-4 overflow-y-auto").MaxHeight("86vh"),
+		VBtn("").Children(
+			web.Slot(
+				VIcon("mdi-plus-circle-outline"),
+			).Name(VSlotPrepend),
+			h.Span("New Element").Class("ml-5"),
+		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
+			Height(50).
+			Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
@@ -446,14 +447,29 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+				Query(paramModelName, builder.name).
+				Query(paramContainerID, ctx.Param(paramContainerID)).
+				Go()
 			listItems = append(listItems,
-				VListItem(
-					VListItemTitle(h.Text(containerName)),
-				).Attr("@click",
+				VHover(
+					web.Slot(
+						VListItem(
+							VListItemTitle(h.Text(containerName)),
+							web.Slot(VBtn("Add").Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+						).Attr("v-bind", "props", ":active", "isHovering").
+							Class("cursor-pointer").
+							Attr("@click", fmt.Sprintf(`isHovering?%s:null`, addContainerEvent)).
+							ActiveColor(ColorPrimary),
+					).Name("default").Scope(`{isHovering, props }`),
+				).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
 					web.Plaid().EventFunc(ContainerPreviewEvent).
 						Query(paramModelName, builder.name).
 						Go(),
-				))
+				),
+				),
+			)
+
 		}
 		containers = append(containers, VListGroup(
 			web.Slot(
@@ -783,9 +799,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			IsPreview:  !isEditor,
 			SeoTags:    seoTags,
 		}
+		cookieHightName := iframePreviewHeightName
 
 		if isEditor {
-
+			cookieHightName = iframeHeightName
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
@@ -901,9 +918,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 		}
 
 		if isIframe {
-			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+			iframeHeightCookie, _ := ctx.R.Cookie(cookieHightName)
 			iframeValue := "1000px"
-			_ = iframeValue
 			if iframeHeightCookie != nil {
 				iframeValue = iframeHeightCookie.Value
 			}
@@ -932,11 +948,13 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			scrollIframe := h.Tag("vx-scroll-iframe").Attr(
 				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
 				"iframe-height", iframeValue,
-				"iframe-height-name", iframeHeightName,
+				"iframe-height-name", cookieHightName,
 				"width", width,
 				":container-data-id", ctx.Param(paramContainerDataID),
-				"ref", "scrollIframe").
-				Attr(web.VAssign("vars", `{el:$}`)...)
+				"ref", "scrollIframe")
+			if isEditor {
+				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
+			}
 			r = scrollIframe
 
 		} else {
@@ -1292,7 +1310,14 @@ func (b *ModelBuilder) ExistedL10n() bool {
 }
 
 func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	containers := b.renderContainersList(ctx)
+	var (
+		containers      = b.renderContainersList(ctx)
+		afterLeaveEvent = removeVirtualElement()
+		containerDataID = ctx.Param(paramContainerDataID)
+	)
+	if containerDataID != "" {
+		afterLeaveEvent += scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID))
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogPortal,
 		Body: web.Scope(
@@ -1303,16 +1328,18 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 						VCardText(containers),
 					).Width("40%").Class("pa-4", "overflow-y-auto"),
 					VCard(
-						VToolbar(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
-						).Class("v-card--variant-tonal"),
 						VCardText(
-							web.Portal().Name(addContainerDialogContentPortal),
-						).Class("px-6"),
-					).Width("60%").Class(H100),
+							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
+						).Class("d-flex justify-end"),
+						VCardText(
+							web.Portal(h.RawHTML(previewEmptySvg)).Name(addContainerDialogContentPortal),
+						).Class("px-6", "mt-10"),
+					).Width("60%"),
 				).Class("d-inline-flex"),
-			).Attr("v-model", "locals.dialog").Width(665).Height(460),
+			).Attr("v-model", "locals.dialog").
+				ScrollStrategy("none").
+				Attr("@after-leave", afterLeaveEvent).
+				Width(665).Height(460),
 		).VSlot(`{locals}`).Init(`{dialog:true}`),
 	})
 	return
@@ -1331,19 +1358,17 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 	if err != nil {
 		return
 	}
-	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
-		MergeQuery(true).
-		Queries(ctx.R.Form).
-		Go()
+
 	iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogContentPortal,
 		Body: VCard(
 			VCardText(
-				h.Div(iframe).Style("pointer-events: none;"),
+				h.Div(
+					h.Div(iframe).Style("pointer-events: none;position: absolute;top: 0;left: 0;width: 100%;height: 100%;"),
+				).Style(" position: relative;width: 100%;padding-top: 56.25%;overflow: hidden;"),
 			).Class("pa-0"),
-		).Attr("@click", addContainerEvent).
-			Elevation(2).Width("100%").Height(326),
+		).Elevation(2).Width(W100),
 	})
 	return
 }

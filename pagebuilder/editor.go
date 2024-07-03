@@ -54,12 +54,13 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp          = "up"
-	EventDown        = "down"
-	EventDelete      = "delete"
-	EventAdd         = "add"
-	EventEdit        = "edit"
-	iframeHeightName = "_iframeHeight"
+	EventUp                 = "up"
+	EventDown               = "down"
+	EventDelete             = "delete"
+	EventAdd                = "add"
+	EventEdit               = "edit"
+	iframeHeightName        = "_iframeHeight"
+	iframePreviewHeightName = "_iframePreviewHeight"
 )
 
 const (
@@ -67,6 +68,23 @@ const (
 	addContainerDialogPortal        = "addContainerDialogPortal"
 	addContainerDialogContentPortal = "addContainerDialogContentPortal"
 )
+
+func (b *Builder) emptyEdit(_ *web.EventContext) h.HTMLComponent {
+	return VLayout(
+		VAppBar(
+			VToolbarTitle("").Children(h.Text("Setting")),
+		).Elevation(0),
+		VSpacer(),
+		VMain(
+			VSheet(
+				VCard(
+					VCardText(
+						h.Text("Select an element and change the setting here."),
+					),
+				).Variant(VariantFlat),
+			).Class("pa-2")),
+	)
+}
 
 func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -81,7 +99,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			containerDataID = ctx.R.FormValue(paramContainerDataID)
 			obj             = m.mb.NewModel()
 		)
-
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
@@ -92,7 +109,8 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Query(presets.ParamOverlay, actions.Content).Go()
 				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
 			}
-
+		} else {
+			editContainerDrawer = b.emptyEdit(ctx)
 		}
 		deviceToggler = b.deviceToggle(ctx)
 		if tabContent, err = m.pageContent(ctx, obj); err != nil {
@@ -488,4 +506,16 @@ func (b *postMessageBody) postMessage(msgType string) string {
 	}
 	b.MsgType = msgType
 	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(b))
+}
+
+func addVirtualELeToContainer(containerDataID interface{}) string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.addVirtualElement(%v);`, containerDataID)
+}
+
+func removeVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
+}
+
+func appendVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
 }

@@ -1611,7 +1611,7 @@ func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
-	addAction := web.Plaid().EventFunc(NewContainerDialogEvent).Query(paramContainerID, web.Var("container_id")).Go()
+	addAction := addVirtualELeToContainer(web.Var("container_data_id")) + web.Plaid().EventFunc(NewContainerDialogEvent).Query(paramContainerID, web.Var("container_id")).Go()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).
