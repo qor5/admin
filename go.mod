@@ -26,8 +26,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/web/v3 v3.0.5-0.20240613075003-b4a333886932
-	github.com/qor5/x/v3 v3.0.6-0.20240613091655-4e32c2a3a0c0
+	github.com/qor5/web/v3 v3.0.5-0.20240703030313-c858d7d0997e
+	github.com/qor5/x/v3 v3.0.6-0.20240702140133-0e8b9d3204b4
 	github.com/samber/lo v1.40.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/stretchr/testify v1.9.0
@@ -174,6 +174,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/qor5/web/v3 => ../web
+// replace github.com/qor5/web/v3 => ../web
 
-replace github.com/qor5/x/v3 => ../x
+// replace github.com/qor5/x/v3 => ../x
