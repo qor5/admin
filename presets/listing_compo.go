@@ -46,6 +46,8 @@ type ColOrderBy struct {
 type ListingCompo struct {
 	lb *ListingBuilder `inject:""`
 
+	activeFilterTabQuery string
+
 	ID                 string          `json:"id"`
 	Popup              bool            `json:"popup"`
 	LongStyleSearchBox bool            `json:"long_style_search_box"`
@@ -130,8 +132,9 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 			ft.ID = fmt.Sprintf("tab%d", i)
 		}
 		encodedQuery := ft.Query.Encode()
-		if c.ActiveFilterTab == ft.ID && encodedQuery == c.FilterQuery {
+		if c.ActiveFilterTab == ft.ID && stateful.IsRawQuerySubset(c.FilterQuery, encodedQuery) {
 			activeIndex = i
+			c.activeFilterTabQuery = encodedQuery
 		}
 		tabs.AppendChildren(
 			VTab().
@@ -209,14 +212,19 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.MultipleSelect.In = msgr.FiltersMultipleSelectIn
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
-	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
-		stateful.ReloadAction(ctx, c, nil,
-			stateful.WithAppendFix(`
-			if (v.compo.filter_query !== $event.encodedFilterData) {
-				v.compo.filter_query = $event.encodedFilterData; 
+	opts := []stateful.PostActionOption{
+		stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData;`),
+	}
+	// method tabsFilter need to be called first, it will set activeFilterTabQuery
+	if c.activeFilterTabQuery != "" {
+		opts = append(opts, stateful.WithAppendFix(
+			fmt.Sprintf(`if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
 				v.compo.active_filter_tab = "";
-			}`),
-		).Go(),
+			}`, c.activeFilterTabQuery),
+		))
+	}
+	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
+		stateful.ReloadAction(ctx, c, nil, opts...).Go(),
 	)
 }
 

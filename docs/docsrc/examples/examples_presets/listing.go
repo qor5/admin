@@ -259,6 +259,10 @@ func PresetsListingCustomizationTabs(b *presets.Builder, db *gorm.DB) (
 		db.First(&c)
 		return []*presets.FilterTab{
 			{
+				Label: "All",
+				Query: url.Values{},
+			},
+			{
 				Label: "Felix",
 				Query: url.Values{"name.ilike": []string{"felix"}},
 			},
@@ -268,11 +272,7 @@ func PresetsListingCustomizationTabs(b *presets.Builder, db *gorm.DB) (
 			},
 			{
 				Label: "Approved",
-				Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
-			},
-			{
-				Label: "All",
-				Query: url.Values{"all": []string{"1"}},
+				Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
 			},
 		}
 	})
