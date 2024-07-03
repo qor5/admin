@@ -465,6 +465,31 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Page Detail Save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/pages/10_2024-05-21-v01_International?__execute_event__=presets_Detailing_Field_Save&detailField=Page&id=10_2024-05-21-v01_International").
+					AddField("Page.Title", "123").
+					AddField("Page.Slug", "/123").
+					AddField("Page.CategoryID", "0").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var cons []*pagebuilder.Page
+				TestDB.Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Pages, got %v", len(cons))
+					return
+				}
+				if cons[0].Title != "123" {
+					t.Fatalf("Expected Page Title, got %s", cons[0].Title)
+					return
+				}
+			},
+		},
 	}
 
 	for _, c := range cases {
