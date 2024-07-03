@@ -209,7 +209,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			web.Slot(
 				VIcon("mdi-plus-circle-outline"),
 			).Name(VSlotPrepend),
-			h.Span("New Element").Class("ml-5"),
+			h.Span("Add Component").Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
 			Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
@@ -778,15 +778,6 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 }
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
-	if !isReadonly && len(comps) == 0 {
-		r = h.Components(
-			h.Div(
-				h.RawHTML(defaultContainerEmptyIcon),
-				h.Div(h.Text("Please add your elements first")),
-			).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
-		)
-		return
-	}
 	r = h.Components(comps...)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
@@ -954,6 +945,26 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				"ref", "scrollIframe")
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
+
+				if !isReadonly && len(comps) == 0 {
+					r = h.Components(
+						h.Div(
+							VCard(
+								VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
+								VCardTitle(h.Text("Start building a page")).Class("d-flex justify-center"),
+								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
+								VCardActions(
+									VBtn("Add Component").Color(ColorPrimary).Variant(VariantElevated).
+										Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
+								).Class("d-flex justify-center"),
+							).Flat(true),
+						).Attr("v-show", "vars.emptyIframe").
+							Attr(web.VAssign("vars", `{emptyIframe:true}`)...).
+							Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
+						scrollIframe,
+					)
+					return
+				}
 			}
 			r = scrollIframe
 
@@ -1312,12 +1323,18 @@ func (b *ModelBuilder) ExistedL10n() bool {
 func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		containers      = b.renderContainersList(ctx)
-		afterLeaveEvent = removeVirtualElement()
+		afterLeaveEvent = removeVirtualElement() + "vars.emptyIframe = true;"
 		containerDataID = ctx.Param(paramContainerDataID)
 	)
 	if containerDataID != "" {
 		afterLeaveEvent += scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID))
 	}
+	emptyContent := VCard(
+		VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
+		VCardTitle(h.Text("Build your pages")).Class("d-flex justify-center"),
+		VCardSubtitle(h.Text("Place an element from QOR5 library.")).Class("d-flex justify-center"),
+	).Flat(true)
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogPortal,
 		Body: web.Scope(
@@ -1332,7 +1349,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
 						).Class("d-flex justify-end"),
 						VCardText(
-							web.Portal(h.RawHTML(previewEmptySvg)).Name(addContainerDialogContentPortal),
+							web.Portal(emptyContent).Name(addContainerDialogContentPortal),
 						).Class("px-6", "mt-10"),
 					).Width("60%"),
 				).Class("d-inline-flex"),
@@ -1342,6 +1359,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 				Width(665).Height(460),
 		).VSlot(`{locals}`).Init(`{dialog:true}`),
 	})
+	r.RunScript = "vars.emptyIframe = false "
 	return
 }
 
