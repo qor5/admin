@@ -22,11 +22,11 @@ func Notify(payload any) string {
 }
 
 type PayloadItem struct {
-	ModelLabel string
-	Slug       string
-	Status     *Status
-	Version    *Version
-	Schedule   *Schedule
+	Model    string    `json:"model"`
+	Slug     string    `json:"slug"`
+	Status   *Status   `json:"status"`
+	Version  *Version  `json:"version"`
+	Schedule *Schedule `json:"schedule"`
 }
 
 func ToPayloadItem(obj any, label string) *PayloadItem {
@@ -34,35 +34,32 @@ func ToPayloadItem(obj any, label string) *PayloadItem {
 		return nil
 	}
 	return &PayloadItem{
-		ModelLabel: label,
-		Slug:       obj.(presets.SlugEncoder).PrimarySlug(),
-		Status:     EmbedStatus(obj),
-		Version:    EmbedVersion(obj),
-		Schedule:   EmbedSchedule(obj),
+		Model:    label,
+		Slug:     obj.(presets.SlugEncoder).PrimarySlug(),
+		Status:   EmbedStatus(obj),
+		Version:  EmbedVersion(obj),
+		Schedule: EmbedSchedule(obj),
 	}
 }
 
-type PayloadItemUpdated struct {
-	*PayloadItem
-}
-
 type PayloadItemDeleted struct {
-	ModelLabel  string
-	Slug        string
-	NextVersion *PayloadItem
+	Model       string       `json:"model"`
+	Slug        string       `json:"slug"`
+	NextVersion *PayloadItem `json:"next_version"`
 }
 
 type PayloadVersionSelected struct {
-	*PayloadItem
+	Model string `json:"model"`
+	Slug  string `json:"slug"`
 }
 
 func NewListenerVersionSelected(mb *presets.ModelBuilder, ownerSlug string) h.HTMLComponent {
 	return web.Listen(Notification(PayloadVersionSelected{}), fmt.Sprintf(`
-	if (payload.ModelLabel != %q || payload.Slug === %q) {
+	if (payload.model != %q || payload.slug === %q) {
 		return
 	}
 	
-	%s = payload.Slug
+	%s = payload.slug
 	
 	if (vars.presetsRightDrawer) {
 		%s
@@ -75,19 +72,19 @@ func NewListenerVersionSelected(mb *presets.ModelBuilder, ownerSlug string) h.HT
 		VarCurrentDisplaySlug,
 		strings.Join([]string{
 			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.Slug")).Go(),
+			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.slug")).Go(),
 		}, ";"),
-		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + '/' + payload.Slug`, mb.Info().ListingHref()))).Go(),
+		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + '/' + payload.slug`, mb.Info().ListingHref()))).Go(),
 	))
 }
 
 func NewListenerItemDeleted(mb *presets.ModelBuilder, ownerSlug string) h.HTMLComponent {
 	return web.Listen(Notification(PayloadItemDeleted{}), fmt.Sprintf(`
-	if (payload.ModelLabel != %q || payload.Slug != %q) {
+	if (payload.model != %q || payload.slug != %q) {
 		return
 	}
 	
-	if (!payload.NextVersion) {
+	if (!payload.next_version) {
 		%s
 	}
 	`,

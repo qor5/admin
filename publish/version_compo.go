@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -17,6 +18,19 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
+
+const filterKeySelected = "f_select_id"
+
+func MustFilterQuery(compo *presets.ListingCompo) url.Values {
+	if compo == nil {
+		panic("compo is nil")
+	}
+	qs, err := url.ParseQuery(compo.FilterQuery)
+	if err != nil {
+		panic(err)
+	}
+	return qs
+}
 
 const versionListDialogURISuffix = "-version-list-dialog"
 
@@ -65,7 +79,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				Attr("style", "height:40px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
-					Query("select_id", primarySlugger.PrimarySlug()).
+					Query(filterKeySelected, primarySlugger.PrimarySlug()).
 					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
 					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
 					Go()).
@@ -143,17 +157,15 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		var listeners []h.HTMLComponent
+		children := []h.HTMLComponent{div}
 		if !config.DisableListeners {
 			slug := primarySlugger.PrimarySlug()
-			listeners = []h.HTMLComponent{
+			children = append(children,
 				NewListenerVersionSelected(mb, slug),
 				NewListenerItemDeleted(mb, slug),
-			}
+			)
 		}
-		return web.Scope(div).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`).Children(
-			listeners...,
-		)
+		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
 	}
 }
 
@@ -230,6 +242,7 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
 	)
 
+	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
 
 	// TODO: i18n
@@ -240,12 +253,11 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-				id := ctx.R.FormValue("select_id")
-				if id == "" {
-					id = ctx.R.FormValue("f_select_id")
-				}
-				if id != "" {
-					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+				compo := presets.ListingCompoFromEventContext(ctx)
+				selected := MustFilterQuery(compo).Get(filterKeySelected)
+
+				if selected != "" {
+					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(selected)
 					con := presets.SQLCondition{
 						Query: "id = ?",
 						Args:  []interface{}{cs["id"]},
@@ -261,23 +273,21 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return cell
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(VersionInterface).EmbedVersion().VersionName
-		p := obj.(presets.SlugEncoder)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-
-		queries := ctx.Queries()
-		queries.Set("select_id", p.PrimarySlug())
-		onChange := web.Plaid().
-			URL(ctx.R.URL.Path).Queries(queries).
-			EventFunc(actions.ReloadList).Go()
-
+		compo := presets.ListingCompoFromEventContext(ctx)
+		filter := MustFilterQuery(compo)
+		selected := filter.Get(filterKeySelected)
+		slug := obj.(presets.SlugEncoder).PrimarySlug()
+		filter.Set(filterKeySelected, slug)
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(
-				v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", onChange),
-				h.Text(versionName),
+				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@change",
+					stateful.ReloadAction(ctx.R.Context(), compo, func(target *presets.ListingCompo) {
+						target.FilterQuery = filter.Encode()
+					}).Go(),
+				),
+				h.Text(
+					obj.(VersionInterface).EmbedVersion().VersionName,
+				),
 			),
 		)
 	})
@@ -325,22 +335,20 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return h.Td().Children(
 			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
-					URL(ctx.R.URL.Path).
+					URL(listingHref).
 					EventFunc(eventRenameVersionDialog).
-					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
-					Query("version_name", versionName).
+					Query(paramVersionName, versionName).
 					Go(),
 				),
 			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
-					URL(ctx.R.URL.Path).
+					URL(listingHref).
 					EventFunc(eventDeleteVersionDialog).
-					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
-					Query("version_name", versionName).
+					Query(paramVersionName, versionName).
 					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplaySlug)).
 					Go(),
 				),
@@ -348,19 +356,28 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		return v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false")
+		compo := presets.ListingCompoFromEventContext(ctx)
+		// filter := MustFilterQuery(compo)
+		// TODO: 最好的方式还是使用原来的 presets Delete 然后可以投递额外的 payload 信息，这里捕获一下以修改 selected
+		return h.Components(
+			web.Listen(
+				Notification(PayloadItemDeleted{}),
+				`console.log(payload);`+stateful.ReloadAction(ctx.R.Context(), compo, nil).Go(),
+			),
+			v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+		)
 	})
 	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-
-		return v.VBtn("Save").Disabled(id == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
-			Query("select_id", id).
-			URL(pm.Info().PresetsPrefix()+"/"+pm.Info().URIName()).
-			EventFunc(eventSelectVersion).
-			Go())
+		compo := presets.ListingCompoFromEventContext(ctx)
+		selected := MustFilterQuery(compo).Get(filterKeySelected)
+		return v.VBtn("Save").Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+			fmt.Sprintf(`%s;%s;`, presets.CloseListingDialogVarScript,
+				Notify(PayloadVersionSelected{
+					Model: mb.Info().Label(),
+					Slug:  selected,
+				}),
+			),
+		)
 	})
 	lb.RowMenu().Empty()
 
@@ -385,26 +402,25 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	})
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		compo := presets.ListingCompoFromEventContext(ctx)
+		selected := MustFilterQuery(compo).Get(filterKeySelected)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabAllVersions,
 				ID:    "all",
-				Query: url.Values{"all": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"all": []string{"1"}, "select_id": []string{selected}},
 			},
 			{
 				Label: msgr.FilterTabOnlineVersion,
 				ID:    "online_versions",
-				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{selected}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,
 				ID:    "named_versions",
-				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{selected}},
 			},
 		}
 	})

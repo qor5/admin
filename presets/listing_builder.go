@@ -189,7 +189,7 @@ func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc
 }
 
 func (b *ListingBuilder) injectorName() string {
-	return strcase.ToCamel(b.mb.Info().ListingHref())
+	return strcase.ToSnake(strcase.ToCamel(b.mb.Info().ListingHref()))
 }
 
 func (b *ListingBuilder) setup() {
@@ -326,6 +326,7 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	return
 }
 
+// TODO: should remove ReloadList event func
 func (b *ListingBuilder) notifReloadList() string {
 	return "PresetsReloadList_" + b.injectorName()
 }

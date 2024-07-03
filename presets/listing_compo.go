@@ -68,7 +68,21 @@ func (c *ListingCompo) CompoID() string {
 	return fmt.Sprintf("ListingCompo_%s", c.ID)
 }
 
+type ctxKeyListingCompo struct{}
+
+func ListingCompoFromContext(ctx context.Context) *ListingCompo {
+	v, _ := ctx.Value(ctxKeyListingCompo{}).(*ListingCompo)
+	return v
+}
+
+func ListingCompoFromEventContext(evCtx *web.EventContext) *ListingCompo {
+	return ListingCompoFromContext(evCtx.R.Context())
+}
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
+	evCtx, _ := c.MustGetEventContext(ctx)
+	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
+
 	return stateful.Actionable(ctx, c,
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
@@ -278,13 +292,6 @@ func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.M
 	}
 }
 
-type ctxKeyListingCompo struct{}
-
-func ListingCompoFromContext(ctx context.Context) *ListingCompo {
-	v, _ := ctx.Value(ctxKeyListingCompo{}).(*ListingCompo)
-	return v
-}
-
 func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if c.lb.Searcher == nil {
 		panic(errors.New("function Searcher is not set"))
@@ -353,7 +360,6 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		})
 	}
 
-	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
 	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))

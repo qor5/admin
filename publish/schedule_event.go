@@ -129,7 +129,7 @@ func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 
 		web.AppendRunScripts(&r, "locals.schedulePublishDialog = false")
 		if mb.HasDetailing() && mb.Detailing().GetDrawer() {
-			web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go())
+			web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go()) // TODO:
 		}
 		return r, nil
 	}
