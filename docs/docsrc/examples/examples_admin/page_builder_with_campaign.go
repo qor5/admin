@@ -176,8 +176,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 				}
 				return v(body, input, ctx)
 			}
-		}).
-		PageEnabled(false)
+		})
 
 	if err = pagebuilder.AutoMigrate(db); err != nil {
 		panic(err)
