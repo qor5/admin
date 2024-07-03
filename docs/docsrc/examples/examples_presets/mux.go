@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SamplesHandler(mux examples.Muxer, prefix string) {
+func SamplesHandler(mux examples.Muxer) {
 	db := docsexamples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
 	addExample(mux, db, PresetsKeywordSearchOff)
@@ -56,8 +56,5 @@ func addExample(mux examples.Muxer, db *gorm.DB, f exampleFunc) {
 	p := presets.New().URIPrefix(path)
 	f(p, db)
 	fmt.Println("Example mounting at: ", path)
-	mux.Handle(
-		path,
-		p,
-	)
+	mux.Handle(path, p)
 }

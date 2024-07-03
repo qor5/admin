@@ -10,13 +10,13 @@ import (
 	webexamples "github.com/qor5/web/v3/examples"
 )
 
-func Mux(mux *http.ServeMux, prefix string) http.Handler {
-	examples_vuetify.Mux(mux, prefix)
+func Mux(mux *http.ServeMux) http.Handler {
+	examples_vuetify.Mux(mux)
 
 	im := &webexamples.IndexMux{Mux: http.NewServeMux()}
-	SamplesHandler(im, prefix)
+	SamplesHandler(im)
 
-	mux.Handle("/samples/",
+	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(
 				im.Mux,
@@ -27,9 +27,9 @@ func Mux(mux *http.ServeMux, prefix string) http.Handler {
 	return mux
 }
 
-func SamplesHandler(mux webexamples.Muxer, prefix string) {
-	examples_vuetify.SamplesHandler(mux, prefix)
-	examples_presets.SamplesHandler(mux, prefix)
+func SamplesHandler(mux webexamples.Muxer) {
+	examples_vuetify.SamplesHandler(mux)
+	examples_presets.SamplesHandler(mux)
 
 	examples.AddPresetExample(mux, ListingExample)
 	examples.AddPresetExample(mux, WorkerExample)

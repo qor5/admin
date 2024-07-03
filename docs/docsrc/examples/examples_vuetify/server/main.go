@@ -17,8 +17,8 @@ func main() {
 	fmt.Println("Starting docs at :" + port)
 	mux := http.NewServeMux()
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	examples_vuetify.SamplesHandler(im, "/samples")
-	mux.Handle("/samples/",
+	examples_vuetify.SamplesHandler(im)
+	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(
 				im.Mux,
@@ -26,7 +26,7 @@ func main() {
 		),
 	)
 	mux.Handle("/", web.New().Page(im.Page))
-	err := http.ListenAndServe(":"+port, examples_vuetify.Mux(mux, ""))
+	err := http.ListenAndServe(":"+port, examples_vuetify.Mux(mux))
 	if err != nil {
 		panic(err)
 	}

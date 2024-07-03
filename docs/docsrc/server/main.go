@@ -8,6 +8,7 @@ import (
 	"github.com/qor5/admin/v3/docs/docsrc"
 	"github.com/qor5/admin/v3/docs/docsrc/assets"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
+	"github.com/qor5/web/v3/examples"
 	"github.com/theplant/docgo"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
@@ -31,7 +32,8 @@ func main() {
 	// @snippet_begin(HelloWorldMuxSample1)
 	mux := http.NewServeMux()
 	// @snippet_end
-	examples_admin.Mux(mux, "")
+	examples.Mux(mux)
+	examples_admin.Mux(mux)
 
 	mux.Handle("/", docgo.New().
 		MainPageTitle("QOR5 Document").

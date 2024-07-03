@@ -18,8 +18,8 @@ func main() {
 	mux := http.NewServeMux()
 	examples_vuetifyx.Mux(mux, "")
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	examples_vuetifyx.SamplesHandler(im, "/samples")
-	mux.Handle("/samples/",
+	examples_vuetifyx.SamplesHandler(im)
+	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(
 				im.Mux,

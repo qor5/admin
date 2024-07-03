@@ -14,7 +14,6 @@ import (
 // @snippet_begin(TipTapLayoutSample)
 func tiptapLayout(in web.PageFunc) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-
 		ctx.Injector.HeadHTML(`
 			<link rel="stylesheet" href="/assets/tiptap.css">
 			<script src='/assets/vue.js'></script>
@@ -49,7 +48,6 @@ func tiptapLayout(in web.PageFunc) (out web.PageFunc) {
 // @snippet_begin(DemoVuetifyLayoutSample)
 func DemoVuetifyLayout(in web.PageFunc) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-
 		ctx.Injector.HeadHTML(`
 			<link rel="stylesheet" href="/vuetify/assets/index.css">
 			<script src='/assets/vue.js'></script>
@@ -84,7 +82,7 @@ func DemoVuetifyLayout(in web.PageFunc) (out web.PageFunc) {
 
 // @snippet_end
 
-func Mux(mux *http.ServeMux, prefix string) http.Handler {
+func Mux(mux *http.ServeMux) http.Handler {
 	// @snippet_begin(ComponentsPackSample)
 	mux.Handle("/assets/main.js",
 		web.PacksHandler("text/javascript",
@@ -118,7 +116,7 @@ func Mux(mux *http.ServeMux, prefix string) http.Handler {
 	// @snippet_end
 
 	// @snippet_begin(VuetifyComponentsPackSample)
-	HandleMaterialDesignIcons(prefix, mux)
+	HandleMaterialDesignIcons("", mux)
 	// @snippet_end
 
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -129,8 +127,7 @@ func Mux(mux *http.ServeMux, prefix string) http.Handler {
 	return mux
 }
 
-func SamplesHandler(mux wexamples.Muxer, prefix string) {
-
+func SamplesHandler(mux wexamples.Muxer) {
 	mux.Handle(
 		HelloVuetifyListPath,
 		HelloVuetifyListPB.Wrap(DemoVuetifyLayout),

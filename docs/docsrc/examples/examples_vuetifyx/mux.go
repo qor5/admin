@@ -37,7 +37,7 @@ func Mux(mux *http.ServeMux, prefix string) http.Handler {
 	return mux
 }
 
-func SamplesHandler(mux examples.Muxer, prefix string) {
+func SamplesHandler(mux examples.Muxer) {
 	mux.Handle(
 		VuetifyComponentsLinkageSelectPath,
 		VuetifyComponentsLinkageSelectPB.Wrap(examples_vuetify.DemoVuetifyLayout),

@@ -81,7 +81,7 @@ func (mb *InlineListingBuilder) Install(fb *FieldBuilder) error {
 			pid = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 		}
 
-		compo, err := mb.Listing().inlineListingComponent(ctx, pid, fb.name)
+		compo, err := mb.Listing().InlineComponent(ctx, pid, fb.name)
 		if err != nil {
 			panic(err)
 		}
@@ -101,7 +101,7 @@ func hasField(rt reflect.Type, name string) bool {
 	return false
 }
 
-func (b *ListingBuilder) inlineListingComponent(evCtx *web.EventContext, parentID, unique string) (r h.HTMLComponent, err error) {
+func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, unique string) (r h.HTMLComponent, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		err = perm.PermissionDenied
 		return

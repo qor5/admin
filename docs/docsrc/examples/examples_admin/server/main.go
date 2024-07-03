@@ -17,10 +17,10 @@ var port = osenv.Get("PORT", "The port to serve on", "7800")
 func main() {
 	fmt.Println("Starting docs at :" + port)
 	mux := http.NewServeMux()
-	examples_vuetify.Mux(mux, "")
+	examples_vuetify.Mux(mux)
 
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	examples_admin.SamplesHandler(im, "/examples")
+	examples_admin.SamplesHandler(im)
 	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(
