@@ -444,6 +444,41 @@ func TestPageBuilderCampaign(t *testing.T) {
 			},
 		},
 		{
+			Name:  "Edit Demo Container Zero Value",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/product-contents?__execute_event__=presets_Update&id=1").
+					AddField("Name", "").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var (
+					mos  []*ProductContent
+					cons []*pagebuilder.DemoContainer
+				)
+				TestDB.Where("model_name = ? and locale_code = ? ", "ProductContent", "").Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("Expected 1  Demo Containers, got %v", len(cons))
+					return
+				}
+				if !cons[0].Filled {
+					t.Fatalf("Expected  Demo Container to be filled ")
+					return
+				}
+				TestDB.Find(&mos)
+				if len(mos) != 1 {
+					t.Fatalf("Expected 1 model contianer, got %v", len(mos))
+					return
+				}
+				if mos[0].Name != "" {
+					t.Fatalf("Expected name '', got %v", mos[0].Name)
+					return
+				}
+			},
+		},
+		{
 			Name:  "Edit section validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
