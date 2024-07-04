@@ -28,6 +28,7 @@ type Builder struct {
 	models                                []*ModelBuilder
 	handler                               http.Handler
 	builder                               *web.Builder
+	dc                                    *stateful.DependencyCenter
 	i18nBuilder                           *i18n.Builder
 	logger                                *zap.Logger
 	permissionBuilder                     *perm.Builder
@@ -85,6 +86,7 @@ func New() *Builder {
 	r := &Builder{
 		logger:  l,
 		builder: web.New(),
+		dc:      stateful.NewDependencyCenter(),
 		i18nBuilder: i18n.New().
 			RegisterForModule(language.English, CoreI18nModuleKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN).
@@ -106,7 +108,7 @@ func New() *Builder {
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
-	stateful.Install(r.builder)
+	stateful.Install(r.builder, r.dc)
 	return r
 }
 

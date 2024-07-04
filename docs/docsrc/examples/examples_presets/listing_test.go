@@ -20,7 +20,7 @@ func TestPresetsListingKeywordSearchOff(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/customers?keyword=thisismykeyword", nil)
 			},
-			ExpectPageBodyNotContains: []string{"thisismykeyword"},
+			ExpectPageBodyNotContains: []string{`model-value='"thisismykeyword"'`},
 		},
 	}
 

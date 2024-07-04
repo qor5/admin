@@ -201,8 +201,8 @@ func (b *ListingBuilder) injectorName() string {
 func (b *ListingBuilder) setup() {
 	b.once.Do(func() {
 		injectorName := b.injectorName()
-		stateful.RegisterInjector(injectorName)
-		stateful.MustProvide(injectorName, func() *ListingBuilder {
+		b.mb.p.dc.RegisterInjector(injectorName)
+		b.mb.p.dc.MustProvide(injectorName, func() *ListingBuilder {
 			return b
 		})
 	})
@@ -233,7 +233,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 
 	r.Body = VLayout(
 		VMain(
-			stateful.MustInject(injectorName, stateful.SyncQuery(compo)),
+			b.mb.p.dc.MustInject(injectorName, stateful.SyncQuery(compo)),
 		),
 	)
 	return
@@ -274,7 +274,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
 		),
 		VCardText().Class("pa-0").Children(
-			stateful.MustInject(injectorName, stateful.ParseQuery(compo)),
+			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
 	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)

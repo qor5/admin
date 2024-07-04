@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -130,7 +129,7 @@ func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, uniq
 				h.Div().Id(compo.ActionsComponentTeleportToID()),
 			),
 			VCardText().Class("pa-0").Children(
-				stateful.MustInject(injectorName, compo),
+				b.mb.p.dc.MustInject(injectorName, compo),
 			),
 		),
 	)
