@@ -408,7 +408,12 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	dp := pm.Detailing(PageBuilderPreviewCard, "Page", seo.SeoDetailFieldName)
+	detailList := []interface{}{PageBuilderPreviewCard, "Page"}
+	if b.seoBuilder != nil {
+		detailList = append(detailList, seo.SeoDetailFieldName)
+	}
+	dp := pm.Detailing(detailList...)
+
 	// register modelBuilder
 
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
