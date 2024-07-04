@@ -439,6 +439,12 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.ListingDialogPortalName),
 			web.Portal().Name(dialogPortalName),
 			web.Portal().Name(addContainerDialogPortal),
+			h.Template(
+				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+					Attr("v-model", "vars.presetsMessage.show").
+					Attr(":color", "vars.presetsMessage.color").
+					Timeout(1000),
+			).Attr("v-if", "vars.presetsMessage"),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
