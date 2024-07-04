@@ -94,6 +94,7 @@ type Builder struct {
 	templateEnabled   bool
 	expendContainers  bool
 	pageEnabled       bool
+	previewContainer  bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -126,6 +127,7 @@ func newBuilder(prefix string, db *gorm.DB) *Builder {
 		templateEnabled:   true,
 		expendContainers:  true,
 		pageEnabled:       true,
+		previewContainer:  true,
 	}
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
@@ -279,6 +281,11 @@ func (b *Builder) TemplateEnabled(v bool) (r *Builder) {
 
 func (b *Builder) PageEnabled(v bool) (r *Builder) {
 	b.pageEnabled = v
+	return b
+}
+
+func (b *Builder) PreviewContainer(v bool) (r *Builder) {
+	b.previewContainer = v
 	return b
 }
 

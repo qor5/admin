@@ -1340,18 +1340,25 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 		Body: web.Scope(
 			VDialog(
 				VSheet(
-					VCard(
-						VCardTitle(h.Text("New Element")),
-						VCardText(containers),
-					).Width("40%").Class("pa-4", "overflow-y-auto"),
-					VCard(
-						VCardText(
+					VSheet(
+						VCard(
+							VCardTitle(h.Text("New Element")),
+							VCardText(containers),
+						).Elevation(0),
+					).Class(W50).Class("pa-4", "overflow-y-auto"),
+					VSheet(
+						h.Div(
+							VSpacer(),
 							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
-						).Class("d-flex justify-end"),
-						VCardText(
-							web.Portal(emptyContent).Name(addContainerDialogContentPortal),
-						).Class("px-6", "mt-10"),
-					).Width("60%"),
+						).Class("d-flex justify-end").Style("height:40px"),
+						VContainer(
+							VRow(
+								VCol(
+									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)),
+								),
+							).Align(Center).Justify(Center).Attr("style", "height:420px"),
+						).Class(W100),
+					).Class(W50),
 				).Class("d-inline-flex"),
 			).Attr("v-model", "locals.dialog").
 				ScrollStrategy("none").
@@ -1372,21 +1379,28 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 	if err = b.db.First(&obj, ID).Error; err != nil {
 		return
 	}
-	previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
-	if err != nil {
-		return
+	var body h.HTMLComponent
+	if !b.builder.previewContainer {
+		containerBuilder := b.builder.ContainerByName(ctx.Param(paramModelName))
+		cover := containerBuilder.cover
+		if cover == "" {
+			cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(containerBuilder.name, " ", "")+".svg")
+		}
+		body = VImg().Src(cover)
+	} else {
+		previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
+		if err != nil {
+			return
+		}
+		iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
+		body = h.Div(h.Div(iframe).
+			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")).Class(H100)
+
 	}
 
-	iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogContentPortal,
-		Body: VCard(
-			VCardText(
-				h.Div(
-					h.Div(iframe).Style("pointer-events: none;position: absolute;top: 0;left: 0;width: 100%;height: 100%;"),
-				).Style(" position: relative;width: 100%;padding-top: 56.25%;overflow: hidden;"),
-			).Class("pa-0"),
-		).Elevation(2).Width(W100),
+		Body: VCard(body).MaxHeight(200).Elevation(0),
 	})
 	return
 }
