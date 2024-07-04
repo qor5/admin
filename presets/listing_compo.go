@@ -342,13 +342,13 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	searchParams.OrderBy = orderBySQL
 
 	if !c.lb.disablePagination {
-		perPage := c.PerPage
+		perPage := cmp.Or(c.PerPage, c.lb.perPage, PerPageDefault)
 		if perPage > PerPageMax {
 			perPage = PerPageMax
 		}
-		searchParams.PerPage = cmp.Or(perPage, PerPageDefault)
-		searchParams.Page = cmp.Or(c.Page, 1)
+		searchParams.PerPage = perPage
 	}
+	searchParams.Page = cmp.Or(c.Page, 1)
 
 	var fd vx.FilterData
 	if c.lb.filterDataFunc != nil {
