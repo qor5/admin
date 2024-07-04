@@ -79,6 +79,12 @@ func ListingCompoFromEventContext(evCtx *web.EventContext) *ListingCompo {
 	return ListingCompoFromContext(evCtx.R.Context())
 }
 
+const ListingCompo_JsPreFixWhenNotifModelsDeleted = `
+if (payload && payload.ids && payload.ids.length > 0) {
+	locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
+}
+`
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	evCtx, _ := c.MustGetEventContext(ctx)
 	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
@@ -107,13 +113,14 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		}),
 		web.Listen(
 			c.lb.notifReloadList(), stateful.ReloadAction(ctx, c, nil).Go(),
-			c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
-			c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`
-	if (payload && payload.ids && payload.ids.length > 0) {
-		locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
-	}
-	%s`, stateful.ReloadAction(ctx, c, nil).Go()),
 		),
+		h.Iff(!c.lb.disableModelListeners, func() h.HTMLComponent {
+			return web.Listen(
+				c.lb.mb.NotifModelsCreated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				c.lb.mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				c.lb.mb.NotifModelsDeleted(), fmt.Sprintf(`%s%s`, ListingCompo_JsPreFixWhenNotifModelsDeleted, stateful.ReloadAction(ctx, c, nil).Go()),
+			)
+		}),
 		// the dialog is handled internally so that it can make good use of locals
 		web.Portal().Name(c.actionDialogPortalName()),
 		// user should locate it self

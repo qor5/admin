@@ -457,10 +457,17 @@ func (b *EditingBuilder) doUpdate(
 		return err1
 	}
 
-	r.Emit(
-		b.mb.NotifModelsUpdated(),
-		PayloadModelsUpdated{Models: []any{obj}},
-	)
+	if id == "" {
+		r.Emit(
+			b.mb.NotifModelsCreated(),
+			PayloadModelsCreated{Models: []any{obj}},
+		)
+	} else {
+		r.Emit(
+			b.mb.NotifModelsUpdated(),
+			PayloadModelsUpdated{Ids: []string{id}, Models: []any{obj}},
+		)
+	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	script := CloseRightDrawerVarScript

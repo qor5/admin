@@ -19,10 +19,7 @@ const (
 	PortalSchedulePublishDialog = "publish_PortalSchedulePublishDialog"
 	PortalPublishCustomDialog   = "publish_PortalPublishCustomDialog"
 
-	VarCurrentDisplaySlug = "vars.publish_VarCurrentDisplaySlug"
-
-	paramVersionName        = "version_name"
-	paramCurrentDisplaySlug = "current_display_id"
+	paramVersionName = "version_name"
 )
 
 func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
@@ -85,13 +82,9 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			return
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.commonConfirmDialog = false",
-			Notify(PayloadVersionSelected{
-				Model: mb.Info().Label(),
-				Slug:  slug,
-			}),
-		)
+		web.AppendRunScripts(&r, "locals.commonConfirmDialog = false")
+		r.Emit(mb.NotifModelsCreated(), presets.PayloadModelsCreated{Models: []any{obj}})
+		r.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: slug})
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
@@ -159,12 +152,11 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.renameVersionDialog = false",
-			web.Emit(presets.NotifModelsUpdated(mb.NewModel()), presets.PayloadModelsUpdated{
-				Models: []any{obj},
-			}),
-		)
+		web.AppendRunScripts(&r, "locals.renameVersionDialog = false")
+		r.Emit(mb.NotifModelsUpdated(), presets.PayloadModelsUpdated{
+			Ids:    []string{id},
+			Models: []any{obj},
+		})
 		return
 	}
 }
@@ -230,25 +222,17 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 			}
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.deleteConfirmation = false",
-			Notify(PayloadItemDeleted{
-				Model:       mb.Info().Label(),
-				Slug:        slug,
-				NextVersion: ToPayloadItem(nextVersion, mb.Info().Label()),
-			}),
-		)
+		web.AppendRunScripts(&r, "locals.deleteConfirmation = false")
 
-		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
-		if slug == currentDisplaySlug && nextVersion != nil {
-			currentDisplaySlug = nextVersion.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r,
-				Notify(PayloadVersionSelected{
-					Model: mb.Info().Label(),
-					Slug:  currentDisplaySlug,
-				}),
-			)
+		addon := PayloadModelsDeletedAddon{}
+		if nextVersion != nil {
+			addon.NextVersionSlug = nextVersion.(presets.SlugEncoder).PrimarySlug()
 		}
+		r.Emit(
+			mb.NotifModelsDeleted(),
+			presets.PayloadModelsDeleted{Ids: []string{slug}},
+			addon,
+		)
 		return r, nil
 	}
 }

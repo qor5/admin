@@ -61,7 +61,8 @@ type ListingBuilder struct {
 	keywordSearchOff  bool
 	FieldsBuilder
 
-	once sync.Once
+	once                  sync.Once
+	disableModelListeners bool
 }
 
 func (mb *ModelBuilder) Listing(vs ...string) (r *ListingBuilder) {
@@ -172,6 +173,11 @@ func (b *ListingBuilder) DialogWidth(v string) (r *ListingBuilder) {
 
 func (b *ListingBuilder) DialogHeight(v string) (r *ListingBuilder) {
 	b.dialogHeight = v
+	return b
+}
+
+func (b *ListingBuilder) DisableModelListeners(v bool) (r *ListingBuilder) {
+	b.disableModelListeners = v
 	return b
 }
 
@@ -304,20 +310,13 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 					),
 					VCardActions(
 						VSpacer(),
-						VBtn(msgr.Cancel).
-							Variant(VariantFlat).
-							Class("ml-2").
-							On("click", "locals.deleteConfirmation = false"),
-
-						VBtn(msgr.Delete).
-							Color("primary").
-							Variant(VariantFlat).
-							Theme(ThemeDark).
-							Attr("@click", web.Plaid().
-								EventFunc(actions.DoDelete).
-								Queries(evCtx.Queries()).
-								URL(b.mb.Info().ListingHref()).
-								Go()),
+						VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", "locals.deleteConfirmation = false"),
+						VBtn(msgr.Delete).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click", web.Plaid().
+							EventFunc(actions.DoDelete).
+							Queries(evCtx.Queries()).
+							URL(b.mb.Info().ListingHref()).
+							Go(),
+						),
 					),
 				),
 			),

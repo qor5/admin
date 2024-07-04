@@ -109,7 +109,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
 			versionComponent,
-			publish.NewListenerItemDeleted(m.mb, ctx.Param(presets.ParamID)),
+			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
 			publish.NewListenerVersionSelected(m.editor, ctx.Param(presets.ParamID)),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {

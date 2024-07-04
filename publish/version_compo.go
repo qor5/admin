@@ -80,8 +80,6 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, primarySlugger.PrimarySlug()).
-					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
-					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
@@ -142,7 +140,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(fmt.Sprintf("%s/%s", mb.Info().PresetsPrefix(), mb.Info().URIName())).Go()
+				URL(mb.Info().ListingHref()).Go()
 			if config.Top {
 				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
@@ -162,7 +160,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			slug := primarySlugger.PrimarySlug()
 			children = append(children,
 				NewListenerVersionSelected(mb, slug),
-				NewListenerItemDeleted(mb, slug),
+				NewListenerModelsDeleted(mb, slug),
 			)
 		}
 		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
@@ -349,20 +347,29 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
 					Query(paramVersionName, versionName).
-					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplaySlug)).
 					Go(),
 				),
 		)
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
-	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		compo := presets.ListingCompoFromEventContext(ctx)
-		// filter := MustFilterQuery(compo)
-		// TODO: 最好的方式还是使用原来的 presets Delete 然后可以投递额外的 payload 信息，这里捕获一下以修改 selected
+	lb.DisableModelListeners(true)
+	lb.FooterAction("Cancel").ButtonCompFunc(func(evCtx *web.EventContext) h.HTMLComponent {
+		ctx := evCtx.R.Context()
+		c := presets.ListingCompoFromContext(ctx)
+		filter := MustFilterQuery(c)
+		selected := filter.Get(filterKeySelected)
+		filter.Del(filterKeySelected)
 		return h.Components(
 			web.Listen(
-				Notification(PayloadItemDeleted{}),
-				`console.log(payload);`+stateful.ReloadAction(ctx.R.Context(), compo, nil).Go(),
+				mb.NotifModelsCreated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				mb.NotifModelsDeleted(), fmt.Sprintf(`(payload, addon) => { %s%s }`, presets.ListingCompo_JsPreFixWhenNotifModelsDeleted,
+					stateful.ReloadAction(ctx, c, nil, stateful.WithAppendFix(fmt.Sprintf(`
+						if (payload.ids.includes(%q) && addon && addon.next_version_slug) {
+							v.compo.filter_query = [%q, %q + "=" + addon.next_version_slug].join("&");
+						}
+					`, selected, filter.Encode(), filterKeySelected))).Go(),
+				),
 			),
 			v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
 		)
@@ -371,11 +378,9 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
 		return v.VBtn("Save").Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
-			fmt.Sprintf(`%s;%s;`, presets.CloseListingDialogVarScript,
-				Notify(PayloadVersionSelected{
-					Model: mb.Info().Label(),
-					Slug:  selected,
-				}),
+			fmt.Sprintf(`%s;%s;`,
+				presets.CloseListingDialogVarScript,
+				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),
 			),
 		)
 	})

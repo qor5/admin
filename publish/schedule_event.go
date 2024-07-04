@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -128,9 +127,10 @@ func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		}
 
 		web.AppendRunScripts(&r, "locals.schedulePublishDialog = false")
-		if mb.HasDetailing() && mb.Detailing().GetDrawer() {
-			web.AppendRunScripts(&r, web.Plaid().EventFunc(actions.ReloadList).Go()) // TODO:
-		}
+		r.Emit(mb.NotifModelsUpdated(), presets.PayloadModelsUpdated{
+			Ids:    []string{slug},
+			Models: []any{obj},
+		})
 		return r, nil
 	}
 }
