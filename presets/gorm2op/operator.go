@@ -120,7 +120,7 @@ func (op *DataOperatorBuilder) saveOrUpdate(obj interface{}, id string) (err err
 		return
 	}
 	if count > 0 {
-		return op.primarySluggerWhere(obj, id).Updates(obj).Error
+		return op.primarySluggerWhere(obj, id).Select("*").Updates(obj).Error
 	}
 	return op.primarySluggerWhere(obj, id).Save(obj).Error
 }
