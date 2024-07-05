@@ -3,13 +3,11 @@ package examples
 import (
 	"fmt"
 	"net/http"
-	"reflect"
-	"runtime"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/examples"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -34,16 +32,6 @@ func ExampleDB() (r *gorm.DB) {
 	return
 }
 
-func URLPathByFunc(v interface{}) string {
-	funcNameWithPkg := runtime.FuncForPC(reflect.ValueOf(v).Pointer()).Name()
-	segs := strings.Split(funcNameWithPkg, ".")
-	return "/samples/" + strcase.ToKebab(segs[len(segs)-1])
-}
-
-type Muxer interface {
-	Handle(pattern string, handler http.Handler)
-}
-
 func AddGA(ctx *web.EventContext) {
 	if strings.Index(ctx.R.Host, "localhost") >= 0 {
 		return
@@ -61,8 +49,8 @@ func AddGA(ctx *web.EventContext) {
 `)
 }
 
-func AddPresetExample(mux Muxer, f func(*presets.Builder, *gorm.DB) http.Handler) {
-	path := URLPathByFunc(f)
+func AddPresetExample(mux examples.Muxer, f func(*presets.Builder, *gorm.DB) http.Handler) {
+	path := examples.URLPathByFunc(f)
 	fmt.Println("Examples mounting path:", path)
 	p := presets.New().AssetFunc(AddGA).URIPrefix(path)
 	mux.Handle(path, f(p, ExampleDB()))

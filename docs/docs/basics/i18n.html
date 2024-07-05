@@ -226,7 +226,7 @@ based on the user&#39;s preferences.</p>
 
 <div>
 <div class='demo'>
-<a href='/samples/internationalization-example/home' target='_blank'>Check the demo</a>
+<a href='/examples/internationalization-example/home' target='_blank'>Check the demo</a>
  | 
 <a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/internationalization.go' target='_blank'>Source on GitHub</a>
 </div>
@@ -237,9 +237,9 @@ based on the user&#39;s preferences.</p>
 
 <highlightjs :language='"go"' :code='"import \"github.com/qor5/x/v3/i18n\""'></highlightjs>
 <p>Next, create a new <code>Builder</code> instance using the <code>New()</code> function.
-If you want to use it with QOR5, use the <code>I18n()</code> on <code>presets.Builder</code>:</p>
+If you want to use it with QOR5, use the <code>GetI18n()</code> on <code>presets.Builder</code>:</p>
 
-<highlightjs :language='"go"' :code='"i18nB := b.I18n()"'></highlightjs>
+<highlightjs :language='"go"' :code='"i18nB := b.GetI18n()"'></highlightjs>
 <p>The <code>Builder</code> struct is the central point of the i18n package.
 It holds the supported languages, the messages for each module in each language,
 and the configuration for retrieving the language preference.</p>
@@ -255,7 +255,7 @@ You can do this by calling the <code>SupportLanguages</code> function on the <co
 <p>Once you have defined the languages, you need to register messages for each module.
 You can do this by the <code>RegisterForModule</code> function on the <code>Builder</code> struct:</p>
 
-<highlightjs :language='"go"' :code='"i18nB.\n\tRegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).\n\tRegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).\n\tRegisterForModule(language.English, I18nExampleKey, Messages_en_US).\n\tRegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).\n\tRegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).\n\tGetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {\n\t\treturn b.I18n().GetSupportLanguages()\n\t})"'></highlightjs>
+<highlightjs :language='"go"' :code='"i18nB.\n\tRegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN_ModelsI18nModuleKey).\n\tRegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, Messages_ja_JP_ModelsI18nModuleKey).\n\tRegisterForModule(language.English, I18nExampleKey, Messages_en_US).\n\tRegisterForModule(language.Japanese, I18nExampleKey, Messages_ja_JP).\n\tRegisterForModule(language.SimplifiedChinese, I18nExampleKey, Messages_zh_CN).\n\tGetSupportLanguagesFromRequestFunc(func(r *http.Request) []language.Tag {\n\t\treturn b.GetI18n().GetSupportLanguages()\n\t})"'></highlightjs>
 <p>The <code>RegisterForModule</code> function takes three arguments: the language tag, the module key,
 and a pointer to a struct that implements the Messages interface.
 The Messages interface is an empty interface that you can use to define your own messages.</p>

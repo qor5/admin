@@ -1,13 +1,10 @@
 package publish
 
 import (
-	"cmp"
 	"errors"
-	"net/url"
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -22,7 +19,7 @@ const (
 	PortalSchedulePublishDialog = "publish_PortalSchedulePublishDialog"
 	PortalPublishCustomDialog   = "publish_PortalPublishCustomDialog"
 
-	VarCurrentDisplaySlug = "vars.publish_VarCurrentDisplaySlug"
+	paramVersionName = "version_name"
 )
 
 func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
@@ -85,12 +82,9 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			return
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.commonConfirmDialog = false",
-			Notify(PayloadVersionSelected{
-				ToPayloadItem(obj, mb.Info().Label()),
-			}),
-		)
+		web.AppendRunScripts(&r, "locals.commonConfirmDialog = false")
+		r.Emit(mb.NotifModelsCreated(), presets.PayloadModelsCreated{Models: []any{obj}})
+		r.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: slug})
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
@@ -98,33 +92,9 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 	}
 }
 
-func selectVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		slug := cmp.Or(ctx.R.FormValue("select_id"), ctx.R.FormValue("f_select_id"))
-
-		obj := mb.NewModel()
-		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
-			return
-		}
-
-		web.AppendRunScripts(&r,
-			presets.CloseListingDialogVarScript,
-			Notify(PayloadVersionSelected{
-				ToPayloadItem(obj, mb.Info().Label()),
-			}),
-		)
-		return
-	}
-}
-
 func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		versionName := ctx.R.FormValue("version_name")
-		okAction := web.Plaid().
-			URL(ctx.R.URL.Path).
-			EventFunc(eventRenameVersion).
-			Queries(ctx.Queries()).Go()
-
+		versionName := ctx.R.FormValue(paramVersionName)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DialogPortalName,
 			Body: web.Scope(
@@ -145,7 +115,11 @@ func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 								Color("primary").
 								Variant(v.VariantFlat).
 								Theme(v.ThemeDark).
-								Attr("@click", okAction),
+								Attr("@click", web.Plaid().
+									URL(ctx.R.URL.Path).
+									EventFunc(eventRenameVersion).
+									Queries(ctx.Queries()).Go(),
+								),
 						),
 					),
 				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
@@ -178,22 +152,18 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		web.AppendRunScripts(&r,
-			"locals.renameVersionDialog = false",
-			Notify(PayloadItemUpdated{
-				ToPayloadItem(obj, mb.Info().Label()),
-			}),
-		)
-
-		listQueries := ctx.Queries().Get(presets.ParamListingQueries)
-		r.RunScript = web.Plaid().URL(ctx.R.URL.Path).StringQuery(listQueries).EventFunc(actions.UpdateListingDialog).Go()
+		web.AppendRunScripts(&r, "locals.renameVersionDialog = false")
+		r.Emit(mb.NotifModelsUpdated(), presets.PayloadModelsUpdated{
+			Ids:    []string{id},
+			Models: []any{obj},
+		})
 		return
 	}
 }
 
 func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		versionName := ctx.R.FormValue("version_name")
+		versionName := ctx.R.FormValue(paramVersionName)
 
 		utilMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -211,8 +181,6 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		return
 	}
 }
-
-const paramCurrentDisplaySlug = "current_display_id"
 
 func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -254,29 +222,16 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 			}
 		}
 
-		nextVersionPayload := ToPayloadItem(nextVersion, mb.Info().Label())
-		web.AppendRunScripts(&r,
-			"locals.deleteConfirmation = false",
-			Notify(PayloadItemDeleted{ModelLabel: mb.Info().Label(), Slug: slug, NextVersion: nextVersionPayload}),
-		)
+		web.AppendRunScripts(&r, "locals.deleteConfirmation = false")
 
-		currentDisplaySlug := ctx.R.FormValue(paramCurrentDisplaySlug)
-		if slug == currentDisplaySlug && nextVersion != nil {
-			currentDisplaySlug = nextVersion.(presets.SlugEncoder).PrimarySlug()
-			web.AppendRunScripts(&r,
-				Notify(PayloadVersionSelected{nextVersionPayload}),
-			)
+		addon := PayloadModelsDeletedAddon{}
+		if nextVersion != nil {
+			addon.NextVersionSlug = nextVersion.(presets.SlugEncoder).PrimarySlug()
 		}
-		listQuery, err := url.ParseQuery(ctx.Queries().Get(presets.ParamListingQueries))
-		if err != nil {
-			return r, err
-		}
-		if slug == cmp.Or(listQuery.Get("select_id"), listQuery.Get("f_select_id")) {
-			listQuery.Set("select_id", currentDisplaySlug)
-		}
-
-		web.AppendRunScripts(&r,
-			web.Plaid().URL(ctx.R.URL.Path).Queries(listQuery).EventFunc(actions.UpdateListingDialog).Go(),
+		r.Emit(
+			mb.NotifModelsDeleted(),
+			presets.PayloadModelsDeleted{Ids: []string{slug}},
+			addon,
 		)
 		return r, nil
 	}

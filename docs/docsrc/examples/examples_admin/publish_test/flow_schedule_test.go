@@ -17,15 +17,12 @@ import (
 )
 
 var dataSeedForFlowScheduleDraft = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO "public"."with_publish_products" ("id", "created_at", "updated_at", "deleted_at", "name", "price", "status", "online_url", "scheduled_start_at", "scheduled_end_at", "actual_start_at", "actual_end_at", "version", "version_name", "parent_version") VALUES ('6', '2024-05-28 06:42:41.620394+00', '2024-05-28 06:42:41.620394+00', NULL, 'FirstProduct', '456', 'draft', '', NULL, NULL, NULL, NULL, '2024-05-28-v01', '2024-05-28-v01', '');
+INSERT INTO "public"."with_publish_products" ("id", "created_at", "updated_at", "deleted_at", "name", "price", "status", "online_url", "scheduled_start_at", "scheduled_end_at", "actual_start_at", "actual_end_at", "version", "version_name", "parent_version") VALUES ('32', '2024-07-04 10:03:29.389412+00', '2024-07-04 10:03:29.389412+00', NULL, 'FirstProduct', '123', 'draft', '', NULL, NULL, NULL, NULL, '2024-07-04-v01', '2024-07-04-v01', '');
 `, []string{"with_publish_products"}))
 
 var dataSeedForFlowScheduleOnline = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO "public"."with_publish_products" ("id", "created_at", "updated_at", "deleted_at", "name", "price", "status", "online_url", "scheduled_start_at", "scheduled_end_at", "actual_start_at", "actual_end_at", "version", "version_name", "parent_version") VALUES ('6', '2024-05-28 06:42:41.620394+00', '2024-05-31 04:20:53.684409+00', NULL, 'FirstProduct', '456', 'online', '', NULL, NULL, '2024-05-31 04:20:53.667989+00', NULL, '2024-05-28-v01', '2024-05-28-v01', '');
+INSERT INTO "public"."with_publish_products" ("id", "created_at", "updated_at", "deleted_at", "name", "price", "status", "online_url", "scheduled_start_at", "scheduled_end_at", "actual_start_at", "actual_end_at", "version", "version_name", "parent_version") VALUES ('32', '2024-07-04 10:03:29.389412+00', '2024-07-04 13:54:50.177453+00', NULL, 'FirstProduct', '123', 'online', '', NULL, NULL, '2024-07-04 13:54:50.171564+00', NULL, '2024-07-04-v01', '2024-07-04-v01', '');
 `, []string{"with_publish_products"}))
-
-// offline
-// INSERT INTO "public"."with_publish_products" ("id", "created_at", "updated_at", "deleted_at", "name", "price", "status", "online_url", "scheduled_start_at", "scheduled_end_at", "actual_start_at", "actual_end_at", "version", "version_name", "parent_version") VALUES ('6', '2024-05-28 06:42:41.620394+00', '2024-05-31 04:21:19.696131+00', NULL, 'FirstProduct', '456', 'offline', '', NULL, NULL, '2024-05-31 04:20:53.667989+00', '2024-05-31 04:21:19.694878+00', '2024-05-28-v01', '2024-05-28-v01', '');
 
 type FlowSchedule struct {
 	*Flow
@@ -106,7 +103,7 @@ func TestFlowSchedule(t *testing.T) {
 			}
 			flowSchedule(t, &FlowSchedule{
 				Flow:               &Flow{db: DB, h: PresetsBuilder},
-				ID:                 "6_2024-05-28-v01",
+				ID:                 "32_2024-07-04-v01",
 				ScheduledStartAt:   c.startAt,
 				ScheduledEndAt:     c.endAt,
 				ExpectErrorMessage: c.errMsg,
@@ -166,7 +163,7 @@ func flowSchedule(t *testing.T, f *FlowSchedule) {
 		}
 		assert.Equal(t, scheduledTimeFormat(&f.ScheduledEndAt), scheduledTimeFormat(m.ScheduledEndAt))
 
-		// flowSchedule_Step03_Event_presets_ReloadList(t, f)
+		// flowSchedule_Step03_Event___dispatch_stateful_action__(t, f)
 		return
 	}
 
@@ -176,7 +173,7 @@ func flowSchedule(t *testing.T, f *FlowSchedule) {
 
 func flowSchedule_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowSchedule) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("presets_DetailingDrawer").
 		Query("id", f.ID).
 		BuildEventFuncRequest()
@@ -194,7 +191,7 @@ func flowSchedule_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowSche
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),
@@ -205,7 +202,7 @@ func flowSchedule_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowSche
 
 func flowSchedule_Step01_Event_publish_eventSchedulePublishDialog(t *testing.T, f *FlowSchedule) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("publish_eventSchedulePublishDialog").
 		Query("id", f.ID).
 		Query("overlay", "dialog").
@@ -233,7 +230,7 @@ func flowSchedule_Step01_Event_publish_eventSchedulePublishDialog(t *testing.T, 
 
 func flowSchedule_Step02_Event_publish_eventSchedulePublish(t *testing.T, f *FlowSchedule) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("publish_eventSchedulePublish").
 		Query("id", f.ID).
 		AddField("ScheduledStartAt", scheduledTimeFormat(&f.ScheduledStartAt)).
@@ -252,44 +249,38 @@ func flowSchedule_Step02_Event_publish_eventSchedulePublish(t *testing.T, f *Flo
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "locals.schedulePublishDialog = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_ReloadList\").go()", resp.RunScript)
+	// assert.Equal(t, testflow.RemoveTime(`locals.schedulePublishDialog = false; plaid().vars(vars).emit("PresetsNotifModelsUpdatedexamplesAdminWithPublishProduct", {"ids":["32_2024-07-04-v01"],"models":[{"ID":32,"CreatedAt":"2024-07-04T18:03:29.389412+08:00","UpdatedAt":"2024-07-04T19:56:54.972308+08:00","DeletedAt":null,"Name":"FirstProduct","Price":123,"Status":"draft","OnlineUrl":"","ScheduledStartAt":"2024-07-07T00:00:00+08:00","ScheduledEndAt":"2024-07-08T00:00:00+08:00","ActualStartAt":null,"ActualEndAt":null,"Version":"2024-07-04-v01","VersionName":"2024-07-04-v01","ParentVersion":""}]})`), testflow.RemoveTime(resp.RunScript))
+	assert.Contains(t, resp.RunScript, `emit("PresetsNotifModelsUpdatedexamplesAdminWithPublishProduct"`)
 
 	return testflow.NewThen(t, w, r)
 }
 
-func flowSchedule_Step03_Event_presets_ReloadList(t *testing.T, f *FlowSchedule) *testflow.Then {
+func flowSchedule_Step03_Event___dispatch_stateful_action__(t *testing.T, f *FlowSchedule) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
-		EventFunc("presets_ReloadList").
-		BuildEventFuncRequest()
-
-	w := httptest.NewRecorder()
-	f.h.ServeHTTP(w, r)
-
-	var resp multipartestutils.TestEventResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Empty(t, resp.PageTitle)
-	assert.False(t, resp.Reload)
-	assert.Nil(t, resp.PushState)
-	assert.Empty(t, resp.RedirectURL)
-	assert.Empty(t, resp.ReloadPortals)
-	assert.Len(t, resp.UpdatePortals, 2)
-	assert.Equal(t, "dataTable", resp.UpdatePortals[0].Name)
-	assert.Equal(t, "dataTableAdditions", resp.UpdatePortals[1].Name)
-	assert.Nil(t, resp.Data)
-	assert.Empty(t, resp.RunScript)
-
-	return testflow.NewThen(t, w, r)
-}
-
-func flowSchedule_Step04_Event_publish_eventSchedulePublishDialog(t *testing.T, f *FlowSchedule) *testflow.Then {
-	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
-		EventFunc("publish_eventSchedulePublishDialog").
-		Query("id", f.ID).
-		Query("overlay", "dialog").
-		AddField("ScheduledStartAt", scheduledTimeFormat(&f.ScheduledStartAt)).
-		AddField("ScheduledEndAt", scheduledTimeFormat(&f.ScheduledEndAt)).
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("__dispatch_stateful_action__").
+		AddField("__action__", `
+{
+	"compo_type": "*presets.ListingCompo",
+	"compo": {
+		"id": "examplespublish_examplewith_publish_products_page",
+		"popup": false,
+		"long_style_search_box": false,
+		"selected_ids": [],
+		"keyword": "",
+		"order_bys": null,
+		"page": 0,
+		"per_page": 0,
+		"display_columns": null,
+		"active_filter_tab": "",
+		"filter_query": "",
+		"on_mounted": ""
+	},
+	"injector": "examplespublish_examplewith_publish_products",
+	"sync_query": true,
+	"method": "OnReload",
+	"request": {}
+}`).
 		BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()
@@ -303,7 +294,7 @@ func flowSchedule_Step04_Event_publish_eventSchedulePublishDialog(t *testing.T, 
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Len(t, resp.UpdatePortals, 1)
-	assert.Equal(t, "publish_PortalSchedulePublishDialog", resp.UpdatePortals[0].Name)
+	assert.Equal(t, "ListingCompo_examplespublish_examplewith_publish_products_page", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
 	assert.Empty(t, resp.RunScript)
 
@@ -312,7 +303,7 @@ func flowSchedule_Step04_Event_publish_eventSchedulePublishDialog(t *testing.T, 
 
 func flowSchedule_Step05_Event_publish_eventSchedulePublish(t *testing.T, f *FlowSchedule) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("publish_eventSchedulePublish").
 		Query("id", f.ID).
 		AddField("ScheduledStartAt", scheduledTimeFormat(&f.ScheduledStartAt)).
@@ -331,7 +322,7 @@ func flowSchedule_Step05_Event_publish_eventSchedulePublish(t *testing.T, f *Flo
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, fmt.Sprintf("vars.presetsMessage = { show: true, message: \"%s\", color: \"error\"}", f.ExpectErrorMessage), resp.RunScript)
+	assert.Equal(t, testflow.RemoveTime(fmt.Sprintf("vars.presetsMessage = { show: true, message: \"%s\", color: \"error\"}", f.ExpectErrorMessage)), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }

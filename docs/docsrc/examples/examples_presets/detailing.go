@@ -25,6 +25,15 @@ type Note struct {
 	UpdatedAt  time.Time
 }
 
+func addListener(ctx *web.EventContext, v any) h.HTMLComponent {
+	simpleReload := web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go()
+	return web.Listen(
+		presets.NotifModelsCreated(v), simpleReload,
+		presets.NotifModelsUpdated(v), simpleReload,
+		presets.NotifModelsDeleted(v), simpleReload,
+	)
+}
+
 func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
@@ -75,10 +84,9 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 		cusID := fmt.Sprint(cu.ID)
 		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(mi, mi.PresetsPrefix()+"/notes", url.Values{"model": []string{"Customer"}, "model_id": []string{cusID}})...)
 
-		return vx.Card(
-			dt,
-		).HeaderTitle(title).
+		return vx.Card(dt).HeaderTitle(title).
 			Actions(
+				addListener(ctx, &Note{}),
 				VBtn("Add Note").
 					Attr("@click",
 						web.POST().EventFunc(actions.New).
@@ -142,6 +150,9 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		return vx.Card(detail).HeaderTitle("Details").Variant(VariantElevated).
 			Actions(
+				web.Listen(
+					cust.NotifModelsUpdated(), web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go(),
+				),
 				VBtn("Agree Terms").
 					Class("mr-2").
 					Attr("@click", web.POST().
@@ -162,7 +173,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")
@@ -172,7 +183,9 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
-
+		if err == nil {
+			r.Emit(presets.NotifModelsUpdated(&Customer{}), presets.PayloadModelsUpdated{Ids: []string{id}})
+		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
 		var alert h.HTMLComponent
@@ -256,6 +269,8 @@ func PresetsDetailPageCards(b *presets.Builder, db *gorm.DB) (
 
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
+
+				addListener(ctx, &CreditCard{}),
 				VBtn("Add Card").
 					Attr("@click",
 						web.POST().

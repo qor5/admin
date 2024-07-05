@@ -120,7 +120,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 			readonly = p.EmbedStatus().Status == publish.StatusDraft
 		}
-		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableObservers: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
+		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -129,12 +129,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				VAppBarTitle().Text("Page Builder"),
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
-			web.Scope(
-				versionComponent,
-			).Observers(
-				publish.ObserverItemDeleted(m.mb, ctx.Param(presets.ParamID)),
-				publish.ObserverVersionSelected(m.editor, ctx.Param(presets.ParamID)),
-			),
+			versionComponent,
+			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
+			publish.NewListenerVersionSelected(m.editor, ctx.Param(presets.ParamID)),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
 			return

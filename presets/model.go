@@ -82,13 +82,8 @@ func (mb *ModelBuilder) Link(v string) *ModelBuilder {
 func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
-	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
-	mb.RegisterEventFunc(actions.DoBulkAction, mb.listing.doBulkAction)
-	mb.RegisterEventFunc(actions.DoListingAction, mb.listing.doListingAction)
-	mb.RegisterEventFunc(actions.OpenBulkActionDialog, mb.listing.openBulkActionDialog)
-	mb.RegisterEventFunc(actions.OpenActionDialog, mb.listing.openActionDialog)
 
 	mb.RegisterEventFunc(actions.Action, mb.detailing.formDrawerAction)
 	mb.RegisterEventFunc(actions.DoAction, mb.detailing.doAction)
@@ -101,8 +96,8 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
 
 	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
+	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
-	mb.RegisterEventFunc(actions.UpdateListingDialog, mb.listing.updateListingDialog)
 
 	// list editor
 	mb.RegisterEventFunc(actions.AddRowEvent, addListItemRow(mb))

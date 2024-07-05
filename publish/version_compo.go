@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -18,13 +19,28 @@ import (
 	"gorm.io/gorm"
 )
 
+const filterKeySelected = "f_select_id"
+
+func MustFilterQuery(compo *presets.ListingCompo) url.Values {
+	if compo == nil {
+		panic("compo is nil")
+	}
+	qs, err := url.ParseQuery(compo.FilterQuery)
+	if err != nil {
+		panic(err)
+	}
+	return qs
+}
+
+const versionListDialogURISuffix = "-version-list-dialog"
+
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
 	PublishEvent     func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	UnPublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	RePublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
 	Top              bool
-	DisableObservers bool
+	DisableListeners bool
 }
 
 func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
@@ -55,16 +71,15 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.Class("pb-4")
 		}
 
+		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(version.EmbedVersion().VersionName),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
-					URL(mb.Info().PresetsPrefix()+"/"+field.ModelInfo.URIName()+"-version-list-dialog").
-					Query("select_id", primarySlugger.PrimarySlug()).
-					BeforeScript(fmt.Sprintf("%s ||= ''", VarCurrentDisplaySlug)).
-					ThenScript(fmt.Sprintf("%s = %q", VarCurrentDisplaySlug, primarySlugger.PrimarySlug())).
+					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
+					Query(filterKeySelected, primarySlugger.PrimarySlug()).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
@@ -125,7 +140,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				EventFunc(eventSchedulePublishDialog).
 				Query(presets.ParamOverlay, actions.Dialog).
 				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(fmt.Sprintf("%s/%s", mb.Info().PresetsPrefix(), mb.Info().URIName())).Go()
+				URL(mb.Info().ListingHref()).Go()
 			if config.Top {
 				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
@@ -140,15 +155,15 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
-		r := web.Scope(div).
-			VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
-		if !config.DisableObservers {
-			r.Observers(
-				ObserverVersionSelected(mb, primarySlugger.PrimarySlug()),
-				ObserverItemDeleted(mb, primarySlugger.PrimarySlug()),
+		children := []h.HTMLComponent{div}
+		if !config.DisableListeners {
+			slug := primarySlugger.PrimarySlug()
+			children = append(children,
+				NewListenerVersionSelected(mb, slug),
+				NewListenerModelsDeleted(mb, slug),
 			)
 		}
-		return r
+		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
 	}
 }
 
@@ -218,13 +233,14 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
-		URIName(pm.Info().URIName() + "-version-list-dialog").
+		URIName(pm.Info().URIName() + versionListDialogURISuffix).
 		InMenu(false)
 
 	b.GetPermission().CreatePolicies(
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
 	)
 
+	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
 
 	// TODO: i18n
@@ -235,12 +251,11 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-				id := ctx.R.FormValue("select_id")
-				if id == "" {
-					id = ctx.R.FormValue("f_select_id")
-				}
-				if id != "" {
-					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+				compo := presets.ListingCompoFromEventContext(ctx)
+				selected := MustFilterQuery(compo).Get(filterKeySelected)
+
+				if selected != "" {
+					cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(selected)
 					con := presets.SQLCondition{
 						Query: "id = ?",
 						Args:  []interface{}{cs["id"]},
@@ -256,21 +271,21 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return cell
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		versionName := obj.(VersionInterface).EmbedVersion().VersionName
-		p := obj.(presets.SlugEncoder)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-
-		queries := ctx.Queries()
-		queries.Set("select_id", p.PrimarySlug())
-		onChange := web.Plaid().URL(ctx.R.URL.Path).Queries(queries).EventFunc(actions.UpdateListingDialog).Go()
-
+		compo := presets.ListingCompoFromEventContext(ctx)
+		filter := MustFilterQuery(compo)
+		selected := filter.Get(filterKeySelected)
+		slug := obj.(presets.SlugEncoder).PrimarySlug()
+		filter.Set(filterKeySelected, slug)
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(
-				v.VRadio().ModelValue(p.PrimarySlug()).TrueValue(id).Attr("@change", onChange),
-				h.Text(versionName),
+				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@change",
+					stateful.ReloadAction(ctx.R.Context(), compo, func(target *presets.ListingCompo) {
+						target.FilterQuery = filter.Encode()
+					}).Go(),
+				),
+				h.Text(
+					obj.(VersionInterface).EmbedVersion().VersionName,
+				),
 			),
 		)
 	})
@@ -318,42 +333,56 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 		return h.Td().Children(
 			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
-					URL(ctx.R.URL.Path).
+					URL(listingHref).
 					EventFunc(eventRenameVersionDialog).
-					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
-					Query("version_name", versionName).
+					Query(paramVersionName, versionName).
 					Go(),
 				),
 			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
-					URL(ctx.R.URL.Path).
+					URL(listingHref).
 					EventFunc(eventDeleteVersionDialog).
-					Query(presets.ParamListingQueries, ctx.Queries().Encode()).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, id).
-					Query("version_name", versionName).
-					Query(paramCurrentDisplaySlug, web.Var(VarCurrentDisplaySlug)).
+					Query(paramVersionName, versionName).
 					Go(),
 				),
 		)
 	})
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
-	lb.FooterAction("Cancel").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		return v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false")
+	lb.DisableModelListeners(true)
+	lb.FooterAction("Cancel").ButtonCompFunc(func(evCtx *web.EventContext) h.HTMLComponent {
+		ctx := evCtx.R.Context()
+		c := presets.ListingCompoFromContext(ctx)
+		filter := MustFilterQuery(c)
+		selected := filter.Get(filterKeySelected)
+		filter.Del(filterKeySelected)
+		return h.Components(
+			web.Listen(
+				mb.NotifModelsCreated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				mb.NotifModelsUpdated(), stateful.ReloadAction(ctx, c, nil).Go(),
+				mb.NotifModelsDeleted(), fmt.Sprintf(`(payload, addon) => { %s%s }`, presets.ListingCompo_JsPreFixWhenNotifModelsDeleted,
+					stateful.ReloadAction(ctx, c, nil, stateful.WithAppendFix(fmt.Sprintf(`
+						if (payload.ids.includes(%q) && addon && addon.next_version_slug) {
+							v.compo.filter_query = [%q, %q + "=" + addon.next_version_slug].join("&");
+						}
+					`, selected, filter.Encode(), filterKeySelected))).Go(),
+				),
+			),
+			v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+		)
 	})
 	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
-
-		return v.VBtn("Save").Disabled(id == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click", web.Plaid().
-			Query("select_id", id).
-			URL(pm.Info().PresetsPrefix()+"/"+pm.Info().URIName()).
-			EventFunc(eventSelectVersion).
-			Go())
+		compo := presets.ListingCompoFromEventContext(ctx)
+		selected := MustFilterQuery(compo).Get(filterKeySelected)
+		return v.VBtn("Save").Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+			fmt.Sprintf(`%s;%s;`,
+				presets.CloseListingDialogVarScript,
+				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),
+			),
+		)
 	})
 	lb.RowMenu().Empty()
 
@@ -378,26 +407,25 @@ func configureVersionListDialog(db *gorm.DB, b *presets.Builder, pm *presets.Mod
 	})
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		compo := presets.ListingCompoFromEventContext(ctx)
+		selected := MustFilterQuery(compo).Get(filterKeySelected)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		id := ctx.R.FormValue("select_id")
-		if id == "" {
-			id = ctx.R.FormValue("f_select_id")
-		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabAllVersions,
 				ID:    "all",
-				Query: url.Values{"all": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"all": []string{"1"}, "select_id": []string{selected}},
 			},
 			{
 				Label: msgr.FilterTabOnlineVersion,
 				ID:    "online_versions",
-				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{selected}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,
 				ID:    "named_versions",
-				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{id}},
+				Query: url.Values{"named_versions": []string{"1"}, "select_id": []string{selected}},
 			},
 		}
 	})

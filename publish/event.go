@@ -12,7 +12,6 @@ const (
 	EventUnpublish = "publish_EventUnpublish"
 
 	EventDuplicateVersion      = "publish_EventDuplicateVersion"
-	eventSelectVersion         = "publish_eventSelectVersion"
 	eventSchedulePublishDialog = "publish_eventSchedulePublishDialog"
 	eventSchedulePublish       = "publish_eventSchedulePublish"
 
@@ -34,7 +33,6 @@ func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publis
 	mb.RegisterEventFunc(EventUnpublish, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
 
 	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(mb, db))
-	mb.RegisterEventFunc(eventSelectVersion, selectVersion(mb, db))
 	mb.RegisterEventFunc(eventSchedulePublishDialog, scheduleDialog(db, mb))
 	mb.RegisterEventFunc(eventSchedulePublish, schedule(db, mb))
 }

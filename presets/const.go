@@ -12,9 +12,8 @@ const (
 	PermBulkActions     = "presets:bulk_actions:*"
 	PermDuplicate       = "presets:duplicate:*"
 
-	permActions         = "actions"
-	permDoListingAction = "do_listing_action"
-	permBulkActions     = "bulk_actions"
+	permActions     = "actions"
+	permBulkActions = "bulk_actions"
 )
 
 var PermRead = []string{PermList, PermGet}
@@ -26,11 +25,6 @@ const (
 	ParamOverlay                  = "overlay"
 	ParamOverlayAfterUpdateScript = "overlay_after_update_script"
 	ParamOverlayUpdateID          = "overlay_update_id"
-	ParamBulkActionName           = "bulk_action"
-	ParamListingActionName        = "listing_action"
-	ParamSelectedIds              = "selected_ids"
-	ParamInDialog                 = "presets_in_dialog"
-	ParamListingQueries           = "presets_listing_queries"
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
 	ParamPortalName               = "portal_name"
 

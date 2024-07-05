@@ -5,64 +5,64 @@
         "protocolVersion": "HTTP/1.1",
         "scheme": "http",
         "host": "local.theplant",
-        "port": 8800,
-        "actualPort": 8800,
-        "path": "/samples/publish-example/with-publish-products",
-        "query": "__execute_event__=presets_DetailingDrawer&id=1_2024-05-26-v01",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v01",
         "tunnel": false,
         "keptAlive": true,
         "webSocket": false,
         "remoteAddress": "local.theplant/127.0.0.1",
         "clientAddress": "/127.0.0.1",
-        "clientPort": 49948,
+        "clientPort": 52129,
         "times": {
-            "start": "2024-05-26T21:13:05.864+08:00",
-            "requestBegin": "2024-05-26T21:13:05.872+08:00",
-            "requestComplete": "2024-05-26T21:13:05.874+08:00",
-            "responseBegin": "2024-05-26T21:13:05.878+08:00",
-            "end": "2024-05-26T21:13:05.881+08:00"
+            "start": "2024-07-04T18:03:46.006+08:00",
+            "requestBegin": "2024-07-04T18:03:46.017+08:00",
+            "requestComplete": "2024-07-04T18:03:46.028+08:00",
+            "responseBegin": "2024-07-04T18:03:46.034+08:00",
+            "end": "2024-07-04T18:03:46.039+08:00"
         },
         "durations": {
-            "total": 9,
+            "total": 22,
             "dns": null,
             "connect": null,
             "ssl": null,
-            "request": 2,
-            "response": 3,
-            "latency": 4
+            "request": 11,
+            "response": 5,
+            "latency": 6
         },
         "speeds": {
-            "overall": 602777,
-            "request": 404500,
-            "response": 1538666
+            "overall": 395227,
+            "request": 128818,
+            "response": 1455600
         },
-        "totalSize": 5425,
+        "totalSize": 8695,
         "request": {
             "sizes": {
-                "headers": 765,
-                "body": 44
+                "headers": 779,
+                "body": 638
             },
             "mimeType": "multipart/form-data",
             "charset": null,
             "contentEncoding": null,
             "header": {
-                "firstLine": "POST /samples/publish-example/with-publish-products?__execute_event__=presets_DetailingDrawer&id=1_2024-05-26-v01 HTTP/1.1",
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v01 HTTP/1.1",
                 "headers": [
                     {
                         "name": "Host",
-                        "value": "local.theplant:8800"
+                        "value": "local.theplant:7800"
                     },
                     {
                         "name": "Content-Length",
-                        "value": "44"
+                        "value": "638"
                     },
                     {
                         "name": "User-Agent",
-                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
                     },
                     {
                         "name": "Content-Type",
-                        "value": "multipart/form-data; boundary=----WebKitFormBoundary2XqutL01tETNd4nJ"
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryRcAqNPyYFzhPgkAe"
                     },
                     {
                         "name": "Accept",
@@ -70,11 +70,11 @@
                     },
                     {
                         "name": "Origin",
-                        "value": "http://local.theplant:8800"
+                        "value": "http://local.theplant:7800"
                     },
                     {
                         "name": "Referer",
-                        "value": "http://local.theplant:8800/samples/publish-example/with-publish-products"
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
                     },
                     {
                         "name": "Accept-Encoding",
@@ -82,11 +82,11 @@
                     },
                     {
                         "name": "Accept-Language",
-                        "value": "zh-CN,zh;q=0.9,en;q=0.8"
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
                     },
                     {
                         "name": "Cookie",
-                        "value": "_ga=GA1.1.114363727.1715697980; _ga_T4L00Y3EM7=GS1.1.1716544157.11.0.1716544157.60.0.0; menuState={\"activeMenuURL\":\"basics/publish.html\",\"scrollTop\":213}"
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
                     },
                     {
                         "name": "Connection",
@@ -95,7 +95,7 @@
                 ]
             },
             "body": {
-                "text": "------WebKitFormBoundary2XqutL01tETNd4nJ--\r\n",
+                "text": "------WebKitFormBoundaryRcAqNPyYFzhPgkAe\r\nContent-Disposition: form-data; name=\"__action__\"\r\n\r\n{\r\n\t\"compo_type\": \"*presets.ListingCompo\",\r\n\t\"compo\": {\r\n\t\t\"id\": \"examplespublish_examplewith_publish_products_page\",\r\n\t\t\"popup\": false,\r\n\t\t\"long_style_search_box\": false,\r\n\t\t\"selected_ids\": [],\r\n\t\t\"keyword\": \"\",\r\n\t\t\"order_bys\": null,\r\n\t\t\"page\": 0,\r\n\t\t\"per_page\": 0,\r\n\t\t\"display_columns\": null,\r\n\t\t\"active_filter_tab\": \"\",\r\n\t\t\"filter_query\": \"\",\r\n\t\t\"on_mounted\": \"\"\r\n\t},\r\n\t\"injector\": \"examplespublish_examplewith_publish_products\",\r\n\t\"sync_query\": true,\r\n\t\"method\": \"OnReload\",\r\n\t\"request\": {}\r\n}\r\n------WebKitFormBoundaryRcAqNPyYFzhPgkAe--\r\n",
                 "charset": null
             }
         },
@@ -103,7 +103,7 @@
             "status": 200,
             "sizes": {
                 "headers": 228,
-                "body": 4388
+                "body": 7050
             },
             "mimeType": "application/json",
             "charset": "utf-8",
@@ -117,7 +117,7 @@
                     },
                     {
                         "name": "Date",
-                        "value": "Sun, 26 May 2024 13:13:05 GMT"
+                        "value": "Thu, 04 Jul 2024 10:03:46 GMT"
                     },
                     {
                         "name": "Transfer-Encoding",
@@ -130,7 +130,7 @@
                 ]
             },
             "body": {
-                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"presets_RightDrawerPortalName\",\"body\":\"\\n\\u003cv-navigation-drawer v-model='vars.presetsRightDrawer' :location='\\\"right\\\"' :temporary='true' :width='\\\"600\\\"' :height='\\\"100%\\\"' class='v-navigation-drawer--temporary'\\u003e\\n\\u003cglobal-events @keyup.esc='vars.presetsRightDrawer = false'\\u003e\\u003c/global-events\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerContentPortalName'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-app-bar color='white' :elevation='0'\\u003e\\n\\u003cv-app-bar-title class='pl-2'\\u003e\\n\\u003cdiv class='d-flex'\\u003eWithPublishProduct 1_2024-05-26-v01\\u003c/div\\u003e\\n\\u003c/v-app-bar-title\\u003e\\n\\n\\u003cv-btn :icon='\\\"mdi-close\\\"' @click.stop='vars.presetsRightDrawer = false'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cv-main\\u003e\\n\\u003cv-sheet class='pa-2'\\u003e\\n\\u003cv-card :flat='true' class='pa-1'\\u003e\\n\\u003cv-container :fluid='true'\\u003e\\n\\u003cgo-plaid-scope v-slot='{form}'\\u003e\\n\\u003cgo-plaid-scope v-slot=' { locals } ' :init='{action: \\\"\\\", commonConfirmDialog: false }'\\u003e\\n\\u003cdiv class='w-100 d-inline-flex'\\u003e\\n\\u003cv-chip :label='true' :variant='\\\"outlined\\\"' style='height:40px;' v-on:click='vars.publish_VarCurrentDisplayID ||= \\u0026#39;\\u0026#39;; plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_OpenListingDialog\\\").url(\\\"/samples/publish-example/with-publish-products-version-list-dialog\\\").query(\\\"select_id\\\", \\\"1_2024-05-26-v01\\\").go().then(function(r){ vars.publish_VarCurrentDisplayID = \\\"1_2024-05-26-v01\\\" })' :append-icon='\\\"mdi-chevron-down\\\"' class='w-100'\\u003e2024-05-26-v01\\n\\u003cv-chip :label='true' color='warning' :size='\\\"small\\\"' class='px-1 mx-1 ml-2'\\u003eDraft\\u003c/v-chip\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-btn :prepend-icon='\\\"mdi-file-document-multiple\\\"' :height='40' :variant='\\\"outlined\\\"' @click='locals.action=\\\"publish_EventDuplicateVersion\\\";locals.commonConfirmDialog = true' class='ml-2'\\u003eDuplicate\\u003c/v-btn\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn @click='locals.action=\\\"publish_EventPublish\\\";locals.commonConfirmDialog = true' :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' class='rounded-s ml-2'\\u003ePublish\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-dialog :max-width='\\\"600px\\\"' v-model='locals.commonConfirmDialog'\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-card-title\\u003eAre you sure?\\u003c/v-card-title\\u003e\\n\\n\\u003cv-card-actions\\u003e\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\n\\u003cv-btn :variant='\\\"flat\\\"' v-on:click='locals.commonConfirmDialog = false' class='ml-2'\\u003eCancel\\u003c/v-btn\\u003e\\n\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(locals.action).query(\\\"id\\\", \\\"1_2024-05-26-v01\\\").go()'\\u003eOK\\u003c/v-btn\\u003e\\n\\u003c/v-card-actions\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-dialog\\u003e\\n\\n\\u003cv-btn :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"publish_eventSchedulePublishDialog\\\").query(\\\"overlay\\\", \\\"dialog\\\").query(\\\"id\\\", \\\"1_2024-05-26-v01\\\").url(\\\"/samples/publish-example/with-publish-products-version-list-dialog\\\").go()' class='ml-1 rounded-e'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-alarm\\\"' :size='\\\"x-large\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='publish_PortalSchedulePublishDialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv class='mb-4'\\u003e\\n\\u003clabel class='v-label theme--light text-caption'\\u003eName\\u003c/label\\u003e\\n\\n\\u003cdiv class='pt-1'\\u003eFirstProduct\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='mb-4'\\u003e\\n\\u003clabel class='v-label theme--light text-caption'\\u003ePrice\\u003c/label\\u003e\\n\\n\\u003cdiv class='pt-1'\\u003e123\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-sheet\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\"}],\"runScript\":\"setTimeout(function(){ vars.presetsRightDrawer = true }, 100)\"}\n",
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"presets_RightDrawerPortalName\",\"body\":\"\\n\\u003cv-navigation-drawer v-model='vars.presetsRightDrawer' :location='\\\"right\\\"' :temporary='true' :width='\\\"600\\\"' :height='\\\"100%\\\"' class='v-navigation-drawer--temporary'\\u003e\\n\\u003cglobal-events @keyup.esc='vars.presetsRightDrawer = false'\\u003e\\u003c/global-events\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerContentPortalName'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-app-bar color='white' :elevation='0'\\u003e\\n\\u003cv-app-bar-title class='pl-2'\\u003e\\n\\u003cdiv class='d-flex'\\u003eWithPublishProduct 32_2024-07-04-v01\\u003c/div\\u003e\\n\\u003c/v-app-bar-title\\u003e\\n\\n\\u003cv-btn :icon='\\\"mdi-close\\\"' @click.stop='vars.presetsRightDrawer = false'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cv-main\\u003e\\n\\u003cv-sheet class='pa-2'\\u003e\\n\\u003cv-card :flat='true' class='pa-1'\\u003e\\n\\u003cv-container :fluid='true'\\u003e\\n\\u003cgo-plaid-scope v-slot='{form}'\\u003e\\n\\u003cgo-plaid-scope v-slot=' { locals } ' :init='{action: \\\"\\\", commonConfirmDialog: false }'\\u003e\\n\\u003cdiv class='w-100 d-inline-flex pb-4'\\u003e\\n\\u003cv-chip :label='true' :variant='\\\"outlined\\\"' style='height:40px;' v-on:click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_OpenListingDialog\\\").url(\\\"/examples/publish-example/with-publish-products-version-list-dialog\\\").query(\\\"f_select_id\\\", \\\"32_2024-07-04-v01\\\").go()' :append-icon='\\\"mdi-chevron-down\\\"' class='w-100'\\u003e2024-07-04-v01\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded mx-2'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-btn :prepend-icon='\\\"mdi-file-document-multiple\\\"' :height='40' :variant='\\\"outlined\\\"' @click='locals.action=\\\"publish_EventDuplicateVersion\\\";locals.commonConfirmDialog = true' class='ml-2'\\u003eDuplicate\\u003c/v-btn\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn @click='locals.action=\\\"publish_EventPublish\\\";locals.commonConfirmDialog = true' :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' class='rounded-s ml-2'\\u003ePublish\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-dialog :max-width='\\\"600px\\\"' v-model='locals.commonConfirmDialog'\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-card-title\\u003eAre you sure?\\u003c/v-card-title\\u003e\\n\\n\\u003cv-card-actions\\u003e\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\n\\u003cv-btn :variant='\\\"flat\\\"' v-on:click='locals.commonConfirmDialog = false' class='ml-2'\\u003eCancel\\u003c/v-btn\\u003e\\n\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(locals.action).query(\\\"id\\\", \\\"32_2024-07-04-v01\\\").go()'\\u003eOK\\u003c/v-btn\\u003e\\n\\u003c/v-card-actions\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-dialog\\u003e\\n\\n\\u003cv-btn :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"publish_eventSchedulePublishDialog\\\").query(\\\"overlay\\\", \\\"dialog\\\").query(\\\"id\\\", \\\"32_2024-07-04-v01\\\").url(\\\"/examples/publish-example/with-publish-products\\\").go()' class='ml-1 rounded-e'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-alarm\\\"' :size='\\\"x-large\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='publish_PortalSchedulePublishDialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-listener @publish-notif-version-selectedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload.slug === \\\"32_2024-07-04-v01\\\") {\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tif (vars.presetsRightDrawer) {\\n\\t\\t\\tvars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", payload.slug).go()\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\" + \\u0026#39;/\\u0026#39; + payload.slug).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-deletedexamples-admin-with-publish-product='(payload, addon) =\\u003e { \\n\\t\\tif (!payload.ids.includes(\\\"32_2024-07-04-v01\\\")) {\\n\\t\\t\\treturn\\n\\t\\t}\\t\\t\\n\\t\\tif (addon.next_version_slug) {\\n\\t\\t\\tplaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", { ...{\\\"slug\\\":\\\"\\\"}, slug: addon.next_version_slug })\\n\\t\\t} else {\\n\\t\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\").go()\\n\\t\\t}\\n\\t}'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='DetailFieldPortal_Details'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cdiv class='mb-2'\\u003e\\n\\u003cspan style='fontSize:16px; font-weight:500;'\\u003eDetails\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-hover\\u003e\\n\\u003ctemplate v-slot:default='{ isHovering, props }'\\u003e\\n\\u003cv-card :variant='\\\"outlined\\\"' :hover='true' v-bind='props' class='mb-6'\\u003e\\n\\u003cv-card-text\\u003e\\n\\u003cdiv class='d-flex justify-space-between'\\u003e\\n\\u003cdiv class='flex-grow-1 pr-3'\\u003e\\n\\u003cv-container\\u003e\\n\\u003cv-row\\u003e\\n\\u003cv-col :md='true'\\u003e\\n\\u003cdiv\\u003e\\n\\u003ch5 class='subtitle-2 pb-2'\\u003ePRODUCT INFORMATION\\u003c/h5\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003eName\\u003c/label\\u003e\\n\\n\\u003cspan\\u003eFirstProduct\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003ePrice\\u003c/label\\u003e\\n\\n\\u003cspan\\u003e123\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-col\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv style='width:32px;'\\u003e\\n\\u003cv-btn :size='\\\"x-small\\\"' :variant='\\\"text\\\"' :rounded='\\\"0\\\"' :icon='\\\"mdi-square-edit-outline\\\"' v-show='isHovering\\u0026\\u0026true' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_Detailing_Field_Edit\\\").query(\\\"detailField\\\", \\\"Details\\\").query(\\\"id\\\", \\\"32_2024-07-04-v01\\\").go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-hover\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv\\u003e\\u003c/div\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-sheet\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\"}],\"runScript\":\"setTimeout(function(){ vars.presetsRightDrawer = true }, 100)\"}\n",
                 "charset": "utf-8"
             }
         }
@@ -141,52 +141,52 @@
         "protocolVersion": "HTTP/1.1",
         "scheme": "http",
         "host": "local.theplant",
-        "port": 8800,
-        "actualPort": 8800,
-        "path": "/samples/publish-example/with-publish-products",
-        "query": "__execute_event__=publish_EventDuplicateVersion&id=1_2024-05-26-v01",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v01",
         "tunnel": false,
         "keptAlive": true,
         "webSocket": false,
         "remoteAddress": "local.theplant/127.0.0.1",
         "clientAddress": "/127.0.0.1",
-        "clientPort": 49948,
+        "clientPort": 52129,
         "times": {
-            "start": "2024-05-26T21:13:09.753+08:00",
-            "requestBegin": "2024-05-26T21:13:09.755+08:00",
-            "requestComplete": "2024-05-26T21:13:09.756+08:00",
-            "responseBegin": "2024-05-26T21:13:09.772+08:00",
-            "end": "2024-05-26T21:13:09.773+08:00"
+            "start": "2024-07-04T18:03:54.385+08:00",
+            "requestBegin": "2024-07-04T18:03:54.389+08:00",
+            "requestComplete": "2024-07-04T18:03:54.390+08:00",
+            "responseBegin": "2024-07-04T18:03:54.407+08:00",
+            "end": "2024-07-04T18:03:54.410+08:00"
         },
         "durations": {
-            "total": 18,
+            "total": 21,
             "dns": null,
             "connect": null,
             "ssl": null,
             "request": 1,
-            "response": 1,
-            "latency": 16
+            "response": 3,
+            "latency": 17
         },
         "speeds": {
-            "overall": 74500,
-            "request": 815000,
-            "response": 526000
+            "overall": 83857,
+            "request": 828000,
+            "response": 311000
         },
-        "totalSize": 1341,
+        "totalSize": 1761,
         "request": {
             "sizes": {
-                "headers": 771,
+                "headers": 784,
                 "body": 44
             },
             "mimeType": "multipart/form-data",
             "charset": null,
             "contentEncoding": null,
             "header": {
-                "firstLine": "POST /samples/publish-example/with-publish-products?__execute_event__=publish_EventDuplicateVersion&id=1_2024-05-26-v01 HTTP/1.1",
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v01 HTTP/1.1",
                 "headers": [
                     {
                         "name": "Host",
-                        "value": "local.theplant:8800"
+                        "value": "local.theplant:7800"
                     },
                     {
                         "name": "Content-Length",
@@ -194,11 +194,11 @@
                     },
                     {
                         "name": "User-Agent",
-                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
                     },
                     {
                         "name": "Content-Type",
-                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryugX6dEAY7WjvHbtt"
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryLobdwPMbBeHl4CTc"
                     },
                     {
                         "name": "Accept",
@@ -206,11 +206,11 @@
                     },
                     {
                         "name": "Origin",
-                        "value": "http://local.theplant:8800"
+                        "value": "http://local.theplant:7800"
                     },
                     {
                         "name": "Referer",
-                        "value": "http://local.theplant:8800/samples/publish-example/with-publish-products"
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
                     },
                     {
                         "name": "Accept-Encoding",
@@ -218,11 +218,11 @@
                     },
                     {
                         "name": "Accept-Language",
-                        "value": "zh-CN,zh;q=0.9,en;q=0.8"
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
                     },
                     {
                         "name": "Cookie",
-                        "value": "_ga=GA1.1.114363727.1715697980; _ga_T4L00Y3EM7=GS1.1.1716544157.11.0.1716544157.60.0.0; menuState={\"activeMenuURL\":\"basics/publish.html\",\"scrollTop\":213}"
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
                     },
                     {
                         "name": "Connection",
@@ -231,7 +231,7 @@
                 ]
             },
             "body": {
-                "text": "------WebKitFormBoundaryugX6dEAY7WjvHbtt--\r\n",
+                "text": "------WebKitFormBoundaryLobdwPMbBeHl4CTc--\r\n",
                 "charset": null
             }
         },
@@ -239,7 +239,7 @@
             "status": 200,
             "sizes": {
                 "headers": 127,
-                "body": 399
+                "body": 806
             },
             "mimeType": "application/json",
             "charset": "utf-8",
@@ -253,11 +253,11 @@
                     },
                     {
                         "name": "Date",
-                        "value": "Sun, 26 May 2024 13:13:09 GMT"
+                        "value": "Thu, 04 Jul 2024 10:03:54 GMT"
                     },
                     {
                         "name": "Content-Length",
-                        "value": "399"
+                        "value": "806"
                     },
                     {
                         "name": "Proxy-Connection",
@@ -266,7 +266,7 @@
                 ]
             },
             "body": {
-                "text": "{\"body\":\"\",\"pushState\":null,\"runScript\":\"plaid().vars(vars).locals(locals).form(form).go().then(function(r){ vars.presetsListingDialog = false; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go(); vars.presetsMessage = { show: true, message: \\\"Successfully Created\\\", color: \\\"success\\\"} })\"}\n",
+                "text": "{\"body\":\"\",\"pushState\":null,\"runScript\":\"locals.commonConfirmDialog = false; plaid().vars(vars).emit(\\\"PresetsNotifModelsCreatedexamplesAdminWithPublishProduct\\\", {\\\"models\\\":[{\\\"ID\\\":32,\\\"CreatedAt\\\":\\\"2024-07-04T18:03:54.402772+08:00\\\",\\\"UpdatedAt\\\":\\\"2024-07-04T18:03:54.399244+08:00\\\",\\\"DeletedAt\\\":null,\\\"Name\\\":\\\"FirstProduct\\\",\\\"Price\\\":123,\\\"Status\\\":\\\"draft\\\",\\\"OnlineUrl\\\":\\\"\\\",\\\"ScheduledStartAt\\\":null,\\\"ScheduledEndAt\\\":null,\\\"ActualStartAt\\\":null,\\\"ActualEndAt\\\":null,\\\"Version\\\":\\\"2024-07-04-v02\\\",\\\"VersionName\\\":\\\"2024-07-04-v02\\\",\\\"ParentVersion\\\":\\\"2024-07-04-v01\\\"}]}); plaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", {\\\"slug\\\":\\\"32_2024-07-04-v02\\\"}); vars.presetsMessage = { show: true, message: \\\"Successfully Created\\\", color: \\\"success\\\"}\"}\n",
                 "charset": "utf-8"
             }
         }
@@ -277,22 +277,22 @@
         "protocolVersion": "HTTP/1.1",
         "scheme": "http",
         "host": "local.theplant",
-        "port": 8800,
-        "actualPort": 8800,
-        "path": "/samples/publish-example/with-publish-products",
-        "query": "__execute_event__=__reload__",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=__dispatch_stateful_action__",
         "tunnel": false,
         "keptAlive": true,
         "webSocket": false,
         "remoteAddress": "local.theplant/127.0.0.1",
         "clientAddress": "/127.0.0.1",
-        "clientPort": 49948,
+        "clientPort": 52129,
         "times": {
-            "start": "2024-05-26T21:13:09.777+08:00",
-            "requestBegin": "2024-05-26T21:13:09.778+08:00",
-            "requestComplete": "2024-05-26T21:13:09.778+08:00",
-            "responseBegin": "2024-05-26T21:13:09.789+08:00",
-            "end": "2024-05-26T21:13:09.790+08:00"
+            "start": "2024-07-04T18:03:54.426+08:00",
+            "requestBegin": "2024-07-04T18:03:54.438+08:00",
+            "requestComplete": "2024-07-04T18:03:54.438+08:00",
+            "responseBegin": "2024-07-04T18:03:54.445+08:00",
+            "end": "2024-07-04T18:03:54.450+08:00"
         },
         "durations": {
             "total": 12,
@@ -300,41 +300,41 @@
             "connect": null,
             "ssl": null,
             "request": 0,
-            "response": 1,
-            "latency": 11
+            "response": 5,
+            "latency": 7
         },
         "speeds": {
-            "overall": 900083,
+            "overall": 1230500,
             "request": 0,
-            "response": 10025000
+            "response": 2673000
         },
-        "totalSize": 10801,
+        "totalSize": 14766,
         "request": {
             "sizes": {
-                "headers": 732,
-                "body": 44
+                "headers": 763,
+                "body": 638
             },
             "mimeType": "multipart/form-data",
             "charset": null,
             "contentEncoding": null,
             "header": {
-                "firstLine": "POST /samples/publish-example/with-publish-products?__execute_event__=__reload__ HTTP/1.1",
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=__dispatch_stateful_action__ HTTP/1.1",
                 "headers": [
                     {
                         "name": "Host",
-                        "value": "local.theplant:8800"
+                        "value": "local.theplant:7800"
                     },
                     {
                         "name": "Content-Length",
-                        "value": "44"
+                        "value": "638"
                     },
                     {
                         "name": "User-Agent",
-                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
                     },
                     {
                         "name": "Content-Type",
-                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryDfqC1CJEt4iMX8uu"
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryYNow3nTrSxJbMCAd"
                     },
                     {
                         "name": "Accept",
@@ -342,11 +342,11 @@
                     },
                     {
                         "name": "Origin",
-                        "value": "http://local.theplant:8800"
+                        "value": "http://local.theplant:7800"
                     },
                     {
                         "name": "Referer",
-                        "value": "http://local.theplant:8800/samples/publish-example/with-publish-products"
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
                     },
                     {
                         "name": "Accept-Encoding",
@@ -354,11 +354,11 @@
                     },
                     {
                         "name": "Accept-Language",
-                        "value": "zh-CN,zh;q=0.9,en;q=0.8"
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
                     },
                     {
                         "name": "Cookie",
-                        "value": "_ga=GA1.1.114363727.1715697980; _ga_T4L00Y3EM7=GS1.1.1716544157.11.0.1716544157.60.0.0; menuState={\"activeMenuURL\":\"basics/publish.html\",\"scrollTop\":213}"
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
                     },
                     {
                         "name": "Connection",
@@ -367,7 +367,7 @@
                 ]
             },
             "body": {
-                "text": "------WebKitFormBoundaryDfqC1CJEt4iMX8uu--\r\n",
+                "text": "------WebKitFormBoundaryYNow3nTrSxJbMCAd\r\nContent-Disposition: form-data; name=\"__action__\"\r\n\r\n{\r\n\t\"compo_type\": \"*presets.ListingCompo\",\r\n\t\"compo\": {\r\n\t\t\"id\": \"examplespublish_examplewith_publish_products_page\",\r\n\t\t\"popup\": false,\r\n\t\t\"long_style_search_box\": false,\r\n\t\t\"selected_ids\": [],\r\n\t\t\"keyword\": \"\",\r\n\t\t\"order_bys\": null,\r\n\t\t\"page\": 0,\r\n\t\t\"per_page\": 0,\r\n\t\t\"display_columns\": null,\r\n\t\t\"active_filter_tab\": \"\",\r\n\t\t\"filter_query\": \"\",\r\n\t\t\"on_mounted\": \"\"\r\n\t},\r\n\t\"injector\": \"examplespublish_examplewith_publish_products\",\r\n\t\"sync_query\": true,\r\n\t\"method\": \"OnReload\",\r\n\t\"request\": {}\r\n}\r\n------WebKitFormBoundaryYNow3nTrSxJbMCAd--\r\n",
                 "charset": null
             }
         },
@@ -375,7 +375,7 @@
             "status": 200,
             "sizes": {
                 "headers": 228,
-                "body": 9797
+                "body": 13137
             },
             "mimeType": "application/json",
             "charset": "utf-8",
@@ -389,7 +389,7 @@
                     },
                     {
                         "name": "Date",
-                        "value": "Sun, 26 May 2024 13:13:09 GMT"
+                        "value": "Thu, 04 Jul 2024 10:03:54 GMT"
                     },
                     {
                         "name": "Transfer-Encoding",
@@ -402,7 +402,7 @@
                 ]
             },
             "body": {
-                "text": "{\"pageTitle\":\"Listing WithPublishProducts - Admin\",\"body\":\"\\n\\u003cv-app id='vt-app' v-assign='[vars, {presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, \\nnavDrawer: true\\n}]'\\u003e\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerPortalName'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_DialogPortalName'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='deleteConfirm'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_confirmDialogPortalName'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_listingDialogPortalName'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003ctemplate v-if='vars.presetsMessage'\\u003e\\n\\u003cv-snackbar v-model='vars.presetsMessage.show' :color='vars.presetsMessage.color' :timeout='2000' :location='\\\"top\\\"'\\u003e{{vars.presetsMessage.message}}\\u003c/v-snackbar\\u003e\\n\\u003c/template\\u003e\\n\\n\\u003cv-layout\\u003e\\n\\u003cv-main\\u003e\\n\\u003cv-navigation-drawer :width='320' v-model='vars.navDrawer' :permanent='true' :floating='true' :elevation='0'\\u003e\\n\\u003cv-layout style='height: calc(100% - 16px);' class='ma-2 border-sm rounded-lg elevation-0'\\u003e\\n\\u003cv-main\\u003e\\n\\u003cv-container\\u003e\\n\\u003cv-row align='center' justify='center'\\u003e\\n\\u003cv-col :cols='8'\\u003e\\n\\u003ch1 class='text-h6'\\u003eAdmin\\u003c/h1\\u003e\\n\\u003c/v-col\\u003e\\n\\n\\u003cv-col :cols='2'\\u003e\\u003c/v-col\\u003e\\n\\n\\u003cv-col :cols='2'\\u003e\\n\\u003cv-app-bar-nav-icon icon='mdi-menu' @click='vars.navDrawer = !vars.navDrawer' :density='\\\"compact\\\"' class='text-grey-darken-1'\\u003e\\u003c/v-app-bar-nav-icon\\u003e\\n\\u003c/v-col\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/v-container\\u003e\\n\\n\\u003cv-card :variant='\\\"text\\\"' class='ma-4'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='[{ menuOpened:  [\\\"\\\"]}, { selection:  [\\\"\\\"]}]'\\u003e\\n\\u003cv-list :open-strategy='\\\"single\\\"' :density='\\\"compact\\\"' v-model:opened='locals.menuOpened' v-model:selected='locals.selection' class='primary--text'\\u003e\\n\\u003cv-list-item :value='\\\"WithPublishProducts\\\"' href='/samples/publish-example/with-publish-products' @click='(e) =\\u003e {\\n\\tif (e.metaKey || e.ctrlKey) { return; }\\n\\te.stopPropagation();\\n\\te.preventDefault();\\n\\tplaid().vars(vars).locals(locals).form(form).pushStateURL(\\\"/samples/publish-example/with-publish-products\\\").go();\\n}\\n' class='rounded-lg'\\u003e\\n\\u003ctemplate v-slot:prepend\\u003e\\n\\u003cv-icon :icon='\\\"format_list_bulleted\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\n\\u003cv-list-item-title\\u003eWithPublishProducts\\u003c/v-list-item-title\\u003e\\n\\u003c/v-list-item\\u003e\\n\\u003c/v-list\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\\n\\u003cv-app-bar :elevation='0'\\u003e\\n\\u003cdiv class='d-flex align-center mx-2 border-b w-100' style='height: 48px;'\\u003e\\n\\u003cv-progress-linear :active='isFetching' style='position: fixed; z-index: 99;' :indeterminate='true' :height='2' color='amber' class='ml-4'\\u003e\\u003c/v-progress-linear\\u003e\\n\\n\\u003cv-app-bar-nav-icon :density='\\\"compact\\\"' v-if='!vars.navDrawer' v-on:click.stop='vars.navDrawer = !vars.navDrawer' class='mr-2'\\u003e\\u003c/v-app-bar-nav-icon\\u003e\\n\\n\\u003cdiv class='mr-auto'\\u003e\\n\\u003cv-toolbar-title\\u003eListing WithPublishProducts\\u003c/v-toolbar-title\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' :disabled='false' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_New\\\").go()' class='ml-2'\\u003eNew\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='{currEditingListItemID: \\\"\\\"}'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-main\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-toolbar :flat='true' color='surface' :height='\\\"auto\\\"' class='pa-2'\\u003e\\n\\u003cv-responsive :max-width='200' :min-width='200'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='{isFocus: false}'\\u003e\\n\\u003cv-text-field :density='\\\"compact\\\"' :variant='\\\"outlined\\\"' label='Search' :flat='true' :clearable='true' :hide-details='true' :single-line='true' :model-value='\\\"\\\"' @keyup.enter='plaid().vars(vars).locals(locals).form(form).clearMergeQuery(\\\"page\\\").query(\\\"keyword\\\", [$event.target.value]).mergeQuery(true).pushState(true).go()' @click:clear='plaid().vars(vars).locals(locals).form(form).query(\\\"keyword\\\", \\\"\\\").pushState(true).go()' class='mr-4'\\u003e\\n\\u003ctemplate v-slot:append-inner\\u003e\\n\\u003cv-icon :icon='\\\"mdi-magnify\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-text-field\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-responsive\\u003e\\n\\u003c/v-toolbar\\u003e\\n\\n\\u003cv-card-text class='pa-2'\\u003e\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='dataTable'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init=' { selected_count : 0 , loadmore : false }'\\u003e\\n\\u003cdiv v-show='locals.selected_count \\u003e 0' class='bg-grey-lighten-3 text-center pt-2 pb-2'\\u003e\\n\\u003cstrong\\u003e{{locals.selected_count}}\\u003c/strong\\u003e\\n records are selected. \\n\\u003cv-btn :variant='\\\"plain\\\"' :size='\\\"small\\\"' v-on:click='plaid().vars(vars).locals(locals).form(form).mergeQuery(true).query(\\\"selected_ids\\\", \\\"\\\").pushState(true).go()'\\u003eclear selection\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-table\\u003e\\n\\u003ctemplate #default\\u003e\\n\\u003cthead class='bg-grey-lighten-5'\\u003e\\n\\u003ctr\\u003e\\n\\u003cth\\u003eName\\u003c/th\\u003e\\n\\n\\u003cth\\u003ePrice\\u003c/th\\u003e\\n\\n\\u003cth\\u003eDraft Count\\u003c/th\\u003e\\n\\n\\u003cth\\u003eOnline\\u003c/th\\u003e\\n\\n\\u003cth class='pl-0' style='width: 64px;'\\u003e\\u003c/th\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/thead\\u003e\\n\\n\\u003ctbody\\u003e\\n\\u003ctr :class='{\\\"vx-list-item--active primary--text\\\": vars.presetsRightDrawer \\u0026\\u0026 locals.currEditingListItemID===\\\"-1_2024-05-26-v02\\\"}'\\u003e\\n\\u003ctd @click.self='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go(); locals.currEditingListItemID=\\\"-1_2024-05-26-v02\\\"'\\u003eFirstProduct\\u003c/td\\u003e\\n\\n\\u003ctd @click.self='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go(); locals.currEditingListItemID=\\\"-1_2024-05-26-v02\\\"'\\u003e123\\u003c/td\\u003e\\n\\n\\u003ctd @click.self='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go(); locals.currEditingListItemID=\\\"-1_2024-05-26-v02\\\"'\\u003e2\\u003c/td\\u003e\\n\\n\\u003ctd @click.self='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go(); locals.currEditingListItemID=\\\"-1_2024-05-26-v02\\\"'\\u003e-\\u003c/td\\u003e\\n\\n\\u003ctd class='pl-0' style='width: 64px;'\\u003e\\n\\u003cv-menu\\u003e\\n\\u003ctemplate v-slot:activator='{ props }'\\u003e\\n\\u003cv-btn v-bind='props' :variant='\\\"text\\\"' :size='\\\"small\\\"'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-dots-horizontal\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\u003c/template\\u003e\\n\\n\\u003cv-list\\u003e\\n\\u003cv-list-item @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DeleteConfirmation\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").query(\\\"all_versions\\\", true).query(\\\"prompt_id\\\", \\\"1\\\").go()'\\u003e\\n\\u003ctemplate v-slot:prepend\\u003e\\n\\u003cv-icon :icon='\\\"mdi-delete\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\n\\u003cv-list-item-title\\u003eDelete\\u003c/v-list-item-title\\u003e\\n\\u003c/v-list-item\\u003e\\n\\u003c/v-list\\u003e\\n\\u003c/v-menu\\u003e\\n\\u003c/td\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/tbody\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-table\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='dataTableAdditions'\\u003e\\n\\u003cdiv class='mt-2'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-row :justify='\\\"end\\\"' :align='\\\"center\\\"' class='ma-0'\\u003e\\n\\u003cdiv\\u003eRows per page: \\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6' style='width: 64px;'\\u003e\\n\\u003cv-select :items='[\\\"10\\\",\\\"15\\\",\\\"20\\\",\\\"50\\\",\\\"100\\\"]' :variant='\\\"underlined\\\"' :model-value='\\\"50\\\"' :hide-details='true' :density='\\\"compact\\\"' style='margin-top: -8px' @update:model-value='plaid().vars(vars).locals(locals).form(form).pushState(true).query(\\\"per_page\\\", [$event]).mergeQuery(true).go()'\\u003e\\u003c/v-select\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e1-1 of 1\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e\\n\\u003cspan\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-left\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).pushState(true).query(\\\"page\\\", 0).mergeQuery(true).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\n\\u003cspan class='ml-3'\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-right\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).pushState(true).query(\\\"page\\\", 2).mergeQuery(true).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/v-app\\u003e\\n\",\"reload\":true,\"pushState\":null}\n",
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"ListingCompo_examplespublish_examplewith_publish_products_page\",\"body\":\"\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='{\\n\\t__queryEncoder_bare__: ({ value, queries, tag }) =\\u003e {\\n\\t\\tif (value) {\\n\\t\\t\\tvalue.split(\\u0026#39;\\u0026\\u0026#39;).forEach((query) =\\u003e {\\n\\t\\t\\t\\tqueries.push(query)\\n\\t\\t\\t})\\n\\t\\t}\\n\\t},\\n\\n\\tnewAction: function() {\\n\\t\\treturn {\\n  \\\"compo_type\\\": \\\"*presets.ListingCompo\\\",\\n  \\\"compo\\\": {\\n    \\\"id\\\": \\\"examplespublish_examplewith_publish_products_page\\\",\\n    \\\"popup\\\": false,\\n    \\\"long_style_search_box\\\": false,\\n    \\\"selected_ids\\\": [],\\n    \\\"keyword\\\": \\\"\\\",\\n    \\\"order_bys\\\": null,\\n    \\\"page\\\": 0,\\n    \\\"per_page\\\": 0,\\n    \\\"display_columns\\\": null,\\n    \\\"active_filter_tab\\\": \\\"\\\",\\n    \\\"filter_query\\\": \\\"\\\",\\n    \\\"on_mounted\\\": \\\"\\\"\\n  },\\n  \\\"injector\\\": \\\"examplespublish_examplewith_publish_products\\\",\\n  \\\"sync_query\\\": true,\\n  \\\"method\\\": \\\"\\\",\\n  \\\"request\\\": {}\\n};\\n\\t},\\n\\tqueryTags: function(v) {\\n\\t\\tlet tags = [\\n  {\\n    \\\"name\\\": \\\"selected_ids\\\",\\n    \\\"json_name\\\": \\\"selected_ids\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"keyword\\\",\\n    \\\"json_name\\\": \\\"keyword\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"order_bys\\\",\\n    \\\"json_name\\\": \\\"order_bys\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"page\\\",\\n    \\\"json_name\\\": \\\"page\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"per_page\\\",\\n    \\\"json_name\\\": \\\"per_page\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"display_columns\\\",\\n    \\\"json_name\\\": \\\"display_columns\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"active_filter_tab\\\",\\n    \\\"json_name\\\": \\\"active_filter_tab\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"filter_query\\\",\\n    \\\"json_name\\\": \\\"filter_query\\\",\\n    \\\"omitempty\\\": false,\\n    \\\"method\\\": \\\"bare\\\",\\n    \\\"args\\\": [\\n      \\\"f_\\\"\\n    ]\\n  }\\n] || [];\\n\\t\\ttags.forEach(tag =\\u003e {\\n\\t\\t\\tif (tag.method) {\\n\\t\\t\\t\\ttag.encoder = this[\\\"__queryEncoder_\\\" + tag.method + \\\"__\\\"];\\n\\t\\t\\t}\\n\\t\\t});\\n\\t\\treturn tags;\\n\\t},\\n\\tsetCookies: function(v) {}, // a placeholder\\n\\tencodeQuery: function(v) {\\n\\t\\tif (!v.sync_query) {\\n\\t\\t\\treturn \\\"\\\";\\n\\t\\t}\\n\\t\\treturn plaid().encodeObjectToQuery(v.compo, this.queryTags());\\n\\t},\\n}'\\u003e\\n\\u003cdiv v-run='(el) =\\u003e {\\n\\tconst cookieTags = locals.queryTags().filter(tag =\\u003e tag.cookie)\\n\\tlocals.setCookies = function(v) {\\n\\t\\tif (!v.sync_query || !el.ownerDocument) {\\n\\t\\t\\treturn;\\n\\t\\t}\\n\\t\\tel.ownerDocument.cookie = \\\"__sync_cookie_af885d09__=\\\" + plaid().encodeObjectToQuery(v.compo, cookieTags);\\n\\t}\\n}'\\u003e\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-run-script :script='function() {\\n\\t\\t\\tlocals.dialog = false;\\n\\t\\t\\tlocals.current_editing_id = \\\"\\\";\\n\\t\\t\\tlocals.selected_ids = [] || [];\\n\\t\\t\\tlet orig = locals.newAction;\\n\\t\\t\\tlocals.newAction = function() {\\n\\t\\t\\t\\tlet v = orig();\\n\\t\\t\\t\\tv.compo.selected_ids = this.selected_ids;\\n\\t\\t\\t\\treturn v\\n\\t\\t\\t}\\n\\t\\t}'\\u003e\\u003c/go-plaid-run-script\\u003e\\n\\n\\u003cgo-plaid-listener @presets-reload-list-examplespublish-examplewith-publish-products='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-createdexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-updatedexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-deletedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload \\u0026\\u0026 payload.ids \\u0026\\u0026 payload.ids.length \\u003e 0) {\\n\\tlocals.selected_ids = locals.selected_ids.filter(id =\\u003e !payload.ids.includes(id));\\n}\\nplaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='ListingCompo_examplespublish_examplewith_publish_products_page_action_dialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cTeleport to='#ListingCompo_examplespublish_examplewith_publish_products_page_actions'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_New\\\").go()' class='ml-2'\\u003eNew\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/Teleport\\u003e\\n\\n\\u003cv-card :elevation='0'\\u003e\\n\\u003cv-toolbar :flat='true' color='surface' :height='\\\"auto\\\"' class='pa-2'\\u003e\\n\\u003cv-responsive :max-width='200' :min-width='200' class='mr-4'\\u003e\\n\\u003cv-text-field :density='\\\"compact\\\"' :variant='\\\"outlined\\\"' label='Search' :flat='true' :clearable='true' :hide-details='true' :single-line='true' :model-value='\\\"\\\"' @keyup.enter='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.keyword = $event.target.value\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()' @click:clear='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\n\\u003ctemplate v-slot:append-inner\\u003e\\n\\u003cv-icon :icon='\\\"mdi-magnify\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-text-field\\u003e\\n\\u003c/v-responsive\\u003e\\n\\u003c/v-toolbar\\u003e\\n\\n\\u003cv-card-text class='pa-2'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals:_dataTableLocals_ }' :init='{ \\n\\t\\t\\t\\tloadmore : false,\\n\\t\\t\\t\\tselectedIds: null || [],\\n\\t\\t\\t\\tlastSelectedIds: null || [],\\n\\t\\t\\t\\tonSelectionChanged: function(v){},\\n\\t\\t\\t\\tonLocalsDebounceChanged: function() {\\n\\t\\t\\t\\t\\tif (JSON.stringify(this.selectedIds) !== JSON.stringify(this.lastSelectedIds)) {\\n\\t\\t\\t\\t\\t\\tthis.lastSelectedIds = this.selectedIds;\\n\\t\\t\\t\\t\\t\\tthis.onSelectionChanged([...this.selectedIds]);\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t},\\n\\t\\t\\t}' @change-debounced='({locals, form, oldLocals, oldForm}) =\\u003e { locals.onLocalsDebounceChanged() }' :use-debounce='1'\\u003e\\n\\u003cv-table\\u003e\\n\\u003ctemplate #default\\u003e\\n\\u003cthead class='bg-grey-lighten-5'\\u003e\\n\\u003ctr\\u003e\\n\\u003cth\\u003eName\\u003c/th\\u003e\\n\\n\\u003cth\\u003ePrice\\u003c/th\\u003e\\n\\n\\u003cth\\u003eDraft Count\\u003c/th\\u003e\\n\\n\\u003cth\\u003eLive\\u003c/th\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/thead\\u003e\\n\\n\\u003ctbody\\u003e\\n\\u003ctr :class='{\\n\\t\\t\\t\\t\\t\\\"vx-list-item--active primary--text\\\": vars.presetsRightDrawer \\u0026\\u0026 locals.current_editing_id === \\\"-32_2024-07-04-v02\\\",\\n\\t\\t\\t\\t}'\\u003e\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v02\\\";'\\u003eFirstProduct\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v02\\\";'\\u003e123\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v02\\\";'\\u003e2\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v02\\\";'\\u003e\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\u003c/td\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/tbody\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-table\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv class='mt-2'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-row :justify='\\\"end\\\"' :align='\\\"center\\\"' class='ma-0'\\u003e\\n\\u003cdiv\\u003eRows per page: \\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6' style='width: 64px;'\\u003e\\n\\u003cv-select :items='[\\\"10\\\",\\\"15\\\",\\\"20\\\",\\\"50\\\",\\\"100\\\"]' :variant='\\\"underlined\\\"' :model-value='\\\"50\\\"' :hide-details='true' :density='\\\"compact\\\"' style='margin-top: -8px' @update:model-value='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.per_page = parseInt($event, 10)\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-select\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e1-1 of 1\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e\\n\\u003cspan\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-left\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\n\\u003cspan class='ml-3'\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-right\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nb.applyJsonPatch(v.compo, [{\\\"value\\\":2,\\\"op\\\":\\\"replace\\\",\\\"path\\\":\\\"/page\\\"}]);\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\"}]}\n",
                 "charset": "utf-8"
             }
         }
@@ -413,52 +413,52 @@
         "protocolVersion": "HTTP/1.1",
         "scheme": "http",
         "host": "local.theplant",
-        "port": 8800,
-        "actualPort": 8800,
-        "path": "/samples/publish-example/with-publish-products",
-        "query": "__execute_event__=presets_DetailingDrawer&id=1_2024-05-26-v02",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v02",
         "tunnel": false,
         "keptAlive": true,
         "webSocket": false,
         "remoteAddress": "local.theplant/127.0.0.1",
         "clientAddress": "/127.0.0.1",
-        "clientPort": 49948,
+        "clientPort": 52122,
         "times": {
-            "start": "2024-05-26T21:13:09.810+08:00",
-            "requestBegin": "2024-05-26T21:13:09.811+08:00",
-            "requestComplete": "2024-05-26T21:13:09.812+08:00",
-            "responseBegin": "2024-05-26T21:13:09.814+08:00",
-            "end": "2024-05-26T21:13:09.815+08:00"
+            "start": "2024-07-04T18:03:54.428+08:00",
+            "requestBegin": "2024-07-04T18:03:54.438+08:00",
+            "requestComplete": "2024-07-04T18:03:54.438+08:00",
+            "responseBegin": "2024-07-04T18:03:54.442+08:00",
+            "end": "2024-07-04T18:03:54.449+08:00"
         },
         "durations": {
-            "total": 4,
+            "total": 11,
             "dns": null,
             "connect": null,
             "ssl": null,
-            "request": 1,
-            "response": 1,
-            "latency": 2
+            "request": 0,
+            "response": 7,
+            "latency": 4
         },
         "speeds": {
-            "overall": 1356250,
-            "request": 809000,
-            "response": 4616000
+            "overall": 736363,
+            "request": 0,
+            "response": 1039714
         },
-        "totalSize": 5425,
+        "totalSize": 8100,
         "request": {
             "sizes": {
-                "headers": 765,
+                "headers": 778,
                 "body": 44
             },
             "mimeType": "multipart/form-data",
             "charset": null,
             "contentEncoding": null,
             "header": {
-                "firstLine": "POST /samples/publish-example/with-publish-products?__execute_event__=presets_DetailingDrawer&id=1_2024-05-26-v02 HTTP/1.1",
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v02 HTTP/1.1",
                 "headers": [
                     {
                         "name": "Host",
-                        "value": "local.theplant:8800"
+                        "value": "local.theplant:7800"
                     },
                     {
                         "name": "Content-Length",
@@ -466,11 +466,11 @@
                     },
                     {
                         "name": "User-Agent",
-                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
                     },
                     {
                         "name": "Content-Type",
-                        "value": "multipart/form-data; boundary=----WebKitFormBoundary0YHat7a7NKKP2PR9"
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryTo2aFueSMaDKZrPY"
                     },
                     {
                         "name": "Accept",
@@ -478,11 +478,11 @@
                     },
                     {
                         "name": "Origin",
-                        "value": "http://local.theplant:8800"
+                        "value": "http://local.theplant:7800"
                     },
                     {
                         "name": "Referer",
-                        "value": "http://local.theplant:8800/samples/publish-example/with-publish-products"
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
                     },
                     {
                         "name": "Accept-Encoding",
@@ -490,11 +490,11 @@
                     },
                     {
                         "name": "Accept-Language",
-                        "value": "zh-CN,zh;q=0.9,en;q=0.8"
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
                     },
                     {
                         "name": "Cookie",
-                        "value": "_ga=GA1.1.114363727.1715697980; _ga_T4L00Y3EM7=GS1.1.1716544157.11.0.1716544157.60.0.0; menuState={\"activeMenuURL\":\"basics/publish.html\",\"scrollTop\":213}"
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
                     },
                     {
                         "name": "Connection",
@@ -503,7 +503,7 @@
                 ]
             },
             "body": {
-                "text": "------WebKitFormBoundary0YHat7a7NKKP2PR9--\r\n",
+                "text": "------WebKitFormBoundaryTo2aFueSMaDKZrPY--\r\n",
                 "charset": null
             }
         },
@@ -511,7 +511,7 @@
             "status": 200,
             "sizes": {
                 "headers": 228,
-                "body": 4388
+                "body": 7050
             },
             "mimeType": "application/json",
             "charset": "utf-8",
@@ -525,7 +525,7 @@
                     },
                     {
                         "name": "Date",
-                        "value": "Sun, 26 May 2024 13:13:09 GMT"
+                        "value": "Thu, 04 Jul 2024 10:03:54 GMT"
                     },
                     {
                         "name": "Transfer-Encoding",
@@ -538,7 +538,687 @@
                 ]
             },
             "body": {
-                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"presets_RightDrawerPortalName\",\"body\":\"\\n\\u003cv-navigation-drawer v-model='vars.presetsRightDrawer' :location='\\\"right\\\"' :temporary='true' :width='\\\"600\\\"' :height='\\\"100%\\\"' class='v-navigation-drawer--temporary'\\u003e\\n\\u003cglobal-events @keyup.esc='vars.presetsRightDrawer = false'\\u003e\\u003c/global-events\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerContentPortalName'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-app-bar color='white' :elevation='0'\\u003e\\n\\u003cv-app-bar-title class='pl-2'\\u003e\\n\\u003cdiv class='d-flex'\\u003eWithPublishProduct 1_2024-05-26-v02\\u003c/div\\u003e\\n\\u003c/v-app-bar-title\\u003e\\n\\n\\u003cv-btn :icon='\\\"mdi-close\\\"' @click.stop='vars.presetsRightDrawer = false'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cv-main\\u003e\\n\\u003cv-sheet class='pa-2'\\u003e\\n\\u003cv-card :flat='true' class='pa-1'\\u003e\\n\\u003cv-container :fluid='true'\\u003e\\n\\u003cgo-plaid-scope v-slot='{form}'\\u003e\\n\\u003cgo-plaid-scope v-slot=' { locals } ' :init='{action: \\\"\\\", commonConfirmDialog: false }'\\u003e\\n\\u003cdiv class='w-100 d-inline-flex'\\u003e\\n\\u003cv-chip :label='true' :variant='\\\"outlined\\\"' style='height:40px;' v-on:click='vars.publish_VarCurrentDisplayID ||= \\u0026#39;\\u0026#39;; plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_OpenListingDialog\\\").url(\\\"/samples/publish-example/with-publish-products-version-list-dialog\\\").query(\\\"select_id\\\", \\\"1_2024-05-26-v02\\\").go().then(function(r){ vars.publish_VarCurrentDisplayID = \\\"1_2024-05-26-v02\\\" })' :append-icon='\\\"mdi-chevron-down\\\"' class='w-100'\\u003e2024-05-26-v02\\n\\u003cv-chip :label='true' color='warning' :size='\\\"small\\\"' class='px-1 mx-1 ml-2'\\u003eDraft\\u003c/v-chip\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-btn :prepend-icon='\\\"mdi-file-document-multiple\\\"' :height='40' :variant='\\\"outlined\\\"' @click='locals.action=\\\"publish_EventDuplicateVersion\\\";locals.commonConfirmDialog = true' class='ml-2'\\u003eDuplicate\\u003c/v-btn\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn @click='locals.action=\\\"publish_EventPublish\\\";locals.commonConfirmDialog = true' :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' class='rounded-s ml-2'\\u003ePublish\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-dialog :max-width='\\\"600px\\\"' v-model='locals.commonConfirmDialog'\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-card-title\\u003eAre you sure?\\u003c/v-card-title\\u003e\\n\\n\\u003cv-card-actions\\u003e\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\n\\u003cv-btn :variant='\\\"flat\\\"' v-on:click='locals.commonConfirmDialog = false' class='ml-2'\\u003eCancel\\u003c/v-btn\\u003e\\n\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(locals.action).query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").go()'\\u003eOK\\u003c/v-btn\\u003e\\n\\u003c/v-card-actions\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-dialog\\u003e\\n\\n\\u003cv-btn :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"publish_eventSchedulePublishDialog\\\").query(\\\"overlay\\\", \\\"dialog\\\").query(\\\"id\\\", \\\"1_2024-05-26-v02\\\").url(\\\"/samples/publish-example/with-publish-products-version-list-dialog\\\").go()' class='ml-1 rounded-e'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-alarm\\\"' :size='\\\"x-large\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='publish_PortalSchedulePublishDialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv class='mb-4'\\u003e\\n\\u003clabel class='v-label theme--light text-caption'\\u003eName\\u003c/label\\u003e\\n\\n\\u003cdiv class='pt-1'\\u003eFirstProduct\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='mb-4'\\u003e\\n\\u003clabel class='v-label theme--light text-caption'\\u003ePrice\\u003c/label\\u003e\\n\\n\\u003cdiv class='pt-1'\\u003e123\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-sheet\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\"}],\"runScript\":\"setTimeout(function(){ vars.presetsRightDrawer = true }, 100)\"}\n",
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"presets_RightDrawerPortalName\",\"body\":\"\\n\\u003cv-navigation-drawer v-model='vars.presetsRightDrawer' :location='\\\"right\\\"' :temporary='true' :width='\\\"600\\\"' :height='\\\"100%\\\"' class='v-navigation-drawer--temporary'\\u003e\\n\\u003cglobal-events @keyup.esc='vars.presetsRightDrawer = false'\\u003e\\u003c/global-events\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerContentPortalName'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-app-bar color='white' :elevation='0'\\u003e\\n\\u003cv-app-bar-title class='pl-2'\\u003e\\n\\u003cdiv class='d-flex'\\u003eWithPublishProduct 32_2024-07-04-v02\\u003c/div\\u003e\\n\\u003c/v-app-bar-title\\u003e\\n\\n\\u003cv-btn :icon='\\\"mdi-close\\\"' @click.stop='vars.presetsRightDrawer = false'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cv-main\\u003e\\n\\u003cv-sheet class='pa-2'\\u003e\\n\\u003cv-card :flat='true' class='pa-1'\\u003e\\n\\u003cv-container :fluid='true'\\u003e\\n\\u003cgo-plaid-scope v-slot='{form}'\\u003e\\n\\u003cgo-plaid-scope v-slot=' { locals } ' :init='{action: \\\"\\\", commonConfirmDialog: false }'\\u003e\\n\\u003cdiv class='w-100 d-inline-flex pb-4'\\u003e\\n\\u003cv-chip :label='true' :variant='\\\"outlined\\\"' style='height:40px;' v-on:click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_OpenListingDialog\\\").url(\\\"/examples/publish-example/with-publish-products-version-list-dialog\\\").query(\\\"f_select_id\\\", \\\"32_2024-07-04-v02\\\").go()' :append-icon='\\\"mdi-chevron-down\\\"' class='w-100'\\u003e2024-07-04-v02\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded mx-2'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-btn :prepend-icon='\\\"mdi-file-document-multiple\\\"' :height='40' :variant='\\\"outlined\\\"' @click='locals.action=\\\"publish_EventDuplicateVersion\\\";locals.commonConfirmDialog = true' class='ml-2'\\u003eDuplicate\\u003c/v-btn\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn @click='locals.action=\\\"publish_EventPublish\\\";locals.commonConfirmDialog = true' :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' class='rounded-s ml-2'\\u003ePublish\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-dialog :max-width='\\\"600px\\\"' v-model='locals.commonConfirmDialog'\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-card-title\\u003eAre you sure?\\u003c/v-card-title\\u003e\\n\\n\\u003cv-card-actions\\u003e\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\n\\u003cv-btn :variant='\\\"flat\\\"' v-on:click='locals.commonConfirmDialog = false' class='ml-2'\\u003eCancel\\u003c/v-btn\\u003e\\n\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(locals.action).query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go()'\\u003eOK\\u003c/v-btn\\u003e\\n\\u003c/v-card-actions\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-dialog\\u003e\\n\\n\\u003cv-btn :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"publish_eventSchedulePublishDialog\\\").query(\\\"overlay\\\", \\\"dialog\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").url(\\\"/examples/publish-example/with-publish-products\\\").go()' class='ml-1 rounded-e'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-alarm\\\"' :size='\\\"x-large\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='publish_PortalSchedulePublishDialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-listener @publish-notif-version-selectedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload.slug === \\\"32_2024-07-04-v02\\\") {\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tif (vars.presetsRightDrawer) {\\n\\t\\t\\tvars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", payload.slug).go()\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\" + \\u0026#39;/\\u0026#39; + payload.slug).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-deletedexamples-admin-with-publish-product='(payload, addon) =\\u003e { \\n\\t\\tif (!payload.ids.includes(\\\"32_2024-07-04-v02\\\")) {\\n\\t\\t\\treturn\\n\\t\\t}\\t\\t\\n\\t\\tif (addon.next_version_slug) {\\n\\t\\t\\tplaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", { ...{\\\"slug\\\":\\\"\\\"}, slug: addon.next_version_slug })\\n\\t\\t} else {\\n\\t\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\").go()\\n\\t\\t}\\n\\t}'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='DetailFieldPortal_Details'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cdiv class='mb-2'\\u003e\\n\\u003cspan style='fontSize:16px; font-weight:500;'\\u003eDetails\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-hover\\u003e\\n\\u003ctemplate v-slot:default='{ isHovering, props }'\\u003e\\n\\u003cv-card :variant='\\\"outlined\\\"' :hover='true' v-bind='props' class='mb-6'\\u003e\\n\\u003cv-card-text\\u003e\\n\\u003cdiv class='d-flex justify-space-between'\\u003e\\n\\u003cdiv class='flex-grow-1 pr-3'\\u003e\\n\\u003cv-container\\u003e\\n\\u003cv-row\\u003e\\n\\u003cv-col :md='true'\\u003e\\n\\u003cdiv\\u003e\\n\\u003ch5 class='subtitle-2 pb-2'\\u003ePRODUCT INFORMATION\\u003c/h5\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003eName\\u003c/label\\u003e\\n\\n\\u003cspan\\u003eFirstProduct\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003ePrice\\u003c/label\\u003e\\n\\n\\u003cspan\\u003e123\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-col\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv style='width:32px;'\\u003e\\n\\u003cv-btn :size='\\\"x-small\\\"' :variant='\\\"text\\\"' :rounded='\\\"0\\\"' :icon='\\\"mdi-square-edit-outline\\\"' v-show='isHovering\\u0026\\u0026true' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_Detailing_Field_Edit\\\").query(\\\"detailField\\\", \\\"Details\\\").query(\\\"id\\\", \\\"32_2024-07-04-v02\\\").go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-hover\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv\\u003e\\u003c/div\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-sheet\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\"}],\"runScript\":\"setTimeout(function(){ vars.presetsRightDrawer = true }, 100)\"}\n",
+                "charset": "utf-8"
+            }
+        }
+    },
+    {
+        "status": "COMPLETE",
+        "method": "POST",
+        "protocolVersion": "HTTP/1.1",
+        "scheme": "http",
+        "host": "local.theplant",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v02",
+        "tunnel": false,
+        "keptAlive": true,
+        "webSocket": false,
+        "remoteAddress": "local.theplant/127.0.0.1",
+        "clientAddress": "/127.0.0.1",
+        "clientPort": 52129,
+        "times": {
+            "start": "2024-07-04T18:03:57.068+08:00",
+            "requestBegin": "2024-07-04T18:03:57.073+08:00",
+            "requestComplete": "2024-07-04T18:03:57.082+08:00",
+            "responseBegin": "2024-07-04T18:03:57.095+08:00",
+            "end": "2024-07-04T18:03:57.104+08:00"
+        },
+        "durations": {
+            "total": 31,
+            "dns": null,
+            "connect": null,
+            "ssl": null,
+            "request": 9,
+            "response": 9,
+            "latency": 13
+        },
+        "speeds": {
+            "overall": 56806,
+            "request": 92000,
+            "response": 103666
+        },
+        "totalSize": 1761,
+        "request": {
+            "sizes": {
+                "headers": 784,
+                "body": 44
+            },
+            "mimeType": "multipart/form-data",
+            "charset": null,
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v02 HTTP/1.1",
+                "headers": [
+                    {
+                        "name": "Host",
+                        "value": "local.theplant:7800"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "44"
+                    },
+                    {
+                        "name": "User-Agent",
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    },
+                    {
+                        "name": "Content-Type",
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundarygTDVruQBtusnRgs2"
+                    },
+                    {
+                        "name": "Accept",
+                        "value": "*/*"
+                    },
+                    {
+                        "name": "Origin",
+                        "value": "http://local.theplant:7800"
+                    },
+                    {
+                        "name": "Referer",
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
+                    },
+                    {
+                        "name": "Accept-Encoding",
+                        "value": "gzip, deflate"
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
+                    },
+                    {
+                        "name": "Cookie",
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
+                    },
+                    {
+                        "name": "Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "------WebKitFormBoundarygTDVruQBtusnRgs2--\r\n",
+                "charset": null
+            }
+        },
+        "response": {
+            "status": 200,
+            "sizes": {
+                "headers": 127,
+                "body": 806
+            },
+            "mimeType": "application/json",
+            "charset": "utf-8",
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "HTTP/1.1 200 OK",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json; charset=utf-8"
+                    },
+                    {
+                        "name": "Date",
+                        "value": "Thu, 04 Jul 2024 10:03:57 GMT"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "806"
+                    },
+                    {
+                        "name": "Proxy-Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "{\"body\":\"\",\"pushState\":null,\"runScript\":\"locals.commonConfirmDialog = false; plaid().vars(vars).emit(\\\"PresetsNotifModelsCreatedexamplesAdminWithPublishProduct\\\", {\\\"models\\\":[{\\\"ID\\\":32,\\\"CreatedAt\\\":\\\"2024-07-04T18:03:57.092015+08:00\\\",\\\"UpdatedAt\\\":\\\"2024-07-04T18:03:57.088784+08:00\\\",\\\"DeletedAt\\\":null,\\\"Name\\\":\\\"FirstProduct\\\",\\\"Price\\\":123,\\\"Status\\\":\\\"draft\\\",\\\"OnlineUrl\\\":\\\"\\\",\\\"ScheduledStartAt\\\":null,\\\"ScheduledEndAt\\\":null,\\\"ActualStartAt\\\":null,\\\"ActualEndAt\\\":null,\\\"Version\\\":\\\"2024-07-04-v03\\\",\\\"VersionName\\\":\\\"2024-07-04-v03\\\",\\\"ParentVersion\\\":\\\"2024-07-04-v02\\\"}]}); plaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", {\\\"slug\\\":\\\"32_2024-07-04-v03\\\"}); vars.presetsMessage = { show: true, message: \\\"Successfully Created\\\", color: \\\"success\\\"}\"}\n",
+                "charset": "utf-8"
+            }
+        }
+    },
+    {
+        "status": "COMPLETE",
+        "method": "POST",
+        "protocolVersion": "HTTP/1.1",
+        "scheme": "http",
+        "host": "local.theplant",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=__dispatch_stateful_action__",
+        "tunnel": false,
+        "keptAlive": true,
+        "webSocket": false,
+        "remoteAddress": "local.theplant/127.0.0.1",
+        "clientAddress": "/127.0.0.1",
+        "clientPort": 52129,
+        "times": {
+            "start": "2024-07-04T18:03:57.119+08:00",
+            "requestBegin": "2024-07-04T18:03:57.120+08:00",
+            "requestComplete": "2024-07-04T18:03:57.121+08:00",
+            "responseBegin": "2024-07-04T18:03:57.129+08:00",
+            "end": "2024-07-04T18:03:57.133+08:00"
+        },
+        "durations": {
+            "total": 13,
+            "dns": null,
+            "connect": null,
+            "ssl": null,
+            "request": 1,
+            "response": 4,
+            "latency": 8
+        },
+        "speeds": {
+            "overall": 1135846,
+            "request": 1401000,
+            "response": 3341250
+        },
+        "totalSize": 14766,
+        "request": {
+            "sizes": {
+                "headers": 763,
+                "body": 638
+            },
+            "mimeType": "multipart/form-data",
+            "charset": null,
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=__dispatch_stateful_action__ HTTP/1.1",
+                "headers": [
+                    {
+                        "name": "Host",
+                        "value": "local.theplant:7800"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "638"
+                    },
+                    {
+                        "name": "User-Agent",
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    },
+                    {
+                        "name": "Content-Type",
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryAmFrz1GSyhqepkAb"
+                    },
+                    {
+                        "name": "Accept",
+                        "value": "*/*"
+                    },
+                    {
+                        "name": "Origin",
+                        "value": "http://local.theplant:7800"
+                    },
+                    {
+                        "name": "Referer",
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
+                    },
+                    {
+                        "name": "Accept-Encoding",
+                        "value": "gzip, deflate"
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
+                    },
+                    {
+                        "name": "Cookie",
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
+                    },
+                    {
+                        "name": "Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "------WebKitFormBoundaryAmFrz1GSyhqepkAb\r\nContent-Disposition: form-data; name=\"__action__\"\r\n\r\n{\r\n\t\"compo_type\": \"*presets.ListingCompo\",\r\n\t\"compo\": {\r\n\t\t\"id\": \"examplespublish_examplewith_publish_products_page\",\r\n\t\t\"popup\": false,\r\n\t\t\"long_style_search_box\": false,\r\n\t\t\"selected_ids\": [],\r\n\t\t\"keyword\": \"\",\r\n\t\t\"order_bys\": null,\r\n\t\t\"page\": 0,\r\n\t\t\"per_page\": 0,\r\n\t\t\"display_columns\": null,\r\n\t\t\"active_filter_tab\": \"\",\r\n\t\t\"filter_query\": \"\",\r\n\t\t\"on_mounted\": \"\"\r\n\t},\r\n\t\"injector\": \"examplespublish_examplewith_publish_products\",\r\n\t\"sync_query\": true,\r\n\t\"method\": \"OnReload\",\r\n\t\"request\": {}\r\n}\r\n------WebKitFormBoundaryAmFrz1GSyhqepkAb--\r\n",
+                "charset": null
+            }
+        },
+        "response": {
+            "status": 200,
+            "sizes": {
+                "headers": 228,
+                "body": 13137
+            },
+            "mimeType": "application/json",
+            "charset": "utf-8",
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "HTTP/1.1 200 OK",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json; charset=utf-8"
+                    },
+                    {
+                        "name": "Date",
+                        "value": "Thu, 04 Jul 2024 10:03:57 GMT"
+                    },
+                    {
+                        "name": "Transfer-Encoding",
+                        "value": "chunked"
+                    },
+                    {
+                        "name": "Proxy-Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"ListingCompo_examplespublish_examplewith_publish_products_page\",\"body\":\"\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='{\\n\\t__queryEncoder_bare__: ({ value, queries, tag }) =\\u003e {\\n\\t\\tif (value) {\\n\\t\\t\\tvalue.split(\\u0026#39;\\u0026\\u0026#39;).forEach((query) =\\u003e {\\n\\t\\t\\t\\tqueries.push(query)\\n\\t\\t\\t})\\n\\t\\t}\\n\\t},\\n\\n\\tnewAction: function() {\\n\\t\\treturn {\\n  \\\"compo_type\\\": \\\"*presets.ListingCompo\\\",\\n  \\\"compo\\\": {\\n    \\\"id\\\": \\\"examplespublish_examplewith_publish_products_page\\\",\\n    \\\"popup\\\": false,\\n    \\\"long_style_search_box\\\": false,\\n    \\\"selected_ids\\\": [],\\n    \\\"keyword\\\": \\\"\\\",\\n    \\\"order_bys\\\": null,\\n    \\\"page\\\": 0,\\n    \\\"per_page\\\": 0,\\n    \\\"display_columns\\\": null,\\n    \\\"active_filter_tab\\\": \\\"\\\",\\n    \\\"filter_query\\\": \\\"\\\",\\n    \\\"on_mounted\\\": \\\"\\\"\\n  },\\n  \\\"injector\\\": \\\"examplespublish_examplewith_publish_products\\\",\\n  \\\"sync_query\\\": true,\\n  \\\"method\\\": \\\"\\\",\\n  \\\"request\\\": {}\\n};\\n\\t},\\n\\tqueryTags: function(v) {\\n\\t\\tlet tags = [\\n  {\\n    \\\"name\\\": \\\"selected_ids\\\",\\n    \\\"json_name\\\": \\\"selected_ids\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"keyword\\\",\\n    \\\"json_name\\\": \\\"keyword\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"order_bys\\\",\\n    \\\"json_name\\\": \\\"order_bys\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"page\\\",\\n    \\\"json_name\\\": \\\"page\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"per_page\\\",\\n    \\\"json_name\\\": \\\"per_page\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"display_columns\\\",\\n    \\\"json_name\\\": \\\"display_columns\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"active_filter_tab\\\",\\n    \\\"json_name\\\": \\\"active_filter_tab\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"filter_query\\\",\\n    \\\"json_name\\\": \\\"filter_query\\\",\\n    \\\"omitempty\\\": false,\\n    \\\"method\\\": \\\"bare\\\",\\n    \\\"args\\\": [\\n      \\\"f_\\\"\\n    ]\\n  }\\n] || [];\\n\\t\\ttags.forEach(tag =\\u003e {\\n\\t\\t\\tif (tag.method) {\\n\\t\\t\\t\\ttag.encoder = this[\\\"__queryEncoder_\\\" + tag.method + \\\"__\\\"];\\n\\t\\t\\t}\\n\\t\\t});\\n\\t\\treturn tags;\\n\\t},\\n\\tsetCookies: function(v) {}, // a placeholder\\n\\tencodeQuery: function(v) {\\n\\t\\tif (!v.sync_query) {\\n\\t\\t\\treturn \\\"\\\";\\n\\t\\t}\\n\\t\\treturn plaid().encodeObjectToQuery(v.compo, this.queryTags());\\n\\t},\\n}'\\u003e\\n\\u003cdiv v-run='(el) =\\u003e {\\n\\tconst cookieTags = locals.queryTags().filter(tag =\\u003e tag.cookie)\\n\\tlocals.setCookies = function(v) {\\n\\t\\tif (!v.sync_query || !el.ownerDocument) {\\n\\t\\t\\treturn;\\n\\t\\t}\\n\\t\\tel.ownerDocument.cookie = \\\"__sync_cookie_af885d09__=\\\" + plaid().encodeObjectToQuery(v.compo, cookieTags);\\n\\t}\\n}'\\u003e\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-run-script :script='function() {\\n\\t\\t\\tlocals.dialog = false;\\n\\t\\t\\tlocals.current_editing_id = \\\"\\\";\\n\\t\\t\\tlocals.selected_ids = [] || [];\\n\\t\\t\\tlet orig = locals.newAction;\\n\\t\\t\\tlocals.newAction = function() {\\n\\t\\t\\t\\tlet v = orig();\\n\\t\\t\\t\\tv.compo.selected_ids = this.selected_ids;\\n\\t\\t\\t\\treturn v\\n\\t\\t\\t}\\n\\t\\t}'\\u003e\\u003c/go-plaid-run-script\\u003e\\n\\n\\u003cgo-plaid-listener @presets-reload-list-examplespublish-examplewith-publish-products='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-createdexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-updatedexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-deletedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload \\u0026\\u0026 payload.ids \\u0026\\u0026 payload.ids.length \\u003e 0) {\\n\\tlocals.selected_ids = locals.selected_ids.filter(id =\\u003e !payload.ids.includes(id));\\n}\\nplaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='ListingCompo_examplespublish_examplewith_publish_products_page_action_dialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cTeleport to='#ListingCompo_examplespublish_examplewith_publish_products_page_actions'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_New\\\").go()' class='ml-2'\\u003eNew\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/Teleport\\u003e\\n\\n\\u003cv-card :elevation='0'\\u003e\\n\\u003cv-toolbar :flat='true' color='surface' :height='\\\"auto\\\"' class='pa-2'\\u003e\\n\\u003cv-responsive :max-width='200' :min-width='200' class='mr-4'\\u003e\\n\\u003cv-text-field :density='\\\"compact\\\"' :variant='\\\"outlined\\\"' label='Search' :flat='true' :clearable='true' :hide-details='true' :single-line='true' :model-value='\\\"\\\"' @keyup.enter='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.keyword = $event.target.value\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()' @click:clear='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\n\\u003ctemplate v-slot:append-inner\\u003e\\n\\u003cv-icon :icon='\\\"mdi-magnify\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-text-field\\u003e\\n\\u003c/v-responsive\\u003e\\n\\u003c/v-toolbar\\u003e\\n\\n\\u003cv-card-text class='pa-2'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals:_dataTableLocals_ }' :init='{ \\n\\t\\t\\t\\tloadmore : false,\\n\\t\\t\\t\\tselectedIds: null || [],\\n\\t\\t\\t\\tlastSelectedIds: null || [],\\n\\t\\t\\t\\tonSelectionChanged: function(v){},\\n\\t\\t\\t\\tonLocalsDebounceChanged: function() {\\n\\t\\t\\t\\t\\tif (JSON.stringify(this.selectedIds) !== JSON.stringify(this.lastSelectedIds)) {\\n\\t\\t\\t\\t\\t\\tthis.lastSelectedIds = this.selectedIds;\\n\\t\\t\\t\\t\\t\\tthis.onSelectionChanged([...this.selectedIds]);\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t},\\n\\t\\t\\t}' @change-debounced='({locals, form, oldLocals, oldForm}) =\\u003e { locals.onLocalsDebounceChanged() }' :use-debounce='1'\\u003e\\n\\u003cv-table\\u003e\\n\\u003ctemplate #default\\u003e\\n\\u003cthead class='bg-grey-lighten-5'\\u003e\\n\\u003ctr\\u003e\\n\\u003cth\\u003eName\\u003c/th\\u003e\\n\\n\\u003cth\\u003ePrice\\u003c/th\\u003e\\n\\n\\u003cth\\u003eDraft Count\\u003c/th\\u003e\\n\\n\\u003cth\\u003eLive\\u003c/th\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/thead\\u003e\\n\\n\\u003ctbody\\u003e\\n\\u003ctr :class='{\\n\\t\\t\\t\\t\\t\\\"vx-list-item--active primary--text\\\": vars.presetsRightDrawer \\u0026\\u0026 locals.current_editing_id === \\\"-32_2024-07-04-v03\\\",\\n\\t\\t\\t\\t}'\\u003e\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v03\\\";'\\u003eFirstProduct\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v03\\\";'\\u003e123\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v03\\\";'\\u003e3\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v03\\\";'\\u003e\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\u003c/td\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/tbody\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-table\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv class='mt-2'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-row :justify='\\\"end\\\"' :align='\\\"center\\\"' class='ma-0'\\u003e\\n\\u003cdiv\\u003eRows per page: \\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6' style='width: 64px;'\\u003e\\n\\u003cv-select :items='[\\\"10\\\",\\\"15\\\",\\\"20\\\",\\\"50\\\",\\\"100\\\"]' :variant='\\\"underlined\\\"' :model-value='\\\"50\\\"' :hide-details='true' :density='\\\"compact\\\"' style='margin-top: -8px' @update:model-value='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.per_page = parseInt($event, 10)\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-select\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e1-1 of 1\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e\\n\\u003cspan\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-left\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\n\\u003cspan class='ml-3'\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-right\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nb.applyJsonPatch(v.compo, [{\\\"value\\\":2,\\\"op\\\":\\\"replace\\\",\\\"path\\\":\\\"/page\\\"}]);\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\"}]}\n",
+                "charset": "utf-8"
+            }
+        }
+    },
+    {
+        "status": "COMPLETE",
+        "method": "POST",
+        "protocolVersion": "HTTP/1.1",
+        "scheme": "http",
+        "host": "local.theplant",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v03",
+        "tunnel": false,
+        "keptAlive": true,
+        "webSocket": false,
+        "remoteAddress": "local.theplant/127.0.0.1",
+        "clientAddress": "/127.0.0.1",
+        "clientPort": 52122,
+        "times": {
+            "start": "2024-07-04T18:03:57.121+08:00",
+            "requestBegin": "2024-07-04T18:03:57.121+08:00",
+            "requestComplete": "2024-07-04T18:03:57.121+08:00",
+            "responseBegin": "2024-07-04T18:03:57.126+08:00",
+            "end": "2024-07-04T18:03:57.126+08:00"
+        },
+        "durations": {
+            "total": 5,
+            "dns": null,
+            "connect": null,
+            "ssl": null,
+            "request": 0,
+            "response": 0,
+            "latency": 5
+        },
+        "speeds": {
+            "overall": 1620000,
+            "request": 0,
+            "response": 0
+        },
+        "totalSize": 8100,
+        "request": {
+            "sizes": {
+                "headers": 778,
+                "body": 44
+            },
+            "mimeType": "multipart/form-data",
+            "charset": null,
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=presets_DetailingDrawer&id=32_2024-07-04-v03 HTTP/1.1",
+                "headers": [
+                    {
+                        "name": "Host",
+                        "value": "local.theplant:7800"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "44"
+                    },
+                    {
+                        "name": "User-Agent",
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    },
+                    {
+                        "name": "Content-Type",
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryDM7408O2nAjSWRrR"
+                    },
+                    {
+                        "name": "Accept",
+                        "value": "*/*"
+                    },
+                    {
+                        "name": "Origin",
+                        "value": "http://local.theplant:7800"
+                    },
+                    {
+                        "name": "Referer",
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
+                    },
+                    {
+                        "name": "Accept-Encoding",
+                        "value": "gzip, deflate"
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
+                    },
+                    {
+                        "name": "Cookie",
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
+                    },
+                    {
+                        "name": "Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "------WebKitFormBoundaryDM7408O2nAjSWRrR--\r\n",
+                "charset": null
+            }
+        },
+        "response": {
+            "status": 200,
+            "sizes": {
+                "headers": 228,
+                "body": 7050
+            },
+            "mimeType": "application/json",
+            "charset": "utf-8",
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "HTTP/1.1 200 OK",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json; charset=utf-8"
+                    },
+                    {
+                        "name": "Date",
+                        "value": "Thu, 04 Jul 2024 10:03:57 GMT"
+                    },
+                    {
+                        "name": "Transfer-Encoding",
+                        "value": "chunked"
+                    },
+                    {
+                        "name": "Proxy-Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"presets_RightDrawerPortalName\",\"body\":\"\\n\\u003cv-navigation-drawer v-model='vars.presetsRightDrawer' :location='\\\"right\\\"' :temporary='true' :width='\\\"600\\\"' :height='\\\"100%\\\"' class='v-navigation-drawer--temporary'\\u003e\\n\\u003cglobal-events @keyup.esc='vars.presetsRightDrawer = false'\\u003e\\u003c/global-events\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='presets_RightDrawerContentPortalName'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cv-layout\\u003e\\n\\u003cv-app-bar color='white' :elevation='0'\\u003e\\n\\u003cv-app-bar-title class='pl-2'\\u003e\\n\\u003cdiv class='d-flex'\\u003eWithPublishProduct 32_2024-07-04-v03\\u003c/div\\u003e\\n\\u003c/v-app-bar-title\\u003e\\n\\n\\u003cv-btn :icon='\\\"mdi-close\\\"' @click.stop='vars.presetsRightDrawer = false'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/v-app-bar\\u003e\\n\\n\\u003cv-main\\u003e\\n\\u003cv-sheet class='pa-2'\\u003e\\n\\u003cv-card :flat='true' class='pa-1'\\u003e\\n\\u003cv-container :fluid='true'\\u003e\\n\\u003cgo-plaid-scope v-slot='{form}'\\u003e\\n\\u003cgo-plaid-scope v-slot=' { locals } ' :init='{action: \\\"\\\", commonConfirmDialog: false }'\\u003e\\n\\u003cdiv class='w-100 d-inline-flex pb-4'\\u003e\\n\\u003cv-chip :label='true' :variant='\\\"outlined\\\"' style='height:40px;' v-on:click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_OpenListingDialog\\\").url(\\\"/examples/publish-example/with-publish-products-version-list-dialog\\\").query(\\\"f_select_id\\\", \\\"32_2024-07-04-v03\\\").go()' :append-icon='\\\"mdi-chevron-down\\\"' class='w-100'\\u003e2024-07-04-v03\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded mx-2'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\u003c/v-chip\\u003e\\n\\n\\u003cv-btn :prepend-icon='\\\"mdi-file-document-multiple\\\"' :height='40' :variant='\\\"outlined\\\"' @click='locals.action=\\\"publish_EventDuplicateVersion\\\";locals.commonConfirmDialog = true' class='ml-2'\\u003eDuplicate\\u003c/v-btn\\u003e\\n\\n\\u003cdiv\\u003e\\n\\u003cv-btn @click='locals.action=\\\"publish_EventPublish\\\";locals.commonConfirmDialog = true' :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' class='rounded-s ml-2'\\u003ePublish\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-dialog :max-width='\\\"600px\\\"' v-model='locals.commonConfirmDialog'\\u003e\\n\\u003cv-card\\u003e\\n\\u003cv-card-title\\u003eAre you sure?\\u003c/v-card-title\\u003e\\n\\n\\u003cv-card-actions\\u003e\\n\\u003cv-spacer\\u003e\\u003c/v-spacer\\u003e\\n\\n\\u003cv-btn :variant='\\\"flat\\\"' v-on:click='locals.commonConfirmDialog = false' class='ml-2'\\u003eCancel\\u003c/v-btn\\u003e\\n\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(locals.action).query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go()'\\u003eOK\\u003c/v-btn\\u003e\\n\\u003c/v-card-actions\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-dialog\\u003e\\n\\n\\u003cv-btn :rounded='\\\"0\\\"' :variant='\\\"flat\\\"' color='primary' :height='40' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"publish_eventSchedulePublishDialog\\\").query(\\\"overlay\\\", \\\"dialog\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").url(\\\"/examples/publish-example/with-publish-products\\\").go()' class='ml-1 rounded-e'\\u003e\\n\\u003cv-icon :icon='\\\"mdi-alarm\\\"' :size='\\\"x-large\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/v-btn\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='publish_PortalSchedulePublishDialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-listener @publish-notif-version-selectedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload.slug === \\\"32_2024-07-04-v03\\\") {\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tif (vars.presetsRightDrawer) {\\n\\t\\t\\tvars.presetsRightDrawer = false;plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", payload.slug).go()\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\" + \\u0026#39;/\\u0026#39; + payload.slug).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-deletedexamples-admin-with-publish-product='(payload, addon) =\\u003e { \\n\\t\\tif (!payload.ids.includes(\\\"32_2024-07-04-v03\\\")) {\\n\\t\\t\\treturn\\n\\t\\t}\\t\\t\\n\\t\\tif (addon.next_version_slug) {\\n\\t\\t\\tplaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", { ...{\\\"slug\\\":\\\"\\\"}, slug: addon.next_version_slug })\\n\\t\\t} else {\\n\\t\\t\\tplaid().vars(vars).locals(locals).form(form).pushState(true).url(\\\"/examples/publish-example/with-publish-products\\\").go()\\n\\t\\t}\\n\\t}'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='DetailFieldPortal_Details'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ form }'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cdiv class='mb-2'\\u003e\\n\\u003cspan style='fontSize:16px; font-weight:500;'\\u003eDetails\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cv-hover\\u003e\\n\\u003ctemplate v-slot:default='{ isHovering, props }'\\u003e\\n\\u003cv-card :variant='\\\"outlined\\\"' :hover='true' v-bind='props' class='mb-6'\\u003e\\n\\u003cv-card-text\\u003e\\n\\u003cdiv class='d-flex justify-space-between'\\u003e\\n\\u003cdiv class='flex-grow-1 pr-3'\\u003e\\n\\u003cv-container\\u003e\\n\\u003cv-row\\u003e\\n\\u003cv-col :md='true'\\u003e\\n\\u003cdiv\\u003e\\n\\u003ch5 class='subtitle-2 pb-2'\\u003ePRODUCT INFORMATION\\u003c/h5\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003eName\\u003c/label\\u003e\\n\\n\\u003cspan\\u003eFirstProduct\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='d-flex pb-2'\\u003e\\n\\u003clabel class='blue-grey--text lighten-3' style='min-width: 180px;'\\u003ePrice\\u003c/label\\u003e\\n\\n\\u003cspan\\u003e123\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-col\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv style='width:32px;'\\u003e\\n\\u003cv-btn :size='\\\"x-small\\\"' :variant='\\\"text\\\"' :rounded='\\\"0\\\"' :icon='\\\"mdi-square-edit-outline\\\"' v-show='isHovering\\u0026\\u0026true' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_Detailing_Field_Edit\\\").query(\\\"detailField\\\", \\\"Details\\\").query(\\\"id\\\", \\\"32_2024-07-04-v03\\\").go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-hover\\u003e\\n\\u003c/div\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv\\u003e\\u003c/div\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/v-container\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/v-sheet\\u003e\\n\\u003c/v-main\\u003e\\n\\u003c/v-layout\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\u003c/go-plaid-portal\\u003e\\n\\u003c/v-navigation-drawer\\u003e\\n\"}],\"runScript\":\"setTimeout(function(){ vars.presetsRightDrawer = true }, 100)\"}\n",
+                "charset": "utf-8"
+            }
+        }
+    },
+    {
+        "status": "COMPLETE",
+        "method": "POST",
+        "protocolVersion": "HTTP/1.1",
+        "scheme": "http",
+        "host": "local.theplant",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v03",
+        "tunnel": false,
+        "keptAlive": true,
+        "webSocket": false,
+        "remoteAddress": "local.theplant/127.0.0.1",
+        "clientAddress": "/127.0.0.1",
+        "clientPort": 52129,
+        "times": {
+            "start": "2024-07-04T18:03:59.394+08:00",
+            "requestBegin": "2024-07-04T18:03:59.401+08:00",
+            "requestComplete": "2024-07-04T18:03:59.402+08:00",
+            "responseBegin": "2024-07-04T18:03:59.417+08:00",
+            "end": "2024-07-04T18:03:59.421+08:00"
+        },
+        "durations": {
+            "total": 20,
+            "dns": null,
+            "connect": null,
+            "ssl": null,
+            "request": 1,
+            "response": 4,
+            "latency": 15
+        },
+        "speeds": {
+            "overall": 88050,
+            "request": 828000,
+            "response": 233250
+        },
+        "totalSize": 1761,
+        "request": {
+            "sizes": {
+                "headers": 784,
+                "body": 44
+            },
+            "mimeType": "multipart/form-data",
+            "charset": null,
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=publish_EventDuplicateVersion&id=32_2024-07-04-v03 HTTP/1.1",
+                "headers": [
+                    {
+                        "name": "Host",
+                        "value": "local.theplant:7800"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "44"
+                    },
+                    {
+                        "name": "User-Agent",
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    },
+                    {
+                        "name": "Content-Type",
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryBtbFzBuM4chLHSJr"
+                    },
+                    {
+                        "name": "Accept",
+                        "value": "*/*"
+                    },
+                    {
+                        "name": "Origin",
+                        "value": "http://local.theplant:7800"
+                    },
+                    {
+                        "name": "Referer",
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
+                    },
+                    {
+                        "name": "Accept-Encoding",
+                        "value": "gzip, deflate"
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
+                    },
+                    {
+                        "name": "Cookie",
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
+                    },
+                    {
+                        "name": "Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "------WebKitFormBoundaryBtbFzBuM4chLHSJr--\r\n",
+                "charset": null
+            }
+        },
+        "response": {
+            "status": 200,
+            "sizes": {
+                "headers": 127,
+                "body": 806
+            },
+            "mimeType": "application/json",
+            "charset": "utf-8",
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "HTTP/1.1 200 OK",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json; charset=utf-8"
+                    },
+                    {
+                        "name": "Date",
+                        "value": "Thu, 04 Jul 2024 10:03:59 GMT"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "806"
+                    },
+                    {
+                        "name": "Proxy-Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "{\"body\":\"\",\"pushState\":null,\"runScript\":\"locals.commonConfirmDialog = false; plaid().vars(vars).emit(\\\"PresetsNotifModelsCreatedexamplesAdminWithPublishProduct\\\", {\\\"models\\\":[{\\\"ID\\\":32,\\\"CreatedAt\\\":\\\"2024-07-04T18:03:59.413181+08:00\\\",\\\"UpdatedAt\\\":\\\"2024-07-04T18:03:59.410171+08:00\\\",\\\"DeletedAt\\\":null,\\\"Name\\\":\\\"FirstProduct\\\",\\\"Price\\\":123,\\\"Status\\\":\\\"draft\\\",\\\"OnlineUrl\\\":\\\"\\\",\\\"ScheduledStartAt\\\":null,\\\"ScheduledEndAt\\\":null,\\\"ActualStartAt\\\":null,\\\"ActualEndAt\\\":null,\\\"Version\\\":\\\"2024-07-04-v04\\\",\\\"VersionName\\\":\\\"2024-07-04-v04\\\",\\\"ParentVersion\\\":\\\"2024-07-04-v03\\\"}]}); plaid().vars(vars).emit(\\\"PublishNotifVersionSelectedexamplesAdminWithPublishProduct\\\", {\\\"slug\\\":\\\"32_2024-07-04-v04\\\"}); vars.presetsMessage = { show: true, message: \\\"Successfully Created\\\", color: \\\"success\\\"}\"}\n",
+                "charset": "utf-8"
+            }
+        }
+    },
+    {
+        "status": "COMPLETE",
+        "method": "POST",
+        "protocolVersion": "HTTP/1.1",
+        "scheme": "http",
+        "host": "local.theplant",
+        "port": 7800,
+        "actualPort": 7800,
+        "path": "/examples/publish-example/with-publish-products",
+        "query": "__execute_event__=__dispatch_stateful_action__",
+        "tunnel": false,
+        "keptAlive": true,
+        "webSocket": false,
+        "remoteAddress": "local.theplant/127.0.0.1",
+        "clientAddress": "/127.0.0.1",
+        "clientPort": 52129,
+        "times": {
+            "start": "2024-07-04T18:03:59.428+08:00",
+            "requestBegin": "2024-07-04T18:03:59.430+08:00",
+            "requestComplete": "2024-07-04T18:03:59.430+08:00",
+            "responseBegin": "2024-07-04T18:03:59.436+08:00",
+            "end": "2024-07-04T18:03:59.436+08:00"
+        },
+        "durations": {
+            "total": 6,
+            "dns": null,
+            "connect": null,
+            "ssl": null,
+            "request": 0,
+            "response": 0,
+            "latency": 6
+        },
+        "speeds": {
+            "overall": 2461000,
+            "request": 0,
+            "response": 0
+        },
+        "totalSize": 14766,
+        "request": {
+            "sizes": {
+                "headers": 763,
+                "body": 638
+            },
+            "mimeType": "multipart/form-data",
+            "charset": null,
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "POST /examples/publish-example/with-publish-products?__execute_event__=__dispatch_stateful_action__ HTTP/1.1",
+                "headers": [
+                    {
+                        "name": "Host",
+                        "value": "local.theplant:7800"
+                    },
+                    {
+                        "name": "Content-Length",
+                        "value": "638"
+                    },
+                    {
+                        "name": "User-Agent",
+                        "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    },
+                    {
+                        "name": "Content-Type",
+                        "value": "multipart/form-data; boundary=----WebKitFormBoundaryl1AfAX09joTTTMMA"
+                    },
+                    {
+                        "name": "Accept",
+                        "value": "*/*"
+                    },
+                    {
+                        "name": "Origin",
+                        "value": "http://local.theplant:7800"
+                    },
+                    {
+                        "name": "Referer",
+                        "value": "http://local.theplant:7800/examples/publish-example/with-publish-products"
+                    },
+                    {
+                        "name": "Accept-Encoding",
+                        "value": "gzip, deflate"
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "value": "en,zh-CN;q=0.9,zh;q=0.8"
+                    },
+                    {
+                        "name": "Cookie",
+                        "value": "__sync_cookie_af885d09__=; _gid=GA1.2.1023459300.1720085775; _ga_T4L00Y3EM7=GS1.1.1720085774.21.1.1720087327.51.0.0; _ga=GA1.2.114363727.1715697980"
+                    },
+                    {
+                        "name": "Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "------WebKitFormBoundaryl1AfAX09joTTTMMA\r\nContent-Disposition: form-data; name=\"__action__\"\r\n\r\n{\r\n\t\"compo_type\": \"*presets.ListingCompo\",\r\n\t\"compo\": {\r\n\t\t\"id\": \"examplespublish_examplewith_publish_products_page\",\r\n\t\t\"popup\": false,\r\n\t\t\"long_style_search_box\": false,\r\n\t\t\"selected_ids\": [],\r\n\t\t\"keyword\": \"\",\r\n\t\t\"order_bys\": null,\r\n\t\t\"page\": 0,\r\n\t\t\"per_page\": 0,\r\n\t\t\"display_columns\": null,\r\n\t\t\"active_filter_tab\": \"\",\r\n\t\t\"filter_query\": \"\",\r\n\t\t\"on_mounted\": \"\"\r\n\t},\r\n\t\"injector\": \"examplespublish_examplewith_publish_products\",\r\n\t\"sync_query\": true,\r\n\t\"method\": \"OnReload\",\r\n\t\"request\": {}\r\n}\r\n------WebKitFormBoundaryl1AfAX09joTTTMMA--\r\n",
+                "charset": null
+            }
+        },
+        "response": {
+            "status": 200,
+            "sizes": {
+                "headers": 228,
+                "body": 13137
+            },
+            "mimeType": "application/json",
+            "charset": "utf-8",
+            "contentEncoding": null,
+            "header": {
+                "firstLine": "HTTP/1.1 200 OK",
+                "headers": [
+                    {
+                        "name": "Content-Type",
+                        "value": "application/json; charset=utf-8"
+                    },
+                    {
+                        "name": "Date",
+                        "value": "Thu, 04 Jul 2024 10:03:59 GMT"
+                    },
+                    {
+                        "name": "Transfer-Encoding",
+                        "value": "chunked"
+                    },
+                    {
+                        "name": "Proxy-Connection",
+                        "value": "keep-alive"
+                    }
+                ]
+            },
+            "body": {
+                "text": "{\"body\":\"\",\"pushState\":null,\"updatePortals\":[{\"name\":\"ListingCompo_examplespublish_examplewith_publish_products_page\",\"body\":\"\\n\\u003cgo-plaid-scope v-slot='{ locals }' :init='{\\n\\t__queryEncoder_bare__: ({ value, queries, tag }) =\\u003e {\\n\\t\\tif (value) {\\n\\t\\t\\tvalue.split(\\u0026#39;\\u0026\\u0026#39;).forEach((query) =\\u003e {\\n\\t\\t\\t\\tqueries.push(query)\\n\\t\\t\\t})\\n\\t\\t}\\n\\t},\\n\\n\\tnewAction: function() {\\n\\t\\treturn {\\n  \\\"compo_type\\\": \\\"*presets.ListingCompo\\\",\\n  \\\"compo\\\": {\\n    \\\"id\\\": \\\"examplespublish_examplewith_publish_products_page\\\",\\n    \\\"popup\\\": false,\\n    \\\"long_style_search_box\\\": false,\\n    \\\"selected_ids\\\": [],\\n    \\\"keyword\\\": \\\"\\\",\\n    \\\"order_bys\\\": null,\\n    \\\"page\\\": 0,\\n    \\\"per_page\\\": 0,\\n    \\\"display_columns\\\": null,\\n    \\\"active_filter_tab\\\": \\\"\\\",\\n    \\\"filter_query\\\": \\\"\\\",\\n    \\\"on_mounted\\\": \\\"\\\"\\n  },\\n  \\\"injector\\\": \\\"examplespublish_examplewith_publish_products\\\",\\n  \\\"sync_query\\\": true,\\n  \\\"method\\\": \\\"\\\",\\n  \\\"request\\\": {}\\n};\\n\\t},\\n\\tqueryTags: function(v) {\\n\\t\\tlet tags = [\\n  {\\n    \\\"name\\\": \\\"selected_ids\\\",\\n    \\\"json_name\\\": \\\"selected_ids\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"keyword\\\",\\n    \\\"json_name\\\": \\\"keyword\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"order_bys\\\",\\n    \\\"json_name\\\": \\\"order_bys\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"page\\\",\\n    \\\"json_name\\\": \\\"page\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"per_page\\\",\\n    \\\"json_name\\\": \\\"per_page\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"display_columns\\\",\\n    \\\"json_name\\\": \\\"display_columns\\\",\\n    \\\"omitempty\\\": true,\\n    \\\"cookie\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"active_filter_tab\\\",\\n    \\\"json_name\\\": \\\"active_filter_tab\\\",\\n    \\\"omitempty\\\": true\\n  },\\n  {\\n    \\\"name\\\": \\\"filter_query\\\",\\n    \\\"json_name\\\": \\\"filter_query\\\",\\n    \\\"omitempty\\\": false,\\n    \\\"method\\\": \\\"bare\\\",\\n    \\\"args\\\": [\\n      \\\"f_\\\"\\n    ]\\n  }\\n] || [];\\n\\t\\ttags.forEach(tag =\\u003e {\\n\\t\\t\\tif (tag.method) {\\n\\t\\t\\t\\ttag.encoder = this[\\\"__queryEncoder_\\\" + tag.method + \\\"__\\\"];\\n\\t\\t\\t}\\n\\t\\t});\\n\\t\\treturn tags;\\n\\t},\\n\\tsetCookies: function(v) {}, // a placeholder\\n\\tencodeQuery: function(v) {\\n\\t\\tif (!v.sync_query) {\\n\\t\\t\\treturn \\\"\\\";\\n\\t\\t}\\n\\t\\treturn plaid().encodeObjectToQuery(v.compo, this.queryTags());\\n\\t},\\n}'\\u003e\\n\\u003cdiv v-run='(el) =\\u003e {\\n\\tconst cookieTags = locals.queryTags().filter(tag =\\u003e tag.cookie)\\n\\tlocals.setCookies = function(v) {\\n\\t\\tif (!v.sync_query || !el.ownerDocument) {\\n\\t\\t\\treturn;\\n\\t\\t}\\n\\t\\tel.ownerDocument.cookie = \\\"__sync_cookie_af885d09__=\\\" + plaid().encodeObjectToQuery(v.compo, cookieTags);\\n\\t}\\n}'\\u003e\\u003c/div\\u003e\\n\\n\\u003cgo-plaid-run-script :script='function() {\\n\\t\\t\\tlocals.dialog = false;\\n\\t\\t\\tlocals.current_editing_id = \\\"\\\";\\n\\t\\t\\tlocals.selected_ids = [] || [];\\n\\t\\t\\tlet orig = locals.newAction;\\n\\t\\t\\tlocals.newAction = function() {\\n\\t\\t\\t\\tlet v = orig();\\n\\t\\t\\t\\tv.compo.selected_ids = this.selected_ids;\\n\\t\\t\\t\\treturn v\\n\\t\\t\\t}\\n\\t\\t}'\\u003e\\u003c/go-plaid-run-script\\u003e\\n\\n\\u003cgo-plaid-listener @presets-reload-list-examplespublish-examplewith-publish-products='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-listener @presets-notif-models-createdexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-updatedexamples-admin-with-publish-product='(payload) =\\u003e { plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }' @presets-notif-models-deletedexamples-admin-with-publish-product='(payload) =\\u003e { if (payload \\u0026\\u0026 payload.ids \\u0026\\u0026 payload.ids.length \\u003e 0) {\\n\\tlocals.selected_ids = locals.selected_ids.filter(id =\\u003e !payload.ids.includes(id));\\n}\\nplaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go() }'\\u003e\\u003c/go-plaid-listener\\u003e\\n\\n\\u003cgo-plaid-portal :visible='true' :form='form' :locals='locals' portal-name='ListingCompo_examplespublish_examplewith_publish_products_page_action_dialog'\\u003e\\u003c/go-plaid-portal\\u003e\\n\\n\\u003cTeleport to='#ListingCompo_examplespublish_examplewith_publish_products_page_actions'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-btn color='primary' :variant='\\\"flat\\\"' theme='dark' @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_New\\\").go()' class='ml-2'\\u003eNew\\u003c/v-btn\\u003e\\n\\u003c/div\\u003e\\n\\u003c/Teleport\\u003e\\n\\n\\u003cv-card :elevation='0'\\u003e\\n\\u003cv-toolbar :flat='true' color='surface' :height='\\\"auto\\\"' class='pa-2'\\u003e\\n\\u003cv-responsive :max-width='200' :min-width='200' class='mr-4'\\u003e\\n\\u003cv-text-field :density='\\\"compact\\\"' :variant='\\\"outlined\\\"' label='Search' :flat='true' :clearable='true' :hide-details='true' :single-line='true' :model-value='\\\"\\\"' @keyup.enter='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.keyword = $event.target.value\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()' @click:clear='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\n\\u003ctemplate v-slot:append-inner\\u003e\\n\\u003cv-icon :icon='\\\"mdi-magnify\\\"'\\u003e\\u003c/v-icon\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-text-field\\u003e\\n\\u003c/v-responsive\\u003e\\n\\u003c/v-toolbar\\u003e\\n\\n\\u003cv-card-text class='pa-2'\\u003e\\n\\u003cgo-plaid-scope v-slot='{ locals:_dataTableLocals_ }' :init='{ \\n\\t\\t\\t\\tloadmore : false,\\n\\t\\t\\t\\tselectedIds: null || [],\\n\\t\\t\\t\\tlastSelectedIds: null || [],\\n\\t\\t\\t\\tonSelectionChanged: function(v){},\\n\\t\\t\\t\\tonLocalsDebounceChanged: function() {\\n\\t\\t\\t\\t\\tif (JSON.stringify(this.selectedIds) !== JSON.stringify(this.lastSelectedIds)) {\\n\\t\\t\\t\\t\\t\\tthis.lastSelectedIds = this.selectedIds;\\n\\t\\t\\t\\t\\t\\tthis.onSelectionChanged([...this.selectedIds]);\\n\\t\\t\\t\\t\\t}\\n\\t\\t\\t\\t},\\n\\t\\t\\t}' @change-debounced='({locals, form, oldLocals, oldForm}) =\\u003e { locals.onLocalsDebounceChanged() }' :use-debounce='1'\\u003e\\n\\u003cv-table\\u003e\\n\\u003ctemplate #default\\u003e\\n\\u003cthead class='bg-grey-lighten-5'\\u003e\\n\\u003ctr\\u003e\\n\\u003cth\\u003eName\\u003c/th\\u003e\\n\\n\\u003cth\\u003ePrice\\u003c/th\\u003e\\n\\n\\u003cth\\u003eDraft Count\\u003c/th\\u003e\\n\\n\\u003cth\\u003eLive\\u003c/th\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/thead\\u003e\\n\\n\\u003ctbody\\u003e\\n\\u003ctr :class='{\\n\\t\\t\\t\\t\\t\\\"vx-list-item--active primary--text\\\": vars.presetsRightDrawer \\u0026\\u0026 locals.current_editing_id === \\\"-32_2024-07-04-v04\\\",\\n\\t\\t\\t\\t}'\\u003e\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v04\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v04\\\";'\\u003eFirstProduct\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v04\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v04\\\";'\\u003e123\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v04\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v04\\\";'\\u003e4\\u003c/td\\u003e\\n\\n\\u003ctd @click='plaid().vars(vars).locals(locals).form(form).eventFunc(\\\"presets_DetailingDrawer\\\").query(\\\"id\\\", \\\"32_2024-07-04-v04\\\").go(); locals.current_editing_id = \\\"-32_2024-07-04-v04\\\";'\\u003e\\n\\u003cv-chip color='warning' :density='\\\"compact\\\"' :tile='true' class='px-1 rounded'\\u003e\\n\\u003cspan\\u003eDraft\\u003c/span\\u003e\\n\\u003c/v-chip\\u003e\\n\\u003c/td\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/tbody\\u003e\\n\\u003c/template\\u003e\\n\\u003c/v-table\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\\n\\u003cdiv class='mt-2'\\u003e\\n\\u003cdiv\\u003e\\n\\u003cv-row :justify='\\\"end\\\"' :align='\\\"center\\\"' class='ma-0'\\u003e\\n\\u003cdiv\\u003eRows per page: \\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6' style='width: 64px;'\\u003e\\n\\u003cv-select :items='[\\\"10\\\",\\\"15\\\",\\\"20\\\",\\\"50\\\",\\\"100\\\"]' :variant='\\\"underlined\\\"' :model-value='\\\"50\\\"' :hide-details='true' :density='\\\"compact\\\"' style='margin-top: -8px' @update:model-value='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nv.compo.per_page = parseInt($event, 10)\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-select\\u003e\\n\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e1-1 of 1\\u003c/div\\u003e\\n\\n\\u003cdiv class='ml-6'\\u003e\\n\\u003cspan\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-left\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\n\\u003cspan class='ml-3'\\u003e\\n\\u003cv-btn :variant='\\\"text\\\"' :icon='\\\"mdi-chevron-right\\\"' :size='32' :disabled='true' @click='plaid().vars(vars).locals(locals).form(form).method(\\\"POST\\\").eventFunc(\\\"__dispatch_stateful_action__\\\").queries({}).run(function(b){\\n\\tlet v = locals.newAction(); // *presets.ListingCompo\\n\\tv.method = \\\"OnReload\\\";\\n\\tv.request = {};\\nb.applyJsonPatch(v.compo, [{\\\"value\\\":2,\\\"op\\\":\\\"replace\\\",\\\"path\\\":\\\"/page\\\"}]);\\n\\n\\tb.__action__ = v;\\n\\tb.__stringQuery__ = locals.encodeQuery(v);\\n\\tlocals.setCookies(v);\\n}).stringQuery((b) =\\u003e b.__stringQuery__).pushState((b) =\\u003e b.__action__.sync_query).fieldValue(\\\"__action__\\\", (b) =\\u003e JSON.stringify(b.__action__, null, \\\"\\\\t\\\")).go()'\\u003e\\u003c/v-btn\\u003e\\n\\u003c/span\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-row\\u003e\\n\\u003c/div\\u003e\\n\\u003c/div\\u003e\\n\\u003c/v-card-text\\u003e\\n\\u003c/v-card\\u003e\\n\\u003c/go-plaid-scope\\u003e\\n\"}]}\n",
                 "charset": "utf-8"
             }
         }

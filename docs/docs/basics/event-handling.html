@@ -227,13 +227,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingURL(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"URL\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingURL(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tDiv(\n\t\t\tH2(\"URL\"),\n\t\t\tButton(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).Go()),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=url' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=url' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L17-L28' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L12-L23' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -242,13 +242,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Reqest a page and also changing the window location.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingPushState(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"PushState\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingPushState(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"PushState\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().\n\t\t\tURL(EventExamplePagePath).\n\t\t\tPushState(true).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=pushstate' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=pushstate' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L30-L41' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L25-L38' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -257,13 +257,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Refresh page.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingReload(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Reload\")),\n\t\t\tText(fmt.Sprintf(\"Now: %s\", time.Now().Format(time.RFC3339Nano))),\n\t\t\tVCardActions(VBtn(\"Reload\").Attr(\"@click\", web.POST().Reload().Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingReload(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Reload\"),\n\t\tText(fmt.Sprintf(\"Now: %s\", time.Now().Format(time.RFC3339Nano))),\n\t\tButton(\"Reload\").Attr(\"@click\", web.POST().Reload().Go()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=reload' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=reload' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L43-L55' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L40-L50' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -272,13 +272,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with a query.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Query\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).Query(\"address\", \"tokyo\").Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Query\"),\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).Query(\"address\", \"tokyo\").Go()),\n\t)\n\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=query' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L57-L68' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L52-L62' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -287,13 +287,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with merging a query.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingMergeQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"MergeQuery\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath+\"?address=beijing\u0026name=qor5\u0026email=qor5@theplant.jp\").PushState(true).Query(\"address\", \"tokyo\").MergeQuery(true).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingMergeQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"MergeQuery\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath+\"?address=beijing\u0026name=qor5\u0026email=qor5@theplant.jp\").PushState(true).Query(\"address\", \"tokyo\").MergeQuery(true).Go()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=merge_query' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=merge_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L70-L81' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L64-L74' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -302,13 +302,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with clearing a query.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingClearMergeQueryQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"ClearMergeQuery\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath+\"?address=beijing\u0026name=qor5\u0026email=qor5@theplant.jp\").PushState(true).Query(\"address\", \"tokyo\").ClearMergeQuery([]string{\"name\"}).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingClearMergeQueryQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"ClearMergeQuery\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().\n\t\t\tURL(EventExamplePagePath+\"?address=beijing\u0026name=qor5\u0026email=qor5@theplant.jp\").\n\t\t\tPushState(true).\n\t\t\tQuery(\"address\", \"tokyo\").\n\t\t\tClearMergeQuery([]string{\"name\"}).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=clear_merge_query' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=clear_merge_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L83-L94' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L76-L91' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -317,13 +317,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with a query string.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingStringQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"StringQuery\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).StringQuery(\"address=tokyo\").Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingStringQuery(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"StringQuery\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().\n\t\t\tURL(EventExamplePagePath).\n\t\t\tPushState(true).\n\t\t\tStringQuery(\"address=tokyo\").\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=string_query' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=string_query' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L96-L107' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L93-L107' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -332,13 +332,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with url.Values.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingQueries(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Queries\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).Queries(url.Values{\"address\": []string{\"tokyo\"}}).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingQueries(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Queries\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().\n\t\t\tURL(EventExamplePagePath).\n\t\t\tPushState(true).\n\t\t\tQueries(url.Values{\"address\": []string{\"tokyo\"}}).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=queries' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=queries' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L109-L123' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -347,13 +347,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Request a page with a url and also changing the window location.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingQueries(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Queries\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.GET().URL(EventExamplePagePath).PushState(true).Queries(url.Values{\"address\": []string{\"tokyo\"}}).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingQueries(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Queries\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.GET().\n\t\t\tURL(EventExamplePagePath).\n\t\t\tPushState(true).\n\t\t\tQueries(url.Values{\"address\": []string{\"tokyo\"}}).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=pushstateurl' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=pushstateurl' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L109-L120' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L109-L123' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -362,13 +362,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Open a page with more options.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingLocation(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Location\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.POST().PushState(true).Location(\u0026web.LocationBuilder{MyURL: EventExamplePagePath, MyStringQuery: \"address=test\"}).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingLocation(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Location\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.POST().\n\t\t\tPushState(true).\n\t\t\tLocation(\u0026web.LocationBuilder{MyURL: EventExamplePagePath, MyStringQuery: \"address=test\"}).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=location' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=location' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L135-L146' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L139-L152' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -377,13 +377,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Fill in a value on form.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingFieldValue(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"FieldValue\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.POST().EventFunc(\"form\").FieldValue(\"name\", \"qor5\").Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingFieldValue(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"FieldValue\"),\n\n\t\tButton(\"Go\").Attr(\"@click\", web.POST().\n\t\t\tEventFunc(\"form\").\n\t\t\tFieldValue(\"name\", \"qor5\").\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=fieldvalue' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=fieldvalue' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L148-L159' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L154-L167' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -392,13 +392,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Register an event func and call it when the event is triggered.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingEventFunc(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVBtn(\"Go\").Attr(\"@click\", web.POST().EventFunc(\"hello\").Go()),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingEventFunc(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"EventFunc\"),\n\t\tButton(\"Go\").Attr(\"@click\", web.POST().\n\t\t\tEventFunc(\"hello\").\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=eventfunc' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=eventfunc' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L161-L169' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L169-L180' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -407,13 +407,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Run a script code.</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingScript(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\taddMessageScript := func(msg string) string {\n\t\treturn fmt.Sprintf(`vars.messages ||= []; vars.messages.push(%q)`, msg)\n\t}\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Script\")),\n\t\t\tVCardActions(\n\t\t\t\tVBtn(\"Go\").Attr(\"@click\",\n\t\t\t\t\tweb.POST().\n\t\t\t\t\t\tBeforeScript(addMessageScript(\"this is before script\")).\n\t\t\t\t\t\tAfterScript(addMessageScript(\"this is after script\")).\n\t\t\t\t\t\tThenScript(addMessageScript(\"this is then script\")).\n\t\t\t\t\t\tGo(),\n\t\t\t\t)),\n\t\t),\n\t\th.Div().Text(`{{ vars.messages }}`),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingScript(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\taddMessageScript := func(msg string) string {\n\t\treturn fmt.Sprintf(`vars.messages ||= []; vars.messages.push(%q)`, msg)\n\t}\n\tpr.Body = Div(\n\t\tH2(\"Script\"),\n\n\t\tButton(\"Go\").Attr(\"@click\",\n\t\t\tweb.POST().\n\t\t\t\tBeforeScript(addMessageScript(\"this is before script\")).\n\t\t\t\tAfterScript(addMessageScript(\"this is after script\")).\n\t\t\t\tThenScript(addMessageScript(\"this is then script\")).\n\t\t\t\tGo(),\n\t\t),\n\t\tDiv().Text(`{{ vars.messages }}`),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=script' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=script' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L171-L193' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L182-L202' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -422,13 +422,13 @@ The default http request method is <code>Post</code>, if you want to use the <co
 </h2>
 <p>Directly call the js method</p>
 
-<highlightjs :language='"go"' :code='"func EventHandlingRaw(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = VContainer(\n\t\tVCard(\n\t\t\tVCardTitle(Text(\"Raw\")),\n\t\t\tVCardActions(VBtn(\"Go\").Attr(\"@click\", web.POST().Raw(`pushStateURL(\"/samples/event_handling/example\")`).Go())),\n\t\t),\n\t)\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"func EventHandlingRaw(ctx *web.EventContext) (pr web.PageResponse, err error) {\n\tpr.Body = Div(\n\t\tH2(\"Raw\"),\n\t\tButton(\"Go\").Attr(\"@click\", web.POST().\n\t\t\tRaw(`pushStateURL(\"/samples/event_handling/example\")`).\n\t\t\tGo()),\n\t)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
-<a href='/samples/event-handling-page?api=raw' target='_blank'>Check the demo</a>
+<a href='/examples/event-handling-page?api=raw' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_web/event-handling.go#L195-L206' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/../../../../../../pkg/mod/github.com/qor5/web/v3@v3.0.5-0.20240704091217-e0d237271f63/examples/event-handling.go#L204-L215' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>

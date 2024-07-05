@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	PresetsBuilder = presets.New().DataOperator(gorm2op.DataOperator(DB)).URIPrefix("/samples/publish-example")
+	PresetsBuilder = presets.New().DataOperator(gorm2op.DataOperator(DB)).URIPrefix("/examples/publish-example")
 	examples_admin.PublishExample(PresetsBuilder, DB)
 
 	m.Run()

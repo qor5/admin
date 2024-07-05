@@ -57,10 +57,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(ctx.R.RequestURI).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamInDialog, true).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(
@@ -85,10 +82,7 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(ctx.R.RequestURI).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamInDialog, true).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(
@@ -110,10 +104,21 @@ func copyURLWithQueriesRemoved(u *url.URL, qs ...string) *url.URL {
 	return newU
 }
 
-func isInDialogFromQuery(ctx *web.EventContext) bool {
-	return ctx.R.URL.Query().Get(ParamInDialog) == "true"
-}
-
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+func UpdateToPortal(update *web.PortalUpdate) *web.PortalBuilder {
+	return web.Portal().Name(update.Name).Children(
+		update.Body,
+	)
+}
+
+func toValidationErrors(err error) *web.ValidationErrors {
+	if vErr, ok := err.(*web.ValidationErrors); ok {
+		return vErr
+	}
+	vErr := &web.ValidationErrors{}
+	vErr.GlobalError(err.Error())
+	return vErr
 }

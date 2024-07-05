@@ -28,16 +28,26 @@ func flowDuplicate(t *testing.T, f *FlowDuplicate) {
 
 	flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t, f)
 
-	flowDuplicate_Step02_Event___reload__(t, f)
+	flowDuplicate_Step02_Event___dispatch_stateful_action__(t, f)
 
 	flowDuplicate_Step03_Event_presets_DetailingDrawer(t, f)
+
+	flowDuplicate_Step04_Event_publish_EventDuplicateVersion(t, f)
+
+	flowDuplicate_Step05_Event___dispatch_stateful_action__(t, f)
+
+	flowDuplicate_Step06_Event_presets_DetailingDrawer(t, f)
+
+	flowDuplicate_Step07_Event_publish_EventDuplicateVersion(t, f)
+
+	flowDuplicate_Step08_Event___dispatch_stateful_action__(t, f)
 }
 
 func flowDuplicate_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowDuplicate) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("presets_DetailingDrawer").
-		Query("id", "1_2024-05-26-v01").
+		Query("id", "32_2024-07-04-v01").
 		BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()
@@ -53,10 +63,10 @@ func flowDuplicate_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowDup
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
-		testflow.OpenRightDrawer("WithPublishProduct 1_2024-05-26-v01"),
+		testflow.OpenRightDrawer("WithPublishProduct 32_2024-07-04-v01"),
 	)
 
 	return testflow.NewThen(t, w, r)
@@ -64,9 +74,9 @@ func flowDuplicate_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowDup
 
 func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *FlowDuplicate) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("publish_EventDuplicateVersion").
-		Query("id", "1_2024-05-26-v01").
+		Query("id", "32_2024-07-04-v01").
 		BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()
@@ -81,15 +91,37 @@ func flowDuplicate_Step01_Event_publish_EventDuplicateVersion(t *testing.T, f *F
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "plaid().vars(vars).locals(locals).form(form).go().then(function(r){ vars.presetsListingDialog = false; vars.presetsRightDrawer = false; plaid().vars(vars).locals(locals).form(form).eventFunc(\"presets_DetailingDrawer\").query(\"id\", \"1_2024-05-26-v02\").go(); vars.presetsMessage = { show: true, message: \"Successfully Created\", color: \"success\"} })", resp.RunScript)
+	assert.Equal(t, testflow.RemoveTime(`locals.commonConfirmDialog = false; plaid().vars(vars).emit("PresetsNotifModelsCreatedexamplesAdminWithPublishProduct", {"models":[{"ID":32,"CreatedAt":"2024-07-04T18:03:54.402772+08:00","UpdatedAt":"2024-07-04T18:03:54.399244+08:00","DeletedAt":null,"Name":"FirstProduct","Price":123,"Status":"draft","OnlineUrl":"","ScheduledStartAt":null,"ScheduledEndAt":null,"ActualStartAt":null,"ActualEndAt":null,"Version":"2024-07-04-v02","VersionName":"2024-07-04-v02","ParentVersion":"2024-07-04-v01"}]}); plaid().vars(vars).emit("PublishNotifVersionSelectedexamplesAdminWithPublishProduct", {"slug":"32_2024-07-04-v02"}); vars.presetsMessage = { show: true, message: "Successfully Created", color: "success"}`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
 
-func flowDuplicate_Step02_Event___reload__(t *testing.T, f *FlowDuplicate) *testflow.Then {
+func flowDuplicate_Step02_Event___dispatch_stateful_action__(t *testing.T, f *FlowDuplicate) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
-		EventFunc("__reload__").
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("__dispatch_stateful_action__").
+		AddField("__action__", `
+{
+	"compo_type": "*presets.ListingCompo",
+	"compo": {
+		"id": "examplespublish_examplewith_publish_products_page",
+		"popup": false,
+		"long_style_search_box": false,
+		"selected_ids": [],
+		"keyword": "",
+		"order_bys": null,
+		"page": 0,
+		"per_page": 0,
+		"display_columns": null,
+		"active_filter_tab": "",
+		"filter_query": "",
+		"on_mounted": ""
+	},
+	"injector": "examplespublish_examplewith_publish_products",
+	"sync_query": true,
+	"method": "OnReload",
+	"request": {}
+}`).
 		BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()
@@ -97,12 +129,13 @@ func flowDuplicate_Step02_Event___reload__(t *testing.T, f *FlowDuplicate) *test
 
 	var resp multipartestutils.TestEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
-	assert.True(t, resp.Reload)
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
 	assert.Nil(t, resp.PushState)
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
-	assert.Empty(t, resp.UpdatePortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "ListingCompo_examplespublish_examplewith_publish_products_page", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
 	assert.Empty(t, resp.RunScript)
 
@@ -111,9 +144,9 @@ func flowDuplicate_Step02_Event___reload__(t *testing.T, f *FlowDuplicate) *test
 
 func flowDuplicate_Step03_Event_presets_DetailingDrawer(t *testing.T, f *FlowDuplicate) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
-		PageURL("/samples/publish-example/with-publish-products").
+		PageURL("/examples/publish-example/with-publish-products").
 		EventFunc("presets_DetailingDrawer").
-		Query("id", "1_2024-05-26-v02").
+		Query("id", "32_2024-07-04-v02").
 		BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()
@@ -129,11 +162,180 @@ func flowDuplicate_Step03_Event_presets_DetailingDrawer(t *testing.T, f *FlowDup
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)", resp.RunScript)
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
-		testflow.OpenRightDrawer("WithPublishProduct 1_2024-05-26-v02"),
+		testflow.OpenRightDrawer("WithPublishProduct 32_2024-07-04-v02"),
 	)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowDuplicate_Step04_Event_publish_EventDuplicateVersion(t *testing.T, f *FlowDuplicate) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("publish_EventDuplicateVersion").
+		Query("id", "32_2024-07-04-v02").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Empty(t, resp.UpdatePortals)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, testflow.RemoveTime(`locals.commonConfirmDialog = false; plaid().vars(vars).emit("PresetsNotifModelsCreatedexamplesAdminWithPublishProduct", {"models":[{"ID":32,"CreatedAt":"2024-07-04T18:03:57.092015+08:00","UpdatedAt":"2024-07-04T18:03:57.088784+08:00","DeletedAt":null,"Name":"FirstProduct","Price":123,"Status":"draft","OnlineUrl":"","ScheduledStartAt":null,"ScheduledEndAt":null,"ActualStartAt":null,"ActualEndAt":null,"Version":"2024-07-04-v03","VersionName":"2024-07-04-v03","ParentVersion":"2024-07-04-v02"}]}); plaid().vars(vars).emit("PublishNotifVersionSelectedexamplesAdminWithPublishProduct", {"slug":"32_2024-07-04-v03"}); vars.presetsMessage = { show: true, message: "Successfully Created", color: "success"}`), testflow.RemoveTime(resp.RunScript))
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowDuplicate_Step05_Event___dispatch_stateful_action__(t *testing.T, f *FlowDuplicate) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("__dispatch_stateful_action__").
+		AddField("__action__", `
+{
+	"compo_type": "*presets.ListingCompo",
+	"compo": {
+		"id": "examplespublish_examplewith_publish_products_page",
+		"popup": false,
+		"long_style_search_box": false,
+		"selected_ids": [],
+		"keyword": "",
+		"order_bys": null,
+		"page": 0,
+		"per_page": 0,
+		"display_columns": null,
+		"active_filter_tab": "",
+		"filter_query": "",
+		"on_mounted": ""
+	},
+	"injector": "examplespublish_examplewith_publish_products",
+	"sync_query": true,
+	"method": "OnReload",
+	"request": {}
+}`).
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "ListingCompo_examplespublish_examplewith_publish_products_page", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Empty(t, resp.RunScript)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowDuplicate_Step06_Event_presets_DetailingDrawer(t *testing.T, f *FlowDuplicate) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("presets_DetailingDrawer").
+		Query("id", "32_2024-07-04-v03").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+
+	testflow.Validate(t, w, r,
+		testflow.OpenRightDrawer("WithPublishProduct 32_2024-07-04-v03"),
+	)
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowDuplicate_Step07_Event_publish_EventDuplicateVersion(t *testing.T, f *FlowDuplicate) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("publish_EventDuplicateVersion").
+		Query("id", "32_2024-07-04-v03").
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Empty(t, resp.UpdatePortals)
+	assert.Nil(t, resp.Data)
+	assert.Equal(t, testflow.RemoveTime(`locals.commonConfirmDialog = false; plaid().vars(vars).emit("PresetsNotifModelsCreatedexamplesAdminWithPublishProduct", {"models":[{"ID":32,"CreatedAt":"2024-07-04T18:03:59.413181+08:00","UpdatedAt":"2024-07-04T18:03:59.410171+08:00","DeletedAt":null,"Name":"FirstProduct","Price":123,"Status":"draft","OnlineUrl":"","ScheduledStartAt":null,"ScheduledEndAt":null,"ActualStartAt":null,"ActualEndAt":null,"Version":"2024-07-04-v04","VersionName":"2024-07-04-v04","ParentVersion":"2024-07-04-v03"}]}); plaid().vars(vars).emit("PublishNotifVersionSelectedexamplesAdminWithPublishProduct", {"slug":"32_2024-07-04-v04"}); vars.presetsMessage = { show: true, message: "Successfully Created", color: "success"}`), testflow.RemoveTime(resp.RunScript))
+
+	return testflow.NewThen(t, w, r)
+}
+
+func flowDuplicate_Step08_Event___dispatch_stateful_action__(t *testing.T, f *FlowDuplicate) *testflow.Then {
+	r := multipartestutils.NewMultipartBuilder().
+		PageURL("/examples/publish-example/with-publish-products").
+		EventFunc("__dispatch_stateful_action__").
+		AddField("__action__", `
+{
+	"compo_type": "*presets.ListingCompo",
+	"compo": {
+		"id": "examplespublish_examplewith_publish_products_page",
+		"popup": false,
+		"long_style_search_box": false,
+		"selected_ids": [],
+		"keyword": "",
+		"order_bys": null,
+		"page": 0,
+		"per_page": 0,
+		"display_columns": null,
+		"active_filter_tab": "",
+		"filter_query": "",
+		"on_mounted": ""
+	},
+	"injector": "examplespublish_examplewith_publish_products",
+	"sync_query": true,
+	"method": "OnReload",
+	"request": {}
+}`).
+		BuildEventFuncRequest()
+
+	w := httptest.NewRecorder()
+	f.h.ServeHTTP(w, r)
+
+	var resp multipartestutils.TestEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.PageTitle)
+	assert.False(t, resp.Reload)
+	assert.Nil(t, resp.PushState)
+	assert.Empty(t, resp.RedirectURL)
+	assert.Empty(t, resp.ReloadPortals)
+	assert.Len(t, resp.UpdatePortals, 1)
+	assert.Equal(t, "ListingCompo_examplespublish_examplewith_publish_products_page", resp.UpdatePortals[0].Name)
+	assert.Nil(t, resp.Data)
+	assert.Empty(t, resp.RunScript)
 
 	return testflow.NewThen(t, w, r)
 }

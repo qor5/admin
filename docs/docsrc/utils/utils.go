@@ -1,10 +1,8 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/qor5/web/v3"
 	"github.com/shurcooL/sanitized_anchor_name"
 	"github.com/sunfmin/snippetgo/parse"
 	. "github.com/theplant/htmlgo"
@@ -74,19 +72,4 @@ func ExamplesDoc() HTMLComponent {
 		)
 	}
 	return u
-}
-
-func PrettyFormAsJSON(ctx *web.EventContext) HTMLComponent {
-	if ctx.R.MultipartForm == nil {
-		return nil
-	}
-
-	formData, err := json.MarshalIndent(ctx.R.MultipartForm, "", "\t")
-	if err != nil {
-		panic(err)
-	}
-
-	return Pre(
-		string(formData),
-	)
 }
