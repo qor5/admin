@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 
 	"github.com/qor5/admin/v3/presets"
@@ -18,8 +17,9 @@ import (
 )
 
 const (
-	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
-	Timeline                       = "Timeline"
+	I18nActivityKey     i18n.ModuleKey = "I18nActivityKey"
+	DetailFieldTimeline string         = "Timeline"
+	ListFieldNotes      string         = "Notes"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -27,11 +27,10 @@ func (ab *Builder) Install(b *presets.Builder) error {
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
-	if permB := b.GetPermission(); permB != nil {
-		permB.CreatePolicies(ab.permPolicy)
-	}
-	mb := b.Model(ab.logModel).MenuIcon("mdi-book-edit")
-
+	// if permB := b.GetPermission(); permB != nil {
+	// 	permB.CreatePolicies(ab.permPolicy)
+	// }
+	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
 	return ab.logModelInstall(b, mb)
 }
 
@@ -42,14 +41,14 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	)
 	ab.lmb = mb
 	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST")))
 		},
 	)
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	listing.Field("ModelName").Label(Messages_en_US.ModelName)
 	listing.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
 				return h.Td(h.Text("-"))
 			}
@@ -60,30 +59,34 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		var (
 			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			contextDB = ab.getDBFromContext(ctx.R.Context())
+			contextDB = ab.db
 		)
 
-		creatorGroups := ab.NewLogModelSlice()
-		contextDB.Select("creator").Group("creator").Find(creatorGroups)
-		creatorGroupsValues := reflect.Indirect(reflect.ValueOf(creatorGroups))
+		creatorGroups := []*ActivityLog{}
+		err := contextDB.Select("creator").Group("creator").Find(&creatorGroups).Error
+		if err != nil {
+			panic(err)
+		}
 		var creatorOptions []*vuetifyx.SelectItem
-		for i := 0; i < creatorGroupsValues.Len(); i++ {
-			creator := reflect.Indirect(creatorGroupsValues.Index(i)).FieldByName("Creator").String()
+
+		for _, creator := range creatorGroups {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
+				Text:  creator.Creator.Name,
+				Value: fmt.Sprint(creator.Creator.ID),
 			})
 		}
 
-		actionGroups := ab.NewLogModelSlice()
-		contextDB.Select("action").Group("action").Order("action").Find(actionGroups)
-		actionGroupsValues := reflect.Indirect(reflect.ValueOf(actionGroups))
+		actionGroups := []*ActivityLog{}
+		err = contextDB.Select("action").Group("action").Order("action").Find(&actionGroups).Error
+		if err != nil {
+			panic(err)
+		}
 		var actionOptions []*vuetifyx.SelectItem
-		for i := 0; i < actionGroupsValues.Len(); i++ {
-			creator := reflect.Indirect(actionGroupsValues.Index(i)).FieldByName("Action").String()
+
+		for _, action := range actionGroups {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  creator,
-				Value: creator,
+				Text:  string(action.Action),
+				Value: string(action.Action),
 			})
 		}
 
@@ -135,44 +138,57 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			},
 			{
 				Label: msgr.ActionEdit,
-				Query: url.Values{"action": []string{ActivityEdit}},
+				Query: url.Values{"action": []string{string(ActionEdit)}},
 			},
 			{
 				Label: msgr.ActionCreate,
-				Query: url.Values{"action": []string{ActivityCreate}},
+				Query: url.Values{"action": []string{string(ActionCreate)}},
 			},
 			{
 				Label: msgr.ActionDelete,
-				Query: url.Values{"action": []string{ActivityDelete}},
+				Query: url.Values{"action": []string{string(ActionDelete)}},
 			},
 		}
 	})
 
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
-		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
-				record = obj.(ActivityLogInterface)
+				record = obj.(*ActivityLog)
 				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			)
-
 			var detailElems []h.HTMLComponent
 			detailElems = append(detailElems, VCard(
 				VCardTitle(
 					VBtn("").Children(
-						VIcon("arrow_back").Class("pr-2").Size(SizeSmall),
+						VIcon("mdi-account").Class("pr-2").Size(SizeSmall),
 					).Icon(true).Attr("@click", "window.history.back()"),
-					h.Text(msgr.DiffDetail),
+					h.Text(" "+msgr.DiffDetail),
+				),
+				VCardText(
+					// vuetif.VAvatar().Class("mr-2").Children(
+					//	VIcon("mdi-account").Size(SizeSmall),
+					// ),
+					h.Text(" "+msgr.DiffDetail),
 				),
 				VTable(
 					h.Tbody(
-						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.GetCreator()))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.GetUserID())))),
-						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.GetAction()))),
-						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.GetModelName()))),
-						h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(record.GetModelLabel()))),
-						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.GetModelKeys()))),
-						h.If(record.GetModelLink() != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.GetModelLink())))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.GetCreatedAt().Format("2006-01-02 15:04:05 MST")))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator.Name))),
+						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))),
+						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(string(record.Action)))),
+						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
+						h.Tr(
+							h.Td(h.Text(msgr.ModelLabel)),
+							h.Td(h.Text(func() string {
+								if record.ModelLabel == "" {
+									return "-"
+								}
+								return record.ModelLabel
+							}())),
+						),
+						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.ModelKeys))),
+						h.If(record.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.ModelLink)))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
 					),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))

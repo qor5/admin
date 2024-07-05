@@ -31,6 +31,11 @@ type Messages struct {
 	DiffOld     string
 	DiffNow     string
 	DiffValue   string
+
+	SuccessfullyCreated string
+	Item                string
+	Notes               string
+	NewNote             string
 }
 
 var Messages_en_US = &Messages{
@@ -64,6 +69,11 @@ var Messages_en_US = &Messages{
 	DiffOld:     "Old",
 	DiffNow:     "Now",
 	DiffValue:   "Value",
+
+	SuccessfullyCreated: "Successfully Created",
+	Item:                "Item",
+	Notes:               "Notes",
+	NewNote:             "New Note",
 }
 
 var Messages_zh_CN = &Messages{
@@ -96,4 +106,16 @@ var Messages_zh_CN = &Messages{
 	DiffOld:         "之前的值",
 	DiffNow:         "当前的值",
 	DiffValue:       "值",
+
+	SuccessfullyCreated: "成功创建",
+	Item:                "记录",
+	Notes:               "备注",
+	NewNote:             "新建备注",
+}
+
+var Messages_ja_JP = &Messages{
+	SuccessfullyCreated: "作成に成功しました",
+	Item:                "アイテム",
+	Notes:               "ノート",
+	NewNote:             "新規ノート",
 }

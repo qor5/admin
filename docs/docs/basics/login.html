@@ -271,7 +271,7 @@ OAuth login does not require a <code>UserModel</code>. If there is a <code>UserM
 <p><code>SessionSecurer</code> helps to ensure user security even in the event of secret leakage. When a user logs in, <code>SessionSecurer</code> generates a random salt and associates it with the user&#39;s record. This salt is then used to sign the user&#39;s session token. When the user makes requests to the server, the server verifies that the session token has been signed with the correct salt. If the salt has been changed, the session token is considered invalid and the user is logged out.</p>
 <h2><a name="hooks" class="anchor" href="#hooks" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Hooks</h2>
 
-<p><a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/builder.go#L39" rel="nofollow">Hooks</a> are functions that are called before or after certain events.<br>
+<p><a href="https://github.com/qor5/x/blob/8f986dddfeaf235fd42bb3361717551d06695517/login/log_builder.go#L39" rel="nofollow">Hooks</a> are functions that are called before or after certain events.<br>
 The following hooks are available:</p>
 <h3><a name="beforesetpassword" class="anchor" href="#beforesetpassword" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
 BeforeSetPassword</h3>

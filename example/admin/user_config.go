@@ -2,16 +2,16 @@ package admin
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/presets/actions"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/role"
@@ -26,10 +26,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func configUser(b *presets.Builder, nb *note.Builder, db *gorm.DB, publisher *publish.Builder) {
+func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	user.Use(nb)
+	user.Use(ab)
 
 	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)

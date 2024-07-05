@@ -4,34 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/qor5/admin/v3/note"
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 
 var hasUnreadNotesQuery = `(%v.id in (
 WITH subquery AS (
-    SELECT qn.resource_id
+    SELECT al.model_keys as resource_id
     FROM (
-             SELECT resource_id, count(*) AS count
-             FROM qor_notes
-             WHERE resource_type = '%v' AND deleted_at IS NULL
-             GROUP BY resource_id
-         ) AS qn LEFT JOIN (
-            SELECT resource_id, number
-            FROM user_notes
-            WHERE user_id = %v AND resource_type = '%v' AND deleted_at IS NULL
-         ) AS un ON qn.resource_id = un.resource_id
-    WHERE qn.count > coalesce(un.number, 0)
+             SELECT model_keys as resource_id, count(*) AS count
+             FROM activity_logs
+             WHERE model_name = '%v' AND action = 'create_note' AND deleted_at IS NULL
+             GROUP BY model_keys
+         ) AS al LEFT JOIN (
+            SELECT model_keys as resource_id, number
+            FROM activity_logs
+            WHERE user_id = %v AND model_name = '%v' AND action LIKE '%%note%%' AND deleted_at IS NULL
+         ) AS un ON al.resource_id = un.resource_id
+    WHERE al.count > coalesce(un.number, 0)
 )
 
 SELECT DISTINCT split_part(resource_id, '_', 1)::integer
 FROM subquery
 ))`
-
-var NoteAfterCreateFunc = func(db *gorm.DB) (err error) {
-	return db.Exec(`DELETE FROM "user_unread_notes";`).Error
-}
 
 type UserUnreadNote struct {
 	gorm.Model
@@ -54,30 +50,22 @@ func getUnreadNotesCount(ctx *web.EventContext, db *gorm.DB) (data map[string]in
 		return
 	}
 
-	var unreadNote UserUnreadNote
-	err = db.Where("user_id = ?", user.ID).First(&unreadNote).Error
-	if err == nil {
-		err = json.Unmarshal([]byte(unreadNote.Content), &data)
-		return
-	}
+	var results []Result
 
-	if err == gorm.ErrRecordNotFound {
-		var results []Result
-
-		if err = db.Raw(fmt.Sprintf(`
+	if err = db.Raw(fmt.Sprintf(`
 WITH subquery AS (
-    SELECT qn.resource_id, qn.resource_type
+    SELECT al.model_keys as resource_id, al.model_name as resource_type
     FROM (
-        SELECT resource_type, resource_id, count(*) AS count
-        FROM qor_notes
-        WHERE deleted_at IS NULL
-        GROUP BY resource_id, resource_type
-    ) AS qn LEFT JOIN (
-        SELECT resource_type, resource_id, number
-        FROM user_notes
-        WHERE user_id = %v AND deleted_at IS NULL
-    ) AS un ON qn.resource_type = un.resource_type AND qn.resource_id = un.resource_id
-    WHERE qn.count > coalesce(un.number, 0)
+        SELECT model_name, model_keys as resource_id, count(*) AS count
+        FROM activity_logs
+        WHERE action = 'create_note' AND deleted_at IS NULL
+        GROUP BY model_keys, model_name
+    ) AS al LEFT JOIN (
+        SELECT model_name, model_keys as resource_id, number
+        FROM activity_logs
+        WHERE user_id = %v AND action LIKE '%%note%%' AND deleted_at IS NULL
+    ) AS un ON al.resource_type = un.model_name AND al.resource_id = un.resource_id
+    WHERE al.count > coalesce(un.number, 0)
 )
 
 SELECT count(*), resource_type
@@ -87,24 +75,25 @@ FROM (
      ) AS sq
 GROUP BY resource_type;
 `, user.ID)).Scan(&results).Error; err != nil {
-			return
-		}
+		return
+	}
 
-		for _, result := range results {
-			data[result.ResourceType] = result.Count
-		}
+	for _, result := range results {
+		data[result.ResourceType] = result.Count
+	}
 
-		var content []byte
-		content, err = json.Marshal(data)
-		if err != nil {
-			return
-		}
+	var content []byte
+	content, err = json.Marshal(data)
+	if err != nil {
+		return
+	}
 
-		unreadNote.UserID = user.ID
-		unreadNote.Content = string(content)
-		if err = db.Save(&unreadNote).Error; err != nil {
-			return
-		}
+	var unreadNote activity.ActivityLog
+	unreadNote.UserID = user.ID
+	unreadNote.Comment = string(content)
+	unreadNote.Action = "unread_notes_count"
+	if err = db.Save(&unreadNote).Error; err != nil {
+		return
 	}
 
 	return
@@ -120,41 +109,44 @@ func markAllAsRead(db *gorm.DB) web.EventFunc {
 		}
 
 		if err = db.Transaction(func(tx *gorm.DB) (err1 error) {
-			if err1 = tx.Unscoped().Where("user_id = ?", u.ID).Delete(&note.UserNote{}).Error; err1 != nil {
+			// Delete user-specific note read records
+			if err1 = tx.Unscoped().Where("user_id = ? AND action LIKE '%%note%%'", u.ID).Delete(&activity.ActivityLog{}).Error; err1 != nil {
 				return
 			}
 
+			// Fetch all notes count
 			var results []Result
-
 			if err = db.Raw(`
-SELECT resource_type, resource_id, count(*) AS count
-FROM qor_notes
-WHERE deleted_at IS NULL
-GROUP BY resource_type, resource_id;
+SELECT model_name as resource_type, model_keys as resource_id, count(*) AS count
+FROM activity_logs
+WHERE action = 'create_note' AND deleted_at IS NULL
+GROUP BY model_name, model_keys;
 `).Scan(&results).Error; err != nil {
 				return
 			}
 
-			var userNotes []note.UserNote
+			var userNotes []activity.ActivityLog
 			for _, result := range results {
-				un := note.UserNote{
-					UserID:       u.ID,
-					ResourceType: result.ResourceType,
-					ResourceID:   result.ResourceID,
-					Number:       int64(result.Count),
+				un := activity.ActivityLog{
+					UserID:    u.ID,
+					ModelName: result.ResourceType,
+					ModelKeys: result.ResourceID,
+					Action:    fmt.Sprintf("read_note:%d", result.Count),
+					Number:    int64(result.Count),
 				}
 				userNotes = append(userNotes, un)
 			}
 
-			if err1 = tx.Create(userNotes).Error; err1 != nil {
+			if err1 = tx.Create(&userNotes).Error; err1 != nil {
 				return
 			}
 
-			var unreadNote UserUnreadNote
-			if err1 = db.Where("user_id = ?", u.ID).First(&unreadNote).Error; err1 != nil {
+			// Update unread notes count
+			var unreadNote activity.ActivityLog
+			if err1 = db.Where("user_id = ? AND action = 'unread_notes_count'", u.ID).First(&unreadNote).Error; err1 != nil {
 				return
 			}
-			unreadNote.Content = "{}"
+			unreadNote.Comment = "{}"
 			if err1 = db.Save(&unreadNote).Error; err1 != nil {
 				return
 			}

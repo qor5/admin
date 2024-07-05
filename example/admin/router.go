@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/v3/role"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
@@ -85,7 +84,6 @@ func Router(db *gorm.DB) http.Handler {
 		loginBuilder.Middleware(),
 		validateSessionToken(db),
 		withRoles(db),
-		withNoteContext(),
 		securityMiddleware(),
 	)
 	cr.Mount("/", mux)

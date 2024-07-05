@@ -17,7 +17,6 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -80,7 +79,6 @@ type Builder struct {
 	templateModel     *presets.ModelBuilder
 	l10n              *l10n.Builder
 	mediaBuilder      *media.Builder
-	note              *note.Builder
 	ab                *activity.Builder
 	publisher         *publish.Builder
 	seoBuilder        *seo.Builder
@@ -230,11 +228,6 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 
 func (b *Builder) SEO(v *seo.Builder) (r *Builder) {
 	b.seoBuilder = v
-	return b
-}
-
-func (b *Builder) Note(v *note.Builder) (r *Builder) {
-	b.note = v
 	return b
 }
 
@@ -548,8 +541,8 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
 		pm.Use(b.l10n)
 	}
 
-	if b.note != nil {
-		pm.Use(b.note)
+	if b.ab != nil {
+		pm.Use(b.ab)
 	}
 }
 

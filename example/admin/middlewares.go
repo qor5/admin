@@ -1,11 +1,8 @@
 package admin
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/v3/note"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/x/v3/login"
 	"gorm.io/gorm"
@@ -44,23 +41,6 @@ func securityMiddleware() func(next http.Handler) http.Handler {
 			w.Header().Add("Pragma", "no-cache")
 
 			next.ServeHTTP(w, req)
-		})
-	}
-}
-
-func withNoteContext() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			u := getCurrentUser(r)
-			if u == nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-			ctx := context.WithValue(r.Context(), note.UserIDKey, u.ID)
-			ctx = context.WithValue(ctx, note.UserKey, fmt.Sprintf("%v (%v)", u.Name, u.Account))
-			newR := r.WithContext(ctx)
-
-			next.ServeHTTP(w, newR)
 		})
 	}
 }

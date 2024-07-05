@@ -122,7 +122,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	if b.ab != nil {
-		b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), job)
+		b.ab.AddRecords(activity.ActionCreate, ctx.R.Context(), job)
 	}
 
 	r.RunScript = web.Plaid().

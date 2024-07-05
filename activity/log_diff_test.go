@@ -21,9 +21,9 @@ type (
 		Content  string
 		Author   Author
 		Comments []Comment
-		Tags     map[string]Tag
+		Tags     map[string]PostTag
 	}
-	Tag struct {
+	PostTag struct {
 		Name string
 	}
 	Author struct {
@@ -101,7 +101,7 @@ func TestDiff(t *testing.T) {
 		},
 		{
 			description: "Using model type handles",
-			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(old, now interface{}, prefixField string) (diffs []Diff) {
+			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(old, now any, prefixField string) (diffs []Diff) {
 				oldAuthor := old.(Author)
 				nowAuthor := now.(Author)
 				if oldAuthor.Name != nowAuthor.Name {
@@ -202,8 +202,8 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Test map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
-			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}}},
+			old:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst12"}}},
 			want: []Diff{
 				{
 					Field: "Tags.tag1.Name",
@@ -215,8 +215,8 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Test adding map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
-			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst12"}, "tag2": {Name: "tst121"}}},
+			old:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst12"}, "tag2": {Name: "tst121"}}},
 			want: []Diff{
 				{
 					Field: "Tags.tag1.Name",
@@ -233,8 +233,8 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Test deleting map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}, "tag2": {Name: "tst1"}}},
-			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			old:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}, "tag2": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}}},
 			want: []Diff{
 				{
 					Field: "Tags.tag2",
@@ -247,7 +247,7 @@ func TestDiff(t *testing.T) {
 			description:  "Test creating map data",
 			modelBuilder: &ModelBuilder{},
 			old:          Post{},
-			now:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			now:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}}},
 			want: []Diff{
 				{
 					Field: "Tags",
@@ -259,7 +259,7 @@ func TestDiff(t *testing.T) {
 		{
 			description:  "Test remove all map data",
 			modelBuilder: &ModelBuilder{},
-			old:          Post{Tags: map[string]Tag{"tag1": {Name: "tst1"}}},
+			old:          Post{Tags: map[string]PostTag{"tag1": {Name: "tst1"}}},
 			now:          Post{Tags: nil},
 			want: []Diff{
 				{
@@ -316,12 +316,12 @@ func BenchmarkComplexDiff(b *testing.B) {
 		Content:       "content111",
 		Author:        Author{Name: "author1", Age: 10},
 		Comments:      []Comment{},
-		Tags:          map[string]Tag{},
+		Tags:          map[string]PostTag{},
 	}
 
 	for i := 0; i < 50; i++ {
 		old.Comments = append(old.Comments, Comment{Text: fmt.Sprintf("text - %d", i)})
-		old.Tags[fmt.Sprintf("tag - %d", i)] = Tag{Name: fmt.Sprintf("title - %d", i)}
+		old.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
 	now := Post{
@@ -336,12 +336,12 @@ func BenchmarkComplexDiff(b *testing.B) {
 			Age:  19,
 		},
 		Comments: []Comment{},
-		Tags:     map[string]Tag{},
+		Tags:     map[string]PostTag{},
 	}
 
 	for i := 0; i < 80; i++ {
 		now.Comments = append(now.Comments, Comment{Text: fmt.Sprintf("text ---%d", i)})
-		old.Tags[fmt.Sprintf("tag - %d", i)] = Tag{Name: fmt.Sprintf("title - %d", i)}
+		old.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
 	builder := NewDiffBuilder(&ModelBuilder{})

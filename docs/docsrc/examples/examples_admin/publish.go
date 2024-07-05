@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/qor/oss"
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
@@ -100,7 +101,15 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}).
 		Editing("Name", "Price")
 
-	publisher := publish.New(db, nil)
+	ab := activity.New(db).
+		AutoMigrate().
+		CurrentUserFunc(func(ctx context.Context) *activity.User {
+			return &activity.User{
+				ID:   1,
+				Name: "John",
+			}
+		})
+	publisher := publish.New(db, nil).Activity(ab)
 	b.Use(publisher)
 	mb.Use(publisher)
 	// run the publisher job if Schedule is used

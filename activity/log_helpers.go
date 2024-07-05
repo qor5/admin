@@ -1,16 +1,18 @@
 package activity
 
 import (
-	"context"
+	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 
-func findOldWithSlug(obj interface{}, slug string, db *gorm.DB) (interface{}, bool) {
+func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
 	if slug == "" {
 		return findOld(obj, db)
 	}
@@ -36,12 +38,12 @@ func findOldWithSlug(obj interface{}, slug string, db *gorm.DB) (interface{}, bo
 	return old, true
 }
 
-func findOld(obj interface{}, db *gorm.DB) (interface{}, bool) {
+func findOld(obj any, db *gorm.DB) (any, bool) {
 	var (
 		objValue = reflect.Indirect(reflect.ValueOf(obj))
 		old      = reflect.New(objValue.Type()).Interface()
 		sqls     []string
-		vars     []interface{}
+		vars     []any
 	)
 
 	stmt := &gorm.Statement{DB: db}
@@ -92,18 +94,37 @@ func getPrimaryKey(t reflect.Type) (keys []string) {
 	return
 }
 
-func ContextWithCreator(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, CreatorContextKey, name)
-}
-
-func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
-	return context.WithValue(ctx, DBContextKey, db)
-}
-
-func getBasicModel(m interface{}) interface{} {
+func getBasicModel(m any) any {
 	if preset, ok := m.(*presets.ModelBuilder); ok {
 		return preset.NewModel()
 	}
 
 	return m
+}
+
+func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
+	var total int64
+	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, "create_note").Count(&total).Error; err != nil {
+		return 0, err
+	}
+
+	if total == 0 {
+		return 0, nil
+	}
+
+	var userNote ActivityLog
+	if err := db.Where("user_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, err
+		}
+	}
+
+	return total - userNote.Number, nil
+}
+
+func handleError(err error, r *web.EventResponse, errorMessage string) {
+	if err != nil {
+		log.Println(errorMessage, err)
+		presets.ShowMessage(r, errorMessage, "error")
+	}
 }

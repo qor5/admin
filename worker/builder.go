@@ -264,7 +264,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			return err
 		}
 		if b.ab != nil {
-			b.ab.AddRecords(activity.ActivityCreate, ctx.R.Context(), j)
+			b.ab.AddRecords(activity.ActionCreate, ctx.R.Context(), j)
 		}
 		return
 	})
