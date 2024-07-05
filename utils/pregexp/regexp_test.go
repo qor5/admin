@@ -22,7 +22,7 @@ func TestRegexp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			re := pregexp.Regexp(test.pattern)
+			re := pregexp.MustCompile(test.pattern)
 			require.NotNil(t, re)
 			assert.Equal(t, test.expected, re.String())
 		})
@@ -41,7 +41,7 @@ func TestRegexp_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
-			resultRegexps[index] = pregexp.Regexp(pattern)
+			resultRegexps[index] = pregexp.MustCompile(pattern)
 		}(i)
 	}
 

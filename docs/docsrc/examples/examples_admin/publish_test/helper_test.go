@@ -49,7 +49,7 @@ func GetNextVersion(currentVersion string) (string, error) {
 		return "", fmt.Errorf("invalid version number")
 	}
 
-	currentDate := time.Now().UTC().Format("2006-01-02")
+	currentDate := time.Now().Local().Format("2006-01-02")
 
 	var nextVersion string
 	if dateStr == currentDate {
@@ -65,22 +65,17 @@ func ContainsVersionBar(body string) bool {
 	return strings.Contains(body, "presets_OpenListingDialog") && strings.Contains(body, "-version-list-dialog")
 }
 
-func EnsureCurrentDisplayID(displayID string) testflow.ValidatorFunc {
-	// Ensure the button that opens the version list sets vars.publish_VarCurrentDisplaySlug and that the version opened is as expected
-	return testflow.ContainsInOrderAtUpdatePortal(0, "<v-chip", fmt.Sprintf(`vars.publish_VarCurrentDisplaySlug = %q`, displayID), "</v-chip>")
-}
-
 var reListContent = regexp.MustCompile(`<tr[\s\S]+?<td>[\s\S]+?<v-radio :model-value='([^']+)'\s*:true-value='([^']+)'[\s\S]+?</v-radio>\s*([^<]+)?\s*</div>[\s\S]+?</tr>`)
 
-func EnsureVersionListDisplay(selectID string, dislayModels []*examples_admin.WithPublishProduct) testflow.ValidatorFunc {
+func EnsureVersionListDisplay(selected string, dislayModels []*examples_admin.WithPublishProduct) testflow.ValidatorFunc {
 	return testflow.Combine(
 		// Ensure list head display
 		testflow.ContainsInOrderAtUpdatePortal(0,
 			// Ensure tabs display
 			"<v-tabs",
-			"active_filter_tab", "all", "f_all", "f_select_id", selectID, "All Versions",
-			"active_filter_tab", "online_versions", "f_online_versions", "f_select_id", selectID, "Online Versions",
-			"active_filter_tab", "named_versions", "f_named_versions", "f_select_id", selectID, "Named Versions",
+			"active_filter_tab", "f_all", "f_select_id", selected, "All Versions",
+			"active_filter_tab", "f_online_versions", "f_select_id", selected, "Online Versions",
+			"active_filter_tab", "f_named_versions", "f_select_id", selected, "Named Versions",
 			"</v-tabs>",
 			// Ensure columns display
 			"<tr>", "<th>Version</th>", "<th>State</th>", "<th>Start at</th>", "<th>End at</th>", "<th>Unread Notes</th>", "<th>Option</th>", "</tr>",
@@ -94,7 +89,7 @@ func EnsureVersionListDisplay(selectID string, dislayModels []*examples_admin.Wi
 				modelValue, _ := strconv.Unquote(sub[1])
 				trueValue, _ := strconv.Unquote(sub[2])
 				assert.Equal(t, dislayModels[i].PrimarySlug(), modelValue)
-				assert.Equal(t, selectID, trueValue)
+				assert.Equal(t, selected, trueValue)
 				// ensure display version name , not version
 				assert.Equal(t, dislayModels[i].Version.VersionName, sub[3])
 			}

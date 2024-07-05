@@ -27,19 +27,44 @@ type Step struct {
 	Extra      string
 }
 
+func QuoteBackticks(s string) string {
+	var sb strings.Builder
+	sb.WriteString("`")
+	for i := 0; i < len(s); i++ {
+		if s[i] == '`' {
+			sb.WriteString("` + \"")
+			for i < len(s) && s[i] == '`' {
+				sb.WriteString("`")
+				i++
+			}
+			sb.WriteString("\" + `")
+			i--
+		} else {
+			sb.WriteByte(s[i])
+		}
+	}
+	sb.WriteString("`")
+	result := sb.String()
+	result = strings.TrimPrefix(result, "`` + ")
+	result = strings.TrimSuffix(result, " + ``")
+	return result
+}
+
 func generateStep(rr RequestResponse) (*Step, error) {
 	u, err := url.Parse(fmt.Sprintf("%s://%s:%d%s?%s", rr.Scheme, rr.Host, rr.Port, rr.Path, rr.Query))
 	if err != nil {
 		return nil, errors.Wrap(err, "url.Parse")
 	}
 
+	var eventFunc string
 	queries := make(map[string]string)
 	for key, values := range u.Query() {
-		queries[key] = values[0]
+		if key == "__execute_event__" {
+			eventFunc = values[len(values)-1]
+			continue
+		}
+		queries[strconv.Quote(key)] = strconv.Quote(values[len(values)-1])
 	}
-
-	eventFunc := queries["__execute_event__"]
-	delete(queries, "__execute_event__")
 
 	formFields := make(map[string]string)
 	if rr.Request.MimeType == "multipart/form-data" {
@@ -53,7 +78,14 @@ func generateStep(rr RequestResponse) (*Step, error) {
 			return nil, errors.Wrap(err, "ReadForm")
 		}
 		for key, values := range form.Value {
-			formFields[key] = values[0]
+			if key == "__action__" {
+				if eventFunc != "__dispatch_stateful_action__" {
+					continue
+				}
+				formFields[strconv.Quote(key)] = QuoteBackticks("\n" + values[0])
+				continue
+			}
+			formFields[strconv.Quote(key)] = strconv.Quote(values[0])
 		}
 	}
 
@@ -105,7 +137,7 @@ var validators = []NamedValidator{
 	},
 }
 
-var assertIgnoreRegexp = regexp.MustCompile(`^\**\w+\.(Body|UpdatePortals\[\d+\]\.Body|UpdatePortals\[\d+\]\.AfterLoaded)$`)
+var assertIgnoreRegexp = regexp.MustCompile(`^\**\w+\.(Body|RunScript|UpdatePortals\[\d+\]\.Body|UpdatePortals\[\d+\]\.AfterLoaded)$`)
 
 func generateLines(body string) ([]string, error) {
 	body = strings.TrimSpace(body)
@@ -121,6 +153,11 @@ func generateLines(body string) ([]string, error) {
 	})
 	if len(assertions) > 0 {
 		lines = append(lines, assertions...)
+		if resp.RunScript != "" {
+			lines = append(lines, fmt.Sprintf("assert.Equal(t, testflow.RemoveTime(%s), testflow.RemoveTime(resp.RunScript))", QuoteBackticks(resp.RunScript)))
+		} else {
+			lines = append(lines, "assert.Empty(t, resp.RunScript)")
+		}
 		lines = append(lines, "")
 	}
 

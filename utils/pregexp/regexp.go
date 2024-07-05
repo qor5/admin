@@ -10,7 +10,7 @@ import (
 
 var regexps = cmap.New[*regexp.Regexp]()
 
-func Regexp(pattern string) *regexp.Regexp {
+func MustCompile(pattern string) *regexp.Regexp {
 	v, ok := regexps.Get(pattern)
 	if ok && v != nil {
 		return v
@@ -24,7 +24,7 @@ func Regexp(pattern string) *regexp.Regexp {
 }
 
 func Match(pattern, text string) ([][]string, error) {
-	subs := Regexp(pattern).FindAllStringSubmatch(text, -1)
+	subs := MustCompile(pattern).FindAllStringSubmatch(text, -1)
 	if len(subs) <= 0 {
 		return nil, errors.Errorf("MatchFailed: %s", pattern)
 	}
@@ -61,7 +61,7 @@ func MatchOneThen(pattern, text string, subIdx int) (string, error) {
 }
 
 func NamedMatchOne(pattern, text string) (map[string]string, error) {
-	re := Regexp(pattern)
+	re := MustCompile(pattern)
 
 	subs := re.FindAllStringSubmatch(text, -1)
 	if len(subs) != 1 {
@@ -81,7 +81,7 @@ func NamedMatchOne(pattern, text string) (map[string]string, error) {
 func ReplaceAllSubmatchFunc(pattern, str string, repl func(match string, groups [][]int) string) string {
 	var builder strings.Builder
 	var lastIndex int
-	for _, v := range Regexp(pattern).FindAllSubmatchIndex([]byte(str), -1) {
+	for _, v := range MustCompile(pattern).FindAllSubmatchIndex([]byte(str), -1) {
 		groups := [][]int{}
 		first := v[0]
 		for i := 0; i < len(v); i += 2 {
