@@ -130,7 +130,6 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 
 func (mb *ModelBuilder) newEditing() (r *EditingBuilder) {
 	mb.writeFields, mb.listing.searchColumns = mb.p.writeFieldDefaults.inspectFieldsAndCollectName(mb.model, reflect.TypeOf(""))
-	mb.listing.searchColumns = mb.listing.searchColumns
 	mb.editing = &EditingBuilder{mb: mb, FieldsBuilder: *mb.writeFields}
 	if mb.p.dataOperator != nil {
 		mb.editing.FetchFunc(mb.p.dataOperator.Fetch)

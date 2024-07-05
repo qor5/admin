@@ -103,7 +103,7 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
-func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gorm.DB) (
+func PresetsDetailInlineListing(b *presets.Builder, db *gorm.DB) (
 	mb *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
