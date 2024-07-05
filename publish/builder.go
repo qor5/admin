@@ -125,7 +125,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	mb.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
 	mb.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
 
-	configureVersionListDialog(db, pb, mb)
+	configureVersionListDialog(db, b, pb, mb)
 }
 
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {

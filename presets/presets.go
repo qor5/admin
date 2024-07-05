@@ -1269,14 +1269,14 @@ func (b *Builder) initMux() {
 			routePath,
 			b.wrap(m, b.layoutFunc(inPageFunc, m.layoutConfig)),
 		)
-		log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
+		log.Printf("mounted url: %s\n", routePath)
 		if m.hasDetailing {
 			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)
 			mux.Handle(
 				routePath,
 				b.wrap(m, b.detailLayoutFunc(m.detailing.GetPageFunc(), m.layoutConfig)),
 			)
-			log.Printf("mounted url: %s, events: %s\n", routePath, m.EventsHub.String())
+			log.Printf("mounted url: %s", routePath)
 		}
 	}
 

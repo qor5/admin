@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"embed"
 	"encoding/base64"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
@@ -68,7 +68,12 @@ func newConfig(db *gorm.DB) config {
 	storage := filesystem.New(PublishDir)
 
 	mediaBuilder := media.New(db)
-	ab := activity.New(db).CreatorContextKey(login.UserKey).AutoMigrate()
+	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+		return &activity.User{
+			ID:   1,
+			Name: "John",
+		}
+	})
 	publisher := publish.New(db, storage)
 	seoBuilder := seo.New(db).AutoMigrate()
 

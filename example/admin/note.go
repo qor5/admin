@@ -3,6 +3,7 @@ package admin
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
@@ -89,7 +90,7 @@ GROUP BY resource_type;
 
 	var unreadNote activity.ActivityLog
 	unreadNote.UserID = user.ID
-	unreadNote.Content = string(content)
+	unreadNote.Comment = string(content)
 	unreadNote.Action = "unread_notes_count"
 	if err = db.Save(&unreadNote).Error; err != nil {
 		return
@@ -145,7 +146,7 @@ GROUP BY model_name, model_keys;
 			if err1 = db.Where("user_id = ? AND action = 'unread_notes_count'", u.ID).First(&unreadNote).Error; err1 != nil {
 				return
 			}
-			unreadNote.Content = "{}"
+			unreadNote.Comment = "{}"
 			if err1 = db.Save(&unreadNote).Error; err1 != nil {
 				return
 			}

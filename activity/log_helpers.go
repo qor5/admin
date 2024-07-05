@@ -1,7 +1,6 @@
 package activity
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -95,33 +94,12 @@ func getPrimaryKey(t reflect.Type) (keys []string) {
 	return
 }
 
-func ContextWithCreator(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, CreatorContextKey, name)
-}
-
 func getBasicModel(m any) any {
 	if preset, ok := m.(*presets.ModelBuilder); ok {
 		return preset.NewModel()
 	}
 
 	return m
-}
-
-type contextUserIDKey int
-
-const (
-	UserIDKey contextUserIDKey = iota
-	UserKey
-)
-
-func GetUserData(ctx *web.EventContext) (userID uint, creator string) {
-	if v := ctx.R.Context().Value(UserIDKey); v != nil {
-		userID = v.(uint)
-	}
-	if v := ctx.R.Context().Value(UserKey); v != nil {
-		creator = v.(string)
-	}
-	return
 }
 
 func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {

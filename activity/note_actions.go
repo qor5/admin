@@ -2,27 +2,40 @@ package activity
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"log"
+)
+
+const (
+	ParamResourceKeys    = "resource_keys"
+	ParamResourceComment = "comment"
+	TimelinePortalName   = "activity-timeline-portal"
 )
 
 func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
-	return b.wrapper.Wrap(func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
-		ri := ctx.R.FormValue("resource_id")
-		rt := ctx.R.FormValue("resource_type")
-		content := ctx.R.FormValue("Content")
+		keys := ctx.R.FormValue(ParamResourceKeys)
+		content := ctx.R.FormValue(ParamResourceComment)
 
-		userID, creator := GetUserData(ctx)
+		if strings.TrimSpace(content) == "" {
+			presets.ShowMessage(&r, "comment cannot be blank", "error")
+			return
+		}
+
+		mv := mb.NewModel()
+		creator := b.currentUserFunc(ctx.R.Context())
 		activity := ActivityLog{
-			UserID:    userID,
-			Creator:   creator,
-			ModelName: rt,
-			ModelKeys: ri,
-			Action:    "create_note",
-			Content:   content,
+			UserID:    creator.ID,
+			Creator:   *creator,
+			ModelName: modelName(mv),
+			ModelKeys: keys,
+			Action:    ActionCreateNote,
+			Comment:   content,
 		}
 
 		if err = db.Save(&activity).Error; err != nil {
@@ -33,45 +46,39 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
-		notesSection := getNotesTab(ctx, db, rt, ri)
+		notesSection := b.timelineList(mv, keys, b.db)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: "notes-section",
+			Name: TimelinePortalName,
 			Body: notesSection,
 		})
 
 		return
-	})
+	}
 }
 
 func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
-	return b.wrapper.Wrap(func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
-		ri := ctx.R.FormValue("resource_id")
-		rt := ctx.R.FormValue("resource_type")
+		keys := ctx.R.FormValue(ParamResourceKeys)
+		mn := modelName(mb.NewModel())
 
-		if ri == "" || rt == "" {
+		if keys == "" {
 			err = fmt.Errorf("missing required parameters")
 			log.Println("updateUserNoteAction error:", err)
 			return
 		}
 
-		userID, _ := GetUserData(ctx)
-		if userID == 0 {
-			err = fmt.Errorf("user not authenticated")
-			log.Println("updateUserNoteAction error:", err)
-			return
-		}
+		creator := b.currentUserFunc(ctx.R.Context())
 
-		userNote := ActivityLog{UserID: userID, ModelName: rt, ModelKeys: ri}
+		userNote := ActivityLog{UserID: creator.ID, ModelName: mn, ModelKeys: keys}
 		if err = db.Where(userNote).FirstOrCreate(&userNote).Error; err != nil {
 			log.Println("updateUserNoteAction error:", err)
 			return
 		}
 
 		var total int64
-		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", rt, ri).Count(&total)
+		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", mn, keys).Count(&total)
 		userNote.Number = total
-		userNote.Action = fmt.Sprintf("update_note: %d", total)
 
 		if err = db.Save(&userNote).Error; err != nil {
 			log.Println("updateUserNoteAction error:", err)
@@ -80,59 +87,35 @@ func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 
 		r.ReloadPortals = append(r.ReloadPortals, presets.NotificationCenterPortalName)
 		return
-	})
+	}
 }
 
 func deleteNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
-	return b.wrapper.Wrap(func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
-		noteID := ctx.R.FormValue("note_id")
-		ri := ctx.R.FormValue("resource_id")
-		rt := ctx.R.FormValue("resource_type")
+		noteID := ctx.R.FormValue(presets.ParamID)
+		keys := ctx.R.FormValue(ParamResourceKeys)
+		// mn := modelName(mb.NewModel())
 
-		userID, _ := GetUserData(ctx)
-		if userID == 0 {
-			return
-		}
+		creator := b.currentUserFunc(ctx.R.Context())
 
 		// Find the note by ID and delete it
-		var note ActivityLog
-		if err = db.Where("id = ? AND user_id = ?", noteID, userID).First(&note).Error; err != nil {
-			presets.ShowMessage(&r, "Note not found or access denied", "error")
-			err = nil
-			return
-		}
 
-		if err = db.Delete(&note).Error; err != nil {
+		if err = db.Model(&ActivityLog{}).Delete("id = ? AND user_id = ?", noteID, creator.ID).Error; err != nil {
 			presets.ShowMessage(&r, "Failed to delete note", "error")
 			err = nil
-			return
-		}
-
-		// Update user note count
-		userNote := ActivityLog{UserID: userID, ModelName: rt, ModelKeys: ri}
-		if err = db.Where(userNote).First(&userNote).Error; err != nil {
-			return
-		}
-
-		var total int64
-		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", rt, ri).Count(&total)
-		userNote.Number = total
-		userNote.Action = fmt.Sprintf("delete_note: %d", total)
-
-		if err = db.Save(&userNote).Error; err != nil {
 			return
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
-		notesSection := getNotesTab(ctx, db, rt, ri)
+		notesSection := b.timelineList(mb, keys, b.db)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: "notes-section",
+			Name: TimelinePortalName,
 			Body: notesSection,
 		})
 
 		return
-	})
+	}
 }

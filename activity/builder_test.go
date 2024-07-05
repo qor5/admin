@@ -35,10 +35,6 @@ type (
 		Title string
 	}
 
-	TestActivityLog struct {
-		ActivityLog
-	}
-
 	TestActivityModel struct {
 		ID          uint `gorm:"primary_key"`
 		VersionName string
@@ -64,6 +60,16 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+var currentUser = &User{
+	ID:     1,
+	Name:   "John",
+	Avatar: "https://i.pravatar.cc/300",
+}
+
+func testCurrentUser(ctx context.Context) *User {
+	return currentUser
+}
+
 func resetDB() {
 	db.Exec("delete from test_activity_models;")
 	db.Exec("DELETE FROM activity_logs")
@@ -82,7 +88,7 @@ func TestModelKeys(t *testing.T) {
 
 	var err error
 
-	err = builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	err = builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -101,7 +107,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 
 	builder.RegisterModel(widgetModel).AddKeys("Name")
-	err = builder.AddCreateRecord("b", Widget{Name: "Text 01", Title: "123"}, db)
+	err = builder.AddCreateRecord(currentUser, Widget{Name: "Text 01", Title: "123"}, db)
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -127,7 +133,7 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 
-	builder.AddCreateRecord("a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -190,7 +196,7 @@ func TestModelTypeHanders(t *testing.T) {
 	})
 
 	resetDB()
-	builder.AddEditRecordWithOld("a",
+	builder.AddEditRecordWithOld(currentUser,
 		Page{
 			ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
@@ -218,16 +224,6 @@ func TestModelTypeHanders(t *testing.T) {
 	}
 }
 
-type user struct{}
-
-func (u user) GetID() uint {
-	return 10
-}
-
-func (u user) GetName() string {
-	return "user a"
-}
-
 func TestCreatorInferface(t *testing.T) {
 	builder := New(db)
 	builder.Install(pb)
@@ -235,16 +231,16 @@ func TestCreatorInferface(t *testing.T) {
 	builder.RegisterModel(pageModel)
 	resetDB()
 
-	builder.AddCreateRecord(user{}, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.Creator != "user a" {
-		t.Errorf("want the creator %v, but got %v", "user a", record.Creator)
+	if record.Creator.Name != "John" {
+		t.Errorf("wrong creator %+v", record.Creator)
 	}
-	if record.UserID != 10 {
-		t.Errorf("want the creator id %v, but got %v", 10, record.UserID)
+	if record.UserID != 1 {
+		t.Errorf("want the creator id %v, but got %v", 1, record.UserID)
 	}
 }
 
@@ -255,24 +251,24 @@ func TestGetActivityLogs(t *testing.T) {
 	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
 	resetDB()
 
-	err := builder.AddCreateRecord("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	err := builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld("creator a", Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"}, db)
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld("creator a", Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"}, db)
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld("creator a", Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"}, db)
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
 
-	logs := builder.GetActivityLogs(Page{ID: 1, VersionName: "v1"}, db)
+	logs := builder.GetActivityLogs(Page{ID: 1, VersionName: "v1"}, "", db)
 	if len(logs) != 3 {
 		t.Errorf("expected 3 logs, but got %d", len(logs))
 	}
@@ -288,14 +284,14 @@ func TestGetActivityLogs(t *testing.T) {
 		if log.ModelKeys != "1:v1" {
 			t.Errorf("expected model keys '1:v1', but got %s", log.ModelKeys)
 		}
-		if log.Creator != "creator a" {
-			t.Errorf("expected creator 'creator a', but got %s", log.Creator)
+		if log.Creator.Name != "John" {
+			t.Errorf("expected creator 'creator a', but got %+v", log.Creator)
 		}
 	}
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(db).CreatorContextKey("creator")
+	builder := New(db).CurrentUserFunc(testCurrentUser)
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 
@@ -313,18 +309,18 @@ func TestMutliModelBuilder(t *testing.T) {
 	resetDB()
 	// add create record
 	db.Create(data1)
-	builder.AddCreateRecord("Test User", data1, db)
+	builder.AddCreateRecord(currentUser, data1, db)
 	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
 		for _, id := range []string{"1", "2"} {
-			var log TestActivityLog
+			var log ActivityLog
 			if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", id).Find(&log); log.ID == 0 {
 				t.Errorf("want the log %v, but got %v", "TestActivityModel:"+id, log)
 			}
 		}
 
-		var log TestActivityLog
+		var log ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", 3).Find(&log); log.ID != 0 {
 			t.Errorf("want skip the create, but still got the record %v", log)
 		}
@@ -333,7 +329,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add edit record
 	data1.Title = "test1-1"
 	data1.Description = "Description1-1"
-	builder.AddEditRecord("Test User", data1, db)
+	builder.AddEditRecord(currentUser, data1, db)
 	db.Save(data1)
 
 	data2.Title = "test2-1"
@@ -345,7 +341,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 
 	{
-		var log1 TestActivityLog
+		var log1 ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "1").Find(&log1); log1.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:1", log1)
 		}
@@ -353,7 +349,7 @@ func TestMutliModelBuilder(t *testing.T) {
 			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","Now":"test1-1"},{"Field":"Description","Old":"Description1","Now":"Description1-1"}]`, log1.ModelDiffs)
 		}
 
-		var log2 TestActivityLog
+		var log2 ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "2").Find(&log2); log2.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:2", log2)
 		}
@@ -365,7 +361,7 @@ func TestMutliModelBuilder(t *testing.T) {
 			t.Errorf("want the log %v, but got %v", "page-02", log2.ModelLabel)
 		}
 
-		var log3 TestActivityLog
+		var log3 ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "3").Find(&log3); log3.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:3", log3)
 		}
@@ -380,22 +376,29 @@ func TestMutliModelBuilder(t *testing.T) {
 	}
 
 	// // add delete record
-	builder.AddDeleteRecord("Test User", data1, db)
+	builder.AddDeleteRecord(currentUser, data1, db)
 	db.Delete(data1)
 
 	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
 		for _, id := range []string{"1", "3"} {
-			var log TestActivityLog
+			var log ActivityLog
 			if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Delete", "TestActivityModel", id).Find(&log); log.ID == 0 {
 				t.Errorf("want the log %v, but got %v", "TestActivityModel:"+id, log)
 			}
 		}
 
-		var log TestActivityLog
+		var log ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Delete", "TestActivityModel", "2").Find(&log); log.ID != 0 {
 			t.Errorf("want skip the create, but still got the record %v", log)
 		}
+	}
+}
+
+func TestModelName(t *testing.T) {
+	mn := modelName(&TestActivityModel{})
+	if mn != "TestActivityModel" {
+		t.Errorf("wrong model name %#+v", mn)
 	}
 }

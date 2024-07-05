@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
-	Timeline        string         = "Timeline"
+	I18nActivityKey     i18n.ModuleKey = "I18nActivityKey"
+	DetailFieldTimeline string         = "Timeline"
+	ListFieldNotes      string         = "Notes"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -26,11 +27,10 @@ func (ab *Builder) Install(b *presets.Builder) error {
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
-	if permB := b.GetPermission(); permB != nil {
-		permB.CreatePolicies(ab.permPolicy)
-	}
+	// if permB := b.GetPermission(); permB != nil {
+	// 	permB.CreatePolicies(ab.permPolicy)
+	// }
 	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
-
 	return ab.logModelInstall(b, mb)
 }
 
@@ -71,8 +71,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 		for _, creator := range creatorGroups {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Creator,
-				Value: creator.Creator,
+				Text:  creator.Creator.Name,
+				Value: fmt.Sprint(creator.Creator.ID),
 			})
 		}
 
@@ -85,8 +85,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 		for _, action := range actionGroups {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  action.Action,
-				Value: action.Action,
+				Text:  string(action.Action),
+				Value: string(action.Action),
 			})
 		}
 
@@ -138,15 +138,15 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			},
 			{
 				Label: msgr.ActionEdit,
-				Query: url.Values{"action": []string{ActivityEdit}},
+				Query: url.Values{"action": []string{string(ActionEdit)}},
 			},
 			{
 				Label: msgr.ActionCreate,
-				Query: url.Values{"action": []string{ActivityCreate}},
+				Query: url.Values{"action": []string{string(ActionCreate)}},
 			},
 			{
 				Label: msgr.ActionDelete,
-				Query: url.Values{"action": []string{ActivityDelete}},
+				Query: url.Values{"action": []string{string(ActionDelete)}},
 			},
 		}
 	})
@@ -173,9 +173,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				),
 				VTable(
 					h.Tbody(
-						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator.Name))),
 						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))),
-						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(record.Action))),
+						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(string(record.Action)))),
 						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
 						h.Tr(
 							h.Td(h.Text(msgr.ModelLabel)),

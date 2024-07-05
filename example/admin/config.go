@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"net/http"
@@ -169,7 +170,14 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).AutoMigrate().CreatorContextKey(login.UserKey).
+	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+		u := ctx.Value(login.UserKey).(*models.User)
+		return &activity.User{
+			ID:     u.ID,
+			Name:   u.Name,
+			Avatar: "",
+		}
+	}).
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 				err = in(pb, mb)
@@ -189,7 +197,6 @@ func NewConfig(db *gorm.DB) Config {
 				return
 			}
 		})
-	b.Use(ab)
 
 	// ab.Model(m).EnableActivityInfoTab()
 	// ab.Model(pm).EnableActivityInfoTab()

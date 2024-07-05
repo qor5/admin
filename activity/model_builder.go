@@ -145,12 +145,12 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 	}
 
 	var (
-		creator = mb.activity.getCreatorFromContext(ctx)
+		creator = mb.activity.currentUserFunc(ctx)
 		db      = mb.activity.db
 	)
 
 	switch action {
-	case ActivityView:
+	case ActionView:
 		for _, v := range vs {
 			err := mb.AddViewRecord(creator, v, db)
 			if err != nil {
@@ -158,21 +158,21 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 			}
 		}
 
-	case ActivityDelete:
+	case ActionDelete:
 		for _, v := range vs {
 			err := mb.AddDeleteRecord(creator, v, db)
 			if err != nil {
 				return err
 			}
 		}
-	case ActivityCreate:
+	case ActionCreate:
 		for _, v := range vs {
 			err := mb.AddCreateRecord(creator, v, db)
 			if err != nil {
 				return err
 			}
 		}
-	case ActivityEdit:
+	case ActionEdit:
 		for _, v := range vs {
 			err := mb.AddEditRecord(creator, v, db)
 			if err != nil {
@@ -186,7 +186,7 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 // AddCustomizedRecord add customized record
 func (mb *ModelBuilder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
 	var (
-		creator = mb.activity.getCreatorFromContext(ctx)
+		creator = mb.activity.currentUserFunc(ctx)
 		db      = mb.activity.db
 	)
 
@@ -202,17 +202,17 @@ func (mb *ModelBuilder) AddCustomizedRecord(action string, diff bool, ctx contex
 }
 
 // AddViewRecord add view record
-func (mb *ModelBuilder) AddViewRecord(creator any, v any, db *gorm.DB) error {
-	return mb.save(creator, ActivityView, v, db, "")
+func (mb *ModelBuilder) AddViewRecord(creator *User, v any, db *gorm.DB) error {
+	return mb.save(creator, ActionView, v, db, "")
 }
 
 // AddDeleteRecord	add delete record
-func (mb *ModelBuilder) AddDeleteRecord(creator any, v any, db *gorm.DB) error {
-	return mb.save(creator, ActivityDelete, v, db, "")
+func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any, db *gorm.DB) error {
+	return mb.save(creator, ActionDelete, v, db, "")
 }
 
 // AddSaverRecord will save a create log or a edit log
-func (mb *ModelBuilder) AddSaveRecord(creator any, now any, db *gorm.DB) error {
+func (mb *ModelBuilder) AddSaveRecord(creator *User, now any, db *gorm.DB) error {
 	old, ok := findOld(now, db)
 	if !ok {
 		return mb.AddCreateRecord(creator, now, db)
@@ -221,12 +221,12 @@ func (mb *ModelBuilder) AddSaveRecord(creator any, now any, db *gorm.DB) error {
 }
 
 // AddCreateRecord add create record
-func (mb *ModelBuilder) AddCreateRecord(creator any, v any, db *gorm.DB) error {
-	return mb.save(creator, ActivityCreate, v, db, "")
+func (mb *ModelBuilder) AddCreateRecord(creator *User, v any, db *gorm.DB) error {
+	return mb.save(creator, ActionCreate, v, db, "")
 }
 
 // AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecord(creator any, now any, db *gorm.DB) error {
+func (mb *ModelBuilder) AddEditRecord(creator *User, now any, db *gorm.DB) error {
 	old, ok := findOld(now, db)
 	if !ok {
 		return fmt.Errorf("can't find old data for %+v ", now)
@@ -235,11 +235,11 @@ func (mb *ModelBuilder) AddEditRecord(creator any, now any, db *gorm.DB) error {
 }
 
 // AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecordWithOld(creator any, old, now any, db *gorm.DB) error {
-	return mb.addDiff(ActivityEdit, creator, old, now, db)
+func (mb *ModelBuilder) AddEditRecordWithOld(creator *User, old, now any, db *gorm.DB) error {
+	return mb.addDiff(ActionEdit, creator, old, now, db)
 }
 
-func (mb *ModelBuilder) addDiff(action string, creator, old, now any, db *gorm.DB) error {
+func (mb *ModelBuilder) addDiff(action string, creator *User, old, now any, db *gorm.DB) error {
 	diffs, err := mb.Diff(old, now)
 	if err != nil {
 		return err
@@ -254,7 +254,7 @@ func (mb *ModelBuilder) addDiff(action string, creator, old, now any, db *gorm.D
 		return err
 	}
 
-	return mb.save(creator, ActivityEdit, now, db, string(b))
+	return mb.save(creator, ActionEdit, now, db, string(b))
 }
 
 // Diff get diffs between old and now value
@@ -262,22 +262,16 @@ func (mb *ModelBuilder) Diff(old, now any) ([]Diff, error) {
 	return NewDiffBuilder(mb).Diff(old, now)
 }
 
-func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, diffs string) error {
+func (mb *ModelBuilder) save(creator *User, action string, v any, db *gorm.DB, diffs string) error {
 	log := &ActivityLog{}
 
 	log.CreatedAt = time.Now()
-	switch user := creator.(type) {
-	case string:
-		log.Creator = user
-	case CreatorInterface:
-		log.Creator = user.GetName()
-		log.UserID = user.GetID()
-	default:
-		log.Creator = "unknown"
-	}
+
+	log.Creator = *creator
+	log.UserID = creator.ID
 
 	log.Action = action
-	log.ModelName = mb.typ.Name()
+	log.ModelName = modelName(v)
 	log.ModelKeys = mb.KeysValue(v)
 
 	if mb.presetModel != nil && mb.presetModel.Info().URIName() != "" {
@@ -290,11 +284,11 @@ func (mb *ModelBuilder) save(creator any, action string, v any, db *gorm.DB, dif
 		log.ModelLink = f(v)
 	}
 
-	if diffs == "" && action == ActivityEdit {
+	if diffs == "" && action == ActionEdit {
 		return nil
 	}
 
-	if action == ActivityEdit {
+	if action == ActionEdit {
 		log.ModelDiffs = diffs
 	}
 

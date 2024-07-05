@@ -1,21 +1,20 @@
 package example_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/x/v3/login"
-
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
@@ -57,7 +56,13 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 		),
 	)
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.GetI18n())
-	ab := activity.New(db).AutoMigrate().CreatorContextKey(login.UserKey)
+	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+		return &activity.User{
+			ID:     1,
+			Name:   "John",
+			Avatar: "",
+		}
+	})
 	publisher := publish.New(db, oss.Storage)
 	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International")).AutoMigrate()).Activity(ab)
 	b.Use(pb)

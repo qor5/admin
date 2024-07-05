@@ -16,7 +16,13 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	activityBuilder := activity.New(db).AutoMigrate()
+	activityBuilder := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+		return &activity.User{
+			ID:     1,
+			Name:   "John",
+			Avatar: "https://i.pravatar.cc/300",
+		}
+	})
 	b.Use(activityBuilder)
 
 	// @snippet_end
@@ -36,7 +42,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
 
-	bt := productModel.Detailing("Content", activity.Timeline).Drawer(true)
+	bt := productModel.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
 	bt.Section("Content").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			return Div().Text("text")
@@ -51,9 +57,8 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	// @snippet_begin(ActivityRecordLogSample)
 
-	currentCtx := context.WithValue(context.Background(), activity.CreatorContextKey, "user1")
-	activityBuilder.AddRecords("Publish", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-	activityBuilder.AddRecords("Update Price", currentCtx, &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
+	activityBuilder.AddRecords("Publish", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
+	activityBuilder.AddRecords("Update Price", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
 
 	// @snippet_end
 	return b
