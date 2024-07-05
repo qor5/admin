@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1168,6 +1169,12 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			b.firstOrCreateDemoContainers(ctx)
+			return in(model, params, ctx)
+		}
+	})
 	listing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		return []*vx.FilterItem{
 			{
@@ -1210,7 +1217,6 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		return nil
 	})
 	listing.RowMenu().Empty()
-	b.firstOrCreateDemoContainers()
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		tdbind := cell
 		c := obj.(*DemoContainer)
@@ -1233,14 +1239,15 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	return
 }
 
-func (b *Builder) firstOrCreateDemoContainers() {
-	var localeCode string
+func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext) {
+	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+	localeCodes := []string{locale}
 	if b.l10n != nil {
-		localeCode = "International"
+		localeCodes = b.l10n.GetSupportLocaleCodes()
 	}
 	for _, con := range b.containerBuilders {
-		if err := con.firstOrCreate(localeCode); err != nil {
-			panic(err)
+		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
+			continue
 		}
 	}
 }
@@ -1542,28 +1549,62 @@ func (b *ContainerBuilder) getContainerDataID(id int) string {
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
 }
 
-func (b *ContainerBuilder) firstOrCreate(locale string) (err error) {
+func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 	var (
-		db  = b.builder.db
-		obj = b.mb.NewModel()
-		m   = DemoContainer{}
+		db   = b.builder.db
+		obj  = b.mb.NewModel()
+		cons []*DemoContainer
+		m    = &DemoContainer{}
 	)
-	db.Where("model_name = ? and locale_code = ? ", b.name, locale).First(&m)
-	if m.ID > 0 {
+	if len(localeCodes) == 0 {
 		return
 	}
-	if err = db.Create(obj).Error; err != nil {
+	return db.Transaction(func(tx *gorm.DB) (vErr error) {
+		tx.Where("model_name = ? and locale_code in ? ", b.name, localeCodes).Find(&cons)
+		if len(cons) == 0 {
+			if vErr = tx.Create(obj).Error; vErr != nil {
+				return
+			}
+			modelID := reflectutils.MustGet(obj, "ID").(uint)
+			m = &DemoContainer{
+				ModelName: b.name,
+				ModelID:   modelID,
+				Filled:    false,
+				Locale:    l10n.Locale{LocaleCode: localeCodes[0]},
+			}
+			if vErr = tx.Create(m).Error; vErr != nil {
+				return
+			}
+			slices.Delete(localeCodes, 0, 1)
+
+		} else {
+			m = cons[0]
+			slices.DeleteFunc(localeCodes, func(s string) bool {
+				for _, con := range cons {
+					if con.LocaleCode == s {
+						return true
+					}
+				}
+				return false
+			})
+		}
+		for _, localeCode := range localeCodes {
+			if localeCode == "" {
+				continue
+			}
+			if vErr = tx.Create(&DemoContainer{
+				Model:     gorm.Model{ID: m.ID},
+				ModelName: b.name,
+				ModelID:   m.ModelID,
+				Filled:    false,
+				Locale:    l10n.Locale{LocaleCode: localeCode},
+			}).Error; vErr != nil {
+				return
+			}
+		}
 		return
-	}
-	modelID := reflectutils.MustGet(obj, "ID")
-	m.Locale.LocaleCode = locale
-	m.ModelName = b.name
-	err = db.Model(DemoContainer{}).Create(map[string]interface{}{
-		"locale_code": locale,
-		"model_name":  b.name,
-		"model_id":    modelID,
-		"filled":      false,
-	}).Error
+	})
+
 	return
 }
 
