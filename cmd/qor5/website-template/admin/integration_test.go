@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/qor5/admin/v3/pagebuilder"
+
 	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
@@ -63,7 +65,18 @@ func TestAll(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"page_builder_ReloadRenderPageOrTemplateEvent"},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var container pagebuilder.Container
+				if err := TestDB.First(&container).Error; err != nil {
+					t.Error("containers not add", er)
+				}
+				if container.ModelName != "MyHeader" {
+					t.Error("containers not add", container.ModelName)
+				}
+				if container.PageModelName != "pages" {
+					t.Error("containers not add for page model name", container.PageModelName)
+				}
+			},
 		},
 		{
 			Name:  "add menu items to header",
