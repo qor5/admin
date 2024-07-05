@@ -203,7 +203,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 	return func(in presets.SetterFunc) presets.SetterFunc {
 		return func(obj interface{}, ctx *web.EventContext) {
 			if ctx.Param(presets.ParamID) == "" {
-				version := fmt.Sprintf("%s-v01", db.NowFunc().Format("2006-01-02"))
+				version := fmt.Sprintf("%s-v01", db.NowFunc().Local().Format("2006-01-02"))
 				if err := reflectutils.Set(obj, "Version.Version", version); err != nil {
 					return
 				}

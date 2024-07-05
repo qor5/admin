@@ -110,8 +110,19 @@ func (op *DataOperatorBuilder) Save(obj interface{}, id string, ctx *web.EventCo
 		err = op.db.Create(obj).Error
 		return
 	}
-	err = op.primarySluggerWhere(obj, id).Save(obj).Error
+	err = op.saveOrUpdate(obj, id)
 	return
+}
+
+func (op *DataOperatorBuilder) saveOrUpdate(obj interface{}, id string) (err error) {
+	var count int64
+	if op.primarySluggerWhere(obj, id).Count(&count).Error != nil {
+		return
+	}
+	if count > 0 {
+		return op.primarySluggerWhere(obj, id).Select("*").Updates(obj).Error
+	}
+	return op.primarySluggerWhere(obj, id).Save(obj).Error
 }
 
 func (op *DataOperatorBuilder) Delete(obj interface{}, id string, ctx *web.EventContext) (err error) {

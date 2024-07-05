@@ -40,7 +40,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder
@@ -77,7 +77,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest)
+				builder := New(dbForTest).AutoMigrate()
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder
@@ -117,7 +117,7 @@ func TestUpdate(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product Detail")
 				builder.RegisterSEO("Product")
 				return builder

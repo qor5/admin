@@ -176,8 +176,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 				}
 				return v(body, input, ctx)
 			}
-		}).
-		PageEnabled(false)
+		})
 
 	if err = pagebuilder.AutoMigrate(db); err != nil {
 		panic(err)
@@ -204,7 +203,14 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		pagebuilder.PageBuilderPreviewCard,
 		"CampaignDetail",
 	)
-	detail.Section("CampaignDetail").Editing("Title")
+	detail.Section("CampaignDetail").Editing("Title").
+		Validator(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			c := obj.(*Campaign)
+			if c.Title == "" {
+				err.GlobalError("title could not be empty")
+			}
+			return
+		})
 
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {

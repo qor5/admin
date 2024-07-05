@@ -68,9 +68,9 @@ func newConfig(db *gorm.DB) config {
 	storage := filesystem.New(PublishDir)
 
 	mediaBuilder := media.New(db)
-	ab := activity.New(db).CreatorContextKey(login.UserKey)
+	ab := activity.New(db).CreatorContextKey(login.UserKey).AutoMigrate()
 	publisher := publish.New(db, storage)
-	seoBuilder := seo.New(db)
+	seoBuilder := seo.New(db).AutoMigrate()
 
 	pageBuilder := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
 		AutoMigrate().
