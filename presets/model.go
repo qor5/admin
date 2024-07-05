@@ -124,7 +124,9 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 	}
 
 	rmb := mb.listing.RowMenu()
-	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	// rmb.RowMenuItem("Edit").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	// 	return editRowMenuItemFunc(mb.Info(), mb.Info().ListingHref(), url.Values{})(obj, id, ctx)
+	// })
 	rmb.RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		return deleteRowMenuItemFunc(mb.Info(), mb.Info().ListingHref(), url.Values{})(obj, id, ctx)
 	})

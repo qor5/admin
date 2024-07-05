@@ -26,7 +26,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/web/v3 v3.0.5-0.20240704091217-e0d237271f63
+	github.com/qor5/web/v3 v3.0.5-0.20240705134640-e88838872a76
 	github.com/qor5/x/v3 v3.0.6-0.20240705055210-716f92907046
 	github.com/samber/lo v1.40.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
@@ -47,7 +47,6 @@ require (
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	go4.org v0.0.0-20230225012048-214862532bf5
 	golang.org/x/text v0.16.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
@@ -158,6 +157,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
+	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/image v0.18.0 // indirect
