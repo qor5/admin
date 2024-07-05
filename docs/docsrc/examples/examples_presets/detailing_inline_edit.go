@@ -118,10 +118,10 @@ func PresetsDetailInlineEditDetailsInspectShowFields(b *presets.Builder, db *gor
 	mb = b.Model(&Customer{}).RightDrawerWidth("1000")
 	dp = mb.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
 
-	ccmb := mb.InlineListing(&CreditCard{}, "CustomerID")
+	ccmb := mb.Inline(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
 
-	ccmb2 := mb.InlineListing(&CreditCard{}, "CustomerID")
+	ccmb2 := mb.Inline(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }

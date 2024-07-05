@@ -15,7 +15,7 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type InlineListingBuilder struct {
+type InlineModelBuilder struct {
 	*ModelBuilder
 	parent     *ModelBuilder
 	foreignKey string
@@ -23,7 +23,7 @@ type InlineListingBuilder struct {
 
 const ParamParentID = "parent_id"
 
-func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *InlineListingBuilder {
+func (parent *ModelBuilder) Inline(elementModel any, foreignKey string) *InlineModelBuilder {
 	rtElement := reflect.TypeOf(elementModel)
 	for rtElement.Kind() != reflect.Ptr {
 		panic(errors.Errorf("element model %T is not a pointer", elementModel))
@@ -62,14 +62,14 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 		}
 	})
 
-	return &InlineListingBuilder{
+	return &InlineModelBuilder{
 		ModelBuilder: mb,
 		parent:       parent,
 		foreignKey:   foreignKey,
 	}
 }
 
-func (mb *InlineListingBuilder) Install(fb *FieldBuilder) error {
+func (mb *InlineModelBuilder) Install(fb *FieldBuilder) error {
 	mb.URIName(fmt.Sprintf("%s-inline-%s", mb.parent.Info().URIName(), inflection.Plural(strcase.ToKebab(fb.name))))
 
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
