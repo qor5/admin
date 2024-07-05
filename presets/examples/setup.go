@@ -512,8 +512,14 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		dt.Column("Number")
 		dt.Column("ExpireYearMonth")
 
+		simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
+				web.Listen(
+					presets.NotifModelsCreated(&CreditCard{}), simpleReload,
+					presets.NotifModelsUpdated(&CreditCard{}), simpleReload,
+					presets.NotifModelsDeleted(&CreditCard{}), simpleReload,
+				),
 				VBtn("Add Card").
 					Variant(VariantFlat).
 					Attr("@click",

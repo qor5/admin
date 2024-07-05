@@ -374,7 +374,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 
 	btnConfigColumns, columns := c.displayColumns(ctx)
 
-	dataTable := vx.DataTableX(objs).
+	dataTable := vx.DataTable(objs).
 		HeadCellWrapperFunc(func(cell h.MutableAttrHTMLComponent, field string, title string) h.HTMLComponent {
 			if _, exists := orderableFieldMap[field]; !exists {
 				return cell
