@@ -38,7 +38,7 @@ func NewListenerVersionSelected(mb *presets.ModelBuilder, slug string) h.HTMLCom
 			presets.CloseRightDrawerVarScript,
 			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.slug")).Go(),
 		}, ";"),
-		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + '/' + payload.slug`, mb.Info().ListingHref()))).Go(),
+		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, mb.Info().ListingHref()))).Go(),
 	))
 }
 

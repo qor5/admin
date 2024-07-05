@@ -103,7 +103,7 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
-func PresetsDetailInlineListing(b *presets.Builder, db *gorm.DB) (
+func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	mb *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
@@ -118,10 +118,10 @@ func PresetsDetailInlineListing(b *presets.Builder, db *gorm.DB) (
 	mb = b.Model(&Customer{}).RightDrawerWidth("1000")
 	dp = mb.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
 
-	ccmb := mb.InlineListing(&CreditCard{}, "CustomerID")
+	ccmb := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
 
-	ccmb2 := mb.InlineListing(&CreditCard{}, "CustomerID")
+	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }
