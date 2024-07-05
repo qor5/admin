@@ -31,6 +31,8 @@ const (
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	AutoSaveContainerEvent           = "page_builder_AutoSaveContainerEvent"
+	NewContainerDialogEvent          = "page_builder_NewContainerDialogEvent"
+	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -52,18 +54,37 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp          = "up"
-	EventDown        = "down"
-	EventDelete      = "delete"
-	EventAdd         = "add"
-	EventEdit        = "edit"
-	iframeHeightName = "_iframeHeight"
-
-	EditorTabAdd    = "Add"
-	EditorTabLayers = "Layers"
+	EventUp                 = "up"
+	EventDown               = "down"
+	EventDelete             = "delete"
+	EventAdd                = "add"
+	EventEdit               = "edit"
+	iframeHeightName        = "_iframeHeight"
+	iframePreviewHeightName = "_iframePreviewHeight"
 )
 
-const editorPreviewContentPortal = "editorPreviewContentPortal"
+const (
+	editorPreviewContentPortal      = "editorPreviewContentPortal"
+	addContainerDialogPortal        = "addContainerDialogPortal"
+	addContainerDialogContentPortal = "addContainerDialogContentPortal"
+)
+
+func (b *Builder) emptyEdit(_ *web.EventContext) h.HTMLComponent {
+	return VLayout(
+		VAppBar(
+			VToolbarTitle("").Children(h.Text("Setting")),
+		).Elevation(0),
+		VSpacer(),
+		VMain(
+			VSheet(
+				VCard(
+					VCardText(
+						h.Text("Select an element and change the setting here."),
+					),
+				).Variant(VariantFlat),
+			).Class("pa-2")),
+	)
+}
 
 func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -75,10 +96,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			exitHref                             string
 			readonly                             bool
 
-			containerDataID = ctx.R.FormValue(paramContainerDataID)
+			containerDataID = ctx.Param(paramContainerDataID)
 			obj             = m.mb.NewModel()
 		)
-
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
@@ -89,7 +109,8 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Query(presets.ParamOverlay, actions.Content).Go()
 				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
 			}
-
+		} else {
+			editContainerDrawer = b.emptyEdit(ctx)
 		}
 		deviceToggler = b.deviceToggle(ctx)
 		if tabContent, err = m.pageContent(ctx, obj); err != nil {
@@ -99,7 +120,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 			readonly = p.EmbedStatus().Status == publish.StatusDraft
 		}
-		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableObservers: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
+		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -108,12 +129,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				VAppBarTitle().Text("Page Builder"),
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
-			web.Scope(
-				versionComponent,
-			).Observers(
-				publish.ObserverItemDeleted(m.mb, ctx.Param(presets.ParamID)),
-				publish.ObserverVersionSelected(m.editor, ctx.Param(presets.ParamID)),
-			),
+			versionComponent,
+			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
+			publish.NewListenerVersionSelected(m.editor, ctx.Param(presets.ParamID)),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
 			return
@@ -126,15 +144,15 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
 			h.If(readonly,
 				VNavigationDrawer(
-					navigatorDrawer,
+					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
 				).Location(LocationLeft).
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
-					h.Div(web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal)).Attr("v-show", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"`, EditorTabLayers)),
+					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
-					Attr(":width", fmt.Sprintf(`vars.hasContainer&&vars.containerTab=="%s"?350:0`, EditorTabLayers)),
+					Width(350),
 			),
 			VMain(
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
@@ -182,36 +200,9 @@ type ContainerSorter struct {
 }
 
 func (b *Builder) renderNavigator(ctx *web.EventContext, m *ModelBuilder) (r h.HTMLComponent, err error) {
-	var listContainers h.HTMLComponent
-	if listContainers, err = m.renderContainersSortedList(ctx); err != nil {
+	if r, err = m.renderContainersSortedList(ctx); err != nil {
 		return
 	}
-	r = h.Components(
-		web.Slot(
-			VTabs(
-				VTab().Text("Layers").Value(EditorTabLayers).Attr("@click",
-					scrollToContainer(web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID)))+
-						removeVirtualElement()+
-						web.Plaid().
-							EventFunc(ShowSortedContainerDrawerEvent).
-							Query(paramStatus, ctx.Param(paramStatus)).
-							Query(paramContainerDataID, web.Var(fmt.Sprintf(`vars.%s`, paramContainerDataID))).
-							MergeQuery(true).
-							Go()),
-				VTab().Text("Add").
-					Value(EditorTabAdd).Attr("@click",
-					appendVirtualElement()+
-						";"+
-						web.Plaid().PushState(true).MergeQuery(true).
-							ClearMergeQuery([]string{paramContainerID}).RunPushState(),
-				),
-			).Attr("v-model", "vars.containerTab").FixedTabs(true),
-		).Name(VSlotPrepend),
-		VTabsWindow(
-			VTabsWindowItem(m.renderContainersList(ctx)).Value(EditorTabAdd),
-			VTabsWindowItem(web.Portal(listContainers).Name(pageBuilderLayerContainerPortal)).Value(EditorTabLayers),
-		).Attr("v-model", "vars.containerTab").Attr(web.VAssign("vars", fmt.Sprintf(`{containerTab:"%s"}`, EditorTabLayers))...),
-	)
 	return
 }
 
@@ -444,6 +435,13 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(presets.DeleteConfirmPortalName),
 			web.Portal().Name(presets.ListingDialogPortalName),
 			web.Portal().Name(dialogPortalName),
+			web.Portal().Name(addContainerDialogPortal),
+			h.Template(
+				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+					Attr("v-model", "vars.presetsMessage.show").
+					Attr(":color", "vars.presetsMessage.color").
+					Timeout(1000),
+			).Attr("v-if", "vars.presetsMessage"),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
@@ -453,18 +451,6 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 
 func scrollToContainer(containerDataID interface{}) string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.scrollToCurrentContainer(%v);`, containerDataID)
-}
-
-func addVirtualELeToContainer(containerDataID interface{}) string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.addVirtualElement(%v);`, containerDataID)
-}
-
-func removeVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
-}
-
-func appendVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
 }
 
 func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, isEditor, isReadonly, isFirst, isEnd bool, containerDataID, modelName string, input *RenderInput) h.HTMLComponent {
@@ -523,4 +509,16 @@ func (b *postMessageBody) postMessage(msgType string) string {
 	}
 	b.MsgType = msgType
 	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(b))
+}
+
+func addVirtualELeToContainer(containerDataID interface{}) string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.addVirtualElement(%v);`, containerDataID)
+}
+
+func removeVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
+}
+
+func appendVirtualElement() string {
+	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
 }

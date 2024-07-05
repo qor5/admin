@@ -31,8 +31,8 @@ type Customer struct {
 	TermAgreedAt    *time.Time
 	ApprovalComment string
 	Avatar          media_library.MediaBox
-	CreditCards     []*CreditCard   `gorm:"-"`
-	Notes           []*ActivityNote `gorm:"-"`
+	CreditCards     []*CreditCard `gorm:"-"`
+	Notes           []*Note       `gorm:"-"`
 }
 
 type Address struct {
@@ -259,6 +259,10 @@ func PresetsListingCustomizationTabs(b *presets.Builder, db *gorm.DB) (
 		db.First(&c)
 		return []*presets.FilterTab{
 			{
+				Label: "All",
+				Query: url.Values{},
+			},
+			{
 				Label: "Felix",
 				Query: url.Values{"name.ilike": []string{"felix"}},
 			},
@@ -268,11 +272,7 @@ func PresetsListingCustomizationTabs(b *presets.Builder, db *gorm.DB) (
 			},
 			{
 				Label: "Approved",
-				Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
-			},
-			{
-				Label: "All",
-				Query: url.Values{"all": []string{"1"}},
+				Query: url.Values{"approved.gte": []string{time.Time{}.Format("2006-01-02 15:04")}},
 			},
 		}
 	})
@@ -292,7 +292,7 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 	mb, cl, ce, _ = PresetsListingCustomizationTabs(b, db)
 
 	cl.BulkAction("Approve").Label("Approve").
-		UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 			comment := ctx.R.FormValue("ApprovalComment")
 			if len(comment) < 10 {
 				ctx.Flash = "comment should larger than 10"
@@ -303,6 +303,11 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 				Updates(map[string]interface{}{"approved_at": time.Now(), "approval_comment": comment}).Error
 			if err != nil {
 				ctx.Flash = err.Error()
+			} else {
+				r.Emit(
+					presets.NotifModelsUpdated(&Customer{}),
+					presets.PayloadModelsUpdated{Ids: selectedIds},
+				)
 			}
 			return
 		}).
@@ -320,8 +325,16 @@ func PresetsListingCustomizationBulkActions(b *presets.Builder, db *gorm.DB) (
 		})
 
 	cl.BulkAction("Delete").Label("Delete").
-		UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+		UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 			err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+			if err == nil {
+				r.Emit(
+					presets.NotifModelsDeleted(&Customer{}),
+					presets.PayloadModelsDeleted{
+						Ids: selectedIds,
+					},
+				)
+			}
 			return
 		}).
 		ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {

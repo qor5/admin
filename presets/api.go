@@ -20,12 +20,12 @@ type FieldComponentFunc func(obj interface{}, field *FieldContext, ctx *web.Even
 
 type (
 	ActionComponentFunc func(id string, ctx *web.EventContext) h.HTMLComponent
-	ActionUpdateFunc    func(id string, ctx *web.EventContext) (err error)
+	ActionUpdateFunc    func(id string, ctx *web.EventContext, r *web.EventResponse) (err error)
 )
 
 type (
 	BulkActionComponentFunc                  func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent
-	BulkActionUpdateFunc                     func(selectedIds []string, ctx *web.EventContext) (err error)
+	BulkActionUpdateFunc                     func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error)
 	BulkActionSelectedIdsProcessorFunc       func(selectedIds []string, ctx *web.EventContext) (processedSelectedIds []string, err error)
 	BulkActionSelectedIdsProcessorNoticeFunc func(selectedIds []string, processedSelectedIds []string, unactionableIds []string) string
 )

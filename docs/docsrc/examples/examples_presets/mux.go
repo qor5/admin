@@ -3,13 +3,14 @@ package examples_presets
 import (
 	"fmt"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
+	docsexamples "github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3/examples"
 	"gorm.io/gorm"
 )
 
-func SamplesHandler(mux examples.Muxer, prefix string) {
-	db := examples.ExampleDB()
+func SamplesHandler(mux examples.Muxer) {
+	db := docsexamples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
 	addExample(mux, db, PresetsKeywordSearchOff)
 	addExample(mux, db, PresetsListingCustomizationFields)
@@ -37,6 +38,7 @@ func SamplesHandler(mux examples.Muxer, prefix string) {
 	addExample(mux, db, PresetsListingCustomizationSearcher)
 	addExample(mux, db, PresetsDetailInlineEditDetails)
 	addExample(mux, db, PresetsDetailInlineEditInspectTables)
+	addExample(mux, db, PresetsDetailInlineListing)
 	addExample(mux, db, PresetsDetailInlineEditFieldSections)
 	addExample(mux, db, PresetsDetailSimple)
 	return
@@ -51,11 +53,8 @@ type exampleFunc func(b *presets.Builder, db *gorm.DB) (
 
 func addExample(mux examples.Muxer, db *gorm.DB, f exampleFunc) {
 	path := examples.URLPathByFunc(f)
-	p := presets.New().AssetFunc(examples.AddGA).URIPrefix(path)
+	p := presets.New().URIPrefix(path)
 	f(p, db)
 	fmt.Println("Example mounting at: ", path)
-	mux.Handle(
-		path,
-		p,
-	)
+	mux.Handle(path, p)
 }

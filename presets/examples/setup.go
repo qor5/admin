@@ -112,6 +112,15 @@ func (*Product) TableName() string {
 	return "preset_products"
 }
 
+func addListener(v any) h.HTMLComponent {
+	simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
+	return web.Listen(
+		presets.NotifModelsCreated(v), simpleReload,
+		presets.NotifModelsUpdated(v), simpleReload,
+		presets.NotifModelsDeleted(v), simpleReload,
+	)
+}
+
 func Preset1(db *gorm.DB) (r *presets.Builder) {
 	err := db.AutoMigrate(
 		&Customer{},
@@ -171,6 +180,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			dt,
 		).HeaderTitle(field.Label).
 			Actions(
+				addListener(&Event{}),
 				VBtn("Add Event").
 					Variant(VariantFlat).Attr("@click",
 					web.Plaid().EventFunc(actions.New).
@@ -218,7 +228,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		)
 	})
 
-	l.BulkAction("Approve").Label("Approve").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+	l.BulkAction("Approve").Label("Approve").UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		comment := ctx.R.FormValue("ApprovalComment")
 		if len(comment) < 10 {
 			ctx.Flash = "comment should larger than 10"
@@ -229,6 +239,11 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			Updates(map[string]interface{}{"approved_at": time.Now(), "approval_comment": comment}).Error
 		if err != nil {
 			ctx.Flash = err.Error()
+		} else {
+			r.Emit(
+				presets.NotifModelsUpdated(&Customer{}),
+				presets.PayloadModelsUpdated{Ids: selectedIds},
+			)
 		}
 		return
 	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
@@ -243,8 +258,14 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			ErrorMessages(errorMessage)
 	})
 
-	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext) (err error) {
+	l.BulkAction("Delete").Label("Delete").UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		err = db.Where("id IN (?)", selectedIds).Delete(&Customer{}).Error
+		if err == nil {
+			r.Emit(
+				presets.NotifModelsDeleted(&Customer{}),
+				presets.PayloadModelsDeleted{Ids: selectedIds},
+			)
+		}
 		return
 	}).ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div().Text(fmt.Sprintf("Are you sure you want to delete %s ?", selectedIds)).Class("title deep-orange--text")
@@ -411,6 +432,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			dt,
 		).HeaderTitle(title).
 			Actions(
+				addListener(&Note{}),
 				VBtn("Add Note").
 					Variant(VariantFlat).
 					Attr("@click",
@@ -450,6 +472,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
+				web.Listen(
+					m.NotifModelsUpdated(), web.Plaid().PushState(true).MergeQuery(true).Go(),
+				),
 				VBtn("Agree Terms").
 					Variant(VariantFlat).Class("mr-2").
 					Attr("@click", web.Plaid().
@@ -503,6 +528,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
+				addListener(&CreditCard{}),
 				VBtn("Add Card").
 					Variant(VariantFlat).
 					Attr("@click",
@@ -513,7 +539,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")
@@ -523,7 +549,12 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
-
+		if err == nil {
+			r.Emit(
+				presets.NotifModelsUpdated(&Customer{}),
+				presets.PayloadModelsUpdated{Ids: []string{id}},
+			)
+		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
 		var alert h.HTMLComponent

@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -27,6 +28,7 @@ type Builder struct {
 	models                                []*ModelBuilder
 	handler                               http.Handler
 	builder                               *web.Builder
+	dc                                    *stateful.DependencyCenter
 	i18nBuilder                           *i18n.Builder
 	logger                                *zap.Logger
 	permissionBuilder                     *perm.Builder
@@ -56,7 +58,7 @@ type Builder struct {
 	extraAssets                           []*extraAsset
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
-	menuOrder                             []any
+	menuOrder                             []interface{}
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
 }
@@ -84,6 +86,7 @@ func New() *Builder {
 	r := &Builder{
 		logger:  l,
 		builder: web.New(),
+		dc:      stateful.NewDependencyCenter(),
 		i18nBuilder: i18n.New().
 			RegisterForModule(language.English, CoreI18nModuleKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, CoreI18nModuleKey, Messages_zh_CN).
@@ -105,6 +108,7 @@ func New() *Builder {
 	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
 	r.layoutFunc = r.defaultLayout
 	r.detailLayoutFunc = r.defaultLayout
+	stateful.Install(r.builder, r.dc)
 	return r
 }
 
@@ -780,6 +784,7 @@ const (
 	DefaultConfirmDialogPortalName = "presets_confirmDialogPortalName"
 	ListingDialogPortalName        = "presets_listingDialogPortalName"
 	singletonEditingPortalName     = "presets_SingletonEditingPortalName"
+	DeleteConfirmPortalName        = "deleteConfirm"
 )
 
 const (
@@ -991,6 +996,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
+		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
+
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
@@ -1057,7 +1064,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							h.Div(
 								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
 							).Class("mr-auto"),
-							GetActionsComponent(ctx),
+							h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
+								return h.Div().Id(actionsComponentTeleportToID)
+							}),
 						).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
 					).
 						Elevation(0),
@@ -1255,6 +1264,8 @@ func (b *Builder) initMux() {
 	)
 
 	for _, m := range b.models {
+		m.listing.setup()
+
 		pluralUri := inflection.Plural(m.uriName)
 		info := m.Info()
 		routePath := info.ListingHref()

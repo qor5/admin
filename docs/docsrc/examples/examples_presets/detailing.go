@@ -16,13 +16,22 @@ import (
 
 // @snippet_begin(PresetsDetailPageTopNotesSample)
 
-type ActivityNote struct {
+type Note struct {
 	ID         int
 	SourceType string
 	SourceID   int
 	Content    string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+func addListener(ctx *web.EventContext, v any) h.HTMLComponent {
+	simpleReload := web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go()
+	return web.Listen(
+		presets.NotifModelsCreated(v), simpleReload,
+		presets.NotifModelsUpdated(v), simpleReload,
+		presets.NotifModelsDeleted(v), simpleReload,
+	)
 }
 
 func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
@@ -32,7 +41,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 	dp *presets.DetailingBuilder,
 ) {
 	cust, cl, ce, dp = PresetsEditingCustomizationValidation(b, db)
-	err := db.AutoMigrate(&ActivityNote{})
+	err := db.AutoMigrate(&Note{})
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +57,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 			title = cu.Description
 		}
 
-		var notes []*ActivityNote
+		var notes []*Note
 		err := db.Where("source_type = 'Customer' AND source_id = ?", cu.ID).
 			Order("id DESC").
 			Find(&notes).Error
@@ -59,7 +68,7 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 		dt := vx.DataTable(notes).WithoutHeader(true).LoadMoreAt(2, "Show More")
 
 		dt.Column("Content").CellComponentFunc(func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-			n := obj.(*ActivityNote)
+			n := obj.(*Note)
 			return h.Td(h.Div(
 				h.Div(
 					VIcon("mdi-message-reply-text").Color("blue").Size(SizeSmall).Class("pr-2"),
@@ -75,11 +84,10 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 		cusID := fmt.Sprint(cu.ID)
 		dt.RowMenuItemFuncs(presets.EditDeleteRowMenuItemFuncs(mi, mi.PresetsPrefix()+"/notes", url.Values{"model": []string{"Customer"}, "model_id": []string{cusID}})...)
 
-		return vx.Card(
-			dt,
-		).HeaderTitle(title).
+		return vx.Card(dt).HeaderTitle(title).
 			Actions(
-				VBtn("Add ActivityNote").
+				addListener(ctx, &Note{}),
+				VBtn("Add Note").
 					Attr("@click",
 						web.POST().EventFunc(actions.New).
 							Query("model", "Customer").
@@ -90,11 +98,11 @@ func PresetsDetailPageTopNotes(b *presets.Builder, db *gorm.DB) (
 			).Class("mb-4").Variant(VariantElevated)
 	})
 
-	b.Model(&ActivityNote{}).
+	b.Model(&Note{}).
 		InMenu(false).
 		Editing("Content").
 		SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-			note := obj.(*ActivityNote)
+			note := obj.(*Note)
 			note.SourceID = ctx.ParamAsInt("model_id")
 			note.SourceType = ctx.R.FormValue("model")
 		})
@@ -142,6 +150,9 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		return vx.Card(detail).HeaderTitle("Details").Variant(VariantElevated).
 			Actions(
+				web.Listen(
+					cust.NotifModelsUpdated(), web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go(),
+				),
 				VBtn("Agree Terms").
 					Class("mr-2").
 					Attr("@click", web.POST().
@@ -162,7 +173,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 			).Class("mb-4")
 	})
 
-	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext) (err error) {
+	dp.Action("AgreeTerms").UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
 		if ctx.R.FormValue("Agree") != "true" {
 			ve := &web.ValidationErrors{}
 			ve.GlobalError("You must agree the terms")
@@ -172,7 +183,9 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		err = db.Model(&Customer{}).Where("id = ?", id).
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
-
+		if err == nil {
+			r.Emit(presets.NotifModelsUpdated(&Customer{}), presets.PayloadModelsUpdated{Ids: []string{id}})
+		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
 		var alert h.HTMLComponent
@@ -256,6 +269,8 @@ func PresetsDetailPageCards(b *presets.Builder, db *gorm.DB) (
 
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
+
+				addListener(ctx, &CreditCard{}),
 				VBtn("Add Card").
 					Attr("@click",
 						web.POST().

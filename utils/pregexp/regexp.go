@@ -1,14 +1,30 @@
-package testflow
+package pregexp
 
 import (
 	"regexp"
 	"strings"
 
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/pkg/errors"
 )
 
+var regexps = cmap.New[*regexp.Regexp]()
+
+func MustCompile(pattern string) *regexp.Regexp {
+	v, ok := regexps.Get(pattern)
+	if ok && v != nil {
+		return v
+	}
+	return regexps.Upsert(pattern, nil, func(exist bool, valueInMap *regexp.Regexp, _ *regexp.Regexp) *regexp.Regexp {
+		if exist {
+			return valueInMap
+		}
+		return regexp.MustCompile(pattern)
+	})
+}
+
 func Match(pattern, text string) ([][]string, error) {
-	subs := regexp.MustCompile(pattern).FindAllStringSubmatch(text, -1)
+	subs := MustCompile(pattern).FindAllStringSubmatch(text, -1)
 	if len(subs) <= 0 {
 		return nil, errors.Errorf("MatchFailed: %s", pattern)
 	}
@@ -45,7 +61,7 @@ func MatchOneThen(pattern, text string, subIdx int) (string, error) {
 }
 
 func NamedMatchOne(pattern, text string) (map[string]string, error) {
-	re := regexp.MustCompile(pattern)
+	re := MustCompile(pattern)
 
 	subs := re.FindAllStringSubmatch(text, -1)
 	if len(subs) != 1 {
@@ -60,4 +76,21 @@ func NamedMatchOne(pattern, text string) (map[string]string, error) {
 		}
 	}
 	return m, nil
+}
+
+func ReplaceAllSubmatchFunc(pattern, str string, repl func(match string, groups [][]int) string) string {
+	var builder strings.Builder
+	var lastIndex int
+	for _, v := range MustCompile(pattern).FindAllSubmatchIndex([]byte(str), -1) {
+		groups := [][]int{}
+		first := v[0]
+		for i := 0; i < len(v); i += 2 {
+			groups = append(groups, []int{v[i] - first, v[i+1] - first})
+		}
+		builder.WriteString(str[lastIndex:v[0]])
+		builder.WriteString(repl(str[v[0]:v[1]], groups))
+		lastIndex = v[1]
+	}
+	builder.WriteString(str[lastIndex:])
+	return builder.String()
 }

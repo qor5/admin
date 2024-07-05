@@ -29,6 +29,7 @@ type Builder struct {
 	ab                *activity.Builder
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
+	autoSchedule      bool
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
@@ -42,6 +43,11 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
+	return b
+}
+
+func (b *Builder) AutoSchedule(v bool) (r *Builder) {
+	b.autoSchedule = v
 	return b
 }
 
@@ -213,6 +219,11 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 }
 
 func (b *Builder) Install(pb *presets.Builder) error {
+	if b.autoSchedule {
+		defer func() {
+			go RunPublisher(b.db, b.storage, b)
+		}()
+	}
 	pb.FieldDefaults(presets.LIST).
 		FieldType(Status{}).
 		ComponentFunc(StatusListFunc())

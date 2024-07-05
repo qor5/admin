@@ -4,9 +4,8 @@ package examples_vuetify
 import (
 	"mime/multipart"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/examples"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )
@@ -40,7 +39,7 @@ func VuetifyBasicInputs(ctx *web.EventContext) (pr web.PageResponse, err error) 
 	}
 
 	pr.Body = VContainer(
-		utils.PrettyFormAsJSON(ctx),
+		examples.PrettyFormAsJSON(ctx),
 		web.Scope(
 			VTextField().
 				Label("Form ValueIs").

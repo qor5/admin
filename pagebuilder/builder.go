@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -92,6 +93,7 @@ type Builder struct {
 	templateEnabled   bool
 	expendContainers  bool
 	pageEnabled       bool
+	previewContainer  bool
 	templateInstall   presets.ModelInstallFunc
 	pageInstall       presets.ModelInstallFunc
 	categoryInstall   presets.ModelInstallFunc
@@ -124,6 +126,7 @@ func newBuilder(prefix string, db *gorm.DB) *Builder {
 		templateEnabled:   true,
 		expendContainers:  true,
 		pageEnabled:       true,
+		previewContainer:  true,
 	}
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
@@ -275,6 +278,11 @@ func (b *Builder) PageEnabled(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) PreviewContainer(v bool) (r *Builder) {
+	b.previewContainer = v
+	return b
+}
+
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
@@ -320,12 +328,33 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 }
 
+func (b *Builder) configPageSaver(pb *presets.Builder) (mb *presets.ModelBuilder) {
+	mb = pb.Model(&Page{})
+	eb := mb.Editing()
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			p := obj.(*Page)
+			if p.Slug != "" {
+				p.Slug = path.Clean(p.Slug)
+			}
+			funcName := ctx.R.FormValue(web.EventFuncIDName)
+			if funcName == publish.EventDuplicateVersion {
+				var fromPage Page
+				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+				p.SEO = fromPage.SEO
+			}
+			return in(obj, id, ctx)
+		}
+	})
+	return
+}
+
 func (b *Builder) Install(pb *presets.Builder) (err error) {
 	defer b.ps.Build()
 	b.ps.I18n(pb.GetI18n())
 	if b.pageEnabled {
 		var r *ModelBuilder
-		r = b.Model(pb.Model(&Page{}))
+		r = b.Model(b.configPageSaver(pb))
 		b.installAsset(pb)
 		b.configEditor(r)
 		b.configTemplateAndPage(pb, r)
@@ -1138,6 +1167,12 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			b.firstOrCreateDemoContainers(ctx)
+			return in(model, params, ctx)
+		}
+	})
 	listing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		return []*vx.FilterItem{
 			{
@@ -1200,6 +1235,19 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		pm.Use(b.l10n)
 	}
 	return
+}
+
+func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext) {
+	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+	localeCodes := []string{locale}
+	if b.l10n != nil {
+		localeCodes = b.l10n.GetSupportLocaleCodes()
+	}
+	for _, con := range b.containerBuilders {
+		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
+			continue
+		}
+	}
 }
 
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
@@ -1344,13 +1392,6 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	b.warpSaver()
-	var localeCode string
-	if b.builder.l10n != nil {
-		localeCode = "International"
-	}
-	if err := b.firstOrCreate(m, localeCode); err != nil {
-		panic(err)
-	}
 	return b
 }
 
@@ -1506,25 +1547,62 @@ func (b *ContainerBuilder) getContainerDataID(id int) string {
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
 }
 
-func (b *ContainerBuilder) firstOrCreate(obj interface{}, locale string) (err error) {
-	db := b.builder.db
-	m := DemoContainer{}
-	db.Where("model_name = ?", b.name).First(&m)
-	if m.ID > 0 {
+func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
+	var (
+		db   = b.builder.db
+		obj  = b.mb.NewModel()
+		cons []*DemoContainer
+		m    = &DemoContainer{}
+	)
+	if len(localeCodes) == 0 {
 		return
 	}
-	if err = db.Create(obj).Error; err != nil {
+	return db.Transaction(func(tx *gorm.DB) (vErr error) {
+		tx.Where("model_name = ? and locale_code in ? ", b.name, localeCodes).Find(&cons)
+		if len(cons) == 0 {
+			if vErr = tx.Create(obj).Error; vErr != nil {
+				return
+			}
+			modelID := reflectutils.MustGet(obj, "ID").(uint)
+			m = &DemoContainer{
+				ModelName: b.name,
+				ModelID:   modelID,
+				Filled:    false,
+				Locale:    l10n.Locale{LocaleCode: localeCodes[0]},
+			}
+			if vErr = tx.Create(m).Error; vErr != nil {
+				return
+			}
+			slices.Delete(localeCodes, 0, 1)
+
+		} else {
+			m = cons[0]
+			slices.DeleteFunc(localeCodes, func(s string) bool {
+				for _, con := range cons {
+					if con.LocaleCode == s {
+						return true
+					}
+				}
+				return false
+			})
+		}
+		for _, localeCode := range localeCodes {
+			if localeCode == "" {
+				continue
+			}
+			if vErr = tx.Create(&DemoContainer{
+				Model:     gorm.Model{ID: m.ID},
+				ModelName: b.name,
+				ModelID:   m.ModelID,
+				Filled:    false,
+				Locale:    l10n.Locale{LocaleCode: localeCode},
+			}).Error; vErr != nil {
+				return
+			}
+		}
 		return
-	}
-	modelID := reflectutils.MustGet(obj, "ID")
-	m.Locale.LocaleCode = locale
-	m.ModelName = b.name
-	err = db.Model(DemoContainer{}).Create(map[string]interface{}{
-		"locale_code": locale,
-		"model_name":  b.name,
-		"model_id":    modelID,
-		"filled":      false,
-	}).Error
+	})
+
 	return
 }
 
@@ -1564,15 +1642,8 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := fmt.Sprintf(`vars.%s=container_data_id;vars.containerTab="%s";`, paramContainerDataID, EditorTabLayers) +
-		removeVirtualElement() + ";" +
-		web.Plaid().
-			EventFunc(ShowSortedContainerDrawerEvent).
-			Query(paramStatus, ctx.Param(paramStatus)).
-			Query(paramContainerDataID, web.Var("container_data_id")).
-			MergeQuery(true).
-			Go() + ";" +
+func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
+	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
 		web.Plaid().
 			PushState(true).
 			MergeQuery(true).
@@ -1586,13 +1657,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
-	addAction := web.Plaid().ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState() +
-		fmt.Sprintf(`;%s;vars.containerTab="%s";`, addVirtualELeToContainer(web.Var("container_data_id")), EditorTabAdd) +
-		web.Plaid().
-			PushState(true).
-			MergeQuery(true).
-			Query(paramContainerID, web.Var("container_id")).
-			RunPushState()
+	addAction := addVirtualELeToContainer(web.Var("container_data_id")) + web.Plaid().EventFunc(NewContainerDialogEvent).Query(paramContainerID, web.Var("container_id")).Go()
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).
@@ -1665,6 +1730,7 @@ func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.Event
 		return
 	}
 	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Go()
+	presets.ShowMessage(&r, "success", "")
 	return
 }
 

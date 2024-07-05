@@ -24,7 +24,7 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 }
 
 func ShowMessage(r *web.EventResponse, msg string, color string) {
-	if r == nil || msg == "" {
+	if msg == "" {
 		return
 	}
 
@@ -32,12 +32,9 @@ func ShowMessage(r *web.EventResponse, msg string, color string) {
 		color = "success"
 	}
 
-	msgJSON := h.JSONString(msg)
-	colorJSON := h.JSONString(color)
-
 	web.AppendRunScripts(r, fmt.Sprintf(
 		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
-		msgJSON, colorJSON))
+		h.JSONString(msg), h.JSONString(color)))
 }
 
 func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
@@ -60,10 +57,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(ctx.R.RequestURI).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamInDialog, true).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(
@@ -88,10 +82,7 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(ctx.R.RequestURI).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamInDialog, true).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(
@@ -103,10 +94,31 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 	}
 }
 
-func isInDialogFromQuery(ctx *web.EventContext) bool {
-	return ctx.R.URL.Query().Get(ParamInDialog) == "true"
+func copyURLWithQueriesRemoved(u *url.URL, qs ...string) *url.URL {
+	newU, _ := url.Parse(u.String())
+	newQuery := newU.Query()
+	for _, k := range qs {
+		newQuery.Del(k)
+	}
+	newU.RawQuery = newQuery.Encode()
+	return newU
 }
 
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+func UpdateToPortal(update *web.PortalUpdate) *web.PortalBuilder {
+	return web.Portal().Name(update.Name).Children(
+		update.Body,
+	)
+}
+
+func toValidationErrors(err error) *web.ValidationErrors {
+	if vErr, ok := err.(*web.ValidationErrors); ok {
+		return vErr
+	}
+	vErr := &web.ValidationErrors{}
+	vErr.GlobalError(err.Error())
+	return vErr
 }

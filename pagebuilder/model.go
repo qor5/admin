@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 
 	"github.com/sunfmin/reflectutils"
 
@@ -27,7 +27,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
 
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
@@ -57,6 +56,8 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
+	b.editor.RegisterEventFunc(NewContainerDialogEvent, b.newContainerDialog)
+	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
 	b.preview = web.Page(b.previewContent)
 }
 
@@ -192,7 +193,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 											),
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
-										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
+										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s && !element.hidden?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
 										Attr("v-bind", "props", "@click", clickColumnEvent).
 										Attr(web.VAssign("vars",
 											fmt.Sprintf(`{%s:"%s"}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
@@ -203,7 +204,15 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 					).Attr("#item", " { element } "),
 				),
 			),
-		).Class("pa-4 pt-2"),
+		).Class("px-4 overflow-y-auto").MaxHeight("86vh"),
+		VBtn("").Children(
+			web.Slot(
+				VIcon("mdi-plus-circle-outline"),
+			).Name(VSlotPrepend),
+			h.Span("Add Component").Class("ml-5"),
+		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
+			Height(50).
+			Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
@@ -227,24 +236,10 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-	r.RunScript = fmt.Sprintf(`vars.%s="%s";`, paramContainerDataID, cb.getContainerDataID(modelID)) +
-		web.Plaid().PushState(true).MergeQuery(true).
-			Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-			Query(paramContainerID, newContainerID).RunPushState() +
-		";" + web.Plaid().
-		EventFunc(ReloadRenderPageOrTemplateEvent).
-		MergeQuery(true).
-		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-		Query(paramContainerID, newContainerID).
-		Go() + ";" +
-		web.Plaid().
-			URL(fmt.Sprintf(`%s/%s`, b.builder.prefix, inflection.Plural(strcase.ToKebab(cb.name)))).
-			EventFunc(actions.Edit).
-			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-			Query(presets.ParamOverlay, actions.Content).
-			Query(presets.ParamID, modelID).
-			Go()
 
+	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
+		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
+		Query(paramContainerID, newContainerID).Go()
 	return
 }
 
@@ -324,6 +319,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		";" +
 		web.Plaid().
 			EventFunc(ShowSortedContainerDrawerEvent).
+			MergeQuery(true).
 			Query(paramStatus, ctx.Param(paramStatus)).
 			Go()
 	return
@@ -450,29 +446,37 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
-			cover := builder.cover
-			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(builder.name, " ", "")+".svg")
-			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+				Query(paramModelName, builder.name).
+				Query(paramContainerID, ctx.Param(paramContainerID)).
+				Go()
 			listItems = append(listItems,
-				VListItem(
-					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2"),
-				).Attr("@click",
-					web.Plaid().EventFunc(AddContainerEvent).
-						MergeQuery(true).
+				VHover(
+					web.Slot(
+						VListItem(
+							VListItemTitle(h.Text(containerName)),
+							web.Slot(VBtn("Add").Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+						).Attr("v-bind", "props", ":active", "isHovering").
+							Class("cursor-pointer").
+							Attr("@click", fmt.Sprintf(`isHovering?%s:null`, addContainerEvent)).
+							ActiveColor(ColorPrimary),
+					).Name("default").Scope(`{isHovering, props }`),
+				).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
+					web.Plaid().EventFunc(ContainerPreviewEvent).
 						Query(paramModelName, builder.name).
-						Query(paramContainerName, builder.name).
 						Go(),
-				))
+				),
+				),
+			)
+
 		}
 		containers = append(containers, VListGroup(
 			web.Slot(
 				VListItem(
 					VListItemTitle(
 						h.Text(groupName),
-					).Class("text-body-1"),
+					),
 				).Attr("v-bind", "props"),
 			).Name("activator").Scope(" { props}"),
 			h.Components(listItems...),
@@ -499,23 +503,17 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			c := b.builder.ContainerByName(builder.ModelName)
-			cover := c.cover
-			if cover == "" {
-				cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(c.name, " ", "")+".svg")
-			}
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
 			listItems = append(listItems,
 				VListItem(
-					VListItemTitle(h.Text(containerName)),
-					VListItemSubtitle(VImg().Src(cover).Height(100)).Class("border-xl mt-2").
-						Attr("@click", web.Plaid().
-							EventFunc(AddContainerEvent).
-							MergeQuery(true).
-							Query(paramContainerName, builder.ModelName).
-							Query(paramModelName, builder.ModelName).
-							Query(paramModelID, builder.ModelID).
-							Query(paramSharedContainer, "true").
-							Go()),
+					VListItemTitle(h.Text(containerName)).Attr("@click", web.Plaid().
+						EventFunc(AddContainerEvent).
+						MergeQuery(true).
+						Query(paramContainerName, builder.ModelName).
+						Query(paramModelName, builder.ModelName).
+						Query(paramModelID, builder.ModelID).
+						Query(paramSharedContainer, "true").
+						Go()),
 				).Value(containerName))
 		}
 
@@ -523,7 +521,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			web.Slot(
 				VListItem(
 					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props").Class("text-body-1"),
+				).Attr("v-bind", "props"),
 			).Name("activator").Scope(" {  props }"),
 			h.Components(listItems...),
 		).Value(groupName))
@@ -566,7 +564,7 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 	var body h.HTMLComponent
 	obj := b.mb.NewModel()
 
-	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
@@ -713,7 +711,7 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r web.PageResponse, err error) {
 	var body h.HTMLComponent
 
-	if body, err = b.renderPageOrTemplate(ctx, obj, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
 		return
 	}
 	r.Body = web.Portal(
@@ -738,7 +736,7 @@ func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (page
 	return
 }
 
-func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface{}, isEditor bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface{}, isEditor, isIframe bool) (r h.HTMLComponent, err error) {
 	var (
 		isTpl                       = ctx.R.FormValue(paramsTpl) != ""
 		status                      = publish.StatusDraft
@@ -775,6 +773,11 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	if err != nil {
 		return
 	}
+	r = b.rendering(comps, ctx, obj, locale, isEditor, isIframe, isReadonly)
+	return
+}
+
+func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
@@ -787,8 +790,10 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			IsPreview:  !isEditor,
 			SeoTags:    seoTags,
 		}
+		cookieHightName := iframePreviewHeightName
 
 		if isEditor {
+			cookieHightName = iframeHeightName
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
@@ -903,10 +908,9 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			}
 		}
 
-		if isEditor {
-			iframeHeightCookie, _ := ctx.R.Cookie(iframeHeightName)
+		if isIframe {
+			iframeHeightCookie, _ := ctx.R.Cookie(cookieHightName)
 			iframeValue := "1000px"
-			_ = iframeValue
 			if iframeHeightCookie != nil {
 				iframeValue = iframeHeightCookie.Value
 			}
@@ -935,31 +939,39 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 			scrollIframe := h.Tag("vx-scroll-iframe").Attr(
 				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
 				"iframe-height", iframeValue,
-				"iframe-height-name", iframeHeightName,
+				"iframe-height-name", cookieHightName,
 				"width", width,
-				":container-data-id", fmt.Sprintf(`vars.containerTab=="%s"?"%s":""`, EditorTabAdd, ctx.Param(paramContainerDataID)),
-				"ref", "scrollIframe").
-				Attr(web.VAssign("vars",
-					fmt.Sprintf(`{hasContainer:%v,el:$}`, len(comps)))...)
-			r = scrollIframe
-			if !isReadonly && len(comps) == 0 {
-				r = h.Components(
-					scrollIframe.Attr("v-show", fmt.Sprintf(`vars.containerTab=="%s"`, EditorTabAdd)),
-					h.Div(
-						h.RawHTML(defaultContainerEmptyIcon),
-						h.Div(h.Text("Please add your elements first")),
-					).Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh").
-						Attr("v-show", fmt.Sprintf(`vars.containerTab!="%s"`, EditorTabAdd)),
-				)
-				return
+				"ref", "scrollIframe")
+			if isEditor {
+				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
+
+				if !isReadonly && len(comps) == 0 {
+					r = h.Components(
+						h.Div(
+							VCard(
+								VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
+								VCardTitle(h.Text("Start building a page")).Class("d-flex justify-center"),
+								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
+								VCardActions(
+									VBtn("Add Component").Color(ColorPrimary).Variant(VariantElevated).
+										Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
+								).Class("d-flex justify-center"),
+							).Flat(true),
+						).Attr("v-show", "vars.emptyIframe").
+							Attr(web.VAssign("vars", `{emptyIframe:true}`)...).
+							Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
+						scrollIframe,
+					)
+					return
+				}
 			}
+			r = scrollIframe
 
 		} else {
 			r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
 			ctx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
 		}
 	}
-
 	return
 }
 
@@ -1004,9 +1016,52 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 	return
 }
 
+func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
+	var (
+		modelName       = ctx.Param(paramModelName)
+		sharedContainer = ctx.Param(paramSharedContainer)
+		modelID         = ctx.ParamAsInt(paramModelID)
+	)
+	if sharedContainer != "true" || modelID == 0 {
+		var con *DemoContainer
+		err = withLocale(
+			b.builder,
+			b.db.
+				Where("model_name = ?", modelName),
+			locale,
+		).
+			First(&con).Error
+		if err != nil {
+			return
+		}
+		modelID = int(con.ModelID)
+	}
+
+	containerBuilder := b.builder.ContainerByName(modelName)
+	device, _ := b.builder.getDevice(ctx)
+
+	displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+	input := RenderInput{
+		IsEditor:    isEditor,
+		IsReadonly:  IsReadonly,
+		Device:      device,
+		ContainerId: "",
+		DisplayName: displayName,
+	}
+	obj := containerBuilder.NewModel()
+	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error
+	if err != nil {
+		return
+	}
+	pure := containerBuilder.renderFunc(obj, &input, ctx)
+	r = b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, IsReadonly, false, false,
+		containerBuilder.getContainerDataID(modelID), modelName, &input)
+	return
+}
+
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	obj := b.mb.NewModel()
-	r.Body, err = b.renderPageOrTemplate(ctx, obj, false)
+	r.Body, err = b.renderPageOrTemplate(ctx, obj, false, false)
 	if err != nil {
 		return
 	}
@@ -1155,86 +1210,92 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 
 func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	eb := mb.Editing()
-	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		if p, ok := obj.(*Page); ok {
-			if p.Slug != "" {
-				p.Slug = path.Clean(p.Slug)
-			}
-			funcName := ctx.R.FormValue(web.EventFuncIDName)
-			if funcName == publish.EventDuplicateVersion {
-				var fromPage Page
-				eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
-				p.SEO = fromPage.SEO
-			}
-		}
-		var (
-			pageID                             int
-			version, localeCode, parentVersion string
-		)
-		if id != "" {
-			ctx.R.Form.Set(presets.ParamID, id)
-			pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
-		}
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-
-		if p, ok := obj.(publish.VersionInterface); ok {
-			parentVersion = p.EmbedVersion().ParentVersion
-			version = p.EmbedVersion().Version
-		}
-		if p, ok := obj.(l10n.LocaleInterface); ok {
-			if p.EmbedLocale().LocaleCode == "" {
-				reflectutils.Set(obj, "LocaleCode", locale)
-			}
-			localeCode = p.EmbedLocale().LocaleCode
-		}
-		err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
-				return
-			}
-			if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
-				if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
-					return
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+			var localeCode string
+			if p, ok := obj.(l10n.LocaleInterface); ok {
+				if p.EmbedLocale().LocaleCode == "" {
+					if err = reflectutils.Set(obj, "LocaleCode", locale); err != nil {
+						return
+					}
 				}
+				localeCode = p.EmbedLocale().LocaleCode
+			}
+
+			if p, ok := obj.(*Page); ok {
+				if p.Slug != "" {
+					p.Slug = path.Clean(p.Slug)
+				}
+				funcName := ctx.R.FormValue(web.EventFuncIDName)
+				if funcName == publish.EventDuplicateVersion {
+					var fromPage Page
+					eb.Fetcher(&fromPage, ctx.Param(presets.ParamID), ctx)
+					p.SEO = fromPage.SEO
+				}
+			}
+			if err = in(obj, id, ctx); err != nil {
 				return
 			}
 
-			if v := ctx.R.FormValue(templateSelectedID); v != "" {
-				var tplID int
-				tplID, inerr = strconv.Atoi(v)
-				if inerr != nil {
-					return
-				}
-				if b.builder.l10n == nil {
-					localeCode = ""
-				}
-				if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
-					panic(inerr)
-				}
+			var (
+				pageID                 int
+				version, parentVersion string
+			)
+			if id != "" {
+				ctx.R.Form.Set(presets.ParamID, id)
+				pageID, _, _ = b.getPrimaryColumnValuesBySlug(ctx)
 			}
-			if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n.FromID).(string)
-				fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
-				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
-
-				var fromIDInt int
-				fromIDInt, err = strconv.Atoi(fromID)
-				if err != nil {
+			if p, ok := obj.(publish.VersionInterface); ok {
+				parentVersion = p.EmbedVersion().ParentVersion
+				version = p.EmbedVersion().Version
+			}
+			err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
+				if strings.Contains(ctx.R.RequestURI, publish.EventDuplicateVersion) {
+					if inerr = b.copyContainersToNewPageVersion(tx, pageID, localeCode, parentVersion, version); inerr != nil {
+						return
+					}
 					return
 				}
-				if p, ok := obj.(*Page); ok {
-					if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+
+				if v := ctx.R.FormValue(templateSelectedID); v != "" {
+					var tplID int
+					tplID, inerr = strconv.Atoi(v)
+					if inerr != nil {
+						return
+					}
+					if b.builder.l10n == nil {
+						localeCode = ""
+					}
+					if inerr = b.copyContainersToAnotherPage(tx, tplID, templateVersion, localeCode, pageID, version, localeCode); inerr != nil {
 						panic(inerr)
 					}
 				}
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
-					panic(inerr)
+				if b.builder.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
+					fromID := ctx.R.Context().Value(l10n.FromID).(string)
+					fromVersion := ctx.R.Context().Value(l10n.FromVersion).(string)
+					fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+
+					var fromIDInt int
+					fromIDInt, err = strconv.Atoi(fromID)
+					if err != nil {
+						return
+					}
+					if p, ok := obj.(*Page); ok {
+						if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+							panic(inerr)
+						}
+					}
+					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+						panic(inerr)
+					}
+					return
 				}
 				return
-			}
-			return
-		})
+			})
 
-		return err
+			return err
+		}
 	})
 }
 
@@ -1256,4 +1317,89 @@ func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context 
 
 func (b *ModelBuilder) ExistedL10n() bool {
 	return b.builder.l10n != nil
+}
+
+func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		containers      = b.renderContainersList(ctx)
+		afterLeaveEvent = removeVirtualElement() + "vars.emptyIframe = true;"
+		containerDataID = ctx.Param(paramContainerDataID)
+	)
+	if containerDataID != "" {
+		afterLeaveEvent += scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID))
+	}
+	emptyContent := VCard(
+		VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
+		VCardTitle(h.Text("Build your pages")).Class("d-flex justify-center"),
+		VCardSubtitle(h.Text("Place an element from QOR5 library.")).Class("d-flex justify-center"),
+	).Flat(true)
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: addContainerDialogPortal,
+		Body: web.Scope(
+			VDialog(
+				VSheet(
+					VSheet(
+						VCard(
+							VCardTitle(h.Text("New Element")),
+							VCardText(containers),
+						).Elevation(0),
+					).Class(W50).Class("pa-4", "overflow-y-auto"),
+					VSheet(
+						h.Div(
+							VSpacer(),
+							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
+						).Class("d-flex justify-end").Style("height:40px"),
+						VContainer(
+							VRow(
+								VCol(
+									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)),
+								),
+							).Align(Center).Justify(Center).Attr("style", "height:420px"),
+						).Class(W100, "py-0"),
+					).Class(W50),
+				).Class("d-inline-flex"),
+			).Attr("v-model", "locals.dialog").
+				ScrollStrategy("none").
+				Attr("@after-leave", afterLeaveEvent).
+				Width(665).Height(460),
+		).VSlot(`{locals}`).Init(`{dialog:true}`),
+	})
+	r.RunScript = "vars.emptyIframe = false "
+	return
+}
+
+func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var previewContainer h.HTMLComponent
+	var (
+		ID, _, locale = b.getPrimaryColumnValuesBySlug(ctx)
+		obj           = b.mb.NewModel()
+	)
+	if err = b.db.First(&obj, ID).Error; err != nil {
+		return
+	}
+	var body h.HTMLComponent
+	if !b.builder.previewContainer {
+		containerBuilder := b.builder.ContainerByName(ctx.Param(paramModelName))
+		cover := containerBuilder.cover
+		if cover == "" {
+			cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(containerBuilder.name, " ", "")+".svg")
+		}
+		body = VImg().Src(cover)
+	} else {
+		previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
+		if err != nil {
+			return
+		}
+		iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
+		body = h.Div(iframe).
+			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")
+
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: addContainerDialogContentPortal,
+		Body: VCard(body).MaxHeight(200).Elevation(0),
+	})
+	return
 }

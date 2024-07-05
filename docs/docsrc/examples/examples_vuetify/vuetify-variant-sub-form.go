@@ -3,9 +3,8 @@ package examples_vuetify
 // @snippet_begin(VuetifyVariantSubForm)
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/docs/docsrc/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/examples"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )
@@ -30,7 +29,7 @@ func VuetifyVariantSubForm(ctx *web.EventContext) (pr web.PageResponse, err erro
 	var verr web.ValidationErrors
 
 	pr.Body = VContainer(
-		utils.PrettyFormAsJSON(ctx),
+		examples.PrettyFormAsJSON(ctx),
 		web.Scope(
 			VSelect().
 				Items([]string{

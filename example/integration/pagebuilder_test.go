@@ -51,11 +51,15 @@ SELECT setval('container_list_content_id_seq', 10, true);
 INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
 SELECT setval('container_headers_id_seq', 10, true);
 
+`, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers"}))
+
+var pageBuilderDemoContainerTestData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+SELECT setval('page_builder_pages_id_seq', 10, true);
 INSERT INTO public.container_in_numbers (id, add_top_space, add_bottom_space, anchor_id, heading, items) VALUES (1, false, false, 'test1', '', 'null');
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'International');
-
-
-`, []string{"page_builder_pages", "page_builder_containers", "container_list_content", "container_headers", "container_in_numbers", "page_builder_demo_containers"}))
+`, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers"}))
 
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
@@ -121,13 +125,43 @@ func TestPageBuilder(t *testing.T) {
 				var page pagebuilder.Page
 				TestDB.First(&page, "slug = ?", "/hello4")
 				if page.LocaleCode != "International" {
-					t.Errorf("wrong locale code, expected International, got %#+v", page)
+					t.Errorf("wrong locale code, expected International, got %#+v", page.LocaleCode)
+				}
+			},
+		},
+		{
+			Name:  "Page Builder Editor Duplicate A Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International?__execute_event__=publish_EventDuplicateVersion").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var pages []*pagebuilder.Page
+				TestDB.Order("id DESC, version DESC").Find(&pages)
+				if len(pages) != 2 {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
+				}
+				if pages[0].Slug != pages[1].Slug {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
+				}
+				var containers []*pagebuilder.Container
+				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+					pages[0].Version.Version)
+				if len(containers) == 0 {
+					t.Error("Container not duplicated", containers)
 				}
 			},
 		},
 
 		{
-			Name:  "Page Builder Editor Duplicate A Page",
+			Name:  "Page Builder Detail Duplicate A Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
@@ -142,6 +176,11 @@ func TestPageBuilder(t *testing.T) {
 				TestDB.Order("id DESC, version DESC").Find(&pages)
 				if len(pages) != 2 {
 					t.Fatal("Page not duplicated", pages)
+					return
+				}
+				if pages[0].Slug != pages[1].Slug {
+					t.Fatalf("Page not duplicated %v", pages)
+					return
 				}
 				var containers []*pagebuilder.Container
 				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
@@ -170,6 +209,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"@change-debounced"},
 		},
+
 		{
 			Name:  "Page Builder add container",
 			Debug: true,
@@ -399,7 +439,7 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Add New Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/page_builder/pages-editors/1_v1_International").
 					EventFunc(pagebuilder.AddContainerEvent).
@@ -410,8 +450,8 @@ func TestPageBuilder(t *testing.T) {
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var cons []*pagebuilder.Container
 				TestDB.Order("id desc").Find(&cons)
-				if len(cons) != 3 {
-					t.Fatalf("add container failed, expected 3 cons, got %d", len(cons))
+				if len(cons) != 1 {
+					t.Fatalf("add container failed, expected 1 cons, got %d", len(cons))
 					return
 				}
 				if cons[0].ModelName != "InNumbers" {
@@ -434,7 +474,7 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Edit Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/page_builder/in-numbers?__execute_event__=presets_Update&id=1").
 					AddField("AnchorID", "test_in_numbers").
@@ -489,6 +529,32 @@ func TestPageBuilder(t *testing.T) {
 					return
 				}
 			},
+		},
+		{
+			Name:  "Page Builder add container dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International?__execute_event__=page_builder_NewContainerDialogEvent").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Navigation"},
+		},
+		{
+			Name:  "Page Builder preview demo container ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International?__execute_event__=page_builder_ContainerPreviewEvent&modelName=InNumbers").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test1"},
 		},
 	}
 

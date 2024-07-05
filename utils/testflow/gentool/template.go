@@ -36,9 +36,9 @@ func {{.FuncName}}(t *testing.T, f *Flow{{.FlowName}}) *testflow.Then {
 	r := multipartestutils.NewMultipartBuilder().
 		PageURL("{{.URL}}").
 		EventFunc({{.EventFunc}}).
-		{{range $key, $value := .Queries}}Query("{{$key}}", "{{$value}}").
+		{{range $key, $value := .Queries}}Query({{$key}}, {{$value}}).
 		{{end}}
-		{{range $key, $value := .FormFields}}AddField("{{$key}}", "{{$value}}").
+		{{range $key, $value := .FormFields}}AddField({{$key}}, {{$value}}).
 		{{end}}BuildEventFuncRequest()
 
 	w := httptest.NewRecorder()

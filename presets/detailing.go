@@ -234,7 +234,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		panic("action required")
 	}
 	id := ctx.R.FormValue(ParamID)
-	if err := action.updateFunc(id, ctx); err != nil || ctx.Flash != nil {
+	if err := action.updateFunc(id, ctx, &r); err != nil || ctx.Flash != nil {
 		if ctx.Flash == nil {
 			ctx.Flash = err
 		}
@@ -321,11 +321,12 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 // SaveDetailField EventFunc: click save button
 func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	key := ctx.Queries().Get(SectionFieldName)
+	id := ctx.Queries().Get(ParamID)
 
 	f := b.Section(key)
 
 	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, id, ctx)
 	if err != nil {
 		return
 	}
@@ -333,7 +334,7 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 		f.setter(obj, ctx)
 	}
 
-	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+	err = f.saver(obj, id, ctx)
 	if err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
@@ -347,6 +348,11 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 			Name:      f.name,
 			Label:     f.label,
 		}, ctx),
+	})
+
+	r.Emit(b.mb.NotifModelsUpdated(), PayloadModelsUpdated{
+		Ids:    []string{id},
+		Models: []any{obj},
 	})
 	return r, nil
 }
