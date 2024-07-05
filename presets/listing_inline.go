@@ -23,7 +23,7 @@ type InlineModelBuilder struct {
 
 const ParamParentID = "parent_id"
 
-func (parent *ModelBuilder) Inline(elementModel any, foreignKey string) *InlineModelBuilder {
+func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *InlineModelBuilder {
 	rtElement := reflect.TypeOf(elementModel)
 	for rtElement.Kind() != reflect.Ptr {
 		panic(errors.Errorf("element model %T is not a pointer", elementModel))

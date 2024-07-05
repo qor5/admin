@@ -118,10 +118,10 @@ func PresetsDetailInlineListing(b *presets.Builder, db *gorm.DB) (
 	mb = b.Model(&Customer{}).RightDrawerWidth("1000")
 	dp = mb.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
 
-	ccmb := mb.Inline(&CreditCard{}, "CustomerID")
+	ccmb := mb.InlineListing(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
 
-	ccmb2 := mb.Inline(&CreditCard{}, "CustomerID")
+	ccmb2 := mb.InlineListing(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }
