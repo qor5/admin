@@ -16,6 +16,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/qor5/x/v3 v3.0.6-0.20240705055210-716f92907046 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
