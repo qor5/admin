@@ -96,7 +96,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			exitHref                             string
 			readonly                             bool
 
-			containerDataID = ctx.R.FormValue(paramContainerDataID)
+			containerDataID = ctx.Param(paramContainerDataID)
 			obj             = m.mb.NewModel()
 		)
 		if containerDataID != "" {

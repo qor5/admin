@@ -941,7 +941,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				"iframe-height", iframeValue,
 				"iframe-height-name", cookieHightName,
 				"width", width,
-				":container-data-id", ctx.Param(paramContainerDataID),
+				"container-data-id", ctx.Param(paramContainerDataID),
 				"ref", "scrollIframe")
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
@@ -1357,7 +1357,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)),
 								),
 							).Align(Center).Justify(Center).Attr("style", "height:420px"),
-						).Class(W100),
+						).Class(W100, "py-0"),
 					).Class(W50),
 				).Class("d-inline-flex"),
 			).Attr("v-model", "locals.dialog").
@@ -1393,8 +1393,8 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 			return
 		}
 		iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
-		body = h.Div(h.Div(iframe).
-			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")).Class(H100)
+		body = h.Div(iframe).
+			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")
 
 	}
 

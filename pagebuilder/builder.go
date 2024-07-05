@@ -1732,6 +1732,7 @@ func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.Event
 		return
 	}
 	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Go()
+	presets.ShowMessage(&r, "success", "")
 	return
 }
 
