@@ -941,7 +941,6 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				"iframe-height", iframeValue,
 				"iframe-height-name", cookieHightName,
 				"width", width,
-				"container-data-id", ctx.Param(paramContainerDataID),
 				"ref", "scrollIframe")
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
