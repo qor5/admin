@@ -12,6 +12,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	h "github.com/theplant/htmlgo"
 )
 
 type ModelBuilder struct {
@@ -124,7 +125,9 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 
 	rmb := mb.listing.RowMenu()
 	// rmb.RowMenuItem("Edit").ComponentFunc(editRowMenuItemFunc(mb.Info(), "", url.Values{}))
-	rmb.RowMenuItem("Delete").ComponentFunc(deleteRowMenuItemFunc(mb.Info(), "", url.Values{}))
+	rmb.RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return deleteRowMenuItemFunc(mb.Info(), mb.Info().ListingHref(), url.Values{})(obj, id, ctx)
+	})
 	return
 }
 

@@ -111,7 +111,7 @@ func TestPresetsDetailing(t *testing.T) {
 	}
 }
 
-var detailInlineListingData = gofixtures.Data(gofixtures.Sql(`
+var detailNestedManyData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.customers (id, name, email, description, company_id, created_at, updated_at, approved_at, 
 term_agreed_at, approval_comment) VALUES (12, 'Felix 1', 'abc@example.com', '', 0, '2024-03-28 05:52:28.497536 +00:00', 
 '2024-03-28 05:52:28.497536 +00:00', null, null, '');
@@ -124,9 +124,9 @@ INSERT INTO public.notes (id, source_type, source_id, content, created_at, updat
 
 `, []string{"customers", "credit_cards", "notes"}))
 
-func TestPresetsDetailInlineListing(t *testing.T) {
+func TestPresetsDetailNestedMany(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	PresetsDetailInlineListing(pb, TestDB)
+	PresetsDetailNestedMany(pb, TestDB)
 
 	cases := []multipartestutils.TestCase{
 		{

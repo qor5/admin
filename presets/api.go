@@ -98,7 +98,12 @@ type ModelPlugin interface {
 	ModelInstall(pb *Builder, mb *ModelBuilder) (err error)
 }
 
+type FieldPlugin interface {
+	FieldInstall(fb *FieldBuilder) error
+}
+
 type (
+	FieldInstallFunc func(fb *FieldBuilder) error
 	ModelInstallFunc func(pb *Builder, mb *ModelBuilder) error
 	InstallFunc      func(pb *Builder) error
 )

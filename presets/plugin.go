@@ -1,5 +1,16 @@
 package presets
 
+func (fb *FieldBuilder) Use(vs ...FieldPlugin) (r *FieldBuilder) {
+	fb.plugins = append(fb.plugins, vs...) // Only for debug for now
+	for _, fp := range vs {
+		err := fp.FieldInstall(fb)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return fb
+}
+
 func (mb *ModelBuilder) Use(vs ...ModelPlugin) (r *ModelBuilder) {
 	mb.plugins = append(mb.plugins, vs...) // Only for debug for now
 	for _, mp := range vs {
@@ -8,7 +19,6 @@ func (mb *ModelBuilder) Use(vs ...ModelPlugin) (r *ModelBuilder) {
 			panic(err)
 		}
 	}
-
 	return mb
 }
 

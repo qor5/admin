@@ -67,6 +67,7 @@ type FieldBuilder struct {
 	context             context.Context
 	rt                  reflect.Type
 	nestedFieldsBuilder *FieldsBuilder
+	plugins             []FieldPlugin
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
@@ -130,18 +131,6 @@ func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *Fi
 		b.context = context.Background()
 	}
 	b.context = context.WithValue(b.context, key, val)
-	return b
-}
-
-type FieldPlugin interface {
-	Install(*FieldBuilder) error
-}
-
-func (b *FieldBuilder) Use(plugin FieldPlugin) (r *FieldBuilder) {
-	err := plugin.Install(b)
-	if err != nil {
-		panic(err)
-	}
 	return b
 }
 

@@ -15,7 +15,7 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type InlineModelBuilder struct {
+type NestedManyBuilder struct {
 	*ModelBuilder
 	parent     *ModelBuilder
 	foreignKey string
@@ -23,7 +23,7 @@ type InlineModelBuilder struct {
 
 const ParamParentID = "parent_id"
 
-func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *InlineModelBuilder {
+func (parent *ModelBuilder) NestedMany(elementModel any, foreignKey string) *NestedManyBuilder {
 	rtElement := reflect.TypeOf(elementModel)
 	for rtElement.Kind() != reflect.Ptr {
 		panic(errors.Errorf("element model %T is not a pointer", elementModel))
@@ -33,9 +33,21 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 	}
 
 	mb := parent.p.Model(elementModel).InMenu(false)
+	mb.Listing().PerPage(10).Except(foreignKey)
+	mb.Editing().Except(foreignKey)
 
-	foreignQuery := strcase.ToSnake(foreignKey) + " = ?"
-	mb.Listing().PerPage(10).Except(foreignKey).WrapSearchFunc(func(in SearchFunc) SearchFunc {
+	return &NestedManyBuilder{
+		ModelBuilder: mb,
+		parent:       parent,
+		foreignKey:   foreignKey,
+	}
+}
+
+func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
+	mb.URIName(fmt.Sprintf("%s-nested-%s", mb.parent.Info().URIName(), inflection.Plural(strcase.ToKebab(fb.name))))
+
+	foreignQuery := strcase.ToSnake(mb.foreignKey) + " = ?"
+	mb.Listing().WrapSearchFunc(func(in SearchFunc) SearchFunc {
 		return func(model any, params *SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 			compo := ListingCompoFromContext(ctx.R.Context())
 			if compo == nil || compo.ParentID == "" {
@@ -49,28 +61,18 @@ func (parent *ModelBuilder) InlineListing(elementModel any, foreignKey string) *
 			return in(model, params, ctx)
 		}
 	})
-	mb.Editing().Except(foreignKey).WrapSaveFunc(func(in SaveFunc) SaveFunc {
+	mb.Editing().WrapSaveFunc(func(in SaveFunc) SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			parentID := ctx.R.FormValue(ParamParentID)
 			if parentID == "" {
 				return perm.PermissionDenied
 			}
-			if err := reflectutils.Set(obj, foreignKey, parentID); err != nil {
+			if err := reflectutils.Set(obj, mb.foreignKey, parentID); err != nil {
 				return err
 			}
 			return in(obj, id, ctx)
 		}
 	})
-
-	return &InlineModelBuilder{
-		ModelBuilder: mb,
-		parent:       parent,
-		foreignKey:   foreignKey,
-	}
-}
-
-func (mb *InlineModelBuilder) Install(fb *FieldBuilder) error {
-	mb.URIName(fmt.Sprintf("%s-inline-%s", mb.parent.Info().URIName(), inflection.Plural(strcase.ToKebab(fb.name))))
 
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var pid string
