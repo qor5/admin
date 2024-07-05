@@ -25,10 +25,6 @@ const (
 	ParamOverlay                  = "overlay"
 	ParamOverlayAfterUpdateScript = "overlay_after_update_script"
 	ParamOverlayUpdateID          = "overlay_update_id"
-	ParamBulkActionName           = "bulk_action"
-	ParamListingActionName        = "listing_action"
-	ParamSelectedIds              = "selected_ids"
-	ParamListingQueries           = "presets_listing_queries"
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
 	ParamPortalName               = "portal_name"
 

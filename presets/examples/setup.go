@@ -112,6 +112,15 @@ func (*Product) TableName() string {
 	return "preset_products"
 }
 
+func addListener(v any) h.HTMLComponent {
+	simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
+	return web.Listen(
+		presets.NotifModelsCreated(v), simpleReload,
+		presets.NotifModelsUpdated(v), simpleReload,
+		presets.NotifModelsDeleted(v), simpleReload,
+	)
+}
+
 func Preset1(db *gorm.DB) (r *presets.Builder) {
 	err := db.AutoMigrate(
 		&Customer{},
@@ -171,6 +180,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			dt,
 		).HeaderTitle(field.Label).
 			Actions(
+				addListener(&Event{}),
 				VBtn("Add Event").
 					Variant(VariantFlat).Attr("@click",
 					web.Plaid().EventFunc(actions.New).
@@ -422,6 +432,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			dt,
 		).HeaderTitle(title).
 			Actions(
+				addListener(&Note{}),
 				VBtn("Add Note").
 					Variant(VariantFlat).
 					Attr("@click",
@@ -461,6 +472,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 
 		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
+				web.Listen(
+					m.NotifModelsUpdated(), web.Plaid().PushState(true).MergeQuery(true).Go(),
+				),
 				VBtn("Agree Terms").
 					Variant(VariantFlat).Class("mr-2").
 					Attr("@click", web.Plaid().
@@ -512,14 +526,9 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		dt.Column("Number")
 		dt.Column("ExpireYearMonth")
 
-		simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
 		return vx.Card(dt).HeaderTitle("Cards").
 			Actions(
-				web.Listen(
-					presets.NotifModelsCreated(&CreditCard{}), simpleReload,
-					presets.NotifModelsUpdated(&CreditCard{}), simpleReload,
-					presets.NotifModelsDeleted(&CreditCard{}), simpleReload,
-				),
+				addListener(&CreditCard{}),
 				VBtn("Add Card").
 					Variant(VariantFlat).
 					Attr("@click",

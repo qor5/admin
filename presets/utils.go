@@ -57,9 +57,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(mi.ListingHref()).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(
@@ -84,9 +82,7 @@ func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values
 			Query(ParamID, id).
 			URL(url)
 		if IsInDialog(ctx) {
-			onclick.URL(mi.ListingHref()).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamListingQueries, ctx.Queries().Encode())
+			onclick.URL(mi.ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		return VListItem(
 			web.Slot(

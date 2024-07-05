@@ -273,8 +273,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	)
 }
 
-func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
-	evCtx, _ := c.MustGetEventContext(ctx)
+func (c *ListingCompo) defaultCellWrapperFunc(_ context.Context) func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 	return func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
 		if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
 			cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
@@ -287,9 +286,7 @@ func (c *ListingCompo) defaultCellWrapperFunc(ctx context.Context) func(cell h.M
 		}
 		onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
 		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHref()).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamListingQueries, evCtx.Queries().Encode())
+			onClick.URL(c.lb.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		if c.ParentID != "" {
 			onClick.Query(ParamParentID, c.ParentID)
@@ -661,9 +658,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		}
 		onClick := web.Plaid().EventFunc(actions.New)
 		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHref()).
-				Query(ParamOverlay, actions.Dialog).
-				Query(ParamListingQueries, evCtx.Queries().Encode())
+			onClick.URL(c.lb.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
 		}
 		if c.ParentID != "" {
 			onClick.Query(ParamParentID, c.ParentID)
