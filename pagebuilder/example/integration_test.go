@@ -57,9 +57,9 @@ func initPageBuilder() (*gorm.DB, *pagebuilder.Builder, *presets.Builder) {
 		),
 	)
 	pb := example.ConfigPageBuilder(db, "/page_builder", "", b.GetI18n())
-	ab := activity.New(db).CreatorContextKey(login.UserKey)
+	ab := activity.New(db).AutoMigrate().CreatorContextKey(login.UserKey)
 	publisher := publish.New(db, oss.Storage)
-	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International"))).Activity(ab)
+	pb.Publisher(publisher).SEO(seo.New(db, seo.WithLocales("International")).AutoMigrate()).Activity(ab)
 	b.Use(pb)
 
 	return db, pb, b

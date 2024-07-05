@@ -64,7 +64,7 @@ func TestRenderSameType(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Customer", CustomerUser{Name: "CustomerA"}).
 					RegisterContextVariable("UserName",
 						func(obj interface{}, _ *Setting, _ *http.Request) string {

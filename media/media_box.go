@@ -37,13 +37,6 @@ func AutoMigrate(db *gorm.DB) (err error) {
 }
 
 func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
-	if !mb.disableAutoMigrate {
-		err := AutoMigrate(db)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	mb.permVerifier = perm.NewVerifier("media_library", b.GetPermission())
 
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())

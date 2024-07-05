@@ -16,7 +16,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	activityBuilder := activity.New(db)
+	activityBuilder := activity.New(db).AutoMigrate()
 	b.Use(activityBuilder)
 
 	// @snippet_end

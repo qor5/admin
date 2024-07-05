@@ -62,11 +62,10 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 					continue
 				}
 			}
-			if record, ok := needUnpublishReflectValues.Index(i).Interface().(UnPublishInterface); ok {
-				if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
-					log.Printf("error: %s\n", err2)
-					err = multierror.Append(err, err2).ErrorOrNil()
-				}
+			record := needUnpublishReflectValues.Index(i).Interface()
+			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
+				log.Printf("error: %s\n", err2)
+				err = multierror.Append(err, err2).ErrorOrNil()
 			}
 		}
 	}
@@ -79,22 +78,19 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		}
 		needPublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
-			if record, ok := needPublishReflectValues.Index(i).Interface().(PublishInterface); ok {
-				if err2 := b.publisher.Publish(record, reqCtx); err2 != nil {
-					log.Printf("error: %s\n", err2)
-					err = multierror.Append(err, err2).ErrorOrNil()
-				}
+			record := needPublishReflectValues.Index(i).Interface()
+			if err2 := b.publisher.Publish(record, reqCtx); err2 != nil {
+				log.Printf("error: %s\n", err2)
+				err = multierror.Append(err, err2).ErrorOrNil()
 			}
 		}
 	}
 
 	{
-		for _, interfaceRecord := range unpublishAfterPublishRecords {
-			if record, ok := interfaceRecord.(UnPublishInterface); ok {
-				if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
-					log.Printf("error: %s\n", err2)
-					err = multierror.Append(err, err2).ErrorOrNil()
-				}
+		for _, record := range unpublishAfterPublishRecords {
+			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
+				log.Printf("error: %s\n", err2)
+				err = multierror.Append(err, err2).ErrorOrNil()
 			}
 		}
 	}

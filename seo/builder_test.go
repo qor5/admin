@@ -48,7 +48,7 @@ func TestBuilder_Render(t *testing.T) {
 			name:      "Render_non-model_seo_with_setting_variables_and_default_context_variables",
 			prepareDB: func() { dbForTest.Save(&globalSeoSetting) },
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -77,7 +77,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().AppendChildren(
 					builder.RegisterSEO("Product", &Product{}),
 				)
@@ -115,7 +115,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(settings)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest)
+				builder := New(dbForTest).AutoMigrate()
 				builder.GetGlobalSEO().AppendChildren(
 					builder.RegisterSEO("Product", &Product{}),
 				)
@@ -145,7 +145,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().AppendChildren(
 					builder.RegisterSEO("Product"),
 				)
@@ -178,7 +178,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en", "zh"))
+				builder := New(dbForTest, WithLocales("en", "zh")).AutoMigrate()
 				builder.GetGlobalSEO().AppendChildren(
 					builder.RegisterSEO("Product"),
 				)
@@ -209,7 +209,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&settings)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest)
+				builder := New(dbForTest).AutoMigrate()
 				builder.GetGlobalSEO().AppendChildren(
 					builder.RegisterSEO("Product"),
 				)
@@ -233,7 +233,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product", &Product{}).
 					RegisterSettingVariables("ProductTag").
 					RegisterMetaProperty("og:image",
@@ -264,7 +264,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
 				return builder
 			}(),
@@ -294,7 +294,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
 				return builder
 			}(),
@@ -324,7 +324,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
 				return builder
 			}(),
@@ -358,7 +358,7 @@ func TestBuilder_Render(t *testing.T) {
 				dbForTest.Save(&product)
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"), WithInherit(false))
+				builder := New(dbForTest, WithLocales("en"), WithInherit(false)).AutoMigrate()
 				builder.RegisterSEO("Product", &Product{})
 				return builder
 			}(),
@@ -397,7 +397,7 @@ func TestBuilder_GetSEOPriority(t *testing.T) {
 		{
 			name: "with global seo",
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("PLP").AppendChildren(
 					builder.RegisterSEO("Region"),
 					builder.RegisterSEO("City"),
@@ -439,7 +439,7 @@ func TestBuilder_RemoveSEO(t *testing.T) {
 	}{{
 		name: "test remove SEO",
 		builder: func() *Builder {
-			builder := New(dbForTest, WithLocales("en"))
+			builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 			builder.RegisterSEO("Parent1").AppendChildren(
 				builder.RegisterSEO("Son1"),
 				builder.RegisterSEO("Son2"),
@@ -448,7 +448,7 @@ func TestBuilder_RemoveSEO(t *testing.T) {
 			return builder
 		}(),
 		expected: func() *Builder {
-			builder := New(dbForTest, WithLocales("en"))
+			builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 			builder.RegisterSEO("Son1")
 			builder.RegisterSEO("Son2")
 			return builder
@@ -491,7 +491,7 @@ func TestBuilder_SortSEOs(t *testing.T) {
 		{
 			name: "with global seo",
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.RegisterSEO("PLP").AppendChildren(
 					builder.RegisterSEO("Region"),
 					builder.RegisterSEO("City"),
@@ -583,7 +583,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -623,7 +623,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest)
+				builder := New(dbForTest).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -658,7 +658,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -719,7 +719,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -793,7 +793,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en"))
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -875,7 +875,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en", "zh"))
+				builder := New(dbForTest, WithLocales("en", "zh")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {
@@ -971,7 +971,7 @@ func TestBuilder_BatchRender(t *testing.T) {
 				}
 			},
 			builder: func() *Builder {
-				builder := New(dbForTest, WithLocales("en", "zh"))
+				builder := New(dbForTest, WithLocales("en", "zh")).AutoMigrate()
 				builder.GetGlobalSEO().RegisterMetaProperty(
 					"og:url",
 					func(_ interface{}, _ *Setting, req *http.Request) string {

@@ -138,7 +138,7 @@ func NewConfig(db *gorm.DB) Config {
 			// return supportedLanguages
 			return b.GetI18n().GetSupportLanguages()
 		})
-	mediab := media.New(db).CurrentUserID(func(ctx *web.EventContext) (id uint) {
+	mediab := media.New(db).AutoMigrate().CurrentUserID(func(ctx *web.EventContext) (id uint) {
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return
@@ -169,7 +169,7 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).CreatorContextKey(login.UserKey).
+	ab := activity.New(db).AutoMigrate().CreatorContextKey(login.UserKey).
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 				err = in(pb, mb)

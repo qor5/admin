@@ -26,7 +26,7 @@ func SEOExampleBasic(b *presets.Builder, db *gorm.DB) http.Handler {
 	mb := b.Model(&SEOPost{})
 	dp := mb.Detailing("Title", seo.SeoDetailFieldName).Drawer(true)
 	_ = dp
-	seob := seo.New(db)
+	seob := seo.New(db).AutoMigrate()
 	seob.RegisterSEO("Post", &SEOPost{}).
 		RegisterContextVariable(
 			"Title",
