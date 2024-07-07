@@ -40,6 +40,7 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 	} else {
 		mediaFile, err = media.Retrieve(media.URL("original"))
 	}
+	defer mediaFile.Close()
 
 	if err != nil {
 		return false, err
