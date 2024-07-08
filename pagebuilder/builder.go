@@ -1237,13 +1237,16 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	return
 }
 
-func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext) {
+func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*ContainerBuilder) {
 	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 	localeCodes := []string{locale}
 	if b.l10n != nil {
 		localeCodes = b.l10n.GetSupportLocaleCodes()
 	}
-	for _, con := range b.containerBuilders {
+	if len(cons) == 0 {
+		cons = b.containerBuilders
+	}
+	for _, con := range cons {
 		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
 			continue
 		}
