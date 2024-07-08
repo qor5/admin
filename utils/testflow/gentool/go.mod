@@ -6,7 +6,7 @@ require (
 	github.com/gobuffalo/flect v1.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/qor5/admin/v3 v3.0.1-0.20240424102851-d75759576158
-	github.com/qor5/web/v3 v3.0.5-0.20240704091217-e0d237271f63
+	github.com/qor5/web/v3 v3.0.5-0.20240705134640-e88838872a76
 	github.com/sergi/go-diff v1.3.1
 	mvdan.cc/gofumpt v0.6.0
 )
@@ -16,7 +16,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/qor5/x/v3 v3.0.6-0.20240705055210-716f92907046 // indirect
+	github.com/qor5/x/v3 v3.0.6-0.20240708035309-f1dc7aad5de5 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect

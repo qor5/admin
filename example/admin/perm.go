@@ -1,8 +1,9 @@
 package admin
 
 import (
-	models2 "github.com/qor5/admin/v3/activity"
 	"net/http"
+
+	models2 "github.com/qor5/admin/v3/activity"
 
 	"github.com/ory/ladon"
 	"github.com/qor5/admin/v3/example/models"
