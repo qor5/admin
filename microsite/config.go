@@ -89,8 +89,12 @@ func (mib *Builder) Install(b *presets.Builder) error {
 			if err != nil {
 				return
 			}
+			defer f.Close()
 
-			fileBytes, err := io.ReadAll(f)
+			var buf bytes.Buffer
+			tee := io.TeeReader(f, &buf)
+
+			err = utils.Upload(storage, packagePath, tee)
 			if err != nil {
 				return
 			}
@@ -100,13 +104,8 @@ func (mib *Builder) Install(b *presets.Builder) error {
 					mib)
 			},
 				fileName,
-				bytes.NewReader(fileBytes),
+				bytes.NewReader(buf.Bytes()),
 				storage)
-			if err != nil {
-				return
-			}
-
-			err = utils.Upload(storage, packagePath, bytes.NewReader(fileBytes))
 			if err != nil {
 				return
 			}

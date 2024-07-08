@@ -136,6 +136,8 @@ func configInputDemo(b *presets.Builder, _ *gorm.DB) {
 			if err != nil {
 				panic(err)
 			}
+			defer f.Close()
+
 			b, err := ioutil.ReadAll(f)
 			if err != nil {
 				panic(err)

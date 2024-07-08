@@ -186,7 +186,7 @@ func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName
 	var mutex sync.Mutex
 
 	err = format.(archiver.Extractor).Extract(context.Background(), reader, nil, func(ctx context.Context, f archiver.File) (err error) {
-		if f.IsDir() {
+		if f.IsDir() || strings.Contains(f.NameInArchive, "__MACOSX") || strings.Contains(f.NameInArchive, "DS_Store") {
 			return
 		}
 
