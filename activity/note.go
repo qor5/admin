@@ -7,7 +7,7 @@ import (
 const (
 	I18nNoteKey i18n.ModuleKey = "I18nNoteKey"
 
-	createNoteEvent     = "note_CreateNoteEvent"
-	updateUserNoteEvent = "note_UpdateUserNoteEvent"
-	deleteNoteEvent     = "note_DeleteNoteEvent"
+	eventCreateNote = "activity_EventCreateNote"
+	eventUpdateNote = "activity_EventUpdateNote"
+	eventDeleteNote = "activity_EventDeleteNote"
 )

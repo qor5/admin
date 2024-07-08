@@ -16,7 +16,7 @@ const (
 	TimelinePortalName   = "activity-timeline-portal"
 )
 
-func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func createNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
 		keys := ctx.R.FormValue(ParamResourceKeys)
@@ -56,7 +56,7 @@ func createNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func updateNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
 		keys := ctx.R.FormValue(ParamResourceKeys)
@@ -90,7 +90,7 @@ func updateUserNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func deleteNoteAction(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func deleteNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := b.db
 		noteID := ctx.R.FormValue(presets.ParamID)

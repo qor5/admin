@@ -47,10 +47,10 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	// Register the model
 	b.RegisterModel(m)
 
-	m.RegisterEventFunc(createNoteEvent, createNoteAction(b, m))
-	m.RegisterEventFunc(updateUserNoteEvent, updateUserNoteAction(b, m))
-	m.RegisterEventFunc(deleteNoteEvent, deleteNoteAction(b, m))
-	// m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m))
+	m.RegisterEventFunc(eventCreateNote, createNote(b, m))
+	m.RegisterEventFunc(eventUpdateNote, updateNote(b, m))
+	m.RegisterEventFunc(eventDeleteNote, deleteNote(b, m))
+	// m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m)) // TODO:
 
 	return nil
 }

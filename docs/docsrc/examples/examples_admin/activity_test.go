@@ -57,7 +57,7 @@ func TestActivity(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=note_CreateNoteEvent").
+					PageURL("/with-activity-products?__execute_event__=activity_EventCreateNote").
 					AddField(activity.ParamResourceKeys, "1").
 					AddField(activity.ParamResourceComment, "Hello content, I am writing a content").
 					BuildEventFuncRequest()
@@ -71,7 +71,7 @@ func TestActivity(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=note_CreateNoteEvent").
+					PageURL("/with-activity-products?__execute_event__=activity_EventCreateNote").
 					AddField(activity.ParamResourceComment, "   ").
 					BuildEventFuncRequest()
 				return req
@@ -84,7 +84,7 @@ func TestActivity(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=note_DeleteNoteEvent&id=1").
+					PageURL("/with-activity-products?__execute_event__=activity_EventDeleteNote&id=1").
 					BuildEventFuncRequest()
 				return req
 			},

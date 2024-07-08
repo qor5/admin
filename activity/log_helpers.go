@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: 都已经给 obj 了，直接 First(obj) 不行吗？
 func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
 	if slug == "" {
 		return findOld(obj, db)
@@ -38,6 +39,7 @@ func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
 	return old, true
 }
 
+// TODO: 方法名意义不清晰，这里是根据传入的 obj 的主键来构造其查询条件，其实突然好奇 gorm 默认是否就是这样做的。
 func findOld(obj any, db *gorm.DB) (any, bool) {
 	var (
 		objValue = reflect.Indirect(reflect.ValueOf(obj))
@@ -71,6 +73,7 @@ func findOld(obj any, db *gorm.DB) (any, bool) {
 	return old, true
 }
 
+// TODO: 这个其实也很好奇，为什么不使用 gorm 的 scheme parse 来搞？
 // getPrimaryKey get primary keys from a model
 func getPrimaryKey(t reflect.Type) (keys []string) {
 	if t.Kind() != reflect.Struct {
@@ -104,6 +107,7 @@ func getBasicModel(m any) any {
 
 func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
 	var total int64
+	// TODO: 这个 action 名称不应该 hard code
 	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, "create_note").Count(&total).Error; err != nil {
 		return 0, err
 	}
@@ -112,6 +116,7 @@ func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID stri
 		return 0, nil
 	}
 
+	// TODO: 这个逻辑貌似不太对
 	var userNote ActivityLog
 	if err := db.Where("user_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -124,7 +129,7 @@ func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID stri
 
 func handleError(err error, r *web.EventResponse, errorMessage string) {
 	if err != nil {
-		log.Println(errorMessage, err)
+		log.Println(errorMessage, err) // TODO:
 		presets.ShowMessage(r, errorMessage, "error")
 	}
 }

@@ -21,6 +21,7 @@ var (
 			nowString := now.(time.Time).Format(time.RFC3339)
 			if oldString != nowString {
 				return []Diff{
+					// TODO: 对于空的时间，是否应该给到空？再者这里是否能处理 *time.Time
 					{Field: prefixField, Old: oldString, Now: nowString},
 				}
 			}
@@ -211,11 +212,13 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 			deletedKeys = []reflect.Value{}
 		)
 
+		// TODO: 既然是字典，还使用这种通过循环来判定的方式有点怪怪的
 		for _, oldKey := range oldKeys {
 			var find bool
 			for _, newKey := range newKeys {
 				if oldKey.Interface() == newKey.Interface() {
 					find = true
+					break
 				}
 			}
 			if find {
@@ -231,6 +234,7 @@ func (db *DiffBuilder) diffLoop(old, now reflect.Value, prefixField string) erro
 			for _, oldKey := range oldKeys {
 				if oldKey.Interface() == newKey.Interface() {
 					find = true
+					break
 				}
 			}
 			if !find {

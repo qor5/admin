@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -30,18 +31,7 @@ type ModelBuilder struct {
 
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
-	for _, key := range keys {
-		var find bool
-		for _, mkey := range mb.keys {
-			if mkey == key {
-				find = true
-				break
-			}
-		}
-		if !find {
-			mb.keys = append(mb.keys, key)
-		}
-	}
+	mb.keys = lo.Uniq(append(mb.keys, keys...))
 	return mb
 }
 
@@ -59,7 +49,7 @@ func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
 
 // SkipCreate skip the created action for preset.ModelBuilder
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
-	if mb.presetModel == nil {
+	if mb.presetModel == nil { // TODO: presetModel 的意义是什么？
 		return mb
 	}
 
@@ -95,12 +85,12 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 
 // AddIgnoredFields append ignored fields to the default ignored fields, this would not overwrite the default ignored fields
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
-	mb.ignoredFields = append(mb.ignoredFields, fields...)
+	mb.ignoredFields = lo.Uniq(append(mb.ignoredFields, fields...))
 	return mb
 }
 
 // SetIgnoredFields set ignored fields to replace the default ignored fields with the new set.
-func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder {
+func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder { // TODO: 移除 Set ？
 	mb.ignoredFields = fields
 	return mb
 }
@@ -115,7 +105,7 @@ func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 }
 
 // KeysValue get model keys value
-func (mb *ModelBuilder) KeysValue(v any) string {
+func (mb *ModelBuilder) KeysValue(v any) string { // TODO: 这个玩意的意义还不是太懂
 	var (
 		stringBuilder = strings.Builder{}
 		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
@@ -127,7 +117,7 @@ func (mb *ModelBuilder) KeysValue(v any) string {
 			if reflectValue.FieldByName(key).IsZero() {
 				continue
 			}
-			if fields.Anonymous {
+			if fields.Anonymous { // TODO: 为什么匿名的需要多一个 FiledByName 呢？
 				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).FieldByName(key).Interface()))
 			} else {
 				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
@@ -139,6 +129,7 @@ func (mb *ModelBuilder) KeysValue(v any) string {
 }
 
 // AddRecords add records log
+// TODO: 但实际上这个 action 只能处理 CURD 的，所以真的有必要搞这个玩意吗？
 func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any) error {
 	if len(vs) == 0 {
 		return errors.New("data are empty")
@@ -150,7 +141,7 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 	)
 
 	switch action {
-	case ActionView:
+	case ActionView: // TODO: 这个名字要不改成 CURD?
 		for _, v := range vs {
 			err := mb.AddViewRecord(creator, v, db)
 			if err != nil {
@@ -208,12 +199,13 @@ func (mb *ModelBuilder) AddViewRecord(creator *User, v any, db *gorm.DB) error {
 
 // AddDeleteRecord	add delete record
 func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any, db *gorm.DB) error {
+	// TODO: 如果 diff 都不需要传递，那 diff 里的某些逻辑貌似不是太有必要了？
 	return mb.save(creator, ActionDelete, v, db, "")
 }
 
 // AddSaverRecord will save a create log or a edit log
 func (mb *ModelBuilder) AddSaveRecord(creator *User, now any, db *gorm.DB) error {
-	old, ok := findOld(now, db)
+	old, ok := findOld(now, db) // TODO: 所以我们这个一定会使用 gorm 吗？不管是不是，db 不应该作为方法参数传入吧？
 	if !ok {
 		return mb.AddCreateRecord(creator, now, db)
 	}
@@ -254,7 +246,7 @@ func (mb *ModelBuilder) addDiff(action string, creator *User, old, now any, db *
 		return err
 	}
 
-	return mb.save(creator, ActionEdit, now, db, string(b))
+	return mb.save(creator, action, now, db, string(b))
 }
 
 // Diff get diffs between old and now value
@@ -268,7 +260,7 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, db *gorm.DB, d
 	log.CreatedAt = time.Now()
 
 	log.Creator = *creator
-	log.UserID = creator.ID
+	log.UserID = creator.ID // TODO: 真的还需要 UserID 这个字段吗？
 
 	log.Action = action
 	log.ModelName = modelName(v)
@@ -281,7 +273,7 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, db *gorm.DB, d
 	}
 
 	if f := mb.link; f != nil {
-		log.ModelLink = f(v)
+		log.ModelLink = f(v) // TODO: 这个东西不需要默认指定其 Detailing Href 吗？
 	}
 
 	if diffs == "" && action == ActionEdit {

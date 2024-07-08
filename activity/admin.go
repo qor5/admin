@@ -23,10 +23,12 @@ const (
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
+	// TODO: 缺少日文？
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
+	// TODO: 为什么注释掉？
 	// if permB := b.GetPermission(); permB != nil {
 	// 	permB.CreatePolicies(ab.permPolicy)
 	// }
@@ -35,6 +37,7 @@ func (ab *Builder) Install(b *presets.Builder) error {
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
+	// TODO: i18n ?
 	var (
 		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		detailing = mb.Detailing("ModelDiffs")
@@ -136,21 +139,23 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Label: msgr.ActionAll,
 				Query: url.Values{"action": []string{}},
 			},
+			// TODO: 不需要筛 View ？
 			{
 				Label: msgr.ActionEdit,
-				Query: url.Values{"action": []string{string(ActionEdit)}},
+				Query: url.Values{"action": []string{ActionEdit}},
 			},
 			{
 				Label: msgr.ActionCreate,
-				Query: url.Values{"action": []string{string(ActionCreate)}},
+				Query: url.Values{"action": []string{ActionCreate}},
 			},
 			{
 				Label: msgr.ActionDelete,
-				Query: url.Values{"action": []string{string(ActionDelete)}},
+				Query: url.Values{"action": []string{ActionDelete}},
 			},
 		}
 	})
 
+	// TODO: 这个 Label 最后会被 i18n 处理吗？
 	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
@@ -174,7 +179,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				VTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator.Name))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))),
+						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))), // TODO: 这个 UserID 和 Creator.ID 有什么区别？应该可以弃用了？
 						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(string(record.Action)))),
 						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
 						h.Tr(
@@ -188,7 +193,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.ModelKeys))),
 						h.If(record.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.ModelLink)))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
+						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))), // TODO: 需要提取到常量中
 					),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
@@ -250,7 +255,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		for _, d := range newdiffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Now)),
+				h.Td().Text(fixSpecialChars(d.Now)), // TODO: 这个为什么需要 fixSpecialChars ？
 			))
 		}
 
