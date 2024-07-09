@@ -205,7 +205,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 			Query("field", field).
 			Query(mediaID, fmt.Sprint(f.ID)).
 			Query("thumb", thumb).
-			FieldValue("cfg", h.JSONString(cfg)).
+			Query("cfg", h.JSONString(cfg)).
 			Go())
 	}
 	return card
