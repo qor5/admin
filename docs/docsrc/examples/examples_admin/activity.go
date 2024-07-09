@@ -7,8 +7,6 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
-	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -43,22 +41,17 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
 
 	bt := productModel.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
-	bt.Section("Content").
-		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-			return Div().Text("text")
-		}).Editing("Title", "Code", "Price")
+	bt.Section("Content").Editing("Title", "Code", "Price")
 
-	activityBuilder.RegisterModel(productModel).
-		AddKeys("Title").
-		AddIgnoredFields("Code").
-		SkipDelete()
+	activityBuilder.MustGetModelBuilder(productModel).AddKeys("Title").AddIgnoredFields("Code").SkipDelete()
 
 	// @snippet_end
 
 	// @snippet_begin(ActivityRecordLogSample)
 
-	activityBuilder.AddRecords("Publish", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-	activityBuilder.AddRecords("Update Price", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
+	ctx := context.Background()
+	activityBuilder.AddRecords(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
+	activityBuilder.AddRecords(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
 
 	// @snippet_end
 	return b

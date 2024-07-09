@@ -11,6 +11,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -143,12 +144,24 @@ func humanContent(log *ActivityLog) string {
 	return fmt.Sprintf("%s: %s", log.Action, log.Comment)
 }
 
+func objectID(obj interface{}) string {
+	var id string
+	if slugger, ok := obj.(presets.SlugEncoder); ok {
+		id = slugger.PrimarySlug()
+	} else {
+		id = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+	}
+	return id
+}
+
 func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
 	mb.presetModel = presetModel
+	mb.LinkFunc(func(a any) string {
+		return presetModel.Info().DetailingHref(objectID(a))
+	})
 
 	editing := presetModel.Editing()
 	d := presetModel.Detailing()
-
 	lb := presetModel.Listing()
 
 	db := ab.db
@@ -185,7 +198,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			}
 
 			if (!ok || id == "") && mb.skip&Create == 0 {
-				return mb.AddRecords(ActionCreate, ctx.R.Context(), obj)
+				return mb.AddRecords(ctx.R.Context(), ActionCreate, obj)
 			}
 
 			if ok && id != "" && mb.skip&Update == 0 {
@@ -208,7 +221,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			}
 
 			if ok {
-				return mb.AddRecords(ActionDelete, ctx.R.Context(), old)
+				return mb.AddRecords(ctx.R.Context(), ActionDelete, old)
 			}
 
 			return
@@ -230,8 +243,8 @@ func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) HTMLComponent
 				),
 				Div(
 					Div(
-						VAvatar().Text(strings.ToUpper(item.Creator.Name)).Color("secondary").Class(
-							"text-h6 rounded-lg").Size("x-small"),
+						// TODO: avatar ?
+						VAvatar().Text(strings.ToUpper(item.Creator.Name)).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
 						Div(
 							Strong(item.Creator.Name).Class("ml-1").Style(
 								"width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
@@ -286,14 +299,14 @@ func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 }
 
 // AddRecords add records log
-func (ab *Builder) AddRecords(action string, ctx context.Context, vs ...any) error {
+func (ab *Builder) AddRecords(ctx context.Context, action string, vs ...any) error {
 	if len(vs) == 0 {
 		return errors.New("data are empty")
 	}
 
 	for _, v := range vs {
 		if mb, ok := ab.GetModelBuilder(v); ok {
-			if err := mb.AddRecords(action, ctx, v); err != nil {
+			if err := mb.AddRecords(ctx, action, v); err != nil {
 				return err
 			}
 		}
@@ -303,9 +316,9 @@ func (ab *Builder) AddRecords(action string, ctx context.Context, vs ...any) err
 }
 
 // AddCustomizedRecord add customized record
-func (ab *Builder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
+func (ab *Builder) AddCustomizedRecord(ctx context.Context, action string, diff bool, obj any) error {
 	if mb, ok := ab.GetModelBuilder(obj); ok {
-		return mb.AddCustomizedRecord(action, diff, ctx, obj)
+		return mb.AddCustomizedRecord(ctx, action, diff, obj)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", obj)

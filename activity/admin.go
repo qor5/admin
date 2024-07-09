@@ -41,7 +41,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	// TODO: i18n ?
 	var (
 		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
-		detailing = mb.Detailing("ModelDiffs")
+		detailing = mb.Detailing("ModelDiffs").Drawer(true)
 	)
 	ab.lmb = mb
 	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
@@ -149,7 +149,10 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Label: msgr.ActionAll,
 				Query: url.Values{"action": []string{}},
 			},
-			// TODO: 不需要筛 View ？
+			{
+				Label: msgr.ActionView,
+				Query: url.Values{"action": []string{ActionView}},
+			},
 			{
 				Label: msgr.ActionEdit,
 				Query: url.Values{"action": []string{ActionEdit}},

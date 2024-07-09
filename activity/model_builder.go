@@ -131,7 +131,7 @@ func (mb *ModelBuilder) KeysValue(v any) string { // TODO: 这个玩意的意义
 
 // AddRecords add records log
 // TODO: 但实际上这个 action 只能处理 CURD 的，所以真的有必要搞这个玩意吗？
-func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any) error {
+func (mb *ModelBuilder) AddRecords(ctx context.Context, action string, vs ...any) error {
 	if len(vs) == 0 {
 		return errors.New("data are empty")
 	}
@@ -176,7 +176,7 @@ func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any
 }
 
 // AddCustomizedRecord add customized record
-func (mb *ModelBuilder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
+func (mb *ModelBuilder) AddCustomizedRecord(ctx context.Context, action string, diff bool, obj any) error {
 	var (
 		creator = mb.activity.currentUserFunc(ctx)
 		db      = mb.activity.db
@@ -274,7 +274,7 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, db *gorm.DB, d
 	}
 
 	if f := mb.link; f != nil {
-		log.ModelLink = f(v) // TODO: 这个东西不需要默认指定其 Detailing Href 吗？
+		log.ModelLink = f(v)
 	}
 
 	if diffs == "" && action == ActionEdit {

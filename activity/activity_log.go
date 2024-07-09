@@ -9,7 +9,7 @@ const (
 	ActionEdit       = "Edit"
 	ActionCreate     = "Create"
 	ActionDelete     = "Delete"
-	ActionCreateNote = "CreateNote" // TODO:
+	ActionCreateNote = "CreateNote"
 )
 
 var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete, ActionCreateNote}

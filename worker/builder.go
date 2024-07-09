@@ -264,7 +264,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			return err
 		}
 		if b.ab != nil {
-			b.ab.AddRecords(activity.ActionCreate, ctx.R.Context(), j)
+			b.ab.AddRecords(ctx.R.Context(), activity.ActionCreate, j)
 		}
 		return
 	})
@@ -504,7 +504,7 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		if isScheduled {
 			action = "Cancel"
 		}
-		b.ab.AddCustomizedRecord(action, false, ctx.R.Context(), &QorJob{
+		b.ab.AddCustomizedRecord(ctx.R.Context(), action, false, &QorJob{
 			Model: gorm.Model{
 				ID: inst.QorJobID,
 			},
@@ -569,7 +569,7 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
-		b.ab.AddCustomizedRecord("Rerun", false, ctx.R.Context(), &QorJob{
+		b.ab.AddCustomizedRecord(ctx.R.Context(), "Rerun", false, &QorJob{
 			Model: gorm.Model{
 				ID: inst.QorJobID,
 			},
