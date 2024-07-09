@@ -251,7 +251,8 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 func sortListItems(mb *ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
+		id := ctx.Param(ParamID)
+		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 		sortSectionFormKey := ctx.R.FormValue(ParamSortSectionFormKey)
 
 		isStartSort := ctx.R.FormValue(ParamIsStartSort)
@@ -271,6 +272,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		}
 
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
+		web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		return
 	}
 }
