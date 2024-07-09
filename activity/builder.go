@@ -7,12 +7,13 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
-	. "github.com/theplant/htmlgo"
+	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -45,14 +46,11 @@ type Builder struct {
 // @snippet_end
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
-	// Register the model
 	b.RegisterModel(m)
-
+	// TODO: 应该写到 RegisterModel 里面？
 	m.RegisterEventFunc(eventCreateNote, createNote(b, m))
 	m.RegisterEventFunc(eventUpdateNote, updateNote(b, m))
 	m.RegisterEventFunc(eventDeleteNote, deleteNote(b, m))
-	// m.Listing().Field("Notes").ComponentFunc(noteFunc(db, m)) // TODO:
-
 	return nil
 }
 
@@ -166,26 +164,27 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 
 	db := ab.db
 
-	d.Field(DetailFieldTimeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	d.Field(DetailFieldTimeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return web.Portal(ab.timelineList(obj, "", db)).Name(TimelinePortalName)
 	})
 
-	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		rt := modelName(presetModel.NewModel())
 		ri := mb.KeysValue(obj)
 		user := ab.currentUserFunc(ctx.R.Context())
 		count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
 
-		return Td(
-			If(count > 0,
-				VBadge().Content(count).Color("red"),
+		return h.Td(
+			h.If(count > 0,
+				v.VBadge().Content(count).Color("red"),
 			).Else(
-				Text(""),
+				h.Text(""),
 			),
 		)
 	}).Label("Unread Notes") // TODO: i18n
 
 	// TODO: 这个的话会丢失掉一些通过 action 来操作的信息，所以需要通过 emit 来做？但是通过 emit 的话貌似又是需要要求 emit 给到 ctx 信息
+	// TODO: section 目前没使用 editing 的 SaveFunc
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if mb.skip&Update != 0 && mb.skip&Create != 0 {
@@ -229,36 +228,52 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	})
 }
 
-func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) HTMLComponent {
-	// Fetch combined timeline data
-	logs := ab.GetActivityLogs(obj, keys, db)
-
-	// Create VTimelineItems
-	var timelineItems []HTMLComponent
-	for _, item := range logs {
-		timelineItems = append(timelineItems,
-			Div(
-				Div(
-					Text(item.CreatedAt.Format("2 hours ago")),
-				),
-				Div(
-					Div(
-						// TODO: avatar ?
-						VAvatar().Text(strings.ToUpper(item.Creator.Name)).Color("secondary").Class("text-h6 rounded-lg").Size("x-small"),
-						Div(
-							Strong(item.Creator.Name).Class("ml-1").Style(
-								"width: 100%; height: 20px; font-family: SF Pro; font-style: normal; font-weight: 510; font-size: 14px; line-height: 20px; display: flex; align-items: center; color: #9e9e9e;"),
-							Div(Text(humanContent(item))).Class("text-caption").Style(
-								"width: 100%; font-family: SF Pro; font-style: normal; font-weight: 400; font-size: 14px; line-height: 20px; color: #9e9e9e;"),
-						).Class("detailsStyle").Style("display: flex; flex-direction: column; align-items: flex-start; padding: 0; width: 100%;"),
-					).Class("contentStyle").Style("display: flex; flex-direction: row; align-items: flex-start; padding: 0; gap: 8px; width: 100%;"),
-				),
-			).Class("itemStyle").Style("width: 100%; color: #9e9e9e;"),
-		)
+func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) h.HTMLComponent {
+	children := []h.HTMLComponent{
+		// TODO: onClick
+		v.VBtn("Add Notes").Class("text-none mb-4").Attr("prepend-icon", "mdi-plus").Attr("variant", "tonal").Attr("color", "grey-darken-3"), // TODO: i18n
 	}
 
-	return VTimeline(
-		timelineItems...,
+	logs := ab.GetActivityLogs(obj, keys, db)
+	for _, item := range logs {
+		creatorName := item.Creator.Name
+		if creatorName == "" {
+			creatorName = "Unknown" // i18n
+		}
+		avatarText := ""
+		if item.Creator.Avatar == "" {
+			avatarText = strings.ToUpper(creatorName[0:1])
+		}
+		// TODO: v.ColorXXX ?
+		// TODO: 不需要支持非 Notes 吗？
+		children = append(children,
+			h.Div().Class("d-flex flex-column ga-1").Children(
+				h.Div().Class("d-flex flex-row align-center ga-2").Children(
+					h.Div().Style("width: 8px; height: 8px; background-color: #30a46c").Class("rounded-circle"),
+					h.Div(h.Text(humanize.Time(item.CreatedAt))).Style("color: #757575"),
+				),
+				h.Div().Class("d-flex flex-row ga-2").Children(
+					h.Div().Class("align-self-stretch").Style("width: 1px; margin-top: -6px; margin-bottom: -2px; margin-left: 3.5px; margin-right: 3.5px; background-color: #30a46c"),
+					h.Div().Class("d-flex flex-column pb-3").Children(
+						h.Div().Class("d-flex flex-row align-center ga-2").Children(
+							v.VAvatar().Attr("style", "font-size: 12px; color: #3e63dd").Attr("color", "#E6EDFE").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
+								h.Iff(item.Creator.Avatar != "", func() h.HTMLComponent {
+									return v.VImg().Attr("alt", creatorName).Attr("src", item.Creator.Avatar)
+								}),
+							),
+							h.Div(h.Text(creatorName)).Style("font-weight: 500"),
+						),
+						h.Div().Class("d-flex flex-row align-center ga-2").Children(
+							h.Div().Style("width: 16px"),
+							h.Div(h.Text(humanContent(item))),
+						),
+					),
+				),
+			),
+		)
+	}
+	return h.Div().Class("d-flex flex-column").Style("font-size: 14px").Children(
+		children...,
 	)
 }
 

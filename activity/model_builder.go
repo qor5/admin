@@ -49,7 +49,6 @@ func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
 
 // SkipCreate skip the created action for preset.ModelBuilder
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
-	// TODO: 这里很奇怪，即使用了 presetModel 也不应该直接返回，否则 skip 没改动，和 presetModel WrapXXX 方法里的对 skip 的判断就没意义了。
 	if mb.presetModel == nil {
 		return mb
 	}
@@ -90,8 +89,8 @@ func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
 	return mb
 }
 
-// SetIgnoredFields set ignored fields to replace the default ignored fields with the new set.
-func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder { // TODO: 移除 Set ？
+// IgnoredFields set ignored fields to replace the default ignored fields with the new set.
+func (mb *ModelBuilder) IgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = fields
 	return mb
 }
@@ -142,7 +141,7 @@ func (mb *ModelBuilder) AddRecords(ctx context.Context, action string, vs ...any
 	)
 
 	switch action {
-	case ActionView: // TODO: 这个名字要不改成 CURD?
+	case ActionView:
 		for _, v := range vs {
 			err := mb.AddViewRecord(creator, v, db)
 			if err != nil {
@@ -200,7 +199,6 @@ func (mb *ModelBuilder) AddViewRecord(creator *User, v any, db *gorm.DB) error {
 
 // AddDeleteRecord	add delete record
 func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any, db *gorm.DB) error {
-	// TODO: 如果 diff 都不需要传递，那 diff 里的某些逻辑貌似不是太有必要了？
 	return mb.save(creator, ActionDelete, v, db, "")
 }
 
