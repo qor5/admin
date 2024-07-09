@@ -84,7 +84,7 @@ func TestAll(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/admin/page_builder/my-headers?__execute_event__=page_builder_AutoSaveContainerEvent&id=1").
+					PageURL("/admin/page_builder/my-headers?__execute_event__=presets_Update&id=1").
 					AddField("MenuItems[0].Text", "123").
 					AddField("MenuItems[0].Link", "123").
 					AddField("MenuItems[1].Text", "456").

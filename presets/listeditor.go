@@ -210,8 +210,9 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 func addListItemRow(mb *ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
-		formKey := ctx.R.FormValue(ParamAddRowFormKey)
+		id := ctx.Param(ParamID)
+		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
+		formKey := ctx.Param(ParamAddRowFormKey)
 		t := reflectutils.GetType(obj, formKey+"[0]")
 		newVal := reflect.New(t.Elem()).Interface()
 		err = reflectutils.Set(obj, formKey+"[]", newVal)
@@ -219,6 +220,7 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 			panic(err)
 		}
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
+		web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		return
 	}
 }
@@ -226,7 +228,8 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
+		id := ctx.Param(ParamID)
+		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
 		lb := strings.LastIndex(formKey, "[")
@@ -240,7 +243,7 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		}
 		ContextModifiedIndexesBuilder(ctx).AppendDeleted(sliceField, index)
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
-		r.RunScript = fmt.Sprintf(`form["%s"]=null;`, formKey)
+		web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		return
 	}
 }
@@ -248,7 +251,8 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 func sortListItems(mb *ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		me := mb.Editing()
-		obj, _ := me.FetchAndUnmarshal(ctx.R.FormValue(ParamID), false, ctx)
+		id := ctx.Param(ParamID)
+		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 		sortSectionFormKey := ctx.R.FormValue(ParamSortSectionFormKey)
 
 		isStartSort := ctx.R.FormValue(ParamIsStartSort)
@@ -265,6 +269,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 				indexes = append(indexes, fmt.Sprint(i.Index))
 			}
 			ContextModifiedIndexesBuilder(ctx).Sorted(sortSectionFormKey, indexes)
+			web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		}
 
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
