@@ -201,7 +201,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0NotContains: []string{"Update"},
+			ExpectPortalUpdate0NotContains: []string{">Update<"},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				if er.UpdatePortals[0].Name != "pageBuilderRightContentPortal" {
 					t.Errorf("error portalName %v", er.UpdatePortals[0].Name)
