@@ -77,9 +77,9 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 							VToolbarTitle(msgr.CropImage),
 							VSpacer(),
 							VBtn(msgr.Crop).Color("primary").
-								Attr(":loading", "locals.cropping").
+								Attr(":loading", "cropLocals.cropping").
 								Attr("@click", web.Plaid().
-									BeforeScript("locals.cropping = true").
+									BeforeScript("cropLocals.cropping = true").
 									EventFunc(cropImageEvent).
 									Query("field", field).
 									Query(mediaID, fmt.Sprint(id)).
@@ -94,7 +94,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 				).ModelValue(true).
 					Scrollable(true).
 					MaxWidth("800px"),
-			).Init(`{cropping: false}`).VSlot("{ locals }"),
+			).Init(`{cropping: false}`).VSlot("{ locals: cropLocals}"),
 		})
 		return
 	}
