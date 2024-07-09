@@ -12,14 +12,15 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const (
-	I18nActivityKey     i18n.ModuleKey = "I18nActivityKey"
-	DetailFieldTimeline string         = "Timeline"
-	ListFieldNotes      string         = "Notes"
+	I18nActivityKey      i18n.ModuleKey = "I18nActivityKey"
+	DetailFieldTimeline  string         = "Timeline"
+	ListFieldUnreadNotes string         = "Notes"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -60,36 +61,40 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	)
 
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		var (
-			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			contextDB = ab.db
-		)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 
-		creatorGroups := []*ActivityLog{}
-		err := contextDB.Select("creator").Group("creator").Find(&creatorGroups).Error
-		if err != nil {
-			panic(err)
-		}
-		var creatorOptions []*vuetifyx.SelectItem
-
-		for _, creator := range creatorGroups {
-			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Creator.Name,
-				Value: fmt.Sprint(creator.Creator.ID),
+		var actionOptions []*vuetifyx.SelectItem
+		for _, action := range DefaultActions {
+			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
+				Text:  action,
+				Value: action,
 			})
 		}
-
 		actionGroups := []*ActivityLog{}
-		err = contextDB.Select("action").Group("action").Order("action").Find(&actionGroups).Error
+		err := ab.db.Select("action").Group("action").Order("action").Find(&actionGroups).Error
 		if err != nil {
 			panic(err)
 		}
-		var actionOptions []*vuetifyx.SelectItem
-
 		for _, action := range actionGroups {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
 				Text:  string(action.Action),
 				Value: string(action.Action),
+			})
+		}
+		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
+
+		var creatorOptions []*vuetifyx.SelectItem
+		creatorGroups := []*ActivityLog{}
+		// TODO: 这里会有个问题，如果 creator 的 name 和 avatar 变化了呢？如果记录不跟随变化，那老的 name 和 avatar 就只是成了快照了
+		// TODO: 所以是否是需要一个单独表来记录这个信息，并且需要同步更新相同 id 的信息？
+		err = ab.db.Select("creator").Group("creator").Find(&creatorGroups).Error
+		if err != nil {
+			panic(err)
+		}
+		for _, creator := range creatorGroups {
+			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
+				Text:  creator.Creator.Name,
+				Value: fmt.Sprint(creator.Creator.ID),
 			})
 		}
 
@@ -101,7 +106,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		return []*vuetifyx.FilterItem{
+		filterData := []*vuetifyx.FilterItem{
 			{
 				Key:          "action",
 				Label:        msgr.FilterAction,
@@ -115,21 +120,26 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				ItemType:     vuetifyx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
-			{
+		}
+		if len(creatorOptions) > 0 {
+			filterData = append(filterData, &vuetifyx.FilterItem{
 				Key:          "creator",
 				Label:        msgr.FilterCreator,
 				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator %s ?`,
+				SQLCondition: `creator %s ?`, // TODO: 这个判断并不对，因为 creator 是 json ，这里是需要判断其中 creator.id 的
 				Options:      creatorOptions,
-			},
-			{
+			})
+		}
+		if len(modelOptions) > 0 {
+			filterData = append(filterData, &vuetifyx.FilterItem{
 				Key:          "model",
 				Label:        msgr.FilterModel,
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `model_name %s ?`,
 				Options:      modelOptions,
-			},
+			})
 		}
+		return filterData
 	})
 
 	listing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {

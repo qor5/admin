@@ -107,8 +107,7 @@ func getBasicModel(m any) any {
 
 func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
 	var total int64
-	// TODO: 这个 action 名称不应该 hard code
-	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, "create_note").Count(&total).Error; err != nil {
+	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, ActionCreateNote).Count(&total).Error; err != nil {
 		return 0, err
 	}
 

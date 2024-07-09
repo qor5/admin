@@ -49,7 +49,8 @@ func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
 
 // SkipCreate skip the created action for preset.ModelBuilder
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
-	if mb.presetModel == nil { // TODO: presetModel 的意义是什么？
+	// TODO: 这里很奇怪，即使用了 presetModel 也不应该直接返回，否则 skip 没改动，和 presetModel WrapXXX 方法里的对 skip 的判断就没意义了。
+	if mb.presetModel == nil {
 		return mb
 	}
 

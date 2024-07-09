@@ -157,7 +157,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 		return web.Portal(ab.timelineList(obj, "", db)).Name(TimelinePortalName)
 	})
 
-	lb.Field(ListFieldNotes).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		rt := modelName(presetModel.NewModel())
 		ri := mb.KeysValue(obj)
 		user := ab.currentUserFunc(ctx.R.Context())
@@ -170,8 +170,9 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 				Text(""),
 			),
 		)
-	}).Label("Unread Notes")
+	}).Label("Unread Notes") // TODO: i18n
 
+	// TODO: 这个的话会丢失掉一些通过 action 来操作的信息，所以需要通过 emit 来做？但是通过 emit 的话貌似又是需要要求 emit 给到 ctx 信息
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if mb.skip&Update != 0 && mb.skip&Create != 0 {
