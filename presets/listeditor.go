@@ -269,10 +269,10 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 				indexes = append(indexes, fmt.Sprint(i.Index))
 			}
 			ContextModifiedIndexesBuilder(ctx).Sorted(sortSectionFormKey, indexes)
+			web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		}
 
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
-		web.AppendRunScripts(&r, fmt.Sprintf(`setTimeout(function(){%s},200)`, web.Emit(mb.NotifRowUpdated(), PayloadRowUpdated{Id: id})))
 		return
 	}
 }
