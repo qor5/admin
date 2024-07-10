@@ -155,7 +155,7 @@ func TestUpdate(t *testing.T) {
 			server := httptest.NewServer(admin)
 
 			l10nBuilder := l10n.New(dbForTest)
-			l10nBuilder.RegisterLocales(c.locale, c.locale, c.locale)
+			l10nBuilder.RegisterLocales(c.locale, c.locale, c.locale, "")
 			builder := c.builder()
 			builder.Install(admin)
 
