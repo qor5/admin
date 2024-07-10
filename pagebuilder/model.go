@@ -313,16 +313,18 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 	)
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-	r.RunScript = web.Plaid().
-		EventFunc(ReloadRenderPageOrTemplateEvent).
-		MergeQuery(true).
-		Go() +
-		";" +
+
+	web.AppendRunScripts(&r,
+		web.Plaid().
+			EventFunc(ReloadRenderPageOrTemplateEvent).
+			MergeQuery(true).
+			Go(),
 		web.Plaid().
 			EventFunc(ShowSortedContainerDrawerEvent).
 			MergeQuery(true).
 			Query(paramStatus, ctx.Param(paramStatus)).
-			Go()
+			Go(),
+	)
 	return
 }
 
@@ -555,9 +557,10 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 			return
 		}
 	}
-
-	r.RunScript = web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go() + ";" +
-		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
+	web.AppendRunScripts(&r,
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
+	)
 	return
 }
 

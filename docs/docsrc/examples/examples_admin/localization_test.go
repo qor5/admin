@@ -49,19 +49,7 @@ func TestLocalization(t *testing.T) {
 				l10nDataWithChina.TruncatePut(SqlDB)
 				return httptest.NewRequest("GET", "/l10n-models?locale=China", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"中文标题", `<v-chip color='success' :variant='"flat"' :label='true' :size='"small"'>China</v-chip>`},
-		},
-		{
-			Name:  "Localize dialog",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				l10nData.TruncatePut(SqlDB)
-				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/l10n-models?__execute_event__=l10n_LocalizeEvent&id=1_International").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"China", "Japan"},
+			ExpectPageBodyContainsInOrder: []string{"中文标题"},
 		},
 		{
 			Name:  "Show detail",

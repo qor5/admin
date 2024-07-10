@@ -421,7 +421,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
-	lb := pm.Listing("ID", publish.ListingFieldLive, "Title", "Path")
+	lb := pm.Listing("ID", "Title", publish.ListingFieldLive, "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)

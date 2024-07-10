@@ -2,14 +2,12 @@ package l10n
 
 import (
 	"fmt"
-	"net/url"
 	"reflect"
 	"slices"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -35,11 +33,10 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 			return nil
 		}
 		vo := reflect.ValueOf(objs).Elem()
-		var existLocales []string
+		existLocales := make([]string, 0)
 		for i := 0; i < vo.Len(); i++ {
 			existLocales = append(existLocales, vo.Index(i).FieldByName("LocaleCode").String())
 		}
-
 		allLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
 		var otherLocales []string
 		for _, locale := range allLocales {
@@ -47,11 +44,20 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 				otherLocales = append(otherLocales, locale)
 			}
 		}
-
 		var chips []h.HTMLComponent
-		chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("success").Variant(VariantFlat).Label(true).Size(SizeSmall))
+		fromImg := lb.GetLocaleImg(fromLocale)
+		if fromImg != "" {
+			chips = append(chips, h.RawHTML(fromImg))
+		} else {
+			chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("success").Variant(VariantFlat).Label(true).Size(SizeSmall))
+		}
 
 		for _, locale := range otherLocales {
+			img := lb.GetLocaleImg(locale)
+			if img != "" {
+				chips = append(chips, h.RawHTML(img))
+				continue
+			}
 			chips = append(chips,
 				VChip(
 					h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale))),
@@ -60,12 +66,69 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 					Size(SizeSmall),
 			)
 		}
+		menu := lb.localizeMenu(obj, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
+			return s == fromLocale
+		}), existLocales)
+		if menu != nil {
+			chips = append(chips, menu)
+		}
 		return h.Td(
 			h.Div(
 				chips...,
 			).Class("d-flex ga-2"),
 		)
 	}
+}
+
+func (b *Builder) localizeMenu(obj interface{}, field *presets.FieldContext, ctx *web.EventContext, allLocales, existLocales []string) h.HTMLComponent {
+	if field.ModelInfo.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		return nil
+	}
+	p, ok := obj.(presets.SlugEncoder)
+	if !ok {
+		return nil
+	}
+	var localsListItems []h.HTMLComponent
+	allSelected := true
+
+	for _, locale := range allLocales {
+		disable := false
+		if slices.Contains(existLocales, locale) {
+			disable = true
+		} else {
+			allSelected = false
+		}
+		img := b.GetLocaleImg(locale)
+		localsListItems = append(localsListItems, VListItem(
+			VListItemTitle(
+				h.If(img != "", h.RawHTML(img)),
+				h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(locale))),
+			).Class("d-flex align-center ga-2"),
+			web.Slot(VIcon("mdi-check").Attr("v-show", fmt.Sprintf(`menuLocals.locales.includes("%s")`, locale)).Size(SizeSmall)).Name(VSlotAppend),
+		).Disabled(disable).Attr("@click",
+			fmt.Sprintf(`menuLocals.locales.includes("%s")?menuLocals.locales.splice(menuLocals.locales.indexOf("%s"), 1):menuLocals.locales.push("%s");`, locale, locale, locale)),
+		)
+	}
+	return web.Scope(
+		VMenu(
+			web.Slot(
+				VIcon("mdi-menu-down").Attr("v-bind", "props").Disabled(allSelected),
+			).Name("activator").Scope(`{props}`),
+			VList(
+				localsListItems...,
+			),
+		).CloseOnContentClick(false).Attr("@update:model-value",
+			fmt.Sprintf(`$event?null:%s`,
+				web.Plaid().
+					URL(ctx.R.URL.Path).
+					EventFunc(DoLocalize).
+					Query(presets.ParamID, p.PrimarySlug()).
+					Query("localize_from", b.GetCorrectLocaleCode(ctx.R)).
+					FieldValue("localize_to", web.Var("menuLocals.locales")).
+					Go(),
+			)),
+	).VSlot(`{locals:menuLocals}`).
+		Init(fmt.Sprintf(`{locales:%v}`, h.JSONString(existLocales)))
 }
 
 func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {
@@ -136,26 +199,5 @@ func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLCompo
 				locales...,
 			).Density(DensityCompact),
 		)
-	}
-}
-
-func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
-	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-			return nil
-		}
-
-		return VListItem(
-			web.Slot(
-				// icon was language
-				VIcon("mdi-translate"),
-			).Name("prepend"),
-			VListItemTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
-		).Attr("@click", web.Plaid().
-			EventFunc(Localize).
-			Queries(editExtraParams).
-			Query(presets.ParamID, id).
-			URL(url).
-			Go())
 	}
 }
