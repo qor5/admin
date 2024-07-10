@@ -96,7 +96,6 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoDeleteDetailingListField, mb.detailing.DeleteDetailListField)
 	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
 
-	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
 

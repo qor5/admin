@@ -88,7 +88,7 @@ func TestModelKeys(t *testing.T) {
 
 	var err error
 
-	err = builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	err = builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 
 	builder.RegisterModel(widgetModel).AddKeys("Name")
-	err = builder.AddCreateRecord(currentUser, Widget{Name: "Text 01", Title: "123"}, db)
+	err = builder.AddCreateRecord(currentUser, Widget{Name: "Text 01", Title: "123"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 
-	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -146,50 +146,50 @@ func TestModelLink(t *testing.T) {
 func TestModelTypeHanders(t *testing.T) {
 	builder := New(db)
 	builder.Install(pb)
-	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, now any, prefixField string) (diffs []Diff) {
+	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, new any, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
-		nowWidgets := now.(Widgets)
+		newWidgets := new.(Widgets)
 
 		var (
 			oldLen  = len(oldWidgets)
-			nowLen  = len(nowWidgets)
+			newLen  = len(newWidgets)
 			minLen  int
 			added   bool
 			deleted bool
 		)
 
-		if oldLen > nowLen {
-			minLen = nowLen
+		if oldLen > newLen {
+			minLen = newLen
 			deleted = true
 		}
 
-		if oldLen < nowLen {
+		if oldLen < newLen {
 			minLen = oldLen
 			added = true
 		}
 
-		if oldLen == nowLen {
+		if oldLen == newLen {
 			minLen = oldLen
 		}
 
 		for i := 0; i < minLen; i++ {
-			if oldWidgets[i].Name != nowWidgets[i].Name {
+			if oldWidgets[i].Name != newWidgets[i].Name {
 				newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
-				diffs = append(diffs, Diff{Field: newPrefixField, Old: oldWidgets[i].Name, Now: nowWidgets[i].Name})
+				diffs = append(diffs, Diff{Field: newPrefixField, Old: oldWidgets[i].Name, New: newWidgets[i].Name})
 			}
 		}
 
 		if added {
-			for i := minLen; i < nowLen; i++ {
+			for i := minLen; i < newLen; i++ {
 				newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
-				diffs = append(diffs, Diff{Field: newPrefixField, Old: "", Now: nowWidgets[i].Name})
+				diffs = append(diffs, Diff{Field: newPrefixField, Old: "", New: newWidgets[i].Name})
 			}
 		}
 
 		if deleted {
 			for i := minLen; i < oldLen; i++ {
 				newPrefixField := fmt.Sprintf("%s.%d", prefixField, i)
-				diffs = append(diffs, Diff{Field: newPrefixField, Old: oldWidgets[i].Name, Now: ""})
+				diffs = append(diffs, Diff{Field: newPrefixField, Old: oldWidgets[i].Name, New: ""})
 			}
 		}
 		return diffs
@@ -213,12 +213,12 @@ func TestModelTypeHanders(t *testing.T) {
 				{Name: "Card 03", Title: "cards 1"},
 				{Name: "Video 03", Title: "video 1"},
 			},
-		}, db)
+		})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	wants := `[{"Field":"VersionName","Old":"v1","Now":"v2"},{"Field":"Title","Old":"test","Now":"test1"},{"Field":"Widgets.0","Old":"Text 01","Now":"Text 011"},{"Field":"Widgets.1","Old":"HeroBanner 02","Now":"HeroBanner 022"},{"Field":"Widgets.3","Old":"","Now":"Video 03"}]`
+	wants := `[{"Field":"VersionName","Old":"v1","New":"v2"},{"Field":"Title","Old":"test","New":"test1"},{"Field":"Widgets.0","Old":"Text 01","New":"Text 011"},{"Field":"Widgets.1","Old":"HeroBanner 02","New":"HeroBanner 022"},{"Field":"Widgets.3","Old":"","New":"Video 03"}]`
 	if record.ModelDiffs != wants {
 		t.Errorf("want the diffs %v, but got %v", wants, record.ModelDiffs)
 	}
@@ -231,7 +231,7 @@ func TestCreatorInferface(t *testing.T) {
 	builder.RegisterModel(pageModel)
 	resetDB()
 
-	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -251,19 +251,19 @@ func TestGetActivityLogs(t *testing.T) {
 	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
 	resetDB()
 
-	err := builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, db)
+	err := builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"}, db)
+	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	resetDB()
 	// add create record
 	db.Create(data1)
-	builder.AddCreateRecord(currentUser, data1, db)
+	builder.AddCreateRecord(currentUser, data1)
 	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
@@ -329,7 +329,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add edit record
 	data1.Title = "test1-1"
 	data1.Description = "Description1-1"
-	builder.AddEditRecord(currentUser, data1, db)
+	builder.AddEditRecord(currentUser, data1)
 	db.Save(data1)
 
 	data2.Title = "test2-1"
@@ -345,16 +345,16 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "1").Find(&log1); log1.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:1", log1)
 		}
-		if log1.ModelDiffs != `[{"Field":"Title","Old":"test1","Now":"test1-1"},{"Field":"Description","Old":"Description1","Now":"Description1-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","Now":"test1-1"},{"Field":"Description","Old":"Description1","Now":"Description1-1"}]`, log1.ModelDiffs)
+		if log1.ModelDiffs != `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]`, log1.ModelDiffs)
 		}
 
 		var log2 ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "2").Find(&log2); log2.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:2", log2)
 		}
-		if log2.ModelDiffs != `[{"Field":"Title","Old":"test2","Now":"test2-1"},{"Field":"Description","Old":"Description3","Now":"Description2-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","Now":"test2-1"},{"Field":"Description","Old":"Description3","Now":"Description2-1"}]`, log1.ModelDiffs)
+		if log2.ModelDiffs != `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]`, log1.ModelDiffs)
 		}
 
 		if log2.ModelLabel != "page-02" {
@@ -365,8 +365,8 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "3").Find(&log3); log3.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:3", log3)
 		}
-		if log3.ModelDiffs != `[{"Field":"Title","Old":"test3","Now":"test3-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test3","Now":"test3-1"}]`, log1.ModelDiffs)
+		if log3.ModelDiffs != `[{"Field":"Title","Old":"test3","New":"test3-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test3","New":"test3-1"}]`, log1.ModelDiffs)
 		}
 
 		if log3.ModelLabel != "page-03" {
@@ -375,8 +375,8 @@ func TestMutliModelBuilder(t *testing.T) {
 
 	}
 
-	// // add delete record
-	builder.AddDeleteRecord(currentUser, data1, db)
+	// add delete record
+	builder.AddDeleteRecord(currentUser, data1)
 	db.Delete(data1)
 
 	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})

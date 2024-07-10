@@ -33,12 +33,12 @@
   activity.RegisterModel(presetModel).AddIgnoredFields("UpdateAt") // will ignore the UpdateAt field when recording activity log for update operation
   activity.RegisterModel(presetModel).AddTypeHanders(
     time.Time{},
-    func(old, now any, prefixField string) []Diff {
+    func(old, new any, prefixField string) []Diff {
   		oldString := old.(time.Time).Format(time.RFC3339)
-  		nowString := now.(time.Time).Format(time.RFC3339)
-  		if oldString != nowString {
+  		newString := new.(time.Time).Format(time.RFC3339)
+  		if oldString != newString {
   			return []Diff{
-  				{Field: prefixField, Old: oldString, Now: nowString},
+  				{Field: prefixField, Old: oldString, New: newString},
   			}
   		}
   		return []Diff{}

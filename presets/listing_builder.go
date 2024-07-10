@@ -324,13 +324,3 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	})
 	return
 }
-
-// TODO: should remove ReloadList event func
-func (b *ListingBuilder) notifReloadList() string {
-	return "PresetsReloadList_" + b.injectorName()
-}
-
-func (b *ListingBuilder) reloadList(evCtx *web.EventContext) (r web.EventResponse, err error) {
-	r.Emit(b.notifReloadList())
-	return
-}

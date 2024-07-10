@@ -24,12 +24,12 @@ type Messages struct {
 	FilterModel     string
 
 	DiffDetail  string
-	DiffNew     string
+	DiffAdd     string
 	DiffDelete  string
 	DiffChanges string
 	DiffField   string
 	DiffOld     string
-	DiffNow     string
+	DiffNew     string
 	DiffValue   string
 
 	SuccessfullyCreated string
@@ -62,12 +62,12 @@ var Messages_en_US = &Messages{
 	FilterModel:     "Model Name",
 
 	DiffDetail:  "Detail",
-	DiffNew:     "New",
+	DiffAdd:     "New",
 	DiffDelete:  "Delete",
 	DiffChanges: "Changes",
 	DiffField:   "Filed",
 	DiffOld:     "Old",
-	DiffNow:     "Now",
+	DiffNew:     "Now",
 	DiffValue:   "Value",
 
 	SuccessfullyCreated: "Successfully Created",
@@ -99,12 +99,12 @@ var Messages_zh_CN = &Messages{
 	FilterCreator:   "操作人",
 	FilterModel:     "操作对象",
 	DiffDetail:      "详情",
-	DiffNew:         "新加",
+	DiffAdd:         "新加",
 	DiffDelete:      "删除",
 	DiffChanges:     "修改",
 	DiffField:       "字段",
 	DiffOld:         "之前的值",
-	DiffNow:         "当前的值",
+	DiffNew:         "当前的值",
 	DiffValue:       "值",
 
 	SuccessfullyCreated: "成功创建",

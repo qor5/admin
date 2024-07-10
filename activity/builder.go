@@ -47,10 +47,6 @@ type Builder struct {
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	b.RegisterModel(m)
-	// TODO: 应该写到 RegisterModel 里面？
-	m.RegisterEventFunc(eventCreateNote, createNote(b, m))
-	m.RegisterEventFunc(eventUpdateNote, updateNote(b, m))
-	m.RegisterEventFunc(eventDeleteNote, deleteNote(b, m))
 	return nil
 }
 
@@ -147,7 +143,10 @@ func objectID(obj interface{}) string {
 	if slugger, ok := obj.(presets.SlugEncoder); ok {
 		id = slugger.PrimarySlug()
 	} else {
-		id = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+		v, err := reflectutils.Get(obj, "ID")
+		if err == nil {
+			id = fmt.Sprint(v)
+		}
 	}
 	return id
 }
@@ -155,8 +154,17 @@ func objectID(obj interface{}) string {
 func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
 	mb.presetModel = presetModel
 	mb.LinkFunc(func(a any) string {
-		return presetModel.Info().DetailingHref(objectID(a))
+		id := objectID(a)
+		if id == "" {
+			return id
+		}
+		return presetModel.Info().DetailingHref(id)
 	})
+
+	presetModel.RegisterEventFunc(eventCreateNote, createNote(ab, presetModel))
+	// TODO: 可以修改和删除？
+	presetModel.RegisterEventFunc(eventUpdateNote, updateNote(ab, presetModel))
+	presetModel.RegisterEventFunc(eventDeleteNote, deleteNote(ab, presetModel))
 
 	editing := presetModel.Editing()
 	d := presetModel.Detailing()
@@ -201,7 +209,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 			}
 
 			if ok && id != "" && mb.skip&Update == 0 {
-				return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj, db)
+				return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj)
 			}
 
 			return
@@ -235,7 +243,7 @@ func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) h.HTMLCompone
 	}
 
 	logs := ab.GetActivityLogs(obj, keys, db)
-	for _, item := range logs {
+	for i, item := range logs {
 		creatorName := item.Creator.Name
 		if creatorName == "" {
 			creatorName = "Unknown" // i18n
@@ -244,16 +252,20 @@ func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) h.HTMLCompone
 		if item.Creator.Avatar == "" {
 			avatarText = strings.ToUpper(creatorName[0:1])
 		}
+		dotColor := "#30a46c"
+		if i != 0 {
+			dotColor = "#e0e0e0"
+		}
 		// TODO: v.ColorXXX ?
 		// TODO: 不需要支持非 Notes 吗？
 		children = append(children,
 			h.Div().Class("d-flex flex-column ga-1").Children(
 				h.Div().Class("d-flex flex-row align-center ga-2").Children(
-					h.Div().Style("width: 8px; height: 8px; background-color: #30a46c").Class("rounded-circle"),
+					h.Div().Style("width: 8px; height: 8px; background-color: "+dotColor).Class("rounded-circle"),
 					h.Div(h.Text(humanize.Time(item.CreatedAt))).Style("color: #757575"),
 				),
 				h.Div().Class("d-flex flex-row ga-2").Children(
-					h.Div().Class("align-self-stretch").Style("width: 1px; margin-top: -6px; margin-bottom: -2px; margin-left: 3.5px; margin-right: 3.5px; background-color: #30a46c"),
+					h.Div().Class("align-self-stretch").Style("background-color: "+dotColor+"; width: 1px; margin-top: -6px; margin-bottom: -2px; margin-left: 3.5px; margin-right: 3.5px;"),
 					h.Div().Class("d-flex flex-column pb-3").Children(
 						h.Div().Class("d-flex flex-row align-center ga-2").Children(
 							v.VAvatar().Attr("style", "font-size: 12px; color: #3e63dd").Attr("color", "#E6EDFE").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
@@ -340,66 +352,66 @@ func (ab *Builder) AddCustomizedRecord(ctx context.Context, action string, diff 
 }
 
 // AddViewRecord add view record
-func (ab *Builder) AddViewRecord(creator *User, v any, db *gorm.DB) error {
+func (ab *Builder) AddViewRecord(creator *User, v any) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddViewRecord(creator, v, db)
+		return mb.AddViewRecord(creator, v)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", v)
 }
 
 // AddDeleteRecord	add delete record
-func (ab *Builder) AddDeleteRecord(creator *User, v any, db *gorm.DB) error {
+func (ab *Builder) AddDeleteRecord(creator *User, v any) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddDeleteRecord(creator, v, db)
+		return mb.AddDeleteRecord(creator, v)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", v)
 }
 
 // AddSaverRecord will save a create log or a edit log
-func (ab *Builder) AddSaveRecord(creator *User, now any, db *gorm.DB) error {
-	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddSaveRecord(creator, now, db)
+func (ab *Builder) AddSaveRecord(creator *User, new any) error {
+	if mb, ok := ab.GetModelBuilder(new); ok {
+		return mb.AddSaveRecord(creator, new)
 	}
 
-	return fmt.Errorf("can't find model builder for %v", now)
+	return fmt.Errorf("can't find model builder for %v", new)
 }
 
 // AddCreateRecord add create record
-func (ab *Builder) AddCreateRecord(creator *User, v any, db *gorm.DB) error {
+func (ab *Builder) AddCreateRecord(creator *User, v any) error {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddCreateRecord(creator, v, db)
+		return mb.AddCreateRecord(creator, v)
 	}
 
 	return fmt.Errorf("can't find model builder for %v", v)
 }
 
 // AddEditRecord add edit record
-func (ab *Builder) AddEditRecord(creator *User, now any, db *gorm.DB) error {
-	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddEditRecord(creator, now, db)
+func (ab *Builder) AddEditRecord(creator *User, new any) error {
+	if mb, ok := ab.GetModelBuilder(new); ok {
+		return mb.AddEditRecord(creator, new)
 	}
 
-	return fmt.Errorf("can't find model builder for %v", now)
+	return fmt.Errorf("can't find model builder for %v", new)
 }
 
 // AddEditRecord add edit record
-func (ab *Builder) AddEditRecordWithOld(creator *User, old, now any, db *gorm.DB) error {
-	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddEditRecordWithOld(creator, old, now, db)
+func (ab *Builder) AddEditRecordWithOld(creator *User, old, new any) error {
+	if mb, ok := ab.GetModelBuilder(new); ok {
+		return mb.AddEditRecordWithOld(creator, old, new)
 	}
 
-	return fmt.Errorf("can't find model builder for %v", now)
+	return fmt.Errorf("can't find model builder for %v", new)
 }
 
 // AddEditRecordWithOldAndContext add edit record
-func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, now any) error {
-	if mb, ok := ab.GetModelBuilder(now); ok {
-		return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx), old, now, ab.db)
+func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, new any) error {
+	if mb, ok := ab.GetModelBuilder(new); ok {
+		return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx), old, new)
 	}
 
-	return fmt.Errorf("can't find model builder for %v", now)
+	return fmt.Errorf("can't find model builder for %v", new)
 }
 
 func (b *Builder) AutoMigrate() (r *Builder) {

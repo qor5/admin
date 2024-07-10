@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -20,7 +19,7 @@ import (
 const (
 	I18nActivityKey      i18n.ModuleKey = "I18nActivityKey"
 	DetailFieldTimeline  string         = "Timeline"
-	ListFieldUnreadNotes string         = "Notes"
+	ListFieldUnreadNotes string         = "UnreadNotes"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -29,10 +28,10 @@ func (ab *Builder) Install(b *presets.Builder) error {
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
 
-	// TODO: 为什么注释掉？
-	// if permB := b.GetPermission(); permB != nil {
-	// 	permB.CreatePolicies(ab.permPolicy)
-	// }
+	if permB := b.GetPermission(); permB != nil {
+		permB.CreatePolicies(ab.permPolicy)
+	}
+
 	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
 	return ab.logModelInstall(b, mb)
 }
@@ -206,7 +205,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.ModelKeys))),
 						h.If(record.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.ModelLink)))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))), // TODO: 需要提取到常量中
+						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format(timeFormat)))),
 					),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
@@ -221,12 +220,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	return nil
 }
 
-func fixSpecialChars(str string) string {
-	str = strings.Replace(str, "{", "[", -1)
-	str = strings.Replace(str, "}", "]", -1)
-	return str
-}
-
 func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	var diffs []Diff
 	err := json.Unmarshal([]byte(diffstr), &diffs)
@@ -239,23 +232,23 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	}
 
 	var (
-		newdiffs    []Diff
+		addediffs   []Diff
 		changediffs []Diff
 		deletediffs []Diff
 	)
 
 	for _, diff := range diffs {
-		if diff.Now == "" && diff.Old != "" {
+		if diff.New == "" && diff.Old != "" {
 			deletediffs = append(deletediffs, diff)
 			continue
 		}
 
-		if diff.Now != "" && diff.Old == "" {
-			newdiffs = append(newdiffs, diff)
+		if diff.New != "" && diff.Old == "" {
+			addediffs = append(addediffs, diff)
 			continue
 		}
 
-		if diff.Now != "" && diff.Old != "" {
+		if diff.New != "" && diff.Old != "" {
 			changediffs = append(changediffs, diff)
 			continue
 		}
@@ -263,18 +256,18 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	var diffsElems []h.HTMLComponent
 	msgr := i18n.MustGetModuleMessages(req, I18nActivityKey, Messages_en_US).(*Messages)
 
-	if len(newdiffs) > 0 {
+	if len(addediffs) > 0 {
 		var elems []h.HTMLComponent
-		for _, d := range newdiffs {
+		for _, d := range addediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Now)), // TODO: 这个为什么需要 fixSpecialChars ？
+				h.Td().Attr("v-pre", true).Text(d.New),
 			))
 		}
 
 		diffsElems = append(diffsElems,
 			VCard(
-				VCardTitle(h.Text(msgr.DiffNew)),
+				VCardTitle(h.Text(msgr.DiffAdd)),
 				VTable(
 					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
 					h.Tbody(elems...),
@@ -287,7 +280,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		for _, d := range deletediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Old)),
+				h.Td().Attr("v-pre", true).Text(d.Old),
 			))
 		}
 
@@ -306,8 +299,8 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		for _, d := range changediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Old)),
-				h.Td().Text(fixSpecialChars(d.Now)),
+				h.Td().Attr("v-pre", true).Text(d.Old),
+				h.Td().Attr("v-pre", true).Text(d.New),
 			))
 		}
 
@@ -315,7 +308,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 			VCard(
 				VCardTitle(h.Text(msgr.DiffChanges)),
 				VTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
+					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNew))),
 					h.Tbody(elems...),
 				),
 			).Attr("style", "margin-top:15px;margin-bottom:15px;"))

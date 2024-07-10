@@ -348,7 +348,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 				nowString := now.(time.Time).Format(fm)
 				if oldString != nowString {
 					return []activity.Diff{
-						{Field: prefixField, Old: oldString, Now: nowString},
+						{Field: prefixField, Old: oldString, New: nowString},
 					}
 				}
 				return []activity.Diff{}
@@ -359,7 +359,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 				nowString := now.(Schedule).ScheduleTime.Format(fm)
 				if oldString != nowString {
 					return []activity.Diff{
-						{Field: prefixField, Old: oldString, Now: nowString},
+						{Field: prefixField, Old: oldString, New: nowString},
 					}
 				}
 				return []activity.Diff{}

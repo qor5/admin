@@ -12,18 +12,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: 都已经给 obj 了，直接 First(obj) 不行吗？
-func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
+func findOldWithSlug(ref any, slug string, db *gorm.DB) (any, bool) {
 	if slug == "" {
-		return findOld(obj, db)
+		return findOld(ref, db)
 	}
 
 	var (
-		objValue = reflect.Indirect(reflect.ValueOf(obj))
-		old      = reflect.New(objValue.Type()).Interface()
+		rt  = reflect.Indirect(reflect.ValueOf(ref)).Type()
+		old = reflect.New(rt).Interface()
 	)
 
-	if slugger, ok := obj.(presets.SlugDecoder); ok {
+	if slugger, ok := ref.(presets.SlugDecoder); ok {
 		cs := slugger.PrimaryColumnValuesBySlug(slug)
 		for key, value := range cs {
 			db = db.Where(fmt.Sprintf("%s = ?", key), value)
@@ -40,22 +39,22 @@ func findOldWithSlug(obj any, slug string, db *gorm.DB) (any, bool) {
 }
 
 // TODO: 方法名意义不清晰，这里是根据传入的 obj 的主键来构造其查询条件，其实突然好奇 gorm 默认是否就是这样做的。
-func findOld(obj any, db *gorm.DB) (any, bool) {
+func findOld(ref any, db *gorm.DB) (any, bool) {
 	var (
-		objValue = reflect.Indirect(reflect.ValueOf(obj))
-		old      = reflect.New(objValue.Type()).Interface()
-		sqls     []string
-		vars     []any
+		rtRef = reflect.Indirect(reflect.ValueOf(ref))
+		old   = reflect.New(rtRef.Type()).Interface()
+		sqls  []string
+		vars  []any
 	)
 
 	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(obj); err != nil {
+	if err := stmt.Parse(ref); err != nil {
 		return nil, false
 	}
 
 	for _, dbName := range stmt.Schema.DBNames {
 		if field := stmt.Schema.LookUpField(dbName); field != nil && field.PrimaryKey {
-			if value, isZero := field.ValueOf(db.Statement.Context, objValue); !isZero {
+			if value, isZero := field.ValueOf(db.Statement.Context, rtRef); !isZero {
 				sqls = append(sqls, fmt.Sprintf("%v = ?", dbName))
 				vars = append(vars, value)
 			}
