@@ -24,6 +24,8 @@ const (
 	Update
 )
 
+const InjectorTop = "_actitivy_top_"
+
 type User struct {
 	ID     uint   `json:"id"`
 	Name   string `json:"name"`
@@ -48,6 +50,11 @@ type Builder struct {
 // @snippet_end
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
+	// TODO: sync.Once ?
+	pb.GetDependencyCenter().RegisterInjector(InjectorTop)
+	pb.GetDependencyCenter().MustProvide(InjectorTop, func() *Builder {
+		return b
+	})
 	b.RegisterModel(m)
 	return nil
 }
@@ -118,6 +125,18 @@ func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) erro
 		}
 	}
 	return nil
+}
+
+func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {
+	var logs []*ActivityLog
+	err := ab.db.Where("model_name = ? AND model_keys = ?", modelName, modelKeys).Order("created_at DESC").Find(&logs).Error
+	if err != nil {
+		return nil, err
+	}
+	if err := ab.supplyCreators(ctx, logs); err != nil {
+		return nil, err
+	}
+	return logs, nil
 }
 
 func (ab *Builder) GetActivityLogs(ctx context.Context, m any, keys string) ([]*ActivityLog, error) {
@@ -215,7 +234,12 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	db := ab.db
 
 	d.Field(DetailFieldTimeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return web.Portal(ab.timelineList(ctx.R.Context(), obj, "")).Name(TimelinePortalName) // TODO: 这里没给到 keys，可以吗？
+		keys := ab.MustGetModelBuilder(presetModel).KeysValue(obj)
+		return presetModel.GetPresetsBuilder().GetDependencyCenter().MustInject(InjectorTop, &Timeline{
+			ModelName:       modelName(obj),
+			ModelKeys:       keys,
+			ShowAddNotesBox: false,
+		})
 	})
 
 	// TODO: 需要判断是否存在此 field
@@ -280,7 +304,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 func (ab *Builder) timelineList(ctx context.Context, obj any, keys string) h.HTMLComponent {
 	children := []h.HTMLComponent{
 		// TODO: onClick
-		v.VBtn("Add Notes").Class("text-none mb-4").Attr("prepend-icon", "mdi-plus").Attr("variant", "tonal").Attr("color", "grey-darken-3"), // TODO: i18n
+		v.VBtn("Add Note").Class("text-none mb-4").Attr("prepend-icon", "mdi-plus").Attr("variant", "tonal").Attr("color", "grey-darken-3"), // TODO: i18n
 	}
 
 	logs, err := ab.GetActivityLogs(ctx, obj, keys)

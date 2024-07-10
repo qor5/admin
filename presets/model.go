@@ -62,6 +62,10 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	return
 }
 
+func (mb *ModelBuilder) GetPresetsBuilder() *Builder {
+	return mb.p
+}
+
 func (mb *ModelBuilder) HasDetailing() bool {
 	return mb.hasDetailing
 }

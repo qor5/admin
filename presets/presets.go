@@ -112,6 +112,10 @@ func New() *Builder {
 	return r
 }
 
+func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {
+	return b.dc
+}
+
 func (b *Builder) GetI18n() (r *i18n.Builder) {
 	return b.i18nBuilder
 }
