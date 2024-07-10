@@ -500,14 +500,14 @@ func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.Ev
 			return errors.New(vErr.Error())
 		}
 	}
-	err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
+	err = b.father.mb.editing.Saver(obj, id, ctx)
 	return
 }
 
 func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
 	// Delete or Add row
 	if ctx.Queries().Get(b.SaveBtnKey()) == "" {
-		err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
+		err = b.father.mb.editing.Saver(obj, id, ctx)
 		return
 	}
 
@@ -530,7 +530,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 			return errors.New(vErr.Error())
 		}
 	}
-	err = b.father.mb.p.dataOperator.Save(obj, id, ctx)
+	err = b.father.mb.editing.Saver(obj, id, ctx)
 	return
 }
 

@@ -43,9 +43,29 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		detailing = mb.Detailing("ModelDiffs").Drawer(true)
 	)
 	ab.lmb = mb
+
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+			r, totalCount, err = in(model, params, ctx)
+			if totalCount <= 0 {
+				return
+			}
+			logs := r.([]*ActivityLog)
+			if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
+				return nil, 0, err
+			}
+			return logs, totalCount, nil
+		}
+	})
+
 	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST")))
+			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format(timeFormat)))
+		},
+	)
+	listing.Field("Creator").Label(Messages_en_US.ModelCreator).ComponentFunc(
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Td(h.Text(obj.(*ActivityLog).Creator.Name))
 		},
 	)
 	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
@@ -65,35 +85,37 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		var actionOptions []*vuetifyx.SelectItem
 		for _, action := range DefaultActions {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  action,
+				Text:  action, // TODO: i18n label ?
 				Value: action,
 			})
 		}
-		actionGroups := []*ActivityLog{}
-		err := ab.db.Select("action").Group("action").Order("action").Find(&actionGroups).Error
+		actions := []string{}
+		err := ab.db.Model(&ActivityLog{}).Select("DISTINCT action AS action").Pluck("action", &actions).Error
 		if err != nil {
 			panic(err)
 		}
-		for _, action := range actionGroups {
+		for _, action := range actions {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  string(action.Action),
-				Value: string(action.Action),
+				Text:  string(action),
+				Value: string(action),
 			})
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		var creatorOptions []*vuetifyx.SelectItem
-		creatorGroups := []*ActivityLog{}
-		// TODO: 这里会有个问题，如果 creator 的 name 和 avatar 变化了呢？如果记录不跟随变化，那老的 name 和 avatar 就只是成了快照了
-		// TODO: 所以是否是需要一个单独表来记录这个信息，并且需要同步更新相同 id 的信息？
-		err = ab.db.Select("creator").Group("creator").Find(&creatorGroups).Error
+		creatorIDs := []uint{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT creator_id AS id").Pluck("id", &creatorIDs).Error
 		if err != nil {
 			panic(err)
 		}
-		for _, creator := range creatorGroups {
+		creators, err := ab.findUsers(ctx.R.Context(), creatorIDs)
+		if err != nil {
+			panic(err)
+		}
+		var creatorOptions []*vuetifyx.SelectItem
+		for _, creator := range creators {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Creator.Name,
-				Value: fmt.Sprint(creator.Creator.ID),
+				Text:  creator.Name,
+				Value: fmt.Sprint(creator.ID),
 			})
 		}
 
@@ -122,10 +144,10 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		if len(creatorOptions) > 0 {
 			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "creator",
+				Key:          "creator_id",
 				Label:        msgr.FilterCreator,
 				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator %s ?`, // TODO: 这个判断并不对，因为 creator 是 json ，这里是需要判断其中 creator.id 的
+				SQLCondition: `creator_id %s ?`,
 				Options:      creatorOptions,
 			})
 		}
@@ -191,7 +213,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				VTable(
 					h.Tbody(
 						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator.Name))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))), // TODO: 这个 UserID 和 Creator.ID 有什么区别？应该可以弃用了？
+						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprint(record.CreatorID)))),
 						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(string(record.Action)))),
 						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
 						h.Tr(

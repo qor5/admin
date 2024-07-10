@@ -17,7 +17,7 @@ import (
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
 	typ           reflect.Type                 // model type
-	activity      *Builder                     // activity builder
+	ab            *Builder                     // activity builder
 	presetModel   *presets.ModelBuilder        // preset model builder
 	skip          uint8                        // skip the refined data operator of the presetModel
 	keys          []string                     // primary keys
@@ -128,13 +128,12 @@ func (mb *ModelBuilder) KeysValue(v any) string {
 }
 
 // AddRecords add records log
-// TODO: 但实际上这个 action 只能处理 CURD 的，所以真的有必要搞这个玩意吗？
 func (mb *ModelBuilder) AddRecords(ctx context.Context, action string, vs ...any) error {
 	if len(vs) == 0 {
 		return errors.New("data are empty")
 	}
 
-	creator := mb.activity.currentUserFunc(ctx)
+	creator := mb.ab.currentUserFunc(ctx)
 
 	switch action {
 	case ActionView:
@@ -172,12 +171,12 @@ func (mb *ModelBuilder) AddRecords(ctx context.Context, action string, vs ...any
 
 // AddCustomizedRecord add customized record
 func (mb *ModelBuilder) AddCustomizedRecord(ctx context.Context, action string, diff bool, obj any) error {
-	creator := mb.activity.currentUserFunc(ctx)
+	creator := mb.ab.currentUserFunc(ctx)
 	if !diff {
 		return mb.save(creator, action, obj, "")
 	}
 
-	old, ok := findOld(obj, mb.activity.db)
+	old, ok := fetchOld(obj, mb.ab.db)
 	if !ok {
 		return fmt.Errorf("can't find old data for %+v ", obj)
 	}
@@ -196,7 +195,7 @@ func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any) error {
 
 // AddSaverRecord will save a create log or a edit log
 func (mb *ModelBuilder) AddSaveRecord(creator *User, new any) error {
-	old, ok := findOld(new, mb.activity.db) // TODO: 所以我们这个一定会使用 gorm 吗？不管是不是，db 不应该作为方法参数传入吧？
+	old, ok := fetchOld(new, mb.ab.db)
 	if !ok {
 		return mb.AddCreateRecord(creator, new)
 	}
@@ -210,7 +209,7 @@ func (mb *ModelBuilder) AddCreateRecord(creator *User, v any) error {
 
 // AddEditRecord add edit record
 func (mb *ModelBuilder) AddEditRecord(creator *User, new any) error {
-	old, ok := findOld(new, mb.activity.db)
+	old, ok := fetchOld(new, mb.ab.db)
 	if !ok {
 		return fmt.Errorf("can't find old data for %+v ", new)
 	}
@@ -246,13 +245,22 @@ func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
 }
 
 func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) error {
+	if mb.ab.findUsersFunc == nil { // TODO: 先简单处理吧
+		user := &ActivityUser{
+			Name:   creator.Name,
+			Avatar: creator.Avatar,
+		}
+		user.ID = creator.ID
+		// TODO: 这样 CreatedAt 会是空值
+		if err := mb.ab.db.Save(user).Error; err != nil {
+			return err
+		}
+	}
+
 	log := &ActivityLog{}
 
 	log.CreatedAt = time.Now()
-
-	log.Creator = *creator
-	log.UserID = creator.ID // TODO: 真的还需要 UserID 这个字段吗？
-
+	log.CreatorID = creator.ID
 	log.Action = action
 	log.ModelName = modelName(v)
 	log.ModelKeys = mb.KeysValue(v)
@@ -275,7 +283,7 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) 
 		log.ModelDiffs = diffs
 	}
 
-	err := mb.activity.db.Save(log).Error
+	err := mb.ab.db.Save(log).Error
 	if err != nil {
 		return err
 	}

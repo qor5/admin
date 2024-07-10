@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -236,11 +237,8 @@ func TestCreatorInferface(t *testing.T) {
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.Creator.Name != "John" {
-		t.Errorf("wrong creator %+v", record.Creator)
-	}
-	if record.UserID != 1 {
-		t.Errorf("want the creator id %v, but got %v", 1, record.UserID)
+	if record.CreatorID != 1 {
+		t.Errorf("want the user id %v, but got %v", 1, record.CreatorID)
 	}
 }
 
@@ -268,10 +266,9 @@ func TestGetActivityLogs(t *testing.T) {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
 
-	logs := builder.GetActivityLogs(Page{ID: 1, VersionName: "v1"}, "", db)
-	if len(logs) != 3 {
-		t.Errorf("expected 3 logs, but got %d", len(logs))
-	}
+	logs, err := builder.GetActivityLogs(context.Background(), Page{ID: 1, VersionName: "v1"}, "")
+	require.NoError(t, err)
+	require.Len(t, logs, 3)
 
 	expectedActions := []string{"Edit", "Edit", "Create"}
 	for i, log := range logs {
@@ -284,9 +281,7 @@ func TestGetActivityLogs(t *testing.T) {
 		if log.ModelKeys != "1:v1" {
 			t.Errorf("expected model keys '1:v1', but got %s", log.ModelKeys)
 		}
-		if log.Creator.Name != "John" {
-			t.Errorf("expected creator 'creator a', but got %+v", log.Creator)
-		}
+		require.Equal(t, log.CreatorID, currentUser.ID)
 	}
 }
 

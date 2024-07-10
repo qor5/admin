@@ -17,9 +17,9 @@ var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete
 type ActivityLog struct {
 	gorm.Model
 
-	UserID uint
-	// TODO: 因为 User 信息有更改的可能性，所以可能还是只记录 ID 然后可通过回调去获取 User 信息更合适？但是如果如此的话，就得还需要一个回调向外界获取 ID 对应的 names 了
-	Creator    User   `gorm:"serializer:json"`
+	CreatorID uint `gorm:"index"`
+	Creator   User `gorm:"-"`
+
 	Action     string `gorm:"index"`
 	ModelKeys  string `gorm:"index"`
 	ModelName  string `gorm:"index"`

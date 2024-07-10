@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO:
 var hasUnreadNotesQuery = `(%v.id in (
 WITH subquery AS (
     SELECT al.model_keys as resource_id
@@ -89,7 +90,7 @@ GROUP BY resource_type;
 	}
 
 	var unreadNote activity.ActivityLog
-	unreadNote.UserID = user.ID
+	unreadNote.CreatorID = user.ID
 	unreadNote.Comment = string(content)
 	unreadNote.Action = "unread_notes_count"
 	if err = db.Save(&unreadNote).Error; err != nil {
@@ -128,7 +129,10 @@ GROUP BY model_name, model_keys;
 			var userNotes []activity.ActivityLog
 			for _, result := range results {
 				un := activity.ActivityLog{
-					UserID:    u.ID,
+					Creator: activity.User{
+						ID:   u.ID,
+						Name: u.Name,
+					},
 					ModelName: result.ResourceType,
 					ModelKeys: result.ResourceID,
 					Action:    fmt.Sprintf("read_note:%d", result.Count),

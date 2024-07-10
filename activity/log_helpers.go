@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func findOldWithSlug(ref any, slug string, db *gorm.DB) (any, bool) {
+func fetchOldWithSlug(ref any, slug string, db *gorm.DB) (any, bool) {
 	if slug == "" {
-		return findOld(ref, db)
+		return fetchOld(ref, db)
 	}
 
 	var (
@@ -38,8 +38,7 @@ func findOldWithSlug(ref any, slug string, db *gorm.DB) (any, bool) {
 	return old, true
 }
 
-// TODO: 方法名意义不清晰，这里是根据传入的 obj 的主键来构造其查询条件，其实突然好奇 gorm 默认是否就是这样做的。
-func findOld(ref any, db *gorm.DB) (any, bool) {
+func fetchOld(ref any, db *gorm.DB) (any, bool) {
 	var (
 		rtRef = reflect.Indirect(reflect.ValueOf(ref))
 		old   = reflect.New(rtRef.Type()).Interface()
@@ -116,7 +115,7 @@ func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID stri
 
 	// TODO: 这个逻辑貌似不太对
 	var userNote ActivityLog
-	if err := db.Where("user_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
+	if err := db.Where("creator_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, err
 		}

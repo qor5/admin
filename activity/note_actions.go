@@ -16,9 +16,8 @@ const (
 	TimelinePortalName   = "activity-timeline-portal"
 )
 
-func createNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func createNote(ab *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := b.db
 		keys := ctx.R.FormValue(ParamResourceKeys)
 		content := ctx.R.FormValue(ParamResourceComment)
 
@@ -28,17 +27,17 @@ func createNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		}
 
 		mv := mb.NewModel()
-		creator := b.currentUserFunc(ctx.R.Context())
+		creator := ab.currentUserFunc(ctx.R.Context())
 		activity := ActivityLog{
-			UserID:    creator.ID,
-			Creator:   *creator,
+			CreatorID: creator.ID,
+			Creator:   *creator, // TODO:
 			ModelName: modelName(mv),
 			ModelKeys: keys,
 			Action:    ActionCreateNote,
 			Comment:   content,
 		}
 
-		if err = db.Save(&activity).Error; err != nil {
+		if err = ab.db.Save(&activity).Error; err != nil {
 			handleError(err, &r, "Failed to save activity")
 			return
 		}
@@ -46,7 +45,7 @@ func createNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
-		notesSection := b.timelineList(mv, keys, b.db)
+		notesSection := ab.timelineList(ctx.R.Context(), mv, keys)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: TimelinePortalName,
 			Body: notesSection,
@@ -56,9 +55,8 @@ func createNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func updateNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func updateNote(ab *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := b.db
 		keys := ctx.R.FormValue(ParamResourceKeys)
 		mn := modelName(mb.NewModel())
 
@@ -68,19 +66,19 @@ func updateNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 			return
 		}
 
-		creator := b.currentUserFunc(ctx.R.Context())
+		creator := ab.currentUserFunc(ctx.R.Context())
 
-		userNote := ActivityLog{UserID: creator.ID, ModelName: mn, ModelKeys: keys}
-		if err = db.Where(userNote).FirstOrCreate(&userNote).Error; err != nil {
+		userNote := ActivityLog{CreatorID: creator.ID, ModelName: mn, ModelKeys: keys}
+		if err = ab.db.Where(userNote).FirstOrCreate(&userNote).Error; err != nil {
 			log.Println("updateUserNoteAction error:", err)
 			return
 		}
 
 		var total int64
-		db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", mn, keys).Count(&total)
+		ab.db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ?", mn, keys).Count(&total)
 		userNote.Number = total
 
-		if err = db.Save(&userNote).Error; err != nil {
+		if err = ab.db.Save(&userNote).Error; err != nil {
 			log.Println("updateUserNoteAction error:", err)
 			return
 		}
@@ -90,18 +88,17 @@ func updateNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	}
 }
 
-func deleteNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
+func deleteNote(ab *Builder, mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := b.db
 		noteID := ctx.R.FormValue(presets.ParamID)
 		keys := ctx.R.FormValue(ParamResourceKeys)
 		// mn := modelName(mb.NewModel())
 
-		creator := b.currentUserFunc(ctx.R.Context())
+		creator := ab.currentUserFunc(ctx.R.Context())
 
 		// Find the note by ID and delete it
 
-		if err = db.Model(&ActivityLog{}).Delete("id = ? AND user_id = ?", noteID, creator.ID).Error; err != nil {
+		if err = ab.db.Model(&ActivityLog{}).Delete("id = ? AND creator_id = ?", noteID, creator.ID).Error; err != nil {
 			presets.ShowMessage(&r, "Failed to delete note", "error")
 			err = nil
 			return
@@ -110,7 +107,7 @@ func deleteNote(b *Builder, mb *presets.ModelBuilder) web.EventFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nNoteKey, Messages_en_US).(*Messages)
 		presets.ShowMessage(&r, msgr.SuccessfullyCreated, "")
 
-		notesSection := b.timelineList(mb, keys, b.db)
+		notesSection := ab.timelineList(ctx.R.Context(), mb, keys)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: TimelinePortalName,
 			Body: notesSection,

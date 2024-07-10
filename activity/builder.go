@@ -12,6 +12,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -24,9 +25,9 @@ const (
 )
 
 type User struct {
-	ID     uint
-	Name   string
-	Avatar string
+	ID     uint   `json:"id"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
 }
 
 type CurrentUserFunc func(ctx context.Context) *User
@@ -41,6 +42,7 @@ type Builder struct {
 	permPolicy      *perm.PolicyBuilder       // permission policy
 	logModelInstall presets.ModelInstallFunc  // log model install
 	currentUserFunc CurrentUserFunc
+	findUsersFunc   func(ctx context.Context, ids []uint) (map[uint]*User, error)
 }
 
 // @snippet_end
@@ -65,6 +67,29 @@ func (ab *Builder) CurrentUserFunc(v CurrentUserFunc) *Builder {
 	return ab
 }
 
+func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []uint) (map[uint]*User, error)) *Builder {
+	ab.findUsersFunc = v
+	return ab
+}
+
+func (ab *Builder) findUsers(ctx context.Context, ids []uint) (map[uint]*User, error) {
+	if ab.findUsersFunc != nil {
+		return ab.findUsersFunc(ctx, ids)
+	}
+	vs := []*ActivityUser{}
+	err := ab.db.Where("id IN ?", ids).Find(&vs).Error
+	if err != nil {
+		return nil, err
+	}
+	return lo.SliceToMap(vs, func(item *ActivityUser) (uint, *User) {
+		return item.ID, &User{
+			ID:     item.ID,
+			Name:   item.Name,
+			Avatar: item.Avatar,
+		}
+	}), nil
+}
+
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
 func New(db *gorm.DB) *Builder {
 	ab := &Builder{
@@ -79,18 +104,35 @@ func New(db *gorm.DB) *Builder {
 	return ab
 }
 
-func (ab *Builder) GetActivityLogs(m interface{}, keys string, db *gorm.DB) []*ActivityLog {
+func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) error {
+	creatorIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) uint {
+		return log.CreatorID
+	}))
+	creators, err := ab.findUsers(ctx, creatorIDs)
+	if err != nil {
+		return err
+	}
+	for _, log := range logs {
+		if creator, ok := creators[log.CreatorID]; ok {
+			log.Creator = *creator
+		}
+	}
+	return nil
+}
+
+func (ab *Builder) GetActivityLogs(ctx context.Context, m any, keys string) ([]*ActivityLog, error) {
 	if keys == "" {
 		keys = ab.MustGetModelBuilder(m).KeysValue(m)
 	}
 	var logs []*ActivityLog
-	err := db.Where("model_name = ? AND model_keys = ?", modelName(m), keys).
-		Order("created_at DESC").
-		Find(&logs).Error
+	err := ab.db.Where("model_name = ? AND model_keys = ?", modelName(m), keys).Order("created_at DESC").Find(&logs).Error
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return logs
+	if err := ab.supplyCreators(ctx, logs); err != nil {
+		return nil, err
+	}
+	return logs, nil
 }
 
 // RegisterModels register mutiple models
@@ -119,8 +161,8 @@ func (ab *Builder) RegisterModel(m any) (mb *ModelBuilder) {
 
 	keys := getPrimaryKey(reflectType)
 	mb = &ModelBuilder{
-		typ:      reflectType,
-		activity: ab,
+		typ: reflectType,
+		ab:  ab,
 
 		keys:          keys,
 		ignoredFields: keys,
@@ -138,7 +180,7 @@ func humanContent(log *ActivityLog) string {
 	return fmt.Sprintf("%s: %s", log.Action, log.Comment)
 }
 
-func objectID(obj interface{}) string {
+func objectID(obj any) string {
 	var id string
 	if slugger, ok := obj.(presets.SlugEncoder); ok {
 		id = slugger.PrimarySlug()
@@ -173,10 +215,11 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	db := ab.db
 
 	d.Field(DetailFieldTimeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return web.Portal(ab.timelineList(obj, "", db)).Name(TimelinePortalName)
+		return web.Portal(ab.timelineList(ctx.R.Context(), obj, "")).Name(TimelinePortalName) // TODO: 这里没给到 keys，可以吗？
 	})
 
-	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	// TODO: 需要判断是否存在此 field
+	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		rt := modelName(presetModel.NewModel())
 		ri := mb.KeysValue(obj)
 		user := ab.currentUserFunc(ctx.R.Context())
@@ -191,15 +234,13 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 		)
 	}).Label("Unread Notes") // TODO: i18n
 
-	// TODO: 这个的话会丢失掉一些通过 action 来操作的信息，所以需要通过 emit 来做？但是通过 emit 的话貌似又是需要要求 emit 给到 ctx 信息
-	// TODO: section 目前没使用 editing 的 SaveFunc
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if mb.skip&Update != 0 && mb.skip&Create != 0 {
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOld(obj, db)
+			old, ok := fetchOld(obj, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -222,7 +263,7 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 				return in(obj, id, ctx)
 			}
 
-			old, ok := findOldWithSlug(obj, id, db)
+			old, ok := fetchOldWithSlug(obj, id, db)
 			if err = in(obj, id, ctx); err != nil {
 				return err
 			}
@@ -236,20 +277,24 @@ func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.Mo
 	})
 }
 
-func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) h.HTMLComponent {
+func (ab *Builder) timelineList(ctx context.Context, obj any, keys string) h.HTMLComponent {
 	children := []h.HTMLComponent{
 		// TODO: onClick
 		v.VBtn("Add Notes").Class("text-none mb-4").Attr("prepend-icon", "mdi-plus").Attr("variant", "tonal").Attr("color", "grey-darken-3"), // TODO: i18n
 	}
 
-	logs := ab.GetActivityLogs(obj, keys, db)
-	for i, item := range logs {
-		creatorName := item.Creator.Name
+	logs, err := ab.GetActivityLogs(ctx, obj, keys)
+	if err != nil {
+		panic(err)
+	}
+
+	for i, log := range logs {
+		creatorName := log.Creator.Name
 		if creatorName == "" {
 			creatorName = "Unknown" // i18n
 		}
 		avatarText := ""
-		if item.Creator.Avatar == "" {
+		if log.Creator.Avatar == "" {
 			avatarText = strings.ToUpper(creatorName[0:1])
 		}
 		dotColor := "#30a46c"
@@ -257,27 +302,26 @@ func (ab *Builder) timelineList(obj any, keys string, db *gorm.DB) h.HTMLCompone
 			dotColor = "#e0e0e0"
 		}
 		// TODO: v.ColorXXX ?
-		// TODO: 不需要支持非 Notes 吗？
 		children = append(children,
 			h.Div().Class("d-flex flex-column ga-1").Children(
 				h.Div().Class("d-flex flex-row align-center ga-2").Children(
 					h.Div().Style("width: 8px; height: 8px; background-color: "+dotColor).Class("rounded-circle"),
-					h.Div(h.Text(humanize.Time(item.CreatedAt))).Style("color: #757575"),
+					h.Div(h.Text(humanize.Time(log.CreatedAt))).Style("color: #757575"),
 				),
 				h.Div().Class("d-flex flex-row ga-2").Children(
 					h.Div().Class("align-self-stretch").Style("background-color: "+dotColor+"; width: 1px; margin-top: -6px; margin-bottom: -2px; margin-left: 3.5px; margin-right: 3.5px;"),
 					h.Div().Class("d-flex flex-column pb-3").Children(
 						h.Div().Class("d-flex flex-row align-center ga-2").Children(
 							v.VAvatar().Attr("style", "font-size: 12px; color: #3e63dd").Attr("color", "#E6EDFE").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
-								h.Iff(item.Creator.Avatar != "", func() h.HTMLComponent {
-									return v.VImg().Attr("alt", creatorName).Attr("src", item.Creator.Avatar)
+								h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
+									return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 								}),
 							),
 							h.Div(h.Text(creatorName)).Style("font-weight: 500"),
 						),
 						h.Div().Class("d-flex flex-row align-center ga-2").Children(
 							h.Div().Style("width: 16px"),
-							h.Div(h.Text(humanContent(item))),
+							h.Div(h.Text(humanContent(log))),
 						),
 					),
 				),
@@ -422,7 +466,7 @@ func (b *Builder) AutoMigrate() (r *Builder) {
 }
 
 func AutoMigrate(db *gorm.DB) (err error) {
-	return db.AutoMigrate(&ActivityLog{})
+	return db.AutoMigrate(&ActivityLog{}, &ActivityUser{})
 }
 
 func modelName(v any) string {
