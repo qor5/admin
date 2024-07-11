@@ -16,7 +16,6 @@ const (
 	DoDeleteDetailingListField = "presets_Detailing_List_Field_Delete"
 	DoCreateDetailingListField = "presets_Detailing_List_Field_Create"
 
-	ReloadList         = "presets_ReloadList"
 	DeleteConfirmation = "presets_DeleteConfirmation"
 	OpenListingDialog  = "presets_OpenListingDialog"
 

@@ -298,7 +298,7 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 	f := b.Section(key)
 
 	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.GetFetchFunc()(obj, ctx.Param(ParamID), ctx)
 	if err != nil {
 		return
 	}

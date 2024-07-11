@@ -433,7 +433,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	id := ctx.Queries().Get(ParamID)
+	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
 			id = slugIf.PrimarySlug()
