@@ -5,14 +5,14 @@ import (
 )
 
 const (
-	ActionView       = "View"
-	ActionEdit       = "Edit"
-	ActionCreate     = "Create"
-	ActionDelete     = "Delete"
-	ActionCreateNote = "CreateNote"
+	ActionView   = "View"
+	ActionEdit   = "Edit"
+	ActionCreate = "Create"
+	ActionDelete = "Delete"
+	ActionNote   = "Note"
 )
 
-var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete, ActionCreateNote}
+var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete, ActionNote}
 
 type ActivityLog struct {
 	gorm.Model
@@ -25,5 +25,5 @@ type ActivityLog struct {
 	ModelName  string `gorm:"index"`
 	ModelLabel string
 	ModelLink  string
-	Detail     string `gorm:"type:jsonb;"`
+	Detail     string `gorm:"type:text;"`
 }

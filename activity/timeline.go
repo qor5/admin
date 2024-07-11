@@ -44,7 +44,7 @@ func (c *Timeline) CompoID() string {
 func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLComponent {
 	// TODO: i18n
 	switch log.Action {
-	case ActionCreateNote:
+	case ActionNote:
 		note := &Note{}
 		if err := json.Unmarshal([]byte(log.Detail), note); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal note: %v", err))
@@ -85,12 +85,13 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 	case ActionEdit:
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
 			h.Text("Edited"),
-			v.VBtn("More Info").Class("text-none text-overline").
+			v.VBtn("More Info").Class("text-none text-overline d-flex align-center").
 				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 				Attr("@click", web.POST().
 					EventFunc(actions.DetailingDrawer).
 					Query(presets.ParamOverlay, actions.Dialog).
-					URL(log.ModelLink).
+					URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
+					Query(paramHideModelLink, true).
 					Go(),
 				),
 		)
@@ -172,23 +173,8 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 				),
 			),
 		)
-		if log.Action == ActionCreateNote {
-			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false,showDeleteDialog:false}").Children(
-				v.VDialog().MaxWidth("520px").Attr("v-model", "xlocals.showDeleteDialog").Children(
-					v.VCard(
-						v.VCardTitle(h.Text("Delete note")),                               // TODO: i18n
-						v.VCardText(h.Text("Are you sure you want to delete this note?")), // TODO: i18n
-						v.VCardActions(
-							v.VSpacer(),
-							v.VBtn("Cancel").Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
-								Attr("@click", "xlocals.showDeleteDialog = false"),
-							v.VBtn("Delete").Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
-								Attr("@click", stateful.PostAction(ctx, c, c.DeleteNote, DeleteNoteRequest{
-									LogID: log.ID,
-								}).Go()),
-						),
-					),
-				),
+		if log.Action == ActionNote {
+			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
 				v.VHover().Disabled(log.CreatorID != c.ab.currentUserFunc(ctx).ID).Children(
 					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
@@ -197,7 +183,7 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
 									Attr("@click", "xlocals.showEditBox = true"),
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
-									Attr("@click", "xlocals.showDeleteDialog = true"),
+									Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %d`, log.ID)),
 							),
 							child,
 						),
@@ -209,8 +195,28 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 	return stateful.Actionable(ctx, c,
 		// web.Listen(NotifyTodosChanged, stateful.ReloadAction(ctx, c, nil).Go()), // TODO:
-		h.Div().Class("d-flex flex-column").Style("text-body-2").Children(
-			children...,
+		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
+			v.VDialog().MaxWidth("520px").
+				Attr(":model-value", `toplocals.deletingLogID !== -1`).
+				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
+				v.VCard(
+					v.VCardTitle(h.Text("Delete note")),                               // TODO: i18n
+					v.VCardText(h.Text("Are you sure you want to delete this note?")), // TODO: i18n
+					v.VCardActions(
+						v.VSpacer(),
+						v.VBtn("Cancel").Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
+							Attr("@click", `toplocals.deletingLogID = -1`),
+						v.VBtn("Delete").Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
+							Attr("@click", stateful.PostAction(ctx, c,
+								c.DeleteNote, DeleteNoteRequest{},
+								stateful.WithAppendFix(`v.request.log_id = toplocals.deletingLogID`),
+							).Go()),
+					),
+				),
+			),
+			h.Div().Class("d-flex flex-column").Style("text-body-2").Children(
+				children...,
+			),
 		),
 	).MarshalHTML(ctx)
 }
@@ -228,7 +234,7 @@ func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web
 	}
 
 	// TODO: 需要单独封装方法供外界显式调用
-	err := c.ab.MustGetModelBuilder(c.mb).create(ctx, ActionCreateNote, c.ModelName, c.ModelKeys, c.ModelLink, &Note{
+	err := c.ab.MustGetModelBuilder(c.mb).create(ctx, ActionNote, c.ModelName, c.ModelKeys, c.ModelLink, &Note{
 		Note: req.Note,
 	})
 	if err != nil {
@@ -239,6 +245,7 @@ func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web
 	presets.ShowMessage(&r, "Successfully added note", "") // TODO: i18n
 	stateful.AppendReloadToResponse(&r, c)
 	// r.Emit(NotifTImelineChanged)
+	// TODO: 需要 Emit ， ActivityLog 的变化是一定要 Emit 的
 	return
 }
 

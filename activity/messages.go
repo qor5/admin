@@ -65,7 +65,7 @@ var Messages_en_US = &Messages{
 	DiffAdd:     "New",
 	DiffDelete:  "Delete",
 	DiffChanges: "Changes",
-	DiffField:   "Filed",
+	DiffField:   "Field",
 	DiffOld:     "Old",
 	DiffNew:     "Now",
 	DiffValue:   "Value",
