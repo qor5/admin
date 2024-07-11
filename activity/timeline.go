@@ -50,7 +50,7 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 			return h.Text(fmt.Sprintf("Failed to unmarshal note: %v", err))
 		}
 		return h.Components(
-			h.Div().Attr("v-if", "!timelineLocals.showEditBox").Class("d-flex flex-column").Children(
+			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
 				h.Text("Added a note :"),
 				h.Pre(note.Note).Style("white-space: pre-wrap"),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
@@ -59,14 +59,14 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 					)
 				}),
 			),
-			h.Div().Attr("v-if", "!!timelineLocals.showEditBox").Class("flex-grow-1 d-flex flex-column mt-4").Style("position: relative").Children(
+			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("flex-grow-1 d-flex flex-column mt-4").Style("position: relative").Children(
 				// TODO: i18n
-				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).Label("").Variant(v.VariantOutlined).
+				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("").Variant(v.VariantOutlined).
 					Attr(web.VField("note", note.Note)...),
 				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
 					// TODO: i18n
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
-						Attr("@click", "timelineLocals.showEditBox = false"),
+						Attr("@click", "xlocals.showEditBox = false"),
 					// TODO: i18n
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-check").
 						Attr("@click", stateful.PostAction(ctx, c,
@@ -103,19 +103,23 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 }
 
 func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
+	// TODO:
+	// evCtx := web.MustGetEventContext(ctx)
+	// utilMsgr := i18n.MustGetModuleMessages(evCtx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+
 	children := []h.HTMLComponent{
 		// TODO: i18n
-		web.Scope().VSlot("{locals: timelineLocals,form}").Init("{showEditBox:false}").FormInit("{note:''}").Children(
-			v.VBtn("Add Note").Attr("v-if", "!timelineLocals.showEditBox").
+		web.Scope().VSlot("{locals: xlocals,form}").Init("{showEditBox:false}").Children(
+			v.VBtn("Add Note").Attr("v-if", "!xlocals.showEditBox").
 				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").
-				Attr("@click", "timelineLocals.showEditBox = true"),
-			h.Div().Attr("v-if", "!!timelineLocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
+				Attr("@click", "xlocals.showEditBox = true"),
+			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
 				// TODO: i18n
-				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).Label("Add Note").Variant(v.VariantOutlined).
+				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("Add Note").Variant(v.VariantOutlined).
 					Attr(web.VField("note", "")...),
 				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
-						Attr("@click", "timelineLocals.showEditBox = false"),
+						Attr("@click", "xlocals.showEditBox = false"),
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-check").
 						Attr("@click", stateful.PostAction(ctx, c,
 							c.CreateNote, CreateNoteRequest{},
@@ -169,22 +173,35 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 			),
 		)
 		if log.Action == ActionCreateNote {
-			child = web.Scope().VSlot("{locals: timelineLocals, form}").Init("{showEditBox:false}").Children(
+			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false,showDeleteDialog:false}").Children(
+				v.VDialog().MaxWidth("520px").Attr("v-model", "xlocals.showDeleteDialog").Children(
+					v.VCard(
+						v.VCardTitle(h.Text("Delete note")),                               // TODO: i18n
+						v.VCardText(h.Text("Are you sure you want to delete this note?")), // TODO: i18n
+						v.VCardActions(
+							v.VSpacer(),
+							v.VBtn("Cancel").Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
+								Attr("@click", "xlocals.showDeleteDialog = false"),
+							v.VBtn("Delete").Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
+								Attr("@click", stateful.PostAction(ctx, c, c.DeleteNote, DeleteNoteRequest{
+									LogID: log.ID,
+								}).Go()),
+						),
+					),
+				),
 				v.VHover().Disabled(log.CreatorID != c.ab.currentUserFunc(ctx).ID).Children(
-					web.Slot(
+					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
-							h.Div().Attr("v-if", "isHovering && !timelineLocals.showEditBox").Class("d-flex flex-row ga-1").
+							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox").Class("d-flex flex-row ga-1").
 								Style("position: absolute; top: 21px; right: 16px").Children(
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
-									Attr("@click", "timelineLocals.showEditBox = true"),
+									Attr("@click", "xlocals.showEditBox = true"),
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
-									Attr("@click", stateful.PostAction(ctx, c, c.DeleteNote, DeleteNoteRequest{
-										LogID: log.ID,
-									}).Go()),
+									Attr("@click", "xlocals.showDeleteDialog = true"),
 							),
 							child,
 						),
-					).Name("default").Scope("{ isHovering, props }"),
+					),
 				),
 			)
 		}
@@ -203,6 +220,7 @@ type CreateNoteRequest struct {
 }
 
 func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web.EventResponse, _ error) {
+	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
 		// TODO: field error ?
 		presets.ShowMessage(&r, "Note cannot be blank", "error") // TODO: i18n
@@ -230,6 +248,7 @@ type UpdateNoteRequest struct {
 }
 
 func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web.EventResponse, _ error) {
+	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
 		// TODO: field error ?
 		presets.ShowMessage(&r, "Note cannot be blank", "error") // TODO: i18n
@@ -250,6 +269,16 @@ func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web
 	}
 	if log.CreatorID != creator.ID {
 		presets.ShowMessage(&r, "You are not the creator of this note", "error") // TODO: i18n
+		return
+	}
+
+	note := &Note{}
+	if err := json.Unmarshal([]byte(log.Detail), note); err != nil {
+		presets.ShowMessage(&r, "Failed to unmarshal note", "error") // TODO: i18n
+		return
+	}
+	if note.Note == req.Note {
+		stateful.AppendReloadToResponse(&r, c)
 		return
 	}
 
