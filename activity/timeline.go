@@ -46,7 +46,7 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 	case ActionNote:
 		note := &Note{}
 		if err := json.Unmarshal([]byte(log.Detail), note); err != nil {
-			return h.Text(fmt.Sprintf("Failed to unmarshal note: %v", err))
+			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
@@ -59,7 +59,6 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 				}),
 			),
 			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("flex-grow-1 d-flex flex-column mt-4").Style("position: relative").Children(
-				// TODO: i18n
 				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("").Variant(v.VariantOutlined).
 					Attr(web.VField("note", note.Note)...),
 				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
@@ -82,8 +81,12 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 	case ActionCreate:
 		return h.Text("Created")
 	case ActionEdit:
+		diffs := []Diff{}
+		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
+			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
+		}
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
-			h.Text("Edited"),
+			h.Text(fmt.Sprintf("Edited %d fields ", len(diffs))),
 			v.VBtn("More Info").Class("text-none text-overline d-flex align-center").
 				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 				Attr("@click", web.POST().

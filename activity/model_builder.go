@@ -291,7 +291,32 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) 
 	return nil
 }
 
-func (mb *ModelBuilder) create(ctx context.Context,
+func (mb *ModelBuilder) createEditLog(ctx context.Context, old any, new any) (*ActivityLog, error) {
+	diffs, err := mb.Diff(old, new)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(diffs) == 0 {
+		return nil, nil
+	}
+
+	return mb.createWithObj(ctx, ActionEdit, new, diffs)
+}
+
+func (mb *ModelBuilder) modelLink(v any) string {
+	if f := mb.link; f != nil {
+		return f(v)
+	}
+	return ""
+}
+
+func (mb *ModelBuilder) createWithObj(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
+	return mb.create(ctx, action, modelName(obj), mb.KeysValue(obj), mb.modelLink(obj), detail)
+}
+
+func (mb *ModelBuilder) create(
+	ctx context.Context,
 	action string,
 	modelName, modelKeys, modelLink string,
 	detail any,

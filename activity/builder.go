@@ -222,7 +222,22 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 				if err != nil {
 					return err
 				}
-				return amb.AddRecords(ctx.R.Context(), ActionCreate, obj)
+				log, err := amb.createWithObj(ctx.R.Context(), ActionCreate, obj, nil)
+				if err != nil {
+					return err
+				}
+				presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+					return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+						if err = in(ctx, r); err != nil {
+							return
+						}
+						r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+							Models: []any{log},
+						})
+						return
+					}
+				})
+				return nil
 			}
 
 			if id != "" && amb.skip&Update == 0 {
@@ -233,10 +248,26 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 				if err := in(obj, id, ctx); err != nil {
 					return err
 				}
-				return amb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj)
+				log, err := amb.createEditLog(ctx.R.Context(), old, obj)
+				if err != nil {
+					return err
+				}
+				if log != nil {
+					presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+						return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+							if err = in(ctx, r); err != nil {
+								return
+							}
+							r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
+								Ids:    []string{fmt.Sprint(log.ID)},
+								Models: []any{log},
+							})
+							return
+						}
+					})
+				}
+				return nil
 			}
-
-			// TODO: 这里比较尴尬的是没有 Emit ActivityLog ，还是需要在 ctx 里开口子能 Emit
 			return in(obj, id, ctx)
 		}
 	})
@@ -253,7 +284,24 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 			if err := in(obj, id, ctx); err != nil {
 				return err
 			}
-			return amb.AddRecords(ctx.R.Context(), ActionDelete, old)
+			log, err := amb.createWithObj(ctx.R.Context(), ActionDelete, old, nil)
+			if err != nil {
+				return err
+			}
+			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+					err = in(ctx, r)
+					if err != nil {
+						return
+					}
+					r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
+						// TODO: 这个 payload 还是应该加 Models
+						Ids: []string{fmt.Sprint(log.ID)},
+					})
+					return
+				}
+			})
+			return nil
 		}
 	})
 
