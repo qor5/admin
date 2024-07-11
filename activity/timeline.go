@@ -12,6 +12,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
+	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )
@@ -24,8 +25,6 @@ type Note struct {
 func init() {
 	stateful.RegisterActionableCompoType(&Timeline{})
 }
-
-// const NotifTImelineChanged = "NotifTImelineChanged"
 
 type Timeline struct {
 	ab *Builder              `inject:""`
@@ -194,7 +193,11 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 		children = append(children, child)
 	}
 	return stateful.Actionable(ctx, c,
-		// web.Listen(NotifyTodosChanged, stateful.ReloadAction(ctx, c, nil).Go()), // TODO:
+		web.Listen(
+			presets.NotifModelsCreated(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
+			presets.NotifModelsUpdated(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
+			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
+		),
 		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
 			v.VDialog().MaxWidth("520px").
 				Attr(":model-value", `toplocals.deletingLogID !== -1`).
@@ -226,6 +229,10 @@ type CreateNoteRequest struct {
 }
 
 func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web.EventResponse, _ error) {
+	if c.ModelName == "" || c.ModelKeys == "" {
+		return r, perm.PermissionDenied
+	}
+
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
 		// TODO: field error ?
@@ -234,7 +241,7 @@ func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web
 	}
 
 	// TODO: 需要单独封装方法供外界显式调用
-	err := c.ab.MustGetModelBuilder(c.mb).create(ctx, ActionNote, c.ModelName, c.ModelKeys, c.ModelLink, &Note{
+	log, err := c.ab.MustGetModelBuilder(c.mb).create(ctx, ActionNote, c.ModelName, c.ModelKeys, c.ModelLink, &Note{
 		Note: req.Note,
 	})
 	if err != nil {
@@ -243,9 +250,9 @@ func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web
 	}
 
 	presets.ShowMessage(&r, "Successfully added note", "") // TODO: i18n
-	stateful.AppendReloadToResponse(&r, c)
-	// r.Emit(NotifTImelineChanged)
-	// TODO: 需要 Emit ， ActivityLog 的变化是一定要 Emit 的
+	r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+		Models: []any{log},
+	})
 	return
 }
 
@@ -255,6 +262,10 @@ type UpdateNoteRequest struct {
 }
 
 func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web.EventResponse, _ error) {
+	if c.ModelName == "" || c.ModelKeys == "" {
+		return r, perm.PermissionDenied
+	}
+
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
 		// TODO: field error ?
@@ -299,8 +310,10 @@ func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web
 	}
 
 	presets.ShowMessage(&r, "Successfully updated note", "") // TODO: i18n
-	stateful.AppendReloadToResponse(&r, c)
-	// r.Emit(NotifTImelineChanged)
+	r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
+		Ids:    []string{fmt.Sprint(log.ID)},
+		Models: []any{log},
+	})
 	return
 }
 
@@ -309,6 +322,10 @@ type DeleteNoteRequest struct {
 }
 
 func (c *Timeline) DeleteNote(ctx context.Context, req DeleteNoteRequest) (r web.EventResponse, _ error) {
+	if c.ModelName == "" || c.ModelKeys == "" {
+		return r, perm.PermissionDenied
+	}
+
 	creator := c.ab.currentUserFunc(ctx)
 	if creator == nil {
 		presets.ShowMessage(&r, "Failed to get current user", "error") // TODO: i18n
@@ -327,7 +344,9 @@ func (c *Timeline) DeleteNote(ctx context.Context, req DeleteNoteRequest) (r web
 		return
 	}
 	presets.ShowMessage(&r, "Successfully deleted note", "") // TODO: i18n
-	stateful.AppendReloadToResponse(&r, c)
-	// r.Emit(NotifTImelineChanged)
+	// TODO: PayloadModelsDeleted 还是应该存在删除前的内容？否则一些地方无法直接细粒度更新
+	r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
+		Ids: []string{fmt.Sprint(req.LogID)},
+	})
 	return
 }

@@ -2,12 +2,10 @@ package activity
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 )
 
@@ -123,9 +121,9 @@ func getBasicModel(m any) any {
 // 	return total - userNote.Number, nil
 // }
 
-func handleError(err error, r *web.EventResponse, errorMessage string) {
-	if err != nil {
-		log.Println(errorMessage, err) // TODO:
-		presets.ShowMessage(r, errorMessage, "error")
-	}
-}
+// func handleError(err error, r *web.EventResponse, errorMessage string) {
+// 	if err != nil {
+// 		log.Println(errorMessage, err) // TODO:
+// 		presets.ShowMessage(r, errorMessage, "error")
+// 	}
+// }

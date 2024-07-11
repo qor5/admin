@@ -43,6 +43,17 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	return ab.logModelInstall(b, mb)
 }
 
+func defaultActionLabels(msgr *Messages) map[string]string {
+	return map[string]string{
+		"":           msgr.ActionAll,
+		ActionView:   msgr.ActionView,
+		ActionEdit:   msgr.ActionEdit,
+		ActionCreate: msgr.ActionCreate,
+		ActionDelete: msgr.ActionDelete,
+		ActionNote:   msgr.ActionNote,
+	}
+}
+
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	// TODO: i18n ?
 	var (
@@ -50,6 +61,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		dp = mb.Detailing("Detail").Drawer(true)
 	)
 	ab.lmb = mb
+
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(model interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			r, err = in(model, id, ctx)
+			if err != nil {
+				return
+			}
+			log := r.(*ActivityLog)
+			if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+				return nil, err
+			}
+			return log, nil
+		}
+	})
 
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -65,19 +90,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 	})
 
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(model interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-			r, err = in(model, id, ctx)
-			if err != nil {
-				return
-			}
-			log := r.(*ActivityLog)
-			if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
-				return nil, err
-			}
-			return log, nil
-		}
-	})
+	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 
 	lb.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -102,11 +115,12 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		actionLabels := defaultActionLabels(msgr)
 
 		var actionOptions []*vuetifyx.SelectItem
 		for _, action := range DefaultActions {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  action, // TODO: i18n label ?
+				Text:  actionLabels[action],
 				Value: action,
 			})
 		}
@@ -186,28 +200,17 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return []*presets.FilterTab{
-			{
-				Label: msgr.ActionAll,
-				Query: url.Values{"action": []string{}},
-			},
-			{
-				Label: msgr.ActionView,
-				Query: url.Values{"action": []string{ActionView}},
-			},
-			{
-				Label: msgr.ActionEdit,
-				Query: url.Values{"action": []string{ActionEdit}},
-			},
-			{
-				Label: msgr.ActionCreate,
-				Query: url.Values{"action": []string{ActionCreate}},
-			},
-			{
-				Label: msgr.ActionDelete,
-				Query: url.Values{"action": []string{ActionDelete}},
-			},
-		}
+		actionLabels := defaultActionLabels(msgr)
+		return lo.Map(append([]string{""}, DefaultActions...), func(action string, _ int) *presets.FilterTab {
+			filterTab := &presets.FilterTab{
+				Label: actionLabels[action],
+				Query: url.Values{"action": []string{action}},
+			}
+			if action == "" {
+				filterTab.Query.Del("action")
+			}
+			return filterTab
+		})
 	})
 
 	// TODO: 这个 Label 最后会被 i18n 处理吗？

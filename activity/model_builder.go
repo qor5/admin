@@ -295,10 +295,10 @@ func (mb *ModelBuilder) create(ctx context.Context,
 	action string,
 	modelName, modelKeys, modelLink string,
 	detail any,
-) error {
+) (*ActivityLog, error) {
 	creator := mb.ab.currentUserFunc(ctx)
 	if creator == nil {
-		return errors.New("current user is nil")
+		return nil, errors.New("current user is nil")
 	}
 
 	if mb.ab.findUsersFunc == nil { // TODO: 先简单处理吧
@@ -309,7 +309,7 @@ func (mb *ModelBuilder) create(ctx context.Context,
 		user.ID = creator.ID
 		// TODO: 这样 CreatedAt 会是空值，回头再优化
 		if err := mb.ab.db.Save(user).Error; err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -328,12 +328,12 @@ func (mb *ModelBuilder) create(ctx context.Context,
 
 	detailJson, err := json.Marshal(detail)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal detail")
+		return nil, errors.Wrap(err, "failed to marshal detail")
 	}
 	log.Detail = string(detailJson)
 
 	if err := mb.ab.db.Create(log).Error; err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return log, nil
 }

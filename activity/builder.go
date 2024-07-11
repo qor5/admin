@@ -236,6 +236,7 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 				return amb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj)
 			}
 
+			// TODO: 这里比较尴尬的是没有 Emit ActivityLog ，还是需要在 ctx 里开口子能 Emit
 			return in(obj, id, ctx)
 		}
 	})
@@ -280,6 +281,7 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 
 	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
 	if listFieldUnreadNotes != nil {
+		// TODO: 因为 UnreadCount 的存在，所以这里其实应该进行添加 listener 来进行更新对应值，进行细粒度更新
 		// listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// 	rt := modelName(mb.NewModel())
 		// 	ri := amb.KeysValue(obj)

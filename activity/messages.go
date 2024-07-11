@@ -7,6 +7,7 @@ type Messages struct {
 	ActionEdit   string
 	ActionCreate string
 	ActionDelete string
+	ActionNote   string
 
 	ModelUserID    string
 	ModelCreatedAt string
@@ -45,6 +46,7 @@ var Messages_en_US = &Messages{
 	ActionEdit:   "Edit",
 	ActionCreate: "Create",
 	ActionDelete: "Delete",
+	ActionNote:   "Note",
 
 	ModelUserID:    "Creator ID",
 	ModelCreatedAt: "Date Time",
@@ -83,6 +85,7 @@ var Messages_zh_CN = &Messages{
 	ActionEdit:   "编辑",
 	ActionCreate: "创建",
 	ActionDelete: "删除",
+	ActionNote:   "备注",
 
 	ModelUserID:    "操作者ID",
 	ModelCreatedAt: "日期时间",
