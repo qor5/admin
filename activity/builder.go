@@ -2,16 +2,14 @@ package activity
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/dustin/go-humanize"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -27,7 +25,7 @@ const (
 const InjectorTop = "_actitivy_top_"
 
 type User struct {
-	ID     uint   `json:"id"`
+	ID     uint   `json:"id"` // TODO: 还是应该换成 ID 是 string 的，以保证通用性
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 }
@@ -50,11 +48,6 @@ type Builder struct {
 // @snippet_end
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
-	// TODO: sync.Once ?
-	pb.GetDependencyCenter().RegisterInjector(InjectorTop)
-	pb.GetDependencyCenter().MustProvide(InjectorTop, func() *Builder {
-		return b
-	})
 	b.RegisterModel(m)
 	return nil
 }
@@ -189,14 +182,10 @@ func (ab *Builder) RegisterModel(m any) (mb *ModelBuilder) {
 	ab.models = append(ab.models, mb)
 
 	if presetModel, ok := m.(*presets.ModelBuilder); ok {
-		ab.installModelBuilder(mb, presetModel)
+		ab.installPresetsModelBuilder(mb, presetModel)
 	}
 
 	return mb
-}
-
-func humanContent(log *ActivityLog) string {
-	return fmt.Sprintf("%s: %s", log.Action, log.Comment)
 }
 
 func objectID(obj any) string {
@@ -212,149 +201,100 @@ func objectID(obj any) string {
 	return id
 }
 
-func (ab *Builder) installModelBuilder(mb *ModelBuilder, presetModel *presets.ModelBuilder) {
-	mb.presetModel = presetModel
-	mb.LinkFunc(func(a any) string {
+func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.ModelBuilder) {
+	amb.presetModel = mb
+	amb.LinkFunc(func(a any) string {
 		id := objectID(a)
 		if id == "" {
 			return id
 		}
-		return presetModel.Info().DetailingHref(id)
+		return mb.Info().DetailingHref(id)
 	})
 
-	presetModel.RegisterEventFunc(eventCreateNote, createNote(ab, presetModel))
-	// TODO: 可以修改和删除？
-	presetModel.RegisterEventFunc(eventUpdateNote, updateNote(ab, presetModel))
-	presetModel.RegisterEventFunc(eventDeleteNote, deleteNote(ab, presetModel))
+	eb := mb.Editing()
+	dp := mb.Detailing()
+	lb := mb.Listing()
 
-	editing := presetModel.Editing()
-	d := presetModel.Detailing()
-	lb := presetModel.Listing()
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if id == "" && amb.skip&Create == 0 {
+				err := in(obj, id, ctx)
+				if err != nil {
+					return err
+				}
+				return amb.AddRecords(ctx.R.Context(), ActionCreate, obj)
+			}
 
-	db := ab.db
+			if id != "" && amb.skip&Update == 0 {
+				old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+				if err != nil {
+					return errors.Wrap(err, "fetch old record")
+				}
+				if err := in(obj, id, ctx); err != nil {
+					return err
+				}
+				return amb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj)
+			}
 
-	d.Field(DetailFieldTimeline).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		keys := ab.MustGetModelBuilder(presetModel).KeysValue(obj)
-		return presetModel.GetPresetsBuilder().GetDependencyCenter().MustInject(InjectorTop, &Timeline{
-			ModelName:       modelName(obj),
-			ModelKeys:       keys,
-			ShowAddNotesBox: false,
+			return in(obj, id, ctx)
+		}
+	})
+
+	eb.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if amb.skip&Delete != 0 {
+				return in(obj, id, ctx)
+			}
+			old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+			if err != nil {
+				return errors.Wrap(err, "fetch old record")
+			}
+			if err := in(obj, id, ctx); err != nil {
+				return err
+			}
+			return amb.AddRecords(ctx.R.Context(), ActionDelete, old)
+		}
+	})
+
+	detailFieldTimeline := dp.GetField(DetailFieldTimeline)
+	if detailFieldTimeline != nil {
+		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+		dc := mb.GetPresetsBuilder().GetDependencyCenter()
+		dc.RegisterInjector(injectorName)
+		dc.MustProvide(injectorName, func() *Builder {
+			return ab
 		})
-	})
-
-	// TODO: 需要判断是否存在此 field
-	lb.Field(ListFieldUnreadNotes).ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		rt := modelName(presetModel.NewModel())
-		ri := mb.KeysValue(obj)
-		user := ab.currentUserFunc(ctx.R.Context())
-		count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
-
-		return h.Td(
-			h.If(count > 0,
-				v.VBadge().Content(count).Color("red"),
-			).Else(
-				h.Text(""),
-			),
-		)
-	}).Label("Unread Notes") // TODO: i18n
-
-	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-		return func(obj any, id string, ctx *web.EventContext) (err error) {
-			if mb.skip&Update != 0 && mb.skip&Create != 0 {
-				return in(obj, id, ctx)
-			}
-
-			old, ok := fetchOld(obj, db)
-			if err = in(obj, id, ctx); err != nil {
-				return err
-			}
-
-			if (!ok || id == "") && mb.skip&Create == 0 {
-				return mb.AddRecords(ctx.R.Context(), ActionCreate, obj)
-			}
-
-			if ok && id != "" && mb.skip&Update == 0 {
-				return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx.R.Context()), old, obj)
-			}
-
-			return
-		}
-	})
-
-	editing.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
-		return func(obj any, id string, ctx *web.EventContext) (err error) {
-			if mb.skip&Delete != 0 {
-				return in(obj, id, ctx)
-			}
-
-			old, ok := fetchOldWithSlug(obj, id, db)
-			if err = in(obj, id, ctx); err != nil {
-				return err
-			}
-
-			if ok {
-				return mb.AddRecords(ctx.R.Context(), ActionDelete, old)
-			}
-
-			return
-		}
-	})
-}
-
-func (ab *Builder) timelineList(ctx context.Context, obj any, keys string) h.HTMLComponent {
-	children := []h.HTMLComponent{
-		// TODO: onClick
-		v.VBtn("Add Note").Class("text-none mb-4").Attr("prepend-icon", "mdi-plus").Attr("variant", "tonal").Attr("color", "grey-darken-3"), // TODO: i18n
+		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+			return mb
+		})
+		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			keys := ab.MustGetModelBuilder(mb).KeysValue(obj)
+			return dc.MustInject(injectorName, &Timeline{
+				ID:        mb.Info().URIName() + ":" + keys,
+				ModelName: modelName(obj),
+				ModelKeys: keys,
+				ModelLink: amb.link(obj),
+			})
+		})
 	}
 
-	logs, err := ab.GetActivityLogs(ctx, obj, keys)
-	if err != nil {
-		panic(err)
-	}
+	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
+	if listFieldUnreadNotes != nil {
+		// listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// 	rt := modelName(mb.NewModel())
+		// 	ri := amb.KeysValue(obj)
+		// 	user := ab.currentUserFunc(ctx.R.Context())
+		// 	count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
 
-	for i, log := range logs {
-		creatorName := log.Creator.Name
-		if creatorName == "" {
-			creatorName = "Unknown" // i18n
-		}
-		avatarText := ""
-		if log.Creator.Avatar == "" {
-			avatarText = strings.ToUpper(creatorName[0:1])
-		}
-		dotColor := "#30a46c"
-		if i != 0 {
-			dotColor = "#e0e0e0"
-		}
-		// TODO: v.ColorXXX ?
-		children = append(children,
-			h.Div().Class("d-flex flex-column ga-1").Children(
-				h.Div().Class("d-flex flex-row align-center ga-2").Children(
-					h.Div().Style("width: 8px; height: 8px; background-color: "+dotColor).Class("rounded-circle"),
-					h.Div(h.Text(humanize.Time(log.CreatedAt))).Style("color: #757575"),
-				),
-				h.Div().Class("d-flex flex-row ga-2").Children(
-					h.Div().Class("align-self-stretch").Style("background-color: "+dotColor+"; width: 1px; margin-top: -6px; margin-bottom: -2px; margin-left: 3.5px; margin-right: 3.5px;"),
-					h.Div().Class("d-flex flex-column pb-3").Children(
-						h.Div().Class("d-flex flex-row align-center ga-2").Children(
-							v.VAvatar().Attr("style", "font-size: 12px; color: #3e63dd").Attr("color", "#E6EDFE").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
-								h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
-									return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
-								}),
-							),
-							h.Div(h.Text(creatorName)).Style("font-weight: 500"),
-						),
-						h.Div().Class("d-flex flex-row align-center ga-2").Children(
-							h.Div().Style("width: 16px"),
-							h.Div(h.Text(humanContent(log))),
-						),
-					),
-				),
-			),
-		)
+		// 	return h.Td(
+		// 		h.If(count > 0,
+		// 			v.VBadge().Content(count).Color("red"),
+		// 		).Else(
+		// 			h.Text(""),
+		// 		),
+		// 	)
+		// }).Label("Unread Notes") // TODO: i18n
 	}
-	return h.Div().Class("d-flex flex-column").Style("font-size: 14px").Children(
-		children...,
-	)
 }
 
 // GetModelBuilder 	get model builder

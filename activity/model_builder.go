@@ -1,14 +1,15 @@
 package activity
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/samber/lo"
 )
@@ -280,11 +281,58 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) 
 	}
 
 	if action == ActionEdit {
-		log.ModelDiffs = diffs
+		log.Detail = diffs
 	}
 
 	err := mb.ab.db.Save(log).Error
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (mb *ModelBuilder) create(ctx context.Context,
+	action string,
+	modelName, modelKeys, modelLink string,
+	detail any,
+) error {
+	creator := mb.ab.currentUserFunc(ctx)
+	if creator == nil {
+		return errors.New("current user is nil")
+	}
+
+	if mb.ab.findUsersFunc == nil { // TODO: 先简单处理吧
+		user := &ActivityUser{
+			Name:   creator.Name,
+			Avatar: creator.Avatar,
+		}
+		user.ID = creator.ID
+		// TODO: 这样 CreatedAt 会是空值，回头再优化
+		if err := mb.ab.db.Save(user).Error; err != nil {
+			return err
+		}
+	}
+
+	log := &ActivityLog{
+		CreatorID:  creator.ID,
+		Action:     action,
+		ModelName:  modelName,
+		ModelKeys:  modelKeys,
+		ModelLabel: "-",
+		ModelLink:  modelLink,
+	}
+	if mb.presetModel != nil {
+		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
+	}
+	log.CreatedAt = time.Now()
+
+	detailJson, err := json.Marshal(detail)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal detail")
+	}
+	log.Detail = string(detailJson)
+
+	if err := mb.ab.db.Create(log).Error; err != nil {
 		return err
 	}
 	return nil

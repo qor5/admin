@@ -38,11 +38,12 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 
-	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
+	productModel := b.Model(&WithActivityProduct{})
 
 	bt := productModel.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
 	bt.Section("Content").Editing("Title", "Code", "Price")
 
+	productModel.Use(activityBuilder)
 	activityBuilder.MustGetModelBuilder(productModel).SkipDelete()
 
 	// @snippet_end

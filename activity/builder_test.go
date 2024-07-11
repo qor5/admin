@@ -220,8 +220,8 @@ func TestModelTypeHanders(t *testing.T) {
 		t.Fatal(err)
 	}
 	wants := `[{"Field":"VersionName","Old":"v1","New":"v2"},{"Field":"Title","Old":"test","New":"test1"},{"Field":"Widgets.0","Old":"Text 01","New":"Text 011"},{"Field":"Widgets.1","Old":"HeroBanner 02","New":"HeroBanner 022"},{"Field":"Widgets.3","Old":"","New":"Video 03"}]`
-	if record.ModelDiffs != wants {
-		t.Errorf("want the diffs %v, but got %v", wants, record.ModelDiffs)
+	if record.Detail != wants {
+		t.Errorf("want the diffs %v, but got %v", wants, record.Detail)
 	}
 }
 
@@ -340,16 +340,16 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "1").Find(&log1); log1.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:1", log1)
 		}
-		if log1.ModelDiffs != `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]`, log1.ModelDiffs)
+		if log1.Detail != `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test1","New":"test1-1"},{"Field":"Description","Old":"Description1","New":"Description1-1"}]`, log1.Detail)
 		}
 
 		var log2 ActivityLog
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "2").Find(&log2); log2.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:2", log2)
 		}
-		if log2.ModelDiffs != `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]`, log1.ModelDiffs)
+		if log2.Detail != `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]`, log1.Detail)
 		}
 
 		if log2.ModelLabel != "page-02" {
@@ -360,8 +360,8 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "3").Find(&log3); log3.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:3", log3)
 		}
-		if log3.ModelDiffs != `[{"Field":"Title","Old":"test3","New":"test3-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test3","New":"test3-1"}]`, log1.ModelDiffs)
+		if log3.Detail != `[{"Field":"Title","Old":"test3","New":"test3-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test3","New":"test3-1"}]`, log1.Detail)
 		}
 
 		if log3.ModelLabel != "page-03" {

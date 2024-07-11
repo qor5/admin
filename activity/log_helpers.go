@@ -1,7 +1,6 @@
 package activity
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -103,26 +102,26 @@ func getBasicModel(m any) any {
 	return m
 }
 
-func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
-	var total int64
-	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, ActionCreateNote).Count(&total).Error; err != nil {
-		return 0, err
-	}
+// func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
+// 	var total int64
+// 	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, ActionCreateNote).Count(&total).Error; err != nil {
+// 		return 0, err
+// 	}
 
-	if total == 0 {
-		return 0, nil
-	}
+// 	if total == 0 {
+// 		return 0, nil
+// 	}
 
-	// TODO: 这个逻辑貌似不太对
-	var userNote ActivityLog
-	if err := db.Where("creator_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, err
-		}
-	}
+// 	// TODO: 这个逻辑貌似不太对
+// 	var userNote ActivityLog
+// 	if err := db.Where("creator_id = ? AND model_name = ? AND model_keys = ?", userID, resourceType, resourceID).First(&userNote).Error; err != nil {
+// 		if !errors.Is(err, gorm.ErrRecordNotFound) {
+// 			return 0, err
+// 		}
+// 	}
 
-	return total - userNote.Number, nil
-}
+// 	return total - userNote.Number, nil
+// }
 
 func handleError(err error, r *web.EventResponse, errorMessage string) {
 	if err != nil {

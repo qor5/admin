@@ -91,7 +91,7 @@ GROUP BY resource_type;
 
 	var unreadNote activity.ActivityLog
 	unreadNote.CreatorID = user.ID
-	unreadNote.Comment = string(content)
+	unreadNote.Detail = string(content) // TODO:
 	unreadNote.Action = "unread_notes_count"
 	if err = db.Save(&unreadNote).Error; err != nil {
 		return
@@ -136,7 +136,7 @@ GROUP BY model_name, model_keys;
 					ModelName: result.ResourceType,
 					ModelKeys: result.ResourceID,
 					Action:    fmt.Sprintf("read_note:%d", result.Count),
-					Number:    int64(result.Count),
+					Detail:    fmt.Sprint(int64(result.Count)), // TODO:
 				}
 				userNotes = append(userNotes, un)
 			}
@@ -150,7 +150,7 @@ GROUP BY model_name, model_keys;
 			if err1 = db.Where("user_id = ? AND action = 'unread_notes_count'", u.ID).First(&unreadNote).Error; err1 != nil {
 				return
 			}
-			unreadNote.Comment = "{}"
+			unreadNote.Detail = "{}" // TODO:
 			if err1 = db.Save(&unreadNote).Error; err1 != nil {
 				return
 			}
