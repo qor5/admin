@@ -86,7 +86,7 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
 
-	mb.RegisterEventFunc(actions.Action, mb.detailing.formDrawerAction)
+	mb.RegisterEventFunc(actions.Action, mb.detailing.openActionDialog)
 	mb.RegisterEventFunc(actions.DoAction, mb.detailing.doAction)
 	mb.RegisterEventFunc(actions.DetailingDrawer, mb.detailing.showInDrawer)
 	mb.RegisterEventFunc(actions.DoSaveDetailingField, mb.detailing.SaveDetailField)

@@ -223,7 +223,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	closeBtnVarScript := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
-		closeBtnVarScript = closeDialogVarScript
+		closeBtnVarScript = CloseDialogVarScript
 	}
 
 	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
@@ -276,17 +276,17 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		})
 		return r, nil
 	}
-	web.AppendRunScripts(&r, CloseRightDrawerVarScript)
+	web.AppendRunScripts(&r, CloseDialogVarScript)
 	return
 }
 
-func (b *DetailingBuilder) formDrawerAction(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *DetailingBuilder) openActionDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	action := getAction(b.actions, ctx.R.FormValue(ParamAction))
 	if action == nil {
 		panic("action required")
 	}
 
-	b.mb.p.rightDrawer(&r, b.actionForm(action, ctx), "")
+	b.mb.p.dialog(&r, b.actionForm(action, ctx), "")
 	return
 }
 
