@@ -797,7 +797,7 @@ type DoBulkActionRequest struct {
 }
 
 func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest) (r web.EventResponse, err error) {
-	evCtx, msgr := c.MustGetEventContext(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 
 	bulk, err := c.fetchBulkAction(ctx, req.Name)
 	if err != nil {
@@ -814,8 +814,10 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 		err = bulk.updateFunc(actionableIds, evCtx, &r)
 	}
 
-	if err != nil {
-		evCtx.Flash = toValidationErrors(err)
+	if err != nil || evCtx.Flash != nil {
+		if evCtx.Flash == nil {
+			evCtx.Flash = toValidationErrors(err)
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: c.actionDialogContentPortalName(),
 			Body: c.bulkPanel(ctx, bulk, c.SelectedIds, actionableIds),
@@ -823,7 +825,6 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 		return r, nil
 	}
 
-	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, c.closeActionDialog())
 	return r, nil
 }
@@ -897,7 +898,7 @@ type DoActionRequest struct {
 }
 
 func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web.EventResponse, err error) {
-	evCtx, msgr := c.MustGetEventContext(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 
 	action, err := c.fetchAction(evCtx, req.Name)
 	if err != nil {
@@ -905,8 +906,10 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 		return r, nil
 	}
 
-	if err := action.updateFunc("", evCtx, &r); err != nil {
-		evCtx.Flash = toValidationErrors(err)
+	if err := action.updateFunc("", evCtx, &r); err != nil || evCtx.Flash != nil {
+		if evCtx.Flash == nil {
+			evCtx.Flash = toValidationErrors(err)
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: c.actionDialogContentPortalName(),
 			Body: c.actionPanel(ctx, action),
@@ -914,7 +917,6 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 		return r, nil
 	}
 
-	ShowMessage(&r, msgr.SuccessfullyUpdated, "")
 	web.AppendRunScripts(&r, c.closeActionDialog())
 	return r, nil
 }
