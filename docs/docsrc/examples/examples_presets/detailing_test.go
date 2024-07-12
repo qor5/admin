@@ -149,3 +149,64 @@ func TestPresetsDetailNestedMany(t *testing.T) {
 		})
 	}
 }
+
+var seedDetailActionsComponent = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.customers (id, name, email, description, company_id, created_at, updated_at, approved_at, 
+term_agreed_at, approval_comment) VALUES (12, 'Felix 1', 'abc@example.com', '', 0, '2024-03-28 05:52:28.497536 +00:00', 
+'2024-03-28 05:52:28.497536 +00:00', null, null, '');
+
+INSERT INTO public.credit_cards (id, customer_id, number, expire_year_month, name, type, phone, email) VALUES (2, 12,
+'95550012', '', '', '', '', '');
+
+INSERT INTO public.notes (id, source_type, source_id, content, created_at, updated_at) VALUES (1, 'Customer', 12, 
+'This is my note 1', '2024-05-27 08:13:58.436186 +00:00', '2024-05-27 08:13:58.436186 +00:00');
+
+`, []string{"customers", "credit_cards", "notes"}))
+
+func TestPresetsDetailActionsComponent(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailPageDetails(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "page detail show",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{">Agree Terms</v-btn>", ">Add Note</v-btn>"},
+		},
+		{
+			Name:  "click agree terms action button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12?__execute_event__=presets_Action&action=AgreeTerms&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`<v-checkbox`, `label='Agree the terms'></v-checkbox>`},
+		},
+		{
+			Name:  "agree terms",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12?__execute_event__=presets_DoAction&action=AgreeTerms&id=12").
+					AddField("Agree", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`emit("PresetsNotifModelsUpdatedexamplesPresetsCustomer"`, `["12"]`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

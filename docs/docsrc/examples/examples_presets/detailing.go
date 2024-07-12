@@ -25,8 +25,8 @@ type Note struct {
 	UpdatedAt  time.Time
 }
 
-func addListener(ctx *web.EventContext, v any) h.HTMLComponent {
-	simpleReload := web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go()
+func addListener(_ *web.EventContext, v any) h.HTMLComponent {
+	simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
 	return web.Listen(
 		presets.NotifModelsCreated(v), simpleReload,
 		presets.NotifModelsUpdated(v), simpleReload,
@@ -151,7 +151,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 		return vx.Card(detail).HeaderTitle("Details").Variant(VariantElevated).
 			Actions(
 				web.Listen(
-					cust.NotifModelsUpdated(), web.Plaid().URL(ctx.R.RequestURI).EventFunc(actions.DetailingDrawer).Go(),
+					cust.NotifModelsUpdated(), web.Plaid().PushState(true).MergeQuery(true).Go(),
 				),
 				VBtn("Agree Terms").
 					Class("mr-2").

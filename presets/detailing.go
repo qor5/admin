@@ -1,9 +1,9 @@
 package presets
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	"net/url"
 	"reflect"
 	"strconv"
 
@@ -171,9 +171,40 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		sidePanel:   b.sidePanel,
 	}, obj, ctx)
 
-	r.Body = VContainer(
+	actionButtons := h.Components()
+	for _, ba := range b.actions {
+		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+			continue
+		}
+
+		if ba.buttonCompFunc != nil {
+			actionButtons = append(actionButtons, ba.buttonCompFunc(ctx))
+			continue
+		}
+
+		actionButtons = append(actionButtons, VBtn(b.mb.getLabel(ba.NameLabel)).
+			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
+			Attr("@click", web.Plaid().
+				EventFunc(actions.Action).
+				Query(ParamID, id).
+				Query(ParamAction, ba.name).
+				URL(b.mb.Info().DetailingHref(id)).
+				Go(),
+			),
+		)
+	}
+	var actionButtonsCompo h.HTMLComponent
+	if len(actionButtons) > 0 {
+		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
+	}
+
+	r.Body = VContainer().ClassIf("mt-n3", actionButtonsCompo != nil).Children(
 		notice,
-	).AppendChildren(tabsContent).Fluid(true)
+		h.Div().Class("d-flex flex-column ga-3").Children(
+			actionButtonsCompo,
+			tabsContent,
+		),
+	).Fluid(true)
 
 	return
 }
@@ -245,10 +276,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		})
 		return r, nil
 	}
-
-	r.PushState = web.Location(url.Values{})
-	r.RunScript = CloseRightDrawerVarScript
-
+	web.AppendRunScripts(&r, CloseRightDrawerVarScript)
 	return
 }
 
