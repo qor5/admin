@@ -259,13 +259,15 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 		filterSearch = c.filterSearch(ctx, fd)
 	}
 
-	textFieldSearch := VResponsive().Children(
-		c.textFieldSearch(ctx),
-	)
-	if filterSearch != nil || !c.LongStyleSearchBox {
-		textFieldSearch.MaxWidth(200).MinWidth(200).Class("mr-4")
-	} else {
-		textFieldSearch.Width(100)
+	textFieldSearch := c.textFieldSearch(ctx)
+	if textFieldSearch != nil {
+		wrapper := VResponsive(textFieldSearch)
+		if filterSearch != nil || !c.LongStyleSearchBox {
+			wrapper.MaxWidth(200).MinWidth(200).Class("mr-4")
+		} else {
+			wrapper.Width(100)
+		}
+		textFieldSearch = wrapper
 	}
 	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Children(
 		textFieldSearch,
