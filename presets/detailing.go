@@ -193,15 +193,15 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 			),
 		)
 	}
-	var buttonsCompo h.HTMLComponent
+	var actionButtonsCompo h.HTMLComponent
 	if len(actionButtons) > 0 {
-		buttonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
+		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
 	}
 
-	r.Body = VContainer().ClassIf("mt-n3", buttonsCompo != nil).Children(
+	r.Body = VContainer().ClassIf("mt-n3", actionButtonsCompo != nil).Children(
 		notice,
 		h.Div().Class("d-flex flex-column ga-3").Children(
-			buttonsCompo,
+			actionButtonsCompo,
 			tabsContent,
 		),
 	).Fluid(true)
