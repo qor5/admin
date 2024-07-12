@@ -158,9 +158,9 @@ func NewConfig(db *gorm.DB) Config {
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
-		RegisterLocales("International", "international", "International").
-		RegisterLocales("China", "cn", "China").
-		RegisterLocales("Japan", "jp", "Japan").
+		RegisterLocales("International", "international", "International", l10n.InternationalSvg).
+		RegisterLocales("China", "cn", "China", l10n.ChinaSvg).
+		RegisterLocales("Japan", "jp", "Japan", l10n.JapanSvg).
 		SupportLocalesFunc(func(R *http.Request) []string {
 			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})

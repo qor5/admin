@@ -236,10 +236,12 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-
+	containerDataId := cb.getContainerDataID(modelID)
 	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramContainerDataID, cb.getContainerDataID(modelID)).
-		Query(paramContainerID, newContainerID).Go()
+		Query(paramContainerDataID, containerDataId).
+		Query(paramContainerID, newContainerID).
+		Form(map[string]string{paramContainerNew: "1"}).
+		Go()
 	return
 }
 
@@ -259,8 +261,7 @@ func (b *ModelBuilder) moveContainer(ctx *web.EventContext) (r web.EventResponse
 		}
 		return
 	})
-	ctx.R.Form.Del(paramMoveResult)
-	r.RunScript = web.Plaid().URL(ctx.R.URL.Path).EventFunc(ReloadRenderPageOrTemplateEvent).Form(nil).Queries(ctx.R.Form).Go()
+	r.RunScript = web.Plaid().PushState(true).EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
 	return
 }
 
@@ -312,16 +313,18 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 	)
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-	r.RunScript = web.Plaid().
-		EventFunc(ReloadRenderPageOrTemplateEvent).
-		MergeQuery(true).
-		Go() +
-		";" +
+
+	web.AppendRunScripts(&r,
+		web.Plaid().
+			EventFunc(ReloadRenderPageOrTemplateEvent).
+			MergeQuery(true).
+			Go(),
 		web.Plaid().
 			EventFunc(ShowSortedContainerDrawerEvent).
 			MergeQuery(true).
 			Query(paramStatus, ctx.Param(paramStatus)).
-			Go()
+			Go(),
+	)
 	return
 }
 
@@ -554,9 +557,10 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 			return
 		}
 	}
-
-	r.RunScript = web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go() + ";" +
-		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
+	web.AppendRunScripts(&r,
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
+	)
 	return
 }
 
@@ -715,7 +719,7 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r we
 		return
 	}
 	r.Body = web.Portal(
-		h.Div(body).Attr(web.VAssign("vars", "{el:$}")...),
+		body,
 	).Name(editorPreviewContentPortal)
 	return
 }
@@ -944,6 +948,9 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				"ref", "scrollIframe")
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
+				if ctx.Param(paramContainerNew) != "" {
+					scrollIframe.Attr("container-data-id", ctx.Param(paramContainerDataID))
+				}
 
 				if !isReadonly && len(comps) == 0 {
 					r = h.Components(
@@ -1022,6 +1029,8 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 		sharedContainer = ctx.Param(paramSharedContainer)
 		modelID         = ctx.ParamAsInt(paramModelID)
 	)
+	containerBuilder := b.builder.ContainerByName(modelName)
+
 	if sharedContainer != "true" || modelID == 0 {
 		var con *DemoContainer
 		err = withLocale(
@@ -1031,13 +1040,22 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 			locale,
 		).
 			First(&con).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			b.builder.firstOrCreateDemoContainers(ctx, containerBuilder)
+			err = withLocale(
+				b.builder,
+				b.db.
+					Where("model_name = ?", modelName),
+				locale,
+			).
+				First(&con).Error
+		}
 		if err != nil {
 			return
 		}
 		modelID = int(con.ModelID)
 	}
 
-	containerBuilder := b.builder.ContainerByName(modelName)
 	device, _ := b.builder.getDevice(ctx)
 
 	displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
@@ -1188,7 +1206,6 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 		if err != nil {
 			return
 		}
-
 		newCon.ID = c.ID
 		newCon.PageID = uint(toPageID)
 		newCon.PageVersion = toPageVersion
@@ -1332,7 +1349,7 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 		VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
 		VCardTitle(h.Text("Build your pages")).Class("d-flex justify-center"),
 		VCardSubtitle(h.Text("Place an element from QOR5 library.")).Class("d-flex justify-center"),
-	).Flat(true)
+	).Flat(true).Tile(true).Color(ColorGrey)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogPortal,
@@ -1353,11 +1370,11 @@ func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventRes
 						VContainer(
 							VRow(
 								VCol(
-									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)),
+									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)).Tile(true),
 								),
 							).Align(Center).Justify(Center).Attr("style", "height:420px"),
 						).Class(W100, "py-0"),
-					).Class(W50),
+					).Class(W50).Color(ColorGrey),
 				).Class("d-inline-flex"),
 			).Attr("v-model", "locals.dialog").
 				ScrollStrategy("none").
@@ -1399,7 +1416,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogContentPortal,
-		Body: VCard(body).MaxHeight(200).Elevation(0),
+		Body: VCard(body).MaxHeight(200).Elevation(0).Flat(true).Tile(true).Color(ColorGrey),
 	})
 	return
 }

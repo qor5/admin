@@ -30,7 +30,6 @@ const (
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
-	AutoSaveContainerEvent           = "page_builder_AutoSaveContainerEvent"
 	NewContainerDialogEvent          = "page_builder_NewContainerDialogEvent"
 	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 
@@ -40,6 +39,7 @@ const (
 	paramStatus          = "status"
 	paramContainerID     = "containerID"
 	paramContainerDataID = "containerDataID"
+	paramContainerNew    = "new"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"

@@ -40,3 +40,11 @@ func (mb *ModelBuilder) NotifModelsDeleted() string {
 func NotifModelsDeleted(v any) string {
 	return fmt.Sprintf("presets_NotifModelsDeleted_%T", v)
 }
+
+func (mb *ModelBuilder) NotifRowUpdated() string {
+	return fmt.Sprintf("presets_NotifRowUpdated")
+}
+
+type PayloadRowUpdated struct {
+	Id string `json:"id"`
+}

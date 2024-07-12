@@ -50,9 +50,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
 			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			AutoCropArea(1).
-			Attr("@update:model-value", web.Plaid().
-				FieldValue("CropOption", web.Var("JSON.stringify($event)")).
-				String())
+			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
 		if size != nil {
 			c.AspectRatio(float64(size.Width), float64(size.Height))
 		}
@@ -77,14 +75,15 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 							VToolbarTitle(msgr.CropImage),
 							VSpacer(),
 							VBtn(msgr.Crop).Color("primary").
-								Attr(":loading", "locals.cropping").
+								Attr(":loading", "cropLocals.cropping").
 								Attr("@click", web.Plaid().
-									BeforeScript("locals.cropping = true").
+									BeforeScript("cropLocals.cropping = true").
 									EventFunc(cropImageEvent).
 									Query("field", field).
 									Query(mediaID, fmt.Sprint(id)).
 									Query("thumb", thumb).
-									FieldValue("cfg", h.JSONString(cfg)).
+									Query("CropOption", web.Var("cropLocals.CropOption")).
+									Query("cfg", h.JSONString(cfg)).
 									Go()),
 						).Class("pl-2 pr-2"),
 						VCardText(
@@ -94,7 +93,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 				).ModelValue(true).
 					Scrollable(true).
 					MaxWidth("800px"),
-			).Init(`{cropping: false}`).VSlot("{ locals }"),
+			).Init(`{cropping: false}`).VSlot("{ locals: cropLocals}"),
 		})
 		return
 	}

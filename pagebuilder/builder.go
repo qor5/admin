@@ -421,7 +421,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
-	lb := pm.Listing("ID", publish.ListingFieldLive, "Title", "Path")
+	lb := pm.Listing("ID", "Title", publish.ListingFieldLive, "Path")
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -1237,13 +1237,16 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	return
 }
 
-func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext) {
+func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*ContainerBuilder) {
 	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 	localeCodes := []string{locale}
 	if b.l10n != nil {
 		localeCodes = b.l10n.GetSupportLocaleCodes()
 	}
-	for _, con := range b.containerBuilders {
+	if len(cons) == 0 {
+		cons = b.containerBuilders
+	}
+	for _, con := range cons {
 		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
 			continue
 		}
@@ -1381,6 +1384,20 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
+	b.mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
+			return nil
+		}
+		return web.Listen(
+			b.mb.NotifRowUpdated(),
+			web.Plaid().
+				URL(b.mb.Info().ListingHref()).
+				EventFunc(actions.Update).
+				Query(presets.ParamID, web.Var("payload.id")).
+				ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+				Go(),
+		)
+	})
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")
@@ -1389,7 +1406,6 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.modelType = val.Elem().Type()
 
 	b.configureRelatedOnlinePagesTab()
-	b.registerEventFuncs()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	b.warpSaver()
 	return b
@@ -1453,7 +1469,7 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
 	eb.OnChangeActionFunc(func(id string, ctx *web.EventContext) (s string) {
-		return web.Plaid().URL(ctx.R.URL.Path).EventFunc(AutoSaveContainerEvent).Query(presets.ParamID, id).Go()
+		return web.Emit(b.mb.NotifRowUpdated(), presets.PayloadRowUpdated{Id: id})
 	})
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
@@ -1537,10 +1553,6 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		}
 		return
 	})
-}
-
-func (b *ContainerBuilder) registerEventFuncs() {
-	b.mb.RegisterEventFunc(AutoSaveContainerEvent, b.autoSaveContainer)
 }
 
 func (b *ContainerBuilder) getContainerDataID(id int) string {
@@ -1706,32 +1718,6 @@ function(e){
 
 func defaultSubPageTitle(ctx *web.EventContext) string {
 	return i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages).PageOverView
-}
-
-func (b *ContainerBuilder) autoSaveContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		id = ctx.R.FormValue(presets.ParamID)
-		mb = b.mb.Editing()
-	)
-	obj, vErr := mb.FetchAndUnmarshal(id, true, ctx)
-	if vErr.HaveErrors() {
-		err = errors.New(vErr.Error())
-		return
-	}
-
-	if mb.Validator != nil {
-		if vErr = mb.Validator(obj, ctx); vErr.HaveErrors() {
-			err = errors.New(vErr.Error())
-			return
-		}
-	}
-
-	if err = mb.Saver(obj, id, ctx); err != nil {
-		return
-	}
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Go()
-	presets.ShowMessage(&r, "success", "")
-	return
 }
 
 type (

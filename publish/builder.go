@@ -504,3 +504,8 @@ func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *sc
 	}
 	return db.Where(strings.Join(querys, " AND "), args...)
 }
+
+func (b *Builder) FullUrl(uri string) (s string) {
+	s, _ = b.storage.GetURL(uri)
+	return strings.TrimSuffix(b.storage.GetEndpoint(), "/") + "/" + strings.Trim(s, "/")
+}

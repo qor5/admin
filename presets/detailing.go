@@ -1,9 +1,9 @@
 package presets
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	"net/url"
 	"reflect"
 	"strconv"
 
@@ -171,9 +171,40 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		sidePanel:   b.sidePanel,
 	}, obj, ctx)
 
-	r.Body = VContainer(
+	actionButtons := []h.HTMLComponent{}
+	for _, ba := range b.actions {
+		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
+			continue
+		}
+
+		if ba.buttonCompFunc != nil {
+			actionButtons = append(actionButtons, ba.buttonCompFunc(ctx))
+			continue
+		}
+
+		actionButtons = append(actionButtons, VBtn(b.mb.getLabel(ba.NameLabel)).
+			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).
+			Attr("@click", web.Plaid().
+				EventFunc(actions.Action).
+				Query(ParamID, id).
+				Query(ParamAction, ba.name).
+				URL(b.mb.Info().DetailingHref(id)).
+				Go(),
+			),
+		)
+	}
+	var actionButtonsCompo h.HTMLComponent
+	if len(actionButtons) > 0 {
+		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
+	}
+
+	r.Body = VContainer().ClassIf("mt-n3", actionButtonsCompo != nil).Children(
 		notice,
-	).AppendChildren(tabsContent).Fluid(true)
+		h.Div().Class("d-flex flex-column ga-3").Children(
+			actionButtonsCompo,
+			tabsContent,
+		),
+	).Fluid(true)
 
 	return
 }
@@ -192,7 +223,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	closeBtnVarScript := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
-		closeBtnVarScript = closeDialogVarScript
+		closeBtnVarScript = CloseDialogVarScript
 	}
 
 	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
@@ -245,20 +276,17 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		})
 		return r, nil
 	}
-
-	r.PushState = web.Location(url.Values{})
-	r.RunScript = CloseRightDrawerVarScript
-
+	web.AppendRunScripts(&r, CloseDialogVarScript)
 	return
 }
 
-func (b *DetailingBuilder) formDrawerAction(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *DetailingBuilder) openActionDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	action := getAction(b.actions, ctx.R.FormValue(ParamAction))
 	if action == nil {
 		panic("action required")
 	}
 
-	b.mb.p.rightDrawer(&r, b.actionForm(action, ctx), "")
+	b.mb.p.dialog(&r, b.actionForm(action, ctx), "")
 	return
 }
 

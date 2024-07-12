@@ -70,6 +70,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		if p, ok := obj.(publish.StatusInterface); ok {
 			if p.EmbedStatus().Status == publish.StatusOnline {
 				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
 			}
 		}
 		return h.Div(

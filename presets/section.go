@@ -372,7 +372,7 @@ func (b *SectionBuilder) ListFieldPrefix(index int) string {
 }
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	id := ctx.Queries().Get(ParamID)
+	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
 			id = slugIf.PrimarySlug()
@@ -383,7 +383,9 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
 		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.componentEditBtnFunc(obj, ctx))).
-		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingField).
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoEditDetailingField).
 			Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
@@ -441,7 +443,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingField).
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoSaveDetailingField).
 			Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
@@ -542,7 +546,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
 	}
 
-	id := ctx.Queries().Get(ParamID)
+	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
 			id = slugIf.PrimarySlug()
@@ -605,7 +609,9 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 	if !b.disableElementCreateBtn {
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
-			Attr("@click", web.Plaid().EventFunc(actions.DoCreateDetailingListField).
+			Attr("@click", web.Plaid().
+				URL(ctx.R.URL.Path).
+				EventFunc(actions.DoCreateDetailingListField).
 				Query(SectionFieldName, b.name).
 				Query(ParamID, id).
 				Go())
@@ -657,9 +663,11 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
 		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.elementEditBtn)).
-		Attr("@click", web.Plaid().EventFunc(actions.DoEditDetailingListField).
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoEditDetailingListField).
 			Query(SectionFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
@@ -693,9 +701,11 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 		Rounded("0").
 		Icon("mdi-delete-outline").
 		Attr("v-show", fmt.Sprintf("%t", !b.disableElementDeleteBtn)).
-		Attr("@click", web.Plaid().EventFunc(actions.DoDeleteDetailingListField).
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoDeleteDetailingListField).
 			Query(SectionFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.DeleteBtnKey(), index).
 			Go())
 
@@ -713,9 +723,11 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 
 	saveBtn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().EventFunc(actions.DoSaveDetailingListField).
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoSaveDetailingListField).
 			Query(SectionFieldName, b.name).
-			Query(ParamID, ctx.Queries().Get(ParamID)).
+			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.SaveBtnKey(), strconv.Itoa(index)).
 			Go())
 

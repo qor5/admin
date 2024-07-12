@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
 	"time"
@@ -36,6 +35,7 @@ type loc struct {
 	code  string
 	path  string
 	label string
+	img   string
 }
 
 func New(db *gorm.DB) *Builder {
@@ -64,7 +64,7 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	return b
 }
 
-func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r *Builder) {
+func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel, img string) (r *Builder) {
 	if slices.ContainsFunc(b.locales, func(l *loc) bool {
 		return l.code == localeCode
 	}) {
@@ -75,6 +75,7 @@ func (b *Builder) RegisterLocales(localeCode, localePath, localeLabel string) (r
 		code:  localeCode,
 		path:  path.Join("/", localePath),
 		label: localeLabel,
+		img:   img,
 	})
 	return b
 }
@@ -135,6 +136,15 @@ func (b *Builder) GetLocaleLabel(localeCode string) string {
 		}
 	}
 	return "Unknown"
+}
+
+func (b *Builder) GetLocaleImg(localeCode string) string {
+	for _, l := range b.locales {
+		if l.code == localeCode {
+			return l.img
+		}
+	}
+	return ""
 }
 
 func (b *Builder) GetSupportLocaleCodes() (r []string) {
@@ -307,9 +317,6 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			return
 		}
 	})
-
-	rmb := m.Listing().RowMenu()
-	rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
 
 	registerEventFuncs(db, m, b, ab)
 
