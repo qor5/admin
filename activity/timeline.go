@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
@@ -23,10 +25,10 @@ type Note struct {
 }
 
 func init() {
-	stateful.RegisterActionableCompoType(&Timeline{})
+	stateful.RegisterActionableCompoType(&TimelineCompo{})
 }
 
-type Timeline struct {
+type TimelineCompo struct {
 	ab *Builder              `inject:""`
 	mb *presets.ModelBuilder `inject:""`
 
@@ -36,12 +38,17 @@ type Timeline struct {
 	ModelLink string `json:"model_link"`
 }
 
-func (c *Timeline) CompoID() string {
+func (c *TimelineCompo) CompoID() string {
 	return fmt.Sprintf("Timeline:%s", c.ID)
 }
 
-func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLComponent {
-	// TODO: i18n
+func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
+	evCtx := web.MustGetEventContext(ctx)
+	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+}
+
+func (c *TimelineCompo) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLComponent {
+	_, msgr := c.MustGetEventContext(ctx)
 	switch log.Action {
 	case ActionNote:
 		note := &Note{}
@@ -50,11 +57,11 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 		}
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
-				h.Text("Added a note :"),
+				h.Text(msgr.AddedANote),
 				h.Pre(note.Note).Style("white-space: pre-wrap"),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
-					return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
-						h.Text(fmt.Sprintf("(edited at %s)", humanize.Time(note.LastEditedAt))),
+					return h.Div().Class("text-caption text-grey-darken-1 font-italic").Children(
+						h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
 					)
 				}),
 			),
@@ -62,10 +69,8 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("").Variant(v.VariantOutlined).
 					Attr(web.VField("note", note.Note)...),
 				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
-					// TODO: i18n
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
 						Attr("@click", "xlocals.showEditBox = false"),
-					// TODO: i18n
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-check").
 						Attr("@click", stateful.PostAction(ctx, c,
 							c.UpdateNote, UpdateNoteRequest{
@@ -77,17 +82,17 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 			),
 		)
 	case ActionView:
-		return h.Text("Viewed")
+		return h.Text(msgr.Viewed)
 	case ActionCreate:
-		return h.Text("Created")
+		return h.Text(msgr.Created)
 	case ActionEdit:
 		diffs := []Diff{}
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
-			h.Text(fmt.Sprintf("Edited %d fields ", len(diffs))),
-			v.VBtn("More Info").Class("text-none text-overline d-flex align-center").
+			h.Text(msgr.EditedNFields(len(diffs))),
+			v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 				Attr("@click", web.POST().
 					EventFunc(actions.DetailingDrawer).
@@ -98,27 +103,23 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 				),
 		)
 	case ActionDelete:
-		return h.Text("Deleted")
+		return h.Text(msgr.Deleted)
 	default:
-		return h.Text(fmt.Sprintf("Performed action %q with detail %v ", log.Action, log.Detail))
+		return h.Text(msgr.PerformAction(log.Action, log.Detail))
 	}
 }
 
-func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
-	// TODO:
-	// evCtx := web.MustGetEventContext(ctx)
-	// utilMsgr := i18n.MustGetModuleMessages(evCtx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
+	_, msgr := c.MustGetEventContext(ctx)
 
 	children := []h.HTMLComponent{
-		// TODO: i18n
-		h.Div().Class("text-h6 mb-8").Text("Activity"),
+		h.Div().Class("text-h6 mb-8").Text(msgr.Activities),
 		web.Scope().VSlot("{locals: xlocals,form}").Init("{showEditBox:false}").Children(
-			v.VBtn("Add Note").Attr("v-if", "!xlocals.showEditBox").
+			v.VBtn(msgr.AddNote).Attr("v-if", "!xlocals.showEditBox").
 				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").
 				Attr("@click", "xlocals.showEditBox = true"),
 			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
-				// TODO: i18n
-				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("Add Note").Variant(v.VariantOutlined).
+				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label(msgr.AddNote).Variant(v.VariantOutlined).
 					Attr(web.VField("note", "")...),
 				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
@@ -141,27 +142,26 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 	for i, log := range logs {
 		creatorName := log.Creator.Name
 		if creatorName == "" {
-			creatorName = "Unknown" // TODO: i18n
+			creatorName = msgr.UnknownCreator
 		}
 		avatarText := ""
 		if log.Creator.Avatar == "" {
-			avatarText = strings.ToUpper(creatorName[0:1])
+			avatarText = strings.ToUpper(string([]rune(creatorName)[0:1]))
 		}
-		// TODO: v.ColorXXX ?
-		dotColor := "#30a46c"
+		dotColor := v.ColorSuccess
 		if i != 0 {
-			dotColor = "#e0e0e0"
+			dotColor = "grey-darken-2"
 		}
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
-				h.Div().Style("width: 8px; height: 8px; background-color: "+dotColor).Class("rounded-circle"),
-				h.Div(h.Text(humanize.Time(log.CreatedAt))).Style("color: #757575"),
+				h.Div().Class("bg-"+dotColor).Style("width: 8px; height: 8px;").Class("rounded-circle"),
+				h.Div(h.Text(humanize.Time(log.CreatedAt))).Class("text-grey-darken-1"),
 			),
 			h.Div().Class("d-flex flex-row ga-2").Children(
-				h.Div().Class("align-self-stretch").Style("background-color: "+dotColor+"; width: 1px; margin: -6px 3.5px -2px 3.5px;"),
+				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
 				h.Div().Class("flex-grow-1 d-flex flex-column pb-3").Children(
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						v.VAvatar().Class("text-overline").Attr("style", "color: #3e63dd").Attr("color", "#E6EDFE").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
+						v.VAvatar().Class("text-overline text-success bg-primary-lighten-2").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
 							h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
 								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 							}),
@@ -206,13 +206,13 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 				Attr(":model-value", `toplocals.deletingLogID !== -1`).
 				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
 				v.VCard(
-					v.VCardTitle(h.Text("Delete note")),                               // TODO: i18n
-					v.VCardText(h.Text("Are you sure you want to delete this note?")), // TODO: i18n
+					v.VCardTitle(h.Text(msgr.DeleteNoteDialogTitle)),
+					v.VCardText(h.Text(msgr.DeleteNoteDialogText)),
 					v.VCardActions(
 						v.VSpacer(),
-						v.VBtn("Cancel").Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
+						v.VBtn(msgr.Cancel).Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
 							Attr("@click", `toplocals.deletingLogID = -1`),
-						v.VBtn("Delete").Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
+						v.VBtn(msgr.Delete).Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
 							Attr("@click", stateful.PostAction(ctx, c,
 								c.DeleteNote, DeleteNoteRequest{},
 								stateful.WithAppendFix(`v.request.log_id = toplocals.deletingLogID`),
@@ -231,15 +231,16 @@ type CreateNoteRequest struct {
 	Note string `json:"note"`
 }
 
-func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web.EventResponse, _ error) {
+func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
 		return r, perm.PermissionDenied
 	}
 
+	_, msgr := c.MustGetEventContext(ctx)
+
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
-		// TODO: field error ?
-		presets.ShowMessage(&r, "Note cannot be blank", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, "error")
 		return
 	}
 
@@ -248,11 +249,11 @@ func (c *Timeline) CreateNote(ctx context.Context, req CreateNoteRequest) (r web
 		Note: req.Note,
 	})
 	if err != nil {
-		presets.ShowMessage(&r, "Failed to add note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToCreateNote, "error")
 		return
 	}
 
-	presets.ShowMessage(&r, "Successfully added note", "") // TODO: i18n
+	presets.ShowMessage(&r, msgr.SuccessfullyCreatedNote, "")
 	r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
 		Models: []any{log},
 	})
@@ -264,39 +265,39 @@ type UpdateNoteRequest struct {
 	Note  string `json:"note"`
 }
 
-func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web.EventResponse, _ error) {
+func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
 		return r, perm.PermissionDenied
 	}
 
+	_, msgr := c.MustGetEventContext(ctx)
+
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
-		// TODO: field error ?
-		presets.ShowMessage(&r, "Note cannot be blank", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, "error")
 		return
 	}
 
 	creator := c.ab.currentUserFunc(ctx)
 	if creator == nil {
-		presets.ShowMessage(&r, "Failed to get current user", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
 		return
 	}
 
 	// TODO: 需要单独封装方法供外界显式调用
 	log := &ActivityLog{}
 	if err := c.ab.db.Where("id = ?", req.LogID).First(log).Error; err != nil {
-		presets.ShowMessage(&r, "Failed to get note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToGetNote, "error")
 		return
 	}
 	if log.CreatorID != creator.ID {
-		presets.ShowMessage(&r, "You are not the creator of this note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, "error")
 		return
 	}
 
 	note := &Note{}
 	if err := json.Unmarshal([]byte(log.Detail), note); err != nil {
-		presets.ShowMessage(&r, "Failed to unmarshal note", "error") // TODO: i18n
-		return
+		return r, errors.Wrap(err, "failed to unmarshal note")
 	}
 	if note.Note == req.Note {
 		stateful.AppendReloadToResponse(&r, c)
@@ -308,11 +309,11 @@ func (c *Timeline) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web
 		LastEditedAt: time.Now(),
 	})
 	if err := c.ab.db.Save(log).Error; err != nil {
-		presets.ShowMessage(&r, "Failed to update note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToUpdateNote, "error")
 		return
 	}
 
-	presets.ShowMessage(&r, "Successfully updated note", "") // TODO: i18n
+	presets.ShowMessage(&r, msgr.SuccessfullyUpdatedNote, "")
 	r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
 		Ids:    []string{fmt.Sprint(log.ID)},
 		Models: []any{log},
@@ -324,29 +325,30 @@ type DeleteNoteRequest struct {
 	LogID uint `json:"log_id"`
 }
 
-func (c *Timeline) DeleteNote(ctx context.Context, req DeleteNoteRequest) (r web.EventResponse, _ error) {
+func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
 		return r, perm.PermissionDenied
 	}
 
+	_, msgr := c.MustGetEventContext(ctx)
+
 	creator := c.ab.currentUserFunc(ctx)
 	if creator == nil {
-		presets.ShowMessage(&r, "Failed to get current user", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
 		return
 	}
 
-	// TODO: 需要一个弹窗确认？
 	// TODO: 需要单独封装方法供外界显式调用
 	result := c.ab.db.Where("id = ? AND creator_id = ?", req.LogID, creator.ID).Delete(&ActivityLog{})
 	if err := result.Error; err != nil {
-		presets.ShowMessage(&r, "Failed to delete note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.FailedToDeleteNote, "error")
 		return
 	}
 	if result.RowsAffected == 0 {
-		presets.ShowMessage(&r, "You are not the creator of this note", "error") // TODO: i18n
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, "error")
 		return
 	}
-	presets.ShowMessage(&r, "Successfully deleted note", "") // TODO: i18n
+	presets.ShowMessage(&r, msgr.SuccessfullyDeletedNote, "")
 	// TODO: PayloadModelsDeleted 还是应该存在删除前的内容？否则一些地方无法直接细粒度更新
 	r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
 		Ids: []string{fmt.Sprint(req.LogID)},

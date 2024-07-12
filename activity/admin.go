@@ -30,10 +30,10 @@ const (
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
-	// TODO: 缺少日文？
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nActivityKey, Messages_ja_JP)
 
 	if permB := b.GetPermission(); permB != nil {
 		permB.CreatePolicies(ab.permPolicy)
@@ -55,7 +55,6 @@ func defaultActionLabels(msgr *Messages) map[string]string {
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
-	// TODO: i18n ?
 	var (
 		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		dp = mb.Detailing("Detail").Drawer(true)
@@ -213,8 +212,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		})
 	})
 
-	// TODO: 这个 Label 最后会被 i18n 处理吗？
-	dp.Field("Detail").Label("Detail").ComponentFunc(
+	dp.Field("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
 				log           = obj.(*ActivityLog)
@@ -236,8 +234,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 							h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(cmp.Or(log.ModelLabel, "-")))),
 							h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(log.ModelKeys))),
 							h.If(!hideModelLink && log.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-								// TODO: i18n
-								v.VBtn("More Info").Class("text-none text-overline d-flex align-center").
+								v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 									Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 									Attr("@click", web.POST().
 										EventFunc(actions.DetailingDrawer).
@@ -263,21 +260,21 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 					}
 					children = append(children, VCard().Elevation(0).Children(
 						VCardTitle().Class("pa-0").Children(
-							h.Text("Note"), // TODO: i18n
+							h.Text(msgr.ActionNote),
 						),
 						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
 							h.Div().Class("d-flex flex-column").Children(
 								h.Pre(note.Note).Style("white-space: pre-wrap"),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
-										h.Text(fmt.Sprintf("(edited at %s)", humanize.Time(note.LastEditedAt))),
+										h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
 									)
 								}),
 							),
 						),
 					))
 				default:
-					children = append(children, h.Text(fmt.Sprintf("Performed action %q with detail %v ", log.Action, log.Detail)))
+					children = append(children, h.Text(msgr.PerformAction(log.Action, log.Detail)))
 				}
 			}
 

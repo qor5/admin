@@ -123,7 +123,7 @@ func getBasicModel(m any) any {
 
 // func handleError(err error, r *web.EventResponse, errorMessage string) {
 // 	if err != nil {
-// 		log.Println(errorMessage, err) // TODO:
+// 		log.Println(errorMessage, err)
 // 		presets.ShowMessage(r, errorMessage, "error")
 // 	}
 // }

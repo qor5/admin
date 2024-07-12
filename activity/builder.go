@@ -319,7 +319,7 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 		})
 		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			keys := ab.MustGetModelBuilder(mb).KeysValue(obj)
-			return dc.MustInject(injectorName, &Timeline{
+			return dc.MustInject(injectorName, &TimelineCompo{
 				ID:        mb.Info().URIName() + ":" + keys,
 				ModelName: modelName(obj),
 				ModelKeys: keys,
