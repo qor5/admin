@@ -789,7 +789,7 @@ const (
 
 const (
 	CloseRightDrawerVarScript   = "vars.presetsRightDrawer = false"
-	closeDialogVarScript        = "vars.presetsDialog = false"
+	CloseDialogVarScript        = "vars.presetsDialog = false"
 	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
 )
 
