@@ -171,7 +171,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		sidePanel:   b.sidePanel,
 	}, obj, ctx)
 
-	actionButtons := h.Components()
+	actionButtons := []h.HTMLComponent{}
 	for _, ba := range b.actions {
 		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
@@ -183,7 +183,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		}
 
 		actionButtons = append(actionButtons, VBtn(b.mb.getLabel(ba.NameLabel)).
-			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
+			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).
 			Attr("@click", web.Plaid().
 				EventFunc(actions.Action).
 				Query(ParamID, id).
