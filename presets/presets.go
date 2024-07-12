@@ -931,7 +931,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 						Color("primary").
 						Variant(VariantFlat).
 						Theme(ThemeDark).
-						Attr("onclick", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
+						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
 				),
 			),
 		).MaxWidth("600px").
