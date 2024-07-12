@@ -25,7 +25,7 @@ const (
 const InjectorTop = "_actitivy_top_"
 
 type User struct {
-	ID     uint   `json:"id"` // TODO: 还是应该换成 ID 是 string 的，以保证通用性
+	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 }
@@ -42,7 +42,7 @@ type Builder struct {
 	permPolicy      *perm.PolicyBuilder       // permission policy
 	logModelInstall presets.ModelInstallFunc  // log model install
 	currentUserFunc CurrentUserFunc
-	findUsersFunc   func(ctx context.Context, ids []uint) (map[uint]*User, error)
+	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
 }
 
 // @snippet_end
@@ -67,12 +67,12 @@ func (ab *Builder) CurrentUserFunc(v CurrentUserFunc) *Builder {
 	return ab
 }
 
-func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []uint) (map[uint]*User, error)) *Builder {
+func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[string]*User, error)) *Builder {
 	ab.findUsersFunc = v
 	return ab
 }
 
-func (ab *Builder) findUsers(ctx context.Context, ids []uint) (map[uint]*User, error) {
+func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*User, error) {
 	if ab.findUsersFunc != nil {
 		return ab.findUsersFunc(ctx, ids)
 	}
@@ -81,9 +81,10 @@ func (ab *Builder) findUsers(ctx context.Context, ids []uint) (map[uint]*User, e
 	if err != nil {
 		return nil, err
 	}
-	return lo.SliceToMap(vs, func(item *ActivityUser) (uint, *User) {
-		return item.ID, &User{
-			ID:     item.ID,
+	return lo.SliceToMap(vs, func(item *ActivityUser) (string, *User) {
+		id := fmt.Sprint(item.ID)
+		return id, &User{
+			ID:     id,
 			Name:   item.Name,
 			Avatar: item.Avatar,
 		}
@@ -105,7 +106,7 @@ func New(db *gorm.DB) *Builder {
 }
 
 func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) error {
-	creatorIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) uint {
+	creatorIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
 		return log.CreatorID
 	}))
 	creators, err := ab.findUsers(ctx, creatorIDs)
@@ -295,7 +296,7 @@ func (ab *Builder) installPresetsModelBuilder(amb *ModelBuilder, mb *presets.Mod
 						return
 					}
 					r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
-						// TODO: 这个 payload 还是应该加 Models
+						// TODO: 这个 payload 还是应该加上 Models
 						Ids: []string{fmt.Sprint(log.ID)},
 					})
 					return

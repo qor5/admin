@@ -16,7 +16,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	activityBuilder := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
 		return &activity.User{
-			ID:     1,
+			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
 		}

@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 }
 
 var currentUser = &User{
-	ID:     1,
+	ID:     "1",
 	Name:   "John",
 	Avatar: "https://i.pravatar.cc/300",
 }
@@ -237,8 +237,8 @@ func TestCreatorInferface(t *testing.T) {
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.CreatorID != 1 {
-		t.Errorf("want the user id %v, but got %v", 1, record.CreatorID)
+	if record.CreatorID != "1" {
+		t.Errorf("want the user id %v, but got %v", "1", record.CreatorID)
 	}
 }
 

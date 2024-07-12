@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 
 	models2 "github.com/qor5/admin/v3/activity"
@@ -43,7 +44,7 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 				switch v := obj.(type) {
 				case *models2.ActivityLog:
 					u := getCurrentUser(r)
-					if u.GetID() == v.CreatorID {
+					if fmt.Sprint(u.GetID()) == v.CreatorID {
 						c["is_authorized"] = true
 					} else {
 						c["is_authorized"] = false

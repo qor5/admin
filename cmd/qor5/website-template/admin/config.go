@@ -70,7 +70,7 @@ func newConfig(db *gorm.DB) config {
 	mediaBuilder := media.New(db)
 	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
 		return &activity.User{
-			ID:   1,
+			ID:   "1",
 			Name: "John",
 		}
 	})

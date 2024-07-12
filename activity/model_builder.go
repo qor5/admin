@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 )
 
 // @snippet_begin(ActivityModelBuilder)
@@ -251,7 +252,11 @@ func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) 
 			Name:   creator.Name,
 			Avatar: creator.Avatar,
 		}
-		user.ID = creator.ID
+		var err error
+		user.ID, err = cast.ToUintE(creator.ID)
+		if err != nil {
+			return errors.Wrap(err, "failed to cast creator ID")
+		}
 		// TODO: 这样 CreatedAt 会是空值
 		if err := mb.ab.db.Save(user).Error; err != nil {
 			return err
@@ -331,10 +336,14 @@ func (mb *ModelBuilder) create(
 			Name:   creator.Name,
 			Avatar: creator.Avatar,
 		}
-		user.ID = creator.ID
+		var err error
+		user.ID, err = cast.ToUintE(creator.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to cast creator ID")
+		}
 		// TODO: 这样 CreatedAt 会是空值，回头再优化
 		if err := mb.ab.db.Save(user).Error; err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to save user")
 		}
 	}
 
@@ -358,7 +367,7 @@ func (mb *ModelBuilder) create(
 	log.Detail = string(detailJson)
 
 	if err := mb.ab.db.Create(log).Error; err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create log")
 	}
 	return log, nil
 }

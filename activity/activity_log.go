@@ -17,8 +17,8 @@ var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete
 type ActivityLog struct {
 	gorm.Model
 
-	CreatorID uint `gorm:"index"`
-	Creator   User `gorm:"-"`
+	CreatorID string `gorm:"index"`
+	Creator   User   `gorm:"-"`
 
 	Action     string `gorm:"index"`
 	ModelKeys  string `gorm:"index"`

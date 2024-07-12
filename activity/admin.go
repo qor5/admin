@@ -137,7 +137,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		creatorIDs := []uint{}
+		creatorIDs := []string{}
 		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT creator_id AS id").Pluck("id", &creatorIDs).Error
 		if err != nil {
 			panic(err)
@@ -150,7 +150,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		for _, creator := range creators {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
 				Text:  creator.Name,
-				Value: fmt.Sprint(creator.ID),
+				Value: creator.ID,
 			})
 		}
 

@@ -173,7 +173,7 @@ func NewConfig(db *gorm.DB) Config {
 	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
-			ID:     u.ID,
+			ID:     fmt.Sprint(u.ID),
 			Name:   u.Name,
 			Avatar: "",
 		}

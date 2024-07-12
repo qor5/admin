@@ -100,7 +100,6 @@ func (c *Timeline) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLCom
 	case ActionDelete:
 		return h.Text("Deleted")
 	default:
-		// TODO: handle link ?
 		return h.Text(fmt.Sprintf("Performed action %q with detail %v ", log.Action, log.Detail))
 	}
 }
@@ -112,6 +111,7 @@ func (c *Timeline) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	children := []h.HTMLComponent{
 		// TODO: i18n
+		h.Div().Class("text-h6 mb-8").Text("Activity"),
 		web.Scope().VSlot("{locals: xlocals,form}").Init("{showEditBox:false}").Children(
 			v.VBtn("Add Note").Attr("v-if", "!xlocals.showEditBox").
 				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").

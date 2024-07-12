@@ -105,7 +105,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		AutoMigrate().
 		CurrentUserFunc(func(ctx context.Context) *activity.User {
 			return &activity.User{
-				ID:   1,
+				ID:   "1",
 				Name: "John",
 			}
 		})

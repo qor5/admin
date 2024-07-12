@@ -90,7 +90,7 @@ GROUP BY resource_type;
 	}
 
 	var unreadNote activity.ActivityLog
-	unreadNote.CreatorID = user.ID
+	unreadNote.CreatorID = fmt.Sprint(user.ID)
 	unreadNote.Detail = string(content) // TODO:
 	unreadNote.Action = "unread_notes_count"
 	if err = db.Save(&unreadNote).Error; err != nil {
@@ -130,7 +130,7 @@ GROUP BY model_name, model_keys;
 			for _, result := range results {
 				un := activity.ActivityLog{
 					Creator: activity.User{
-						ID:   u.ID,
+						ID:   fmt.Sprint(u.ID),
 						Name: u.Name,
 					},
 					ModelName: result.ResourceType,
