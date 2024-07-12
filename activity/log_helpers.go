@@ -68,38 +68,6 @@ func fetchOld(ref any, db *gorm.DB) (any, bool) {
 	return old, true
 }
 
-// TODO: 这个其实也很好奇，为什么不使用 gorm 的 scheme parse 来搞？
-// getPrimaryKey get primary keys from a model
-func getPrimaryKey(t reflect.Type) (keys []string) {
-	if t.Kind() != reflect.Struct {
-		return
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		if strings.Contains(t.Field(i).Tag.Get("gorm"), "primary") {
-			keys = append(keys, t.Field(i).Name)
-			continue
-		}
-
-		if t.Field(i).Type.Kind() == reflect.Ptr && t.Field(i).Anonymous {
-			keys = append(keys, getPrimaryKey(t.Field(i).Type.Elem())...)
-		}
-
-		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Anonymous {
-			keys = append(keys, getPrimaryKey(t.Field(i).Type)...)
-		}
-	}
-	return
-}
-
-func getBasicModel(m any) any {
-	if preset, ok := m.(*presets.ModelBuilder); ok {
-		return preset.NewModel()
-	}
-
-	return m
-}
-
 // func GetUnreadNotesCount(db *gorm.DB, userID uint, resourceType, resourceID string) (int64, error) {
 // 	var total int64
 // 	if err := db.Model(&ActivityLog{}).Where("model_name = ? AND model_keys = ? AND action = ?", resourceType, resourceID, ActionCreateNote).Count(&total).Error; err != nil {

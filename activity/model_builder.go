@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	h "github.com/theplant/htmlgo"
 )
 
 // @snippet_begin(ActivityModelBuilder)
@@ -29,6 +30,155 @@ type ModelBuilder struct {
 }
 
 // @snippet_end
+
+func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
+	amb.presetModel = mb
+	amb.LinkFunc(func(a any) string {
+		id := objectID(a)
+		if id == "" {
+			return id
+		}
+		return mb.Info().DetailingHref(id)
+	})
+
+	eb := mb.Editing()
+	dp := mb.Detailing()
+	lb := mb.Listing()
+
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if id == "" && amb.skip&Create == 0 {
+				err := in(obj, id, ctx)
+				if err != nil {
+					return err
+				}
+				log, err := amb.createWithObj(ctx.R.Context(), ActionCreate, obj, nil)
+				if err != nil {
+					return err
+				}
+				presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+					return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+						if err = in(ctx, r); err != nil {
+							return
+						}
+						r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+							Models: []any{log},
+						})
+						return
+					}
+				})
+				return nil
+			}
+
+			if id != "" && amb.skip&Update == 0 {
+				old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+				if err != nil {
+					return errors.Wrap(err, "fetch old record")
+				}
+				if err := in(obj, id, ctx); err != nil {
+					return err
+				}
+				log, err := amb.createEditLog(ctx.R.Context(), old, obj)
+				if err != nil {
+					return err
+				}
+				if log != nil {
+					presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+						return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+							if err = in(ctx, r); err != nil {
+								return
+							}
+							r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
+								Ids:    []string{fmt.Sprint(log.ID)},
+								Models: []any{log},
+							})
+							return
+						}
+					})
+				}
+				return nil
+			}
+			return in(obj, id, ctx)
+		}
+	})
+
+	eb.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if amb.skip&Delete != 0 {
+				return in(obj, id, ctx)
+			}
+			old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+			if err != nil {
+				return errors.Wrap(err, "fetch old record")
+			}
+			if err := in(obj, id, ctx); err != nil {
+				return err
+			}
+			log, err := amb.createWithObj(ctx.R.Context(), ActionDelete, old, nil)
+			if err != nil {
+				return err
+			}
+			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+					err = in(ctx, r)
+					if err != nil {
+						return
+					}
+					r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
+						// TODO: 这个 payload 还是应该加上 Models
+						Ids: []string{fmt.Sprint(log.ID)},
+					})
+					return
+				}
+			})
+			return nil
+		}
+	})
+
+	detailFieldTimeline := dp.GetField(DetailFieldTimeline)
+	if detailFieldTimeline != nil {
+		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+		dc := mb.GetPresetsBuilder().GetDependencyCenter()
+		dc.RegisterInjector(injectorName)
+		dc.MustProvide(injectorName, func() *Builder {
+			return amb.ab
+		})
+		dc.MustProvide(injectorName, func() *ModelBuilder {
+			return amb
+		})
+		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+			return mb
+		})
+		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			keys := amb.KeysValue(obj)
+			return dc.MustInject(injectorName, &TimelineCompo{
+				ID:        mb.Info().URIName() + ":" + keys,
+				ModelName: modelName(obj),
+				ModelKeys: keys,
+				ModelLink: amb.link(obj),
+			})
+		})
+	}
+
+	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
+	if listFieldUnreadNotes != nil {
+		// TODO: 因为 UnreadCount 的存在，所以这里其实应该进行添加 listener 来进行更新对应值，进行细粒度更新
+		// listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// 	rt := modelName(mb.NewModel())
+		// 	ri := amb.KeysValue(obj)
+		// 	user := ab.currentUserFunc(ctx.R.Context())
+		// 	count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
+
+		// 	return h.Td(
+		// 		h.If(count > 0,
+		// 			v.VBadge().Content(count).Color("red"),
+		// 		).Else(
+		// 			h.Text(""),
+		// 		),
+		// 	)
+		// }).Label("Unread Notes") // TODO: i18n
+	}
+}
 
 // AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
@@ -107,26 +257,7 @@ func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 
 // KeysValue get model keys value
 func (mb *ModelBuilder) KeysValue(v any) string {
-	var (
-		stringBuilder = strings.Builder{}
-		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
-		reflectType   = reflectValue.Type()
-	)
-
-	for _, key := range mb.keys {
-		if fields, ok := reflectType.FieldByName(key); ok {
-			if reflectValue.FieldByName(key).IsZero() {
-				continue
-			}
-			if fields.Anonymous { // TODO: 为什么匿名的需要多一个 FiledByName 呢？
-				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).FieldByName(key).Interface()))
-			} else {
-				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
-			}
-		}
-	}
-
-	return strings.TrimRight(stringBuilder.String(), ":")
+	return keysValue(v, mb.keys)
 }
 
 // AddRecords add records log

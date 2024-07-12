@@ -150,7 +150,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		}
 		dotColor := v.ColorSuccess
 		if i != 0 {
-			dotColor = "grey-darken-2"
+			dotColor = "grey-lighten-2"
 		}
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
