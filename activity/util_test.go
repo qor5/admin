@@ -16,6 +16,11 @@ func TestFirstUpperWord(t *testing.T) {
 	assert.Equal(t, firstUpperWord("フィールド"), "フ")
 }
 
+func TestModelName(t *testing.T) {
+	assert.Equal(t, "TestActivityModel", modelName(&TestActivityModel{}))
+	assert.Equal(t, "TestActivityModel", modelName(TestActivityModel{}))
+}
+
 func TestKeysValue(t *testing.T) {
 	type InnerStruct struct {
 		Field1 string
@@ -163,6 +168,53 @@ func TestParseGormPrimaryFieldNames(t *testing.T) {
 			}
 			if !reflect.DeepEqual(fields, test.Expected) {
 				t.Errorf("Expected primary fields %v, but got %v", test.Expected, fields)
+			}
+		})
+	}
+}
+
+func TestGetPrimaryKeys(t *testing.T) {
+	type TestModel struct {
+		ID   uint `gorm:"primary_key"`
+		Name string
+	}
+
+	type EmbeddedModel struct {
+		TestModel
+	}
+
+	type NestedModel struct {
+		EmbeddedModel
+		Version string `gorm:"primary_key"`
+	}
+
+	tests := []struct {
+		Name     string
+		Model    interface{}
+		Expected []string
+	}{
+		{
+			Name:     "TestModel",
+			Model:    TestModel{},
+			Expected: []string{"ID"},
+		},
+		{
+			Name:     "EmbeddedModel",
+			Model:    EmbeddedModel{},
+			Expected: []string{"ID"},
+		},
+		{
+			Name:     "NestedModel",
+			Model:    NestedModel{},
+			Expected: []string{"ID", "Version"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			keys := getPrimaryKeys(reflect.TypeOf(test.Model))
+			if !reflect.DeepEqual(keys, test.Expected) {
+				t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
 			}
 		})
 	}

@@ -20,6 +20,11 @@ func firstUpperWord(name string) string {
 	return strings.ToUpper(string([]rune(name)[0:1]))
 }
 
+func modelName(v any) string {
+	segs := strings.Split(reflect.TypeOf(v).String(), ".")
+	return strings.TrimLeft(segs[len(segs)-1], "*")
+}
+
 func keysValue(v any, keys []string) string {
 	rv := reflect.Indirect(reflect.ValueOf(v))
 	if !rv.IsValid() {
@@ -34,6 +39,28 @@ func keysValue(v any, keys []string) string {
 		vals = append(vals, fmt.Sprint(rvField.Interface()))
 	}
 	return strings.Join(vals, ":")
+}
+
+func getPrimaryKeys(t reflect.Type) (keys []string) {
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		if strings.Contains(t.Field(i).Tag.Get("gorm"), "primary") {
+			keys = append(keys, t.Field(i).Name)
+			continue
+		}
+
+		if t.Field(i).Type.Kind() == reflect.Ptr && t.Field(i).Anonymous {
+			keys = append(keys, getPrimaryKeys(t.Field(i).Type.Elem())...)
+		}
+
+		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Anonymous {
+			keys = append(keys, getPrimaryKeys(t.Field(i).Type)...)
+		}
+	}
+	return
 }
 
 var (

@@ -22,11 +22,8 @@ import (
 )
 
 const (
-	I18nActivityKey      i18n.ModuleKey = "I18nActivityKey"
-	DetailFieldTimeline  string         = "Timeline"
-	ListFieldUnreadNotes string         = "UnreadNotes"
-
-	paramHideModelLink = "hide_link"
+	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
+	paramHideModelLink                = "hide_link"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -59,7 +56,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		dp = mb.Detailing("Detail").Drawer(true)
 	)
-	ab.lmb = mb
 
 	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
 		return func(model interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {

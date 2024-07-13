@@ -16,6 +16,17 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+const (
+	DetailFieldTimeline  string = "Timeline"
+	ListFieldUnreadNotes string = "UnreadNotes"
+)
+
+const (
+	Create = 1 << iota
+	Delete
+	Update
+)
+
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
@@ -36,7 +47,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	amb.LinkFunc(func(a any) string {
 		id := objectID(a)
 		if id == "" {
-			return id
+			return ""
 		}
 		return mb.Info().DetailingHref(id)
 	})

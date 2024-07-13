@@ -246,7 +246,8 @@ func TestGetActivityLogs(t *testing.T) {
 	builder := New(db)
 	pb.Use(builder)
 
-	builder.RegisterModel(Page{}).AddKeys("ID", "VersionName")
+	amb := builder.RegisterModel(Page{})
+	amb.AddKeys("ID", "VersionName")
 	resetDB()
 
 	err := builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
@@ -266,7 +267,8 @@ func TestGetActivityLogs(t *testing.T) {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
 
-	logs, err := builder.GetActivityLogs(context.Background(), Page{ID: 1, VersionName: "v1"}, "")
+	page := Page{ID: 1, VersionName: "v1"}
+	logs, err := builder.getActivityLogs(context.Background(), modelName(page), amb.KeysValue(page))
 	require.NoError(t, err)
 	require.Len(t, logs, 3)
 
@@ -388,12 +390,5 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Delete", "TestActivityModel", "2").Find(&log); log.ID != 0 {
 			t.Errorf("want skip the create, but still got the record %v", log)
 		}
-	}
-}
-
-func TestModelName(t *testing.T) {
-	mn := modelName(&TestActivityModel{})
-	if mn != "TestActivityModel" {
-		t.Errorf("wrong model name %#+v", mn)
 	}
 }
