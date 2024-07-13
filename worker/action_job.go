@@ -3,7 +3,6 @@ package worker
 import (
 	"fmt"
 
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -122,7 +121,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	if b.ab != nil {
-		b.ab.AddRecords(ctx.R.Context(), activity.ActionCreate, job)
+		b.ab.Create(ctx.R.Context(),  job)
 	}
 
 	r.RunScript = web.Plaid().

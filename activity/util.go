@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
+	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
@@ -78,7 +79,7 @@ func ParseGormPrimaryFieldNames(v any) ([]string, error) {
 	}), nil
 }
 
-func objectID(obj any) string {
+func ObjectID(obj any) string {
 	var id string
 	if slugger, ok := obj.(presets.SlugEncoder); ok {
 		id = slugger.PrimarySlug()
@@ -89,4 +90,63 @@ func objectID(obj any) string {
 		}
 	}
 	return id
+}
+
+func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {
+	if slug == "" {
+		return FetchOld(db, ref)
+	}
+
+	var (
+		rt  = reflect.Indirect(reflect.ValueOf(ref)).Type()
+		old = reflect.New(rt).Interface()
+	)
+
+	if slugger, ok := ref.(presets.SlugDecoder); ok {
+		cs := slugger.PrimaryColumnValuesBySlug(slug)
+		for key, value := range cs {
+			db = db.Where(fmt.Sprintf("%s = ?", key), value)
+		}
+	} else {
+		db = db.Where("id = ?", slug)
+	}
+
+	if db.First(old).Error != nil {
+		return nil, false
+	}
+
+	return old, true
+}
+
+func FetchOld(db *gorm.DB, ref any) (any, bool) {
+	var (
+		rtRef = reflect.Indirect(reflect.ValueOf(ref))
+		old   = reflect.New(rtRef.Type()).Interface()
+		sqls  []string
+		vars  []any
+	)
+
+	stmt := &gorm.Statement{DB: db}
+	if err := stmt.Parse(ref); err != nil {
+		return nil, false
+	}
+
+	for _, dbName := range stmt.Schema.DBNames {
+		if field := stmt.Schema.LookUpField(dbName); field != nil && field.PrimaryKey {
+			if value, isZero := field.ValueOf(db.Statement.Context, rtRef); !isZero {
+				sqls = append(sqls, fmt.Sprintf("%v = ?", dbName))
+				vars = append(vars, value)
+			}
+		}
+	}
+
+	if len(sqls) == 0 || len(vars) == 0 || len(sqls) != len(vars) {
+		return nil, false
+	}
+
+	if db.Where(strings.Join(sqls, " AND "), vars...).First(old).Error != nil {
+		return nil, false
+	}
+
+	return old, true
 }

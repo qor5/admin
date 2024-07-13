@@ -23,7 +23,7 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab 
 		}
 		if ab != nil {
 			if _, exist := ab.GetModelBuilder(obj); exist {
-				ab.AddCustomizedRecord(ctx.R.Context(), actionName, false, obj)
+				ab.Log(ctx.R.Context(), actionName, obj, nil)
 			}
 		}
 
@@ -53,7 +53,7 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 		}
 		if ab != nil {
 			if _, exist := ab.GetModelBuilder(obj); exist {
-				ab.AddCustomizedRecord(ctx.R.Context(), actionName, false, obj)
+				ab.Log(ctx.R.Context(), actionName, obj, nil)
 			}
 		}
 

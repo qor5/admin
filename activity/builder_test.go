@@ -83,13 +83,14 @@ func TestModelKeys(t *testing.T) {
 		panic(err)
 	}
 
-	builder := New(db)
+	builder := New(db, testCurrentUser)
 	pb.Use(builder)
 	builder.RegisterModel(pageModel).AddKeys("ID", "VersionName")
 
 	var err error
+	ctx := context.Background()
 
-	err = builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
+	_, err = builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -108,7 +109,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 
 	builder.RegisterModel(widgetModel).AddKeys("Name")
-	err = builder.AddCreateRecord(currentUser, Widget{Name: "Text 01", Title: "123"})
+	_, err = builder.Create(ctx, Widget{Name: "Text 01", Title: "123"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -125,7 +126,7 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
-	builder := New(db)
+	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).LinkFunc(func(v any) string {
 		page := v.(Page)
@@ -134,7 +135,8 @@ func TestModelLink(t *testing.T) {
 
 	resetDB()
 
-	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
+	ctx := context.Background()
+	builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -145,7 +147,7 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
-	builder := New(db)
+	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, new any, prefixField string) (diffs []Diff) {
 		oldWidgets := old.(Widgets)
@@ -197,7 +199,8 @@ func TestModelTypeHanders(t *testing.T) {
 	})
 
 	resetDB()
-	builder.AddEditRecordWithOld(currentUser,
+	ctx := context.Background()
+	builder.Edit(ctx,
 		Page{
 			ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
@@ -226,13 +229,14 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestCreatorInferface(t *testing.T) {
-	builder := New(db)
+	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 
 	builder.RegisterModel(pageModel)
 	resetDB()
 
-	builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
+	ctx := context.Background()
+	builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -243,26 +247,27 @@ func TestCreatorInferface(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
-	builder := New(db)
+	builder := New(db, testCurrentUser)
 	pb.Use(builder)
 
 	amb := builder.RegisterModel(Page{})
 	amb.AddKeys("ID", "VersionName")
 	resetDB()
 
-	err := builder.AddCreateRecord(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"})
+	ctx := context.Background()
+	_, err := builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"})
+	_, err = builder.Edit(ctx, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
+	_, err = builder.Edit(ctx, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	err = builder.AddEditRecordWithOld(currentUser, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"})
+	_, err = builder.Edit(ctx, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
@@ -288,7 +293,7 @@ func TestGetActivityLogs(t *testing.T) {
 }
 
 func TestMutliModelBuilder(t *testing.T) {
-	builder := New(db).CurrentUserFunc(testCurrentUser)
+	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
 
@@ -304,9 +309,11 @@ func TestMutliModelBuilder(t *testing.T) {
 	data3 := &TestActivityModel{ID: 3, VersionName: "v3", Title: "test3", Description: "Description3"}
 
 	resetDB()
+	ctx := context.Background()
+
 	// add create record
 	db.Create(data1)
-	builder.AddCreateRecord(currentUser, data1)
+	builder.Create(ctx, data1)
 	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
@@ -326,7 +333,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add edit record
 	data1.Title = "test1-1"
 	data1.Description = "Description1-1"
-	builder.AddEditRecord(currentUser, data1)
+	old, _ := FetchOld(db, data1)
+	builder.Edit(ctx, old, data1)
 	db.Save(data1)
 
 	data2.Title = "test2-1"
@@ -373,7 +381,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	}
 
 	// add delete record
-	builder.AddDeleteRecord(currentUser, data1)
+	builder.Delete(ctx, data1)
 	db.Delete(data1)
 
 	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})

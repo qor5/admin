@@ -49,20 +49,16 @@ func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 	return ab
 }
 
-func (ab *Builder) CurrentUserFunc(v CurrentUserFunc) *Builder {
-	ab.currentUserFunc = v
-	return ab
-}
-
 func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[string]*User, error)) *Builder {
 	ab.findUsersFunc = v
 	return ab
 }
 
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB) *Builder {
+func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
 	ab := &Builder{
-		db: db,
+		db:              db,
+		currentUserFunc: currentUserFunc,
 		permPolicy: perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
 			ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).
 			On("*:activity_logs").On("*:activity_logs:*"),
@@ -198,91 +194,37 @@ func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys str
 	return logs, nil
 }
 
-// AddRecords add records log
-func (ab *Builder) AddRecords(ctx context.Context, action string, vs ...any) error {
-	if len(vs) == 0 {
-		return errors.New("data are empty")
-	}
-
-	for _, v := range vs {
-		if mb, ok := ab.GetModelBuilder(v); ok {
-			if err := mb.AddRecords(ctx, action, v); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// AddCustomizedRecord add customized record
-func (ab *Builder) AddCustomizedRecord(ctx context.Context, action string, diff bool, obj any) error {
-	if mb, ok := ab.GetModelBuilder(obj); ok {
-		return mb.AddCustomizedRecord(ctx, action, diff, obj)
-	}
-
-	return fmt.Errorf("can't find model builder for %v", obj)
-}
-
-// AddViewRecord add view record
-func (ab *Builder) AddViewRecord(creator *User, v any) error {
+func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*ActivityLog, error) {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddViewRecord(creator, v)
+		return mb.Log(ctx, action, v, detail)
 	}
-
-	return fmt.Errorf("can't find model builder for %v", v)
+	return nil, errors.Errorf("can't find model builder for %v", v)
 }
 
-// AddDeleteRecord	add delete record
-func (ab *Builder) AddDeleteRecord(creator *User, v any) error {
+func (ab *Builder) Create(ctx context.Context, v any) (*ActivityLog, error) {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddDeleteRecord(creator, v)
+		return mb.Create(ctx, v)
 	}
-
-	return fmt.Errorf("can't find model builder for %v", v)
+	return nil, errors.Errorf("can't find model builder for %v", v)
 }
 
-// AddSaverRecord will save a create log or a edit log
-func (ab *Builder) AddSaveRecord(creator *User, new any) error {
-	if mb, ok := ab.GetModelBuilder(new); ok {
-		return mb.AddSaveRecord(creator, new)
-	}
-
-	return fmt.Errorf("can't find model builder for %v", new)
-}
-
-// AddCreateRecord add create record
-func (ab *Builder) AddCreateRecord(creator *User, v any) error {
+func (ab *Builder) View(ctx context.Context, v any) (*ActivityLog, error) {
 	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.AddCreateRecord(creator, v)
+		return mb.View(ctx, v)
 	}
-
-	return fmt.Errorf("can't find model builder for %v", v)
+	return nil, errors.Errorf("can't find model builder for %v", v)
 }
 
-// AddEditRecord add edit record
-func (ab *Builder) AddEditRecord(creator *User, new any) error {
+func (ab *Builder) Edit(ctx context.Context, old, new any) (*ActivityLog, error) {
 	if mb, ok := ab.GetModelBuilder(new); ok {
-		return mb.AddEditRecord(creator, new)
+		return mb.Edit(ctx, old, new)
 	}
-
-	return fmt.Errorf("can't find model builder for %v", new)
+	return nil, errors.Errorf("can't find model builder for %v", new)
 }
 
-// AddEditRecord add edit record
-func (ab *Builder) AddEditRecordWithOld(creator *User, old, new any) error {
-	if mb, ok := ab.GetModelBuilder(new); ok {
-		return mb.AddEditRecordWithOld(creator, old, new)
+func (ab *Builder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
+	if mb, ok := ab.GetModelBuilder(v); ok {
+		return mb.Delete(ctx, v)
 	}
-
-	return fmt.Errorf("can't find model builder for %v", new)
-}
-
-// AddEditRecordWithOldAndContext add edit record
-func (ab *Builder) AddEditRecordWithOldAndContext(ctx context.Context, old, new any) error {
-	if mb, ok := ab.GetModelBuilder(new); ok {
-		return mb.AddEditRecordWithOld(ab.currentUserFunc(ctx), old, new)
-	}
-
-	return fmt.Errorf("can't find model builder for %v", new)
+	return nil, errors.Errorf("can't find model builder for %v", v)
 }

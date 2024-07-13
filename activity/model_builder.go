@@ -45,7 +45,7 @@ type ModelBuilder struct {
 func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
-		id := objectID(a)
+		id := ObjectID(a)
 		if id == "" {
 			return ""
 		}
@@ -89,7 +89,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err := in(obj, id, ctx); err != nil {
 					return err
 				}
-				log, err := amb.createEditLog(ctx.R.Context(), old, obj)
+				log, err := amb.Edit(ctx.R.Context(), old, obj)
 				if err != nil {
 					return err
 				}
@@ -271,174 +271,19 @@ func (mb *ModelBuilder) KeysValue(v any) string {
 	return keysValue(v, mb.keys)
 }
 
-// AddRecords add records log
-func (mb *ModelBuilder) AddRecords(ctx context.Context, action string, vs ...any) error {
-	if len(vs) == 0 {
-		return errors.New("data are empty")
-	}
-
-	creator := mb.ab.currentUserFunc(ctx)
-
-	switch action {
-	case ActionView:
-		for _, v := range vs {
-			err := mb.AddViewRecord(creator, v)
-			if err != nil {
-				return err
-			}
-		}
-
-	case ActionDelete:
-		for _, v := range vs {
-			err := mb.AddDeleteRecord(creator, v)
-			if err != nil {
-				return err
-			}
-		}
-	case ActionCreate:
-		for _, v := range vs {
-			err := mb.AddCreateRecord(creator, v)
-			if err != nil {
-				return err
-			}
-		}
-	case ActionEdit:
-		for _, v := range vs {
-			err := mb.AddEditRecord(creator, v)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
+	return mb.createWithObj(ctx, action, obj, detail)
 }
 
-// AddCustomizedRecord add customized record
-func (mb *ModelBuilder) AddCustomizedRecord(ctx context.Context, action string, diff bool, obj any) error {
-	creator := mb.ab.currentUserFunc(ctx)
-	if !diff {
-		return mb.save(creator, action, obj, "")
-	}
-
-	old, ok := fetchOld(obj, mb.ab.db)
-	if !ok {
-		return fmt.Errorf("can't find old data for %+v ", obj)
-	}
-	return mb.addDiff(action, creator, old, obj)
+func (mb *ModelBuilder) Create(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.createWithObj(ctx, ActionCreate, v, nil)
 }
 
-// AddViewRecord add view record
-func (mb *ModelBuilder) AddViewRecord(creator *User, v any) error {
-	return mb.save(creator, ActionView, v, "")
+func (mb *ModelBuilder) View(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.createWithObj(ctx, ActionView, v, nil)
 }
 
-// AddDeleteRecord	add delete record
-func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any) error {
-	return mb.save(creator, ActionDelete, v, "")
-}
-
-// AddSaverRecord will save a create log or a edit log
-func (mb *ModelBuilder) AddSaveRecord(creator *User, new any) error {
-	old, ok := fetchOld(new, mb.ab.db)
-	if !ok {
-		return mb.AddCreateRecord(creator, new)
-	}
-	return mb.AddEditRecordWithOld(creator, old, new)
-}
-
-// AddCreateRecord add create record
-func (mb *ModelBuilder) AddCreateRecord(creator *User, v any) error {
-	return mb.save(creator, ActionCreate, v, "")
-}
-
-// AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecord(creator *User, new any) error {
-	old, ok := fetchOld(new, mb.ab.db)
-	if !ok {
-		return fmt.Errorf("can't find old data for %+v ", new)
-	}
-	return mb.AddEditRecordWithOld(creator, old, new)
-}
-
-// AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecordWithOld(creator *User, old, new any) error {
-	return mb.addDiff(ActionEdit, creator, old, new)
-}
-
-func (mb *ModelBuilder) addDiff(action string, creator *User, old, new any) error {
-	diffs, err := mb.Diff(old, new)
-	if err != nil {
-		return err
-	}
-
-	if len(diffs) == 0 {
-		return nil
-	}
-
-	b, err := json.Marshal(diffs)
-	if err != nil {
-		return err
-	}
-
-	return mb.save(creator, action, new, string(b))
-}
-
-// Diff get diffs between old and new value
-func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
-	return NewDiffBuilder(mb).Diff(old, new)
-}
-
-func (mb *ModelBuilder) save(creator *User, action string, v any, diffs string) error {
-	if mb.ab.findUsersFunc == nil { // TODO: 先简单处理吧
-		user := &ActivityUser{
-			Name:   creator.Name,
-			Avatar: creator.Avatar,
-		}
-		var err error
-		user.ID, err = cast.ToUintE(creator.ID)
-		if err != nil {
-			return errors.Wrap(err, "failed to cast creator ID")
-		}
-		// TODO: 这样 CreatedAt 会是空值
-		if err := mb.ab.db.Save(user).Error; err != nil {
-			return err
-		}
-	}
-
-	log := &ActivityLog{}
-
-	log.CreatedAt = time.Now()
-	log.CreatorID = creator.ID
-	log.Action = action
-	log.ModelName = modelName(v)
-	log.ModelKeys = mb.KeysValue(v)
-
-	if mb.presetModel != nil && mb.presetModel.Info().URIName() != "" {
-		log.ModelLabel = mb.presetModel.Info().URIName()
-	} else {
-		log.ModelLabel = "-"
-	}
-
-	if f := mb.link; f != nil {
-		log.ModelLink = f(v)
-	}
-
-	if diffs == "" && action == ActionEdit {
-		return nil
-	}
-
-	if action == ActionEdit {
-		log.Detail = diffs
-	}
-
-	err := mb.ab.db.Save(log).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (mb *ModelBuilder) createEditLog(ctx context.Context, old any, new any) (*ActivityLog, error) {
+func (mb *ModelBuilder) Edit(ctx context.Context, old any, new any) (*ActivityLog, error) {
 	diffs, err := mb.Diff(old, new)
 	if err != nil {
 		return nil, err
@@ -449,6 +294,14 @@ func (mb *ModelBuilder) createEditLog(ctx context.Context, old any, new any) (*A
 	}
 
 	return mb.createWithObj(ctx, ActionEdit, new, diffs)
+}
+
+func (mb *ModelBuilder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.createWithObj(ctx, ActionDelete, v, nil)
+}
+
+func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
+	return NewDiffBuilder(mb).Diff(old, new)
 }
 
 func (mb *ModelBuilder) modelLink(v any) string {

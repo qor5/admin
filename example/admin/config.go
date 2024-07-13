@@ -170,7 +170,7 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
 			ID:     fmt.Sprint(u.ID),
@@ -178,6 +178,7 @@ func NewConfig(db *gorm.DB) Config {
 			Avatar: "",
 		}
 	}).
+		AutoMigrate().
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 				err = in(pb, mb)

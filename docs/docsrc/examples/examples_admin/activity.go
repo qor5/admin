@@ -14,13 +14,13 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	activityBuilder := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+	activityBuilder := activity.New(db, func(ctx context.Context) *activity.User {
 		return &activity.User{
 			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
 		}
-	})
+	}).AutoMigrate()
 	b.Use(activityBuilder)
 
 	// @snippet_end
@@ -51,8 +51,8 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(ActivityRecordLogSample)
 
 	ctx := context.Background()
-	activityBuilder.AddRecords(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-	activityBuilder.AddRecords(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
+	activityBuilder.Log(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100}, nil)
+	activityBuilder.Log(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200}, nil)
 
 	// @snippet_end
 	return b
