@@ -195,11 +195,17 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		}
 		children = append(children, child)
 	}
+	reloadAction := fmt.Sprintf(`
+	if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
+		return
+	}
+	%s
+	`, stateful.ReloadAction(ctx, c, nil).Go())
 	return stateful.Actionable(ctx, c,
 		web.Listen(
-			presets.NotifModelsCreated(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
-			presets.NotifModelsUpdated(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
-			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
+			presets.NotifModelsCreated(&ActivityLog{}), reloadAction,
+			presets.NotifModelsUpdated(&ActivityLog{}), reloadAction,
+			presets.NotifModelsDeleted(&ActivityLog{}), reloadAction,
 		),
 		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
 			v.VDialog().MaxWidth("520px").

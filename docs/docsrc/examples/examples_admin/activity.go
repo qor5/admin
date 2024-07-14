@@ -46,7 +46,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	dp.Section("Content").Editing("Title", "Code", "Price")
 
 	mb.Use(ab)
-	ab.MustGetModelBuilder(mb).SkipDelete()
+	ab.MustGetModelBuilder(mb).SkipView()
 
 	// @snippet_end
 

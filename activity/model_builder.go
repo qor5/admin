@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/qor5/web/v3"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/samber/lo"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -42,6 +44,16 @@ type ModelBuilder struct {
 }
 
 // @snippet_end
+
+type ctxKeyUnreadCounts struct{}
+
+func NotifiLastViewedAtUpdated(modelName string) string {
+	return fmt.Sprintf("activity_NotifModelsCreated_%s", modelName)
+}
+
+type PayloadLastViewedAtUpdated struct {
+	Log *ActivityLog `json:"log"`
+}
 
 func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
@@ -80,7 +92,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err != nil {
 					return err
 				}
-				log, err := amb.createWithObj(ctx.R.Context(), ActionCreate, obj, nil)
+				log, err := amb.Create(ctx.R.Context(), obj)
 				if err != nil {
 					return err
 				}
@@ -128,24 +140,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		}
 	})
 
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(obj any, id string, ctx *web.EventContext) (r any, err error) {
-			r, err = in(obj, id, ctx)
-			if err != nil {
-				return
-			}
-			if amb.skip&View != 0 {
-				return
-			}
-			log, err := amb.View(ctx.R.Context(), r)
-			if err != nil {
-				return r, err
-			}
-			emitLogCreated(ctx, log)
-			return r, nil
-		}
-	})
-
 	detailFieldTimeline := dp.GetField(DetailFieldTimeline)
 	if detailFieldTimeline != nil {
 		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
@@ -161,10 +155,35 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			return mb
 		})
 		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			if amb.skip&View == 0 {
+				log, err := amb.View(ctx.R.Context(), obj)
+				if err != nil {
+					panic(err)
+				}
+				emitLogCreated(ctx, log)
+			}
+
+			modelName := getModelName(obj)
+
+			log, err := amb.Log(ctx.R.Context(), ActionLastView, obj, nil)
+			if err != nil {
+				panic(err)
+			}
+			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+					if err = in(ctx, r); err != nil {
+						return
+					}
+					// this action is special, so we use a separate notification
+					r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+					return
+				}
+			})
+
 			keys := amb.KeysValue(obj)
 			return dc.MustInject(injectorName, &TimelineCompo{
 				ID:        mb.Info().URIName() + ":" + keys,
-				ModelName: modelName(obj),
+				ModelName: modelName,
 				ModelKeys: keys,
 				ModelLink: amb.link(obj),
 			})
@@ -173,21 +192,48 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 
 	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
 	if listFieldUnreadNotes != nil {
-		// TODO: 因为 UnreadCount 的存在，所以这里其实应该进行添加 listener 来进行更新对应值，进行细粒度更新
+		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+				r, totalCount, err = in(model, params, ctx)
+				if err != nil {
+					return
+				}
+				var modelName string
+				modelKeyses := []string{}
+				reflectutils.ForEach(r, func(obj any) {
+					if modelName == "" {
+						modelName = getModelName(obj)
+					}
+					modelKeyses = append(modelKeyses, amb.KeysValue(obj))
+				})
+				if len(modelKeyses) > 0 {
+					counts, err := GetUnreadNotesCount(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
+					if err != nil {
+						return r, totalCount, err
+					}
+					prefix := modelName + "/"
+					counts = lo.MapKeys(counts, func(value int64, key string) string {
+						return strings.TrimPrefix(key, prefix)
+					})
+					ctx.WithContextValue(ctxKeyUnreadCounts{}, counts)
+				}
+				return
+			}
+		})
 		listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			// rt := modelName(mb.NewModel())
-			// ri := amb.KeysValue(obj)
-			// user := ab.currentUserFunc(ctx.R.Context())
-			// count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
-			count := 10
+			counts, ok := ctx.ContextValue(ctxKeyUnreadCounts{}).(map[string]int64)
+			if !ok {
+				return h.Text("")
+			}
+			modelKeys := amb.KeysValue(obj)
+			count := counts[modelKeys]
 			return h.Td(
-				// web.Listen(
-				// 	presets.NotifModelsUpdated(&ActivityLog{}), ``,
-				// ),
-				h.If(count > 0,
-					v.VBadge().Inline(true).Content(count).Color(v.ColorError),
-				).Else(
-					h.Text(""),
+				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ count: %d }", count)).Children(
+					web.Listen(
+						NotifiLastViewedAtUpdated(getModelName(obj)),
+						fmt.Sprintf(`if (payload.log.ModelKeys === %q) { locals.count = 0 }`, modelKeys),
+					),
+					v.VBadge().Attr("v-if", "locals.count!=0").Attr(":content", "locals.count").Inline(true).Color(v.ColorError),
 				),
 			)
 		}).Label("Unread Notes")
@@ -276,15 +322,15 @@ func (mb *ModelBuilder) KeysValue(v any) string {
 }
 
 func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
-	return mb.createWithObj(ctx, action, obj, detail)
+	return mb.create(ctx, action, getModelName(obj), mb.KeysValue(obj), mb.modelLink(obj), detail)
 }
 
 func (mb *ModelBuilder) Create(ctx context.Context, v any) (*ActivityLog, error) {
-	return mb.createWithObj(ctx, ActionCreate, v, nil)
+	return mb.Log(ctx, ActionCreate, v, nil)
 }
 
 func (mb *ModelBuilder) View(ctx context.Context, v any) (*ActivityLog, error) {
-	return mb.createWithObj(ctx, ActionView, v, nil)
+	return mb.Log(ctx, ActionView, v, nil)
 }
 
 func (mb *ModelBuilder) Edit(ctx context.Context, old any, new any) (*ActivityLog, error) {
@@ -297,15 +343,15 @@ func (mb *ModelBuilder) Edit(ctx context.Context, old any, new any) (*ActivityLo
 		return nil, nil
 	}
 
-	return mb.createWithObj(ctx, ActionEdit, new, diffs)
+	return mb.Log(ctx, ActionEdit, new, diffs)
 }
 
 func (mb *ModelBuilder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
-	return mb.createWithObj(ctx, ActionDelete, v, nil)
+	return mb.Log(ctx, ActionDelete, v, nil)
 }
 
 func (mb *ModelBuilder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {
-	return mb.createWithObj(ctx, ActionNote, v, note)
+	return mb.Log(ctx, ActionNote, v, note)
 }
 
 func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
@@ -317,10 +363,6 @@ func (mb *ModelBuilder) modelLink(v any) string {
 		return f(v)
 	}
 	return ""
-}
-
-func (mb *ModelBuilder) createWithObj(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
-	return mb.create(ctx, action, modelName(obj), mb.KeysValue(obj), mb.modelLink(obj), detail)
 }
 
 func (mb *ModelBuilder) create(
@@ -341,8 +383,10 @@ func (mb *ModelBuilder) create(
 			Name:      creator.Name,
 			Avatar:    creator.Avatar,
 		}
-		if err := mb.ab.db.Save(user).Error; err != nil {
-			return nil, errors.Wrap(err, "failed to save user")
+		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
+			if err := mb.ab.db.Create(user).Error; err != nil {
+				return nil, errors.Wrap(err, "failed to create user")
+			}
 		}
 	}
 
@@ -365,8 +409,46 @@ func (mb *ModelBuilder) create(
 	}
 	log.Detail = string(detailJson)
 
+	if action == ActionLastView {
+		log.Hidden = true
+		r := &ActivityLog{}
+		if err := mb.ab.db.
+			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", creator.ID, modelName, modelKeys, action).
+			Assign(log).FirstOrCreate(r).Error; err != nil {
+			return nil, err
+		}
+		return r, nil
+
+		// Why not use this ? Because id will be empty when the record is already created
+		// if mb.ab.db.Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.CreatorID, log.ModelName, log.ModelKeys, log.Action).
+		// 	Select("*").Updates(log).RowsAffected == 0 {
+		// 	if err := mb.ab.db.Create(log).Error; err != nil {
+		// 		return nil, errors.Wrap(err, "failed to create log")
+		// 	}
+		// }
+
+		// Why not use Upsert ?
+		// https://github.com/go-gorm/gorm/issues/6512
+		// https://github.com/jackc/pgx/issues/1234
+		// if err := mb.ab.db.Clauses(clause.OnConflict{
+		// 	Columns: []clause.Column{
+		// 		{Name: "model_name"},
+		// 		{Name: "model_keys"},
+		// 	},
+		// 	TargetWhere: clause.Where{Exprs: []clause.Expression{
+		// 		gorm.Expr("action = ?", ActionLastView),
+		// 		gorm.Expr("deleted_at IS NULL"),
+		// 	}},
+		// 	UpdateAll: true,
+		// }).Create(log).Error; err != nil {
+		// 	return nil, errors.Wrap(err, "failed to create log")
+		// }
+		// return log, nil
+	}
+
 	if err := mb.ab.db.Create(log).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to create log")
 	}
+
 	return log, nil
 }

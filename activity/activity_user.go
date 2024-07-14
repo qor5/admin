@@ -11,6 +11,6 @@ type ActivityUser struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Name      string         `gorm:"index"`
-	Avatar    string
+	Name      string         `gorm:"index;not null"`
+	Avatar    string         `gorm:"not null"`
 }

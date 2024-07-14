@@ -17,8 +17,8 @@ func TestFirstUpperWord(t *testing.T) {
 }
 
 func TestModelName(t *testing.T) {
-	assert.Equal(t, "TestActivityModel", modelName(&TestActivityModel{}))
-	assert.Equal(t, "TestActivityModel", modelName(TestActivityModel{}))
+	assert.Equal(t, "TestActivityModel", getModelName(&TestActivityModel{}))
+	assert.Equal(t, "TestActivityModel", getModelName(TestActivityModel{}))
 }
 
 func TestKeysValue(t *testing.T) {

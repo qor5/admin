@@ -13,9 +13,9 @@ import (
 )
 
 type User struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
+	ID     string
+	Name   string
+	Avatar string
 }
 
 type CurrentUserFunc func(ctx context.Context) *User
@@ -143,8 +143,23 @@ func (b *Builder) AutoMigrate() (r *Builder) {
 	return b
 }
 
-func AutoMigrate(db *gorm.DB) (err error) {
-	return db.AutoMigrate(&ActivityLog{}, &ActivityUser{})
+func AutoMigrate(db *gorm.DB) error {
+	dst := []any{&ActivityLog{}, &ActivityUser{}}
+	for _, v := range dst {
+		err := db.AutoMigrate(v)
+		if err != nil {
+			return errors.Wrap(err, "auto migrate")
+		}
+		if vv, ok := v.(interface {
+			AfterMigrate(tx *gorm.DB) error
+		}); ok {
+			err := vv.AfterMigrate(db)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*User, error) {
@@ -184,7 +199,7 @@ func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) erro
 
 func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {
 	var logs []*ActivityLog
-	err := ab.db.Where("model_name = ? AND model_keys = ?", modelName, modelKeys).Order("created_at DESC").Find(&logs).Error
+	err := ab.db.Where("hidden = FALSE AND model_name = ? AND model_keys = ?", modelName, modelKeys).Order("created_at DESC").Find(&logs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -225,6 +240,13 @@ func (ab *Builder) Edit(ctx context.Context, old, new any) (*ActivityLog, error)
 func (ab *Builder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
 	if mb, ok := ab.GetModelBuilder(v); ok {
 		return mb.Delete(ctx, v)
+	}
+	return nil, errors.Errorf("can't find model builder for %v", v)
+}
+
+func (ab *Builder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {
+	if mb, ok := ab.GetModelBuilder(v); ok {
+		return mb.Note(ctx, v, note)
 	}
 	return nil, errors.Errorf("can't find model builder for %v", v)
 }

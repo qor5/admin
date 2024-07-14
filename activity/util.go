@@ -21,7 +21,7 @@ func firstUpperWord(name string) string {
 	return strings.ToUpper(string([]rune(name)[0:1]))
 }
 
-func modelName(v any) string {
+func getModelName(v any) string {
 	segs := strings.Split(reflect.TypeOf(v).String(), ".")
 	return strings.TrimLeft(segs[len(segs)-1], "*")
 }
@@ -149,4 +149,74 @@ func FetchOld(db *gorm.DB, ref any) (any, bool) {
 	}
 
 	return old, true
+}
+
+func GetUnreadNotesCount(db *gorm.DB, creatorID string, modelName string, modelKeyses []string) (map[string]int64, error) {
+	if creatorID == "" {
+		return nil, errors.New("creatorID is required")
+	}
+
+	args := []any{
+		ActionNote, creatorID,
+	}
+
+	var explictWhere string
+	if modelName != "" {
+		explictWhere = ` AND model_name = ?`
+		args = append(args, modelName)
+	}
+	if len(modelKeyses) > 0 {
+		explictWhere += ` AND model_keys IN (?)`
+		args = append(args, modelKeyses)
+	}
+
+	args = append(args, ActionLastView, creatorID)
+
+	if modelName != "" {
+		args = append(args, modelName)
+	}
+	if len(modelKeyses) > 0 {
+		args = append(args, modelKeyses)
+	}
+
+	raw := fmt.Sprintf(`
+	WITH NoteRecords AS (
+		SELECT model_name, model_keys, created_at
+		FROM activity_logs
+		WHERE action = ? AND creator_id <> ? AND deleted_at IS NULL
+			%s
+	),
+	LastViewedAts AS (
+		SELECT model_name, model_keys, MAX(updated_at) AS last_viewed_at
+		FROM public.activity_logs
+		WHERE action = ? AND creator_id = ? AND deleted_at IS NULL
+			%s
+		GROUP BY model_name, model_keys
+	)
+	SELECT
+		n.model_name,
+		n.model_keys,
+		COUNT(*) AS unread_note_count
+	FROM NoteRecords n
+	LEFT JOIN LastViewedAts lva
+		ON n.model_name = lva.model_name
+		AND n.model_keys = lva.model_keys
+	WHERE lva.last_viewed_at IS NULL
+		OR n.created_at > lva.last_viewed_at
+	GROUP BY n.model_name, n.model_keys;`, explictWhere, explictWhere)
+
+	result := []struct {
+		ModelName       string
+		ModelKeys       string
+		UnreadNoteCount int64
+	}{}
+	if err := db.Raw(raw, args...).Scan(&result).Error; err != nil {
+		return nil, err
+	}
+
+	counts := map[string]int64{}
+	for _, r := range result {
+		counts[r.ModelName+"/"+r.ModelKeys] = r.UnreadNoteCount
+	}
+	return counts, nil
 }

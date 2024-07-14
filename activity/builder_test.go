@@ -273,7 +273,7 @@ func TestGetActivityLogs(t *testing.T) {
 	}
 
 	page := Page{ID: 1, VersionName: "v1"}
-	logs, err := builder.getActivityLogs(context.Background(), modelName(page), amb.KeysValue(page))
+	logs, err := builder.getActivityLogs(context.Background(), getModelName(page), amb.KeysValue(page))
 	require.NoError(t, err)
 	require.Len(t, logs, 3)
 
