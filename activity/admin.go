@@ -87,6 +87,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 
+	// TODO: should be able to delete log ?
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+
 	lb.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format(timeFormat)))

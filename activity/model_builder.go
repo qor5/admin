@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/samber/lo"
-	"github.com/spf13/cast"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -23,8 +23,9 @@ const (
 
 const (
 	Create = 1 << iota
+	View
+	Edit
 	Delete
-	Update
 )
 
 // @snippet_begin(ActivityModelBuilder)
@@ -56,6 +57,22 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	dp := mb.Detailing()
 	lb := mb.Listing()
 
+	emitLogCreated := func(evCtx *web.EventContext, log *ActivityLog) {
+		if log == nil {
+			return
+		}
+		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+				if err = in(ctx, r); err != nil {
+					return
+				}
+				r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+					Models: []any{log},
+				})
+				return
+			}
+		})
+	}
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if id == "" && amb.skip&Create == 0 {
@@ -67,21 +84,11 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err != nil {
 					return err
 				}
-				presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-					return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-						if err = in(ctx, r); err != nil {
-							return
-						}
-						r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
-							Models: []any{log},
-						})
-						return
-					}
-				})
+				emitLogCreated(ctx, log)
 				return nil
 			}
 
-			if id != "" && amb.skip&Update == 0 {
+			if id != "" && amb.skip&Edit == 0 {
 				old, err := eb.Fetcher(mb.NewModel(), id, ctx)
 				if err != nil {
 					return errors.Wrap(err, "fetch old record")
@@ -93,20 +100,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err != nil {
 					return err
 				}
-				if log != nil {
-					presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-						return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-							if err = in(ctx, r); err != nil {
-								return
-							}
-							r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
-								Ids:    []string{fmt.Sprint(log.ID)},
-								Models: []any{log},
-							})
-							return
-						}
-					})
-				}
+				emitLogCreated(ctx, log)
 				return nil
 			}
 			return in(obj, id, ctx)
@@ -125,24 +119,30 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			if err := in(obj, id, ctx); err != nil {
 				return err
 			}
-			log, err := amb.createWithObj(ctx.R.Context(), ActionDelete, old, nil)
+			log, err := amb.Delete(ctx.R.Context(), old)
 			if err != nil {
 				return err
 			}
-			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-					err = in(ctx, r)
-					if err != nil {
-						return
-					}
-					r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
-						// TODO: 这个 payload 还是应该加上 Models
-						Ids: []string{fmt.Sprint(log.ID)},
-					})
-					return
-				}
-			})
+			emitLogCreated(ctx, log)
 			return nil
+		}
+	})
+
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj any, id string, ctx *web.EventContext) (r any, err error) {
+			r, err = in(obj, id, ctx)
+			if err != nil {
+				return
+			}
+			if amb.skip&View != 0 {
+				return
+			}
+			log, err := amb.View(ctx.R.Context(), r)
+			if err != nil {
+				return r, err
+			}
+			emitLogCreated(ctx, log)
+			return r, nil
 		}
 	})
 
@@ -174,42 +174,41 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
 	if listFieldUnreadNotes != nil {
 		// TODO: 因为 UnreadCount 的存在，所以这里其实应该进行添加 listener 来进行更新对应值，进行细粒度更新
-		// listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		// 	rt := modelName(mb.NewModel())
-		// 	ri := amb.KeysValue(obj)
-		// 	user := ab.currentUserFunc(ctx.R.Context())
-		// 	count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
-
-		// 	return h.Td(
-		// 		h.If(count > 0,
-		// 			v.VBadge().Content(count).Color("red"),
-		// 		).Else(
-		// 			h.Text(""),
-		// 		),
-		// 	)
-		// }).Label("Unread Notes") // TODO: i18n
+		listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			// rt := modelName(mb.NewModel())
+			// ri := amb.KeysValue(obj)
+			// user := ab.currentUserFunc(ctx.R.Context())
+			// count, _ := GetUnreadNotesCount(db, user.ID, rt, ri)
+			count := 10
+			return h.Td(
+				// web.Listen(
+				// 	presets.NotifModelsUpdated(&ActivityLog{}), ``,
+				// ),
+				h.If(count > 0,
+					v.VBadge().Inline(true).Content(count).Color(v.ColorError),
+				).Else(
+					h.Text(""),
+				),
+			)
+		}).Label("Unread Notes")
 	}
 }
 
-// AddKeys add keys to the model builder
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	mb.keys = lo.Uniq(append(mb.keys, keys...))
 	return mb
 }
 
-// Keys set keys for the model builder
 func (mb *ModelBuilder) Keys(keys ...string) *ModelBuilder {
 	mb.keys = keys
 	return mb
 }
 
-// LinkFunc set the link that linked to the modified record
 func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
 	mb.link = f
 	return mb
 }
 
-// SkipCreate skip the created action for preset.ModelBuilder
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
 	if mb.presetModel == nil {
 		panic("SkipCreate method only supports presets.ModelBuilder")
@@ -221,19 +220,28 @@ func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
 	return mb
 }
 
-// SkipUpdate skip the update action for preset.ModelBuilder
-func (mb *ModelBuilder) SkipUpdate() *ModelBuilder {
+func (mb *ModelBuilder) SkipView() *ModelBuilder {
 	if mb.presetModel == nil {
-		panic("SkipUpdate method only supports presets.ModelBuilder")
+		panic("SkipView method only supports presets.ModelBuilder")
 	}
 
-	if mb.skip&Update == 0 {
-		mb.skip |= Update
+	if mb.skip&View == 0 {
+		mb.skip |= View
 	}
 	return mb
 }
 
-// SkipDelete skip the delete action for preset.ModelBuilder
+func (mb *ModelBuilder) SkipEdit() *ModelBuilder {
+	if mb.presetModel == nil {
+		panic("SkipEdit method only supports presets.ModelBuilder")
+	}
+
+	if mb.skip&Edit == 0 {
+		mb.skip |= Edit
+	}
+	return mb
+}
+
 func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	if mb.presetModel == nil {
 		panic("SkipDelete method only supports presets.ModelBuilder")
@@ -245,19 +253,16 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-// AddIgnoredFields append ignored fields to the default ignored fields, this would not overwrite the default ignored fields
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = lo.Uniq(append(mb.ignoredFields, fields...))
 	return mb
 }
 
-// IgnoredFields set ignored fields to replace the default ignored fields with the new set.
 func (mb *ModelBuilder) IgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = fields
 	return mb
 }
 
-// AddTypeHanders add type handers for the model builder
 func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	if mb.typeHandlers == nil {
 		mb.typeHandlers = map[reflect.Type]TypeHandler{}
@@ -266,7 +271,6 @@ func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	return mb
 }
 
-// KeysValue get model keys value
 func (mb *ModelBuilder) KeysValue(v any) string {
 	return keysValue(v, mb.keys)
 }
@@ -300,6 +304,10 @@ func (mb *ModelBuilder) Delete(ctx context.Context, v any) (*ActivityLog, error)
 	return mb.createWithObj(ctx, ActionDelete, v, nil)
 }
 
+func (mb *ModelBuilder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {
+	return mb.createWithObj(ctx, ActionNote, v, note)
+}
+
 func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
 	return NewDiffBuilder(mb).Diff(old, new)
 }
@@ -326,17 +334,13 @@ func (mb *ModelBuilder) create(
 		return nil, errors.New("current user is nil")
 	}
 
-	if mb.ab.findUsersFunc == nil { // TODO: 先简单处理吧
+	if mb.ab.findUsersFunc == nil {
 		user := &ActivityUser{
-			Name:   creator.Name,
-			Avatar: creator.Avatar,
+			CreatedAt: mb.ab.db.NowFunc(),
+			ID:        creator.ID,
+			Name:      creator.Name,
+			Avatar:    creator.Avatar,
 		}
-		var err error
-		user.ID, err = cast.ToUintE(creator.ID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to cast creator ID")
-		}
-		// TODO: 这样 CreatedAt 会是空值，回头再优化
 		if err := mb.ab.db.Save(user).Error; err != nil {
 			return nil, errors.Wrap(err, "failed to save user")
 		}

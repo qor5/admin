@@ -1,9 +1,16 @@
 package activity
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ActivityUser struct {
-	gorm.Model
-	Name   string `gorm:"index"`
-	Avatar string
+	ID        string `gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Name      string         `gorm:"index"`
+	Avatar    string
 }

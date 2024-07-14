@@ -244,7 +244,6 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 		return
 	}
 
-	// TODO: 需要单独封装方法供外界显式调用
 	log, err := c.ab.MustGetModelBuilder(c.mb).create(ctx, ActionNote, c.ModelName, c.ModelKeys, c.ModelLink, &Note{
 		Note: req.Note,
 	})
@@ -284,7 +283,6 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		return
 	}
 
-	// TODO: 需要单独封装方法供外界显式调用
 	log := &ActivityLog{}
 	if err := c.ab.db.Where("id = ?", req.LogID).First(log).Error; err != nil {
 		presets.ShowMessage(&r, msgr.FailedToGetNote, "error")
@@ -338,7 +336,6 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return
 	}
 
-	// TODO: 需要单独封装方法供外界显式调用
 	result := c.ab.db.Where("id = ? AND creator_id = ?", req.LogID, creator.ID).Delete(&ActivityLog{})
 	if err := result.Error; err != nil {
 		presets.ShowMessage(&r, msgr.FailedToDeleteNote, "error")
@@ -349,7 +346,6 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return
 	}
 	presets.ShowMessage(&r, msgr.SuccessfullyDeletedNote, "")
-	// TODO: PayloadModelsDeleted 还是应该存在删除前的内容？否则一些地方无法直接细粒度更新
 	r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
 		Ids: []string{fmt.Sprint(req.LogID)},
 	})

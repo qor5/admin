@@ -14,14 +14,14 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	activityBuilder := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
 		return &activity.User{
 			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
 		}
 	}).AutoMigrate()
-	b.Use(activityBuilder)
+	b.Use(ab)
 
 	// @snippet_end
 
@@ -38,21 +38,23 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 
-	productModel := b.Model(&WithActivityProduct{})
+	mb := b.Model(&WithActivityProduct{})
 
-	bt := productModel.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
-	bt.Section("Content").Editing("Title", "Code", "Price")
+	mb.Listing("Title", activity.ListFieldUnreadNotes, "Code", "Price")
 
-	productModel.Use(activityBuilder)
-	activityBuilder.MustGetModelBuilder(productModel).SkipDelete()
+	dp := mb.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
+	dp.Section("Content").Editing("Title", "Code", "Price")
+
+	mb.Use(ab)
+	ab.MustGetModelBuilder(mb).SkipDelete()
 
 	// @snippet_end
 
 	// @snippet_begin(ActivityRecordLogSample)
 
-	ctx := context.Background()
-	activityBuilder.Log(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100}, nil)
-	activityBuilder.Log(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200}, nil)
+	// ctx := context.Background()
+	// ab.Log(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100}, nil)
+	// ab.Log(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200}, nil)
 
 	// @snippet_end
 	return b
