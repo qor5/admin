@@ -88,8 +88,8 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 						).Class("pl-2 pr-2"),
 						VCardText(
 							c,
-						).Attr("style", "max-height: 500px"),
-					),
+						),
+					).Height(500),
 				).ModelValue(true).
 					Scrollable(true).
 					MaxWidth("800px"),

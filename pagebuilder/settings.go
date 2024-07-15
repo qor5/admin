@@ -152,7 +152,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Div(
-				h.Div(h.Text(msgr.PageOverView)).Class("text-h4"),
 				detailingRow("Title", h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
 				detailingRow("Slug", h.Text(p.Slug)),
 				detailingRow(msgr.Category, h.Text(category.Path)),
@@ -171,7 +170,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return h.Components(
-			h.Div(h.Text(msgr.PageOverView)).Class("text-h4"),
 			detailingRow("Title",
 				VTextField().
 					Variant(VariantOutlined).

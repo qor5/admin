@@ -263,10 +263,8 @@ func (b *Builder) EditingComponentFunc(obj interface{}, _ *presets.FieldContext,
 
 	return web.Scope(
 		h.Div(
-			h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 			VExpansionPanels(
 				VExpansionPanel(
-
 					VExpansionPanelTitle(
 						VSwitch().
 							Label(msgr.Customize).Attr("ref", "switchComp").Color("primary").
@@ -410,9 +408,6 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		keywordsComps = append(keywordsComps, h.Span(keyword))
 	}
 	return h.Components(
-		VCard(
-			h.Span(msgr.Basic).Class("text-subtitle-1"),
-		).Class("px-2 py-1").Variant(VariantTonal).Width(60),
 		h.Div(h.Span("Search Result Preview")).Class("mt-6"),
 		VCard(
 			VCardText(
@@ -483,9 +478,8 @@ func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
 	}
 }
 
-func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func (b *Builder) detailShowComponent(obj interface{}, _ *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
 		fieldPrefix string
 		setting     Setting
 		db          = b.db
@@ -511,7 +505,6 @@ func (b *Builder) detailShowComponent(obj interface{}, field *presets.FieldConte
 	}
 
 	return h.Div(
-		h.Div(h.Text(msgr.Seo)).Class("text-h4 mb-10"),
 		b.vSeoReadonly(obj, fieldPrefix, locale, seo, &setting, ctx.R),
 	).Class("pb-4")
 }
