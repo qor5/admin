@@ -16,6 +16,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -47,7 +48,7 @@ func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventCont
 	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 }
 
-func (c *TimelineCompo) HumanContent(ctx context.Context, log *ActivityLog) h.HTMLComponent {
+func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forceTextColor string) h.HTMLComponent {
 	_, msgr := c.MustGetEventContext(ctx)
 	switch log.Action {
 	case ActionNote:
@@ -57,10 +58,10 @@ func (c *TimelineCompo) HumanContent(ctx context.Context, log *ActivityLog) h.HT
 		}
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
-				h.Text(msgr.AddedANote),
-				h.Pre(note.Note).Style("white-space: pre-wrap"),
+				h.Div(h.Text(msgr.AddedANote)).ClassIf(forceTextColor, forceTextColor != ""),
+				h.Pre(note.Note).Style("white-space: pre-wrap").ClassIf(forceTextColor, forceTextColor != ""),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
-					return h.Div().Class("text-caption text-grey-darken-1 font-italic").Children(
+					return h.Div().Class("text-caption font-italic").Class(lo.If(forceTextColor != "", forceTextColor).Else("text-grey-darken-1")).Children(
 						h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
 					)
 				}),
@@ -82,16 +83,16 @@ func (c *TimelineCompo) HumanContent(ctx context.Context, log *ActivityLog) h.HT
 			),
 		)
 	case ActionView:
-		return h.Text(msgr.Viewed)
+		return h.Div(h.Text(msgr.Viewed)).ClassIf(forceTextColor, forceTextColor != "")
 	case ActionCreate:
-		return h.Text(msgr.Created)
+		return h.Div(h.Text(msgr.Created)).ClassIf(forceTextColor, forceTextColor != "")
 	case ActionEdit:
 		diffs := []Diff{}
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
-			h.Text(msgr.EditedNFields(len(diffs))),
+			h.Div(h.Text(msgr.EditedNFields(len(diffs)))).ClassIf(forceTextColor, forceTextColor != ""),
 			v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 				Attr("@click", web.POST().
@@ -103,9 +104,9 @@ func (c *TimelineCompo) HumanContent(ctx context.Context, log *ActivityLog) h.HT
 				),
 		)
 	case ActionDelete:
-		return h.Text(msgr.Deleted)
+		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
 	default:
-		return h.Text(msgr.PerformAction(log.Action, log.Detail))
+		return h.Div(h.Text(msgr.PerformAction(log.Action, log.Detail))).ClassIf(forceTextColor, forceTextColor != "")
 	}
 }
 
@@ -155,7 +156,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Style("width: 8px; height: 8px;").Class("rounded-circle"),
-				h.Div(h.Text(humanize.Time(log.CreatedAt))).Class("text-grey-darken-1"),
+				h.Div(h.Text(humanize.Time(log.CreatedAt))).Class(lo.If(i != 0, "text-grey").Else("text-grey-darken-1")),
 			),
 			h.Div().Class("d-flex flex-row ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
@@ -166,11 +167,11 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 							}),
 						),
-						h.Div(h.Text(creatorName)).Class("font-weight-medium"),
+						h.Div(h.Text(creatorName)).Class("font-weight-medium").ClassIf("text-grey", i != 0),
 					),
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						h.Div().Style("width: 16px"),
-						c.HumanContent(ctx, log),
+						c.humanContent(ctx, log, lo.If(i != 0, "text-grey").Else("")),
 					),
 				),
 			),
