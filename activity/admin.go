@@ -23,7 +23,7 @@ import (
 
 const (
 	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
-	paramHideModelLink                = "hide_link"
+	paramHideDetailTop                = "hideDetailTop"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
@@ -222,37 +222,39 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			var (
 				log           = obj.(*ActivityLog)
 				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-				hideModelLink = cast.ToBool(ctx.R.Form.Get(paramHideModelLink))
+				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
 			)
 			var children []h.HTMLComponent
-			children = append(children, VCard().Elevation(0).Children(
-				VCardTitle().Class("pa-0").Children(
-					h.Text(" "+msgr.DiffDetail),
-				),
-				VCardText().Class("pa-0 pt-3").Children(
-					VTable(
-						h.Tbody(
-							h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(log.Creator.Name))),
-							h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprint(log.CreatorID)))),
-							h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(log.Action))),
-							h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(log.ModelName))),
-							h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(cmp.Or(log.ModelLabel, "-")))),
-							h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(log.ModelKeys))),
-							h.If(!hideModelLink && log.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-								v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-									Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
-									Attr("@click", web.POST().
-										EventFunc(actions.DetailingDrawer).
-										Query(presets.ParamOverlay, actions.Dialog).
-										URL(log.ModelLink).
-										Go(),
-									),
-							))),
-							h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
+			if !hideDetailTop {
+				children = append(children, VCard().Elevation(0).Children(
+					VCardTitle().Class("pa-0").Children(
+						h.Text(" "+msgr.DiffDetail),
+					),
+					VCardText().Class("pa-0 pt-3").Children(
+						VTable(
+							h.Tbody(
+								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(log.Creator.Name))),
+								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprint(log.CreatorID)))),
+								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(log.Action))),
+								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(log.ModelName))),
+								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(cmp.Or(log.ModelLabel, "-")))),
+								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(log.ModelKeys))),
+								h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
+									v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+										Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+										Attr("@click", web.POST().
+											EventFunc(actions.DetailingDrawer).
+											Query(presets.ParamOverlay, actions.Dialog).
+											URL(log.ModelLink).
+											Go(),
+										),
+								)),
+								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
+							),
 						),
 					),
-				),
-			))
+				))
+			}
 
 			if d := field.Value(obj).(string); d != "" {
 				switch log.Action {

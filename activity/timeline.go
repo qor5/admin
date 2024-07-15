@@ -99,7 +99,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 					EventFunc(actions.DetailingDrawer).
 					Query(presets.ParamOverlay, actions.Dialog).
 					URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
-					Query(paramHideModelLink, true).
+					Query(paramHideDetailTop, true).
 					Go(),
 				),
 		)
