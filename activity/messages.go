@@ -175,7 +175,7 @@ var Messages_zh_CN = &Messages{
 	DiffValue:       "值",
 
 	AddedANote:              "添加了一个备注：",
-	LastEditedAtTemplate:    "（编辑于 {desc}）",
+	LastEditedAtTemplate:    "编辑于 {desc}",
 	EditedNFieldsTemplate:   "编辑了 {n} 个字段",
 	MoreInfo:                "更多信息",
 	Created:                 "创建",
@@ -235,7 +235,7 @@ var Messages_ja_JP = &Messages{
 	DiffValue:   "値",
 
 	AddedANote:              "ノートを追加しました：",
-	LastEditedAtTemplate:    "（{desc} に編集）",
+	LastEditedAtTemplate:    "{desc} に編集",
 	EditedNFieldsTemplate:   "{n}つのフィールドを編集しました",
 	MoreInfo:                "詳細情報",
 	Created:                 "作成",

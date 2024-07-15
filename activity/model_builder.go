@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	DetailFieldTimeline string = "Timeline"
-	ListFieldNotes      string = "Notes"
+	FieldTimeline       string = "__ActivityTimeline__"
+	ListFieldNotes      string = "__ActivityNotes__"
+	ListFieldLabelNotes string = "Notes"
 )
 
 const (
@@ -138,21 +139,24 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		}
 	})
 
-	detailFieldTimeline := dp.GetField(DetailFieldTimeline)
-	if detailFieldTimeline != nil {
-		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
-		dc := mb.GetPresetsBuilder().GetDependencyCenter()
-		dc.RegisterInjector(injectorName)
-		dc.MustProvide(injectorName, func() *Builder {
-			return amb.ab
-		})
-		dc.MustProvide(injectorName, func() *ModelBuilder {
-			return amb
-		})
-		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
-			return mb
-		})
-		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+	dc := mb.GetPresetsBuilder().GetDependencyCenter()
+	dcConfigured := false
+	configFieldTimeline := func(fb *presets.FieldBuilder) {
+		if !dcConfigured {
+			dcConfigured = true
+			dc.RegisterInjector(injectorName)
+			dc.MustProvide(injectorName, func() *Builder {
+				return amb.ab
+			})
+			dc.MustProvide(injectorName, func() *ModelBuilder {
+				return amb
+			})
+			dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+				return mb
+			})
+		}
+		fb.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if amb.skip&View == 0 {
 				log, err := amb.View(ctx.R.Context(), obj)
 				if err != nil {
@@ -186,6 +190,11 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				ModelLink: amb.link(obj),
 			})
 		})
+	}
+
+	detailFieldTimeline := dp.GetField(FieldTimeline)
+	if detailFieldTimeline != nil {
+		configFieldTimeline(detailFieldTimeline)
 	}
 
 	listFieldNotes := lb.GetField(ListFieldNotes)
@@ -249,7 +258,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 					),
 				),
 			)
-		})
+		}).Label(ListFieldLabelNotes)
 	}
 }
 

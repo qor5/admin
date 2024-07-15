@@ -109,55 +109,8 @@ func markAllAsRead(db *gorm.DB) web.EventFunc {
 			return
 		}
 
-		if err = db.Transaction(func(tx *gorm.DB) (err1 error) {
-			// Delete user-specific note read records
-			if err1 = tx.Unscoped().Where("user_id = ? AND action LIKE '%%note%%'", u.ID).Delete(&activity.ActivityLog{}).Error; err1 != nil {
-				return
-			}
-
-			// Fetch all notes count
-			var results []Result
-			if err = db.Raw(`
-SELECT model_name as resource_type, model_keys as resource_id, count(*) AS count
-FROM activity_logs
-WHERE action = 'create_note' AND deleted_at IS NULL
-GROUP BY model_name, model_keys;
-`).Scan(&results).Error; err != nil {
-				return
-			}
-
-			var userNotes []activity.ActivityLog
-			for _, result := range results {
-				un := activity.ActivityLog{
-					Creator: activity.User{
-						ID:   fmt.Sprint(u.ID),
-						Name: u.Name,
-					},
-					ModelName: result.ResourceType,
-					ModelKeys: result.ResourceID,
-					Action:    fmt.Sprintf("read_note:%d", result.Count),
-					Detail:    fmt.Sprint(int64(result.Count)), // TODO:
-				}
-				userNotes = append(userNotes, un)
-			}
-
-			if err1 = tx.Create(&userNotes).Error; err1 != nil {
-				return
-			}
-
-			// Update unread notes count
-			var unreadNote activity.ActivityLog
-			if err1 = db.Where("user_id = ? AND action = 'unread_notes_count'", u.ID).First(&unreadNote).Error; err1 != nil {
-				return
-			}
-			unreadNote.Detail = "{}" // TODO:
-			if err1 = db.Save(&unreadNote).Error; err1 != nil {
-				return
-			}
-
-			return
-		}); err != nil {
-			return
+		if err = activity.MarkAllNotesAsRead(db, fmt.Sprint(u.ID)); err != nil {
+			return r, err
 		}
 
 		r.Reload = true
