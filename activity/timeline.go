@@ -162,7 +162,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
 				h.Div().Class("flex-grow-1 d-flex flex-column pb-3").Children(
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						v.VAvatar().Class("text-overline text-success bg-primary-lighten-2").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
+						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
 							h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
 								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 							}),
@@ -196,6 +196,11 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		}
 		children = append(children, child)
 	}
+
+	if len(logs) == 0 {
+		children = append(children, h.Div().Class("text-body-2 text-grey align-self-center mb-4").Text(msgr.NoActivitiesYet))
+	}
+
 	reloadAction := fmt.Sprintf(`
 	if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
 		return

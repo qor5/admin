@@ -62,6 +62,7 @@ type Messages struct {
 	DeleteNoteDialogText    string
 	Cancel                  string
 	Delete                  string
+	NoActivitiesYet         string
 }
 
 func (msgr *Messages) LastEditedAt(desc string) string {
@@ -138,6 +139,7 @@ var Messages_en_US = &Messages{
 	DeleteNoteDialogText:    "Are you sure you want to delete this note?",
 	Cancel:                  "Cancel",
 	Delete:                  "Delete",
+	NoActivitiesYet:         "No activities yet",
 }
 
 var Messages_zh_CN = &Messages{
@@ -196,6 +198,7 @@ var Messages_zh_CN = &Messages{
 	DeleteNoteDialogText:    "确定要删除此备注吗？",
 	Cancel:                  "取消",
 	Delete:                  "删除",
+	NoActivitiesYet:         "暂无活动",
 }
 
 var Messages_ja_JP = &Messages{
@@ -255,4 +258,5 @@ var Messages_ja_JP = &Messages{
 	DeleteNoteDialogText:    "このノートを削除してもよろしいですか？",
 	Cancel:                  "キャンセル",
 	Delete:                  "削除",
+	NoActivitiesYet:         "まだアクティビティはありません",
 }

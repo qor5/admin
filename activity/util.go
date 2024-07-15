@@ -151,13 +151,20 @@ func FetchOld(db *gorm.DB, ref any) (any, bool) {
 	return old, true
 }
 
-func GetUnreadNotesCount(db *gorm.DB, creatorID string, modelName string, modelKeyses []string) (map[string]int64, error) {
+type NoteCount struct {
+	ModelName        string
+	ModelKeys        string
+	UnreadNotesCount int64
+	TotalNotesCount  int64
+}
+
+func GetNotesCounts(db *gorm.DB, creatorID string, modelName string, modelKeyses []string) ([]*NoteCount, error) {
 	if creatorID == "" {
 		return nil, errors.New("creatorID is required")
 	}
 
 	args := []any{
-		ActionNote, creatorID,
+		ActionNote,
 	}
 
 	var explictWhere string
@@ -179,11 +186,13 @@ func GetUnreadNotesCount(db *gorm.DB, creatorID string, modelName string, modelK
 		args = append(args, modelKeyses)
 	}
 
+	args = append(args, creatorID)
+
 	raw := fmt.Sprintf(`
 	WITH NoteRecords AS (
-		SELECT model_name, model_keys, created_at
+		SELECT model_name, model_keys, created_at, creator_id
 		FROM activity_logs
-		WHERE action = ? AND creator_id <> ? AND deleted_at IS NULL
+		WHERE action = ? AND deleted_at IS NULL
 			%s
 	),
 	LastViewedAts AS (
@@ -196,27 +205,17 @@ func GetUnreadNotesCount(db *gorm.DB, creatorID string, modelName string, modelK
 	SELECT
 		n.model_name,
 		n.model_keys,
-		COUNT(*) AS unread_note_count
+		COUNT(CASE WHEN n.creator_id <> ? AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at) THEN 1 END) AS unread_notes_count,
+		COUNT(*) AS total_notes_count
 	FROM NoteRecords n
 	LEFT JOIN LastViewedAts lva
 		ON n.model_name = lva.model_name
 		AND n.model_keys = lva.model_keys
-	WHERE lva.last_viewed_at IS NULL
-		OR n.created_at > lva.last_viewed_at
 	GROUP BY n.model_name, n.model_keys;`, explictWhere, explictWhere)
 
-	result := []struct {
-		ModelName       string
-		ModelKeys       string
-		UnreadNoteCount int64
-	}{}
-	if err := db.Raw(raw, args...).Scan(&result).Error; err != nil {
+	counts := []*NoteCount{}
+	if err := db.Raw(raw, args...).Scan(&counts).Error; err != nil {
 		return nil, err
-	}
-
-	counts := map[string]int64{}
-	for _, r := range result {
-		counts[r.ModelName+"/"+r.ModelKeys] = r.UnreadNoteCount
 	}
 	return counts, nil
 }

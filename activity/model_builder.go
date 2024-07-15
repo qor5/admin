@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
@@ -18,8 +17,8 @@ import (
 )
 
 const (
-	DetailFieldTimeline  string = "Timeline"
-	ListFieldUnreadNotes string = "UnreadNotes"
+	DetailFieldTimeline string = "Timeline"
+	ListFieldNotes      string = "Notes"
 )
 
 const (
@@ -189,8 +188,8 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		})
 	}
 
-	listFieldUnreadNotes := lb.GetField(ListFieldUnreadNotes)
-	if listFieldUnreadNotes != nil {
+	listFieldNotes := lb.GetField(ListFieldNotes)
+	if listFieldNotes != nil {
 		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 				r, totalCount, err = in(model, params, ctx)
@@ -206,36 +205,51 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 					modelKeyses = append(modelKeyses, amb.KeysValue(obj))
 				})
 				if len(modelKeyses) > 0 {
-					counts, err := GetUnreadNotesCount(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
+					counts, err := GetNotesCounts(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
 					if err != nil {
 						return r, totalCount, err
 					}
-					prefix := modelName + "/"
-					counts = lo.MapKeys(counts, func(value int64, key string) string {
-						return strings.TrimPrefix(key, prefix)
+					m := lo.SliceToMap(counts, func(v *NoteCount) (string, *NoteCount) {
+						return v.ModelKeys, v
 					})
-					ctx.WithContextValue(ctxKeyUnreadCounts{}, counts)
+					ctx.WithContextValue(ctxKeyUnreadCounts{}, m)
 				}
 				return
 			}
 		})
-		listFieldUnreadNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			counts, ok := ctx.ContextValue(ctxKeyUnreadCounts{}).(map[string]int64)
+		listFieldNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			counts, ok := ctx.ContextValue(ctxKeyUnreadCounts{}).(map[string]*NoteCount)
 			if !ok {
 				return h.Text("")
 			}
 			modelKeys := amb.KeysValue(obj)
 			count := counts[modelKeys]
+			if count == nil {
+				count = &NoteCount{ModelKeys: modelKeys, UnreadNotesCount: 0, TotalNotesCount: 0}
+			}
+			var totalNotesCountText string
+			if count.TotalNotesCount > 99 {
+				totalNotesCountText = "99+"
+			} else {
+				totalNotesCountText = fmt.Sprintf("%d", count.TotalNotesCount)
+			}
+
+			total := h.Div().Class("text-caption bg-grey-lighten-3 rounded px-1").Text(totalNotesCountText)
 			return h.Td(
-				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ count: %d }", count)).Children(
+				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ unreadNotesCount: %d }", count.UnreadNotesCount)).Children(
 					web.Listen(
 						NotifiLastViewedAtUpdated(getModelName(obj)),
-						fmt.Sprintf(`if (payload.log.ModelKeys === %q) { locals.count = 0 }`, modelKeys),
+						fmt.Sprintf(`if (payload.log.ModelKeys === %q) { locals.unreadNotesCount = 0 }`, modelKeys),
 					),
-					v.VBadge().Attr("v-if", "locals.count!=0").Attr(":content", "locals.count").Inline(true).Color(v.ColorError),
+					v.VBadge().Attr("v-if", "locals.unreadNotesCount>0").Color(v.ColorError).Dot(true).Bordered(true).OffsetX("-3").OffsetY("-3").Children(
+						total,
+					),
+					h.Div().Attr("v-else", true).Class("d-flex flex-row").Children(
+						total,
+					),
 				),
 			)
-		}).Label("Unread Notes")
+		})
 	}
 }
 

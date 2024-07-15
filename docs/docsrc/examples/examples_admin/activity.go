@@ -40,7 +40,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	mb := b.Model(&WithActivityProduct{})
 
-	mb.Listing("Title", activity.ListFieldUnreadNotes, "Code", "Price")
+	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 
 	dp := mb.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
 	dp.Section("Content").Editing("Title", "Code", "Price")

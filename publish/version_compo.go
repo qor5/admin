@@ -245,7 +245,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	listingFields := []string{"Version", "State", "StartAt", "EndAt", "Option"}
 	if pb.ab != nil {
 		pb.ab.ModelInstall(b, mb)
-		listingFields = []string{"Version", "State", "StartAt", "EndAt", activity.ListFieldUnreadNotes, "Option"}
+		listingFields = []string{"Version", "State", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
 	}
 
 	// TODO: i18n
