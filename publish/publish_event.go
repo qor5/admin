@@ -22,8 +22,8 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab 
 			return
 		}
 		if ab != nil {
-			if _, exist := ab.GetModelBuilder(obj); exist {
-				ab.Log(ctx.R.Context(), actionName, obj, nil)
+			if amb, exist := ab.GetModelBuilder(obj); exist {
+				amb.Log(ctx.R.Context(), actionName, obj, nil)
 			}
 		}
 
@@ -52,8 +52,8 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 			return
 		}
 		if ab != nil {
-			if _, exist := ab.GetModelBuilder(obj); exist {
-				ab.Log(ctx.R.Context(), actionName, obj, nil)
+			if amb, exist := ab.GetModelBuilder(obj); exist {
+				amb.Log(ctx.R.Context(), actionName, obj, nil)
 			}
 		}
 

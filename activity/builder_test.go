@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
@@ -54,7 +55,10 @@ func TestMain(m *testing.M) {
 	db = env.DB
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = db.AutoMigrate(&TestActivityModel{}, &ActivityLog{}); err != nil {
+	if err = AutoMigrate(db); err != nil {
+		panic(err)
+	}
+	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
 		panic(err)
 	}
 
@@ -74,12 +78,13 @@ func testCurrentUser(ctx context.Context) *User {
 func resetDB() {
 	db.Exec("delete from test_activity_models;")
 	db.Exec("DELETE FROM activity_logs")
+	db.Exec("DELETE FROM activity_users")
 }
 
 func TestModelKeys(t *testing.T) {
 	resetDB()
 
-	if err := db.AutoMigrate(&ActivityLog{}); err != nil {
+	if err := AutoMigrate(db); err != nil {
 		panic(err)
 	}
 
@@ -90,19 +95,16 @@ func TestModelKeys(t *testing.T) {
 	var err error
 	ctx := context.Background()
 
-	_, err = builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	log, err := builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
 	record := &ActivityLog{}
-
-	db.Debug().First(&record)
-
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
+	assert.Equal(t, log, record)
 	if record.ModelKeys != "1:v1" {
-		fmt.Println(record.ModelKeys)
 		t.Errorf("want the keys %v, but got %v", "1:v1", record.ModelKeys)
 	}
 
@@ -114,9 +116,6 @@ func TestModelKeys(t *testing.T) {
 		t.Fatalf("failed to add create record: %v", err)
 	}
 	record2 := &ActivityLog{}
-
-	db.Debug().First(&record)
-
 	if err := db.First(record2).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +304,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	builder.RegisterModel(pageModel3).Keys("ID").SkipCreate().AddIgnoredFields("Description")
 
 	data1 := &TestActivityModel{ID: 1, VersionName: "v1", Title: "test1", Description: "Description1"}
-	data2 := &TestActivityModel{ID: 2, VersionName: "v2", Title: "test2", Description: "Description3"}
+	data2 := &TestActivityModel{ID: 2, VersionName: "v2", Title: "test2", Description: "Description2"}
 	data3 := &TestActivityModel{ID: 3, VersionName: "v3", Title: "test3", Description: "Description3"}
 
 	resetDB()
@@ -314,8 +313,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add create record
 	db.Create(data1)
 	builder.Create(ctx, data1)
-	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
-	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
 		for _, id := range []string{"1", "2"} {
 			var log ActivityLog
@@ -325,7 +324,7 @@ func TestMutliModelBuilder(t *testing.T) {
 		}
 
 		var log ActivityLog
-		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", 3).Find(&log); log.ID != 0 {
+		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Create", "TestActivityModel", "3").Find(&log); log.ID != 0 {
 			t.Errorf("want skip the create, but still got the record %v", log)
 		}
 	}
@@ -334,8 +333,9 @@ func TestMutliModelBuilder(t *testing.T) {
 	data1.Title = "test1-1"
 	data1.Description = "Description1-1"
 	old, _ := FetchOld(db, data1)
-	builder.Edit(ctx, old, data1)
 	db.Save(data1)
+	_, err := builder.Edit(ctx, old, data1)
+	assert.NoError(t, err)
 
 	data2.Title = "test2-1"
 	data2.Description = "Description2-1"
@@ -358,8 +358,8 @@ func TestMutliModelBuilder(t *testing.T) {
 		if db.Where("action = ? AND model_name = ? AND model_keys = ?", "Edit", "TestActivityModel", "2").Find(&log2); log2.ID == 0 {
 			t.Errorf("want the log %v, but got %v", "TestActivityModel:2", log2)
 		}
-		if log2.Detail != `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]` {
-			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description3","New":"Description2-1"}]`, log1.Detail)
+		if log2.Detail != `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description2","New":"Description2-1"}]` {
+			t.Errorf("want the log %v, but got %v", `[{"Field":"Title","Old":"test2","New":"test2-1"},{"Field":"Description","Old":"Description2","New":"Description2-1"}]`, log1.Detail)
 		}
 
 		if log2.ModelLabel != "page-02" {
@@ -377,13 +377,11 @@ func TestMutliModelBuilder(t *testing.T) {
 		if log3.ModelLabel != "page-03" {
 			t.Errorf("want the log %v, but got %v", "page-03", log2.ModelLabel)
 		}
-
 	}
 
 	// add delete record
-	builder.Delete(ctx, data1)
 	db.Delete(data1)
-
+	builder.Delete(ctx, data1)
 	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{

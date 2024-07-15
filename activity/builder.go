@@ -209,44 +209,68 @@ func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys str
 	return logs, nil
 }
 
-func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.Log(ctx, action, v, detail)
+func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {
+	typ := reflect.Indirect(reflect.ValueOf(v)).Type()
+	ambs := lo.Filter(ab.models, func(amb *ModelBuilder, _ int) bool {
+		return amb.typ == typ
+	})
+	if len(ambs) == 0 {
+		return nil, errors.Errorf("can't find model builder for %v", v)
 	}
-	return nil, errors.Errorf("can't find model builder for %v", v)
+	if len(ambs) > 1 {
+		bare, ok := lo.Find(ambs, func(amb *ModelBuilder) bool { return amb.presetModel == nil })
+		if ok {
+			return bare, nil
+		}
+		return nil, errors.Errorf("multiple model builders found for %v", v)
+	}
+	return ambs[0], nil
+}
+
+func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*ActivityLog, error) {
+	amb, err := ab.onlyModelBuilder(v)
+	if err != nil {
+		return nil, err
+	}
+	return amb.Log(ctx, action, v, detail)
 }
 
 func (ab *Builder) Create(ctx context.Context, v any) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.Create(ctx, v)
+	amb, err := ab.onlyModelBuilder(v)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("can't find model builder for %v", v)
+	return amb.Create(ctx, v)
 }
 
 func (ab *Builder) View(ctx context.Context, v any) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.View(ctx, v)
+	amb, err := ab.onlyModelBuilder(v)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("can't find model builder for %v", v)
+	return amb.View(ctx, v)
 }
 
 func (ab *Builder) Edit(ctx context.Context, old, new any) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(new); ok {
-		return mb.Edit(ctx, old, new)
+	amb, err := ab.onlyModelBuilder(new)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("can't find model builder for %v", new)
+	return amb.Edit(ctx, old, new)
 }
 
 func (ab *Builder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.Delete(ctx, v)
+	amb, err := ab.onlyModelBuilder(v)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("can't find model builder for %v", v)
+	return amb.Delete(ctx, v)
 }
 
 func (ab *Builder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {
-	if mb, ok := ab.GetModelBuilder(v); ok {
-		return mb.Note(ctx, v, note)
+	amb, err := ab.onlyModelBuilder(v)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("can't find model builder for %v", v)
+	return amb.Note(ctx, v, note)
 }

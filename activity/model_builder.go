@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
@@ -401,7 +400,7 @@ func (mb *ModelBuilder) create(
 	if mb.presetModel != nil {
 		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
 	}
-	log.CreatedAt = time.Now()
+	log.CreatedAt = mb.ab.db.NowFunc()
 
 	detailJson, err := json.Marshal(detail)
 	if err != nil {

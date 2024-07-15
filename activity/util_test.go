@@ -36,7 +36,7 @@ func TestKeysValue(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		keys     []string
 		expected string
 	}{
@@ -140,7 +140,7 @@ func TestParseGormPrimaryFieldNames(t *testing.T) {
 
 	tests := []struct {
 		Name     string
-		Model    interface{}
+		Model    any
 		Expected []string
 	}{
 		{
@@ -190,7 +190,7 @@ func TestGetPrimaryKeys(t *testing.T) {
 
 	tests := []struct {
 		Name     string
-		Model    interface{}
+		Model    any
 		Expected []string
 	}{
 		{

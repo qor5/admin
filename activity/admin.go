@@ -58,7 +58,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	)
 
 	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(model interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+		return func(model any, id string, ctx *web.EventContext) (r any, err error) {
 			r, err = in(model, id, ctx)
 			if err != nil {
 				return
@@ -72,7 +72,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	})
 
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+				Query: "hidden = ?",
+				Args:  []any{false},
+			})
 			r, totalCount, err = in(model, params, ctx)
 			if totalCount <= 0 {
 				return
@@ -88,7 +92,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 
 	// TODO: should be able to delete log ?
-	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj any, id string, ctx *web.EventContext) h.HTMLComponent {
 		return nil
 	})
 

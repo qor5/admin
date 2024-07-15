@@ -310,7 +310,7 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 
 	log.Detail = h.JSONString(&Note{
 		Note:         req.Note,
-		LastEditedAt: time.Now(),
+		LastEditedAt: c.ab.db.NowFunc(),
 	})
 	if err := c.ab.db.Save(log).Error; err != nil {
 		presets.ShowMessage(&r, msgr.FailedToUpdateNote, "error")
