@@ -1,24 +1,31 @@
-package activity
+package activity_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/publish"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func TestFirstUpperWord(t *testing.T) {
-	assert.Equal(t, firstUpperWord(""), "")
-	assert.Equal(t, firstUpperWord("xxx"), "X")
-	assert.Equal(t, firstUpperWord("Yxx"), "Y")
-	assert.Equal(t, firstUpperWord("你好"), "你")
-	assert.Equal(t, firstUpperWord("フィールド"), "フ")
+	assert.Equal(t, activity.FirstUpperWord(""), "")
+	assert.Equal(t, activity.FirstUpperWord("xxx"), "X")
+	assert.Equal(t, activity.FirstUpperWord("Yxx"), "Y")
+	assert.Equal(t, activity.FirstUpperWord("你好"), "你")
+	assert.Equal(t, activity.FirstUpperWord("フィールド"), "フ")
 }
 
 func TestModelName(t *testing.T) {
-	assert.Equal(t, "TestActivityModel", getModelName(&TestActivityModel{}))
-	assert.Equal(t, "TestActivityModel", getModelName(TestActivityModel{}))
+	type TestActivityModel struct {
+		ID uint `gorm:"primaryKey"`
+	}
+	assert.Equal(t, "TestActivityModel", activity.ParseModelName(&TestActivityModel{}))
+	assert.Equal(t, "TestActivityModel", activity.ParseModelName(TestActivityModel{}))
 }
 
 func TestKeysValue(t *testing.T) {
@@ -32,6 +39,11 @@ func TestKeysValue(t *testing.T) {
 		InnerStruct
 		Field3 float64
 		Field4 string
+	}
+
+	type Version struct {
+		*publish.Version
+		ID string
 	}
 
 	tests := []struct {
@@ -113,19 +125,64 @@ func TestKeysValue(t *testing.T) {
 			keys:     []string{"ID", "Name"},
 			expected: "0:foo",
 		},
+		{
+			name: "Struct with Version",
+			input: struct {
+				publish.Version
+				Name string
+			}{
+				Version: publish.Version{
+					Version: "ver0",
+				},
+				Name: "bar",
+			},
+			keys:     []string{"Version", "Name"},
+			expected: "ver0:bar",
+		},
+		{
+			name: "Struct with Version ptr",
+			input: struct {
+				*publish.Version
+				Name string
+			}{
+				Version: &publish.Version{
+					Version: "ver0",
+				},
+				Name: "bar",
+			},
+			keys:     []string{"Version", "Name"},
+			expected: "ver0:bar",
+		},
+		{
+			name: "Struct with Version multilevel",
+			input: struct {
+				*Version
+				Name string
+			}{
+				Version: &Version{
+					Version: &publish.Version{
+						Version: "ver0",
+					},
+					ID: "foo",
+				},
+				Name: "bar",
+			},
+			keys:     []string{"ID", "Version", "Name"},
+			expected: "foo:ver0:bar",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := keysValue(test.input, test.keys)
+			result := activity.KeysValue(test.input, test.keys, ":")
 			assert.Equal(t, test.expected, result)
 		})
 	}
 }
 
-func TestParseGormPrimaryFieldNames(t *testing.T) {
+func TestParsePrimaryFields(t *testing.T) {
 	type TestModel struct {
-		ID   uint `gorm:"primary_key"`
+		ID   uint `gorm:"primaryKey"`
 		Name string
 	}
 
@@ -135,7 +192,7 @@ func TestParseGormPrimaryFieldNames(t *testing.T) {
 
 	type NestedModel struct {
 		EmbeddedModel
-		Version string `gorm:"primary_key"`
+		Version string `gorm:"primaryKey"`
 	}
 
 	tests := []struct {
@@ -162,11 +219,14 @@ func TestParseGormPrimaryFieldNames(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			fields, err := ParseGormPrimaryFieldNames(test.Model)
+			fields, err := activity.ParsePrimaryFields(test.Model)
 			if err != nil {
 				t.Errorf("Error occurred: %v", err)
 			}
-			if !reflect.DeepEqual(fields, test.Expected) {
+			keys := lo.Map(fields, func(f *schema.Field, _ int) string {
+				return f.Name
+			})
+			if !reflect.DeepEqual(keys, test.Expected) {
 				t.Errorf("Expected primary fields %v, but got %v", test.Expected, fields)
 			}
 		})
@@ -175,7 +235,7 @@ func TestParseGormPrimaryFieldNames(t *testing.T) {
 
 func TestGetPrimaryKeys(t *testing.T) {
 	type TestModel struct {
-		ID   uint `gorm:"primary_key"`
+		ID   uint `gorm:"primaryKey"`
 		Name string
 	}
 
@@ -185,7 +245,7 @@ func TestGetPrimaryKeys(t *testing.T) {
 
 	type NestedModel struct {
 		EmbeddedModel
-		Version string `gorm:"primary_key"`
+		Version string `gorm:"primaryKey"`
 	}
 
 	tests := []struct {
@@ -212,9 +272,17 @@ func TestGetPrimaryKeys(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			keys := getPrimaryKeys(reflect.TypeOf(test.Model))
-			if !reflect.DeepEqual(keys, test.Expected) {
-				t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
+			{
+				keys := activity.ParsePrimaryKeys(test.Model)
+				if !reflect.DeepEqual(keys, test.Expected) {
+					t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
+				}
+			}
+			{ // ptr test
+				keys := activity.ParsePrimaryKeys(&(test.Model))
+				if !reflect.DeepEqual(keys, test.Expected) {
+					t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
+				}
 			}
 		})
 	}

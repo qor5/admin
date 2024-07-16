@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -14,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm/schema"
 )
 
 const (
@@ -32,11 +34,13 @@ const (
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
+	ref           any                          // model ref
 	typ           reflect.Type                 // model type
 	ab            *Builder                     // activity builder
 	presetModel   *presets.ModelBuilder        // preset model builder
 	skip          uint8                        // skip the refined data operator of the presetModel
 	keys          []string                     // primary keys
+	keyColumns    []string                     // primary field columns
 	ignoredFields []string                     // ignored fields
 	typeHandlers  map[reflect.Type]TypeHandler // type handlers
 	link          func(any) string             // display the model link on the admin detail page
@@ -139,24 +143,21 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		}
 	})
 
-	injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
-	dc := mb.GetPresetsBuilder().GetDependencyCenter()
-	dcConfigured := false
-	configFieldTimeline := func(fb *presets.FieldBuilder) {
-		if !dcConfigured {
-			dcConfigured = true
-			dc.RegisterInjector(injectorName)
-			dc.MustProvide(injectorName, func() *Builder {
-				return amb.ab
-			})
-			dc.MustProvide(injectorName, func() *ModelBuilder {
-				return amb
-			})
-			dc.MustProvide(injectorName, func() *presets.ModelBuilder {
-				return mb
-			})
-		}
-		fb.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	detailFieldTimeline := dp.GetField(FieldTimeline)
+	if detailFieldTimeline != nil {
+		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+		dc := mb.GetPresetsBuilder().GetDependencyCenter()
+		dc.RegisterInjector(injectorName)
+		dc.MustProvide(injectorName, func() *Builder {
+			return amb.ab
+		})
+		dc.MustProvide(injectorName, func() *ModelBuilder {
+			return amb
+		})
+		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+			return mb
+		})
+		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if amb.skip&View == 0 {
 				log, err := amb.View(ctx.R.Context(), obj)
 				if err != nil {
@@ -165,7 +166,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				emitLogCreated(ctx, log)
 			}
 
-			modelName := getModelName(obj)
+			modelName := ParseModelName(obj)
 
 			log, err := amb.Log(ctx.R.Context(), ActionLastView, obj, nil)
 			if err != nil {
@@ -182,7 +183,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				}
 			})
 
-			keys := amb.KeysValue(obj)
+			keys := amb.ParseModelKeys(obj)
 			return dc.MustInject(injectorName, &TimelineCompo{
 				ID:        mb.Info().URIName() + ":" + keys,
 				ModelName: modelName,
@@ -190,11 +191,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				ModelLink: amb.link(obj),
 			})
 		})
-	}
-
-	detailFieldTimeline := dp.GetField(FieldTimeline)
-	if detailFieldTimeline != nil {
-		configFieldTimeline(detailFieldTimeline)
 	}
 
 	listFieldNotes := lb.GetField(ListFieldNotes)
@@ -209,9 +205,9 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				modelKeyses := []string{}
 				reflectutils.ForEach(r, func(obj any) {
 					if modelName == "" {
-						modelName = getModelName(obj)
+						modelName = ParseModelName(obj)
 					}
-					modelKeyses = append(modelKeyses, amb.KeysValue(obj))
+					modelKeyses = append(modelKeyses, amb.ParseModelKeys(obj))
 				})
 				if len(modelKeyses) > 0 {
 					counts, err := GetNotesCounts(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
@@ -231,7 +227,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			if !ok {
 				return h.Text("")
 			}
-			modelKeys := amb.KeysValue(obj)
+			modelKeys := amb.ParseModelKeys(obj)
 			count := counts[modelKeys]
 			if count == nil {
 				count = &NoteCount{ModelKeys: modelKeys, UnreadNotesCount: 0, TotalNotesCount: 0}
@@ -243,11 +239,12 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				totalNotesCountText = fmt.Sprintf("%d", count.TotalNotesCount)
 			}
 
+			// TODO: Because of the filter of hasUnreadNotes, it seems that you need to reload the list directly.
 			total := h.Div().Class("text-caption bg-grey-lighten-3 rounded px-1").Text(totalNotesCountText)
 			return h.Td(
 				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ unreadNotesCount: %d }", count.UnreadNotesCount)).Children(
 					web.Listen(
-						NotifiLastViewedAtUpdated(getModelName(obj)),
+						NotifiLastViewedAtUpdated(ParseModelName(obj)),
 						fmt.Sprintf(`if (payload.log.ModelKeys === %q) { locals.unreadNotesCount = 0 }`, modelKeys),
 					),
 					v.VBadge().Attr("v-if", "locals.unreadNotesCount>0").Color(v.ColorError).Dot(true).Bordered(true).OffsetX("-3").OffsetY("-3").Children(
@@ -264,12 +261,34 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 
 func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
 	mb.keys = lo.Uniq(append(mb.keys, keys...))
+	mb.keyColumns = mb.parseColumns(keys)
 	return mb
 }
 
 func (mb *ModelBuilder) Keys(keys ...string) *ModelBuilder {
 	mb.keys = keys
+	mb.keyColumns = mb.parseColumns(keys)
 	return mb
+}
+
+func (mb *ModelBuilder) parseColumns(keys []string) []string {
+	s, err := ParseSchema(mb.ref)
+	if err != nil {
+		return lo.Map(keys, func(v string, _ int) string { return strcase.ToSnake(v) })
+	}
+
+	columns := make([]string, 0, len(keys))
+	m := lo.SliceToMap(s.Fields, func(f *schema.Field) (string, *schema.Field) {
+		return f.Name, f
+	})
+	for _, key := range keys {
+		f, ok := m[key]
+		if !ok {
+			panic(fmt.Errorf("invalid key %q", key))
+		}
+		columns = append(columns, f.DBName)
+	}
+	return columns
 }
 
 func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
@@ -339,12 +358,14 @@ func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	return mb
 }
 
-func (mb *ModelBuilder) KeysValue(v any) string {
-	return keysValue(v, mb.keys)
+const ModelKeysSeparator = ":"
+
+func (mb *ModelBuilder) ParseModelKeys(v any) string {
+	return KeysValue(v, mb.keys, ModelKeysSeparator)
 }
 
 func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
-	return mb.create(ctx, action, getModelName(obj), mb.KeysValue(obj), mb.modelLink(obj), detail)
+	return mb.create(ctx, action, ParseModelName(obj), mb.ParseModelKeys(obj), mb.modelLink(obj), detail)
 }
 
 func (mb *ModelBuilder) Create(ctx context.Context, v any) (*ActivityLog, error) {

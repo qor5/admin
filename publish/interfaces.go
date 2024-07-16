@@ -51,7 +51,7 @@ type Status struct {
 
 // @snippet_begin(PublishVersion)
 type Version struct {
-	Version       string `gorm:"primary_key;size:128;not null;"`
+	Version       string `gorm:"primaryKey;size:128;not null;"`
 	VersionName   string
 	ParentVersion string
 }

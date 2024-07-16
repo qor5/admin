@@ -93,14 +93,16 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	if reflectType.Kind() != reflect.Struct {
 		panic(fmt.Sprintf("%v is not a struct", reflectType.Name()))
 	}
-
-	primaryKeys := getPrimaryKeys(reflectType)
 	amb = &ModelBuilder{
-		typ:           reflectType,
-		ab:            ab,
-		keys:          primaryKeys,
-		ignoredFields: primaryKeys,
+		ref: reflect.New(reflectType).Interface(),
+		typ: reflectType,
+		ab:  ab,
 	}
+
+	primaryKeys := ParsePrimaryKeys(model)
+	amb.Keys(primaryKeys...)
+	amb.IgnoredFields(primaryKeys...)
+
 	if mb, ok := m.(*presets.ModelBuilder); ok {
 		amb.installPresetsModelBuilder(mb)
 	}

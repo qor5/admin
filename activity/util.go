@@ -14,35 +14,72 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func firstUpperWord(name string) string {
+func FirstUpperWord(name string) string {
 	if name == "" {
 		return ""
 	}
 	return strings.ToUpper(string([]rune(name)[0:1]))
 }
 
-func getModelName(v any) string {
+func ParseModelName(v any) string {
 	segs := strings.Split(reflect.TypeOf(v).String(), ".")
 	return strings.TrimLeft(segs[len(segs)-1], "*")
 }
 
-func keysValue(v any, keys []string) string {
+func KeysValue(v any, keys []string, sep string) string {
 	rv := reflect.Indirect(reflect.ValueOf(v))
 	if !rv.IsValid() {
 		return ""
 	}
 	vals := []string{}
 	for _, key := range keys {
-		rvField := rv.FieldByName(key)
-		if !rvField.IsValid() {
-			continue
+		rv := rv
+	while:
+		for {
+			rt := rv.Type()
+			rtField, ok := rt.FieldByName(key)
+			if !ok {
+				break while
+			}
+			rvField := rv.FieldByName(key)
+			if !rvField.IsValid() {
+				break while
+			}
+			if rtField.Anonymous {
+				rvField = reflect.Indirect(rvField)
+				rv = rvField
+				continue
+			}
+
+			vals = append(vals, fmt.Sprint(rvField.Interface()))
+			break while
 		}
-		vals = append(vals, fmt.Sprint(rvField.Interface()))
 	}
-	return strings.Join(vals, ":")
+	return strings.Join(vals, sep)
 }
 
-func getPrimaryKeys(t reflect.Type) (keys []string) {
+var (
+	schemaParserCacheStore sync.Map
+	schemaParserNamer      = schema.NamingStrategy{IdentifierMaxLength: 64}
+)
+
+func ParseSchema(v any) (*schema.Schema, error) {
+	s, err := schema.Parse(v, &schemaParserCacheStore, schemaParserNamer)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse schema")
+	}
+	return s, nil
+}
+
+func ParsePrimaryFields(v any) ([]*schema.Field, error) {
+	s, err := ParseSchema(v)
+	if err != nil {
+		return nil, err
+	}
+	return s.PrimaryFields, nil
+}
+
+func parsePrimaryKeys(t reflect.Type) (keys []string) {
 	if t.Kind() != reflect.Struct {
 		return
 	}
@@ -54,29 +91,23 @@ func getPrimaryKeys(t reflect.Type) (keys []string) {
 		}
 
 		if t.Field(i).Type.Kind() == reflect.Ptr && t.Field(i).Anonymous {
-			keys = append(keys, getPrimaryKeys(t.Field(i).Type.Elem())...)
+			keys = append(keys, parsePrimaryKeys(t.Field(i).Type.Elem())...)
 		}
 
 		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Anonymous {
-			keys = append(keys, getPrimaryKeys(t.Field(i).Type)...)
+			keys = append(keys, parsePrimaryKeys(t.Field(i).Type)...)
 		}
 	}
 	return
 }
 
-var (
-	schemaParserCacheStore sync.Map
-	schemaParserNamer      = schema.NamingStrategy{IdentifierMaxLength: 64}
-)
-
-func ParseGormPrimaryFieldNames(v any) ([]string, error) {
-	s, err := schema.Parse(v, &schemaParserCacheStore, schemaParserNamer)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse schema")
+func ParsePrimaryKeys(v any) []string {
+	fields, err := ParsePrimaryFields(v)
+	if err == nil {
+		return lo.Map(fields, func(f *schema.Field, _ int) string { return f.Name })
 	}
-	return lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string {
-		return f.Name
-	}), nil
+	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
+	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
 }
 
 func ObjectID(obj any) string {

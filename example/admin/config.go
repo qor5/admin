@@ -290,7 +290,7 @@ func NewConfig(db *gorm.DB) Config {
 						{
 							Key:          "hasUnreadNotes",
 							Invisible:    true,
-							SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
+							SQLCondition: ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
 						},
 					}
 				})
@@ -320,10 +320,6 @@ func NewConfig(db *gorm.DB) Config {
 	configListModel(b, ab)
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
-
-	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
-		panic(err)
-	}
 
 	microb := microsite.New(db).Publisher(publisher)
 
@@ -545,7 +541,7 @@ func configPost(
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
+				SQLCondition: ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
 			},
 			{
 				Key:          "created",
@@ -698,5 +694,23 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 		)
 		// .Class("mx-auto")
 		// .Attr("max-width", "140")
+	}
+}
+
+var noteMarkAllAsRead = "note_mark_all_as_read"
+
+func markAllAsRead(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return
+		}
+
+		if err = activity.MarkAllNotesAsRead(db, fmt.Sprint(u.ID)); err != nil {
+			return r, err
+		}
+
+		r.Reload = true
+		return
 	}
 }

@@ -25,7 +25,7 @@ var (
 
 type (
 	Page struct {
-		ID          uint `gorm:"primary_key"`
+		ID          uint `gorm:"primaryKey"`
 		VersionName string
 		Title       string
 		Description string
@@ -38,7 +38,7 @@ type (
 	}
 
 	TestActivityModel struct {
-		ID          uint `gorm:"primary_key"`
+		ID          uint `gorm:"primaryKey"`
 		VersionName string
 		Title       string
 		Description string
@@ -272,7 +272,7 @@ func TestGetActivityLogs(t *testing.T) {
 	}
 
 	page := Page{ID: 1, VersionName: "v1"}
-	logs, err := builder.getActivityLogs(context.Background(), getModelName(page), amb.KeysValue(page))
+	logs, err := builder.getActivityLogs(context.Background(), ParseModelName(page), amb.ParseModelKeys(page))
 	require.NoError(t, err)
 	require.Len(t, logs, 3)
 

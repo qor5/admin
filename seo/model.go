@@ -15,7 +15,7 @@ import (
 )
 
 type QorSEOSetting struct {
-	Name      string `gorm:"primary_key"`
+	Name      string `gorm:"primaryKey"`
 	Setting   Setting
 	Variables Variables `sql:"type:text"`
 

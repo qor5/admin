@@ -2,9 +2,11 @@ package activity
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
 
@@ -122,4 +124,44 @@ func MarkAllNotesAsRead(db *gorm.DB, creatorID string) error {
 
 		return nil
 	})
+}
+
+func SQLConditionHasUnreadNotes(creatorID string, modelName string, columns []string, sep string, columnPrefix string) string {
+	a := strings.Join(lo.Map(columns, func(v string, _ int) string {
+		return fmt.Sprintf("%s%s::text", columnPrefix, v)
+	}), ",")
+	b := strings.Join(lo.Map(columns, func(v string, i int) string {
+		return fmt.Sprintf(`split_part(n.model_keys, '%s', %d) AS %s`, sep, i+1, v)
+	}), ",\n")
+
+	return fmt.Sprintf(`
+	(%s) IN (
+	    WITH NoteRecords AS (
+		    SELECT model_name, model_keys, created_at, creator_id
+		    FROM activity_logs
+		    WHERE action = '%s' AND deleted_at IS NULL
+		        AND model_name = '%s'
+		),
+		LastViewedAts AS (
+		    SELECT model_name, model_keys, MAX(updated_at) AS last_viewed_at
+		    FROM activity_logs
+		    WHERE action = '%s' AND creator_id = '%s' AND deleted_at IS NULL
+		        AND model_name = '%s'
+		    GROUP BY model_name, model_keys
+		)
+		
+	    SELECT
+%s
+	    FROM NoteRecords n
+	    LEFT JOIN LastViewedAts lva
+	        ON n.model_name = lva.model_name
+	        AND n.model_keys = lva.model_keys
+	    WHERE n.creator_id <> '%s' 
+	        AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at)
+	    GROUP BY n.model_keys
+    )`, a, ActionNote, modelName, ActionLastView, creatorID, modelName, b, creatorID)
+}
+
+func (amb *ModelBuilder) SQLConditionHasUnreadNotes(creatorID string, columnPrefix string) string {
+	return SQLConditionHasUnreadNotes(creatorID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
 }

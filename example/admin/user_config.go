@@ -30,7 +30,7 @@ import (
 func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	user.Use(ab)
+	defer func() { user.Use(ab) }()
 
 	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
@@ -328,7 +328,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "users", "Users", u.ID, "Users"),
+				SQLCondition: ab.MustGetModelBuilder(user).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), "users."),
 			},
 			{
 				Key:          "registration_date",
@@ -420,14 +420,7 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 		return cell
 	})
 	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		u := getCurrentUser(ctx.R)
-
 		return []*vx.FilterItem{
-			{
-				Key:          "hasUnreadNotes",
-				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
-			},
 			{
 				Key:          "created",
 				Label:        "Create Time",
@@ -469,23 +462,6 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 				ItemType:     vx.ItemTypeNumber,
 				SQLCondition: `id %s ?`,
 				Folded:       true,
-			},
-		}
-	})
-
-	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
-
-		return []*presets.FilterTab{
-			{
-				Label: msgr.FilterTabsAll,
-				ID:    "all",
-				Query: url.Values{"all": []string{"1"}},
-			},
-			{
-				Label: msgr.FilterTabsHasUnreadNotes,
-				ID:    "hasUnreadNotes",
-				Query: url.Values{"hasUnreadNotes": []string{"1"}},
 			},
 		}
 	})
