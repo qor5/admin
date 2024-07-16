@@ -54,9 +54,11 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 		sidePanel := config.sidePanel(obj, ctx)
 		if sidePanel != nil {
 			asideContent = VContainer(
-				VRow(
-					VCol(asideContent).Cols(8),
-					VCol(sidePanel).Cols(4),
+				web.ParentSizeObserver("{ width, height }").Children(
+					VRow(
+						VCol(asideContent).Attr(":cols", `width>900?8:12`),
+						VCol(sidePanel).Attr(":cols", `width>900?4:12`),
+					),
 				),
 			)
 		}

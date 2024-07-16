@@ -7,6 +7,8 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
+	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -39,23 +41,14 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 
 	mb := b.Model(&WithActivityProduct{})
-
+	defer func() { ab.RegisterModel(mb).SkipView() }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
-
-	dp := mb.Detailing("Content", activity.FieldTimeline).Drawer(true)
+	dp := mb.Detailing("Content").Drawer(true)
 	dp.Section("Content").Editing("Title", "Code", "Price")
-
-	mb.Use(ab)
-	ab.MustGetModelBuilder(mb).SkipView()
-
+	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
+	})
 	// @snippet_end
 
-	// @snippet_begin(ActivityRecordLogSample)
-
-	// ctx := context.Background()
-	// ab.Log(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100}, nil)
-	// ab.Log(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200}, nil)
-
-	// @snippet_end
 	return b
 }

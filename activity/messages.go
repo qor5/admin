@@ -83,7 +83,7 @@ func (msgr *Messages) PerformAction(action string, detail string) string {
 }
 
 var Messages_en_US = &Messages{
-	Activities:   "Activities",
+	Activities:   "Activity",
 	ActionAll:    "All",
 	ActionView:   "View",
 	ActionEdit:   "Edit",
