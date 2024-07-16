@@ -31,14 +31,15 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			}
 		}()
 
-		if mb.Info().Verifier().Do(presets.PermDuplicate).WithReq(ctx.R).IsAllowed() != nil {
-			return r, perm.PermissionDenied
-		}
-
 		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
-		if err = utils.PrimarySluggerWhere(db, mb.NewModel(), slug).First(obj).Error; err != nil {
+		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
+		if err != nil {
 			return
+		}
+
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermUpdate, PermDuplicate) {
+			return r, perm.PermissionDenied
 		}
 
 		version := EmbedVersion(obj)
@@ -131,16 +132,15 @@ func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 
 func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
-			presets.ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-			return
-		}
-
 		id := ctx.R.FormValue(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, id, ctx)
 		if err != nil {
 			return
+		}
+
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermUpdate) {
+			return r, perm.PermissionDenied
 		}
 
 		name := ctx.R.FormValue("VersionName")
@@ -191,13 +191,18 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 			}
 		}()
 
-		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil {
-			return r, perm.PermissionDenied
-		}
-
 		slug := ctx.R.FormValue(presets.ParamID)
 		if len(slug) <= 0 {
 			return r, errors.New("no delete_id")
+		}
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
+		if err != nil {
+			return
+		}
+
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermDelete) {
+			return r, perm.PermissionDenied
 		}
 
 		if err := mb.Editing().Deleter(mb.NewModel(), slug, ctx); err != nil {

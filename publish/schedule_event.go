@@ -103,15 +103,14 @@ func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 			}
 		}()
 
-		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
-			return r, perm.PermissionDenied
-		}
-
 		slug := ctx.Param(presets.ParamID)
 		obj := mb.NewModel()
 		obj, err = mb.Editing().Fetcher(obj, slug, ctx)
 		if err != nil {
 			return r, err
+		}
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, PermPublish, PermUnpublish, PermSchedule) {
+			return r, perm.PermissionDenied
 		}
 
 		sc, ok := obj.(ScheduleInterface)

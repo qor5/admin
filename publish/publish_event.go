@@ -3,6 +3,7 @@ package publish
 import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +16,11 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, act
 		if err != nil {
 			return
 		}
+
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, PermPublish) {
+			return r, perm.PermissionDenied
+		}
+
 		reqCtx := publisher.WithContextValues(ctx.R.Context())
 		err = publisher.Publish(obj, reqCtx)
 		if err != nil {
@@ -45,6 +51,11 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 		if err != nil {
 			return
 		}
+
+		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, PermUnpublish) {
+			return r, perm.PermissionDenied
+		}
+
 		reqCtx := publisher.WithContextValues(ctx.R.Context())
 		err = publisher.UnPublish(obj, reqCtx)
 		if err != nil {

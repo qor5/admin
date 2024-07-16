@@ -56,6 +56,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			ok             bool
 			versionSwitch  *v.VChipBuilder
 			publishBtn     h.HTMLComponent
+			verifier       = mb.Info().Verifier()
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
@@ -66,6 +67,11 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		}
 
 		div := h.Div().Class("w-100 d-inline-flex")
+		div.AppendChildren(
+			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
+				Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
+				utilsMsgr),
+		)
 
 		if !config.Top {
 			div.Class("pb-4")
@@ -89,70 +95,87 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			versionSwitch.AppendIcon("mdi-chevron-down")
 
 			div.AppendChildren(versionSwitch)
-			div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
-				Height(40).Class("ml-2").Variant(v.VariantOutlined).
-				Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
+
+			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
+				div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
+					Height(40).Class("ml-2").Variant(v.VariantOutlined).
+					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
+			}
 		}
 
+		deniedPublish := DeniedDo(verifier, obj, ctx.R, PermPublish)
+		deniedUnpublish := DeniedDo(verifier, obj, ctx.R, PermUnpublish)
 		if status, ok = obj.(StatusInterface); ok {
 			switch status.EmbedStatus().Status {
 			case StatusDraft, StatusOffline:
-				publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
-				if config.PublishEvent != nil {
-					publishEvent = config.PublishEvent(obj, field, ctx)
+				if !deniedPublish {
+					publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
+					if config.PublishEvent != nil {
+						publishEvent = config.PublishEvent(obj, field, ctx)
+					}
+					publishBtn = h.Div(
+						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
+							Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
+					)
 				}
-				publishBtn = h.Div(
-					v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
-						Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
-				)
 			case StatusOnline:
-				unPublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventUnpublish)
-				if config.UnPublishEvent != nil {
-					unPublishEvent = config.UnPublishEvent(obj, field, ctx)
+				var unPublishEvent, rePublishEvent string
+				if !deniedUnpublish {
+					unPublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventUnpublish)
+					if config.UnPublishEvent != nil {
+						unPublishEvent = config.UnPublishEvent(obj, field, ctx)
+					}
 				}
-				rePublishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventRepublish)
-				if config.RePublishEvent != nil {
-					rePublishEvent = config.RePublishEvent(obj, field, ctx)
+				if !deniedPublish {
+					rePublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventRepublish)
+					if config.RePublishEvent != nil {
+						rePublishEvent = config.RePublishEvent(obj, field, ctx)
+					}
 				}
-				publishBtn = h.Div(
-					v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
-						Class("ml-2").Variant(v.VariantFlat).Color(v.ColorError).Height(40),
-					v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-						Class("ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
-				).Class("d-inline-flex")
+				if unPublishEvent != "" || rePublishEvent != "" {
+					publishBtn = h.Div(
+						h.Iff(unPublishEvent != "", func() h.HTMLComponent {
+							return v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
+								Class("ml-2").Variant(v.VariantFlat).Color(v.ColorError).Height(40)
+						}),
+						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
+							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
+								Class("ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40)
+						}),
+					).Class("d-inline-flex")
+				}
 			}
-			div.AppendChildren(publishBtn)
-			// Publish/Unpublish/Republish ConfirmDialog
-			div.AppendChildren(
-				utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-					Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
-					utilsMsgr),
-			)
-			// Publish/Unpublish/Republish CustomDialog
-			if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
-				div.AppendChildren(web.Portal().Name(PortalPublishCustomDialog))
+			if publishBtn != nil {
+				div.AppendChildren(publishBtn)
+				// Publish/Unpublish/Republish CustomDialog
+				if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
+					div.AppendChildren(web.Portal().Name(PortalPublishCustomDialog))
+				}
 			}
 		}
 
 		if _, ok = obj.(ScheduleInterface); ok {
-			var scheduleBtn h.HTMLComponent
-			clickEvent := web.POST().
-				EventFunc(eventSchedulePublishDialog).
-				Query(presets.ParamOverlay, actions.Dialog).
-				Query(presets.ParamID, primarySlugger.PrimarySlug()).
-				URL(mb.Info().ListingHref()).Go()
-			if config.Top {
-				scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
-					Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
-					BgColor(v.ColorPrimaryLighten2).Readonly(true).
-					Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption")
-			} else {
-				scheduleBtn = v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
-					Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", clickEvent)
+			deniedSchedule := deniedPublish || deniedUnpublish || DeniedDo(verifier, obj, ctx.R, PermSchedule)
+			if !deniedSchedule {
+				var scheduleBtn h.HTMLComponent
+				clickEvent := web.POST().
+					EventFunc(eventSchedulePublishDialog).
+					Query(presets.ParamOverlay, actions.Dialog).
+					Query(presets.ParamID, primarySlugger.PrimarySlug()).
+					URL(mb.Info().ListingHref()).Go()
+				if config.Top {
+					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
+						Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
+						BgColor(v.ColorPrimaryLighten2).Readonly(true).
+						Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption")
+				} else {
+					scheduleBtn = v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
+						Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", clickEvent)
+				}
+				div.AppendChildren(scheduleBtn)
+				// SchedulePublishDialog
+				div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 			}
-			div.AppendChildren(scheduleBtn)
-			// SchedulePublishDialog
-			div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
 		}
 
 		children := []h.HTMLComponent{div}
@@ -317,8 +340,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		versionName := obj.(VersionInterface).EmbedVersion().VersionName
 		status := obj.(StatusInterface).EmbedStatus().Status
 		disable := status == StatusOnline || status == StatusOffline
-		deniedUpdate := mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil
-		deniedDelete := mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() != nil
+		verifier := mb.Info().Verifier()
+		deniedUpdate := DeniedDo(verifier, obj, ctx.R, presets.PermUpdate)
+		deniedDelete := DeniedDo(verifier, obj, ctx.R, presets.PermDelete)
 		return h.Td().Children(
 			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
