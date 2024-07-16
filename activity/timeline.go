@@ -111,7 +111,10 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 }
 
 func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
+	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
+		return h.Div(h.Text(perm.PermissionDenied.Error())).MarshalHTML(ctx)
+	}
 
 	children := []h.HTMLComponent{
 		h.Div().Class("text-h6 mb-8").Text(msgr.Activities),
@@ -248,7 +251,10 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
+	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
+		return r, perm.PermissionDenied
+	}
 
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
@@ -281,7 +287,10 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
+	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
+		return r, perm.PermissionDenied
+	}
 
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
@@ -340,7 +349,10 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
+	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
+		return r, perm.PermissionDenied
+	}
 
 	creator := c.ab.currentUserFunc(ctx)
 	if creator == nil {
