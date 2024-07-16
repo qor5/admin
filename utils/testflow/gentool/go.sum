@@ -26,6 +26,7 @@ github.com/qor5/web/v3 v3.0.5-0.20240705134640-e88838872a76/go.mod h1:RPLKS/poCC
 github.com/qor5/x/v3 v3.0.6-0.20240705055210-716f92907046 h1:7B32BdUmqnoT88IeG7V9R0qMPnAhsWdBExlz8B3ppiM=
 github.com/qor5/x/v3 v3.0.6-0.20240705055210-716f92907046/go.mod h1:85rLAySzyq7L0dWXzICMnBVULCv53AtYmx3x1qeCDx0=
 github.com/qor5/x/v3 v3.0.6-0.20240708035309-f1dc7aad5de5/go.mod h1:85rLAySzyq7L0dWXzICMnBVULCv53AtYmx3x1qeCDx0=
+github.com/qor5/x/v3 v3.0.6-0.20240715061803-5a7484258739/go.mod h1:85rLAySzyq7L0dWXzICMnBVULCv53AtYmx3x1qeCDx0=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=

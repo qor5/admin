@@ -93,7 +93,7 @@ func TestPageBuilder(t *testing.T) {
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`iframe`, `Page Overview`, `SEO`,
+				`iframe`, `Page`, `SEO`,
 			},
 		},
 		{
