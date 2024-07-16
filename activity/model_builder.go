@@ -1,26 +1,46 @@
 package activity
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
-	"strings"
-	"time"
 
+	"github.com/iancoleman/strcase"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
-	"gorm.io/gorm"
+	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/samber/lo"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm/schema"
+)
+
+const (
+	FieldTimeline       string = "__ActivityTimeline__"
+	ListFieldNotes      string = "__ActivityNotes__"
+	ListFieldLabelNotes string = "Notes"
+)
+
+const (
+	Create = 1 << iota
+	View
+	Edit
+	Delete
 )
 
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
+	ref           any                          // model ref
 	typ           reflect.Type                 // model type
-	activity      *Builder                     // activity builder
+	ab            *Builder                     // activity builder
 	presetModel   *presets.ModelBuilder        // preset model builder
 	skip          uint8                        // skip the refined data operator of the presetModel
 	keys          []string                     // primary keys
+	keyColumns    []string                     // primary field columns
 	ignoredFields []string                     // ignored fields
 	typeHandlers  map[reflect.Type]TypeHandler // type handlers
 	link          func(any) string             // display the model link on the admin detail page
@@ -28,39 +48,257 @@ type ModelBuilder struct {
 
 // @snippet_end
 
-// AddKeys add keys to the model builder
-func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
-	for _, key := range keys {
-		var find bool
-		for _, mkey := range mb.keys {
-			if mkey == key {
-				find = true
-				break
+type ctxKeyUnreadCounts struct{}
+
+func NotifiLastViewedAtUpdated(modelName string) string {
+	return fmt.Sprintf("activity_NotifModelsCreated_%s", modelName)
+}
+
+type PayloadLastViewedAtUpdated struct {
+	Log *ActivityLog `json:"log"`
+}
+
+func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
+	amb.presetModel = mb
+	amb.LinkFunc(func(a any) string {
+		id := ObjectID(a)
+		if id == "" {
+			return ""
+		}
+		return mb.Info().DetailingHref(id)
+	})
+
+	eb := mb.Editing()
+	dp := mb.Detailing()
+	lb := mb.Listing()
+
+	emitLogCreated := func(evCtx *web.EventContext, log *ActivityLog) {
+		if log == nil {
+			return
+		}
+		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+				if err = in(ctx, r); err != nil {
+					return
+				}
+				r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+					Models: []any{log},
+				})
+				return
 			}
-		}
-		if !find {
-			mb.keys = append(mb.keys, key)
-		}
+		})
 	}
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if id == "" && amb.skip&Create == 0 {
+				err := in(obj, id, ctx)
+				if err != nil {
+					return err
+				}
+				log, err := amb.OnCreate(ctx.R.Context(), obj)
+				if err != nil {
+					return err
+				}
+				emitLogCreated(ctx, log)
+				return nil
+			}
+
+			if id != "" && amb.skip&Edit == 0 {
+				old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+				if err != nil {
+					return errors.Wrap(err, "fetch old record")
+				}
+				if err := in(obj, id, ctx); err != nil {
+					return err
+				}
+				log, err := amb.OnEdit(ctx.R.Context(), old, obj)
+				if err != nil {
+					return err
+				}
+				emitLogCreated(ctx, log)
+				return nil
+			}
+			return in(obj, id, ctx)
+		}
+	})
+
+	eb.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+		return func(obj any, id string, ctx *web.EventContext) (err error) {
+			if amb.skip&Delete != 0 {
+				return in(obj, id, ctx)
+			}
+			old, err := eb.Fetcher(mb.NewModel(), id, ctx)
+			if err != nil {
+				return errors.Wrap(err, "fetch old record")
+			}
+			if err := in(obj, id, ctx); err != nil {
+				return err
+			}
+			log, err := amb.OnDelete(ctx.R.Context(), old)
+			if err != nil {
+				return err
+			}
+			emitLogCreated(ctx, log)
+			return nil
+		}
+	})
+
+	detailFieldTimeline := dp.GetField(FieldTimeline)
+	if detailFieldTimeline != nil {
+		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+		dc := mb.GetPresetsBuilder().GetDependencyCenter()
+		dc.RegisterInjector(injectorName)
+		dc.MustProvide(injectorName, func() *Builder {
+			return amb.ab
+		})
+		dc.MustProvide(injectorName, func() *ModelBuilder {
+			return amb
+		})
+		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+			return mb
+		})
+		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			if amb.skip&View == 0 {
+				log, err := amb.OnView(ctx.R.Context(), obj)
+				if err != nil {
+					panic(err)
+				}
+				emitLogCreated(ctx, log)
+			}
+
+			modelName := ParseModelName(obj)
+
+			log, err := amb.Log(ctx.R.Context(), ActionLastView, obj, nil)
+			if err != nil {
+				panic(err)
+			}
+			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+					if err = in(ctx, r); err != nil {
+						return
+					}
+					// this action is special, so we use a separate notification
+					r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+					return
+				}
+			})
+
+			keys := amb.ParseModelKeys(obj)
+			return dc.MustInject(injectorName, &TimelineCompo{
+				ID:        mb.Info().URIName() + ":" + keys,
+				ModelName: modelName,
+				ModelKeys: keys,
+				ModelLink: amb.link(obj),
+			})
+		})
+	}
+
+	listFieldNotes := lb.GetField(ListFieldNotes)
+	if listFieldNotes != nil {
+		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+				r, totalCount, err = in(model, params, ctx)
+				if err != nil {
+					return
+				}
+				var modelName string
+				modelKeyses := []string{}
+				reflectutils.ForEach(r, func(obj any) {
+					if modelName == "" {
+						modelName = ParseModelName(obj)
+					}
+					modelKeyses = append(modelKeyses, amb.ParseModelKeys(obj))
+				})
+				if len(modelKeyses) > 0 {
+					counts, err := GetNotesCounts(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
+					if err != nil {
+						return r, totalCount, err
+					}
+					m := lo.SliceToMap(counts, func(v *NoteCount) (string, *NoteCount) {
+						return v.ModelKeys, v
+					})
+					ctx.WithContextValue(ctxKeyUnreadCounts{}, m)
+				}
+				return
+			}
+		})
+		listFieldNotes.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			counts, ok := ctx.ContextValue(ctxKeyUnreadCounts{}).(map[string]*NoteCount)
+			if !ok {
+				return h.Text("")
+			}
+			modelKeys := amb.ParseModelKeys(obj)
+			count := counts[modelKeys]
+			if count == nil {
+				count = &NoteCount{ModelKeys: modelKeys, UnreadNotesCount: 0, TotalNotesCount: 0}
+			}
+			var totalNotesCountText string
+			if count.TotalNotesCount > 99 {
+				totalNotesCountText = "99+"
+			} else {
+				totalNotesCountText = fmt.Sprintf("%d", count.TotalNotesCount)
+			}
+
+			// TODO: Because of the filter of hasUnreadNotes, it seems that you need to reload the list directly.
+			total := h.Div().Class("text-caption bg-grey-lighten-3 rounded px-1").Text(totalNotesCountText)
+			return h.Td(
+				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ unreadNotesCount: %d }", count.UnreadNotesCount)).Children(
+					web.Listen(
+						NotifiLastViewedAtUpdated(ParseModelName(obj)),
+						fmt.Sprintf(`if (payload.log.ModelKeys === %q) { locals.unreadNotesCount = 0 }`, modelKeys),
+					),
+					v.VBadge().Attr("v-if", "locals.unreadNotesCount>0").Color(v.ColorError).Dot(true).Bordered(true).OffsetX("-3").OffsetY("-3").Children(
+						total,
+					),
+					h.Div().Attr("v-else", true).Class("d-flex flex-row").Children(
+						total,
+					),
+				),
+			)
+		}).Label(ListFieldLabelNotes)
+	}
+}
+
+func (mb *ModelBuilder) AddKeys(keys ...string) *ModelBuilder {
+	mb.keys = lo.Uniq(append(mb.keys, keys...))
+	mb.keyColumns = mb.parseColumns(keys)
 	return mb
 }
 
-// Keys set keys for the model builder
 func (mb *ModelBuilder) Keys(keys ...string) *ModelBuilder {
 	mb.keys = keys
+	mb.keyColumns = mb.parseColumns(keys)
 	return mb
 }
 
-// LinkFunc set the link that linked to the modified record
+func (mb *ModelBuilder) parseColumns(keys []string) []string {
+	s, err := ParseSchema(mb.ref)
+	if err != nil {
+		return lo.Map(keys, func(v string, _ int) string { return strcase.ToSnake(v) })
+	}
+
+	columns := make([]string, 0, len(keys))
+	m := lo.SliceToMap(s.Fields, func(f *schema.Field) (string, *schema.Field) {
+		return f.Name, f
+	})
+	for _, key := range keys {
+		f, ok := m[key]
+		if !ok {
+			panic(fmt.Errorf("invalid key %q", key))
+		}
+		columns = append(columns, f.DBName)
+	}
+	return columns
+}
+
 func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
 	mb.link = f
 	return mb
 }
 
-// SkipCreate skip the created action for preset.ModelBuilder
 func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
 	if mb.presetModel == nil {
-		return mb
+		panic("SkipCreate method only supports presets.ModelBuilder")
 	}
 
 	if mb.skip&Create == 0 {
@@ -69,22 +307,31 @@ func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
 	return mb
 }
 
-// SkipUpdate skip the update action for preset.ModelBuilder
-func (mb *ModelBuilder) SkipUpdate() *ModelBuilder {
+func (mb *ModelBuilder) SkipView() *ModelBuilder {
 	if mb.presetModel == nil {
-		return mb
+		panic("SkipView method only supports presets.ModelBuilder")
 	}
 
-	if mb.skip&Update == 0 {
-		mb.skip |= Update
+	if mb.skip&View == 0 {
+		mb.skip |= View
 	}
 	return mb
 }
 
-// SkipDelete skip the delete action for preset.ModelBuilder
+func (mb *ModelBuilder) SkipEdit() *ModelBuilder {
+	if mb.presetModel == nil {
+		panic("SkipEdit method only supports presets.ModelBuilder")
+	}
+
+	if mb.skip&Edit == 0 {
+		mb.skip |= Edit
+	}
+	return mb
+}
+
 func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	if mb.presetModel == nil {
-		return mb
+		panic("SkipDelete method only supports presets.ModelBuilder")
 	}
 
 	if mb.skip&Delete == 0 {
@@ -93,19 +340,16 @@ func (mb *ModelBuilder) SkipDelete() *ModelBuilder {
 	return mb
 }
 
-// AddIgnoredFields append ignored fields to the default ignored fields, this would not overwrite the default ignored fields
 func (mb *ModelBuilder) AddIgnoredFields(fields ...string) *ModelBuilder {
-	mb.ignoredFields = append(mb.ignoredFields, fields...)
+	mb.ignoredFields = lo.Uniq(append(mb.ignoredFields, fields...))
 	return mb
 }
 
-// SetIgnoredFields set ignored fields to replace the default ignored fields with the new set.
-func (mb *ModelBuilder) SetIgnoredFields(fields ...string) *ModelBuilder {
+func (mb *ModelBuilder) IgnoredFields(fields ...string) *ModelBuilder {
 	mb.ignoredFields = fields
 	return mb
 }
 
-// AddTypeHanders add type handers for the model builder
 func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	if mb.typeHandlers == nil {
 		mb.typeHandlers = map[reflect.Type]TypeHandler{}
@@ -114,187 +358,140 @@ func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	return mb
 }
 
-// KeysValue get model keys value
-func (mb *ModelBuilder) KeysValue(v any) string {
-	var (
-		stringBuilder = strings.Builder{}
-		reflectValue  = reflect.Indirect(reflect.ValueOf(v))
-		reflectType   = reflectValue.Type()
-	)
+const ModelKeysSeparator = ":"
 
-	for _, key := range mb.keys {
-		if fields, ok := reflectType.FieldByName(key); ok {
-			if reflectValue.FieldByName(key).IsZero() {
-				continue
-			}
-			if fields.Anonymous {
-				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).FieldByName(key).Interface()))
-			} else {
-				stringBuilder.WriteString(fmt.Sprintf("%v:", reflectValue.FieldByName(key).Interface()))
-			}
-		}
-	}
-
-	return strings.TrimRight(stringBuilder.String(), ":")
+func (mb *ModelBuilder) ParseModelKeys(v any) string {
+	return KeysValue(v, mb.keys, ModelKeysSeparator)
 }
 
-// AddRecords add records log
-func (mb *ModelBuilder) AddRecords(action string, ctx context.Context, vs ...any) error {
-	if len(vs) == 0 {
-		return errors.New("data are empty")
-	}
-
-	var (
-		creator = mb.activity.currentUserFunc(ctx)
-		db      = mb.activity.db
-	)
-
-	switch action {
-	case ActionView:
-		for _, v := range vs {
-			err := mb.AddViewRecord(creator, v, db)
-			if err != nil {
-				return err
-			}
-		}
-
-	case ActionDelete:
-		for _, v := range vs {
-			err := mb.AddDeleteRecord(creator, v, db)
-			if err != nil {
-				return err
-			}
-		}
-	case ActionCreate:
-		for _, v := range vs {
-			err := mb.AddCreateRecord(creator, v, db)
-			if err != nil {
-				return err
-			}
-		}
-	case ActionEdit:
-		for _, v := range vs {
-			err := mb.AddEditRecord(creator, v, db)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
+	return mb.create(ctx, action, ParseModelName(obj), mb.ParseModelKeys(obj), mb.modelLink(obj), detail)
 }
 
-// AddCustomizedRecord add customized record
-func (mb *ModelBuilder) AddCustomizedRecord(action string, diff bool, ctx context.Context, obj any) error {
-	var (
-		creator = mb.activity.currentUserFunc(ctx)
-		db      = mb.activity.db
-	)
-
-	if !diff {
-		return mb.save(creator, action, obj, db, "")
-	}
-
-	old, ok := findOld(obj, db)
-	if !ok {
-		return fmt.Errorf("can't find old data for %+v ", obj)
-	}
-	return mb.addDiff(action, creator, old, obj, db)
+func (mb *ModelBuilder) OnCreate(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.Log(ctx, ActionCreate, v, nil)
 }
 
-// AddViewRecord add view record
-func (mb *ModelBuilder) AddViewRecord(creator *User, v any, db *gorm.DB) error {
-	return mb.save(creator, ActionView, v, db, "")
+func (mb *ModelBuilder) OnView(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.Log(ctx, ActionView, v, nil)
 }
 
-// AddDeleteRecord	add delete record
-func (mb *ModelBuilder) AddDeleteRecord(creator *User, v any, db *gorm.DB) error {
-	return mb.save(creator, ActionDelete, v, db, "")
-}
-
-// AddSaverRecord will save a create log or a edit log
-func (mb *ModelBuilder) AddSaveRecord(creator *User, now any, db *gorm.DB) error {
-	old, ok := findOld(now, db)
-	if !ok {
-		return mb.AddCreateRecord(creator, now, db)
-	}
-	return mb.AddEditRecordWithOld(creator, old, now, db)
-}
-
-// AddCreateRecord add create record
-func (mb *ModelBuilder) AddCreateRecord(creator *User, v any, db *gorm.DB) error {
-	return mb.save(creator, ActionCreate, v, db, "")
-}
-
-// AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecord(creator *User, now any, db *gorm.DB) error {
-	old, ok := findOld(now, db)
-	if !ok {
-		return fmt.Errorf("can't find old data for %+v ", now)
-	}
-	return mb.AddEditRecordWithOld(creator, old, now, db)
-}
-
-// AddEditRecord add edit record
-func (mb *ModelBuilder) AddEditRecordWithOld(creator *User, old, now any, db *gorm.DB) error {
-	return mb.addDiff(ActionEdit, creator, old, now, db)
-}
-
-func (mb *ModelBuilder) addDiff(action string, creator *User, old, now any, db *gorm.DB) error {
-	diffs, err := mb.Diff(old, now)
+func (mb *ModelBuilder) OnEdit(ctx context.Context, old any, new any) (*ActivityLog, error) {
+	diffs, err := mb.Diff(old, new)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(diffs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	b, err := json.Marshal(diffs)
-	if err != nil {
-		return err
-	}
-
-	return mb.save(creator, ActionEdit, now, db, string(b))
+	return mb.Log(ctx, ActionEdit, new, diffs)
 }
 
-// Diff get diffs between old and now value
-func (mb *ModelBuilder) Diff(old, now any) ([]Diff, error) {
-	return NewDiffBuilder(mb).Diff(old, now)
+func (mb *ModelBuilder) OnDelete(ctx context.Context, v any) (*ActivityLog, error) {
+	return mb.Log(ctx, ActionDelete, v, nil)
 }
 
-func (mb *ModelBuilder) save(creator *User, action string, v any, db *gorm.DB, diffs string) error {
-	log := &ActivityLog{}
+func (mb *ModelBuilder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {
+	return mb.Log(ctx, ActionNote, v, note)
+}
 
-	log.CreatedAt = time.Now()
+func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
+	return NewDiffBuilder(mb).Diff(old, new)
+}
 
-	log.Creator = *creator
-	log.UserID = creator.ID
-
-	log.Action = action
-	log.ModelName = modelName(v)
-	log.ModelKeys = mb.KeysValue(v)
-
-	if mb.presetModel != nil && mb.presetModel.Info().URIName() != "" {
-		log.ModelLabel = mb.presetModel.Info().URIName()
-	} else {
-		log.ModelLabel = "-"
-	}
-
+func (mb *ModelBuilder) modelLink(v any) string {
 	if f := mb.link; f != nil {
-		log.ModelLink = f(v)
+		return f(v)
+	}
+	return ""
+}
+
+func (mb *ModelBuilder) create(
+	ctx context.Context,
+	action string,
+	modelName, modelKeys, modelLink string,
+	detail any,
+) (*ActivityLog, error) {
+	creator := mb.ab.currentUserFunc(ctx)
+	if creator == nil {
+		return nil, errors.New("current user is nil")
 	}
 
-	if diffs == "" && action == ActionEdit {
-		return nil
+	if mb.ab.findUsersFunc == nil {
+		user := &ActivityUser{
+			CreatedAt: mb.ab.db.NowFunc(),
+			ID:        creator.ID,
+			Name:      creator.Name,
+			Avatar:    creator.Avatar,
+		}
+		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
+			if err := mb.ab.db.Create(user).Error; err != nil {
+				return nil, errors.Wrap(err, "failed to create user")
+			}
+		}
 	}
 
-	if action == ActionEdit {
-		log.ModelDiffs = diffs
+	log := &ActivityLog{
+		CreatorID:  creator.ID,
+		Action:     action,
+		ModelName:  modelName,
+		ModelKeys:  modelKeys,
+		ModelLabel: "-",
+		ModelLink:  modelLink,
 	}
+	if mb.presetModel != nil {
+		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
+	}
+	log.CreatedAt = mb.ab.db.NowFunc()
 
-	err := db.Save(log).Error
+	detailJson, err := json.Marshal(detail)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "failed to marshal detail")
 	}
-	return nil
+	log.Detail = string(detailJson)
+
+	if action == ActionLastView {
+		log.Hidden = true
+		r := &ActivityLog{}
+		if err := mb.ab.db.
+			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", creator.ID, modelName, modelKeys, action).
+			Assign(log).FirstOrCreate(r).Error; err != nil {
+			return nil, err
+		}
+		return r, nil
+
+		// Why not use this ? Because id will be empty when the record is already created
+		// if mb.ab.db.Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.CreatorID, log.ModelName, log.ModelKeys, log.Action).
+		// 	Select("*").Updates(log).RowsAffected == 0 {
+		// 	if err := mb.ab.db.Create(log).Error; err != nil {
+		// 		return nil, errors.Wrap(err, "failed to create log")
+		// 	}
+		// }
+
+		// Why not use Upsert ?
+		// https://github.com/go-gorm/gorm/issues/6512
+		// https://github.com/jackc/pgx/issues/1234
+		// if err := mb.ab.db.Clauses(clause.OnConflict{
+		// 	Columns: []clause.Column{
+		// 		{Name: "model_name"},
+		// 		{Name: "model_keys"},
+		// 	},
+		// 	TargetWhere: clause.Where{Exprs: []clause.Expression{
+		// 		gorm.Expr("action = ?", ActionLastView),
+		// 		gorm.Expr("deleted_at IS NULL"),
+		// 	}},
+		// 	UpdateAll: true,
+		// }).Create(log).Error; err != nil {
+		// 	return nil, errors.Wrap(err, "failed to create log")
+		// }
+		// return log, nil
+	}
+
+	if err := mb.ab.db.Create(log).Error; err != nil {
+		return nil, errors.Wrap(err, "failed to create log")
+	}
+
+	return log, nil
 }

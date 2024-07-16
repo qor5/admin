@@ -1,7 +1,6 @@
 package publish
 
 import (
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"gorm.io/gorm"
 )
@@ -27,10 +26,10 @@ const (
 	ParamScriptAfterPublish = "publish_param_script_after_publish"
 )
 
-func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, ab *activity.Builder) {
-	mb.RegisterEventFunc(EventPublish, publishAction(db, mb, publisher, ab, ActivityPublish))
-	mb.RegisterEventFunc(EventRepublish, publishAction(db, mb, publisher, ab, ActivityRepublish))
-	mb.RegisterEventFunc(EventUnpublish, unpublishAction(db, mb, publisher, ab, ActivityUnPublish))
+func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publisher *Builder) {
+	mb.RegisterEventFunc(EventPublish, publishAction(db, mb, publisher, ActivityPublish))
+	mb.RegisterEventFunc(EventRepublish, publishAction(db, mb, publisher, ActivityRepublish))
+	mb.RegisterEventFunc(EventUnpublish, unpublishAction(db, mb, publisher, ActivityUnPublish))
 
 	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(mb, db))
 	mb.RegisterEventFunc(eventSchedulePublishDialog, scheduleDialog(db, mb))

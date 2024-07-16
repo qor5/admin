@@ -30,6 +30,7 @@ require (
 	github.com/qor5/x/v3 v3.0.6-0.20240715061803-5a7484258739
 	github.com/samber/lo v1.40.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
+	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunfmin/reflectutils v1.0.5
 	github.com/sunfmin/snippetgo v0.0.3

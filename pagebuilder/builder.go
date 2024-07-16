@@ -540,10 +540,6 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
 	if b.l10n != nil {
 		pm.Use(b.l10n)
 	}
-
-	if b.ab != nil {
-		pm.Use(b.ab)
-	}
 }
 
 func (b *Builder) preparePlugins() {

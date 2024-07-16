@@ -62,6 +62,10 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	return
 }
 
+func (mb *ModelBuilder) GetPresetsBuilder() *Builder {
+	return mb.p
+}
+
 func (mb *ModelBuilder) HasDetailing() bool {
 	return mb.hasDetailing
 }
@@ -96,7 +100,6 @@ func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.DoDeleteDetailingListField, mb.detailing.DeleteDetailListField)
 	mb.RegisterEventFunc(actions.DoCreateDetailingListField, mb.detailing.CreateDetailListField)
 
-	mb.RegisterEventFunc(actions.ReloadList, mb.listing.reloadList)
 	mb.RegisterEventFunc(actions.DeleteConfirmation, mb.listing.deleteConfirmation)
 	mb.RegisterEventFunc(actions.OpenListingDialog, mb.listing.openListingDialog)
 

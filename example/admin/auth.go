@@ -100,7 +100,8 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 			return nil
 		}).
 		AfterLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := ab.AddCustomizedRecord("log-in", false, r.Context(), user); err != nil {
+			_, err := ab.Log(r.Context(), "log-in", user, nil)
+			if err != nil {
 				return err
 			}
 
@@ -149,15 +150,18 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 		}).
 		AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if user != nil {
-				return ab.AddCustomizedRecord("login-failed", false, r.Context(), user)
+				_, err := ab.Log(r.Context(), "login-failed", user, nil)
+				return err
 			}
 			return nil
 		}).
 		AfterUserLocked(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			return ab.AddCustomizedRecord("locked", false, r.Context(), user)
+			_, err := ab.Log(r.Context(), "locked", user, nil)
+			return err
 		}).
 		AfterLogout(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := ab.AddCustomizedRecord("log-out", false, r.Context(), user); err != nil {
+			_, err := ab.Log(r.Context(), "log-out", user, nil)
+			if err != nil {
 				return err
 			}
 
@@ -170,20 +174,23 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 		AfterConfirmSendResetPasswordLink(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
 			resetLink := extraVals[0]
 			_ = resetLink
-			return ab.AddCustomizedRecord("send-reset-password-link", false, r.Context(), user)
+			_, err := ab.Log(r.Context(), "send-reset-password-link", user, nil)
+			return err
 		}).
 		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
 				return err
 			}
-			return ab.AddCustomizedRecord("reset-password", false, r.Context(), user)
+			_, err := ab.Log(r.Context(), "reset-password", user, nil)
+			return err
 		}).
 		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
 				return err
 			}
 
-			return ab.AddCustomizedRecord("change-password", false, r.Context(), user)
+			_, err := ab.Log(r.Context(), "change-password", user, nil)
+			return err
 		}).
 		AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
 			oldToken := extraVals[0].(string)

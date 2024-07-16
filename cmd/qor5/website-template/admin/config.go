@@ -68,12 +68,12 @@ func newConfig(db *gorm.DB) config {
 	storage := filesystem.New(PublishDir)
 
 	mediaBuilder := media.New(db)
-	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
 		return &activity.User{
-			ID:   1,
+			ID:   "1",
 			Name: "John",
 		}
-	})
+	}).AutoMigrate()
 	publisher := publish.New(db, storage)
 	seoBuilder := seo.New(db).AutoMigrate()
 

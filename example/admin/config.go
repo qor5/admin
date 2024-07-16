@@ -40,6 +40,7 @@ import (
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
@@ -170,14 +171,15 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
-			ID:     u.ID,
+			ID:     fmt.Sprint(u.ID),
 			Name:   u.Name,
 			Avatar: "",
 		}
 	}).
+		AutoMigrate().
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
 			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
 				err = in(pb, mb)
@@ -203,13 +205,15 @@ func NewConfig(db *gorm.DB) Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
+	publisher.Activity(ab)
+
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	configureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
 
 	configMenuOrder(b)
 
-	configPost(b, db, ab, publisher, ab)
+	configPost(b, db, publisher, ab)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -288,7 +292,7 @@ func NewConfig(db *gorm.DB) Config {
 						{
 							Key:          "hasUnreadNotes",
 							Invisible:    true,
-							SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "page_builder_pages", "Pages", u.ID, "Pages"),
+							SQLCondition: ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
 						},
 					}
 				})
@@ -319,18 +323,12 @@ func NewConfig(db *gorm.DB) Config {
 
 	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
 
-	if err := db.AutoMigrate(&UserUnreadNote{}); err != nil {
-		panic(err)
-	}
-
 	microb := microsite.New(db).Publisher(publisher)
 
 	l10nBuilder.Activity(ab)
 	l10nM, l10nVM := configL10nModel(db, b)
 	l10nM.Use(l10nBuilder)
 	l10nVM.Use(l10nBuilder)
-
-	publisher.Activity(ab)
 
 	initLoginBuilder(db, b, ab)
 
@@ -520,19 +518,16 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 func configPost(
 	b *presets.Builder,
 	db *gorm.DB,
-	ab *activity.Builder,
 	publisher *publish.Builder,
-	nb *activity.Builder,
+	ab *activity.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
-	m.Use(
-		slug.New(),
-		ab,
-		publisher,
-		nb,
-	)
+	m.Use(slug.New())
+	defer func() {
+		m.Use(publisher, ab)
+	}()
 
-	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", activity.ListFieldNotes).
 		SearchColumns("title", "body").
 		PerPage(10)
 
@@ -543,7 +538,7 @@ func configPost(
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: fmt.Sprintf(hasUnreadNotesQuery, "posts", "Posts", u.ID, "Posts"),
+				SQLCondition: ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
 			},
 			{
 				Key:          "created",
@@ -607,7 +602,7 @@ func configPost(
 		}
 	})
 
-	ed := m.Editing("StatusBar", "ScheduleBar", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage")
+	ed := m.Editing("StatusBar", "ScheduleBar", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage", activity.FieldTimeline)
 	ed.Field("HeroImage").
 		WithContextValue(
 			media.MediaBoxConfig,
@@ -632,30 +627,49 @@ func configPost(
 	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
+
+	m.Detailing(publish.VersionsPublishBar, "Title", "Body", activity.FieldTimeline).Drawer(true)
 	return m
 }
 
 func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
 	return func(ctx *web.EventContext) int {
-		data, err := getUnreadNotesCount(ctx, db)
-		if err != nil {
+		user := getCurrentUser(ctx.R)
+		if user == nil {
 			return 0
 		}
-
-		a, b, c := data["Pages"], data["Posts"], data["Users"]
-		return a + b + c
+		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		if err != nil {
+			panic(err)
+		}
+		total := lo.SumBy(counts, func(item *activity.NoteCount) int {
+			return int(item.UnreadNotesCount)
+		})
+		// TODO: listen to auto update ?
+		return total
 	}
 }
 
 func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		data, err := getUnreadNotesCount(ctx, db)
-		if err != nil {
+		user := getCurrentUser(ctx.R)
+		if user == nil {
 			return nil
 		}
+		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		if err != nil {
+			panic(err)
+		}
 
-		a, b, c := data["Pages"], data["Posts"], data["Users"]
+		groups := lo.GroupBy(counts, func(item *activity.NoteCount) string {
+			return item.ModelName
+		})
 
+		by := func(item *activity.NoteCount) int { return int(item.UnreadNotesCount) }
+
+		a, b, c := lo.SumBy(groups["Page"], by), lo.SumBy(groups["Post"], by), lo.SumBy(groups["User"], by)
+
+		// TODO: listen to auto update ?
 		return v.VList(
 			v.VListItem(
 				v.VListItemTitle(h.Text("Pages")),
@@ -677,5 +691,23 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 		)
 		// .Class("mx-auto")
 		// .Attr("max-width", "140")
+	}
+}
+
+var noteMarkAllAsRead = "note_mark_all_as_read"
+
+func markAllAsRead(db *gorm.DB) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		u := getCurrentUser(ctx.R)
+		if u == nil {
+			return
+		}
+
+		if err = activity.MarkAllNotesAsRead(db, fmt.Sprint(u.ID)); err != nil {
+			return r, err
+		}
+
+		r.Reload = true
+		return
 	}
 }

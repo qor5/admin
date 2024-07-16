@@ -264,7 +264,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			return err
 		}
 		if b.ab != nil {
-			b.ab.AddRecords(activity.ActionCreate, ctx.R.Context(), j)
+			b.ab.OnCreate(ctx.R.Context(), j)
 		}
 		return
 	})
@@ -341,14 +341,14 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	})
 
 	if b.ab != nil {
-		b.ab.RegisterModel(mb).SkipCreate().SkipUpdate().SkipDelete().
+		b.ab.RegisterModel(mb).SkipCreate().SkipView().SkipEdit().SkipDelete().
 			AddTypeHanders(time.Time{}, func(old, now interface{}, prefixField string) []activity.Diff {
 				fm := "2006-01-02 15:04:05"
 				oldString := old.(time.Time).Format(fm)
 				nowString := now.(time.Time).Format(fm)
 				if oldString != nowString {
 					return []activity.Diff{
-						{Field: prefixField, Old: oldString, Now: nowString},
+						{Field: prefixField, Old: oldString, New: nowString},
 					}
 				}
 				return []activity.Diff{}
@@ -359,7 +359,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 				nowString := now.(Schedule).ScheduleTime.Format(fm)
 				if oldString != nowString {
 					return []activity.Diff{
-						{Field: prefixField, Old: oldString, Now: nowString},
+						{Field: prefixField, Old: oldString, New: nowString},
 					}
 				}
 				return []activity.Diff{}
@@ -504,11 +504,11 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 		if isScheduled {
 			action = "Cancel"
 		}
-		b.ab.AddCustomizedRecord(action, false, ctx.R.Context(), &QorJob{
+		b.ab.Log(ctx.R.Context(), action, &QorJob{
 			Model: gorm.Model{
 				ID: inst.QorJobID,
 			},
-		})
+		}, nil)
 	}
 
 	return er, nil
@@ -569,11 +569,11 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
-		b.ab.AddCustomizedRecord("Rerun", false, ctx.R.Context(), &QorJob{
+		b.ab.Log(ctx.R.Context(), "Rerun", &QorJob{
 			Model: gorm.Model{
 				ID: inst.QorJobID,
 			},
-		})
+		}, nil)
 	}
 	return
 }
@@ -637,7 +637,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	er.Reload = true
 	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	if b.ab != nil {
-		b.ab.AddEditRecordWithOldAndContext(
+		b.ab.OnEdit(
 			ctx.R.Context(),
 			&QorJob{
 				Model: gorm.Model{

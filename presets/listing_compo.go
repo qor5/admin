@@ -111,9 +111,6 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 				%s
 			}`, c.OnMounted))
 		}),
-		web.Listen(
-			c.lb.notifReloadList(), stateful.ReloadAction(ctx, c, nil).Go(),
-		),
 		h.Iff(!c.lb.disableModelListeners, func() h.HTMLComponent {
 			return web.Listen(
 				c.lb.mb.NotifModelsCreated(), stateful.ReloadAction(ctx, c, nil).Go(),

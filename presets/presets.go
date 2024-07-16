@@ -112,6 +112,10 @@ func New() *Builder {
 	return r
 }
 
+func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {
+	return b.dc
+}
+
 func (b *Builder) GetI18n() (r *i18n.Builder) {
 	return b.i18nBuilder
 }
@@ -1345,6 +1349,22 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		m.registerDefaultEventFuncs()
 		p.MergeHub(&m.EventsHub)
 	}
+	p.WrapEventFunc(func(in web.EventFunc) web.EventFunc {
+		return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+			r, err = in(ctx)
+			if err != nil {
+				return
+			}
+			wrapper, ok := getEventFuncAddonWrapper(ctx)
+			if !ok {
+				return
+			}
+			err = wrapper(func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+				return nil
+			})(ctx, &r)
+			return
+		}
+	})
 
 	handlers := b.GetI18n().EnsureLanguage(
 		p,

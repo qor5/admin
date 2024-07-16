@@ -1,53 +1,114 @@
 package activity
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
+	"github.com/spf13/cast"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const (
-	I18nActivityKey     i18n.ModuleKey = "I18nActivityKey"
-	DetailFieldTimeline string         = "Timeline"
-	ListFieldNotes      string         = "Notes"
+	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
+	paramHideDetailTop                = "hideDetailTop"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nActivityKey, Messages_ja_JP)
 
-	// if permB := b.GetPermission(); permB != nil {
-	// 	permB.CreatePolicies(ab.permPolicy)
-	// }
+	if permB := b.GetPermission(); permB != nil {
+		permB.CreatePolicies(ab.permPolicy)
+	}
+
 	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
 	return ab.logModelInstall(b, mb)
 }
 
+func defaultActionLabels(msgr *Messages) map[string]string {
+	return map[string]string{
+		"":           msgr.ActionAll,
+		ActionView:   msgr.ActionView,
+		ActionEdit:   msgr.ActionEdit,
+		ActionCreate: msgr.ActionCreate,
+		ActionDelete: msgr.ActionDelete,
+		ActionNote:   msgr.ActionNote,
+	}
+}
+
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		listing   = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
-		detailing = mb.Detailing("ModelDiffs")
+		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
+		dp = mb.Detailing("Detail").Drawer(true)
 	)
-	ab.lmb = mb
-	listing.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
+
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(model any, id string, ctx *web.EventContext) (r any, err error) {
+			r, err = in(model, id, ctx)
+			if err != nil {
+				return
+			}
+			log := r.(*ActivityLog)
+			if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+				return nil, err
+			}
+			return log, nil
+		}
+	})
+
+	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+				Query: "hidden = ?",
+				Args:  []any{false},
+			})
+			r, totalCount, err = in(model, params, ctx)
+			if totalCount <= 0 {
+				return
+			}
+			logs := r.([]*ActivityLog)
+			if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
+				return nil, 0, err
+			}
+			return logs, totalCount, nil
+		}
+	})
+
+	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
+
+	// TODO: should be able to delete log ?
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj any, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+
+	lb.Field("CreatedAt").Label(Messages_en_US.ModelCreatedAt).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format("2006-01-02 15:04:05 MST")))
+			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format(timeFormat)))
 		},
 	)
-	listing.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
-	listing.Field("ModelName").Label(Messages_en_US.ModelName)
-	listing.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
+	lb.Field("Creator").Label(Messages_en_US.ModelCreator).ComponentFunc(
+		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Td(h.Text(obj.(*ActivityLog).Creator.Name))
+		},
+	)
+	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
+	lb.Field("ModelName").Label(Messages_en_US.ModelName)
+	lb.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
 				return h.Td(h.Text("-"))
@@ -56,37 +117,44 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		},
 	)
 
-	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		var (
-			msgr      = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-			contextDB = ab.db
-		)
+	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		actionLabels := defaultActionLabels(msgr)
 
-		creatorGroups := []*ActivityLog{}
-		err := contextDB.Select("creator").Group("creator").Find(&creatorGroups).Error
+		var actionOptions []*vuetifyx.SelectItem
+		for _, action := range DefaultActions {
+			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
+				Text:  actionLabels[action],
+				Value: action,
+			})
+		}
+		actions := []string{}
+		err := ab.db.Model(&ActivityLog{}).Select("DISTINCT action AS action").Pluck("action", &actions).Error
+		if err != nil {
+			panic(err)
+		}
+		for _, action := range actions {
+			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
+				Text:  string(action),
+				Value: string(action),
+			})
+		}
+		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
+
+		creatorIDs := []string{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT creator_id AS id").Pluck("id", &creatorIDs).Error
+		if err != nil {
+			panic(err)
+		}
+		creators, err := ab.findUsers(ctx.R.Context(), creatorIDs)
 		if err != nil {
 			panic(err)
 		}
 		var creatorOptions []*vuetifyx.SelectItem
-
-		for _, creator := range creatorGroups {
+		for _, creator := range creators {
 			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Creator.Name,
-				Value: fmt.Sprint(creator.Creator.ID),
-			})
-		}
-
-		actionGroups := []*ActivityLog{}
-		err = contextDB.Select("action").Group("action").Order("action").Find(&actionGroups).Error
-		if err != nil {
-			panic(err)
-		}
-		var actionOptions []*vuetifyx.SelectItem
-
-		for _, action := range actionGroups {
-			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  string(action.Action),
-				Value: string(action.Action),
+				Text:  creator.Name,
+				Value: creator.ID,
 			})
 		}
 
@@ -98,7 +166,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		return []*vuetifyx.FilterItem{
+		filterData := []*vuetifyx.FilterItem{
 			{
 				Key:          "action",
 				Label:        msgr.FilterAction,
@@ -112,101 +180,115 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				ItemType:     vuetifyx.ItemTypeDatetimeRange,
 				SQLCondition: `created_at %s ?`,
 			},
-			{
-				Key:          "creator",
+		}
+		if len(creatorOptions) > 0 {
+			filterData = append(filterData, &vuetifyx.FilterItem{
+				Key:          "creator_id",
 				Label:        msgr.FilterCreator,
 				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator %s ?`,
+				SQLCondition: `creator_id %s ?`,
 				Options:      creatorOptions,
-			},
-			{
+			})
+		}
+		if len(modelOptions) > 0 {
+			filterData = append(filterData, &vuetifyx.FilterItem{
 				Key:          "model",
 				Label:        msgr.FilterModel,
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `model_name %s ?`,
 				Options:      modelOptions,
-			},
+			})
 		}
+		return filterData
 	})
 
-	listing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return []*presets.FilterTab{
-			{
-				Label: msgr.ActionAll,
-				Query: url.Values{"action": []string{}},
-			},
-			{
-				Label: msgr.ActionEdit,
-				Query: url.Values{"action": []string{string(ActionEdit)}},
-			},
-			{
-				Label: msgr.ActionCreate,
-				Query: url.Values{"action": []string{string(ActionCreate)}},
-			},
-			{
-				Label: msgr.ActionDelete,
-				Query: url.Values{"action": []string{string(ActionDelete)}},
-			},
-		}
+		actionLabels := defaultActionLabels(msgr)
+		return lo.Map(append([]string{""}, DefaultActions...), func(action string, _ int) *presets.FilterTab {
+			filterTab := &presets.FilterTab{
+				Label: actionLabels[action],
+				Query: url.Values{"action": []string{action}},
+			}
+			if action == "" {
+				filterTab.Query.Del("action")
+			}
+			return filterTab
+		})
 	})
 
-	detailing.Field("ModelDiffs").Label("Detail").ComponentFunc(
+	dp.Field("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
-				record = obj.(*ActivityLog)
-				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+				log           = obj.(*ActivityLog)
+				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
 			)
-			var detailElems []h.HTMLComponent
-			detailElems = append(detailElems, VCard(
-				VCardTitle(
-					VBtn("").Children(
-						VIcon("mdi-account").Class("pr-2").Size(SizeSmall),
-					).Icon(true).Attr("@click", "window.history.back()"),
-					h.Text(" "+msgr.DiffDetail),
-				),
-				VCardText(
-					// vuetif.VAvatar().Class("mr-2").Children(
-					//	VIcon("mdi-account").Size(SizeSmall),
-					// ),
-					h.Text(" "+msgr.DiffDetail),
-				),
-				VTable(
-					h.Tbody(
-						h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(record.Creator.Name))),
-						h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprintf("%v", record.UserID)))),
-						h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(string(record.Action)))),
-						h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(record.ModelName))),
-						h.Tr(
-							h.Td(h.Text(msgr.ModelLabel)),
-							h.Td(h.Text(func() string {
-								if record.ModelLabel == "" {
-									return "-"
-								}
-								return record.ModelLabel
-							}())),
-						),
-						h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(record.ModelKeys))),
-						h.If(record.ModelLink != "", h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(h.Text(record.ModelLink)))),
-						h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(record.CreatedAt.Format("2006-01-02 15:04:05 MST")))),
+			var children []h.HTMLComponent
+			if !hideDetailTop {
+				children = append(children, VCard().Elevation(0).Children(
+					VCardTitle().Class("pa-0").Children(
+						h.Text(" "+msgr.DiffDetail),
 					),
-				),
-			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
-
-			if d := field.Value(obj).(string); d != "" {
-				detailElems = append(detailElems, DiffComponent(d, ctx.R))
+					VCardText().Class("pa-0 pt-3").Children(
+						VTable(
+							h.Tbody(
+								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(log.Creator.Name))),
+								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprint(log.CreatorID)))),
+								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(log.Action))),
+								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(log.ModelName))),
+								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(cmp.Or(log.ModelLabel, "-")))),
+								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(log.ModelKeys))),
+								h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
+									v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+										Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+										Attr("@click", web.POST().
+											EventFunc(actions.DetailingDrawer).
+											Query(presets.ParamOverlay, actions.Dialog).
+											URL(log.ModelLink).
+											Go(),
+										),
+								)),
+								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
+							),
+						),
+					),
+				))
 			}
 
-			return h.Components(detailElems...)
+			if d := field.Value(obj).(string); d != "" {
+				switch log.Action {
+				case ActionCreate, ActionView, ActionEdit, ActionDelete:
+					children = append(children, DiffComponent(d, ctx.R))
+				case ActionNote:
+					note := &Note{}
+					if err := json.Unmarshal([]byte(log.Detail), note); err != nil {
+						panic(err)
+					}
+					children = append(children, VCard().Elevation(0).Children(
+						VCardTitle().Class("pa-0").Children(
+							h.Text(msgr.ActionNote),
+						),
+						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
+							h.Div().Class("d-flex flex-column").Children(
+								h.Pre(note.Note).Style("white-space: pre-wrap"),
+								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
+									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
+										h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
+									)
+								}),
+							),
+						),
+					))
+				default:
+					children = append(children, h.Text(msgr.PerformAction(log.Action, log.Detail)))
+				}
+			}
+
+			return h.Div().Class("d-flex flex-column ga-3").Children(children...)
 		},
 	)
 	return nil
-}
-
-func fixSpecialChars(str string) string {
-	str = strings.Replace(str, "{", "[", -1)
-	str = strings.Replace(str, "}", "]", -1)
-	return str
 }
 
 func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
@@ -221,23 +303,23 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	}
 
 	var (
-		newdiffs    []Diff
+		addediffs   []Diff
 		changediffs []Diff
 		deletediffs []Diff
 	)
 
 	for _, diff := range diffs {
-		if diff.Now == "" && diff.Old != "" {
+		if diff.New == "" && diff.Old != "" {
 			deletediffs = append(deletediffs, diff)
 			continue
 		}
 
-		if diff.Now != "" && diff.Old == "" {
-			newdiffs = append(newdiffs, diff)
+		if diff.New != "" && diff.Old == "" {
+			addediffs = append(addediffs, diff)
 			continue
 		}
 
-		if diff.Now != "" && diff.Old != "" {
+		if diff.New != "" && diff.Old != "" {
 			changediffs = append(changediffs, diff)
 			continue
 		}
@@ -245,23 +327,25 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	var diffsElems []h.HTMLComponent
 	msgr := i18n.MustGetModuleMessages(req, I18nActivityKey, Messages_en_US).(*Messages)
 
-	if len(newdiffs) > 0 {
+	if len(addediffs) > 0 {
 		var elems []h.HTMLComponent
-		for _, d := range newdiffs {
+		for _, d := range addediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Now)),
+				h.Td().Attr("v-pre", true).Text(d.New),
 			))
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffNew)),
-				VTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-					h.Tbody(elems...),
+			VCard().Elevation(0).Children(
+				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffAdd)),
+				VCardText().Class("pa-0 pt-3").Children(
+					VTable(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Tbody(elems...),
+					),
 				),
-			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			))
 	}
 
 	if len(deletediffs) > 0 {
@@ -269,18 +353,20 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		for _, d := range deletediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Old)),
+				h.Td().Attr("v-pre", true).Text(d.Old),
 			))
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffDelete)),
-				VTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
-					h.Tbody(elems...),
+			VCard().Elevation(0).Children(
+				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffDelete)),
+				VCardText().Class("pa-0 pt-3").Children(
+					VTable(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Tbody(elems...),
+					),
 				),
-			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			))
 	}
 
 	if len(changediffs) > 0 {
@@ -288,19 +374,21 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		for _, d := range changediffs {
 			elems = append(elems, h.Tr(
 				h.Td().Text(d.Field),
-				h.Td().Text(fixSpecialChars(d.Old)),
-				h.Td().Text(fixSpecialChars(d.Now)),
+				h.Td().Attr("v-pre", true).Text(d.Old),
+				h.Td().Attr("v-pre", true).Text(d.New),
 			))
 		}
 
 		diffsElems = append(diffsElems,
-			VCard(
-				VCardTitle(h.Text(msgr.DiffChanges)),
-				VTable(
-					h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNow))),
-					h.Tbody(elems...),
+			VCard().Elevation(0).Children(
+				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffChanges)),
+				VCardText().Class("pa-0 pt-3").Children(
+					VTable(
+						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNew))),
+						h.Tbody(elems...),
+					),
 				),
-			).Attr("style", "margin-top:15px;margin-bottom:15px;"))
+			))
 	}
 	return h.Components(diffsElems...)
 }

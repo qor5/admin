@@ -76,11 +76,13 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 				return
 			}
 			if len(toObjs) > 0 {
-				if err = ab.AddCustomizedRecord(LocalizeFrom, false, ctx.R.Context(), fromObj); err != nil {
+				_, err = ab.Log(ctx.R.Context(), LocalizeFrom, fromObj, nil)
+				if err != nil {
 					return
 				}
 				for _, toObj := range toObjs {
-					if err = ab.AddCustomizedRecord(LocalizeTo, false, ctx.R.Context(), toObj); err != nil {
+					_, err = ab.Log(ctx.R.Context(), LocalizeTo, toObj, nil)
+					if err != nil {
 						return
 					}
 				}

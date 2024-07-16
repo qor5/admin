@@ -314,6 +314,10 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		db.First(&c)
 		return []*presets.FilterTab{
 			{
+				Label: "All",
+				Query: url.Values{"all": []string{"1"}},
+			},
+			{
 				Label: "Felix",
 				Query: url.Values{"name.ilike": []string{"felix"}},
 			},
@@ -324,10 +328,6 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 			{
 				Label: "Approved",
 				Query: url.Values{"approved.gt": []string{fmt.Sprint(1)}},
-			},
-			{
-				Label: "All",
-				Query: url.Values{"all": []string{"1"}},
 			},
 		}
 	})

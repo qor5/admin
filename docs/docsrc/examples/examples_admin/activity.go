@@ -7,8 +7,6 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
-	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -16,14 +14,14 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	activityBuilder := activity.New(db).AutoMigrate().CurrentUserFunc(func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
 		return &activity.User{
-			ID:     1,
+			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
 		}
-	})
-	b.Use(activityBuilder)
+	}).AutoMigrate()
+	b.Use(ab)
 
 	// @snippet_end
 
@@ -40,25 +38,23 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 
-	productModel := b.Model(&WithActivityProduct{}).Use(activityBuilder)
+	mb := b.Model(&WithActivityProduct{})
 
-	bt := productModel.Detailing("Content", activity.DetailFieldTimeline).Drawer(true)
-	bt.Section("Content").
-		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-			return Div().Text("text")
-		}).Editing("Title", "Code", "Price")
+	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 
-	activityBuilder.RegisterModel(productModel).
-		AddKeys("Title").
-		AddIgnoredFields("Code").
-		SkipDelete()
+	dp := mb.Detailing("Content", activity.FieldTimeline).Drawer(true)
+	dp.Section("Content").Editing("Title", "Code", "Price")
+
+	mb.Use(ab)
+	ab.MustGetModelBuilder(mb).SkipView()
 
 	// @snippet_end
 
 	// @snippet_begin(ActivityRecordLogSample)
 
-	activityBuilder.AddRecords("Publish", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100})
-	activityBuilder.AddRecords("Update Price", context.TODO(), &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200})
+	// ctx := context.Background()
+	// ab.Log(ctx, "Publish", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 100}, nil)
+	// ab.Log(ctx, "Update Price", &WithActivityProduct{Title: "Product 1", Code: "P1", Price: 200}, nil)
 
 	// @snippet_end
 	return b

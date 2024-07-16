@@ -101,14 +101,13 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}).
 		Editing("Name", "Price")
 
-	ab := activity.New(db).
-		AutoMigrate().
-		CurrentUserFunc(func(ctx context.Context) *activity.User {
-			return &activity.User{
-				ID:   1,
-				Name: "John",
-			}
-		})
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
+		return &activity.User{
+			ID:   "1",
+			Name: "John",
+		}
+	}).
+		AutoMigrate()
 	publisher := publish.New(db, nil).Activity(ab)
 	b.Use(publisher)
 	mb.Use(publisher)

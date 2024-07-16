@@ -23,9 +23,8 @@ import (
 )
 
 type Builder struct {
-	db      *gorm.DB
-	storage oss.StorageInterface
-	// models            []*presets.ModelBuilder
+	db                *gorm.DB
+	storage           oss.StorageInterface
 	ab                *activity.Builder
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
@@ -58,7 +57,6 @@ func (b *Builder) AfterInstall(f func()) *Builder {
 
 func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) error {
 	db := b.db
-	ab := b.ab
 
 	obj := m.NewModel()
 	_ = obj.(presets.SlugEncoder)
@@ -99,7 +97,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 		}
 	}
 
-	registerEventFuncsForResource(db, m, b, ab)
+	registerEventFuncsForResource(db, m, b)
 	return nil
 }
 
