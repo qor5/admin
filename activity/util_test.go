@@ -233,7 +233,7 @@ func TestParsePrimaryFields(t *testing.T) {
 	}
 }
 
-func TestGetPrimaryKeys(t *testing.T) {
+func TestParsePrimaryKeys(t *testing.T) {
 	type TestModel struct {
 		ID   uint `gorm:"primaryKey"`
 		Name string
