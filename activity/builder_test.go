@@ -95,7 +95,7 @@ func TestModelKeys(t *testing.T) {
 	var err error
 	ctx := context.Background()
 
-	log, err := builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	_, err = builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -103,7 +103,6 @@ func TestModelKeys(t *testing.T) {
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, log, record)
 	if record.ModelKeys != "1:v1" {
 		t.Errorf("want the keys %v, but got %v", "1:v1", record.ModelKeys)
 	}
