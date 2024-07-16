@@ -95,7 +95,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err != nil {
 					return err
 				}
-				log, err := amb.Create(ctx.R.Context(), obj)
+				log, err := amb.OnCreate(ctx.R.Context(), obj)
 				if err != nil {
 					return err
 				}
@@ -111,7 +111,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				if err := in(obj, id, ctx); err != nil {
 					return err
 				}
-				log, err := amb.Edit(ctx.R.Context(), old, obj)
+				log, err := amb.OnEdit(ctx.R.Context(), old, obj)
 				if err != nil {
 					return err
 				}
@@ -134,7 +134,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			if err := in(obj, id, ctx); err != nil {
 				return err
 			}
-			log, err := amb.Delete(ctx.R.Context(), old)
+			log, err := amb.OnDelete(ctx.R.Context(), old)
 			if err != nil {
 				return err
 			}
@@ -159,7 +159,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		})
 		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if amb.skip&View == 0 {
-				log, err := amb.View(ctx.R.Context(), obj)
+				log, err := amb.OnView(ctx.R.Context(), obj)
 				if err != nil {
 					panic(err)
 				}
@@ -368,15 +368,15 @@ func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail 
 	return mb.create(ctx, action, ParseModelName(obj), mb.ParseModelKeys(obj), mb.modelLink(obj), detail)
 }
 
-func (mb *ModelBuilder) Create(ctx context.Context, v any) (*ActivityLog, error) {
+func (mb *ModelBuilder) OnCreate(ctx context.Context, v any) (*ActivityLog, error) {
 	return mb.Log(ctx, ActionCreate, v, nil)
 }
 
-func (mb *ModelBuilder) View(ctx context.Context, v any) (*ActivityLog, error) {
+func (mb *ModelBuilder) OnView(ctx context.Context, v any) (*ActivityLog, error) {
 	return mb.Log(ctx, ActionView, v, nil)
 }
 
-func (mb *ModelBuilder) Edit(ctx context.Context, old any, new any) (*ActivityLog, error) {
+func (mb *ModelBuilder) OnEdit(ctx context.Context, old any, new any) (*ActivityLog, error) {
 	diffs, err := mb.Diff(old, new)
 	if err != nil {
 		return nil, err
@@ -389,7 +389,7 @@ func (mb *ModelBuilder) Edit(ctx context.Context, old any, new any) (*ActivityLo
 	return mb.Log(ctx, ActionEdit, new, diffs)
 }
 
-func (mb *ModelBuilder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
+func (mb *ModelBuilder) OnDelete(ctx context.Context, v any) (*ActivityLog, error) {
 	return mb.Log(ctx, ActionDelete, v, nil)
 }
 

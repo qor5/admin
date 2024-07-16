@@ -205,6 +205,8 @@ func NewConfig(db *gorm.DB) Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
+	publisher.Activity(ab)
+
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	configureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
@@ -327,8 +329,6 @@ func NewConfig(db *gorm.DB) Config {
 	l10nM, l10nVM := configL10nModel(db, b)
 	l10nM.Use(l10nBuilder)
 	l10nVM.Use(l10nBuilder)
-
-	publisher.Activity(ab)
 
 	initLoginBuilder(db, b, ab)
 
@@ -522,12 +522,9 @@ func configPost(
 	ab *activity.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
-	m.Use(
-		slug.New(),
-		publisher,
-	)
+	m.Use(slug.New())
 	defer func() {
-		m.Use(ab)
+		m.Use(publisher, ab)
 	}()
 
 	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", activity.ListFieldNotes).
@@ -631,7 +628,7 @@ func configPost(
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 
-	m.Detailing("Title", "Body", activity.FieldTimeline)
+	m.Detailing(publish.VersionsPublishBar, "Title", "Body", activity.FieldTimeline).Drawer(true)
 	return m
 }
 

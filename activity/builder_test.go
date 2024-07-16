@@ -95,7 +95,7 @@ func TestModelKeys(t *testing.T) {
 	var err error
 	ctx := context.Background()
 
-	log, err := builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	log, err := builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestModelKeys(t *testing.T) {
 	resetDB()
 
 	builder.RegisterModel(widgetModel).AddKeys("Name")
-	_, err = builder.Create(ctx, Widget{Name: "Text 01", Title: "123"})
+	_, err = builder.OnCreate(ctx, Widget{Name: "Text 01", Title: "123"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestModelLink(t *testing.T) {
 	resetDB()
 
 	ctx := context.Background()
-	builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -199,7 +199,7 @@ func TestModelTypeHanders(t *testing.T) {
 
 	resetDB()
 	ctx := context.Background()
-	builder.Edit(ctx,
+	builder.OnEdit(ctx,
 		Page{
 			ID: 1, VersionName: "v1", Title: "test",
 			Widgets: []Widget{
@@ -235,7 +235,7 @@ func TestCreatorInferface(t *testing.T) {
 	resetDB()
 
 	ctx := context.Background()
-	builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	record := &ActivityLog{}
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
@@ -254,19 +254,19 @@ func TestGetActivityLogs(t *testing.T) {
 	resetDB()
 
 	ctx := context.Background()
-	_, err := builder.Create(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	_, err := builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
 	if err != nil {
 		t.Fatalf("failed to add create record: %v", err)
 	}
-	_, err = builder.Edit(ctx, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"})
+	_, err = builder.OnEdit(ctx, Page{ID: 1, VersionName: "v1", Title: "test"}, Page{ID: 1, VersionName: "v1", Title: "test1"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	_, err = builder.Edit(ctx, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
+	_, err = builder.OnEdit(ctx, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	_, err = builder.Edit(ctx, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"})
+	_, err = builder.OnEdit(ctx, Page{ID: 2, VersionName: "v1", Title: "test1"}, Page{ID: 2, VersionName: "v1", Title: "test2"})
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
@@ -312,7 +312,7 @@ func TestMutliModelBuilder(t *testing.T) {
 
 	// add create record
 	db.Create(data1)
-	builder.Create(ctx, data1)
+	builder.OnCreate(ctx, data1)
 	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{
@@ -334,7 +334,7 @@ func TestMutliModelBuilder(t *testing.T) {
 	data1.Description = "Description1-1"
 	old, _ := FetchOld(db, data1)
 	db.Save(data1)
-	_, err := builder.Edit(ctx, old, data1)
+	_, err := builder.OnEdit(ctx, old, data1)
 	assert.NoError(t, err)
 
 	data2.Title = "test2-1"
@@ -381,7 +381,7 @@ func TestMutliModelBuilder(t *testing.T) {
 
 	// add delete record
 	db.Delete(data1)
-	builder.Delete(ctx, data1)
+	builder.OnDelete(ctx, data1)
 	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
 	{

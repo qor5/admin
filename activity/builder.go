@@ -237,36 +237,36 @@ func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*
 	return amb.Log(ctx, action, v, detail)
 }
 
-func (ab *Builder) Create(ctx context.Context, v any) (*ActivityLog, error) {
+func (ab *Builder) OnCreate(ctx context.Context, v any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(v)
 	if err != nil {
 		return nil, err
 	}
-	return amb.Create(ctx, v)
+	return amb.OnCreate(ctx, v)
 }
 
-func (ab *Builder) View(ctx context.Context, v any) (*ActivityLog, error) {
+func (ab *Builder) OnView(ctx context.Context, v any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(v)
 	if err != nil {
 		return nil, err
 	}
-	return amb.View(ctx, v)
+	return amb.OnView(ctx, v)
 }
 
-func (ab *Builder) Edit(ctx context.Context, old, new any) (*ActivityLog, error) {
+func (ab *Builder) OnEdit(ctx context.Context, old, new any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(new)
 	if err != nil {
 		return nil, err
 	}
-	return amb.Edit(ctx, old, new)
+	return amb.OnEdit(ctx, old, new)
 }
 
-func (ab *Builder) Delete(ctx context.Context, v any) (*ActivityLog, error) {
+func (ab *Builder) OnDelete(ctx context.Context, v any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(v)
 	if err != nil {
 		return nil, err
 	}
-	return amb.Delete(ctx, v)
+	return amb.OnDelete(ctx, v)
 }
 
 func (ab *Builder) Note(ctx context.Context, v any, note *Note) (*ActivityLog, error) {

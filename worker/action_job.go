@@ -121,7 +121,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	if b.ab != nil {
-		b.ab.Create(ctx.R.Context(),  job)
+		b.ab.OnCreate(ctx.R.Context(), job)
 	}
 
 	r.RunScript = web.Plaid().

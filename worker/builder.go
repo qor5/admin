@@ -264,7 +264,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			return err
 		}
 		if b.ab != nil {
-			b.ab.Create(ctx.R.Context(), j)
+			b.ab.OnCreate(ctx.R.Context(), j)
 		}
 		return
 	})
@@ -341,7 +341,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	})
 
 	if b.ab != nil {
-		b.ab.RegisterModel(mb).SkipCreate().SkipEdit().SkipDelete().
+		b.ab.RegisterModel(mb).SkipCreate().SkipView().SkipEdit().SkipDelete().
 			AddTypeHanders(time.Time{}, func(old, now interface{}, prefixField string) []activity.Diff {
 				fm := "2006-01-02 15:04:05"
 				oldString := old.(time.Time).Format(fm)
@@ -637,7 +637,7 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	er.Reload = true
 	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	if b.ab != nil {
-		b.ab.Edit(
+		b.ab.OnEdit(
 			ctx.R.Context(),
 			&QorJob{
 				Model: gorm.Model{
