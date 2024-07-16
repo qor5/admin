@@ -629,7 +629,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	}
 
 	for _, ba := range c.lb.actions {
-		if c.lb.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(evCtx.R).IsAllowed() != nil {
+		if c.lb.mb.Info().Verifier().SnakeDo(permDoListingAction, ba.name).WithReq(evCtx.R).IsAllowed() != nil {
 			continue
 		}
 
@@ -866,7 +866,7 @@ func (c *ListingCompo) fetchAction(evCtx *web.EventContext, name string) (*Actio
 		return nil, errors.New("cannot find requested action")
 	}
 
-	if c.lb.mb.Info().Verifier().SnakeDo(permActions, action.name).WithReq(evCtx.R).IsAllowed() != nil {
+	if c.lb.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(evCtx.R).IsAllowed() != nil {
 		return nil, perm.PermissionDenied
 	}
 
