@@ -352,12 +352,12 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 
 		return []*presets.FilterTab{
 			{
-				Label: msgr.FilterTabsActive,
-				Query: url.Values{"status": []string{"active"}},
-			},
-			{
 				Label: msgr.FilterTabsAll,
 				Query: url.Values{"all": []string{"1"}},
+			},
+			{
+				Label: msgr.FilterTabsActive,
+				Query: url.Values{"status": []string{"active"}},
 			},
 			{
 				Label: msgr.FilterTabsHasUnreadNotes,
