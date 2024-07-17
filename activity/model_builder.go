@@ -27,7 +27,6 @@ const (
 
 const (
 	Create = 1 << iota
-	View
 	Edit
 	Delete
 )
@@ -99,14 +98,6 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 		})
 	})
 	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
-		if amb.skip&View == 0 {
-			log, err := amb.OnView(ctx, obj)
-			if err != nil {
-				panic(err)
-			}
-			emitLogCreated(evCtx, log)
-		}
-
 		modelName := ParseModelName(obj)
 
 		log, err := amb.Log(ctx, ActionLastView, obj, nil)
@@ -322,17 +313,6 @@ func (mb *ModelBuilder) SkipCreate() *ModelBuilder {
 
 	if mb.skip&Create == 0 {
 		mb.skip |= Create
-	}
-	return mb
-}
-
-func (mb *ModelBuilder) SkipView() *ModelBuilder {
-	if mb.presetModel == nil {
-		panic("SkipView method only supports presets.ModelBuilder")
-	}
-
-	if mb.skip&View == 0 {
-		mb.skip |= View
 	}
 	return mb
 }

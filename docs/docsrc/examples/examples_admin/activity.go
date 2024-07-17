@@ -41,7 +41,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 
 	mb := b.Model(&WithActivityProduct{})
-	defer func() { ab.RegisterModel(mb).SkipView() }()
+	defer func() { ab.RegisterModel(mb) }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 	dp := mb.Detailing("Content").Drawer(true)
 	dp.Section("Content").Editing("Title", "Code", "Price")
