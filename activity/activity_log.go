@@ -35,11 +35,11 @@ type ActivityLog struct {
 
 func (*ActivityLog) AfterMigrate(tx *gorm.DB) error {
 	if err := tx.Exec(fmt.Sprintf(`
-		CREATE UNIQUE INDEX IF NOT EXISTS idx_model_name_keys_action_lastview
-		ON activity_logs (model_name, model_keys)
+		CREATE UNIQUE INDEX IF NOT EXISTS uix_creator_id_model_name_keys_action_lastview
+		ON activity_logs (creator_id, model_name, model_keys)
 		WHERE action = '%s' AND deleted_at IS NULL
 	`, ActionLastView)).Error; err != nil {
-		return errors.Wrap(err, "failed to create index idx_model_name_keys_action_lastview")
+		return errors.Wrap(err, "failed to create index uix_creator_id_model_name_keys_action_lastview")
 	}
 	return nil
 }

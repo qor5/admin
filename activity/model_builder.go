@@ -145,7 +145,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	})
 
 	eb := mb.Editing()
-	dp := mb.Detailing()
 	lb := mb.Listing()
 
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
@@ -203,11 +202,14 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		}
 	})
 
-	detailFieldTimeline := dp.GetField(FieldTimeline)
-	if detailFieldTimeline != nil {
-		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return amb.NewTimelineCompo(ctx, obj, ":"+FieldTimeline)
-		})
+	if mb.HasDetailing() {
+		dp := mb.Detailing()
+		detailFieldTimeline := dp.GetField(FieldTimeline)
+		if detailFieldTimeline != nil {
+			detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return amb.NewTimelineCompo(ctx, obj, ":"+FieldTimeline)
+			})
+		}
 	}
 
 	listFieldNotes := lb.GetField(ListFieldNotes)
