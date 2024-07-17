@@ -9,20 +9,20 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/role"
+	"github.com/sunfmin/reflectutils"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -30,7 +30,7 @@ import (
 func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	defer func() { user.Use(ab) }()
+	defer func() { ab.RegisterModel(user) }()
 
 	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
@@ -59,6 +59,12 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 		"Status",
 		"FavorPostID",
 	)
+	ed.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		if ctx.R.FormValue(presets.ParamID) == "" {
+			return nil
+		}
+		return ab.MustGetModelBuilder(user).NewTimelineCompo(ctx, obj, "_side")
+	})
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
@@ -232,13 +238,11 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				})
 			}
 
-			return vx.VXAutocomplete().Label(field.Label).
-				// ItemText("text").ItemValue("value").
-				Attr(web.VField(field.Name, values)...).
-				Multiple(true).Chips(true).Clearable(true).DeletableChips(true).
-				SelectedItems(selectedItems).
-				Items(allRoleItems).
-				CacheItems(true)
+			return VAutocomplete().Label(field.Label).Chips(true).
+				Items(allRoleItems).ItemTitle("text").ItemValue("value").
+				Multiple(true).Attr(web.VField(field.Name, values)...).
+				ErrorMessages(field.Errors...).
+				Disabled(field.Disabled)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			u, ok := obj.(*models.User)
@@ -281,7 +285,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	configureFavorPostSelectDialog(db, b, publisher)
 	ed.Field("FavorPostID").Label("Favorite Post").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		id := field.Value(obj).(uint)
-		return web.Portal(favorPostSelector(db, id)).Name("favorPostSelector")
+		return web.Portal(favorPostSelector(db, id)).Name(portalFavorPostSelector)
 	})
 
 	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
@@ -290,12 +294,14 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			if u.GetAccountName() == loginInitialUserEmail {
 				return perm.PermissionDenied
 			}
-			u.RegistrationDate = time.Now()
+			if u.RegistrationDate.IsZero() {
+				u.RegistrationDate = time.Now()
+			}
 			return in(obj, id, ctx)
 		}
 	})
 
-	cl := user.Listing("ID", "Name", "Account", "Status", "Notes").PerPage(10)
+	cl := user.Listing("ID", "Name", "Account", "Status", activity.ListFieldNotes).PerPage(10)
 	cl.Field("Account").Label("Email")
 	cl.SearchColumns("users.Name", "Account")
 
@@ -368,6 +374,12 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	})
 }
 
+const (
+	eventSelectFavorPost          = "selectFavorPost"
+	portalFavorPostSelector       = "favorPostSelector"
+	uriNameDialogSelectFavorPosts = "dialog-select-favor-posts"
+)
+
 func favorPostSelector(db *gorm.DB, id uint) h.HTMLComponent {
 	var items []*models.Post
 	if id > 0 {
@@ -376,25 +388,20 @@ func favorPostSelector(db *gorm.DB, id uint) h.HTMLComponent {
 			items = append(items, p)
 		}
 	}
-	return h.Div(
-		VAutocomplete().
-			Label("Favorite Post").
-			Attr(web.VField("FavorPostID", id)...).
-			Items(items).
-			ItemTitle("Title").
-			ItemValue("ID").
-			Readonly(true).
-			Clearable(true),
-	).Attr("@click", web.Plaid().EventFunc(actions.OpenListingDialog).
-		URL("/dialog-select-favor-posts").
-		Go())
+	selectCompo := VSelect().Label("Favorite Post").Readonly(true).Clearable(true)
+	if len(items) > 0 {
+		selectCompo.Attr(web.VField("FavorPostID", id)...).Items(items).ItemTitle("Title").ItemValue("ID")
+	}
+	return h.Div(selectCompo).Attr("@click", web.Plaid().URL("/"+uriNameDialogSelectFavorPosts).EventFunc(actions.OpenListingDialog).Go())
 }
 
 func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher *publish.Builder) {
 	b := pb.Model(&models.Post{}).
-		URIName("dialog-select-favor-posts").
+		URIName(uriNameDialogSelectFavorPosts).
 		InMenu(false).Use(publisher)
+
 	lb := b.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body").
+		DialogWidth("900px").
 		SearchColumns("title", "body").
 		PerPage(10).
 		OrderableFields([]*presets.OrderableField{
@@ -414,7 +421,7 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
 		cell.SetAttr("@click.self", web.Plaid().
 			Query("id", strings.Split(id, "_")[0]).
-			EventFunc("selectFavorPost").
+			EventFunc(eventSelectFavorPost).
 			Go(),
 		)
 		return cell
@@ -471,7 +478,7 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 	// 	return VBtn("Confirm").
 	// 		Color("primary").
 	// 		Attr("@click", web.Plaid().
-	// 			EventFunc("selectFavorPost").
+	// 			EventFunc(eventSelectFavorPost).
 	// 			Query("ids", ctx.R.URL.Query().Get(presets.ParamSelectedIds)).
 	// 			MergeQuery(true).
 	// 			Go())
@@ -479,14 +486,14 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 }
 
 func registerSelectFavorPostEvent(db *gorm.DB, b *presets.Builder) {
-	b.GetWebBuilder().RegisterEventFunc("selectFavorPost", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	b.GetWebBuilder().RegisterEventFunc(eventSelectFavorPost, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var id uint
 		if v := ctx.R.FormValue("id"); v != "" {
 			iv, _ := strconv.Atoi(v)
 			id = uint(iv)
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: "favorPostSelector",
+			Name: portalFavorPostSelector,
 			Body: favorPostSelector(db, id),
 		})
 		web.AppendRunScripts(&r, presets.CloseListingDialogVarScript)

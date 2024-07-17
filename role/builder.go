@@ -116,25 +116,27 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		return
 	})
 	permFb.Field("Actions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		policy := obj.(*perm.DefaultDBPolicy)
 		return VAutocomplete().
 			Variant(FieldVariantUnderlined).
 			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
+			Attr(web.VField(field.FormKey, policy.Actions)...).
 			Multiple(true).
 			Chips(true).
 			ClosableChips(true).
-			Items(b.actions)
+			Items(b.actions).ItemTitle("text").ItemValue("value")
 	})
 
 	permFb.Field("Resources").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		policy := obj.(*perm.DefaultDBPolicy)
 		return VAutocomplete().
 			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.StringValue(obj))...).
+			Attr(web.VField(field.FormKey, policy.Resources)...).
 			Label(field.Label).
 			Multiple(true).
 			Chips(true).
 			ClosableChips(true).
-			Items(b.resources)
+			Items(b.resources).ItemTitle("text").ItemValue("value")
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		p := obj.(*perm.DefaultDBPolicy)
 		p.Resources = ctx.R.Form[field.FormKey]
