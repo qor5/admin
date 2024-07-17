@@ -26,9 +26,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/web/v3 v3.0.5-0.20240705134640-e88838872a76
+	github.com/qor5/web/v3 v3.0.5-0.20240717040023-4b80a69c031d
 	github.com/qor5/x/v3 v3.0.6-0.20240715061803-5a7484258739
-	github.com/samber/lo v1.40.0
+	github.com/samber/lo v1.46.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
@@ -160,7 +160,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -34,6 +35,8 @@ const (
 // @snippet_begin(ActivityModelBuilder)
 // a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
+	once sync.Once
+
 	ref           any                          // model ref
 	typ           reflect.Type                 // model type
 	ab            *Builder                     // activity builder
@@ -58,6 +61,79 @@ type PayloadLastViewedAtUpdated struct {
 	Log *ActivityLog `json:"log"`
 }
 
+func emitLogCreated(evCtx *web.EventContext, log *ActivityLog) {
+	if log == nil {
+		return
+	}
+	presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+		return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+			if err = in(ctx, r); err != nil {
+				return
+			}
+			r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
+				Models: []any{log},
+			})
+			return
+		}
+	})
+}
+
+func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSuffix string) h.HTMLComponent {
+	if amb.presetModel == nil {
+		panic("NewTimelineCompo method only supports presets.ModelBuilder")
+	}
+	mb := amb.presetModel
+
+	injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+	dc := mb.GetPresetsBuilder().GetDependencyCenter()
+	amb.once.Do(func() {
+		dc.RegisterInjector(injectorName)
+		dc.MustProvide(injectorName, func() *Builder {
+			return amb.ab
+		})
+		dc.MustProvide(injectorName, func() *ModelBuilder {
+			return amb
+		})
+		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
+			return mb
+		})
+	})
+	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
+		if amb.skip&View == 0 {
+			log, err := amb.OnView(ctx, obj)
+			if err != nil {
+				panic(err)
+			}
+			emitLogCreated(evCtx, log)
+		}
+
+		modelName := ParseModelName(obj)
+
+		log, err := amb.Log(ctx, ActionLastView, obj, nil)
+		if err != nil {
+			panic(err)
+		}
+		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+				if err = in(ctx, r); err != nil {
+					return
+				}
+				// this action is special, so we use a separate notification
+				r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+				return
+			}
+		})
+
+		keys := amb.ParseModelKeys(obj)
+		return dc.MustInject(injectorName, &TimelineCompo{
+			ID:        mb.Info().URIName() + ":" + keys + idSuffix,
+			ModelName: modelName,
+			ModelKeys: keys,
+			ModelLink: amb.link(obj),
+		}).MarshalHTML(ctx)
+	})
+}
+
 func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
@@ -72,22 +148,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	dp := mb.Detailing()
 	lb := mb.Listing()
 
-	emitLogCreated := func(evCtx *web.EventContext, log *ActivityLog) {
-		if log == nil {
-			return
-		}
-		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-				if err = in(ctx, r); err != nil {
-					return
-				}
-				r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
-					Models: []any{log},
-				})
-				return
-			}
-		})
-	}
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if id == "" && amb.skip&Create == 0 {
@@ -145,51 +205,8 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 
 	detailFieldTimeline := dp.GetField(FieldTimeline)
 	if detailFieldTimeline != nil {
-		injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
-		dc := mb.GetPresetsBuilder().GetDependencyCenter()
-		dc.RegisterInjector(injectorName)
-		dc.MustProvide(injectorName, func() *Builder {
-			return amb.ab
-		})
-		dc.MustProvide(injectorName, func() *ModelBuilder {
-			return amb
-		})
-		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
-			return mb
-		})
 		detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			if amb.skip&View == 0 {
-				log, err := amb.OnView(ctx.R.Context(), obj)
-				if err != nil {
-					panic(err)
-				}
-				emitLogCreated(ctx, log)
-			}
-
-			modelName := ParseModelName(obj)
-
-			log, err := amb.Log(ctx.R.Context(), ActionLastView, obj, nil)
-			if err != nil {
-				panic(err)
-			}
-			presets.WrapEventFuncAddon(ctx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-				return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-					if err = in(ctx, r); err != nil {
-						return
-					}
-					// this action is special, so we use a separate notification
-					r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
-					return
-				}
-			})
-
-			keys := amb.ParseModelKeys(obj)
-			return dc.MustInject(injectorName, &TimelineCompo{
-				ID:        mb.Info().URIName() + ":" + keys,
-				ModelName: modelName,
-				ModelKeys: keys,
-				ModelLink: amb.link(obj),
-			})
+			return amb.NewTimelineCompo(ctx, obj, ":"+FieldTimeline)
 		})
 	}
 

@@ -235,7 +235,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 					),
 				),
 			),
-			h.Div().Class("d-flex flex-column").Style("text-body-2").Children(
+			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Children(
 				children...,
 			),
 		),

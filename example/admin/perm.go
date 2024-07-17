@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	models2 "github.com/qor5/admin/v3/activity"
-
 	"github.com/ory/ladon"
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/x/v3/perm"
@@ -42,7 +41,7 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 			c := make(perm.Context)
 			for _, obj := range objs {
 				switch v := obj.(type) {
-				case *models2.ActivityLog:
+				case *activity.ActivityLog:
 					u := getCurrentUser(r)
 					if fmt.Sprint(u.GetID()) == v.CreatorID {
 						c["is_authorized"] = true
