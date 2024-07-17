@@ -5,12 +5,17 @@
 - Firstly, you should create an activity instance in your project.
 
   ```go
-  activity := activity.New(presetsBuilder, db, logModel)
+  activity := activity.New(db, currentUserFunc)
   ```
 
-  - presetsBuilder (Required), it is a instance of `presets.Builder` to register activity into presets.
-  - db (Required), it is a global database instance. we will use it if we don't find the specific database instance in a operation.
-  - logModel (Optional), you can use your own model table to record the activity log as long as the model implements the `ActivityLogModel` interface.
+  - db (Required): The database where activity_logs is stored.
+  - currentUserFunc (Required): You need to provide this method to get the creator.
+
+- Register activity into presets
+
+  ```go
+  activityBuilder.Install(presetsBuilder)
+  ```
 
 - Register normal model or a `presets.ModelBuilder` into activity
 
@@ -51,13 +56,13 @@
   - When a struct type only have one `activity.ModelBuilder`, you can use `activity` to record the log directly.
 
     ```go
-      activity.AddRecords(ActivityEdit, ctx, record)
-      activity.AddRecords(ActivityCreate, ctx, record)
+      activity.OnEdit(ctx, old, new)
+      activity.OnCreate(ctx, obj)
     ```
 
   - When a struct type have multiple `activity.ModelBuilder`, you need to get the corresponding `activity.ModelBuilder` and then use it to record the log.
 
     ```go
-      activity.MustGetModelBuilder(presetModel1).AddRecords(ActivityEdit, ctx, record)
-      activity.MustGetModelBuilder(presetModel2).AddRecords(ActivityEdit, ctx, record)
+      activity.MustGetModelBuilder(presetModel1).OnEdit(ctx, old, new)
+      activity.MustGetModelBuilder(presetModel2).OnCreate(ctx, obj)
     ```

@@ -341,7 +341,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	})
 
 	if b.ab != nil {
-		b.ab.RegisterModel(mb).SkipCreate().SkipView().SkipEdit().SkipDelete().
+		b.ab.RegisterModel(mb).SkipCreate().SkipEdit().SkipDelete().
 			AddTypeHanders(time.Time{}, func(old, now interface{}, prefixField string) []activity.Diff {
 				fm := "2006-01-02 15:04:05"
 				oldString := old.(time.Time).Format(fm)
