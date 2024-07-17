@@ -30,7 +30,7 @@ import (
 func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
-	defer func() { ab.RegisterModel(user).SkipView() }()
+	defer func() { ab.RegisterModel(user) }()
 
 	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 		u := getCurrentUser(ctx.R)
@@ -238,7 +238,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				})
 			}
 
-			return VSelect().Label(field.Label).Chips(true).
+			return VAutocomplete().Label(field.Label).Chips(true).
 				Items(allRoleItems).ItemTitle("text").ItemValue("value").
 				Multiple(true).Attr(web.VField(field.Name, values)...).
 				ErrorMessages(field.Errors...).
