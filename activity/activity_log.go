@@ -34,6 +34,10 @@ type ActivityLog struct {
 }
 
 func (*ActivityLog) AfterMigrate(tx *gorm.DB) error {
+	// just a forward compatible
+	if err := tx.Exec(`DROP INDEX IF EXISTS idx_model_name_keys_action_lastview`).Error; err != nil {
+		return errors.Wrap(err, "failed to drop index idx_model_name_keys_action_lastview")
+	}
 	if err := tx.Exec(fmt.Sprintf(`
 		CREATE UNIQUE INDEX IF NOT EXISTS uix_creator_id_model_name_keys_action_lastview
 		ON activity_logs (creator_id, model_name, model_keys)
