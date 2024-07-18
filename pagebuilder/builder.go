@@ -23,7 +23,6 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
@@ -596,100 +595,36 @@ func (b *Builder) configDetailLayoutFunc(
 	db *gorm.DB,
 ) {
 	oldDetailLayout := pb.GetDetailLayoutFunc()
+	oldLayout := pb.GetLayoutFunc()
+	pb.LayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
+		pb.PageTitleFunc(nil)
+		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			return oldLayout(in, cfg)(ctx)
+		}
+	})
 
 	// change old detail layout
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
+			pb.PageTitleFunc(nil)
 			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && b.templateModel != nil && !strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/") {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}
-
-			pb.InjectAssets(ctx)
-			// call createMenus before in(ctx) to fill the menuGroupName for modelBuilders first
-			menu := pb.CreateMenus(ctx)
-			var profile h.HTMLComponent
-			if pb.GetProfileFunc() != nil {
-				profile = pb.GetProfileFunc()(ctx)
-			}
-			utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
-			pvMsgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, publish.Messages_en_US).(*publish.Messages)
 			id := ctx.Param(presets.ParamID)
-
 			if id == "" {
 				return pb.DefaultNotFoundPageFunc(ctx)
 			}
-			var isTemplate bool
-			isPage := strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/")
-			if b.templateModel != nil {
-				isTemplate = strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/")
-			}
 
-			if isTemplate {
-				ctx.R.Form.Set(paramsTpl, "1")
-			}
-			var obj interface{}
-			var dmb *presets.ModelBuilder
-			if isPage {
-				dmb = pm
-			} else {
-				dmb = b.templateModel
-			}
-			obj = dmb.NewModel()
-			if sd, ok := obj.(presets.SlugDecoder); ok {
-				vs, err := presets.RecoverPrimaryColumnValuesBySlug(sd, id)
-				if err != nil {
-					return pb.DefaultNotFoundPageFunc(ctx)
-				}
-				if _, err := strconv.Atoi(vs["id"]); err != nil {
-					return pb.DefaultNotFoundPageFunc(ctx)
-				}
-			} else {
-				if _, err := strconv.Atoi(id); err != nil {
-					return pb.DefaultNotFoundPageFunc(ctx)
-				}
-			}
-			obj, err = dmb.Detailing().GetFetchFunc()(obj, id, ctx)
+			obj := pm.NewModel()
+			obj, err = pm.Detailing().GetFetchFunc()(obj, id, ctx)
 			if err != nil {
 				if errors.Is(err, presets.ErrRecordNotFound) {
 					return pb.DefaultNotFoundPageFunc(ctx)
 				}
 				return
 			}
-
-			if l, ok := obj.(l10n.LocaleInterface); ok {
-				locale := ctx.R.FormValue("locale")
-				if ctx.R.FormValue(web.EventFuncIDName) == "__reload__" && locale != "" && locale != l.EmbedLocale().LocaleCode {
-					// redirect to list page when change locale
-					http.Redirect(ctx.W, ctx.R, dmb.Info().ListingHref(), http.StatusSeeOther)
-					return
-				}
-			}
-			var tabContent web.PageResponse
-
-			tabContent, err = in(ctx)
-			if errors.Is(err, perm.PermissionDenied) {
-				pr.Body = h.Text(perm.PermissionDenied.Error())
-				return pr, nil
-			}
-			if err != nil {
-				panic(err)
-			}
-
-			primaryID := ""
-			if v, ok := obj.(presets.SlugEncoder); ok {
-				primaryID = v.PrimarySlug()
-			}
 			var pageAppbarContent []h.HTMLComponent
-			pageAppbarContent = append(pageAppbarContent,
-				VProgressLinear().
-					Attr(":active", "isFetching").
-					Class("ml-4").
-					Attr("style", "position: fixed; z-index: 99;").
-					Indeterminate(true).
-					Height(2).
-					Color(pb.GetProgressBarColor()),
-			)
 			pageAppbarContent = h.Components(
 				VAppBarNavIcon().
 					Density(DensityCompact).
@@ -705,78 +640,12 @@ func (b *Builder) configDetailLayoutFunc(
 				publish.DefaultVersionBar(db)(obj, ctx),
 			)
 
-			toolbar := VContainer(
-				VRow(
-					VCol(pb.RunBrandFunc(ctx)).Cols(8),
-					VCol(
-						pb.RunSwitchLanguageFunc(ctx),
-					).Cols(2),
-
-					VCol(
-						VAppBarNavIcon().Icon("mdi-menu").
-							Density(DensityCompact).
-							Attr("@click", "vars.navDrawer = !vars.navDrawer"),
-					).Cols(2),
-				).Attr("align", "center").Attr("justify", "center"),
-			)
-			pr.Body = web.Scope(
-				VApp(
-					VNavigationDrawer(
-						VLayout(
-							VMain(
-								toolbar,
-								VCard(
-									menu,
-								).Class("ma-4").Variant(VariantText),
-							),
-							VAppBar(
-								profile,
-							).Location("bottom").Class("border-t-sm border-b-0").Elevation(0),
-						).Class("ma-2 border-sm rounded-lg elevation-1").Attr("style", "height: calc(100% - 16px);"),
-					).Width(320).
-						ModelValue(true).
-						Attr("v-model", "vars.navDrawer").
-						Permanent(true).
-						Floating(true).
-						Elevation(0),
-
-					VAppBar(
-						h.Div(
-							pageAppbarContent...,
-						).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px"),
-					).
-						Elevation(0).
-						Density("compact").Class("px-6"),
-					web.Portal().Name(presets.RightDrawerPortalName),
-					web.Portal().Name(presets.DialogPortalName),
-					web.Portal().Name(presets.DeleteConfirmPortalName),
-					web.Portal().Name(presets.DefaultConfirmDialogPortalName),
-					web.Portal().Name(presets.ListingDialogPortalName),
-					web.Portal().Name(dialogPortalName),
-					utils.ConfirmDialog(pvMsgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-						Query(presets.ParamID, primaryID).Go(),
-						utilsMsgr),
-					VProgressLinear().
-						Attr(":active", "isFetching").
-						Attr("style", "position: fixed; z-index: 99").
-						Indeterminate(true).
-						Height(2).
-						Color(pb.GetProgressBarColor()),
-					h.Template(
-						VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
-							Attr("v-model", "vars.presetsMessage.show").
-							Attr(":color", "vars.presetsMessage.color").
-							Timeout(1000),
-					).Attr("v-if", "vars.presetsMessage"),
-					VMain(
-						VLayout(
-							VMain(
-								tabContent.Body.(h.HTMLComponent),
-							),
-						).Class("pa-6"),
-					),
-				).Attr("id", "vt-app").Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false, presetsListingDialog: false, presetsMessage: {show: false, color: "success", message: ""}}`)...),
-			).VSlot(" { locals } ").Init(fmt.Sprintf(`{action: "", commonConfirmDialog: false }`))
+			pb.PageTitleFunc(func(ctx *web.EventContext) h.HTMLComponent {
+				return h.Div(
+					pageAppbarContent...,
+				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px")
+			})
+			pr, err = oldDetailLayout(in, cfg)(ctx)
 			return
 		}
 	})
@@ -785,11 +654,6 @@ func (b *Builder) configDetailLayoutFunc(
 
 func versionCount(db *gorm.DB, obj interface{}, id string, localCode string) (count int64) {
 	db.Model(obj).Where("id = ? and locale_code = ?", id, localCode).Count(&count)
-	return
-}
-
-func scheduleCount(db *gorm.DB, p *Page) (count int64) {
-	db.Model(&Page{}).Where("id = ? and version != ? and status = ? and (scheduled_start_at is not null or scheduled_end_at is not null)", p.ID, p.Version.Version, publish.StatusDraft).Count(&count)
 	return
 }
 
