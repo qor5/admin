@@ -173,12 +173,17 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 	return tabs.ModelValue(activeIndex)
 }
 
+func (c *ListingCompo) textFieldSearchID() string {
+	return c.CompoID() + "_textFieldSearch"
+}
+
 func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 	if c.lb.keywordSearchOff {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
 	return VTextField().
+		Id(c.textFieldSearchID()).
 		Density(DensityCompact).
 		Variant(FieldVariantOutlined).
 		Label(msgr.Search).
@@ -208,16 +213,20 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		return nil
 	}
 
-	invisibleKeys := lo.SliceToMap(fd, func(d *vx.FilterItem) (string, bool) {
-		return d.Key, true
-	})
 	existsInvibleQuery := ""
+
+	invisibleKeys := map[string]bool{}
+	for _, item := range fd {
+		if item.Invisible {
+			invisibleKeys[item.Key] = true
+		}
+	}
 	if len(invisibleKeys) > 0 {
 		if c.FilterQuery != "" {
 			qs, err := url.ParseQuery(c.FilterQuery)
 			if err == nil {
 				for k := range qs {
-					if _, ok := invisibleKeys[k]; !ok {
+					if !invisibleKeys[k] {
 						delete(qs, k)
 					}
 				}
@@ -254,23 +263,30 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	}
 	if existsInvibleQuery != "" {
 		opts = append(opts, stateful.WithAppendFix(fmt.Sprintf(`
-			if (!v.compo.filter_query.endsWith('&')) {
-				v.compo.filter_query += '&';
+			if (v.compo.filter_query !== "" && !v.compo.filter_query.endsWith("&")) {
+				v.compo.filter_query += "&";
 			}
-			v.compo.filter_query += %q;`, existsInvibleQuery)))
+			v.compo.filter_query += %q;`, existsInvibleQuery),
+		))
 	}
 	// method tabsFilter need to be called first, it will set activeFilterTabQuery
 	if c.activeFilterTabQuery != "" {
-		opts = append(opts, stateful.WithAppendFix(
-			fmt.Sprintf(`
-			console.log(v.compo.filter_query);
+		opts = append(opts, stateful.WithAppendFix(fmt.Sprintf(`
 			if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
 				v.compo.active_filter_tab = "";
 			}`, c.activeFilterTabQuery),
 		))
 	}
-	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
-		stateful.ReloadAction(ctx, c, nil, opts...).Go(),
+	opts = append(opts, stateful.WithAppendFix(`
+		if (xlocals.textFieldSearchElem) {
+			v.compo.keyword = xlocals.textFieldSearchElem.value;
+		}`))
+	return web.Scope().VSlot("{locals:xlocals}").Init("{textFieldSearchElem: null}").Children(
+		vx.VXFilter(fd).Translations(ft).
+			UpdateModelValue(stateful.ReloadAction(ctx, c, nil, opts...).Go()).
+			Attr("v-run", fmt.Sprintf(`(el) => { 
+				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
+			}`, c.textFieldSearchID())),
 	)
 }
 
