@@ -186,15 +186,17 @@ func NewConfig(db *gorm.DB) Config {
 				if err != nil {
 					return
 				}
-				mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams,
-					ctx *web.EventContext,
-				) (r interface{}, totalCount int, err error) {
-					u := getCurrentUser(ctx.R)
-					qdb := db
-					if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
-						qdb = db.Where("user_id = ?", u.ID)
+				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+						u := getCurrentUser(ctx.R)
+						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
+							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+								Query: "creator_id = ?",
+								Args:  []interface{}{fmt.Sprint(u.ID)},
+							})
+						}
+						return in(model, params, ctx)
 					}
-					return gorm2op.DataOperator(qdb).Search(model, params, ctx)
 				})
 				return
 			}
