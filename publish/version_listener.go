@@ -23,6 +23,11 @@ type PayloadVersionSelected struct {
 }
 
 func NewListenerVersionSelected(mb *presets.ModelBuilder, slug string) h.HTMLComponent {
+	event := actions.Edit
+	if mb.HasDetailing() {
+		event = actions.DetailingDrawer
+	}
+	drawerToSlug := web.Plaid().URL(mb.Info().ListingHref()).EventFunc(event).Query(presets.ParamID, web.Var("payload.slug")).Go()
 	return web.Listen(NotifVersionSelected(mb), fmt.Sprintf(`
 		if (payload.slug === %q) {
 			return
@@ -36,7 +41,7 @@ func NewListenerVersionSelected(mb *presets.ModelBuilder, slug string) h.HTMLCom
 		slug,
 		strings.Join([]string{
 			presets.CloseRightDrawerVarScript,
-			web.Plaid().EventFunc(actions.DetailingDrawer).Query(presets.ParamID, web.Var("payload.slug")).Go(),
+			drawerToSlug,
 		}, ";"),
 		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, mb.Info().ListingHref()))).Go(),
 	))

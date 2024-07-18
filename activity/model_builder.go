@@ -136,8 +136,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	})
 
 	eb := mb.Editing()
-	lb := mb.Listing()
-
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
 			if id == "" && amb.skip&Create == 0 {
@@ -193,18 +191,27 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		}
 	})
 
+	eb.Creating().Except(FieldTimeline)
+	editFieldTimeline := eb.GetField(FieldTimeline)
+	if editFieldTimeline != nil && editFieldTimeline.GetCompFunc() == nil {
+		editFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return amb.NewTimelineCompo(ctx, obj, "_edit_"+FieldTimeline)
+		})
+	}
+
 	if mb.HasDetailing() {
 		dp := mb.Detailing()
 		detailFieldTimeline := dp.GetField(FieldTimeline)
-		if detailFieldTimeline != nil {
+		if detailFieldTimeline != nil && detailFieldTimeline.GetCompFunc() == nil {
 			detailFieldTimeline.ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				return amb.NewTimelineCompo(ctx, obj, ":"+FieldTimeline)
+				return amb.NewTimelineCompo(ctx, obj, "_detail_"+FieldTimeline)
 			})
 		}
 	}
 
+	lb := mb.Listing()
 	listFieldNotes := lb.GetField(ListFieldNotes)
-	if listFieldNotes != nil {
+	if listFieldNotes != nil && listFieldNotes.GetCompFunc() == nil {
 		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 				r, totalCount, err = in(model, params, ctx)
