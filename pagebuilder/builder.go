@@ -597,8 +597,8 @@ func (b *Builder) configDetailLayoutFunc(
 	oldDetailLayout := pb.GetDetailLayoutFunc()
 	oldLayout := pb.GetLayoutFunc()
 	pb.LayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
-		pb.PageTitleFunc(nil)
 		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			pb.PageTitleFunc(nil)
 			return oldLayout(in, cfg)(ctx)
 		}
 	})

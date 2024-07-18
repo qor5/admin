@@ -1010,11 +1010,11 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
-		var detailPageTitle h.HTMLComponent
+		var pageTitleComp h.HTMLComponent
 		if b.pageTitleFunc != nil {
-			detailPageTitle = b.pageTitleFunc(ctx)
+			pageTitleComp = b.pageTitleFunc(ctx)
 		} else {
-			detailPageTitle = h.Div(
+			pageTitleComp = h.Div(
 				VAppBarNavIcon().
 					Density("compact").
 					Class("mr-2").
@@ -1083,7 +1083,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						Floating(true).
 						Elevation(0),
 					VAppBar(
-						detailPageTitle,
+						pageTitleComp,
 					).Elevation(0),
 					innerPr.Body,
 				).Class(""),
