@@ -93,7 +93,7 @@ func TestPageBuilder(t *testing.T) {
 				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`iframe`, `Page`, `SEO`,
+				`Page`, `SEO`, `Activity`,
 			},
 		},
 		{
@@ -529,19 +529,6 @@ func TestPageBuilder(t *testing.T) {
 					return
 				}
 			},
-		},
-		{
-			Name:  "Page Builder add container dialog",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International?__execute_event__=page_builder_NewContainerDialogEvent").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Navigation"},
 		},
 		{
 			Name:  "Page Builder preview demo container ",

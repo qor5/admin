@@ -307,9 +307,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 	defer b.ps.Build()
 
 	r := b.Model(mb)
-	if b.publisher != nil {
-		mb.Use(b.publisher)
-	}
+	b.useAllPlugin(mb)
 	// register model editors page
 	b.installAsset(pb)
 	b.configEditor(r)
@@ -379,9 +377,15 @@ func (b *Builder) configEditor(m *ModelBuilder) {
 func (b *Builder) configDetail(m *ModelBuilder) {
 	mb := m.mb
 	if mb.HasDetailing() {
-		fb := mb.Detailing().GetField(PageBuilderPreviewCard)
+		dp := mb.Detailing()
+		fb := dp.GetField(PageBuilderPreviewCard)
 		if fb != nil && fb.GetCompFunc() == nil {
 			fb.ComponentFunc(overview(m))
+		}
+		if b.ab != nil {
+			dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+				return b.ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
+			})
 		}
 	}
 }
@@ -430,14 +434,32 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
-	detailList := []interface{}{PageBuilderPreviewCard, "Page"}
+	detailList := []interface{}{"Title", PageBuilderPreviewCard, "Page"}
 	if b.seoBuilder != nil {
 		detailList = append(detailList, seo.SeoDetailFieldName)
 	}
+
 	dp := pm.Detailing(detailList...)
+	if b.ab != nil {
+		detailList = append(detailList, activity.ListFieldNotes)
+	}
+	dp.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var versionBadge *VChipBuilder
+		if v, ok := obj.(PrimarySlugInterface); ok {
+			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
+			versionBadge = VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"])))).
+				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
+		}
 
+		return h.Div(
+			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
+				web.GET().URL(pm.Info().ListingHref()).PushState(true).Go(),
+			),
+			h.H1("{{vars.pageTitle}}").Class("ml-4"),
+			versionBadge.Class("mt-2 ml-2"),
+		).Class("d-inline-flex align-center")
+	})
 	// register modelBuilder
-
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
@@ -643,15 +665,8 @@ func (b *Builder) configDetailLayoutFunc(
 					return
 				}
 			}
-			var (
-				tabContent   web.PageResponse
-				versionBadge *VChipBuilder
-			)
+			var tabContent web.PageResponse
 
-			if v, ok := obj.(PrimarySlugInterface); ok {
-				ps := v.PrimaryColumnValuesBySlug(id)
-				versionBadge = VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"])))).Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
-			}
 			tabContent, err = in(ctx)
 			if errors.Is(err, perm.PermissionDenied) {
 				pr.Body = h.Text(perm.PermissionDenied.Error())
@@ -756,13 +771,6 @@ func (b *Builder) configDetailLayoutFunc(
 					VMain(
 						VLayout(
 							VMain(
-								VContainer(
-									VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-										web.GET().URL(pm.Info().ListingHref()).PushState(true).Go(),
-									),
-									h.H1("{{vars.pageTitle}}").Class("ml-4"),
-									versionBadge.Class("mt-2 ml-2"),
-								).Class("d-inline-flex align-center"),
 								tabContent.Body.(h.HTMLComponent),
 							),
 						).Class("pa-6"),
@@ -1665,7 +1673,9 @@ func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
-	addAction := addVirtualELeToContainer(web.Var("container_data_id")) + web.Plaid().EventFunc(NewContainerDialogEvent).Query(paramContainerID, web.Var("container_id")).Go()
+	addAction := web.Plaid().MergeQuery(true).PushState(true).Query(paramContainerID, web.Var("container_id")).RunPushState() +
+		`;vars.containerPreview=false;vars.overlayEl.refs.overlay.showByIframe(vars.el.refs.scrollIframe,rect);vars.overlay=true;` +
+		addVirtualELeToContainer(web.Var("container_data_id"))
 	deleteAction := web.POST().
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).
@@ -1680,7 +1690,7 @@ func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 		Go()
 	return fmt.Sprintf(`
 function(e){
-	const { msg_type,container_data_id, container_id,display_name } = e.data
+	const { msg_type,container_data_id, container_id,display_name,rect } = e.data
 	if (!msg_type || !container_data_id.split) {
 		return
 	} 

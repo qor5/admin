@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sunfmin/reflectutils"
+
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/i18n"
 
@@ -28,7 +30,9 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			onlineHint     h.HTMLComponent
 			isTemplate     bool
 			ps             string
+			version        string
 			id             uint
+			containerCount int64
 		)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
 		if b.templateModel != nil {
@@ -37,14 +41,13 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps = v.PrimarySlug()
 		}
-		if v, ok := obj.(interface {
-			GetID() uint
-		}); ok {
-			id = v.GetID()
-			ctx.R.Form.Set(paramPageID, strconv.Itoa(int(id)))
-		}
+
+		id = reflectutils.MustGet(obj, "ID").(uint)
+		ctx.R.Form.Set(paramPageID, strconv.Itoa(int(id)))
+
 		if v, ok := obj.(publish.VersionInterface); ok {
-			ctx.R.Form.Set(paramPageVersion, v.EmbedVersion().Version)
+			version = v.EmbedVersion().Version
+			ctx.R.Form.Set(paramPageVersion, version)
 		}
 		if l, ok := obj.(l10n.LocaleInterface); ok {
 			ctx.R.Form.Set(paramLocale, l.EmbedLocale().LocaleCode)
@@ -66,10 +69,13 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				se = "Scheduled at: " + start + " ~ " + end
 			}
 		}
-
+		b.db.Model(&Container{}).
+			Where("page_id = ? AND page_version = ? and page_model_name = ?", id, version, m.name).
+			Count(&containerCount)
 		if p, ok := obj.(publish.StatusInterface); ok {
 			if p.EmbedStatus().Status == publish.StatusOnline {
-				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).
+					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
 			}
 		}
@@ -77,8 +83,25 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			onlineHint,
 			versionComponent,
 			h.Div(
-				h.Iframe().Src(previewDevelopUrl).Attr("scrolling", "no", "frameborder", "0").
-					Style(`height:320px;width:100%;pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.00) 60%, rgba(255, 255, 255, 0.60) 100%), var(--body-background-color, #F5F5F5);`),
+				h.Div(
+					h.If(containerCount == 0,
+						h.Div(
+							VCard(
+								VCardTitle(h.RawHTML(previewIframeEmptySvg)).Class("d-flex justify-center"),
+								VCardSubtitle(h.Text("This page has no content yet, start to edit in page builder")).
+									Class("d-flex justify-center"),
+							).Flat(true).Class("bg-"+ColorGreyLighten4),
+						).Class("d-flex align-center justify-center", H100, "bg-"+ColorGreyLighten4),
+					),
+					h.If(containerCount > 0,
+						h.Iframe().Src(previewDevelopUrl).
+							Attr("scrolling", "no", "frameborder", "0").
+							Style(`pointer-events: none; 
+ -webkit-mask-image: radial-gradient(circle, black 24px, transparent);
+  mask-image: radial-gradient(circle, black 80px, transparent);
+transform-origin: 0 0; transform:scale(0.5);width:200%;`),
+					),
+				).Class(W100, H100),
 				h.Div(
 					h.Div(
 						h.Text(se),
@@ -86,7 +109,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorSecondary).
 						Class("rounded-sm").Height(40).Variant(VariantFlat),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
-			).Style(`position:relative`).Class("w-100").
+			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
 				Attr("@click",
 					web.Plaid().URL(fmt.Sprintf("%s/%s-editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),
 				),

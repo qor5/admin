@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
 	"github.com/qor5/web/v3"
 
 	"github.com/sunfmin/reflectutils"
@@ -56,7 +58,6 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
-	b.editor.RegisterEventFunc(NewContainerDialogEvent, b.newContainerDialog)
 	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
 	b.preview = web.Page(b.previewContent)
 }
@@ -135,9 +136,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	r = web.Scope(
 		VSheet(
 			VList(
-				h.Tag("vx-draggable").
-					Attr("item-key", "model_id").
-					Attr("v-model", "sortLocals.items", "handle", ".handle", "animation", "300").
+				vx.VXDraggable().ItemKey("model_id").Handle(".handle").Attr("v-model", "sortLocals.items").Animation(300).
 					Attr("@end", web.Plaid().
 						URL(ctx.R.URL.Path).
 						EventFunc(MoveContainerEvent).
@@ -212,7 +211,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			h.Span("Add Component").Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
-			Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
+			Attr("@click", appendVirtualElement()+"vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
@@ -940,12 +939,12 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				).Attr(newCtx.Injector.HTMLLangAttrs()...),
 			}
 			_, width := b.builder.getDevice(ctx)
-			scrollIframe := h.Tag("vx-scroll-iframe").Attr(
-				":srcdoc", h.JSONString(h.MustString(r, ctx.R.Context())),
-				"iframe-height", iframeValue,
-				"iframe-height-name", cookieHightName,
-				"width", width,
-				"ref", "scrollIframe")
+
+			scrollIframe := vx.VXScrollIframe().
+				Srcdoc(h.MustString(r, ctx.R.Context())).
+				IframeHeightName(cookieHightName).
+				IframeHeight(iframeValue).
+				Width(width).Attr("ref", "scrollIframe")
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
 				if ctx.Param(paramContainerNew) != "" {
@@ -961,7 +960,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
 								VCardActions(
 									VBtn("Add Component").Color(ColorPrimary).Variant(VariantElevated).
-										Attr("@click", appendVirtualElement()+web.Plaid().ClearMergeQuery([]string{paramContainerID}).EventFunc(NewContainerDialogEvent).Go()),
+										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
 								).Class("d-flex justify-center"),
 							).Flat(true),
 						).Attr("v-show", "vars.emptyIframe").
@@ -1336,54 +1335,35 @@ func (b *ModelBuilder) ExistedL10n() bool {
 	return b.builder.l10n != nil
 }
 
-func (b *ModelBuilder) newContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		containers      = b.renderContainersList(ctx)
-		afterLeaveEvent = removeVirtualElement() + "vars.emptyIframe = true;"
-		containerDataID = ctx.Param(paramContainerDataID)
-	)
-	if containerDataID != "" {
-		afterLeaveEvent += scrollToContainer(fmt.Sprintf(`"%s"`, containerDataID))
-	}
+func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponent {
+	containers := b.renderContainersList(ctx)
 	emptyContent := VCard(
 		VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
 		VCardTitle(h.Text("Build your pages")).Class("d-flex justify-center"),
 		VCardSubtitle(h.Text("Place an element from QOR5 library.")).Class("d-flex justify-center"),
-	).Flat(true).Tile(true).Color(ColorGrey)
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: addContainerDialogPortal,
-		Body: web.Scope(
-			VDialog(
-				VSheet(
-					VSheet(
-						VCard(
-							VCardTitle(h.Text("New Element")),
-							VCardText(containers),
-						).Elevation(0),
-					).Class(W50).Class("pa-4", "overflow-y-auto"),
-					VSheet(
-						h.Div(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "locals.dialog=false"),
-						).Class("d-flex justify-end").Style("height:40px"),
-						VContainer(
-							VRow(
-								VCol(
-									VSheet(web.Portal(emptyContent).Name(addContainerDialogContentPortal)).Tile(true),
-								),
-							).Align(Center).Justify(Center).Attr("style", "height:420px"),
-						).Class(W100, "py-0"),
-					).Class(W50).Color(ColorGrey),
-				).Class("d-inline-flex"),
-			).Attr("v-model", "locals.dialog").
-				ScrollStrategy("none").
-				Attr("@after-leave", afterLeaveEvent).
-				Width(665).Height(460),
-		).VSlot(`{locals}`).Init(`{dialog:true}`),
-	})
-	r.RunScript = "vars.emptyIframe = false "
-	return
+	).Flat(true).Tile(true).Color(ColorGreyLighten3)
+	return VSheet(
+		VSheet(
+			VCard(
+				VCardTitle(h.Text("New Element")),
+				VCardText(containers),
+			).Elevation(0),
+		).Class(W50).Class("pa-4", "overflow-y-auto"),
+		VSheet(
+			h.Div(
+				VSpacer(),
+				VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "vars.overlay=false"),
+			).Class("d-flex justify-end").Style("height:40px"),
+			VContainer(
+				VRow(
+					VCol(
+						emptyContent.Attr("v-if", "!vars.containerPreview"),
+						VSheet(web.Portal().Name(addContainerDialogContentPortal)).Tile(true).Attr("v-if", "vars.containerPreview"),
+					),
+				).Align(Center).Justify(Center).Attr("style", "height:420px"),
+			).Class(W100, "py-0"),
+		).Class(W50).Color(ColorGreyLighten3),
+	).Class("d-inline-flex").Width(665).Height(460)
 }
 
 func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -1416,7 +1396,8 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogContentPortal,
-		Body: VCard(body).MaxHeight(200).Elevation(0).Flat(true).Tile(true).Color(ColorGrey),
+		Body: VCard(body).MaxHeight(200).Elevation(0).Flat(true).Tile(true).Color(ColorGreyLighten3),
 	})
+	r.RunScript = "vars.containerPreview = true"
 	return
 }
