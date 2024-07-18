@@ -109,7 +109,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/campaigns/1_2024-05-20-v01", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "iframe", "CampaignDetail"},
+			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "CampaignDetail"},
 		},
 		{
 			Name:  "Product Detail",
@@ -118,17 +118,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "iframe", "ProductDetail"},
-		},
-		{
-			Name:  "Campaign editor NewContainerDialog",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/campaigns-editors/1_2024-05-20-v01?__execute_event__=page_builder_NewContainerDialogEvent", nil)
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"MyContent", "CampaignContent"},
-			ExpectPortalUpdate0NotContains:     []string{"ProductContent"},
+			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "ProductDetail"},
 		},
 		{
 			Name:  "Campaign My Contents",

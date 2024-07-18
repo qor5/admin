@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/qor5/admin/v3/activity"
+
 	"github.com/qor5/admin/v3/media/media_library"
 
 	"github.com/qor/oss"
@@ -147,6 +149,14 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 	storage := filesystem.New("/tmp/publish")
+	ab := activity.New(db, func(ctx context.Context) *activity.User {
+		return &activity.User{
+			ID:     "1",
+			Name:   "John",
+			Avatar: "https://i.pravatar.cc/300",
+		}
+	}).AutoMigrate()
+
 	puBuilder := publish.New(db, storage)
 	if b.GetPermission() == nil {
 		b.Permission(
@@ -158,6 +168,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.Use(puBuilder)
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+		Activity(ab).
 		Publisher(puBuilder).
 		WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
 			return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {

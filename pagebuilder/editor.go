@@ -30,7 +30,6 @@ const (
 	RenameContainerEvent             = "page_builder_RenameContainerEvent"
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
-	NewContainerDialogEvent          = "page_builder_NewContainerDialogEvent"
 	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 
 	paramPageID          = "pageID"
@@ -120,6 +119,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 			readonly = p.EmbedStatus().Status == publish.StatusDraft
 		}
+		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
+		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
+			MaxWidth(665).
+			Attr("ref", "overlay").
+			Attr("@after-leave", afterLeaveEvent).
+			Attr("v-model", "vars.overlay")
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
@@ -155,9 +160,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Width(350),
 			),
 			VMain(
+				addOverlay,
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
-			),
+			).Attr(web.VAssign("vars", "{overlayEl:$}")...),
 		)
 		return
 	}
@@ -444,7 +450,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			).Attr("v-if", "vars.presetsMessage"),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
-			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false}`)...)
+			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false}`)...)
 		return
 	}
 }
@@ -508,7 +514,11 @@ func (b *postMessageBody) postMessage(msgType string) string {
 		return ""
 	}
 	b.MsgType = msgType
-	return fmt.Sprintf(`window.parent.postMessage(%s, '*')`, h.JSONString(b))
+	return fmt.Sprintf(`
+const {top, left, width, height} = event.target.getBoundingClientRect();
+const data= %s;
+data.rect = {top, left, width, height}
+window.parent.postMessage(data, '*')`, h.JSONString(b))
 }
 
 func addVirtualELeToContainer(containerDataID interface{}) string {
