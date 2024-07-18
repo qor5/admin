@@ -449,16 +449,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		dataTable.Column(col.Name).Title(col.Label).CellComponentFunc(c.lb.cellComponentFunc(f))
 	}
 
-	if c.lb.disablePagination {
-		return dataTable
-	}
-
 	var dataTableAdditions h.HTMLComponent
 	if totalCount <= 0 {
 		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
 			h.Text(msgr.ListingNoRecordToShow),
 		)
 	} else {
+		if c.lb.disablePagination {
+			return dataTable
+		}
 		dataTableAdditions = h.Div().Class("mt-2").Children(
 			vx.VXTablePagination().
 				Total(int64(totalCount)).
@@ -529,15 +528,15 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 	}
 
 	return web.Scope().
-			VSlot("{ locals }").
+			VSlot("{ locals: xlocals }").
 			Init(fmt.Sprintf(`{selectColumnsMenu: false, displayColumns: %s}`, h.JSONString(wrappers))).
 			Children(
-				VMenu().CloseOnContentClick(false).Width(240).Attr("v-model", "locals.selectColumnsMenu").Children(
+				VMenu().CloseOnContentClick(false).Width(240).Attr("v-model", "xlocals.selectColumnsMenu").Children(
 					web.Slot().Name("activator").Scope("{ props }").Children(
 						VBtn("").Icon("mdi-cog").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
 					),
 					VList().Density(DensityCompact).Children(
-						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "locals.displayColumns", "handle", ".handle", "animation", "300").Children(
+						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "xlocals.displayColumns", "handle", ".handle", "animation", "300").Children(
 							h.Template().Attr("#item", " { element } ").Children(
 								VListItem(
 									VListItemTitle(
@@ -552,12 +551,12 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 							),
 						),
 						VListItem().Class("d-flex justify-space-between").Children(
-							VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`),
+							VBtn(msgr.Cancel).Elevation(0).Attr("@click", `xlocals.selectColumnsMenu = false`),
 							VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", fmt.Sprintf(`
-								locals.selectColumnsMenu = false; 
+								xlocals.selectColumnsMenu = false; 
 								%s`,
 								stateful.ReloadAction(ctx, c, nil,
-									stateful.WithAppendFix(`v.compo.display_columns = locals.displayColumns.map(({ label, ...rest }) => rest)`),
+									stateful.WithAppendFix(`v.compo.display_columns = xlocals.displayColumns.map(({ label, ...rest }) => rest)`),
 								).Go(),
 							)),
 						),
