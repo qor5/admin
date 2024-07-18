@@ -82,6 +82,8 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		return h.Div(
 			onlineHint,
 			versionComponent,
+			web.Listen(m.mb.NotifModelsUpdated(),
+				web.Plaid().PushState(true).URL(m.mb.Info().DetailingHref(ps)).Go()),
 			h.Div(
 				h.Div(
 					h.If(containerCount == 0,
@@ -97,7 +99,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 						h.Iframe().Src(previewDevelopUrl).
 							Attr("scrolling", "no", "frameborder", "0").
 							Style(`pointer-events: none; 
- -webkit-mask-image: radial-gradient(circle, black 24px, transparent);
+ -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
   mask-image: radial-gradient(circle, black 80px, transparent);
 transform-origin: 0 0; transform:scale(0.5);width:200%;`),
 					),
@@ -105,8 +107,8 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;`),
 				h.Div(
 					h.Div(
 						h.Text(se),
-					).Class(fmt.Sprintf("bg-%s", ColorSecondaryLighten2)),
-					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorSecondary).
+					).Class(fmt.Sprintf("bg-%s", ColorGreyLighten3)),
+					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorBlack).
 						Class("rounded-sm").Height(40).Variant(VariantFlat),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").

@@ -42,6 +42,7 @@ type Builder struct {
 	homePageLayoutConfig                  *LayoutConfig
 	notFoundPageLayoutConfig              *LayoutConfig
 	brandFunc                             ComponentFunc
+	pageTitleFunc                         ComponentFunc
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
@@ -203,6 +204,11 @@ func (b *Builder) NotFoundFunc(v web.PageFunc) (r *Builder) {
 
 func (b *Builder) BrandFunc(v ComponentFunc) (r *Builder) {
 	b.brandFunc = v
+	return b
+}
+
+func (b *Builder) PageTitleFunc(v ComponentFunc) (r *Builder) {
+	b.pageTitleFunc = v
 	return b
 }
 
@@ -952,6 +958,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 		menu := b.CreateMenus(ctx)
+
 		toolbar := VContainer(
 			VRow(
 				VCol(b.RunBrandFunc(ctx)).Cols(8),
@@ -1003,6 +1010,24 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
+		var pageTitleComp h.HTMLComponent
+		if b.pageTitleFunc != nil {
+			pageTitleComp = b.pageTitleFunc(ctx)
+		} else {
+			pageTitleComp = h.Div(
+				VAppBarNavIcon().
+					Density("compact").
+					Class("mr-2").
+					Attr("v-if", "!vars.navDrawer").
+					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+				h.Div(
+					VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+				).Class("mr-auto"),
+				h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
+					return h.Div().Id(actionsComponentTeleportToID)
+				}),
+			).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
+		}
 		pr.Body = VApp(
 			web.Portal().Name(RightDrawerPortalName),
 
@@ -1023,6 +1048,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			).Attr("v-if", "vars.presetsMessage"),
 			VLayout(
 				VMain(
+					VProgressLinear().
+						Attr(":active", "isFetching").
+						Class("ml-4").
+						Attr("style", "position: fixed; z-index: 99;").
+						Indeterminate(true).
+						Height(2).
+						Color(b.progressBarColor),
 					VNavigationDrawer(
 						// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 						// b.RunBrandFunc(ctx),
@@ -1051,29 +1083,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						Floating(true).
 						Elevation(0),
 					VAppBar(
-						h.Div(
-							VProgressLinear().
-								Attr(":active", "isFetching").
-								Class("ml-4").
-								Attr("style", "position: fixed; z-index: 99;").
-								Indeterminate(true).
-								Height(2).
-								Color(b.progressBarColor),
-
-							VAppBarNavIcon().
-								Density("compact").
-								Class("mr-2").
-								Attr("v-if", "!vars.navDrawer").
-								On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-							h.Div(
-								VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
-							).Class("mr-auto"),
-							h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
-								return h.Div().Id(actionsComponentTeleportToID)
-							}),
-						).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px"),
-					).
-						Elevation(0),
+						pageTitleComp,
+					).Elevation(0),
 					innerPr.Body,
 				).Class(""),
 			),
