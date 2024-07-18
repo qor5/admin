@@ -158,7 +158,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			deniedSchedule := deniedPublish || deniedUnpublish || DeniedDo(verifier, obj, ctx.R, PermSchedule)
 			if !deniedSchedule {
 				var scheduleBtn h.HTMLComponent
-				clickEvent := web.POST().
+				clickEvent := web.Plaid().
 					EventFunc(eventSchedulePublishDialog).
 					Query(presets.ParamOverlay, actions.Dialog).
 					Query(presets.ParamID, primarySlugger.PrimarySlug()).

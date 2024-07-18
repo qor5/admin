@@ -3,9 +3,13 @@ package admin
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/samber/lo"
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/media/media_library"
@@ -17,7 +21,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func configInputDemo(b *presets.Builder, _ *gorm.DB) {
+func configInputDemo(b *presets.Builder, db *gorm.DB) {
 	inputDemo := b.Model(&models.InputDemo{})
 	// MenuIcon("view_quilt")
 
@@ -58,6 +62,7 @@ func configInputDemo(b *presets.Builder, _ *gorm.DB) {
 		"DatePickerMonth1",
 		"TimePicker1",
 		"MediaLibrary1",
+		"SelectedCustomers",
 	)
 
 	// TextField1       string
@@ -230,4 +235,83 @@ func configInputDemo(b *presets.Builder, _ *gorm.DB) {
 					},
 				},
 			})
+
+	configureDialogCustomerSelector(db, b)
+	ed.Field("SelectedCustomers").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		compo, err := customerSelector(ctx, nil, []string{})
+		if err != nil {
+			panic(err)
+		}
+		return web.Portal(compo).Name(portalCustomerSelector)
+	})
+}
+
+const (
+	eventSelectCustomer           = "eventSelectCustomer"
+	portalCustomerSelector        = "portalCustomerSelector"
+	uriNameDialogCustomerSelector = "dialog-customer-selector"
+)
+
+func customerSelector(_ *web.EventContext, db *gorm.DB, selectedIds []string) (h.HTMLComponent, error) {
+	var items []*models.Customer
+	if len(selectedIds) > 0 {
+		if err := db.Where("id IN (?)", selectedIds).Find(&items).Error; err != nil {
+			return nil, errors.Wrap(err, "find customers")
+		}
+	}
+	children := []h.HTMLComponent{
+		VBtn("Select Customers").Class("mb-2").Attr("@click",
+			web.Plaid().URL("/"+uriNameDialogCustomerSelector).
+				EventFunc(actions.OpenListingDialog).
+				Query("selected_ids", selectedIds).
+				Go(),
+		),
+	}
+	children = append(children, lo.Map(items, func(v *models.Customer, _ int) h.HTMLComponent {
+		return h.Div().Children(
+			h.Text(v.Name),
+		)
+	})...)
+
+	return h.Div().Class("d-flex flex-column ga-2 align-start").Children(children...), nil
+}
+
+const paramSelectedIds = "selected_ids"
+
+func configureDialogCustomerSelector(db *gorm.DB, pb *presets.Builder) {
+	b := pb.Model(&models.Customer{}).URIName(uriNameDialogCustomerSelector).InMenu(false)
+	registerEventSelectCustomer(db, pb)
+
+	lb := b.Listing().DialogWidth("900px")
+	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
+	lb.RowMenu().Empty()
+	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		return cell
+	})
+	lb.BulkAction("Confirm").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return VBtn("Confirm").Attr("@click", web.Plaid().
+			EventFunc(eventSelectCustomer).
+			Query(paramSelectedIds, web.Var("locals.selected_ids")).
+			MergeQuery(true).
+			Go(),
+		)
+	})
+}
+
+func registerEventSelectCustomer(db *gorm.DB, b *presets.Builder) {
+	b.GetWebBuilder().RegisterEventFunc(eventSelectCustomer, func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		selectedIds := strings.Split(strings.TrimSpace(ctx.R.FormValue(paramSelectedIds)), ",")
+		selectedIds = lo.Filter(selectedIds, func(v string, _ int) bool { return v != "" })
+		compo, err := customerSelector(ctx, db, selectedIds)
+		if err != nil {
+			presets.ShowMessage(&r, err.Error(), "error")
+			return
+		}
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: portalCustomerSelector,
+			Body: compo,
+		})
+		web.AppendRunScripts(&r, presets.CloseListingDialogVarScript)
+		return
+	})
 }

@@ -527,6 +527,9 @@ func configPost(
 	m.Use(slug.New())
 	defer func() {
 		m.Use(publisher, ab)
+		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+			return ab.MustGetModelBuilder(m).NewTimelineCompo(ctx, obj, "_side")
+		})
 	}()
 
 	mListing := m.Listing("ID", "Title", "TitleWithSlug", "HeroImage", "Body", activity.ListFieldNotes).
@@ -604,8 +607,11 @@ func configPost(
 		}
 	})
 
-	ed := m.Editing("StatusBar", "ScheduleBar", "Title", "TitleWithSlug", "Seo", "HeroImage", "Body", "BodyImage", activity.FieldTimeline)
-	ed.Field("HeroImage").
+	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
+	sb := dp.Section("Detail").Editing("Title", "HeroImage", "Body", "BodyImage")
+
+	// TODO: need viewing field setting
+	sb.EditingField("HeroImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
@@ -621,16 +627,13 @@ func configPost(
 					},
 				},
 			})
-	ed.Field("BodyImage").
+	sb.EditingField("BodyImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
-
-	ed.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	sb.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
-
-	m.Detailing(publish.VersionsPublishBar, "Title", "Body", activity.FieldTimeline).Drawer(true)
 	return m
 }
 

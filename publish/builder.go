@@ -104,6 +104,13 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.ModelBuilder, db *gorm.DB) {
 	ed := mb.Editing()
 	creating := ed.Creating().Except(VersionsPublishBar)
+	// On demand, currently only supported detailing
+	// var fb *presets.FieldBuilder
+	// if !mb.HasDetailing() {
+	// 	fb = ed.GetField(VersionsPublishBar)
+	// } else {
+	// 	fb = mb.Detailing().GetField(VersionsPublishBar)
+	// }
 	var detailing *presets.DetailingBuilder
 	if !mb.HasDetailing() {
 		detailing = mb.Detailing().Drawer(true)
