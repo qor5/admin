@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -207,6 +208,24 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		return nil
 	}
 
+	invisibleKeys := lo.SliceToMap(fd, func(d *vx.FilterItem) (string, bool) {
+		return d.Key, true
+	})
+	existsInvibleQuery := ""
+	if len(invisibleKeys) > 0 {
+		if c.FilterQuery != "" {
+			qs, err := url.ParseQuery(c.FilterQuery)
+			if err == nil {
+				for k := range qs {
+					if _, ok := invisibleKeys[k]; !ok {
+						delete(qs, k)
+					}
+				}
+				existsInvibleQuery = qs.Encode()
+			}
+		}
+	}
+
 	_, msgr := c.MustGetEventContext(ctx)
 
 	for _, d := range fd {
@@ -231,12 +250,21 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
 	opts := []stateful.PostActionOption{
-		stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData;`),
+		stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData + "";`),
+	}
+	if existsInvibleQuery != "" {
+		opts = append(opts, stateful.WithAppendFix(fmt.Sprintf(`
+			if (!v.compo.filter_query.endsWith('&')) {
+				v.compo.filter_query += '&';
+			}
+			v.compo.filter_query += %q;`, existsInvibleQuery)))
 	}
 	// method tabsFilter need to be called first, it will set activeFilterTabQuery
 	if c.activeFilterTabQuery != "" {
 		opts = append(opts, stateful.WithAppendFix(
-			fmt.Sprintf(`if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
+			fmt.Sprintf(`
+			console.log(v.compo.filter_query);
+			if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
 				v.compo.active_filter_tab = "";
 			}`, c.activeFilterTabQuery),
 		))
