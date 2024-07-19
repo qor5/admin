@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -17,6 +16,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
