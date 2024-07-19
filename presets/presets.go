@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -981,7 +982,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
-		if err == perm.PermissionDenied {
+		if errors.Is(err, perm.PermissionDenied) {
 			pr.Body = h.Text(perm.PermissionDenied.Error())
 			return pr, nil
 		}
@@ -1028,17 +1029,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				}),
 			).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
 		}
-		pr.Body = VApp(
-			web.Portal().Name(RightDrawerPortalName),
-
-			// App(true).
-			// Fixed(true),
-			// ClippedLeft(true),
-			web.Portal().Name(DialogPortalName),
-			web.Portal().Name(DeleteConfirmPortalName),
-			web.Portal().Name(DefaultConfirmDialogPortalName),
-			web.Portal().Name(ListingDialogPortalName),
-
+		pr.Body = VCard(
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
 					Attr("v-model", "vars.presetsMessage.show").
@@ -1047,6 +1038,44 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VLayout(
+				web.Portal().Name(RightDrawerPortalName),
+
+				// App(true).
+				// Fixed(true),
+				// ClippedLeft(true),
+				web.Portal().Name(DialogPortalName),
+				web.Portal().Name(DeleteConfirmPortalName),
+				web.Portal().Name(DefaultConfirmDialogPortalName),
+				web.Portal().Name(ListingDialogPortalName),
+
+				VNavigationDrawer(
+					// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+					// b.RunBrandFunc(ctx),
+					// profile,
+					VLayout(
+						VMain(
+							toolbar,
+							VCard(
+								menu,
+							).Class("ma-4").Variant(VariantText),
+						),
+						// VDivider(),
+						profile,
+					).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
+						"height: calc(100% - 16px);"),
+					// ).Class("ma-2").
+					// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
+				).
+					Width(320).
+					// App(true).
+					// Clipped(true).
+					// Fixed(true).
+					Attr("v-model", "vars.navDrawer").
+					// Attr("style", "border-right: 1px solid grey ").
+					Permanent(true).
+					Floating(true).
+					Elevation(0),
+
 				VMain(
 					VProgressLinear().
 						Attr(":active", "isFetching").
@@ -1055,40 +1084,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						Indeterminate(true).
 						Height(2).
 						Color(b.progressBarColor),
-					VNavigationDrawer(
-						// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-						// b.RunBrandFunc(ctx),
-						// profile,
-						VLayout(
-							VMain(
-								toolbar,
-								VCard(
-									menu,
-								).Class("ma-4").Variant(VariantText),
-							),
-							// VDivider(),
-							profile,
-						).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
-							"height: calc(100% - 16px);"),
-						// ).Class("ma-2").
-						// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
-					).
-						Width(320).
-						// App(true).
-						// Clipped(true).
-						// Fixed(true).
-						Attr("v-model", "vars.navDrawer").
-						// Attr("style", "border-right: 1px solid grey ").
-						Permanent(true).
-						Floating(true).
-						Elevation(0),
 					VAppBar(
 						pageTitleComp,
 					).Elevation(0),
 					innerPr.Body,
-				).Class(""),
+				).Class("overflow-y-auto").Attr("style", "height:100vh"),
 			),
-		).Attr("id", "vt-app").
+		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
 navDrawer: true
 }`)...)
