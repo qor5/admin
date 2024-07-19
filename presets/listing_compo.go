@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -172,12 +173,17 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 	return tabs.ModelValue(activeIndex)
 }
 
+func (c *ListingCompo) textFieldSearchID() string {
+	return c.CompoID() + "_textFieldSearch"
+}
+
 func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 	if c.lb.keywordSearchOff {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
 	return VTextField().
+		Id(c.textFieldSearchID()).
 		Density(DensityCompact).
 		Variant(FieldVariantOutlined).
 		Label(msgr.Search).
@@ -207,6 +213,28 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		return nil
 	}
 
+	existsInvibleQuery := ""
+
+	invisibleKeys := map[string]bool{}
+	for _, item := range fd {
+		if item.Invisible {
+			invisibleKeys[item.Key] = true
+		}
+	}
+	if len(invisibleKeys) > 0 {
+		if c.FilterQuery != "" {
+			qs, err := url.ParseQuery(c.FilterQuery)
+			if err == nil {
+				for k := range qs {
+					if !invisibleKeys[k] {
+						delete(qs, k)
+					}
+				}
+				existsInvibleQuery = qs.Encode()
+			}
+		}
+	}
+
 	_, msgr := c.MustGetEventContext(ctx)
 
 	for _, d := range fd {
@@ -231,18 +259,34 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.MultipleSelect.NotIn = msgr.FiltersMultipleSelectNotIn
 
 	opts := []stateful.PostActionOption{
-		stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData;`),
+		stateful.WithAppendFix(`v.compo.filter_query = $event.encodedFilterData + "";`),
+	}
+	if existsInvibleQuery != "" {
+		opts = append(opts, stateful.WithAppendFix(fmt.Sprintf(`
+			if (v.compo.filter_query !== "" && !v.compo.filter_query.endsWith("&")) {
+				v.compo.filter_query += "&";
+			}
+			v.compo.filter_query += %q;`, existsInvibleQuery),
+		))
 	}
 	// method tabsFilter need to be called first, it will set activeFilterTabQuery
 	if c.activeFilterTabQuery != "" {
-		opts = append(opts, stateful.WithAppendFix(
-			fmt.Sprintf(`if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
+		opts = append(opts, stateful.WithAppendFix(fmt.Sprintf(`
+			if (!plaid().isRawQuerySubset(v.compo.filter_query, %q)) {
 				v.compo.active_filter_tab = "";
 			}`, c.activeFilterTabQuery),
 		))
 	}
-	return vx.VXFilter(fd).Translations(ft).UpdateModelValue(
-		stateful.ReloadAction(ctx, c, nil, opts...).Go(),
+	opts = append(opts, stateful.WithAppendFix(`
+		if (xlocals.textFieldSearchElem) {
+			v.compo.keyword = xlocals.textFieldSearchElem.value;
+		}`))
+	return web.Scope().VSlot("{locals:xlocals}").Init("{textFieldSearchElem: null}").Children(
+		vx.VXFilter(fd).Translations(ft).
+			UpdateModelValue(stateful.ReloadAction(ctx, c, nil, opts...).Go()).
+			Attr("v-run", fmt.Sprintf(`(el) => { 
+				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
+			}`, c.textFieldSearchID())),
 	)
 }
 
@@ -449,16 +493,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		dataTable.Column(col.Name).Title(col.Label).CellComponentFunc(c.lb.cellComponentFunc(f))
 	}
 
-	if c.lb.disablePagination {
-		return dataTable
-	}
-
 	var dataTableAdditions h.HTMLComponent
 	if totalCount <= 0 {
 		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
 			h.Text(msgr.ListingNoRecordToShow),
 		)
 	} else {
+		if c.lb.disablePagination {
+			return dataTable
+		}
 		dataTableAdditions = h.Div().Class("mt-2").Children(
 			vx.VXTablePagination().
 				Total(int64(totalCount)).
@@ -529,15 +572,15 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 	}
 
 	return web.Scope().
-			VSlot("{ locals }").
+			VSlot("{ locals: xlocals }").
 			Init(fmt.Sprintf(`{selectColumnsMenu: false, displayColumns: %s}`, h.JSONString(wrappers))).
 			Children(
-				VMenu().CloseOnContentClick(false).Width(240).Attr("v-model", "locals.selectColumnsMenu").Children(
+				VMenu().CloseOnContentClick(false).Width(240).Attr("v-model", "xlocals.selectColumnsMenu").Children(
 					web.Slot().Name("activator").Scope("{ props }").Children(
 						VBtn("").Icon("mdi-cog").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
 					),
 					VList().Density(DensityCompact).Children(
-						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "locals.displayColumns", "handle", ".handle", "animation", "300").Children(
+						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "xlocals.displayColumns", "handle", ".handle", "animation", "300").Children(
 							h.Template().Attr("#item", " { element } ").Children(
 								VListItem(
 									VListItemTitle(
@@ -552,12 +595,12 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 							),
 						),
 						VListItem().Class("d-flex justify-space-between").Children(
-							VBtn(msgr.Cancel).Elevation(0).Attr("@click", `locals.selectColumnsMenu = false`),
+							VBtn(msgr.Cancel).Elevation(0).Attr("@click", `xlocals.selectColumnsMenu = false`),
 							VBtn(msgr.OK).Elevation(0).Color("primary").Attr("@click", fmt.Sprintf(`
-								locals.selectColumnsMenu = false; 
+								xlocals.selectColumnsMenu = false; 
 								%s`,
 								stateful.ReloadAction(ctx, c, nil,
-									stateful.WithAppendFix(`v.compo.display_columns = locals.displayColumns.map(({ label, ...rest }) => rest)`),
+									stateful.WithAppendFix(`v.compo.display_columns = xlocals.displayColumns.map(({ label, ...rest }) => rest)`),
 								).Go(),
 							)),
 						),

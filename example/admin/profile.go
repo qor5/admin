@@ -40,6 +40,10 @@ func profile(db *gorm.DB) presets.ComponentFunc {
 		for _, role := range u.Roles {
 			roles = append(roles, role.Name)
 		}
+		role := "-"
+		if len(roles) > 0 {
+			role = roles[0]
+		}
 
 		total := notifierCount(db)(ctx)
 		content := notifierComponent(db)(ctx)
@@ -73,7 +77,7 @@ func profile(db *gorm.DB) presets.ComponentFunc {
 				).Class("d-flex justify-space-between align-center"),
 			).Name(VSlotTitle),
 			web.Slot(
-				h.Div(h.Text(roles[0])),
+				h.Div(h.Text(role)),
 			).Name(VSlotSubtitle),
 		).Class(W100).Flat(true)
 
@@ -106,7 +110,7 @@ func profile(db *gorm.DB) presets.ComponentFunc {
 							).Name(VSlotTitle),
 							web.Slot(
 								h.Div(
-									h.Text(roles[0]),
+									h.Text(role),
 								),
 								h.Div(
 									VChip(h.Text(u.Status)).Label(true).Density(DensityCompact).Color(ColorSuccess).Class("px-1"),
