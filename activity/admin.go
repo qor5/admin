@@ -3,7 +3,6 @@ package activity
 import (
 	"cmp"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -103,7 +102,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	)
 	lb.Field("Creator").Label(Messages_en_US.ModelCreator).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Td(h.Text(obj.(*ActivityLog).Creator.Name))
+			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).Creator.Name))
 		},
 	)
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
@@ -113,7 +112,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			if obj.(*ActivityLog).ModelLabel == "" {
 				return h.Td(h.Text("-"))
 			}
-			return h.Td(h.Text(obj.(*ActivityLog).ModelLabel))
+			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).ModelLabel))
 		},
 	)
 
@@ -233,22 +232,24 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 					VCardText().Class("pa-0 pt-3").Children(
 						VTable(
 							h.Tbody(
-								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td(h.Text(log.Creator.Name))),
-								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td(h.Text(fmt.Sprint(log.CreatorID)))),
-								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td(h.Text(log.Action))),
-								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td(h.Text(log.ModelName))),
-								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td(h.Text(cmp.Or(log.ModelLabel, "-")))),
-								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td(h.Text(log.ModelKeys))),
-								h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-									v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-										Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
-										Attr("@click", web.POST().
-											EventFunc(actions.DetailingDrawer).
-											Query(presets.ParamOverlay, actions.Dialog).
-											URL(log.ModelLink).
-											Go(),
-										),
-								)),
+								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td().Attr("v-pre", true).Text(log.Creator.Name)),
+								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.CreatorID)),
+								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(log.Action)),
+								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
+								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),
+								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
+								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
+									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
+										v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+											Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+											Attr("@click", web.POST().
+												EventFunc(actions.DetailingDrawer).
+												Query(presets.ParamOverlay, actions.Dialog).
+												URL(log.ModelLink).
+												Go(),
+											),
+									))
+								}),
 								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
 							),
 						),
@@ -271,7 +272,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
 							h.Div().Class("d-flex flex-column").Children(
-								h.Pre(note.Note).Style("white-space: pre-wrap"),
+								h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
 										h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
@@ -281,7 +282,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 					))
 				default:
-					children = append(children, h.Text(msgr.PerformAction(log.Action, log.Detail)))
+					children = append(children, h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)))
 				}
 			}
 

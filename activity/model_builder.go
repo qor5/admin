@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -132,17 +133,42 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		if id == "" {
 			return ""
 		}
-		return mb.Info().DetailingHref(id)
+		if mb.HasDetailing() {
+			return mb.Info().DetailingHref(id)
+		}
+		return ""
 	})
 
 	eb := mb.Editing()
 	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
-			if id == "" && amb.skip&Create == 0 {
-				err := in(obj, id, ctx)
-				if err != nil {
-					return err
+			if amb.skip&Create != 0 && amb.skip&Edit != 0 {
+				return in(obj, id, ctx)
+			}
+
+			fetchOld := func(id string) (_ any, xerr error) {
+				if id == "" {
+					return nil, gorm.ErrRecordNotFound
 				}
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = fmt.Errorf("%v", r)
+						}
+						xerr = errors.Wrap(err, "Panic")
+					}
+				}()
+				return eb.Fetcher(mb.NewModel(), id, ctx)
+			}
+			old, err := fetchOld(id)
+			edit := err == nil && old != nil
+
+			if err := in(obj, id, ctx); err != nil {
+				return err
+			}
+
+			if !edit && amb.skip&Create == 0 {
 				log, err := amb.OnCreate(ctx.R.Context(), obj)
 				if err != nil {
 					return err
@@ -151,14 +177,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				return nil
 			}
 
-			if id != "" && amb.skip&Edit == 0 {
-				old, err := eb.Fetcher(mb.NewModel(), id, ctx)
-				if err != nil {
-					return errors.Wrap(err, "fetch old record")
-				}
-				if err := in(obj, id, ctx); err != nil {
-					return err
-				}
+			if edit && amb.skip&Edit == 0 {
 				log, err := amb.OnEdit(ctx.R.Context(), old, obj)
 				if err != nil {
 					return err
@@ -166,7 +185,8 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				emitLogCreated(ctx, log)
 				return nil
 			}
-			return in(obj, id, ctx)
+
+			return nil
 		}
 	})
 

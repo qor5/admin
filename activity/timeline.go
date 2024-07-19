@@ -59,7 +59,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
 				h.Div(h.Text(msgr.AddedANote)).ClassIf(forceTextColor, forceTextColor != ""),
-				h.Pre(note.Note).Style("white-space: pre-wrap").ClassIf(forceTextColor, forceTextColor != ""),
+				h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap").ClassIf(forceTextColor, forceTextColor != ""),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 					return h.Div().Class("text-caption font-italic").Class(lo.If(forceTextColor != "", forceTextColor).Else("text-grey-darken-1")).Children(
 						h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
@@ -106,14 +106,14 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 	case ActionDelete:
 		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
 	default:
-		return h.Div(h.Text(msgr.PerformAction(log.Action, log.Detail))).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
 	}
 }
 
 func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
-		return h.Div(h.Text(perm.PermissionDenied.Error())).MarshalHTML(ctx)
+		return h.Div().Attr("v-pre", true).Text(perm.PermissionDenied.Error()).MarshalHTML(ctx)
 	}
 
 	children := []h.HTMLComponent{
@@ -170,7 +170,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 							}),
 						),
-						h.Div(h.Text(creatorName)).Class("font-weight-medium").ClassIf("text-grey", i != 0),
+						h.Div().Attr("v-pre", true).Text(creatorName).Class("font-weight-medium").ClassIf("text-grey", i != 0),
 					),
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						h.Div().Style("width: 16px"),
