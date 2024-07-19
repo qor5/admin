@@ -334,6 +334,11 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 		f.setter(obj, ctx)
 	}
 
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
 		Body: f.editComponent(obj, &FieldContext{
@@ -360,6 +365,11 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
 	}
 
 	err = f.saver(obj, id, ctx)
@@ -416,6 +426,11 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 		f.setter(obj, ctx)
 	}
 
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
 		Body: f.listComponent(obj, nil, ctx, int(deleteIndex), int(index), -1),
@@ -446,6 +461,11 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
 	}
 
 	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
@@ -484,6 +504,11 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
 	}
 
 	// delete from slice
@@ -532,6 +557,11 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
 	}
 
 	var list any
