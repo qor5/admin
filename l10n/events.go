@@ -112,13 +112,12 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 					return
 				}
 			}
-
 			newContext := context.WithValue(ctx.R.Context(), FromID, fromID)
 			newContext = context.WithValue(newContext, FromVersion, fromVersion)
 			newContext = context.WithValue(newContext, FromLocale, fromLocale)
 			ctx.R = ctx.R.WithContext(newContext)
 
-			if err = me.Saver(toObj, toParamID, ctx); err != nil {
+			if err = me.Saver(toObj, "", ctx); err != nil {
 				return
 			}
 			toObjs = append(toObjs, toObj)
