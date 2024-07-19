@@ -132,7 +132,10 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 		if id == "" {
 			return ""
 		}
-		return mb.Info().DetailingHref(id)
+		if mb.HasDetailing() {
+			return mb.Info().DetailingHref(id)
+		}
+		return ""
 	})
 
 	eb := mb.Editing()
