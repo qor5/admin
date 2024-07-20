@@ -195,7 +195,14 @@ type Messages_ModelsI18nModuleKey struct {
 	PagesLocale     string
 	PagesNotes      string
 	PagesDraftCount string
+	PagesPath       string
 	PagesOnline     string
+	PagesVersion    string
+	PagesVersions   string
+	PagesStartAt    string
+	PagesEndAt      string
+	PagesOption     string
+	PagesLive       string
 
 	Page                   string
 	PagesStatus            string
@@ -338,10 +345,17 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	PagesLocale:     "地区",
 	PagesNotes:      "备注",
 	PagesDraftCount: "草稿数",
+	PagesPath:       "路径",
 	PagesOnline:     "在线",
+	PagesVersion:    "版本",
+	PagesVersions:   "版本",
+	PagesStartAt:    "开始时间",
+	PagesEndAt:      "结束时间",
+	PagesOption:     "选项",
+	PagesLive:       "发布状态",
 
 	Page:                   "Page",
-	PagesStatus:            "PagesStatus",
+	PagesStatus:            "状态",
 	PagesSchedule:          "PagesSchedule",
 	PagesCategoryID:        "PagesCategoryID",
 	PagesTemplateSelection: "PagesTemplateSelection",
@@ -481,7 +495,14 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	PagesLocale:     "ローカル",
 	PagesNotes:      "ノート",
 	PagesDraftCount: "カウント下書き",
+	PagesPath:       "パス",
 	PagesOnline:     "オンライン",
+	PagesVersion:    "バージョン",
+	PagesVersions:   "バージョン",
+	PagesStartAt:    "開始日時",
+	PagesEndAt:      "終了日時",
+	PagesOption:     "オプション",
+	PagesLive:       "ライブ",
 
 	Page:                   "ページ",
 	PagesStatus:            "状態",

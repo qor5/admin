@@ -265,16 +265,18 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
-	listingFields := []string{"Version", "State", "StartAt", "EndAt", "Option"}
+	listingFields := []string{"Version", "Status", "StartAt", "EndAt", "Option"}
 	if pb.ab != nil {
 		defer func() { pb.ab.RegisterModel(mb) }()
-		listingFields = []string{"Version", "State", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
+		listingFields = []string{"Version", "Status", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
 	}
 
-	// TODO: i18n
 	lb := mb.Listing(listingFields...).
-		DialogWidth("900").
-		Title("Version List").
+		DialogWidth("900px").
+		TitleFunc(func(evCtx *web.EventContext) (string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			return msgr.VersionsList, nil
+		}).
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -317,7 +319,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 			),
 		)
 	})
-	lb.Field("State").ComponentFunc(StatusListFunc())
+	lb.Field("Status").ComponentFunc(StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(ScheduleInterface)
 

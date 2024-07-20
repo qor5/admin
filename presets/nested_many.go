@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
@@ -108,10 +107,9 @@ func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, uniq
 		return
 	}
 
-	msgr := MustGetMessages(evCtx.R)
-	title := b.title
-	if title == "" {
-		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	title, err := b.getTitle(evCtx)
+	if err != nil {
+		return r, err
 	}
 	evCtx.WithContextValue(ctxInDialog, true)
 
