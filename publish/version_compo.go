@@ -369,6 +369,8 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.DisableModelListeners(true)
 	lb.FooterAction("Cancel").ButtonCompFunc(func(evCtx *web.EventContext) h.HTMLComponent {
+		utilsMsgr := i18n.MustGetModuleMessages(evCtx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
 		ctx := evCtx.R.Context()
 		c := presets.ListingCompoFromContext(ctx)
 		filter := MustFilterQuery(c)
@@ -386,13 +388,15 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
 		)
 	})
-	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+	lb.FooterAction("OK").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
-		return v.VBtn("Save").Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),
