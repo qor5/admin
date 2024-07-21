@@ -27,7 +27,7 @@ const (
 	paramName = "name"
 )
 
-func profile(db *gorm.DB) presets.ComponentFunc {
+func profileX(db *gorm.DB) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 

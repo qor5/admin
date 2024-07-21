@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/pkg/errors"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
@@ -28,6 +29,7 @@ import (
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/profile"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
@@ -171,13 +173,13 @@ func NewConfig(db *gorm.DB) Config {
 	utils.Install(b)
 
 	// @snippet_begin(ActivityExample)
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
 			ID:     fmt.Sprint(u.ID),
 			Name:   u.Name,
 			Avatar: "",
-		}
+		}, nil
 	}).
 		AutoMigrate().
 		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
@@ -475,6 +477,45 @@ func configMenuOrder(b *presets.Builder) {
 }
 
 func configBrand(b *presets.Builder, db *gorm.DB) {
+	profileB := profile.New(
+		func(ctx context.Context) (*profile.User, error) {
+			evCtx := web.MustGetEventContext(ctx)
+			u := getCurrentUser(evCtx.R)
+			if u == nil {
+				return nil, perm.PermissionDenied
+			}
+			notifiCounts, err := activity.GetNotesCounts(db, fmt.Sprint(u.ID), "", nil)
+			if err != nil {
+				return nil, err
+			}
+			return &profile.User{
+				ID:   fmt.Sprint(u.ID),
+				Name: u.Name,
+				// Avatar: "",
+				Roles:     u.GetRoles(),
+				Available: u.Status == "active",
+				Fields: []*profile.UserField{
+					{Name: "Email", Value: u.Account},
+					{Name: "Company", Value: u.Company},
+				},
+				NotifCounts: notifiCounts,
+			}, nil
+		},
+		func(ctx context.Context, newName string) error {
+			evCtx := web.MustGetEventContext(ctx)
+			u := getCurrentUser(evCtx.R)
+			if u == nil {
+				return perm.PermissionDenied
+			}
+			u.Name = newName
+			if err := db.Save(u).Error; err != nil {
+				return errors.Wrap(err, "failed to update user name")
+			}
+			return nil
+		},
+	)
+	profileB.Install(b)
+
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"
@@ -504,8 +545,7 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
-	}).ProfileFunc(profile(db)).
-		NotificationFunc(notifierComponent(db), notifierCount(db)).
+	}).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
