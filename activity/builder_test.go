@@ -71,8 +71,8 @@ var currentUser = &User{
 	Avatar: "https://i.pravatar.cc/300",
 }
 
-func testCurrentUser(ctx context.Context) *User {
-	return currentUser
+func testCurrentUser(ctx context.Context) (*User, error) {
+	return currentUser, nil
 }
 
 func resetDB() {

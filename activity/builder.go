@@ -18,8 +18,6 @@ type User struct {
 	Avatar string
 }
 
-type CurrentUserFunc func(ctx context.Context) *User
-
 // @snippet_begin(ActivityBuilder)
 // Builder struct contains all necessary fields
 type Builder struct {
@@ -28,7 +26,7 @@ type Builder struct {
 	db              *gorm.DB                 // global db
 	logModelInstall presets.ModelInstallFunc // log model install
 	permPolicy      *perm.PolicyBuilder      // permission policy
-	currentUserFunc CurrentUserFunc
+	currentUserFunc func(ctx context.Context) (*User, error)
 	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
 }
 
@@ -55,7 +53,7 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 }
 
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
+func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) *Builder {
 	ab := &Builder{
 		db:              db,
 		currentUserFunc: currentUserFunc,

@@ -40,7 +40,7 @@ type TimelineCompo struct {
 }
 
 func (c *TimelineCompo) CompoID() string {
-	return fmt.Sprintf("Timeline:%s", c.ID)
+	return fmt.Sprintf("TimelineCompo:%s", c.ID)
 }
 
 func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
@@ -116,6 +116,11 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return h.Div().Attr("v-pre", true).Text(perm.PermissionDenied.Error()).MarshalHTML(ctx)
 	}
 
+	user, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	children := []h.HTMLComponent{
 		h.Div().Class("text-h6 mb-8").Text(msgr.Activities),
 		web.Scope().VSlot("{locals: xlocals,form}").Init("{showEditBox:false}").Children(
@@ -165,7 +170,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
 				h.Div().Class("flex-grow-1 d-flex flex-column pb-3").Children(
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Attr("size", "x-small").Attr("density", "compact").Attr("rounded", true).Text(avatarText).Children(
+						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeXSmall).Density(v.DensityCompact).Rounded(true).Text(avatarText).Children(
 							h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
 								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
 							}),
@@ -181,7 +186,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		)
 		if log.Action == ActionNote {
 			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
-				v.VHover().Disabled(log.CreatorID != c.ab.currentUserFunc(ctx).ID).Children(
+				v.VHover().Disabled(log.CreatorID != user.ID).Children(
 					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
 							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox").Class("d-flex flex-row ga-1").
@@ -258,7 +263,7 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
-		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, "error")
+		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, v.ColorError)
 		return
 	}
 
@@ -266,11 +271,11 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 		Note: req.Note,
 	})
 	if err != nil {
-		presets.ShowMessage(&r, msgr.FailedToCreateNote, "error")
+		presets.ShowMessage(&r, msgr.FailedToCreateNote, v.ColorError)
 		return
 	}
 
-	presets.ShowMessage(&r, msgr.SuccessfullyCreatedNote, "")
+	presets.ShowMessage(&r, msgr.SuccessfullyCreatedNote, v.ColorSuccess)
 	r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
 		Models: []any{log},
 	})
@@ -294,23 +299,23 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 
 	req.Note = strings.TrimSpace(req.Note)
 	if req.Note == "" {
-		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, "error")
+		presets.ShowMessage(&r, msgr.NoteCannotBeEmpty, v.ColorError)
 		return
 	}
 
-	creator := c.ab.currentUserFunc(ctx)
-	if creator == nil {
-		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
+	user, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
+		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, v.ColorError)
 		return
 	}
 
 	log := &ActivityLog{}
 	if err := c.ab.db.Where("id = ?", req.LogID).First(log).Error; err != nil {
-		presets.ShowMessage(&r, msgr.FailedToGetNote, "error")
+		presets.ShowMessage(&r, msgr.FailedToGetNote, v.ColorError)
 		return
 	}
-	if log.CreatorID != creator.ID {
-		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, "error")
+	if log.CreatorID != user.ID {
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, v.ColorError)
 		return
 	}
 
@@ -328,11 +333,11 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		LastEditedAt: c.ab.db.NowFunc(),
 	})
 	if err := c.ab.db.Save(log).Error; err != nil {
-		presets.ShowMessage(&r, msgr.FailedToUpdateNote, "error")
+		presets.ShowMessage(&r, msgr.FailedToUpdateNote, v.ColorError)
 		return
 	}
 
-	presets.ShowMessage(&r, msgr.SuccessfullyUpdatedNote, "")
+	presets.ShowMessage(&r, msgr.SuccessfullyUpdatedNote, v.ColorSuccess)
 	r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
 		Ids:    []string{fmt.Sprint(log.ID)},
 		Models: []any{log},
@@ -354,22 +359,22 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	creator := c.ab.currentUserFunc(ctx)
-	if creator == nil {
-		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
+	user, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
+		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, v.ColorError)
 		return
 	}
 
-	result := c.ab.db.Where("id = ? AND creator_id = ?", req.LogID, creator.ID).Delete(&ActivityLog{})
+	result := c.ab.db.Where("id = ? AND creator_id = ?", req.LogID, user.ID).Delete(&ActivityLog{})
 	if err := result.Error; err != nil {
-		presets.ShowMessage(&r, msgr.FailedToDeleteNote, "error")
+		presets.ShowMessage(&r, msgr.FailedToDeleteNote, v.ColorError)
 		return
 	}
 	if result.RowsAffected == 0 {
-		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, "error")
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, v.ColorError)
 		return
 	}
-	presets.ShowMessage(&r, msgr.SuccessfullyDeletedNote, "")
+	presets.ShowMessage(&r, msgr.SuccessfullyDeletedNote, v.ColorSuccess)
 	r.Emit(presets.NotifModelsDeleted(&ActivityLog{}), presets.PayloadModelsDeleted{
 		Ids: []string{fmt.Sprint(req.LogID)},
 	})
