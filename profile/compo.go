@@ -56,7 +56,7 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		),
 		web.Slot().Name(v.VSlotTitle).Children(
 			h.Div().Class("d-flex align-center ga-2 pt-1").Children(
-				h.Div(h.Text(user.Name)).Class("text-subtitle-2 text-secondary"),
+				h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-2 text-secondary"),
 				c.userCompo(ctx, user),
 			),
 		),
@@ -159,7 +159,7 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponen
 						h.Div().Class("d-flex flex-column").Children(
 							web.Scope().VSlot(`{ locals: xlocals }`).Init(fmt.Sprintf(`{editShow:false, name: %q}`, user.Name)).Children(
 								h.Div().Attr("v-if", "!xlocals.editShow").Class("d-flex align-center ga-2").Children(
-									h.Div().Text(user.Name).Class("text-subtitle-1 font-weight-medium"),
+									h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-1 font-weight-medium"),
 									v.VBtn("").Size(20).Variant(v.VariantText).Color(v.ColorGreyDarken1).
 										Attr("@click", "xlocals.editShow = true").Children(
 										v.VIcon("mdi-pencil-outline"),
