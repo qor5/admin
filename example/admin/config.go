@@ -20,6 +20,7 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
+	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
@@ -57,9 +58,10 @@ var assets embed.FS
 var PublishStorage oss.StorageInterface = filesystem.New("publish")
 
 type Config struct {
-	pb          *presets.Builder
-	pageBuilder *pagebuilder.Builder
-	Publisher   *publish.Builder
+	pb                  *presets.Builder
+	pageBuilder         *pagebuilder.Builder
+	Publisher           *publish.Builder
+	loginSessionBuilder *plogin.SessionBuilder
 }
 
 var (
@@ -79,7 +81,6 @@ func NewConfig(db *gorm.DB) Config {
 		&models.Post{},
 		&models.InputDemo{},
 		&models.User{},
-		&models.LoginSession{},
 		&models.ListModel{},
 		&role.Role{},
 		&perm.DefaultDBPolicy{},
@@ -335,15 +336,15 @@ func NewConfig(db *gorm.DB) Config {
 	l10nM.Use(l10nBuilder)
 	l10nVM.Use(l10nBuilder)
 
-	initLoginBuilder(db, b, ab)
+	loginSessionBuilder := initLoginBuilder(db, b, ab)
 
 	configInputDemo(b, db)
 
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, ab, db, publisher)
-	configProfile(b, db)
+	configUser(b, ab, db, publisher, loginSessionBuilder)
+	// configProfile(b, db, loginSessionBuilder)
 
 	b.Use(
 		mediab,
@@ -361,9 +362,10 @@ func NewConfig(db *gorm.DB) Config {
 	}
 
 	return Config{
-		pb:          b,
-		pageBuilder: pageBuilder,
-		Publisher:   publisher,
+		pb:                  b,
+		pageBuilder:         pageBuilder,
+		Publisher:           publisher,
+		loginSessionBuilder: loginSessionBuilder,
 	}
 }
 
@@ -489,7 +491,7 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 			if err != nil {
 				return nil, err
 			}
-			return &profile.User{
+			user := &profile.User{
 				ID:   fmt.Sprint(u.ID),
 				Name: u.Name,
 				// Avatar: "",
@@ -500,7 +502,11 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 					{Name: "Company", Value: u.Company},
 				},
 				NotifCounts: notifiCounts,
-			}, nil
+			}
+			if u.OAuthAvatar != "" {
+				user.Avatar = u.OAuthAvatar
+			}
+			return user, nil
 		},
 		func(ctx context.Context, newName string) error {
 			evCtx := web.MustGetEventContext(ctx)

@@ -17,6 +17,9 @@ const (
 	OAuthProviderGoogle          = "google"
 	OAuthProviderMicrosoftOnline = "microsoftonline"
 	OAuthProviderGithub          = "github"
+
+	StatusActive   = "active"
+	StatusInactive = "inactive"
 )
 
 var DefaultRoles = []string{

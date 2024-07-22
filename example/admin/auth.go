@@ -22,8 +22,6 @@ import (
 )
 
 var (
-	loginBuilder               *login.Builder
-	vh                         *login.ViewHelper
 	loginSecret                = osenv.Get("LOGIN_SECRET", "Login secret use to sign session", "")
 	loginGoogleKey             = osenv.Get("LOGIN_GOOGLE_KEY", "Google client key for Login with Google", "")
 	loginGoogleSecret          = osenv.Get("LOGIN_GOOGLE_SECRET", "Google client secret for Login with Google", "")
@@ -47,9 +45,8 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
-	ab.RegisterModel(&models.User{})
-	loginBuilder = plogin.New(pb).
+func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) *plogin.SessionBuilder {
+	loginBuilder := plogin.New(pb).
 		DB(db).
 		UserModel(&models.User{}).
 		Secret(loginSecret).
@@ -99,18 +96,6 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 			}
 			return nil
 		}).
-		AfterLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			_, err := ab.Log(r.Context(), "log-in", user, nil)
-			if err != nil {
-				return err
-			}
-
-			if err := addSessionLogByUserID(db, r, user.(*models.User).ID); err != nil {
-				return err
-			}
-
-			return nil
-		}).
 		AfterOAuthComplete(func(r *http.Request, user interface{}, _ ...interface{}) error {
 			u := user.(goth.User)
 			if u.Email == "" {
@@ -128,6 +113,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 
 				user := &models.User{
 					Name:             name,
+					Status:           models.StatusActive,
 					RegistrationDate: time.Now(),
 					OAuthInfo: login.OAuthInfo{
 						OAuthProvider:   u.Provider,
@@ -147,67 +133,16 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) {
 			}
 
 			return nil
-		}).
-		AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if user != nil {
-				_, err := ab.Log(r.Context(), "login-failed", user, nil)
-				return err
-			}
-			return nil
-		}).
-		AfterUserLocked(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			_, err := ab.Log(r.Context(), "locked", user, nil)
-			return err
-		}).
-		AfterLogout(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			_, err := ab.Log(r.Context(), "log-out", user, nil)
-			if err != nil {
-				return err
-			}
-
-			if err := expireCurrentSessionLog(db, r, user.(*models.User).ID); err != nil {
-				return err
-			}
-
-			return nil
-		}).
-		AfterConfirmSendResetPasswordLink(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
-			resetLink := extraVals[0]
-			_ = resetLink
-			_, err := ab.Log(r.Context(), "send-reset-password-link", user, nil)
-			return err
-		}).
-		AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
-				return err
-			}
-			_, err := ab.Log(r.Context(), "reset-password", user, nil)
-			return err
-		}).
-		AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			if err := expireAllSessionLogs(db, user.(*models.User).ID); err != nil {
-				return err
-			}
-
-			_, err := ab.Log(r.Context(), "change-password", user, nil)
-			return err
-		}).
-		AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
-			oldToken := extraVals[0].(string)
-			if err := updateCurrentSessionLog(db, r, user.(*models.User).ID, oldToken); err != nil {
-				return err
-			}
-
-			return nil
-		}).
-		AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			return nil
 		}).TOTP(false).MaxRetryCount(0)
 
-	vh = loginBuilder.ViewHelper()
-	loginBuilder.LoginPageFunc(loginPage(vh, pb))
+	loginBuilder.LoginPageFunc(loginPage(loginBuilder.ViewHelper(), pb))
 
 	genInitialUser(db)
+
+	return plogin.NewSessionBuilder(loginBuilder, db).
+		ActivityModelBuilder(ab.RegisterModel(&models.User{})).
+		AutoMigrate().
+		Setup()
 }
 
 func genInitialUser(db *gorm.DB) {
@@ -230,7 +165,8 @@ func genInitialUser(db *gorm.DB) {
 	}
 
 	user := &models.User{
-		Name: email,
+		Name:   email,
+		Status: models.StatusActive,
 		UserPass: login.UserPass{
 			Account:  email,
 			Password: password,

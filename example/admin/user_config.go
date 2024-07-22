@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/role"
@@ -27,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
+func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder, loginSessionBuilder *plogin.SessionBuilder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
 	defer func() { ab.RegisterModel(user) }()
@@ -111,7 +112,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 		if err != nil {
 			return r, err
 		}
-		err = expireAllSessionLogs(db, u.ID)
+		err = loginSessionBuilder.ExpireAllSessions(fmt.Sprint(u.ID))
 		if err != nil {
 			return r, err
 		}

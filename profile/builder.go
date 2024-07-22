@@ -65,8 +65,9 @@ func (u *User) GetFirstRole() string {
 }
 
 type Builder struct {
-	mu              sync.RWMutex
-	pb              *presets.Builder
+	mu sync.RWMutex
+	pb *presets.Builder
+
 	currentUserFunc func(ctx context.Context) (*User, error)
 	renameCallback  func(ctx context.Context, newName string) error
 }
