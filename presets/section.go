@@ -379,10 +379,11 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
+	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	btn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-square-edit-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.componentEditBtnFunc(obj, ctx))).
+		Attr("v-show", fmt.Sprintf("isHovering&&%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoEditDetailingField).
@@ -441,7 +442,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
-	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+
+	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -545,6 +548,9 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 	if b.elementEditBtnFunc != nil {
 		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
 	}
+	if b.elementEditBtn {
+		b.elementEditBtn = b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
+	}
 
 	id := ctx.Param(ParamID)
 	if id == "" {
@@ -606,7 +612,8 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		})
 	}
 
-	if !b.disableElementCreateBtn {
+	disableCreateBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
 			Attr("@click", web.Plaid().
