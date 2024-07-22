@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
@@ -492,8 +493,8 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 				ID:   fmt.Sprint(u.ID),
 				Name: u.Name,
 				// Avatar: "",
-				Roles:     u.GetRoles(),
-				Available: u.Status == "active",
+				Roles:  u.GetRoles(),
+				Status: strcase.ToCamel(u.Status),
 				Fields: []*profile.UserField{
 					{Name: "Email", Value: u.Account},
 					{Name: "Company", Value: u.Company},

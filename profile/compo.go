@@ -131,10 +131,6 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponen
 		v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary),
 		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", web.Plaid().URL(logoutURL).Go()),
 	))
-	availableText := msgr.Available
-	if !user.Available {
-		availableText = msgr.Unavailable
-	}
 
 	renameAction := stateful.PostAction(ctx, c,
 		c.Rename, RenameRequest{},
@@ -182,7 +178,11 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponen
 							),
 							h.Div().Class("text-subtitle-2 font-weight-medium text-grey-darken-1").Text(user.GetFirstRole()),
 						),
-						v.VChip().Attr("style", "height:20px").Class("align-self-start px-1 text-caption").Text(availableText).Label(true).Density(v.DensityCompact).Color(v.ColorSuccess),
+						h.Iff(user.Status != "", func() h.HTMLComponent {
+							return v.VChip().Text(user.Status).
+								Attr("style", "height:20px").Class("align-self-start px-1 text-caption").
+								Label(true).Density(v.DensityCompact).Color(v.ColorSuccess)
+						}),
 					),
 				),
 				h.Div().Class("d-flex flex-column ga-6 pa-6").Children(children...),

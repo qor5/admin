@@ -51,7 +51,7 @@ type User struct {
 	Name        string
 	Avatar      string
 	Roles       []string
-	Available   bool
+	Status      string
 	Fields      []*UserField
 	NotifCounts []*activity.NoteCount
 }
