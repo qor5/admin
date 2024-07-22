@@ -29,23 +29,18 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 		panic(err)
 	}
 	b := presets.New().RightDrawerWidth("700")
-	b.DataOperator(gorm2op.DataOperator(db))
-	order := b.Model(&models.Order{})
-	ol := order.Listing()
-	ol.BulkAction("CustomBulkAction").ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(vuetify.VBtn("CustomBulkAction"))
-	})
-
-	ol.Action("CustomAction").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(vuetify.VBtn("CustomAction"))
-	})
-
 	defer b.Build()
+	b.DataOperator(gorm2op.DataOperator(db))
 
+	testPermModelOrder(b)
+
+	perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermActions, presets.PermBulkActions, presets.PermDoListingAction, presets.PermList).On(perm.Anything),
 			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermList).On(perm.Anything),
+			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermUpdate, presets.PermGet).On(perm.Anything),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermGet).On(perm.Anything),
 		).SubjectsFunc(func(r *http.Request) []string {
 			u, ok := login.GetCurrentUser(r).(*models.User)
 			if !ok {
@@ -67,8 +62,24 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 	mux.Handle("/", m(b))
 	return mux
 }
+func testPermModelOrder(b *presets.Builder) {
+	// model order
+	order := b.Model(&models.Order{})
+	ol := order.Listing()
+	ol.BulkAction("CustomBulkAction").ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(vuetify.VBtn("CustomBulkAction"))
+	})
 
-func TestEditorPerm(t *testing.T) {
+	ol.Action("CustomAction").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(vuetify.VBtn("CustomAction"))
+	})
+
+	order.Detailing("source_section").Drawer(true)
+
+	order.Detailing("source_section").Section("source_section").Editing("Source")
+}
+
+func TestBulkActionPerm(t *testing.T) {
 	dbr, _ := TestDB.DB()
 	type Case struct {
 		multipartestutils.TestCase
@@ -102,6 +113,53 @@ func TestEditorPerm(t *testing.T) {
 					return req
 				},
 				ExpectPageBodyNotContains: []string{`CustomBulkAction`, "CustomAction"},
+			},
+			Role: models.RoleViewer,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.TestCase.Name, func(t *testing.T) {
+			h := testPermHandler(TestDB, c.Role)
+			multipartestutils.RunCase(t, c.TestCase, h)
+		})
+	}
+}
+
+func TestSectionEditPerm(t *testing.T) {
+	dbr, _ := TestDB.DB()
+	type Case struct {
+		multipartestutils.TestCase
+		Role string
+	}
+	cases := []Case{
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "Show order detail with update perm",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					admin.OrdersExampleData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/orders?__execute_event__=presets_DetailingDrawer&id=6").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectPortalUpdate0ContainsInOrder: []string{":icon='\"mdi-square-edit-outline\"' v-show='isHovering&&true&&true'"},
+			},
+			Role: models.RoleEditor,
+		},
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "Show order detail without update perm",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					admin.OrdersExampleData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/orders?__execute_event__=presets_DetailingDrawer&id=6").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectPortalUpdate0ContainsInOrder: []string{":icon='\"mdi-square-edit-outline\"' v-show='isHovering&&true&&false'"},
 			},
 			Role: models.RoleViewer,
 		},
