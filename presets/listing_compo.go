@@ -182,25 +182,29 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	return VTextField().
-		Id(c.textFieldSearchID()).
-		Density(DensityCompact).
-		Variant(FieldVariantOutlined).
-		Label(msgr.Search).
-		Flat(true).
-		Clearable(true).
-		HideDetails(true).
-		SingleLine(true).
-		ModelValue(c.Keyword).
-		Attr("@keyup.enter", stateful.ReloadAction(ctx, c, nil,
-			stateful.WithAppendFix(`v.compo.keyword = $event.target.value`),
-		).Go()).
-		Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-			target.Keyword = ""
-		}).Go()).
-		Children(
-			web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-		)
+	reloadAction := stateful.ReloadAction(ctx, c, nil,
+		stateful.WithAppendFix(`v.compo.keyword = xlocals.keyword`),
+	).Go()
+	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
+		VTextField().
+			Id(c.textFieldSearchID()).
+			Density(DensityCompact).
+			Variant(FieldVariantOutlined).
+			Label(msgr.Search).
+			Flat(true).
+			Clearable(true).
+			HideDetails(true).
+			SingleLine(true).
+			ModelValue(c.Keyword).
+			Attr("v-model", "xlocals.keyword").
+			Attr("@keyup.enter", reloadAction).
+			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				target.Keyword = ""
+			}).Go()).
+			Children(
+				web.Slot(VIcon("mdi-magnify").Attr("@click", reloadAction)).Name("append-inner"),
+			),
+	)
 }
 
 func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTMLComponent {
