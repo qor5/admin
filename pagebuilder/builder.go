@@ -607,7 +607,7 @@ func (b *Builder) configDetailLayoutFunc(
 	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
 		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 			pb.PageTitleFunc(nil)
-			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") && b.templateModel != nil && !strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/") {
+			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") {
 				pr, err = oldDetailLayout(in, cfg)(ctx)
 				return
 			}

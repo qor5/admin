@@ -884,6 +884,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  font-weight: 400;
 			  line-height: 16px; 
               text-overflow: ellipsis;
+              white-space: nowrap;
 			  letter-spacing: 0.04px;	
 			}
 			
