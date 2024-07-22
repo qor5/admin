@@ -33,7 +33,8 @@ INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_
 SELECT setval('page_builder_categories_id_seq', 1, true);
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'International', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
 SELECT setval('page_builder_pages_id_seq', 1, true);
-`, []string{"page_builder_pages", "page_builder_categories"}))
+INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code) VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456', '');
+`, []string{"page_builder_pages", "page_builder_categories", "page_builder_templates"}))
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
@@ -542,6 +543,19 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"test1"},
+		},
+		{
+			Name:  "Template detail ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_templates/1").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"123", "456"},
 		},
 	}
 
