@@ -182,7 +182,7 @@ func TestSectionEditPerm(t *testing.T) {
 		},
 		{
 			TestCase: multipartestutils.TestCase{
-				Name:  "Save order section without update perm",
+				Name:  "Save order section with update perm",
 				Debug: true,
 				ReqFunc: func() *http.Request {
 					admin.OrdersExampleData.TruncatePut(dbr)
