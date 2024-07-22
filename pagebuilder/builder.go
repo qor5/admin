@@ -424,7 +424,12 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 
 func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
-	lb := pm.Listing("ID", "Title", publish.ListingFieldLive, "Path")
+
+	listingFields := []string{"ID", "Title", publish.ListingFieldLive, "Path"}
+	if b.ab != nil {
+		listingFields = append(listingFields, activity.ListFieldNotes)
+	}
+	lb := pm.Listing(listingFields...)
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -433,15 +438,13 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
 	})
+
 	detailList := []interface{}{"Title", PageBuilderPreviewCard, "Page"}
 	if b.seoBuilder != nil {
 		detailList = append(detailList, seo.SeoDetailFieldName)
 	}
 
 	dp := pm.Detailing(detailList...)
-	if b.ab != nil {
-		detailList = append(detailList, activity.ListFieldNotes)
-	}
 	dp.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var versionBadge *VChipBuilder
 		if v, ok := obj.(PrimarySlugInterface); ok {

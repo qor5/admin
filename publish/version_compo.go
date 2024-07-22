@@ -265,16 +265,18 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
-	listingFields := []string{"Version", "State", "StartAt", "EndAt", "Option"}
+	listingFields := []string{"Version", "Status", "StartAt", "EndAt", "Option"}
 	if pb.ab != nil {
 		defer func() { pb.ab.RegisterModel(mb) }()
-		listingFields = []string{"Version", "State", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
+		listingFields = []string{"Version", "Status", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
 	}
 
-	// TODO: i18n
 	lb := mb.Listing(listingFields...).
-		DialogWidth("900").
-		Title("Version List").
+		DialogWidth("900px").
+		TitleFunc(func(evCtx *web.EventContext) (string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			return msgr.VersionsList, nil
+		}).
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -317,7 +319,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 			),
 		)
 	})
-	lb.Field("State").ComponentFunc(StatusListFunc())
+	lb.Field("Status").ComponentFunc(StatusListFunc())
 	lb.Field("StartAt").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(ScheduleInterface)
 
@@ -367,6 +369,8 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.DisableModelListeners(true)
 	lb.FooterAction("Cancel").ButtonCompFunc(func(evCtx *web.EventContext) h.HTMLComponent {
+		utilsMsgr := i18n.MustGetModuleMessages(evCtx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
 		ctx := evCtx.R.Context()
 		c := presets.ListingCompoFromContext(ctx)
 		filter := MustFilterQuery(c)
@@ -384,13 +388,15 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn("Cancel").Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
 		)
 	})
-	lb.FooterAction("Save").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+	lb.FooterAction("OK").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
-		return v.VBtn("Save").Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),

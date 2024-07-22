@@ -37,7 +37,8 @@ type ListingBuilder struct {
 
 	// title is the title of the listing page.
 	// its default value is "Listing ${modelName}".
-	title string
+	title     string
+	titleFunc func(evCtx *web.EventContext) (string, error)
 
 	// perPage is the number of records per page.
 	// if request query param "per_page" is set, it will be set to that value.
@@ -118,6 +119,11 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 
 func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
+	return b
+}
+
+func (b *ListingBuilder) TitleFunc(f func(evCtx *web.EventContext) (string, error)) (r *ListingBuilder) {
+	b.titleFunc = f
 	return b
 }
 
@@ -213,10 +219,9 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		return r, perm.PermissionDenied
 	}
 
-	msgr := MustGetMessages(evCtx.R)
-	title := b.title
-	if title == "" {
-		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	title, err := b.getTitle(evCtx)
+	if err != nil {
+		return r, err
 	}
 	r.PageTitle = title
 
@@ -239,16 +244,26 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	return
 }
 
+func (b *ListingBuilder) getTitle(evCtx *web.EventContext) (string, error) {
+	if b.titleFunc != nil {
+		return b.titleFunc(evCtx)
+	}
+	title := b.title
+	if title == "" {
+		title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	}
+	return title, nil
+}
+
 func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
 		err = perm.PermissionDenied
 		return
 	}
 
-	msgr := MustGetMessages(evCtx.R)
-	title := b.title
-	if title == "" {
-		title = msgr.ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	title, err := b.getTitle(evCtx)
+	if err != nil {
+		return r, err
 	}
 
 	evCtx.WithContextValue(ctxInDialog, true)

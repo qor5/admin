@@ -78,7 +78,7 @@ func EnsureVersionListDisplay(selected string, dislayModels []*examples_admin.Wi
 			"active_filter_tab", "f_named_versions", "f_select_id", selected, "Named Versions",
 			"</v-tabs>",
 			// Ensure columns display
-			"<tr>", "<th>Version</th>", "<th>State</th>", "<th>Start at</th>", "<th>End at</th>", "<th>Notes</th>", "<th>Option</th>", "</tr>",
+			"<tr>", "<th>Version</th>", "<th>Status</th>", "<th>Start at</th>", "<th>End at</th>", "<th>Notes</th>", "<th>Option</th>", "</tr>",
 		),
 		// Ensure list content display
 		testflow.WrapEvent(func(t *testing.T, w *httptest.ResponseRecorder, r *http.Request, e multipartestutils.TestEventResponse) {
