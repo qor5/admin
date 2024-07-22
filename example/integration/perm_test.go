@@ -194,7 +194,7 @@ func TestSectionEditPerm(t *testing.T) {
 					return req
 				},
 				ExpectPortalUpdate0ContainsInOrder: []string{"newSource"},
-			}
+			},
 			Role: models.RoleEditor,
 		},
 	}
