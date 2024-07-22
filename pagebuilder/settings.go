@@ -101,7 +101,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 							Style(`pointer-events: none; 
  -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
   mask-image: radial-gradient(circle, black 80px, transparent);
-transform-origin: 0 0; transform:scale(0.5);width:200%;`),
+transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					),
 				).Class(W100, H100),
 				h.Div(
