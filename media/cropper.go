@@ -89,9 +89,10 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 						VCardText(
 							c,
 						),
-					).Height(500),
+					),
 				).ModelValue(true).
 					Scrollable(true).
+					Height(500).
 					MaxWidth("800px"),
 			).Init(`{cropping: false}`).VSlot("{ locals: cropLocals}"),
 		})
