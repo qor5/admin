@@ -163,6 +163,40 @@ func TestSectionEditPerm(t *testing.T) {
 			},
 			Role: models.RoleViewer,
 		},
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "Save order section without update perm",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					admin.OrdersExampleData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/orders?__execute_event__=presets_Detailing_Field_Save&id=6").
+						Query("detailField", "source_section").
+						AddField("source_section.Source", "newSource").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectRunScriptContainsInOrder: []string{"permission denied"},
+			},
+			Role: models.RoleViewer,
+		},
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "Save order section without update perm",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					admin.OrdersExampleData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/orders?__execute_event__=presets_Detailing_Field_Save&id=6").
+						Query("detailField", "source_section").
+						AddField("source_section.Source", "newSource").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectPortalUpdate0ContainsInOrder: []string{"newSource"},
+			}
+			Role: models.RoleEditor,
+		},
 	}
 
 	for _, c := range cases {
