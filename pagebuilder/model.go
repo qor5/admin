@@ -880,7 +880,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  overflow: hidden;	
 			  font-size: 12px;
 			  font-style: normal;
-			  max-width: calc(100% - 80px);
+			  max-width: calc(100% - 88px);
 			  font-weight: 400;
 			  line-height: 16px; 
               text-overflow: ellipsis;
