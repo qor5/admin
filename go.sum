@@ -317,8 +317,8 @@ github.com/qor/oss v0.0.0-20230717083721-c04686f83630 h1:CRi4xF7B8aGX/y48NCjarNd
 github.com/qor/oss v0.0.0-20230717083721-c04686f83630/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
-github.com/qor5/web/v3 v3.0.5-0.20240717040023-4b80a69c031d h1:IKW0l0FZAmczHynvBOH6MQjfqpL5v9pSf094uO7U9io=
-github.com/qor5/web/v3 v3.0.5-0.20240717040023-4b80a69c031d/go.mod h1:RPLKS/poCC6yN+CKPQB1iS7g2V0iz7vIsJSY6v/8zY0=
+github.com/qor5/web/v3 v3.0.5-0.20240723094007-d24081129126 h1:LfWbM+CBJbgDqKDyRk8GeYYOoZ8UgQG17t5DwoYUX9o=
+github.com/qor5/web/v3 v3.0.5-0.20240723094007-d24081129126/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/qor5/x/v3 v3.0.6-0.20240716033136-45995deaaeb2 h1:+PKEd+OBDnJj6OVz4I+GubbiUmzMXsOiR/tOk7paidY=
 github.com/qor5/x/v3 v3.0.6-0.20240716033136-45995deaaeb2/go.mod h1:85rLAySzyq7L0dWXzICMnBVULCv53AtYmx3x1qeCDx0=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
@@ -375,8 +375,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/sunfmin/reflectutils v1.0.5 h1:izu+W1FasRz0KXUqFo/h4GKsXveDiUt3SwVvFs6w0wU=
-github.com/sunfmin/reflectutils v1.0.5/go.mod h1:ao2bbF4RZrTe2PboJKdZoC3BA71gdU6rFkCuUjoeqMw=
+github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9 h1:uGwnYgklZ5WLaQO8GKg4vGP2kykhrQztoAZ5/huKnG0=
+github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9/go.mod h1:ao2bbF4RZrTe2PboJKdZoC3BA71gdU6rFkCuUjoeqMw=
 github.com/sunfmin/snippetgo v0.0.3 h1:pMCpFCyW2fYHhfLp4tb5ccvTCpIuSNFomtDCr9duUaE=
 github.com/sunfmin/snippetgo v0.0.3/go.mod h1:Ue+VuRdcJfuRkdxawPJOYYqKw1MgeJNwAz1qCc1pazQ=
 github.com/testcontainers/testcontainers-go v0.31.0 h1:W0VwIhcEVhRflwL9as3dhY6jXjVCA27AkmbnZ+UTh3U=
