@@ -26,13 +26,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20230717083721-c04686f83630
-	github.com/qor5/web/v3 v3.0.5-0.20240717040023-4b80a69c031d
+	github.com/qor5/web/v3 v3.0.5-0.20240723094007-d24081129126
 	github.com/qor5/x/v3 v3.0.6-0.20240723060143-cae2d56f60a2
 	github.com/samber/lo v1.46.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/sunfmin/reflectutils v1.0.5
+	github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9
 	github.com/sunfmin/snippetgo v0.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.16

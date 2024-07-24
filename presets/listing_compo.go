@@ -158,6 +158,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 		tabs.AppendChildren(
 			VTab().
 				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+					target.Page = 0
 					target.ActiveFilterTab = ft.ID
 					target.FilterQuery = encodedQuery
 				}).Go()).
@@ -182,7 +183,10 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	reloadAction := stateful.ReloadAction(ctx, c, nil,
+	reloadAction := stateful.ReloadAction(ctx, c,
+		func(target *ListingCompo) {
+			target.Page = 0
+		},
 		stateful.WithAppendFix(`v.compo.keyword = xlocals.keyword`),
 	).Go()
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
@@ -199,6 +203,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Attr("v-model", "xlocals.keyword").
 			Attr("@keyup.enter", reloadAction).
 			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				target.Page = 0
 				target.Keyword = ""
 			}).Go()).
 			Children(
@@ -287,7 +292,9 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		}`))
 	return web.Scope().VSlot("{locals:xlocals}").Init("{textFieldSearchElem: null}").Children(
 		vx.VXFilter(fd).Translations(ft).
-			UpdateModelValue(stateful.ReloadAction(ctx, c, nil, opts...).Go()).
+			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				target.Page = 0
+			}, opts...).Go()).
 			Attr("v-run", fmt.Sprintf(`(el) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
 			}`, c.textFieldSearchID())),
@@ -440,6 +447,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 			}
 			return h.Th("").Style("cursor: pointer; white-space: nowrap;").
 				Attr("@click.stop", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+					target.Page = 0
 					if orderBy.OrderBy == OrderByASC {
 						orderBy.OrderBy = OrderByDESC
 					} else {
@@ -513,7 +521,10 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
-				OnSelectPerPage(stateful.ReloadAction(ctx, c, nil,
+				OnSelectPerPage(stateful.ReloadAction(ctx, c,
+					func(target *ListingCompo) {
+						target.Page = 0
+					},
 					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
 				).Go()).
 				OnPrevPage(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
