@@ -43,7 +43,7 @@ func Router(db *gorm.DB) http.Handler {
 	c := NewConfig(db)
 
 	mux := http.NewServeMux()
-	c.loginSessionBuilder.GetLoginBuilder().Mount(mux)
+	c.loginSessionBuilder.Mount(mux)
 	//	mux.Handle("/frontstyle.css", c.pb.GetWebBuilder().PacksHandler("text/css", web.ComponentsPack(`
 	// :host {
 	//	all: initial;

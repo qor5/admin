@@ -110,7 +110,7 @@ func NewConfig(db *gorm.DB) Config {
 		Session:  sess,
 		Endpoint: publishURL,
 	}))
-	b := presets.New().RightDrawerWidth("700")
+	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
@@ -335,7 +335,8 @@ func NewConfig(db *gorm.DB) Config {
 	l10nM.Use(l10nBuilder)
 	l10nVM.Use(l10nBuilder)
 
-	loginSessionBuilder := initLoginBuilder(db, b, ab)
+	loginSessionBuilder := initLoginSessionBuilder(db, b, ab)
+	defer func() { loginSessionBuilder.Setup() }()
 
 	configBrand(b, db, loginSessionBuilder)
 
@@ -345,7 +346,6 @@ func NewConfig(db *gorm.DB) Config {
 	configECDashboard(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
-	// configProfile(b, db, loginSessionBuilder)
 
 	b.Use(
 		mediab,
@@ -554,16 +554,13 @@ func configBrand(b *presets.Builder, db *gorm.DB, lsb *plogin.SessionBuilder) {
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
-	}).
-		DataOperator(gorm2op.DataOperator(db)).
-		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			r.PageTitle = "Home"
-			r.Body = Dashboard()
-			return
-		}).
-		NotFoundPageLayoutConfig(&presets.LayoutConfig{
-			NotificationCenterInvisible: true,
-		})
+	}).HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		r.PageTitle = "Home"
+		r.Body = Dashboard()
+		return
+	}).NotFoundPageLayoutConfig(&presets.LayoutConfig{
+		NotificationCenterInvisible: true,
+	})
 }
 
 func configPost(

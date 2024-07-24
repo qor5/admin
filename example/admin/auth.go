@@ -45,7 +45,7 @@ func getCurrentUser(r *http.Request) (u *models.User) {
 	return u
 }
 
-func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) *plogin.SessionBuilder {
+func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) *plogin.SessionBuilder {
 	loginBuilder := plogin.New(pb).
 		DB(db).
 		UserModel(&models.User{}).
@@ -149,8 +149,7 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) *p
 			}
 			return user.GetAccountName() == loginInitialUserEmail
 		}).
-		AutoMigrate().
-		Setup()
+		AutoMigrate()
 }
 
 func genInitialUser(db *gorm.DB) {

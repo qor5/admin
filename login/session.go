@@ -74,6 +74,14 @@ func (b *SessionBuilder) IsPublicUser(f func(user any) bool) *SessionBuilder {
 	return b
 }
 
+func (b *SessionBuilder) Mount(mux *http.ServeMux) {
+	b.lb.Mount(mux)
+}
+
+func (b *SessionBuilder) MountAPI(mux *http.ServeMux) {
+	b.lb.MountAPI(mux)
+}
+
 func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
