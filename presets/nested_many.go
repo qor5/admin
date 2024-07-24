@@ -2,12 +2,12 @@ package presets
 
 import (
 	"fmt"
-	"github.com/qor5/web"
 	"reflect"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
