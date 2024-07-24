@@ -24,6 +24,8 @@ type MediaLibrary struct {
 	SelectedType string
 	File         MediaLibraryStorage `sql:"size:4294967295;" mediaLibrary:"url:/system/{{class}}/{{primary_key}}/{{column}}.{{extension}}"`
 	UserID       uint                `sql:"index"`
+	Dir          bool
+	ParentId     uint `sql:"index"`
 }
 
 type MediaOption struct {

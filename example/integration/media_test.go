@@ -4,6 +4,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/admin/v3/media/media_library"
+
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/web/v3"
+
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
 	"gorm.io/gorm"
@@ -51,6 +56,33 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"test_search1.png", "test_search2.png"},
+		},
+
+		{
+			Name:  "MediaLibrary Create Directory",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/1_2024-06-19-v01_International").
+					Query(web.EventFuncIDName, media.CreateDirectoryEvent).
+					AddField(media.ParamDirName, "test_create_directory").
+					AddField(media.ParamParentID, "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m *media_library.MediaLibrary
+				if err := TestDB.Order("id desc").First(&m).Error; err != nil {
+					t.Fatalf("create directory err : %v", err)
+					return
+				}
+				if !m.Dir || m.File.FileName != "test_create_directory" {
+					t.Fatalf("create directory : %#+v", m)
+					return
+				}
+			},
 		},
 	}
 

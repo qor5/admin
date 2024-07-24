@@ -33,3 +33,7 @@ func currentPageName(field string) string {
 func fileCroppingVarName(id uint) string {
 	return fmt.Sprintf("fileChooser%d_cropping", id)
 }
+
+const (
+	newFolderDialogPortalName = "media_new_folder_dialog_portal_name"
+)

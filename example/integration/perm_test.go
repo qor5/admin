@@ -62,6 +62,7 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 	mux.Handle("/", m(b))
 	return mux
 }
+
 func testPermModelOrder(b *presets.Builder) {
 	// model order
 	order := b.Model(&models.Order{})

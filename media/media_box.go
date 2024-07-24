@@ -28,6 +28,9 @@ type MediaBoxConfigKey int
 const (
 	MediaBoxConfig      MediaBoxConfigKey = iota
 	I18nMediaLibraryKey i18n.ModuleKey    = "I18nMediaLibraryKey"
+
+	ParamDirName  = "dir_name"
+	ParamParentID = "parent_id"
 )
 
 func AutoMigrate(db *gorm.DB) (err error) {
@@ -241,6 +244,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
+								MergeQuery(true).
 								EventFunc(doDeleteEvent).
 								Query("field", field).
 								Query(mediaID, id).
@@ -508,6 +512,63 @@ func updateDescription(mb *Builder) web.EventFunc {
 		}
 
 		r.RunScript = `vars.snackbarShow = true;`
+		return
+	}
+}
+
+func createDirectory(mb *Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			dirName  = ctx.Param(ParamDirName)
+			parentID = ctx.ParamAsInt(ParamParentID)
+			m        = &media_library.MediaLibrary{Dir: true, ParentId: uint(parentID)}
+		)
+		if dirName == "" {
+			presets.ShowMessage(&r, "folder name can`t be empty", ColorWarning)
+			return
+		}
+		m.File.FileName = dirName
+		var uid uint
+		if mb.currentUserID != nil {
+			uid = mb.currentUserID(ctx)
+		}
+		m.UserID = uid
+		m.ParentId = uint(parentID)
+		if err = mb.db.Save(&m).Error; err != nil {
+			return
+		}
+		r.RunScript = web.Plaid().MergeQuery(true).PushState(true).Go()
+		return
+	}
+}
+
+func newFolderDialog(mb *Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: newFolderDialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						web.Slot(h.Text("New Folder")).Name("title"),
+						web.Slot(
+							VSpacer(),
+							VBtn("").Icon("mdi-close").
+								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
+						).Name(VSlotAppend),
+						VTextField().Variant(FieldVariantUnderlined).
+							Class("px-6").
+							Label("Folder Name").Attr(web.VField(ParamDirName, "")...),
+						VCardActions(
+							VSpacer(),
+							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn("Ok").Color(ColorPrimary).Attr("@click",
+								web.Plaid().EventFunc(CreateDirectoryEvent).MergeQuery(true).Go(),
+							),
+						),
+					),
+				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
+		})
 		return
 	}
 }
