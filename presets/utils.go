@@ -2,6 +2,7 @@ package presets
 
 import (
 	"fmt"
+	"github.com/sunfmin/reflectutils"
 	"net/url"
 	"time"
 
@@ -121,4 +122,14 @@ func toValidationErrors(err error) *web.ValidationErrors {
 	vErr := &web.ValidationErrors{}
 	vErr.GlobalError(err.Error())
 	return vErr
+}
+
+func GetPrimaryKey(obj interface{}) string {
+	var id string
+	if slugger, ok := obj.(SlugEncoder); ok {
+		id = slugger.PrimarySlug()
+	} else {
+		id = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+	}
+	return id
 }

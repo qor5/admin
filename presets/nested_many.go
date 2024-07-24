@@ -74,12 +74,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 	})
 
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var pid string
-		if slugger, ok := obj.(SlugEncoder); ok {
-			pid = slugger.PrimarySlug()
-		} else {
-			pid = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
-		}
+		pid := GetPrimaryKey(obj)
 
 		compo, err := mb.Listing().InlineComponent(ctx, pid, fb.name)
 		if err != nil {

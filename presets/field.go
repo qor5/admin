@@ -609,11 +609,8 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	id, err := reflectutils.Get(obj, "ID")
-	edit := false
-	if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
-		edit = true
-	}
+	id := GetPrimaryKey(obj)
+	edit := id != ""
 
 	var layout []interface{}
 	if b.fieldsLayout == nil {
