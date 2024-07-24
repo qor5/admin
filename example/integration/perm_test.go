@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"testing"
@@ -212,7 +211,6 @@ func TestBulkActionPerm(t *testing.T) {
 		t.Run(c.TestCase.Name, func(t *testing.T) {
 			h := testPermHandler(TestDB, c.Role)
 			multipartestutils.RunCase(t, c.TestCase, h)
-			fmt.Println("1")
 		})
 	}
 }

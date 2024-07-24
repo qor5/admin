@@ -585,7 +585,6 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 		case string:
 			m, ok := mMap[v]
 			if !ok {
-				fmt.Println(inflection.Plural(strcase.ToKebab(v)))
 				m = mMap[inflection.Plural(strcase.ToKebab(v))]
 			}
 			if m == nil {

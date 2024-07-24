@@ -259,7 +259,6 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		URIName(pm.Info().URIName() + versionListDialogURISuffix).
 		InMenu(false)
 
-	fmt.Println(fmt.Sprintf("%s", pm.Info().URIName()))
 	b.GetPermission().CreatePolicies(
 		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
 	)
