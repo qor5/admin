@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/samber/lo"
-	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -108,19 +107,6 @@ func ParsePrimaryKeys(v any) []string {
 	}
 	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
 	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
-}
-
-func ObjectID(obj any) string {
-	var id string
-	if slugger, ok := obj.(presets.SlugEncoder); ok {
-		id = slugger.PrimarySlug()
-	} else {
-		v, err := reflectutils.Get(obj, "ID")
-		if err == nil {
-			id = fmt.Sprint(v)
-		}
-	}
-	return id
 }
 
 func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {

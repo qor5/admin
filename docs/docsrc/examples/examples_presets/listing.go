@@ -97,7 +97,17 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
 
 	cl = mb.Listing("ID", "Name", "Company", "Email").
-		SearchColumns("name", "email").SelectableColumns(true)
+		SearchColumns("name", "email").SelectableColumns(true).
+		OrderableFields([]*presets.OrderableField{
+			{
+				FieldName: "ID",
+				DBColumn:  "id",
+			},
+			{
+				FieldName: "Name",
+				DBColumn:  "name",
+			},
+		})
 	cl.Field("Company").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		c := obj.(*Customer)
 		var comp Company

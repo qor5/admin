@@ -18,6 +18,8 @@ type NestedManyBuilder struct {
 	*ModelBuilder
 	parent     *ModelBuilder
 	foreignKey string
+
+	initialListingCompoProcessor func(evCtx *web.EventContext, lb *ListingBuilder, compo *ListingCompo) error
 }
 
 const ParamParentID = "parent_id"
@@ -40,6 +42,11 @@ func (parent *ModelBuilder) NestedMany(elementModel any, foreignKey string) *Nes
 		parent:       parent,
 		foreignKey:   foreignKey,
 	}
+}
+
+func (mb *NestedManyBuilder) InitialListingCompoProcessor(f func(evCtx *web.EventContext, lb *ListingBuilder, compo *ListingCompo) error) *NestedManyBuilder {
+	mb.initialListingCompoProcessor = f
+	return mb
 }
 
 func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
@@ -76,7 +83,10 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		pid := GetPrimaryKey(obj)
 
-		compo, err := mb.Listing().InlineComponent(ctx, pid, fb.name)
+		compo, err := mb.Listing().nestedManyComponent(ctx,
+			pid, fb.name,
+			mb.initialListingCompoProcessor,
+		)
 		if err != nil {
 			panic(err)
 		}
@@ -96,10 +106,12 @@ func hasField(rt reflect.Type, name string) bool {
 	return false
 }
 
-func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, unique string) (r h.HTMLComponent, err error) {
+func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
+	parentID, unique string,
+	initialCompoPreprocessor func(evCtx *web.EventContext, lb *ListingBuilder, compo *ListingCompo) error,
+) (r h.HTMLComponent, err error) {
 	if b.mb.Info().Verifier().Do(PermList).WithReq(evCtx.R).IsAllowed() != nil {
-		err = perm.PermissionDenied
-		return
+		return r, perm.PermissionDenied
 	}
 
 	title, err := b.getTitle(evCtx)
@@ -115,8 +127,12 @@ func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, uniq
 		LongStyleSearchBox: true,
 		ParentID:           parentID,
 	}
-
-	r = web.Scope().VSlot("{ form }").Children(
+	if initialCompoPreprocessor != nil {
+		if err := initialCompoPreprocessor(evCtx, b, compo); err != nil {
+			return r, err
+		}
+	}
+	return web.Scope().VSlot("{ form }").Children(
 		VCard().Elevation(0).Class("ma-n2").Children(
 			VCardTitle().Class("d-flex align-center").Children(
 				h.Text(title),
@@ -127,6 +143,5 @@ func (b *ListingBuilder) InlineComponent(evCtx *web.EventContext, parentID, uniq
 				b.mb.p.dc.MustInject(injectorName, compo),
 			),
 		),
-	)
-	return
+	), nil
 }

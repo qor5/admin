@@ -53,13 +53,14 @@ type ListingBuilder struct {
 	// 3. all data will be returned in one page.
 	disablePagination bool
 
-	orderBy           string
-	orderableFields   []*OrderableField
-	selectableColumns bool
-	conditions        []*SQLCondition
-	dialogWidth       string
-	dialogHeight      string
-	keywordSearchOff  bool
+	orderBy                 string
+	orderableFields         []*OrderableField
+	selectableColumns       bool
+	conditions              []*SQLCondition
+	dialogWidth             string
+	dialogHeight            string
+	keywordSearchOff        bool
+	displayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
 	FieldsBuilder
 
 	once                  sync.Once
@@ -129,6 +130,11 @@ func (b *ListingBuilder) TitleFunc(f func(evCtx *web.EventContext) (string, erro
 
 func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	b.keywordSearchOff = v
+	return b
+}
+
+func (b *ListingBuilder) DisplayColumnsProcessor(f func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)) (r *ListingBuilder) {
+	b.displayColumnsProcessor = f
 	return b
 }
 
