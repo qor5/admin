@@ -3,7 +3,6 @@ package media
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/qor5/admin/v3/media/base"
 
@@ -47,7 +46,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		}
 
 		c := cropper.Cropper().
-			Src(m.File.URL("original")+"?"+fmt.Sprint(time.Now().Nanosecond())).
+			Src(m.File.URL("original")).
 			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			AutoCropArea(1).
 			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
@@ -88,8 +87,8 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 						).Class("pl-2 pr-2"),
 						VCardText(
 							c,
-						),
-					).Height(500),
+						).Attr("style", "max-height: 500px"),
+					),
 				).ModelValue(true).
 					Scrollable(true).
 					MaxWidth("800px"),

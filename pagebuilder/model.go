@@ -854,8 +854,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
-			  width: 32%;
 			  height: 32px;	
+              max-width: calc(50% - 0px);
 			  opacity: 0;
               display: flex;
 			  align-items: center;	
@@ -877,10 +877,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			
 			.editor-bar .title {
 			  color: #FFFFFF;
-		      width: 30%;
 			  overflow: hidden;	
 			  font-size: 12px;
 			  font-style: normal;
+			  max-width: calc(100% - 88px);
 			  font-weight: 400;
 			  line-height: 16px; 
               text-overflow: ellipsis;
