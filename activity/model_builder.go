@@ -129,7 +129,7 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
-		id := ObjectID(a)
+		id := presets.ObjectID(a)
 		if id == "" {
 			return ""
 		}

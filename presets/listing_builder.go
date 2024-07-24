@@ -53,14 +53,14 @@ type ListingBuilder struct {
 	// 3. all data will be returned in one page.
 	disablePagination bool
 
-	orderBy                   string
-	orderableFields           []*OrderableField
-	selectableColumns         bool
-	conditions                []*SQLCondition
-	dialogWidth               string
-	dialogHeight              string
-	keywordSearchOff          bool
-	availableColumnsProcessor func(evCtx *web.EventContext, availableColumns []DisplayColumn) ([]DisplayColumn, error)
+	orderBy                 string
+	orderableFields         []*OrderableField
+	selectableColumns       bool
+	conditions              []*SQLCondition
+	dialogWidth             string
+	dialogHeight            string
+	keywordSearchOff        bool
+	displayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
 	FieldsBuilder
 
 	once                  sync.Once
@@ -133,8 +133,8 @@ func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) AvailableColumnsProcessor(f func(evCtx *web.EventContext, availableColumns []DisplayColumn) ([]DisplayColumn, error)) (r *ListingBuilder) {
-	b.availableColumnsProcessor = f
+func (b *ListingBuilder) DisplayColumnsProcessor(f func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)) (r *ListingBuilder) {
+	b.displayColumnsProcessor = f
 	return b
 }
 
@@ -344,25 +344,4 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 		),
 	})
 	return
-}
-
-func (b *ListingBuilder) GetAvailableColumns(evCtx *web.EventContext) ([]DisplayColumn, error) {
-	var availableColumns []DisplayColumn
-	for _, f := range b.fields {
-		if b.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(evCtx.R).IsAllowed() != nil {
-			continue
-		}
-		availableColumns = append(availableColumns, DisplayColumn{
-			Name:    f.name,
-			Visible: true,
-		})
-	}
-	if b.availableColumnsProcessor != nil {
-		var err error
-		availableColumns, err = b.availableColumnsProcessor(evCtx, availableColumns)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return availableColumns, nil
 }

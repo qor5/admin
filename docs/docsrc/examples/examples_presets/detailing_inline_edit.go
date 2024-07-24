@@ -1,6 +1,8 @@
 package examples_presets
 
 import (
+	"log"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -122,14 +124,17 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	dp.Field("CreditCards").Use(ccmb)
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
-	// force ignore ExpireYearMonth column
-	ccmb2.Listing().AvailableColumnsProcessor(func(evCtx *web.EventContext, availableColumns []presets.DisplayColumn) ([]presets.DisplayColumn, error) {
-		for i, v := range availableColumns {
+	// force ignore ExpireYearMonth column if you need
+	ccmb2.Listing().DisplayColumnsProcessor(func(evCtx *web.EventContext, displayColumns []*presets.DisplayColumn) ([]*presets.DisplayColumn, error) {
+		listCompo := presets.ListingCompoFromContext(evCtx.R.Context())
+		log.Printf("ParentID: %v", listCompo.ParentID)
+
+		for _, v := range displayColumns {
 			if v.Name == "ExpireYearMonth" {
-				availableColumns[i].Visible = false
+				v.Visible = false
 			}
 		}
-		return availableColumns, nil
+		return displayColumns, nil
 	})
 
 	dp.Field("CreditCards2").Use(ccmb2)
