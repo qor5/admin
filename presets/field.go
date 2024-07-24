@@ -609,7 +609,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	id := MustObjectID(obj)
+	id := ObjectID(obj)
 	edit := id != ""
 
 	var layout []interface{}
