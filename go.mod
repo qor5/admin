@@ -32,7 +32,7 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
-	github.com/sunfmin/reflectutils v1.0.6
+	github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9
 	github.com/sunfmin/snippetgo v0.0.3
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.16
