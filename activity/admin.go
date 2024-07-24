@@ -130,6 +130,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			panic(err)
 		}
 		for _, action := range actions {
+			if action == ActionLastView {
+				continue
+			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
 				Text:  string(action),
 				Value: string(action),
