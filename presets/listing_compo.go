@@ -423,7 +423,10 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.Wrap(err, "searcher error"))
 	}
 
-	btnConfigColumns, columns := c.displayColumns(ctx)
+	btnConfigColumns, columns, err := c.displayColumns(ctx)
+	if err != nil {
+		panic(errors.Wrap(err, "display columns error"))
+	}
 
 	dataTable := vx.DataTable(objs).
 		HeadCellWrapperFunc(func(cell h.MutableAttrHTMLComponent, field string, title string) h.HTMLComponent {
@@ -543,21 +546,14 @@ type DisplayColumnWrapper struct {
 	Label string `json:"label"`
 }
 
-func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLComponent, wrappers []DisplayColumnWrapper) {
+func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLComponent, wrappers []DisplayColumnWrapper, err error) {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
-	displayColumn := slices.Clone(c.DisplayColumns)
-	var availableColumns []DisplayColumn
-	for _, f := range c.lb.fields {
-		if c.lb.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(evCtx.R).IsAllowed() != nil {
-			continue
-		}
-		availableColumns = append(availableColumns, DisplayColumn{
-			Name:    f.name,
-			Visible: true,
-		})
+	availableColumns, err := c.lb.GetAvailableColumns(evCtx)
+	if err != nil {
+		return nil, nil, err
 	}
-
+	displayColumn := slices.Clone(c.DisplayColumns)
 	// if there is abnormal data, restore the default
 	if len(displayColumn) != len(availableColumns) ||
 		// names not match
@@ -583,7 +579,7 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 	}
 
 	if !c.lb.selectableColumns {
-		return nil, wrappers
+		return nil, wrappers, nil
 	}
 
 	return web.Scope().
@@ -622,7 +618,7 @@ func (c *ListingCompo) displayColumns(ctx context.Context) (btnConfigure h.HTMLC
 					),
 				),
 			),
-		wrappers
+		wrappers, nil
 }
 
 func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {

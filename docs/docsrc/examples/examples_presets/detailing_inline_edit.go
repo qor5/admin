@@ -122,6 +122,16 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	dp.Field("CreditCards").Use(ccmb)
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
+	// force ignore ExpireYearMonth column
+	ccmb2.Listing().AvailableColumnsProcessor(func(evCtx *web.EventContext, availableColumns []presets.DisplayColumn) ([]presets.DisplayColumn, error) {
+		for i, v := range availableColumns {
+			if v.Name == "ExpireYearMonth" {
+				availableColumns[i].Visible = false
+			}
+		}
+		return availableColumns, nil
+	})
+
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }
