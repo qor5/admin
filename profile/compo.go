@@ -18,8 +18,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-const logoutURL = "/auth/logout"
-
 func init() {
 	stateful.RegisterActionableCompoType(&ProfileCompo{})
 }
@@ -128,8 +126,8 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponen
 		))
 	}
 	children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
-		v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary),
-		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", web.Plaid().URL(logoutURL).Go()),
+		v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", c.b.lsb.OpenSessionsDialog()),
+		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", web.Plaid().URL(c.b.lsb.GetLoginBuilder().LogoutURL).Go()),
 	))
 
 	renameAction := stateful.PostAction(ctx, c,
@@ -203,6 +201,6 @@ func (c *ProfileCompo) Rename(ctx context.Context, req RenameRequest) (r web.Eve
 	}
 	_, msgr := c.MustGetEventContext(ctx)
 	presets.ShowMessage(&r, msgr.SuccessfullyRename, v.ColorSuccess)
-	r.Reload = true
+	web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
 	return r, nil
 }

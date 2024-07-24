@@ -140,7 +140,15 @@ func initLoginBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Builder) *p
 	genInitialUser(db)
 
 	return plogin.NewSessionBuilder(loginBuilder, db).
-		ActivityModelBuilder(ab.RegisterModel(&models.User{})).
+		Activity(ab.RegisterModel(&models.User{})).
+		Presets(pb).
+		IsPublicUser(func(u interface{}) bool {
+			user, ok := u.(*models.User)
+			if !ok {
+				return false
+			}
+			return user.GetAccountName() == loginInitialUserEmail
+		}).
 		AutoMigrate().
 		Setup()
 }

@@ -25,6 +25,7 @@ const (
 	paramHideDetailTop                = "hideDetailTop"
 )
 
+// TODO: 这个 language 在 timeline 也用到，所以就造成 Install 是必须的，这不太对
 func (ab *Builder) Install(b *presets.Builder) error {
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).

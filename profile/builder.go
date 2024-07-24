@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
+	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -68,15 +69,18 @@ type Builder struct {
 	mu sync.RWMutex
 	pb *presets.Builder
 
+	lsb             *plogin.SessionBuilder
 	currentUserFunc func(ctx context.Context) (*User, error)
 	renameCallback  func(ctx context.Context, newName string) error
 }
 
 func New(
+	lsb *plogin.SessionBuilder,
 	currentUserFunc func(ctx context.Context) (*User, error),
 	renameCallback func(ctx context.Context, newName string) error,
 ) *Builder {
 	return &Builder{
+		lsb:             lsb,
 		currentUserFunc: currentUserFunc,
 		renameCallback:  renameCallback,
 	}

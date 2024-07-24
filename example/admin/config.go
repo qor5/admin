@@ -118,7 +118,6 @@ func NewConfig(db *gorm.DB) Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	configBrand(b, db)
 
 	initPermission(b, db)
 
@@ -338,6 +337,8 @@ func NewConfig(db *gorm.DB) Config {
 
 	loginSessionBuilder := initLoginBuilder(db, b, ab)
 
+	configBrand(b, db, loginSessionBuilder)
+
 	configInputDemo(b, db)
 
 	configOrder(b, db)
@@ -479,8 +480,9 @@ func configMenuOrder(b *presets.Builder) {
 	)
 }
 
-func configBrand(b *presets.Builder, db *gorm.DB) {
+func configBrand(b *presets.Builder, db *gorm.DB, lsb *plogin.SessionBuilder) {
 	profileB := profile.New(
+		lsb,
 		func(ctx context.Context) (*profile.User, error) {
 			evCtx := web.MustGetEventContext(ctx)
 			u := getCurrentUser(evCtx.R)

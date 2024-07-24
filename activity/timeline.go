@@ -93,6 +93,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 		}
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
 			h.Div(h.Text(msgr.EditedNFields(len(diffs)))).ClassIf(forceTextColor, forceTextColor != ""),
+			// TODO: 需要判断是否启用了 presets 如果没启用就不显示这个
 			v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 				Attr("@click", web.POST().

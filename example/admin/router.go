@@ -17,8 +17,6 @@ import (
 var favicon []byte
 
 const (
-	logoutURL = "/auth/logout"
-
 	exportOrdersURL = "/export-orders"
 )
 
