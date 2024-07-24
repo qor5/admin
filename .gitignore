@@ -7,3 +7,4 @@ coverage.html
 _backup
 docs/docsrc/public
 .DS_Store
+.idea
