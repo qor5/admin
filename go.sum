@@ -377,8 +377,6 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9 h1:uGwnYgklZ5WLaQO8GKg4vGP2kykhrQztoAZ5/huKnG0=
 github.com/sunfmin/reflectutils v1.0.6-0.20240723093451-ac287aca03a9/go.mod h1:ao2bbF4RZrTe2PboJKdZoC3BA71gdU6rFkCuUjoeqMw=
-github.com/sunfmin/reflectutils v1.0.6 h1:tX1ecTgYLsv2F8iBO2JL3BY2AdMtyFz/ir3ip+njFNs=
-github.com/sunfmin/reflectutils v1.0.6/go.mod h1:ao2bbF4RZrTe2PboJKdZoC3BA71gdU6rFkCuUjoeqMw=
 github.com/sunfmin/snippetgo v0.0.3 h1:pMCpFCyW2fYHhfLp4tb5ccvTCpIuSNFomtDCr9duUaE=
 github.com/sunfmin/snippetgo v0.0.3/go.mod h1:Ue+VuRdcJfuRkdxawPJOYYqKw1MgeJNwAz1qCc1pazQ=
 github.com/testcontainers/testcontainers-go v0.31.0 h1:W0VwIhcEVhRflwL9as3dhY6jXjVCA27AkmbnZ+UTh3U=
