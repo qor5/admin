@@ -211,7 +211,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			h.Span("Add Component").Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
-			Attr("@click", appendVirtualElement()+"vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
+			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
@@ -450,8 +450,8 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		for _, builder := range group {
 			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+				MergeQuery(true).
 				Query(paramModelName, builder.name).
-				Query(paramContainerID, ctx.Param(paramContainerID)).
 				Go()
 			listItems = append(listItems,
 				VHover(
@@ -855,7 +855,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  position: absolute;
 			  z-index: 9999;
 			  height: 32px;	
-              max-width: calc(50% - 0px);
+              width: 207px;
 			  opacity: 0;
               display: flex;
 			  align-items: center;	
