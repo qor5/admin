@@ -2,15 +2,14 @@ package presets
 
 import (
 	"fmt"
+	"github.com/qor5/web"
 	"reflect"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -81,7 +80,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 	})
 
 	fb.ComponentFunc(func(obj any, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		pid := GetPrimaryKey(obj)
+		pid := MustObjectID(obj)
 
 		compo, err := mb.Listing().nestedManyComponent(ctx,
 			pid, fb.name,

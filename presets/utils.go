@@ -8,10 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -162,14 +160,4 @@ func MustJsonCopy(dst, src any) {
 	if err := JsonCopy(dst, src); err != nil {
 		panic(err)
 	}
-}
-
-func GetPrimaryKey(obj interface{}) string {
-	var id string
-	if slugger, ok := obj.(SlugEncoder); ok {
-		id = slugger.PrimarySlug()
-	} else {
-		id = fmt.Sprint(reflectutils.MustGet(obj, "ID"))
-	}
-	return id
 }

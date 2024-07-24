@@ -3,6 +3,7 @@ package presets
 import (
 	"context"
 	"fmt"
+	"github.com/qor5/web"
 	"net/http"
 	"reflect"
 	"slices"
@@ -12,10 +13,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -609,7 +608,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	id := GetPrimaryKey(obj)
+	id := MustObjectID(obj)
 	edit := id != ""
 
 	var layout []interface{}
