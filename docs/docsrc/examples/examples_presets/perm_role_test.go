@@ -1,4 +1,4 @@
-package integration_test
+package examples_presets
 
 import (
 	"net/http"
