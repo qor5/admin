@@ -36,6 +36,8 @@ const (
 	ParamParentID       = "parent_id"
 	ParamSelectFolderID = "select_folder_id"
 	ParamSelectIDS      = "select_ids"
+	ParamField          = "field"
+	ParamCfg            = "cfg"
 )
 
 func AutoMigrate(db *gorm.DB) (err error) {
@@ -542,12 +544,16 @@ func createFolder(mb *Builder) web.EventFunc {
 		if err = mb.db.Save(&m).Error; err != nil {
 			return
 		}
-		r.RunScript = web.Plaid().MergeQuery(true).PushState(true).Go()
+		r.RunScript = web.Plaid().EventFunc(ReloadMediaContentEvent).
+			Query(paramTab, ctx.Param(paramTab)).
+			Query(ParamField, ctx.Param(ParamField)).
+			FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+			Go()
 		return
 	}
 }
 
-func newFolderDialog(_ *web.EventContext) (r web.EventResponse, err error) {
+func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
@@ -566,7 +572,11 @@ func newFolderDialog(_ *web.EventContext) (r web.EventResponse, err error) {
 						VSpacer(),
 						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
-							web.Plaid().EventFunc(CreateFolderEvent).MergeQuery(true).Go(),
+							web.Plaid().EventFunc(CreateFolderEvent).
+								Query(paramTab, ctx.Param(paramTab)).
+								Query(ParamField, ctx.Param(ParamField)).
+								FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+								Go(),
 						),
 					),
 				),
@@ -612,7 +622,11 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 							VBtn("Save").Color(ColorPrimary).
 								Attr("@click", web.Plaid().
-									EventFunc(MoveToFolderEvent).Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
+									EventFunc(MoveToFolderEvent).
+									Query(paramTab, ctx.Param(paramTab)).
+									Query(ParamField, ctx.Param(ParamField)).
+									FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
 						),
 					).Height(571).Width(658).Class("pa-6"),
 				).MaxWidth(658).Attr("v-model", "dialogLocals.show"),
@@ -645,7 +659,12 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			}
 			presets.ShowMessage(&r, "move success", ColorSuccess)
 		}
-		r.RunScript = web.Plaid().MergeQuery(true).PushState(true).Go()
+		r.RunScript = web.Plaid().
+			EventFunc(ReloadMediaContentEvent).
+			Query(paramTab, ctx.Param(paramTab)).
+			Query(ParamField, ctx.Param(ParamField)).
+			FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+			Go()
 		return
 	}
 }
@@ -653,7 +672,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 func nextFolder(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := uint(ctx.ParamAsInt(presets.ParamID))
+		id := uint(ctx.ParamAsInt(ParamSelectFolderID))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: folderGroupPortalName(id),
 			Body: h.Components(folderGroupsComponents(db, ctx, id)...),
@@ -684,10 +703,12 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID uint) (
 							PrependIcon("mdi-folder").
 							Attr(":active", fmt.Sprintf(`form.%s==%v`, ParamSelectFolderID, record.ID)).
 							Attr("@click", fmt.Sprintf("form.%s=%v;", ParamSelectFolderID, record.ID)+
-								web.Plaid().
-									EventFunc(NextFolderEvent).
-									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-									Query(presets.ParamID, record.ID).Go()),
+								fmt.Sprintf(`if (!locals.folder%v){locals.folder%v=1;%s}`, record.ID, record.ID,
+									web.Plaid().
+										EventFunc(NextFolderEvent).
+										Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+										Query(ParamSelectFolderID, record.ID).
+										Go())),
 					).Name("activator").Scope(" {  props }"),
 					web.Portal().Name(folderGroupPortalName(record.ID)),
 				).Value(record.ID),
@@ -700,4 +721,16 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID uint) (
 		}
 	}
 	return
+}
+
+func reloadMediaContent(mb *Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		field := ctx.Param(ParamField)
+		cfg := stringToCfg(ctx.Param(ParamCfg))
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: mediaContentPortalName,
+			Body: mediaLibraryContent(mb, field, ctx, cfg),
+		})
+		return
+	}
 }

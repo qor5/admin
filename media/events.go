@@ -21,6 +21,7 @@ const (
 	MoveToFolderDialogEvent = "mediaLibrary_MoveToFolderDialogEvent"
 	MoveToFolderEvent       = "mediaLibrary_MoveToFolderEvent"
 	NextFolderEvent         = "mediaLibrary_NextFolderEvent"
+	ReloadMediaContentEvent = "mediaLibrary_ReloadMediaContentEvent"
 )
 
 func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
@@ -40,4 +41,5 @@ func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
 	hub.RegisterEventFunc(MoveToFolderDialogEvent, moveToFolderDialog(mb))
 	hub.RegisterEventFunc(MoveToFolderEvent, moveToFolder(mb))
 	hub.RegisterEventFunc(NextFolderEvent, nextFolder(mb))
+	hub.RegisterEventFunc(ReloadMediaContentEvent, reloadMediaContent(mb))
 }
