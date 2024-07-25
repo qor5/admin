@@ -72,11 +72,14 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		b.db.Model(&Container{}).
 			Where("page_id = ? AND page_version = ? and page_model_name = ?", id, version, m.name).
 			Count(&containerCount)
+		var copyURL string
 		if p, ok := obj.(publish.StatusInterface); ok {
+			copyURL = fmt.Sprintf(`$event.view.window.location.origin+"%s"`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
 				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).
 					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
+				copyURL = fmt.Sprintf(`"%s"`, previewDevelopUrl)
 			}
 		}
 		return h.Div(
@@ -118,7 +121,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
 				VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
-					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText($event.view.window.location.origin+"%s");vars.presetsMessage = { show: true, message: "success", color: "%s"}`, previewDevelopUrl, ColorSuccess)),
+					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: "%s"}`, copyURL, ColorSuccess)),
 			).Class("d-inline-flex align-center"),
 		).Class("my-10")
 	}
