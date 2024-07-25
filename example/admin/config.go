@@ -95,6 +95,42 @@ func NewConfig(db *gorm.DB) Config {
 		panic(err)
 	}
 
+	// @snippet_begin(ActivityExample)
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
+		u := ctx.Value(login.UserKey).(*models.User)
+		return &activity.User{
+			ID:     fmt.Sprint(u.ID),
+			Name:   u.Name,
+			Avatar: "",
+		}, nil
+	}).
+		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
+			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+				err = in(pb, mb)
+				if err != nil {
+					return
+				}
+				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+						u := getCurrentUser(ctx.R)
+						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
+							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+								Query: "creator_id = ?",
+								Args:  []interface{}{fmt.Sprint(u.ID)},
+							})
+						}
+						return in(model, params, ctx)
+					}
+				})
+				return
+			}
+		}).
+		TablePrefix("cms_").
+		AutoMigrate()
+
+	// ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,
@@ -172,43 +208,6 @@ func NewConfig(db *gorm.DB) Config {
 		ContextValueFuncs(l10nBuilder.ContextValueProvider)
 
 	utils.Install(b)
-
-	// @snippet_begin(ActivityExample)
-	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
-		u := ctx.Value(login.UserKey).(*models.User)
-		return &activity.User{
-			ID:     fmt.Sprint(u.ID),
-			Name:   u.Name,
-			Avatar: "",
-		}, nil
-	}).
-		AutoMigrate().
-		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
-			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
-				err = in(pb, mb)
-				if err != nil {
-					return
-				}
-				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-						u := getCurrentUser(ctx.R)
-						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
-							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-								Query: "creator_id = ?",
-								Args:  []interface{}{fmt.Sprint(u.ID)},
-							})
-						}
-						return in(model, params, ctx)
-					}
-				})
-				return
-			}
-		})
-
-	// ab.Model(m).EnableActivityInfoTab()
-	// ab.Model(pm).EnableActivityInfoTab()
-	// ab.Model(l).SkipDelete().SkipCreate()
-	// @snippet_end
 
 	publisher.Activity(ab)
 
@@ -326,7 +325,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configListModel(b, ab)
 
-	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
+	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(ab))
 
 	microb := microsite.New(db).Publisher(publisher)
 
@@ -480,7 +479,7 @@ func configMenuOrder(b *presets.Builder) {
 	)
 }
 
-func configBrand(b *presets.Builder, db *gorm.DB, lsb *plogin.SessionBuilder) {
+func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder) {
 	profileB := profile.New(
 		lsb,
 		func(ctx context.Context) (*profile.User, error) {
@@ -489,7 +488,7 @@ func configBrand(b *presets.Builder, db *gorm.DB, lsb *plogin.SessionBuilder) {
 			if u == nil {
 				return nil, perm.PermissionDenied
 			}
-			notifiCounts, err := activity.GetNotesCounts(db, fmt.Sprint(u.ID), "", nil)
+			notifiCounts, err := ab.GetNotesCounts(ctx, "", nil)
 			if err != nil {
 				return nil, err
 			}
@@ -683,13 +682,9 @@ func configPost(
 	return m
 }
 
-func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
+func notifierCount(ab *activity.Builder) func(ctx *web.EventContext) int {
 	return func(ctx *web.EventContext) int {
-		user := getCurrentUser(ctx.R)
-		if user == nil {
-			return 0
-		}
-		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
 		if err != nil {
 			panic(err)
 		}
@@ -701,13 +696,9 @@ func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
 	}
 }
 
-func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
+func notifierComponent(ab *activity.Builder) func(ctx *web.EventContext) h.HTMLComponent {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		user := getCurrentUser(ctx.R)
-		if user == nil {
-			return nil
-		}
-		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
 		if err != nil {
 			panic(err)
 		}
@@ -747,14 +738,9 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 
 var noteMarkAllAsRead = "note_mark_all_as_read"
 
-func markAllAsRead(db *gorm.DB) web.EventFunc {
+func markAllAsRead(ab *activity.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		u := getCurrentUser(ctx.R)
-		if u == nil {
-			return
-		}
-
-		if err = activity.MarkAllNotesAsRead(db, fmt.Sprint(u.ID)); err != nil {
+		if err = ab.MarkAllNotesAsRead(ctx.R.Context()); err != nil {
 			return r, err
 		}
 

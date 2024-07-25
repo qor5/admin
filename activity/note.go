@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -17,10 +18,12 @@ type NoteCount struct {
 	TotalNotesCount  int64
 }
 
-func GetNotesCounts(db *gorm.DB, creatorID string, modelName string, modelKeyses []string) ([]*NoteCount, error) {
+func getNotesCounts(db *gorm.DB, tablePrefix string, creatorID string, modelName string, modelKeyses []string) ([]*NoteCount, error) {
 	if creatorID == "" {
 		return nil, errors.New("creatorID is required")
 	}
+
+	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
 
 	args := []any{
 		ActionNote,
@@ -50,13 +53,13 @@ func GetNotesCounts(db *gorm.DB, creatorID string, modelName string, modelKeyses
 	raw := fmt.Sprintf(`
 	WITH NoteRecords AS (
 		SELECT model_name, model_keys, created_at, creator_id
-		FROM activity_logs
+		FROM %s
 		WHERE action = ? AND deleted_at IS NULL
 			%s
 	),
 	LastViewedAts AS (
 		SELECT model_name, model_keys, MAX(updated_at) AS last_viewed_at
-		FROM public.activity_logs
+		FROM %s
 		WHERE action = ? AND creator_id = ? AND deleted_at IS NULL
 			%s
 		GROUP BY model_name, model_keys
@@ -70,7 +73,7 @@ func GetNotesCounts(db *gorm.DB, creatorID string, modelName string, modelKeyses
 	LEFT JOIN LastViewedAts lva
 		ON n.model_name = lva.model_name
 		AND n.model_keys = lva.model_keys
-	GROUP BY n.model_name, n.model_keys;`, explictWhere, explictWhere)
+	GROUP BY n.model_name, n.model_keys;`, tableName, explictWhere, tableName, explictWhere)
 
 	counts := []*NoteCount{}
 	if err := db.Raw(raw, args...).Scan(&counts).Error; err != nil {
@@ -79,19 +82,21 @@ func GetNotesCounts(db *gorm.DB, creatorID string, modelName string, modelKeyses
 	return counts, nil
 }
 
-func MarkAllNotesAsRead(db *gorm.DB, creatorID string) error {
+func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error {
+	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
+
 	return db.Transaction(func(tx *gorm.DB) error {
 		var results []struct {
 			ModelName    string
 			ModelKeys    string
 			MaxCreatedAt time.Time
 		}
-		if err := db.Raw(`
+		if err := db.Raw(fmt.Sprintf(`
 			SELECT model_name, model_keys, MAX(created_at) AS max_created_at
-			FROM activity_logs
+			FROM %s
 			WHERE action = ? AND deleted_at IS NULL
 			GROUP BY model_name, model_keys;
-			`, ActionNote,
+			`, tableName), ActionNote,
 		).Scan(&results).Error; err != nil {
 			return errors.Wrap(err, "")
 		}
@@ -126,7 +131,7 @@ func MarkAllNotesAsRead(db *gorm.DB, creatorID string) error {
 	})
 }
 
-func SQLConditionHasUnreadNotes(creatorID string, modelName string, columns []string, sep string, columnPrefix string) string {
+func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, creatorID string, modelName string, columns []string, sep string, columnPrefix string) string {
 	a := strings.Join(lo.Map(columns, func(v string, _ int) string {
 		return fmt.Sprintf("%s%s::text", columnPrefix, v)
 	}), ",")
@@ -134,17 +139,19 @@ func SQLConditionHasUnreadNotes(creatorID string, modelName string, columns []st
 		return fmt.Sprintf(`split_part(n.model_keys, '%s', %d) AS %s`, sep, i+1, v)
 	}), ",\n")
 
+	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
+
 	return fmt.Sprintf(`
 	(%s) IN (
 	    WITH NoteRecords AS (
 		    SELECT model_name, model_keys, created_at, creator_id
-		    FROM activity_logs
+		    FROM %s
 		    WHERE action = '%s' AND deleted_at IS NULL
 		        AND model_name = '%s'
 		),
 		LastViewedAts AS (
 		    SELECT model_name, model_keys, MAX(updated_at) AS last_viewed_at
-		    FROM activity_logs
+		    FROM %s
 		    WHERE action = '%s' AND creator_id = '%s' AND deleted_at IS NULL
 		        AND model_name = '%s'
 		    GROUP BY model_name, model_keys
@@ -159,9 +166,25 @@ func SQLConditionHasUnreadNotes(creatorID string, modelName string, columns []st
 	    WHERE n.creator_id <> '%s' 
 	        AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at)
 	    GROUP BY n.model_keys
-    )`, a, ActionNote, modelName, ActionLastView, creatorID, modelName, b, creatorID)
+    )`, a, tableName, ActionNote, modelName, tableName, ActionLastView, creatorID, modelName, b, creatorID)
+}
+
+func (ab *Builder) GetNotesCounts(ctx context.Context, modelName string, modelKeyses []string) ([]*NoteCount, error) {
+	user, err := ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return getNotesCounts(ab.db, ab.tablePrefix, user.ID, modelName, modelKeyses)
+}
+
+func (ab *Builder) MarkAllNotesAsRead(ctx context.Context) error {
+	user, err := ab.currentUserFunc(ctx)
+	if err != nil {
+		return err
+	}
+	return markAllNotesAsRead(ab.db, ab.tablePrefix, user.ID)
 }
 
 func (amb *ModelBuilder) SQLConditionHasUnreadNotes(creatorID string, columnPrefix string) string {
-	return SQLConditionHasUnreadNotes(creatorID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
+	return sqlConditionHasUnreadNotes(amb.ab.db, amb.ab.tablePrefix, creatorID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
 }
