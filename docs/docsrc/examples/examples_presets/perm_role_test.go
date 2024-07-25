@@ -1,10 +1,10 @@
-package integration_test
+package examples_presets
 
 import (
 	"net/http"
+	"strconv"
 	"testing"
-
-	"gorm.io/gorm"
+	"time"
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"
@@ -16,8 +16,33 @@ import (
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
+	"github.com/theplant/gofixtures"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 )
+
+type customer struct {
+	CustomCode uint `gorm:"primarykey"`
+	Name       string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  gorm.DeletedAt `gorm:"index"`
+}
+
+func (c *customer) TableName() string { return "permtest_customers" }
+
+func (c *customer) PrimarySlug() string {
+	if c.CustomCode == 0 {
+		return ""
+	}
+	return strconv.Itoa(int(c.CustomCode))
+}
+
+func (c *customer) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	return map[string]string{
+		"custom_code": slug,
+	}
+}
 
 func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 	mux := http.NewServeMux()
@@ -25,6 +50,7 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 		&models.User{},
 		&role.Role{},
 		&models.Order{},
+		&customer{},
 	); err != nil {
 		panic(err)
 	}
@@ -32,15 +58,19 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 	defer b.Build()
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	testPermModelOrder(b)
+	configPermOrder(b)
+	configPermCustomer(b)
 
 	perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
-			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermActions, presets.PermBulkActions, presets.PermDoListingAction, presets.PermList).On(perm.Anything),
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermList).On(perm.Anything),
-			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermUpdate, presets.PermGet).On(perm.Anything),
-			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermGet).On(perm.Anything),
+			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermActions, presets.PermBulkActions, presets.PermDoListingAction, presets.PermList).On("*:presets:orders:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermList).On("*:presets:orders:*"),
+			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(presets.PermUpdate, presets.PermGet).On("*:presets:orders:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermGet).On("*:presets:orders:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:presets:customers:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:customers:*"),
+			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:customers:*"),
 		).SubjectsFunc(func(r *http.Request) []string {
 			u, ok := login.GetCurrentUser(r).(*models.User)
 			if !ok {
@@ -62,7 +92,8 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 	mux.Handle("/", m(b))
 	return mux
 }
-func testPermModelOrder(b *presets.Builder) {
+
+func configPermOrder(b *presets.Builder) {
 	// model order
 	order := b.Model(&models.Order{})
 	ol := order.Listing()
@@ -77,6 +108,64 @@ func testPermModelOrder(b *presets.Builder) {
 	order.Detailing("source_section").Drawer(true)
 
 	order.Detailing("source_section").Section("source_section").Editing("Source")
+}
+
+var permCustomerData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.permtest_customers (custom_code, created_at, updated_at, deleted_at, name) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'OldName');
+`, []string{"permtest_customers"}))
+
+func configPermCustomer(b *presets.Builder) {
+	mb := b.Model(&customer{})
+	de := mb.Detailing("name_section").Drawer(true)
+	se := de.Section("name_section")
+	se.Editing("Name").Viewing("Name")
+}
+
+func TestPermWithoutID(t *testing.T) {
+	dbr, _ := TestDB.DB()
+	type Case struct {
+		multipartestutils.TestCase
+		Role string
+	}
+	cases := []Case{
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "deny create",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					permCustomerData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&detailField=name_section&id=1").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectPortalUpdate0ContainsInOrder: []string{"<v-text-field type='text' :variant='\"underlined\"' v-model='form[\"name_section.Name\"]' v-assign='[form, {\"name_section.Name\":\"OldName\"}]' label='Name' :disabled='false'></v-text-field>"},
+			},
+			Role: models.RoleViewer,
+		},
+		{
+			TestCase: multipartestutils.TestCase{
+				Name:  "allow create",
+				Debug: true,
+				ReqFunc: func() *http.Request {
+					permCustomerData.TruncatePut(dbr)
+					req := multipartestutils.NewMultipartBuilder().
+						PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&detailField=name_section&id=1").
+						BuildEventFuncRequest()
+					return req
+				},
+				ExpectPortalUpdate0ContainsInOrder: []string{"<v-text-field type='text' :variant='\"underlined\"' v-model='form[\"name_section.Name\"]' v-assign='[form, {\"name_section.Name\":\"OldName\"}]' label='Name' :disabled='false'></v-text-field>"},
+			},
+			Role: models.RoleEditor,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.TestCase.Name, func(t *testing.T) {
+			h := testPermHandler(TestDB, c.Role)
+			multipartestutils.RunCase(t, c.TestCase, h)
+		})
+	}
 }
 
 func TestBulkActionPerm(t *testing.T) {
