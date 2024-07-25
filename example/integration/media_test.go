@@ -57,17 +57,16 @@ func TestMedia(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{"test_search1.png", "test_search2.png"},
 		},
-
 		{
-			Name:  "MediaLibrary Create Directory",
+			Name:  "MediaLibrary Create Folder",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-06-19-v01_International").
-					Query(web.EventFuncIDName, media.CreateDirectoryEvent).
-					AddField(media.ParamDirName, "test_create_directory").
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.CreateFolderEvent).
+					AddField(media.ParamFolderName, "test_create_directory").
 					AddField(media.ParamParentID, "0").
 					BuildEventFuncRequest()
 				return req
@@ -78,11 +77,39 @@ func TestMedia(t *testing.T) {
 					t.Fatalf("create directory err : %v", err)
 					return
 				}
-				if !m.Dir || m.File.FileName != "test_create_directory" {
+				if !m.Folder || m.File.FileName != "test_create_directory" {
 					t.Fatalf("create directory : %#+v", m)
 					return
 				}
 			},
+		},
+		{
+			Name:  "MediaLibrary New Folder Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.NewFolderDialogEvent).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "New Folder"},
+		},
+		{
+			Name:  "MediaLibrary Move To Folder Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.MoveToFolderDialogEvent).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder"},
 		},
 	}
 

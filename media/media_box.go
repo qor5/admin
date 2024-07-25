@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/qor5/admin/v3/media/base"
@@ -29,8 +32,10 @@ const (
 	MediaBoxConfig      MediaBoxConfigKey = iota
 	I18nMediaLibraryKey i18n.ModuleKey    = "I18nMediaLibraryKey"
 
-	ParamDirName  = "dir_name"
-	ParamParentID = "parent_id"
+	ParamFolderName     = "folder_name"
+	ParamParentID       = "parent_id"
+	ParamSelectFolderID = "select_folder_id"
+	ParamSelectIDS      = "select_ids"
 )
 
 func AutoMigrate(db *gorm.DB) (err error) {
@@ -516,12 +521,12 @@ func updateDescription(mb *Builder) web.EventFunc {
 	}
 }
 
-func createDirectory(mb *Builder) web.EventFunc {
+func createFolder(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			dirName  = ctx.Param(ParamDirName)
+			dirName  = ctx.Param(ParamFolderName)
 			parentID = ctx.ParamAsInt(ParamParentID)
-			m        = &media_library.MediaLibrary{Dir: true, ParentId: uint(parentID)}
+			m        = &media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
 		)
 		if dirName == "" {
 			presets.ShowMessage(&r, "folder name can`t be empty", ColorWarning)
@@ -542,33 +547,157 @@ func createDirectory(mb *Builder) web.EventFunc {
 	}
 }
 
-func newFolderDialog(mb *Builder) web.EventFunc {
+func newFolderDialog(_ *web.EventContext) (r web.EventResponse, err error) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: newFolderDialogPortalName,
+		Body: web.Scope(
+			VDialog(
+				VCard(
+					web.Slot(h.Text("New Folder")).Name("title"),
+					web.Slot(
+						VSpacer(),
+						VBtn("").Icon("mdi-close").
+							Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
+					).Name(VSlotAppend),
+					VTextField().Variant(FieldVariantUnderlined).
+						Class("px-6").
+						Label("Folder Name").Attr(web.VField(ParamFolderName, "")...),
+					VCardActions(
+						VSpacer(),
+						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+						VBtn("Ok").Color(ColorPrimary).Attr("@click",
+							web.Plaid().EventFunc(CreateFolderEvent).MergeQuery(true).Go(),
+						),
+					),
+				),
+			).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+		).VSlot("{locals:dialogLocals}").Init("{show:true}"),
+	})
+	return
+}
+
+func moveToFolderDialog(mb *Builder) web.EventFunc {
+	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: newFolderDialogPortalName,
+			Name: moveToFolderDialogPortalName,
 			Body: web.Scope(
 				VDialog(
 					VCard(
-						web.Slot(h.Text("New Folder")).Name("title"),
+						web.Slot(h.Text("Choose Folder")).Name("title"),
 						web.Slot(
 							VSpacer(),
 							VBtn("").Icon("mdi-close").
 								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
 						).Name(VSlotAppend),
-						VTextField().Variant(FieldVariantUnderlined).
-							Class("px-6").
-							Label("Folder Name").Attr(web.VField(ParamDirName, "")...),
+						VCardItem(
+							VCard(
+								VList(
+									VListGroup(
+										web.Slot(
+											VListItem(
+												VListItemTitle(h.Text("Root Directory")),
+											).Attr("v-bind", "props").
+												PrependIcon("mdi-folder").
+												Attr(":active", fmt.Sprintf(`form.%s==0`, ParamSelectFolderID)).
+												Attr("@click", fmt.Sprintf("form.%s=0;", ParamSelectFolderID)),
+										).Name("activator").Scope(" {  props }"),
+										h.Components(folderGroupsComponents(db, ctx, 0)...),
+									).Value(0)).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
+							).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
+						),
+
 						VCardActions(
 							VSpacer(),
 							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn("Ok").Color(ColorPrimary).Attr("@click",
-								web.Plaid().EventFunc(CreateDirectoryEvent).MergeQuery(true).Go(),
-							),
+							VBtn("Save").Color(ColorPrimary).
+								Attr("@click", web.Plaid().
+									EventFunc(MoveToFolderEvent).Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
 						),
-					),
-				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
-			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
+					).Height(571).Width(658).Class("pa-6"),
+				).MaxWidth(658).Attr("v-model", "dialogLocals.show"),
+			).VSlot("{locals:dialogLocals,form}").Init("{show:true}").FormInit(fmt.Sprintf("{%s:0}", ParamSelectFolderID)),
 		})
 		return
 	}
+}
+
+func moveToFolder(mb *Builder) web.EventFunc {
+	db := mb.db
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			selectFolderID = ctx.Param(ParamSelectFolderID)
+			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
+		)
+		var ids []uint
+
+		for _, idStr := range selectIDs {
+			selectID, err1 := strconv.Atoi(idStr)
+			if err1 != nil {
+				continue
+			}
+			ids = append(ids, uint(selectID))
+		}
+		presets.ShowMessage(&r, "move failed", ColorWarning)
+		if len(ids) > 0 {
+			if err = db.Model(media_library.MediaLibrary{}).Where("id in  ?", ids).Update("parent_id", selectFolderID).Error; err != nil {
+				return
+			}
+			presets.ShowMessage(&r, "move success", ColorSuccess)
+		}
+		r.RunScript = web.Plaid().MergeQuery(true).PushState(true).Go()
+		return
+	}
+}
+
+func nextFolder(mb *Builder) web.EventFunc {
+	db := mb.db
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := uint(ctx.ParamAsInt(presets.ParamID))
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: folderGroupPortalName(id),
+			Body: h.Components(folderGroupsComponents(db, ctx, id)...),
+		})
+		return
+	}
+}
+
+func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID uint) (items []h.HTMLComponent) {
+	var (
+		records   []*media_library.MediaLibrary
+		count     int64
+		selectIDs = strings.Split(ctx.Param(ParamSelectIDS), ",")
+	)
+	db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
+	for _, record := range records {
+		if slices.Contains(selectIDs, fmt.Sprint(record.ID)) {
+			continue
+		}
+		db.Model(media_library.MediaLibrary{}).Where("parent_id = ?  and folder = true", record.ID).Count(&count)
+		if count > 0 {
+			items = append(items,
+				VListGroup(
+					web.Slot(
+						VListItem(
+							VListItemTitle(h.Text(record.File.FileName)),
+						).Attr("v-bind", "props").
+							PrependIcon("mdi-folder").
+							Attr(":active", fmt.Sprintf(`form.%s==%v`, ParamSelectFolderID, record.ID)).
+							Attr("@click", fmt.Sprintf("form.%s=%v;", ParamSelectFolderID, record.ID)+
+								web.Plaid().
+									EventFunc(NextFolderEvent).
+									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+									Query(presets.ParamID, record.ID).Go()),
+					).Name("activator").Scope(" {  props }"),
+					web.Portal().Name(folderGroupPortalName(record.ID)),
+				).Value(record.ID),
+			)
+		} else {
+			items = append(items, VListItem(h.Text(record.File.FileName)).
+				Attr(":active", fmt.Sprintf(`form.%s==%v`, ParamSelectFolderID, record.ID)).
+				Attr("@click", fmt.Sprintf("form.%s=%v;", ParamSelectFolderID, record.ID)).
+				PrependIcon("mdi-folder"))
+		}
+	}
+	return
 }

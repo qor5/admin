@@ -141,7 +141,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 		typeVal = typeAll
 	}
 	if tab == tabFiles {
-		wh = wh.Where("dir = ?", false)
+		wh = wh.Where("folder = ?", false)
 	} else {
 		wh = wh.Where("parent_id = ?", parentID)
 		items := parentFolders(ctx, mb.db, uint(parentID), uint(parentID), nil)
@@ -209,11 +209,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 
 	for _, f := range files {
 		var fileComp h.HTMLComponent
-		if f.Dir {
-			fileComp = directoryComponent(mb, field, ctx, f, msgr)
-		} else {
-			fileComp = fileComponent(mb, field, ctx, f, msgr, cfg, initCroppingVars)
-		}
+		fileComp = fileOrFolderComponent(mb, field, ctx, f, msgr, cfg, initCroppingVars)
 		row.AppendChildren(
 			VCol(fileComp).Cols(6).Sm(4).Md(3),
 		)
@@ -221,6 +217,8 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 
 	return h.Div(
 		web.Portal().Name(newFolderDialogPortalName),
+		web.Portal().Name(moveToFolderDialogPortalName),
+		imageDialog(),
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
 			Attr("v-model", "vars.snackbarShow").
 			Location("top").
@@ -321,8 +319,19 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 					).Cols(10),
 				),
 				VCol().Cols(1),
+				VRow(
+					VCol(
+						h.Text(fmt.Sprintf("{{locals.select_ids.length}} %s", "Selected")),
+						VBtn("Move to").Size(SizeSmall).Variant(VariantOutlined).
+							Attr(":disabled", "locals.select_ids.length==0").
+							Color(ColorSecondary).Class("ml-4").
+							Attr("@click", web.Plaid().EventFunc(MoveToFolderDialogEvent).Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
+						VBtn("Delete").Size(SizeSmall).Variant(VariantOutlined).Color(ColorWarning).Class("ml-2"),
+					),
+				).Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
 			).Fluid(true),
-		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).VSlot("{ locals }"),
+		).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
+			VSlot("{ locals}").Init("{select_ids:[]}"),
 		VOverlay(
 			h.Img("").Attr(":src", "vars.isImage? vars.mediaShow: ''").
 				Style("max-height: 80vh; max-width: 80vw; background: rgba(0, 0, 0, 0.5)"),
@@ -334,11 +343,10 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 					Class("white--text").Style("text-decoration: none;"),
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
-	).Attr(web.VAssign("vars", `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)...)
+	).Attr(web.VAssign("vars", `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false,moving:false,imagePreview:false,imageSrc:""}`)...)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
-	g := VChipGroup().Column(true)
 	text := "original"
 	if f.File.Width != 0 && f.File.Height != 0 {
 		text = fmt.Sprintf("%s(%dx%d)", "original", f.File.Width, f.File.Height)
@@ -346,19 +354,7 @@ func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
 	if f.File.FileSizes["original"] != 0 {
 		text = fmt.Sprintf("%s %s", text, base.ByteCountSI(f.File.FileSizes["original"]))
 	}
-	g.AppendChildren(
-		VChip(h.Text(text)).Size(SizeSmall),
-	)
-	// if len(f.File.Sizes) == 0 {
-	//	return g
-	// }
-
-	// for k, size := range f.File.GetSizes() {
-	//	g.AppendChildren(
-	//		VChip(thumbName(k, size)).XSize(SizeSmall),
-	//	)
-	// }
-	return g
+	return h.Text(text)
 }
 
 type uploadFiles struct {
@@ -508,117 +504,141 @@ func fileComponent(
 	msgr *Messages,
 	cfg *media_library.MediaBoxConfig,
 	initCroppingVars []string,
-) h.HTMLComponent {
+	event *string,
+) (title h.HTMLComponent, content h.HTMLComponent) {
 	_, needCrop := mergeNewSizes(f, cfg)
 	croppingVar := fileCroppingVarName(f.ID)
 	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
 	imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(base.IsImageFormat(f.File.FileName)))
 
-	return VCard(
-		h.Div(
-			h.If(
-				base.IsImageFormat(f.File.FileName),
-				VImg(
-					h.If(needCrop,
-						h.Div(
-							VProgressCircular().Indeterminate(true),
-							h.Span(msgr.Cropping).Class("text-h6 pl-2"),
-						).Class("d-flex align-center justify-center v-card--reveal white--text").
-							Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
-							Attr("v-if", fmt.Sprintf("locals.%s", croppingVar)),
-					),
-				).Src(f.File.URL(media_library.QorPreviewSizeName)).Height(200),
-				// .Contain(true),
-			).Else(
-				fileThumb(f.File.FileName),
-			),
-		).AttrIf("role", "button", field != mediaLibraryListField).
-			AttrIf("@click", web.Plaid().
-				BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-				EventFunc(chooseFileEvent).
-				Query("field", field).
-				Query(mediaID, fmt.Sprint(f.ID)).
-				FieldValue("cfg", h.JSONString(cfg)).
-				Go(), field != mediaLibraryListField).
-			AttrIf("@click", imgClickVars, field == mediaLibraryListField),
-		VCardText(
-			h.A().Text(f.File.FileName).
-				Attr("@click", imgClickVars),
-			h.Input("").
-				Style("width: 100%;").
-				Placeholder(msgr.DescriptionForAccessibility).
-				Value(f.File.Description).
-				Attr("@change", web.Plaid().
-					EventFunc(updateDescriptionEvent).
-					Query("field", field).
-					Query(mediaID, fmt.Sprint(f.ID)).
-					FieldValue("cfg", h.JSONString(cfg)).
-					FieldValue("CurrentDescription", web.Var("$event.target.value")).
-					Go(),
-				).Readonly(mb.updateDescIsAllowed(ctx.R, f) != nil),
-			h.If(base.IsImageFormat(f.File.FileName),
-				fileChips(f),
-			),
+	src := f.File.URL("original")
+	*event = fmt.Sprintf(`console.log(2);vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	title = h.Div(
+		h.If(
+			base.IsImageFormat(f.File.FileName),
+			VImg(
+				h.If(needCrop,
+					h.Div(
+						VProgressCircular().Indeterminate(true),
+						h.Span(msgr.Cropping).Class("text-h6 pl-2"),
+					).Class("d-flex align-center justify-center v-card--reveal white--text").
+						Style("height: 100%; background: rgba(0, 0, 0, 0.5)").
+						Attr("v-if", fmt.Sprintf("locals.%s", croppingVar)),
+				),
+			).Src(src).Height(120).Cover(true),
+		).Else(
+			fileThumb(f.File.FileName),
 		),
-		h.If(mb.deleteIsAllowed(ctx.R, f) == nil,
-			VCardActions(
-				VSpacer(),
-				VBtn(msgr.Delete).
-					Variant(VariantText).
-					Attr("@click",
-						web.Plaid().
-							EventFunc(deleteConfirmationEvent).
-							Query("field", field).
-							Query(mediaID, fmt.Sprint(f.ID)).
-							FieldValue("cfg", h.JSONString(cfg)).
-							Go(),
-					),
-			),
-		),
+	).AttrIf("role", "button", field != mediaLibraryListField).
+		AttrIf("@click", web.Plaid().
+			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
+			EventFunc(chooseFileEvent).
+			Query("field", field).
+			Query(mediaID, fmt.Sprint(f.ID)).
+			FieldValue("cfg", h.JSONString(cfg)).
+			Go(), field != mediaLibraryListField).
+		AttrIf("@click", imgClickVars, field == mediaLibraryListField)
+
+	content = h.Components(
+		web.Slot(
+			web.Scope(
+				VTextField().Attr(web.VField("name", f.File.FileName)...).
+					Attr(":variant", fmt.Sprintf(`locals.edit_%v?"%s":"%s"`, f.ID, VariantOutlined, VariantPlain)),
+			).VSlot(`{form}`),
+		).Name("title"),
+		web.Slot(h.If(base.IsImageFormat(f.File.FileName),
+			fileChips(f))).Name("subtitle"),
 	)
+
+	return
 }
 
-func directoryComponent(
+func fileOrFolderComponent(
 	mb *Builder,
 	field string,
 	ctx *web.EventContext,
 	f *media_library.MediaLibrary,
 	msgr *Messages,
+	cfg *media_library.MediaBoxConfig,
+	initCroppingVars []string,
 ) h.HTMLComponent {
-	var count int64
+	var (
+		title, content            h.HTMLComponent
+		checkEvent                = fmt.Sprintf(`console.log(1);let arr=locals.select_ids;let find_id=%v; arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, f.ID)
+		clickCardWithoutMoveEvent = "null"
+	)
+	menus := h.Components(
+		VListItem(h.Text("Rename")).Attr("@click", fmt.Sprintf("locals.edit_%v=true", f.ID)),
+		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
+		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
+			web.Plaid().
+				EventFunc(deleteConfirmationEvent).
+				Query("field", field).
+				Query(mediaID, fmt.Sprint(f.ID)).
+				Go())),
+	)
 
-	return web.Scope(
-		VCard(
-			VCardItem(VIcon("mdi-folder").Size(90).Color(ColorPrimary)).Class("justify-center align-center"),
-			VCardItem(
-				VCard(
-					web.Slot(
-						VTextField().Attr(web.VField("name", f.File.FileName)...).
-							Attr(":variant", fmt.Sprintf(`folderLocals.edit?"%s":"%s"`, VariantOutlined, VariantPlain)),
-					).Name("title"),
-					web.Slot(h.Text(fmt.Sprintf("%v items", count))).Name("subtitle"),
-					web.Slot(
-						VMenu(
-							web.Slot(
-								VBtn("").Children(
-									VIcon("mdi-dots-horizontal"),
-								).Attr("v-bind", "props").Variant("text").Size("small"),
-							).Name("activator").Scope("{ props }"),
-							VList(
-								VListItem(h.Text("Rename")).Attr("@click", "folderLocals.edit=true"),
-								VListItem(h.Text("Move to")),
-								VListItem(h.Text(msgr.Delete)).Attr("@click",
-									web.Plaid().
-										EventFunc(deleteConfirmationEvent).
-										Query("field", field).
-										Query(mediaID, fmt.Sprint(f.ID)).
-										Go())),
+	if f.Folder {
+		title, content = folderComponent(mb, field, ctx, f, msgr)
+		clickCardWithoutMoveEvent = web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, f.ID).Go()
+	} else {
+		title, content = fileComponent(mb, field, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent)
+	}
+
+	return VCard(
+		VCheckbox().
+			Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
+			Attr("@update:model-value", checkEvent).
+			Attr("style", "z-index:2").
+			Class("position-absolute top-0 right-0").Attr("v-if", "locals.select_ids.length>0"),
+		VCardText(
+			VCard(
+				title,
+			).Height(120).Elevation(0),
+		).Class("pa-0", W100),
+		VCardItem(
+			VCard(
+				content,
+				web.Slot(
+					VMenu(
+						web.Slot(
+							VBtn("").Children(
+								VIcon("mdi-dots-horizontal"),
+							).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+						).Name("activator").Scope("{ props }"),
+						VList(
+							menus...,
 						),
-					).Name(VSlotAppend),
-				).Color(ColorGreyLighten5),
-			).Class("pa-0"),
-		).Attr("@click", web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, f.ID).Go()),
-	).VSlot("{locals:folderLocals}").Init("{edit:false}")
+					),
+				).Name(VSlotAppend),
+			).Color(ColorGreyLighten5),
+		).Class("pa-0"),
+	).Class("position-relative").
+		Hover(true).
+		Attr("@click", fmt.Sprintf("locals.select_ids.length>0?function(){%s}():%s", checkEvent, clickCardWithoutMoveEvent))
+}
+
+func folderComponent(
+	mb *Builder,
+	field string,
+	ctx *web.EventContext,
+	f *media_library.MediaLibrary,
+	msgr *Messages,
+) (title h.HTMLComponent, content h.HTMLComponent) {
+	var count int64
+	mb.db.Model(media_library.MediaLibrary{}).Where("parent_id = ?", f.ID).Count(&count)
+	title = VCardText(VIcon("mdi-folder").Size(90).Color(ColorPrimary)).Class("d-flex justify-center align-center")
+	content = h.Components(
+		web.Slot(
+			web.Scope(
+				VTextField().Attr(web.VField("name", f.File.FileName)...).
+					Attr(":variant", fmt.Sprintf(`locals.edit_%v?"%s":"%s"`, f.ID, VariantOutlined, VariantPlain)),
+			).VSlot(`{form}`),
+		).Name("title"),
+		web.Slot(h.Text(fmt.Sprintf("%v items", count))).Name("subtitle"),
+	)
+
+	return
 }
 
 func parentFolders(ctx *web.EventContext, db *gorm.DB, currentID, parentID uint, existed map[uint]bool) (comps h.HTMLComponents) {
@@ -633,17 +653,29 @@ func parentFolders(ctx *web.EventContext, db *gorm.DB, currentID, parentID uint,
 		return
 	}
 	item = VBreadcrumbsItem().Title(current.File.FileName)
-	comps = append(comps, item)
 	if currentID == parentID {
 		item.Disabled(true)
 	} else {
 		item.Href("#").Attr("@click.prevent", web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, currentID).Go())
 	}
+	comps = append(comps, item)
 	if current.ParentId == 0 || existed[current.ID] {
+		comps = append(h.Components(VBreadcrumbsItem().Title("/").Href("#").Attr("@click.prevent", web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, 0).Go())), comps...)
+
 		return
 	}
-
-	comps = append(h.Components(VIcon("mdi-chevron-right")), comps...)
+	comps = append(h.Components(h.Text("/")), comps...)
 	existed[currentID] = true
 	return append(parentFolders(ctx, db, current.ParentId, parentID, existed), comps...)
+}
+
+func imageDialog() h.HTMLComponent {
+	return VDialog(
+		VCard(
+			VBtn("").Icon("mdi-close").
+				Variant(VariantText).Attr("@click", "vars.imagePreview=false").
+				Class("position-absolute right-0 top-0").Attr("style", "z-index:2"),
+			VImg().Attr(":src", "vars.imageSrc").Width(658),
+		).Class("position-relative"),
+	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
 }

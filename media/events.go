@@ -16,8 +16,11 @@ const (
 	updateDescriptionEvent  = "mediaLibrary_UpdateDescriptionEvent"
 	deleteConfirmationEvent = "mediaLibrary_DeleteConfirmationEvent"
 	doDeleteEvent           = "mediaLibrary_DoDelete"
-	CreateDirectoryEvent    = "mediaLibrary_CreateDirectoryEvent"
+	CreateFolderEvent       = "mediaLibrary_CreateFolderEvent"
 	NewFolderDialogEvent    = "mediaLibrary_NewFolderDialogEvent"
+	MoveToFolderDialogEvent = "mediaLibrary_MoveToFolderDialogEvent"
+	MoveToFolderEvent       = "mediaLibrary_MoveToFolderEvent"
+	NextFolderEvent         = "mediaLibrary_NextFolderEvent"
 )
 
 func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
@@ -32,6 +35,9 @@ func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
 	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(mb))
 	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(mb))
 	hub.RegisterEventFunc(doDeleteEvent, doDelete(mb))
-	hub.RegisterEventFunc(CreateDirectoryEvent, createDirectory(mb))
-	hub.RegisterEventFunc(NewFolderDialogEvent, newFolderDialog(mb))
+	hub.RegisterEventFunc(CreateFolderEvent, createFolder(mb))
+	hub.RegisterEventFunc(NewFolderDialogEvent, newFolderDialog)
+	hub.RegisterEventFunc(MoveToFolderDialogEvent, moveToFolderDialog(mb))
+	hub.RegisterEventFunc(MoveToFolderEvent, moveToFolder(mb))
+	hub.RegisterEventFunc(NextFolderEvent, nextFolder(mb))
 }

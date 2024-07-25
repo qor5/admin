@@ -34,6 +34,11 @@ func fileCroppingVarName(id uint) string {
 	return fmt.Sprintf("fileChooser%d_cropping", id)
 }
 
+func folderGroupPortalName(id uint) string {
+	return fmt.Sprintf("%v_folder_portal_name", id)
+}
+
 const (
-	newFolderDialogPortalName = "media_new_folder_dialog_portal_name"
+	newFolderDialogPortalName    = "media_new_folder_dialog_portal_name"
+	moveToFolderDialogPortalName = "media_move_to_folder_dialog_portal_name"
 )
