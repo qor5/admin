@@ -111,6 +111,11 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 }
 
 func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
+	user, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user")
+	}
+
 	evCtx, msgr := c.MustGetEventContext(ctx)
 	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
 		return h.Div().Attr("v-pre", true).Text(perm.PermissionDenied.Error()).MarshalHTML(ctx)
@@ -181,7 +186,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		)
 		if log.Action == ActionNote {
 			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
-				v.VHover().Disabled(log.CreatorID != c.ab.currentUserFunc(ctx).ID).Children(
+				v.VHover().Disabled(log.CreatorID != user.ID).Children(
 					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
 							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox").Class("d-flex flex-row ga-1").
@@ -298,8 +303,8 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		return
 	}
 
-	creator := c.ab.currentUserFunc(ctx)
-	if creator == nil {
+	creator, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
 		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
 		return
 	}
@@ -354,8 +359,8 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	creator := c.ab.currentUserFunc(ctx)
-	if creator == nil {
+	creator, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
 		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, "error")
 		return
 	}

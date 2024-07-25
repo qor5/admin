@@ -101,11 +101,11 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}).
 		Editing("Name", "Price")
 
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
 			ID:   "1",
 			Name: "John",
-		}
+		}, nil
 	}).
 		AutoMigrate()
 	publisher := publish.New(db, nil).Activity(ab)

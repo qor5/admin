@@ -149,12 +149,12 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 	storage := filesystem.New("/tmp/publish")
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
 			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
-		}
+		}, nil
 	}).AutoMigrate()
 
 	puBuilder := publish.New(db, storage)

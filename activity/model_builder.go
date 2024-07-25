@@ -98,25 +98,25 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 			return mb
 		})
 	})
-	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
-		modelName := ParseModelName(obj)
 
-		log, err := amb.Log(ctx, ActionLastView, obj, nil)
-		if err != nil {
-			panic(err)
-		}
-		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-				if err = in(ctx, r); err != nil {
-					return
-				}
-				// this action is special, so we use a separate notification
-				r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+	modelName := ParseModelName(obj)
+
+	log, err := amb.Log(evCtx.R.Context(), ActionLastView, obj, nil)
+	if err != nil {
+		panic(fmt.Errorf("failed to log last view: %w", err))
+	}
+	presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+		return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+			if err = in(ctx, r); err != nil {
 				return
 			}
-		})
-
-		keys := amb.ParseModelKeys(obj)
+			// this action is special, so we use a separate notification
+			r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+			return
+		}
+	})
+	keys := amb.ParseModelKeys(obj)
+	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
 		return dc.MustInject(injectorName, &TimelineCompo{
 			ID:        mb.Info().URIName() + ":" + keys + idSuffix,
 			ModelName: modelName,
@@ -247,7 +247,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 					modelKeyses = append(modelKeyses, amb.ParseModelKeys(obj))
 				})
 				if len(modelKeyses) > 0 {
-					counts, err := GetNotesCounts(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
+					counts, err := amb.ab.GetNotesCounts(ctx.R.Context(), modelName, modelKeyses)
 					if err != nil {
 						return r, totalCount, err
 					}
@@ -440,9 +440,9 @@ func (mb *ModelBuilder) create(
 	modelName, modelKeys, modelLink string,
 	detail any,
 ) (*ActivityLog, error) {
-	creator := mb.ab.currentUserFunc(ctx)
-	if creator == nil {
-		return nil, errors.New("current user is nil")
+	creator, err := mb.ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user")
 	}
 
 	if mb.ab.findUsersFunc == nil {

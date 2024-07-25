@@ -16,12 +16,12 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
 			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
-		}
+		}, nil
 	}).AutoMigrate()
 	b.Use(ab)
 

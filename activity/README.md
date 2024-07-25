@@ -33,7 +33,6 @@
 - Configure more options for the `presets.ModelBuilder` to record more custom information
 
   ```go
-  activity.RegisterModel(presetModel).UseDefaultTab() //use activity tab on the admin model edit page
   activity.RegisterModel(presetModel).AddKeys("ID", "Version") // will record value of the ID and Version field as the keyword of a model table
   activity.RegisterModel(presetModel).AddIgnoredFields("UpdateAt") // will ignore the UpdateAt field when recording activity log for update operation
   activity.RegisterModel(presetModel).AddTypeHanders(
@@ -66,3 +65,25 @@
       activity.MustGetModelBuilder(presetModel1).OnEdit(ctx, old, new)
       activity.MustGetModelBuilder(presetModel2).OnCreate(ctx, obj)
     ```
+
+- Add ListFieldNotes to Listing Builder
+
+  ```go
+    mb.Listing("ID", "Title", "Body", activity.ListFieldNotes)
+  ```
+
+- Add TimelineCompo to DetailingBuilder or EditingBuilder
+
+  - Add to SidePanel
+
+  ```go
+    dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+      return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
+    })
+  ```
+
+  - Add to Field
+
+  ```go
+    mb.Detailing("Title", "Body", activity.FieldTimeline)
+  ```

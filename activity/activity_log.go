@@ -33,16 +33,13 @@ type ActivityLog struct {
 	Detail     string `gorm:"not null;"`
 }
 
-func (*ActivityLog) AfterMigrate(tx *gorm.DB) error {
-	// just a forward compatible
-	if err := tx.Exec(`DROP INDEX IF EXISTS idx_model_name_keys_action_lastview`).Error; err != nil {
-		return errors.Wrap(err, "failed to drop index idx_model_name_keys_action_lastview")
-	}
+func (v *ActivityLog) AfterMigrate(tx *gorm.DB, tablePrefix string) error {
+	tableName := tablePrefix + ParseTableNameWithDB(tx, v)
 	if err := tx.Exec(fmt.Sprintf(`
 		CREATE UNIQUE INDEX IF NOT EXISTS uix_creator_id_model_name_keys_action_lastview
-		ON activity_logs (creator_id, model_name, model_keys)
+		ON %s (creator_id, model_name, model_keys)
 		WHERE action = '%s' AND deleted_at IS NULL
-	`, ActionLastView)).Error; err != nil {
+	`, tableName, ActionLastView)).Error; err != nil {
 		return errors.Wrap(err, "failed to create index uix_creator_id_model_name_keys_action_lastview")
 	}
 	return nil

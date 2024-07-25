@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	db = env.DB
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = AutoMigrate(db); err != nil {
+	if err = AutoMigrate(db, ""); err != nil {
 		panic(err)
 	}
 	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
@@ -71,8 +71,8 @@ var currentUser = &User{
 	Avatar: "https://i.pravatar.cc/300",
 }
 
-func testCurrentUser(ctx context.Context) *User {
-	return currentUser
+func testCurrentUser(ctx context.Context) (*User, error) {
+	return currentUser, nil
 }
 
 func resetDB() {
@@ -84,7 +84,7 @@ func resetDB() {
 func TestModelKeys(t *testing.T) {
 	resetDB()
 
-	if err := AutoMigrate(db); err != nil {
+	if err := AutoMigrate(db, ""); err != nil {
 		panic(err)
 	}
 

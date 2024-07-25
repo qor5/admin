@@ -18,17 +18,17 @@ type User struct {
 	Avatar string
 }
 
-type CurrentUserFunc func(ctx context.Context) *User
-
 // @snippet_begin(ActivityBuilder)
 // Builder struct contains all necessary fields
 type Builder struct {
 	models []*ModelBuilder // registered model builders
 
-	db              *gorm.DB                 // global db
+	dbPrimitive     *gorm.DB
+	db              *gorm.DB // global db
+	tablePrefix     string
 	logModelInstall presets.ModelInstallFunc // log model install
 	permPolicy      *perm.PolicyBuilder      // permission policy
-	currentUserFunc CurrentUserFunc
+	currentUserFunc func(ctx context.Context) (*User, error)
 	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
 }
 
@@ -55,8 +55,9 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 }
 
 // New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
+func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) *Builder {
 	ab := &Builder{
+		dbPrimitive:     db,
 		db:              db,
 		currentUserFunc: currentUserFunc,
 		permPolicy: perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
@@ -64,6 +65,16 @@ func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
 			On("*:activity_logs").On("*:activity_logs:*"),
 	}
 	ab.logModelInstall = ab.defaultLogModelInstall
+	return ab
+}
+
+func (ab *Builder) TablePrefix(prefix string) *Builder {
+	ab.tablePrefix = prefix
+	if prefix == "" {
+		ab.db = ab.dbPrimitive
+	} else {
+		ab.db = ab.dbPrimitive.Scopes(ScopeDynamicTablePrefix(prefix)).Session(&gorm.Session{})
+	}
 	return ab
 }
 
@@ -139,23 +150,26 @@ func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 }
 
 func (b *Builder) AutoMigrate() (r *Builder) {
-	if err := AutoMigrate(b.db); err != nil {
+	if err := AutoMigrate(b.db, ""); err != nil {
 		panic(err)
 	}
 	return b
 }
 
-func AutoMigrate(db *gorm.DB) error {
+func AutoMigrate(db *gorm.DB, tablePrefix string) error {
+	if tablePrefix != "" {
+		db = db.Scopes(ScopeDynamicTablePrefix(tablePrefix)).Session(&gorm.Session{})
+	}
 	dst := []any{&ActivityLog{}, &ActivityUser{}}
 	for _, v := range dst {
-		err := db.AutoMigrate(v)
+		err := db.Model(v).AutoMigrate(v)
 		if err != nil {
 			return errors.Wrap(err, "auto migrate")
 		}
 		if vv, ok := v.(interface {
-			AfterMigrate(tx *gorm.DB) error
+			AfterMigrate(tx *gorm.DB, tablePrefix string) error
 		}); ok {
-			err := vv.AfterMigrate(db)
+			err := vv.AfterMigrate(db, tablePrefix)
 			if err != nil {
 				return err
 			}

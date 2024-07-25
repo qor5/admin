@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"cmp"
 	"fmt"
 	"reflect"
 	"strings"
@@ -107,6 +108,40 @@ func ParsePrimaryKeys(v any) []string {
 	}
 	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
 	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
+}
+
+func ParseTableNameWithDB(db *gorm.DB, model any) string {
+	stmt := &gorm.Statement{DB: db}
+	stmt.Parse(model)
+	return stmt.Schema.Table
+}
+
+const dbKeyTablePrefix = "__table_prefix__"
+
+// ScopeDynamicTablePrefix set dynamic table prefix
+// Only scenarios where a Model is provided are supported
+func ScopeDynamicTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if _, ok := db.Get(dbKeyTablePrefix); ok {
+			panic("db table prefix already set")
+		}
+
+		if tablePrefix == "" {
+			return db
+		}
+
+		stmt := db.Statement
+		if stmt.Table != "" {
+			return db
+		}
+
+		model := cmp.Or(stmt.Model, stmt.Dest)
+		if model == nil {
+			return db
+		}
+
+		return db.Set(dbKeyTablePrefix, tablePrefix).Table(tablePrefix + ParseTableNameWithDB(db, model))
+	}
 }
 
 func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {
