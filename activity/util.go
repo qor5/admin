@@ -71,12 +71,12 @@ func ParseSchema(v any) (*schema.Schema, error) {
 	return s, nil
 }
 
-func ParsePrimaryFields(v any) ([]*schema.Field, error) {
-	s, err := ParseSchema(v)
-	if err != nil {
-		return nil, err
+func ParseSchemaWithDB(db *gorm.DB, v any) (*schema.Schema, error) {
+	stmt := &gorm.Statement{DB: db}
+	if err := stmt.Parse(v); err != nil {
+		return nil, errors.Wrap(err, "parse schema with db")
 	}
-	return s.PrimaryFields, nil
+	return stmt.Schema, nil
 }
 
 func parsePrimaryKeys(t reflect.Type) (keys []string) {
@@ -102,28 +102,25 @@ func parsePrimaryKeys(t reflect.Type) (keys []string) {
 }
 
 func ParsePrimaryKeys(v any) []string {
-	fields, err := ParsePrimaryFields(v)
+	s, err := ParseSchema(v)
 	if err == nil {
-		return lo.Map(fields, func(f *schema.Field, _ int) string { return f.Name })
+		return lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string { return f.Name })
 	}
 	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
 	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
 }
 
-func ParseTableNameWithDB(db *gorm.DB, model any) string {
-	stmt := &gorm.Statement{DB: db}
-	stmt.Parse(model)
-	return stmt.Schema.Table
-}
-
 const dbKeyTablePrefix = "__table_prefix__"
 
-// ScopeDynamicTablePrefix set dynamic table prefix
-// Only scenarios where a Model is provided are supported
-func ScopeDynamicTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+// scopeDynamicTablePrefix set dynamic table prefix
+// 1. Only scenarios where a Model is provided are supported
+// 2. Previously Table(...) will be overwritten
+func scopeDynamicTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if _, ok := db.Get(dbKeyTablePrefix); ok {
-			panic("db table prefix already set")
+		if v, ok := db.Get(dbKeyTablePrefix); ok {
+			if v.(string) != tablePrefix {
+				panic(fmt.Sprintf("table prefix is already set to %s", v))
+			}
 		}
 
 		if tablePrefix == "" {
@@ -131,16 +128,17 @@ func ScopeDynamicTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 		}
 
 		stmt := db.Statement
-		if stmt.Table != "" {
-			return db
-		}
-
 		model := cmp.Or(stmt.Model, stmt.Dest)
 		if model == nil {
 			return db
 		}
 
-		return db.Set(dbKeyTablePrefix, tablePrefix).Table(tablePrefix + ParseTableNameWithDB(db, model))
+		s, err := ParseSchemaWithDB(db, model)
+		if err != nil {
+			db.AddError(err)
+			return db
+		}
+		return db.Set(dbKeyTablePrefix, tablePrefix).Table(tablePrefix + s.Table)
 	}
 }
 

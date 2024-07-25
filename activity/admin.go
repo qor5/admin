@@ -3,12 +3,14 @@ package activity
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 
 	"github.com/dustin/go-humanize"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -54,38 +56,45 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	var (
 		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		dp = mb.Detailing("Detail").Drawer(true)
+		eb = mb.Editing()
 	)
 
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(model any, id string, ctx *web.EventContext) (r any, err error) {
-			r, err = in(model, id, ctx)
-			if err != nil {
-				return
-			}
-			log := r.(*ActivityLog)
-			if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
-				return nil, err
-			}
-			return log, nil
+	// should use own DataOperator
+
+	op := gorm2op.DataOperator(ab.db)
+	dp.FetchFunc(func(obj any, id string, ctx *web.EventContext) (r any, err error) {
+		r, err = op.Fetch(obj, id, ctx)
+		if err != nil {
+			return r, err
 		}
+		log := r.(*ActivityLog)
+		if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+			return nil, err
+		}
+		return log, nil
 	})
 
-	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
-			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-				Query: "hidden = ?",
-				Args:  []any{false},
-			})
-			r, totalCount, err = in(model, params, ctx)
-			if totalCount <= 0 {
-				return
-			}
-			logs := r.([]*ActivityLog)
-			if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
-				return nil, 0, err
-			}
-			return logs, totalCount, nil
+	eb.SaveFunc(func(obj any, id string, ctx *web.EventContext) error {
+		return errors.New("should not be used")
+	})
+	eb.DeleteFunc(func(obj any, id string, ctx *web.EventContext) error {
+		return errors.New("should not be used")
+	})
+
+	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+			Query: "hidden = ?",
+			Args:  []any{false},
+		})
+		r, totalCount, err = op.Search(model, params, ctx)
+		if totalCount <= 0 {
+			return
 		}
+		logs := r.([]*ActivityLog)
+		if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
+			return nil, 0, err
+		}
+		return logs, totalCount, nil
 	})
 
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })

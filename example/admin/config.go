@@ -121,7 +121,7 @@ func NewConfig(db *gorm.DB) Config {
 				return
 			}
 		}).
-		TablePrefix("cms_").
+		TablePrefix("cs_portal_").
 		AutoMigrate()
 
 	// ab.Model(l).SkipDelete().SkipCreate()
@@ -288,12 +288,15 @@ func NewConfig(db *gorm.DB) Config {
 				}
 				pmListing := pm.Listing()
 				pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-					u := getCurrentUser(ctx.R)
+					hasUnreadNotesCondition, err := ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+					if err != nil {
+						panic(err)
+					}
 					return []*vx.FilterItem{
 						{
 							Key:          "hasUnreadNotes",
 							Invisible:    true,
-							SQLCondition: ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
+							SQLCondition: hasUnreadNotesCondition,
 						},
 					}
 				})
@@ -535,13 +538,15 @@ func configPost(
 		PerPage(10)
 
 	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		u := getCurrentUser(ctx.R)
-
+		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+		if err != nil {
+			panic(err)
+		}
 		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
+				SQLCondition: hasUnreadNotesCondition,
 			},
 			{
 				Key:          "created",

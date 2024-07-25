@@ -23,7 +23,11 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, creatorID string, modelName
 		return nil, errors.New("creatorID is required")
 	}
 
-	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
+	s, err := ParseSchemaWithDB(db, &ActivityLog{})
+	if err != nil {
+		return nil, err
+	}
+	tableName := tablePrefix + s.Table
 
 	args := []any{
 		ActionNote,
@@ -83,7 +87,11 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, creatorID string, modelName
 }
 
 func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error {
-	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
+	s, err := ParseSchemaWithDB(db, &ActivityLog{})
+	if err != nil {
+		return err
+	}
+	tableName := tablePrefix + s.Table
 
 	return db.Transaction(func(tx *gorm.DB) error {
 		var results []struct {
@@ -131,7 +139,7 @@ func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error
 	})
 }
 
-func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, creatorID string, modelName string, columns []string, sep string, columnPrefix string) string {
+func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, creatorID string, modelName string, columns []string, sep string, columnPrefix string) (string, error) {
 	a := strings.Join(lo.Map(columns, func(v string, _ int) string {
 		return fmt.Sprintf("%s%s::text", columnPrefix, v)
 	}), ",")
@@ -139,7 +147,11 @@ func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, creatorID strin
 		return fmt.Sprintf(`split_part(n.model_keys, '%s', %d) AS %s`, sep, i+1, v)
 	}), ",\n")
 
-	tableName := tablePrefix + ParseTableNameWithDB(db, &ActivityLog{})
+	s, err := ParseSchemaWithDB(db, &ActivityLog{})
+	if err != nil {
+		return "", err
+	}
+	tableName := tablePrefix + s.Table
 
 	return fmt.Sprintf(`
 	(%s) IN (
@@ -166,7 +178,7 @@ func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, creatorID strin
 	    WHERE n.creator_id <> '%s' 
 	        AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at)
 	    GROUP BY n.model_keys
-    )`, a, tableName, ActionNote, modelName, tableName, ActionLastView, creatorID, modelName, b, creatorID)
+    )`, a, tableName, ActionNote, modelName, tableName, ActionLastView, creatorID, modelName, b, creatorID), nil
 }
 
 func (ab *Builder) GetNotesCounts(ctx context.Context, modelName string, modelKeyses []string) ([]*NoteCount, error) {
@@ -185,6 +197,12 @@ func (ab *Builder) MarkAllNotesAsRead(ctx context.Context) error {
 	return markAllNotesAsRead(ab.db, ab.tablePrefix, user.ID)
 }
 
-func (amb *ModelBuilder) SQLConditionHasUnreadNotes(creatorID string, columnPrefix string) string {
-	return sqlConditionHasUnreadNotes(amb.ab.db, amb.ab.tablePrefix, creatorID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
+// SQLConditionHasUnreadNotes returns a SQL condition that can be used in a WHERE clause to filter records that have unread notes.
+// Note that this method requires the applied db to be amb.ab.db, not any other db
+func (amb *ModelBuilder) SQLConditionHasUnreadNotes(ctx context.Context, columnPrefix string) (string, error) {
+	user, err := amb.ab.currentUserFunc(ctx)
+	if err != nil {
+		return "", err
+	}
+	return sqlConditionHasUnreadNotes(amb.ab.db, amb.ab.tablePrefix, user.ID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
 }
