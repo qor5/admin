@@ -3,6 +3,7 @@ package activity
 import (
 	"fmt"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -34,13 +35,18 @@ type ActivityLog struct {
 }
 
 func (v *ActivityLog) AfterMigrate(tx *gorm.DB, tablePrefix string) error {
-	tableName := tablePrefix + ParseTableNameWithDB(tx, v)
+	s, err := ParseSchemaWithDB(tx, v)
+	if err != nil {
+		return err
+	}
+	tableName := tablePrefix + s.Table
+	uix := fmt.Sprintf(`uix_%s_creator_id_model_name_keys_action_lastview`, strcase.ToSnake(tableName))
 	if err := tx.Exec(fmt.Sprintf(`
-		CREATE UNIQUE INDEX IF NOT EXISTS uix_creator_id_model_name_keys_action_lastview
+		CREATE UNIQUE INDEX IF NOT EXISTS %s
 		ON %s (creator_id, model_name, model_keys)
 		WHERE action = '%s' AND deleted_at IS NULL
-	`, tableName, ActionLastView)).Error; err != nil {
-		return errors.Wrap(err, "failed to create index uix_creator_id_model_name_keys_action_lastview")
+	`, uix, tableName, ActionLastView)).Error; err != nil {
+		return errors.Wrapf(err, "failed to create index %s", uix)
 	}
 	return nil
 }

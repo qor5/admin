@@ -219,15 +219,15 @@ func TestParsePrimaryFields(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			fields, err := activity.ParsePrimaryFields(test.Model)
+			s, err := activity.ParseSchema(test.Model)
 			if err != nil {
 				t.Errorf("Error occurred: %v", err)
 			}
-			keys := lo.Map(fields, func(f *schema.Field, _ int) string {
+			keys := lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string {
 				return f.Name
 			})
 			if !reflect.DeepEqual(keys, test.Expected) {
-				t.Errorf("Expected primary fields %v, but got %v", test.Expected, fields)
+				t.Errorf("Expected primary fields %v, but got %v", test.Expected, s.PrimaryFields)
 			}
 		})
 	}
