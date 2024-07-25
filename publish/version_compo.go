@@ -2,6 +2,8 @@ package publish
 
 import (
 	"fmt"
+	"github.com/iancoleman/strcase"
+	"github.com/qor5/x/v3/perm"
 	"net/url"
 	"reflect"
 
@@ -12,7 +14,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
@@ -260,7 +261,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		InMenu(false)
 
 	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+versionListDialogURISuffix))),
 	)
 
 	listingHref := mb.Info().ListingHref()
