@@ -42,17 +42,6 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	return ab.logModelInstall(b, mb)
 }
 
-func defaultActionLabels(msgr *Messages) map[string]string {
-	return map[string]string{
-		"":           msgr.ActionAll,
-		ActionView:   msgr.ActionView,
-		ActionEdit:   msgr.ActionEdit,
-		ActionCreate: msgr.ActionCreate,
-		ActionDelete: msgr.ActionDelete,
-		ActionNote:   msgr.ActionNote,
-	}
-}
-
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
 		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
@@ -129,7 +118,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		var actionOptions []*vuetifyx.SelectItem
 		for _, action := range DefaultActions {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  actionLabels[action],
+				Text:  cmp.Or(actionLabels[action], action),
 				Value: action,
 			})
 		}
@@ -143,8 +132,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				continue
 			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  string(action),
-				Value: string(action),
+				Text:  cmp.Or(actionLabels[action], action),
+				Value: action,
 			})
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
@@ -212,17 +201,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		filterTabs := []*presets.FilterTab{
+			{
+				Label: msgr.ActionAll,
+				Query: url.Values{},
+			},
+		}
 		actionLabels := defaultActionLabels(msgr)
-		return lo.Map(append([]string{""}, DefaultActions...), func(action string, _ int) *presets.FilterTab {
-			filterTab := &presets.FilterTab{
-				Label: actionLabels[action],
+		for _, action := range DefaultActions {
+			filterTabs = append(filterTabs, &presets.FilterTab{
+				Label: cmp.Or(actionLabels[action], action),
 				Query: url.Values{"action": []string{action}},
-			}
-			if action == "" {
-				filterTab.Query.Del("action")
-			}
-			return filterTab
-		})
+			})
+		}
+		return filterTabs
 	})
 
 	dp.Field("Detail").ComponentFunc(

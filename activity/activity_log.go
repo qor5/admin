@@ -17,7 +17,17 @@ const (
 	ActionLastView = "LastView" // hidden and only for internal use
 )
 
-var DefaultActions = []string{ActionView, ActionEdit, ActionCreate, ActionDelete, ActionNote}
+var DefaultActions = []string{ActionCreate /* ActionView,*/, ActionEdit, ActionDelete, ActionNote}
+
+func defaultActionLabels(msgr *Messages) map[string]string {
+	return map[string]string{
+		ActionCreate: msgr.ActionCreate,
+		ActionView:   msgr.ActionView,
+		ActionEdit:   msgr.ActionEdit,
+		ActionDelete: msgr.ActionDelete,
+		ActionNote:   msgr.ActionNote,
+	}
+}
 
 type ActivityLog struct {
 	gorm.Model
