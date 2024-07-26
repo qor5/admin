@@ -114,11 +114,6 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 }
 
 func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	user, err := c.ab.currentUserFunc(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get current user")
-	}
-
 	evCtx, msgr := c.MustGetEventContext(ctx)
 	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
 		return h.Div().Attr("v-pre", true).Text(perm.PermissionDenied.Error()).MarshalHTML(ctx)
@@ -151,6 +146,10 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
+	user, err := c.ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user")
+	}
 	for i, log := range logs {
 		creatorName := log.Creator.Name
 		if creatorName == "" {
