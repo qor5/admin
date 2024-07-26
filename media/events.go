@@ -14,14 +14,13 @@ const (
 	uploadFileEvent         = "mediaLibrary_UploadFileEvent"
 	chooseFileEvent         = "mediaLibrary_ChooseFileEvent"
 	updateDescriptionEvent  = "mediaLibrary_UpdateDescriptionEvent"
-	deleteConfirmationEvent = "mediaLibrary_DeleteConfirmationEvent"
-	doDeleteEvent           = "mediaLibrary_DoDelete"
+	DeleteConfirmationEvent = "mediaLibrary_DeleteConfirmationEvent"
+	DoDeleteEvent           = "mediaLibrary_DoDelete"
 	CreateFolderEvent       = "mediaLibrary_CreateFolderEvent"
 	NewFolderDialogEvent    = "mediaLibrary_NewFolderDialogEvent"
 	MoveToFolderDialogEvent = "mediaLibrary_MoveToFolderDialogEvent"
 	MoveToFolderEvent       = "mediaLibrary_MoveToFolderEvent"
 	NextFolderEvent         = "mediaLibrary_NextFolderEvent"
-	ReloadMediaContentEvent = "mediaLibrary_ReloadMediaContentEvent"
 )
 
 func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
@@ -34,12 +33,11 @@ func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
 	hub.RegisterEventFunc(uploadFileEvent, uploadFile(mb))
 	hub.RegisterEventFunc(chooseFileEvent, chooseFile(mb))
 	hub.RegisterEventFunc(updateDescriptionEvent, updateDescription(mb))
-	hub.RegisterEventFunc(deleteConfirmationEvent, deleteConfirmation(mb))
-	hub.RegisterEventFunc(doDeleteEvent, doDelete(mb))
+	hub.RegisterEventFunc(DeleteConfirmationEvent, deleteConfirmation(mb))
+	hub.RegisterEventFunc(DoDeleteEvent, doDelete(mb))
 	hub.RegisterEventFunc(CreateFolderEvent, createFolder(mb))
 	hub.RegisterEventFunc(NewFolderDialogEvent, newFolderDialog)
 	hub.RegisterEventFunc(MoveToFolderDialogEvent, moveToFolderDialog(mb))
 	hub.RegisterEventFunc(MoveToFolderEvent, moveToFolder(mb))
 	hub.RegisterEventFunc(NextFolderEvent, nextFolder(mb))
-	hub.RegisterEventFunc(ReloadMediaContentEvent, reloadMediaContent(mb))
 }

@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"slices"
@@ -96,12 +97,12 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		jsonValuesField := fmt.Sprintf("%s.Values", field.FormKey)
 		mediaBox := media_library.MediaBox{}
-		err = mediaBox.Scan(ctx.R.FormValue(jsonValuesField))
+		err = mediaBox.Scan(ctx.Param(jsonValuesField))
 		if err != nil {
 			return
 		}
 		descriptionField := fmt.Sprintf("%s.Description", field.FormKey)
-		mediaBox.Description = ctx.R.FormValue(descriptionField)
+		mediaBox.Description = ctx.Param(descriptionField)
 		err = reflectutils.Set(obj, field.Name, mediaBox)
 		if err != nil {
 			return
@@ -213,7 +214,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
 			Query("field", field).
-			Query(mediaID, fmt.Sprint(f.ID)).
+			Query(MediaIDS, fmt.Sprint(f.ID)).
 			Query("thumb", thumb).
 			Query("cfg", h.JSONString(cfg)).
 			Go())
@@ -229,16 +230,27 @@ func fileThumb(filename string) h.HTMLComponent {
 
 func deleteConfirmation(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue(mediaID)
-		cfg := ctx.R.FormValue("cfg")
+		var (
+			msgr  = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			field = ctx.Param(ParamField)
+			cfg   = ctx.Param(ParamCfg)
+			ids   = strings.Split(ctx.Param(MediaIDS), ",")
 
+			message string
+		)
+		if len(ids) == 0 {
+			presets.ShowMessage(&r, "faield", ColorWarning)
+			return
+		} else if len(ids) == 1 {
+			message = msgr.DeleteConfirmationText(ids[0])
+		} else {
+			message = fmt.Sprintf(`Are you sure you want to delete %v objects`, len(ids))
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
 			Body: VDialog(
 				VCard(
-					VCardTitle(h.Text(msgr.DeleteConfirmationText(id))),
+					VCardTitle(h.Text(message)),
 					VCardActions(
 						VSpacer(),
 						VBtn(msgr.Cancel).
@@ -251,11 +263,12 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
-								MergeQuery(true).
-								EventFunc(doDeleteEvent).
-								Query("field", field).
-								Query(mediaID, id).
-								FieldValue("cfg", cfg).
+								EventFunc(DoDeleteEvent).
+								Query(paramTab, ctx.Param(paramTab)).
+								Query(paramParentID, ctx.Param(paramParentID)).
+								Query(ParamField, field).
+								Query(MediaIDS, ids).
+								Query(ParamCfg, cfg).
 								Go()),
 					),
 				),
@@ -271,15 +284,25 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 
 func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := mb.db
-		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue(mediaID)
-		cfg := ctx.R.FormValue("cfg")
+		var (
+			db        = mb.db
+			field     = ctx.Param(ParamField)
+			ids       = strings.Split(ctx.Param(MediaIDS), ",")
+			cfg       = ctx.Param(ParamCfg)
+			objs      []media_library.MediaLibrary
+			deleteIDs []uint
+		)
+		for _, idStr := range ids {
+			id, err1 := strconv.ParseInt(idStr, 10, 64)
+			if err1 != nil {
+				continue
+			}
+			deleteIDs = append(deleteIDs, uint(id))
+		}
 
-		var obj media_library.MediaLibrary
-		err = db.Where("id = ?", id).First(&obj).Error
+		err = db.Where("id in ?", deleteIDs).Find(&objs).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				renderFileChooserDialogContent(
 					ctx,
 					&r,
@@ -292,11 +315,13 @@ func doDelete(mb *Builder) web.EventFunc {
 			}
 			panic(err)
 		}
-		if err = mb.deleteIsAllowed(ctx.R, &obj); err != nil {
-			return
+		for _, obj := range objs {
+			if err = mb.deleteIsAllowed(ctx.R, &obj); err != nil {
+				return
+			}
 		}
 
-		err = db.Delete(&media_library.MediaLibrary{}, "id = ?", id).Error
+		err = db.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error
 		if err != nil {
 			panic(err)
 		}
@@ -326,8 +351,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Class("rounded-sm").
 			Attr("style", "text-transform: none;").
 			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
-				Query("field", field).
-				FieldValue("cfg", h.JSONString(cfg)).
+				Query(ParamField, field).
+				Query(ParamCfg, h.JSONString(cfg)).
 				Go(),
 			).Disabled(disabled),
 	)
@@ -338,8 +363,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				Class("rounded-sm ml-2").
 				Attr("style", "text-transform: none").
 				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
-					Query("field", field).
-					FieldValue("cfg", h.JSONString(cfg)).
+					Query(ParamField, field).
+					Query(ParamCfg, h.JSONString(cfg)).
 					Go(),
 				).Disabled(disabled),
 		)
@@ -383,7 +408,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		c.AppendChildren(row)
 
 		fieldName := fmt.Sprintf("%s.Description", field)
-		value := ctx.R.FormValue(fieldName)
+		value := ctx.Param(fieldName)
 		if len(value) == 0 {
 			value = mediaBox.Description
 		}
@@ -431,8 +456,8 @@ func MediaBoxListFunc() presets.FieldComponentFunc {
 
 func deleteFileField() web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.R.FormValue("field")
-		cfg := stringToCfg(ctx.R.FormValue("cfg"))
+		field := ctx.Param(ParamField)
+		cfg := stringToCfg(ctx.Param(ParamCfg))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &media_library.MediaBox{}, field, cfg, false, false),
@@ -483,15 +508,17 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 
 func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := mb.db
-		field := ctx.R.FormValue("field")
-		id := ctx.R.FormValue(mediaID)
-		cfg := ctx.R.FormValue("cfg")
+		var (
+			db    = mb.db
+			field = ctx.Param(ParamField)
+			id    = ctx.Param(MediaIDS)
+			cfg   = ctx.Param(ParamCfg)
+		)
 
 		var obj media_library.MediaLibrary
 		err = db.Where("id = ?", id).First(&obj).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				renderFileChooserDialogContent(
 					ctx,
 					&r,
@@ -513,7 +540,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 			return
 		}
 
-		media.File.Description = ctx.R.FormValue("CurrentDescription")
+		media.File.Description = ctx.Param("CurrentDescription")
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
@@ -544,10 +571,11 @@ func createFolder(mb *Builder) web.EventFunc {
 		if err = mb.db.Save(&m).Error; err != nil {
 			return
 		}
-		r.RunScript = web.Plaid().EventFunc(ReloadMediaContentEvent).
+		r.RunScript = web.Plaid().EventFunc(imageJumpPageEvent).
 			Query(paramTab, ctx.Param(paramTab)).
+			Query(paramParentID, ctx.Param(paramParentID)).
 			Query(ParamField, ctx.Param(ParamField)).
-			FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+			Query(ParamCfg, ctx.Param(ParamCfg)).
 			Go()
 		return
 	}
@@ -574,8 +602,9 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
 							web.Plaid().EventFunc(CreateFolderEvent).
 								Query(paramTab, ctx.Param(paramTab)).
+								Query(paramParentID, ctx.Param(paramParentID)).
 								Query(ParamField, ctx.Param(ParamField)).
-								FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+								Query(ParamCfg, ctx.Param(ParamCfg)).
 								Go(),
 						),
 					),
@@ -603,17 +632,8 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 						VCardItem(
 							VCard(
 								VList(
-									VListGroup(
-										web.Slot(
-											VListItem(
-												VListItemTitle(h.Text("Root Directory")),
-											).Attr("v-bind", "props").
-												PrependIcon("mdi-folder").
-												Attr(":active", fmt.Sprintf(`form.%s==0`, ParamSelectFolderID)).
-												Attr("@click", fmt.Sprintf("form.%s=0;", ParamSelectFolderID)),
-										).Name("activator").Scope(" {  props }"),
-										h.Components(folderGroupsComponents(db, ctx, 0)...),
-									).Value(0)).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
+									h.Components(folderGroupsComponents(db, ctx, -1)...),
+								).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
 							).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
 						),
 
@@ -624,8 +644,9 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 								Attr("@click", web.Plaid().
 									EventFunc(MoveToFolderEvent).
 									Query(paramTab, ctx.Param(paramTab)).
+									Query(paramParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
 									Query(ParamField, ctx.Param(ParamField)).
-									FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+									Query(ParamCfg, ctx.Param(ParamCfg)).
 									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
 						),
 					).Height(571).Width(658).Class("pa-6"),
@@ -646,7 +667,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		var ids []uint
 
 		for _, idStr := range selectIDs {
-			selectID, err1 := strconv.Atoi(idStr)
+			selectID, err1 := strconv.ParseInt(idStr, 10, 64)
 			if err1 != nil {
 				continue
 			}
@@ -660,10 +681,11 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, "move success", ColorSuccess)
 		}
 		r.RunScript = web.Plaid().
-			EventFunc(ReloadMediaContentEvent).
+			EventFunc(imageJumpPageEvent).
 			Query(paramTab, ctx.Param(paramTab)).
+			Query(paramParentID, selectFolderID).
 			Query(ParamField, ctx.Param(ParamField)).
-			FieldValue(ParamCfg, ctx.Param(ParamCfg)).
+			Query(ParamCfg, ctx.Param(ParamCfg)).
 			Go()
 		return
 	}
@@ -672,27 +694,46 @@ func moveToFolder(mb *Builder) web.EventFunc {
 func nextFolder(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := uint(ctx.ParamAsInt(ParamSelectFolderID))
+		id := ctx.ParamAsInt(ParamSelectFolderID)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: folderGroupPortalName(id),
+			Name: folderGroupPortalName(uint(id)),
 			Body: h.Components(folderGroupsComponents(db, ctx, id)...),
 		})
 		return
 	}
 }
 
-func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID uint) (items []h.HTMLComponent) {
+func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (items []h.HTMLComponent) {
 	var (
 		records   []*media_library.MediaLibrary
 		count     int64
 		selectIDs = strings.Split(ctx.Param(ParamSelectIDS), ",")
+		idS       []uint
 	)
-	db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
+
+	for _, idStr := range selectIDs {
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			continue
+		}
+		idS = append(idS, uint(id))
+	}
+
+	if parentID == -1 {
+		item := &media_library.MediaLibrary{
+			Folder: true,
+		}
+		item.ID = 0
+		item.File.FileName = "Root Director"
+		records = append(records, item)
+	} else {
+		db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
+	}
 	for _, record := range records {
 		if slices.Contains(selectIDs, fmt.Sprint(record.ID)) {
 			continue
 		}
-		db.Model(media_library.MediaLibrary{}).Where("parent_id = ?  and folder = true", record.ID).Count(&count)
+		db.Model(media_library.MediaLibrary{}).Where("id not in ? and parent_id = ?  and folder = true", idS, record.ID).Count(&count)
 		if count > 0 {
 			items = append(items,
 				VListGroup(
@@ -721,16 +762,4 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID uint) (
 		}
 	}
 	return
-}
-
-func reloadMediaContent(mb *Builder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Param(ParamField)
-		cfg := stringToCfg(ctx.Param(ParamCfg))
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: mediaContentPortalName,
-			Body: mediaLibraryContent(mb, field, ctx, cfg),
-		})
-		return
-	}
 }
