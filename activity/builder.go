@@ -19,14 +19,13 @@ type User struct {
 }
 
 // @snippet_begin(ActivityBuilder)
-// Builder struct contains all necessary fields
 type Builder struct {
 	models []*ModelBuilder // registered model builders
 
-	dbPrimitive     *gorm.DB
-	db              *gorm.DB // global db
+	dbPrimitive     *gorm.DB // primitive db
+	db              *gorm.DB // global db with table prefix scope
 	tablePrefix     string
-	logModelInstall presets.ModelInstallFunc // log model install
+	logModelInstall presets.ModelInstallFunc // admin preset install
 	permPolicy      *perm.PolicyBuilder      // permission policy
 	currentUserFunc func(ctx context.Context) (*User, error)
 	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
@@ -54,7 +53,6 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 	return ab
 }
 
-// New initializes a new Builder instance with a provided database connection and an optional activity log model.
 func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) *Builder {
 	ab := &Builder{
 		dbPrimitive:     db,
@@ -78,7 +76,6 @@ func (ab *Builder) TablePrefix(prefix string) *Builder {
 	return ab
 }
 
-// RegisterModels register mutiple models
 func (ab *Builder) RegisterModels(models ...any) *Builder {
 	for _, model := range models {
 		ab.RegisterModel(model)
@@ -86,7 +83,6 @@ func (ab *Builder) RegisterModels(models ...any) *Builder {
 	return ab
 }
 
-// RegisterModel Model register a model and return model builder
 func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	if amb, exist := ab.GetModelBuilder(m); exist {
 		return amb
@@ -122,7 +118,6 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	return amb
 }
 
-// GetModelBuilder 	get model builder
 func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	if _, ok := v.(*presets.ModelBuilder); ok {
 		return lo.Find(ab.models, func(amb *ModelBuilder) bool {
@@ -135,7 +130,6 @@ func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	})
 }
 
-// MustGetModelBuilder 	get model builder
 func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	amb, ok := ab.GetModelBuilder(v)
 	if !ok {
@@ -144,7 +138,6 @@ func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	return amb
 }
 
-// GetModelBuilders get all model builders
 func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 	return ab.models
 }

@@ -77,7 +77,7 @@
   - Add to SidePanel
 
   ```go
-    dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+    dp.SidePanelFunc(func(obj any, ctx *web.EventContext) h.HTMLComponent {
       return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
     })
   ```
