@@ -32,8 +32,8 @@ func defaultActionLabels(msgr *Messages) map[string]string {
 type ActivityLog struct {
 	gorm.Model
 
-	CreatorID string `gorm:"index;not null;"`
-	Creator   User   `gorm:"-"`
+	UserID string `gorm:"index;not null;"`
+	User   User   `gorm:"-"`
 
 	Action     string `gorm:"index;not null;"`
 	Hidden     bool   `gorm:"index;default:false;not null;"`
@@ -55,10 +55,10 @@ func (v *ActivityLog) AfterMigrate(tx *gorm.DB, tablePrefix string) error {
 	if tables := strings.Split(tableName, "."); len(tables) == 2 {
 		tableBare = tables[1]
 	}
-	uix := fmt.Sprintf(`uix_%s_creator_id_model_name_keys_action_lastview`, tableBare)
+	uix := fmt.Sprintf(`uix_%s_user_id_model_name_keys_action_lastview`, tableBare)
 	if err := tx.Exec(fmt.Sprintf(`
 		CREATE UNIQUE INDEX IF NOT EXISTS %s
-		ON %s (creator_id, model_name, model_keys)
+		ON %s (user_id, model_name, model_keys)
 		WHERE action = '%s' AND deleted_at IS NULL
 	`, uix, tableName, ActionLastView)).Error; err != nil {
 		return errors.Wrapf(err, "failed to create index %s", uix)
