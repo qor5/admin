@@ -56,7 +56,7 @@ func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
+		lb = mb.Listing("CreatedAt", "User", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		dp = mb.Detailing("Detail").Drawer(true)
 		eb = mb.Editing()
 	)
@@ -70,7 +70,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return r, err
 		}
 		log := r.(*ActivityLog)
-		if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+		if err := ab.supplyUsers(ctx.R.Context(), []*ActivityLog{log}); err != nil {
 			return nil, err
 		}
 		return log, nil
@@ -93,7 +93,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return
 		}
 		logs := r.([]*ActivityLog)
-		if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
+		if err := ab.supplyUsers(ctx.R.Context(), logs); err != nil {
 			return nil, 0, err
 		}
 		return logs, totalCount, nil
@@ -107,9 +107,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format(timeFormat)))
 		},
 	)
-	lb.Field("Creator").Label(Messages_en_US.ModelCreator).ComponentFunc(
+	lb.Field("User").Label(Messages_en_US.ModelUser).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).Creator.Name))
+			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).User.Name))
 		},
 	)
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
@@ -150,20 +150,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		creatorIDs := []string{}
-		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT creator_id AS id").Pluck("id", &creatorIDs).Error
+		userIDs := []string{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT user_id AS id").Pluck("id", &userIDs).Error
 		if err != nil {
 			panic(err)
 		}
-		creators, err := ab.findUsers(ctx.R.Context(), creatorIDs)
+		users, err := ab.findUsers(ctx.R.Context(), userIDs)
 		if err != nil {
 			panic(err)
 		}
-		var creatorOptions []*vuetifyx.SelectItem
-		for _, creator := range creators {
-			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Name,
-				Value: creator.ID,
+		var userOptions []*vuetifyx.SelectItem
+		for _, user := range users {
+			userOptions = append(userOptions, &vuetifyx.SelectItem{
+				Text:  user.Name,
+				Value: user.ID,
 			})
 		}
 
@@ -190,13 +190,13 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				SQLCondition: `created_at %s ?`,
 			},
 		}
-		if len(creatorOptions) > 0 {
+		if len(userOptions) > 0 {
 			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "creator_id",
-				Label:        msgr.FilterCreator,
+				Key:          "user_id",
+				Label:        msgr.FilterUser,
 				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator_id %s ?`,
-				Options:      creatorOptions,
+				SQLCondition: `user_id %s ?`,
+				Options:      userOptions,
 			})
 		}
 		if len(modelOptions) > 0 {
@@ -245,8 +245,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 					VCardText().Class("pa-0 pt-3").Children(
 						VTable(
 							h.Tbody(
-								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td().Attr("v-pre", true).Text(log.Creator.Name)),
-								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.CreatorID)),
+								h.Tr(h.Td(h.Text(msgr.ModelUser)), h.Td().Attr("v-pre", true).Text(log.User.Name)),
+								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.UserID)),
 								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(log.Action)),
 								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),

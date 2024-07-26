@@ -192,17 +192,17 @@ func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*Use
 	}), nil
 }
 
-func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) error {
-	creatorIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
-		return log.CreatorID
+func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
+	userIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
+		return log.UserID
 	}))
-	creators, err := ab.findUsers(ctx, creatorIDs)
+	users, err := ab.findUsers(ctx, userIDs)
 	if err != nil {
 		return err
 	}
 	for _, log := range logs {
-		if creator, ok := creators[log.CreatorID]; ok {
-			log.Creator = *creator
+		if user, ok := users[log.UserID]; ok {
+			log.User = *user
 		}
 	}
 	return nil
@@ -214,7 +214,7 @@ func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys str
 	if err != nil {
 		return nil, err
 	}
-	if err := ab.supplyCreators(ctx, logs); err != nil {
+	if err := ab.supplyUsers(ctx, logs); err != nil {
 		return nil, err
 	}
 	return logs, nil

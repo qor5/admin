@@ -151,13 +151,13 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to get current user")
 	}
 	for i, log := range logs {
-		creatorName := log.Creator.Name
-		if creatorName == "" {
-			creatorName = msgr.UnknownCreator
+		userName := log.User.Name
+		if userName == "" {
+			userName = msgr.UnknownUser
 		}
 		avatarText := ""
-		if log.Creator.Avatar == "" {
-			avatarText = strings.ToUpper(string([]rune(creatorName)[0:1]))
+		if log.User.Avatar == "" {
+			avatarText = strings.ToUpper(string([]rune(userName)[0:1]))
 		}
 		dotColor := v.ColorSuccess
 		if i != 0 {
@@ -173,11 +173,11 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Div().Class("flex-grow-1 d-flex flex-column pb-3").Children(
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeXSmall).Density(v.DensityCompact).Rounded(true).Text(avatarText).Children(
-							h.Iff(log.Creator.Avatar != "", func() h.HTMLComponent {
-								return v.VImg().Attr("alt", creatorName).Attr("src", log.Creator.Avatar)
+							h.Iff(log.User.Avatar != "", func() h.HTMLComponent {
+								return v.VImg().Attr("alt", userName).Attr("src", log.User.Avatar)
 							}),
 						),
-						h.Div().Attr("v-pre", true).Text(creatorName).Class("font-weight-medium").ClassIf("text-grey", i != 0),
+						h.Div().Attr("v-pre", true).Text(userName).Class("font-weight-medium").ClassIf("text-grey", i != 0),
 					),
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						h.Div().Style("width: 16px"),
@@ -188,7 +188,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		)
 		if log.Action == ActionNote {
 			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
-				v.VHover().Disabled(log.CreatorID != user.ID).Children(
+				v.VHover().Disabled(log.UserID != user.ID).Children(
 					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
 							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox").Class("d-flex flex-row ga-1").
@@ -305,7 +305,7 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		return
 	}
 
-	creator, err := c.ab.currentUserFunc(ctx)
+	user, err := c.ab.currentUserFunc(ctx)
 	if err != nil {
 		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, v.ColorError)
 		return
@@ -316,8 +316,8 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 		presets.ShowMessage(&r, msgr.FailedToGetNote, v.ColorError)
 		return
 	}
-	if log.CreatorID != creator.ID {
-		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, v.ColorError)
+	if log.UserID != user.ID {
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteUser, v.ColorError)
 		return
 	}
 
@@ -361,19 +361,19 @@ func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (
 		return r, perm.PermissionDenied
 	}
 
-	creator, err := c.ab.currentUserFunc(ctx)
+	user, err := c.ab.currentUserFunc(ctx)
 	if err != nil {
 		presets.ShowMessage(&r, msgr.FailedToGetCurrentUser, v.ColorError)
 		return
 	}
 
-	result := c.ab.db.Where("id = ? AND creator_id = ?", req.LogID, creator.ID).Delete(&ActivityLog{})
+	result := c.ab.db.Where("id = ? AND user_id = ?", req.LogID, user.ID).Delete(&ActivityLog{})
 	if err := result.Error; err != nil {
 		presets.ShowMessage(&r, msgr.FailedToDeleteNote, v.ColorError)
 		return
 	}
 	if result.RowsAffected == 0 {
-		presets.ShowMessage(&r, msgr.YouAreNotTheNoteCreator, v.ColorError)
+		presets.ShowMessage(&r, msgr.YouAreNotTheNoteUser, v.ColorError)
 		return
 	}
 	presets.ShowMessage(&r, msgr.SuccessfullyDeletedNote, v.ColorSuccess)

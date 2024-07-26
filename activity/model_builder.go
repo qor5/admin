@@ -461,7 +461,7 @@ func (mb *ModelBuilder) create(
 	}
 
 	log := &ActivityLog{
-		CreatorID:  user.ID,
+		UserID:     user.ID,
 		Action:     action,
 		ModelName:  modelName,
 		ModelKeys:  modelKeys,
@@ -483,14 +483,14 @@ func (mb *ModelBuilder) create(
 		log.Hidden = true
 		r := &ActivityLog{}
 		if err := mb.ab.db.
-			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
+			Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
 			Assign(log).FirstOrCreate(r).Error; err != nil {
 			return nil, err
 		}
 		return r, nil
 
 		// Why not use this ? Because log.id is empty although the record is already created, there is no advance fetch of the original id here .
-		// if mb.ab.db.Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.CreatorID, log.ModelName, log.ModelKeys, log.Action).
+		// if mb.ab.db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
 		// 	Select("*").Updates(log).RowsAffected == 0 {
 		// 	if err := mb.ab.db.Create(log).Error; err != nil {
 		// 		return nil, errors.Wrap(err, "failed to create log")

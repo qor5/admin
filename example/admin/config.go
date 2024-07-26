@@ -112,7 +112,7 @@ func NewConfig(db *gorm.DB) Config {
 						u := getCurrentUser(ctx.R)
 						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
 							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-								Query: "creator_id = ?",
+								Query: "user_id = ?",
 								Args:  []interface{}{fmt.Sprint(u.ID)},
 							})
 						}

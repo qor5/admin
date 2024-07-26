@@ -17,7 +17,7 @@ type Messages struct {
 	ModelUserID    string
 	ModelCreatedAt string
 	ModelAction    string
-	ModelCreator   string
+	ModelUser      string
 	ModelKeys      string
 	ModelName      string
 	ModelLabel     string
@@ -26,7 +26,7 @@ type Messages struct {
 
 	FilterAction    string
 	FilterCreatedAt string
-	FilterCreator   string
+	FilterUser      string
 	FilterModel     string
 
 	DiffDetail  string
@@ -48,13 +48,13 @@ type Messages struct {
 	PerformActionNoDetailTemplate string
 	PerformActionTemplate         string
 	AddNote                       string
-	UnknownCreator                string
+	UnknownUser                   string
 	NoteCannotBeEmpty             string
 	FailedToCreateNote            string
 	SuccessfullyCreatedNote       string
 	FailedToGetCurrentUser        string
 	FailedToGetNote               string
-	YouAreNotTheNoteCreator       string
+	YouAreNotTheNoteUser          string
 	FailedToUpdateNote            string
 	SuccessfullyUpdatedNote       string
 	FailedToDeleteNote            string
@@ -100,7 +100,7 @@ var Messages_en_US = &Messages{
 	ModelUserID:    "Creator ID",
 	ModelCreatedAt: "Date Time",
 	ModelAction:    "Action",
-	ModelCreator:   "Creator",
+	ModelUser:      "Creator",
 	ModelKeys:      "Keys",
 	ModelName:      "Table Name",
 	ModelLabel:     "Menu Name",
@@ -109,7 +109,7 @@ var Messages_en_US = &Messages{
 
 	FilterAction:    "Action",
 	FilterCreatedAt: "Create Time",
-	FilterCreator:   "Creator",
+	FilterUser:      "Creator",
 	FilterModel:     "Model Name",
 
 	DiffDetail:  "Detail",
@@ -131,13 +131,13 @@ var Messages_en_US = &Messages{
 	PerformActionNoDetailTemplate: "Perform {action}",
 	PerformActionTemplate:         "Perform {action} with {detail}",
 	AddNote:                       "Add Note",
-	UnknownCreator:                "Unknown",
+	UnknownUser:                   "Unknown",
 	NoteCannotBeEmpty:             "Note cannot be empty",
 	FailedToCreateNote:            "Failed to create note",
 	SuccessfullyCreatedNote:       "Successfully created note",
 	FailedToGetCurrentUser:        "Failed to get current user",
 	FailedToGetNote:               "Failed to get note",
-	YouAreNotTheNoteCreator:       "You are not the creator of this note",
+	YouAreNotTheNoteUser:          "You are not the creator of this note",
 	FailedToUpdateNote:            "Failed to update note",
 	SuccessfullyUpdatedNote:       "Successfully updated note",
 	FailedToDeleteNote:            "Failed to delete note",
@@ -161,7 +161,7 @@ var Messages_zh_CN = &Messages{
 	ModelUserID:    "操作者ID",
 	ModelCreatedAt: "日期时间",
 	ModelAction:    "操作",
-	ModelCreator:   "操作者",
+	ModelUser:      "操作者",
 	ModelKeys:      "表的主键值",
 	ModelName:      "表名",
 	ModelLabel:     "菜单名",
@@ -170,7 +170,7 @@ var Messages_zh_CN = &Messages{
 
 	FilterAction:    "操作类型",
 	FilterCreatedAt: "操作时间",
-	FilterCreator:   "操作人",
+	FilterUser:      "操作人",
 	FilterModel:     "操作对象",
 	DiffDetail:      "详情",
 	DiffAdd:         "新加",
@@ -191,13 +191,13 @@ var Messages_zh_CN = &Messages{
 	PerformActionNoDetailTemplate: "执行 {action}",
 	PerformActionTemplate:         "执行 {action} 操作，详情为 {detail}",
 	AddNote:                       "添加备注",
-	UnknownCreator:                "未知",
+	UnknownUser:                   "未知",
 	NoteCannotBeEmpty:             "备注不能为空",
 	FailedToCreateNote:            "创建备注失败",
 	SuccessfullyCreatedNote:       "成功创建备注",
 	FailedToGetCurrentUser:        "获取当前用户失败",
 	FailedToGetNote:               "获取备注失败",
-	YouAreNotTheNoteCreator:       "您不是备注的创建者",
+	YouAreNotTheNoteUser:          "您不是备注的创建者",
 	FailedToUpdateNote:            "更新备注失败",
 	SuccessfullyUpdatedNote:       "成功更新备注",
 	FailedToDeleteNote:            "删除备注失败",
@@ -221,7 +221,7 @@ var Messages_ja_JP = &Messages{
 	ModelUserID:    "作成者ID",
 	ModelCreatedAt: "日時",
 	ModelAction:    "アクション",
-	ModelCreator:   "作成者",
+	ModelUser:      "作成者",
 	ModelKeys:      "キー",
 	ModelName:      "テーブル名",
 	ModelLabel:     "メニュー名",
@@ -230,7 +230,7 @@ var Messages_ja_JP = &Messages{
 
 	FilterAction:    "アクション",
 	FilterCreatedAt: "作成日時",
-	FilterCreator:   "作成者",
+	FilterUser:      "作成者",
 	FilterModel:     "モデル名",
 
 	DiffDetail:  "詳細",
@@ -252,13 +252,13 @@ var Messages_ja_JP = &Messages{
 	PerformActionNoDetailTemplate: "{action} を実行",
 	PerformActionTemplate:         "{action} を実行し、{detail} を使用",
 	AddNote:                       "ノートを追加",
-	UnknownCreator:                "不明",
+	UnknownUser:                   "不明",
 	NoteCannotBeEmpty:             "ノートは空にできません",
 	FailedToCreateNote:            "ノートの作成に失敗しました",
 	SuccessfullyCreatedNote:       "ノートの作成に成功しました",
 	FailedToGetCurrentUser:        "現在のユーザーの取得に失敗しました",
 	FailedToGetNote:               "ノートの取得に失敗しました",
-	YouAreNotTheNoteCreator:       "このノートの作成者ではありません",
+	YouAreNotTheNoteUser:          "このノートの作成者ではありません",
 	FailedToUpdateNote:            "ノートの更新に失敗しました",
 	SuccessfullyUpdatedNote:       "ノートの更新に成功しました",
 	FailedToDeleteNote:            "ノートの削除に失敗しました",
