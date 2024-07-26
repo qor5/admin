@@ -441,7 +441,7 @@ func (mb *ModelBuilder) create(
 	modelName, modelKeys, modelLink string,
 	detail any,
 ) (*ActivityLog, error) {
-	creator, err := mb.ab.currentUserFunc(ctx)
+	user, err := mb.ab.currentUserFunc(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user")
 	}
@@ -449,9 +449,9 @@ func (mb *ModelBuilder) create(
 	if mb.ab.findUsersFunc == nil {
 		user := &ActivityUser{
 			CreatedAt: mb.ab.db.NowFunc(),
-			ID:        creator.ID,
-			Name:      creator.Name,
-			Avatar:    creator.Avatar,
+			ID:        user.ID,
+			Name:      user.Name,
+			Avatar:    user.Avatar,
 		}
 		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
 			if err := mb.ab.db.Create(user).Error; err != nil {
@@ -461,7 +461,7 @@ func (mb *ModelBuilder) create(
 	}
 
 	log := &ActivityLog{
-		CreatorID:  creator.ID,
+		CreatorID:  user.ID,
 		Action:     action,
 		ModelName:  modelName,
 		ModelKeys:  modelKeys,
@@ -483,7 +483,7 @@ func (mb *ModelBuilder) create(
 		log.Hidden = true
 		r := &ActivityLog{}
 		if err := mb.ab.db.
-			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", creator.ID, modelName, modelKeys, action).
+			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
 			Assign(log).FirstOrCreate(r).Error; err != nil {
 			return nil, err
 		}
