@@ -33,14 +33,18 @@ func TestMain(m *testing.M) {
 	db = env.DB
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = db.AutoMigrate(&Foo{}); err != nil {
-		panic(err)
-	}
-
 	m.Run()
 }
 
+func resetDB() {
+	db.Exec("DROP TABLE IF EXISTS foos")
+	db.Exec("DROP TABLE IF EXISTS bars")
+}
+
 func TestTablePrefix(t *testing.T) {
+	resetDB()
+	require.NoError(t, db.AutoMigrate(&Foo{}))
+
 	require.NoError(t, db.Create(&Foo{ID: "1", Name: "foo"}).Error)
 	{
 		foo := &Foo{}
@@ -48,11 +52,11 @@ func TestTablePrefix(t *testing.T) {
 		require.Equal(t, "foo", foo.Name)
 	}
 
-	require.NoError(t, db.Exec(`CREATE SCHEMA IF NOT EXISTS copilot ;`).Error)
+	require.NoError(t, db.Exec(`CREATE SCHEMA IF NOT EXISTS plant;`).Error)
 
 	db := db.Session(&gorm.Session{})
 	db.Config.NamingStrategy = schema.NamingStrategy{
-		TablePrefix:         "copilot.",
+		TablePrefix:         "plant.",
 		IdentifierMaxLength: 64,
 	}
 	{
@@ -60,7 +64,7 @@ func TestTablePrefix(t *testing.T) {
 		sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 			return tx.Where("id = ?", "1").First(foo)
 		})
-		require.NotContains(t, sql, "copilot") // Because the db already has an internal cache
+		require.NotContains(t, sql, "plant") // Because the db already has an internal cache
 	}
 	{
 		require.NoError(t, db.AutoMigrate(&Bar{}))
@@ -69,31 +73,37 @@ func TestTablePrefix(t *testing.T) {
 		sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 			return tx.Create(&Bar{ID: "1", Name: "bar"})
 		})
-		require.Contains(t, sql, "copilot") // Because the db hasn't cached the Bar yet.
+		require.Contains(t, sql, "plant") // Because the db hasn't cached the Bar yet.
 	}
 	// So it is not a reliable solution.
 }
 
 func TestTable(t *testing.T) {
+	resetDB()
+	require.NoError(t, db.AutoMigrate(&Foo{}))
+
 	foo := &Foo{}
 	require.Contains(t, db.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Table("copilotx.foos").Where("id = ?", "1").First(foo)
-	}), "copilotx")
+		return tx.Table("plantx.foos").Where("id = ?", "1").First(foo)
+	}), "plantx")
 	require.Contains(t, db.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Table("copiloty.foos").Where("id = ?", "1").First(foo)
-	}), "copiloty")
+		return tx.Table("planty.foos").Where("id = ?", "1").First(foo)
+	}), "planty")
 
-	require.NoError(t, db.Exec(`CREATE SCHEMA IF NOT EXISTS copilot;`).Error)
-	db := db.Table("copilot.foos").Session(&gorm.Session{}) // Fixed TableName
+	require.NoError(t, db.Exec(`CREATE SCHEMA IF NOT EXISTS plant;`).Error)
+	db := db.Table("plant.foos").Session(&gorm.Session{}) // Fixed TableName
 	require.Contains(t, db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("id = ?", "1").First(foo)
-	}), "copilot")
+	}), "plant")
 	require.Contains(t, db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return tx.Where("id = ?", "1").First(foo)
-	}), "copilot")
+	}), "plant")
 }
 
 func TestScopes(t *testing.T) {
+	resetDB()
+	require.NoError(t, db.AutoMigrate(&Foo{}))
+
 	callCount := 0
 	scopeTableName := func(tableName string) func(*gorm.DB) *gorm.DB {
 		return func(db *gorm.DB) *gorm.DB {
@@ -116,6 +126,8 @@ func TestScopes(t *testing.T) {
 }
 
 func TestDynamicTablePrefix(t *testing.T) {
+	resetDB()
+
 	getTableName := func(db *gorm.DB, tablePrefix string, model any) string {
 		stmt := &gorm.Statement{DB: db}
 		stmt.Parse(model)

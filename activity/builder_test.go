@@ -16,12 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var (
-	db          *gorm.DB
-	pb          = presets.New()
-	pageModel   = pb.Model(&Page{})
-	widgetModel = pb.Model(&Widget{})
-)
+var db *gorm.DB
 
 type (
 	Page struct {
@@ -82,6 +77,10 @@ func resetDB() {
 }
 
 func TestModelKeys(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+	widgetModel := pb.Model(&Widget{})
+
 	resetDB()
 
 	if err := AutoMigrate(db, ""); err != nil {
@@ -124,6 +123,9 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).LinkFunc(func(v any) string {
@@ -145,6 +147,9 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, new any, prefixField string) (diffs []Diff) {
@@ -227,6 +232,9 @@ func TestModelTypeHanders(t *testing.T) {
 }
 
 func TestUser(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 
@@ -245,6 +253,8 @@ func TestUser(t *testing.T) {
 }
 
 func TestGetActivityLogs(t *testing.T) {
+	pb := presets.New()
+
 	builder := New(db, testCurrentUser)
 	pb.Use(builder)
 
@@ -291,6 +301,8 @@ func TestGetActivityLogs(t *testing.T) {
 }
 
 func TestMutliModelBuilder(t *testing.T) {
+	pb := presets.New()
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
