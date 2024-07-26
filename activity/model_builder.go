@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -33,10 +33,7 @@ const (
 )
 
 // @snippet_begin(ActivityModelBuilder)
-// a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
-	once sync.Once
-
 	ref           any                          // model ref
 	typ           reflect.Type                 // model type
 	ab            *Builder                     // activity builder
@@ -78,45 +75,36 @@ func emitLogCreated(evCtx *web.EventContext, log *ActivityLog) {
 	})
 }
 
+func injectorName(mb *presets.ModelBuilder) string {
+	return fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+}
+
 func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSuffix string) h.HTMLComponent {
 	if amb.presetModel == nil {
 		panic("NewTimelineCompo method only supports presets.ModelBuilder")
 	}
 	mb := amb.presetModel
 
-	injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+	injectorName := injectorName(mb)
 	dc := mb.GetPresetsBuilder().GetDependencyCenter()
-	amb.once.Do(func() {
-		dc.RegisterInjector(injectorName)
-		dc.MustProvide(injectorName, func() *Builder {
-			return amb.ab
-		})
-		dc.MustProvide(injectorName, func() *ModelBuilder {
-			return amb
-		})
-		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
-			return mb
-		})
-	})
-	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
-		modelName := ParseModelName(obj)
+	modelName := ParseModelName(obj)
 
-		log, err := amb.Log(ctx, ActionLastView, obj, nil)
-		if err != nil {
-			panic(err)
-		}
-		presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
-			return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
-				if err = in(ctx, r); err != nil {
-					return
-				}
-				// this action is special, so we use a separate notification
-				r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+	log, err := amb.Log(evCtx.R.Context(), ActionLastView, obj, nil)
+	if err != nil {
+		panic(fmt.Errorf("failed to log last view: %w", err))
+	}
+	presets.WrapEventFuncAddon(evCtx, func(in presets.EventFuncAddon) presets.EventFuncAddon {
+		return func(ctx *web.EventContext, r *web.EventResponse) (err error) {
+			if err = in(ctx, r); err != nil {
 				return
 			}
-		})
-
-		keys := amb.ParseModelKeys(obj)
+			// this action is special, so we use a separate notification
+			r.Emit(NotifiLastViewedAtUpdated(modelName), PayloadLastViewedAtUpdated{Log: log})
+			return
+		}
+	})
+	keys := amb.ParseModelKeys(obj)
+	return h.ComponentFunc(func(ctx context.Context) (r []byte, err error) {
 		return dc.MustInject(injectorName, &TimelineCompo{
 			ID:        mb.Info().URIName() + ":" + keys + idSuffix,
 			ModelName: modelName,
@@ -126,7 +114,7 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 	})
 }
 
-func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
+func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
 		id := presets.ObjectID(a)
@@ -137,6 +125,20 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			return mb.Info().DetailingHref(id)
 		}
 		return ""
+	})
+
+	pb := mb.GetPresetsBuilder()
+	if !amb.ab.IsPresetInstalled(pb) {
+		pb.GetI18n().
+			RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
+			RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
+			RegisterForModule(language.Japanese, I18nActivityKey, Messages_ja_JP)
+	}
+	dc := mb.GetPresetsBuilder().GetDependencyCenter()
+	injectorName := injectorName(mb)
+	dc.RegisterInjector(injectorName)
+	dc.MustProvide(injectorName, func() (*Builder, *presets.ModelBuilder, *ModelBuilder) {
+		return amb.ab, mb, amb
 	})
 
 	eb := mb.Editing()
@@ -247,7 +249,7 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 					modelKeyses = append(modelKeyses, amb.ParseModelKeys(obj))
 				})
 				if len(modelKeyses) > 0 {
-					counts, err := GetNotesCounts(amb.ab.db, amb.ab.currentUserFunc(ctx.R.Context()).ID, modelName, modelKeyses)
+					counts, err := amb.ab.GetNotesCounts(ctx.R.Context(), modelName, modelKeyses)
 					if err != nil {
 						return r, totalCount, err
 					}
@@ -276,7 +278,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				totalNotesCountText = fmt.Sprintf("%d", count.TotalNotesCount)
 			}
 
-			// TODO: Because of the filter of hasUnreadNotes, it seems that you need to reload the list directly.
 			total := h.Div().Class("text-caption bg-grey-lighten-3 rounded px-1").Text(totalNotesCountText)
 			return h.Td(
 				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ unreadNotesCount: %d }", count.UnreadNotesCount)).Children(
@@ -440,17 +441,17 @@ func (mb *ModelBuilder) create(
 	modelName, modelKeys, modelLink string,
 	detail any,
 ) (*ActivityLog, error) {
-	creator := mb.ab.currentUserFunc(ctx)
-	if creator == nil {
-		return nil, errors.New("current user is nil")
+	user, err := mb.ab.currentUserFunc(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user")
 	}
 
 	if mb.ab.findUsersFunc == nil {
 		user := &ActivityUser{
 			CreatedAt: mb.ab.db.NowFunc(),
-			ID:        creator.ID,
-			Name:      creator.Name,
-			Avatar:    creator.Avatar,
+			ID:        user.ID,
+			Name:      user.Name,
+			Avatar:    user.Avatar,
 		}
 		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
 			if err := mb.ab.db.Create(user).Error; err != nil {
@@ -460,7 +461,7 @@ func (mb *ModelBuilder) create(
 	}
 
 	log := &ActivityLog{
-		CreatorID:  creator.ID,
+		UserID:     user.ID,
 		Action:     action,
 		ModelName:  modelName,
 		ModelKeys:  modelKeys,
@@ -482,14 +483,14 @@ func (mb *ModelBuilder) create(
 		log.Hidden = true
 		r := &ActivityLog{}
 		if err := mb.ab.db.
-			Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", creator.ID, modelName, modelKeys, action).
+			Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
 			Assign(log).FirstOrCreate(r).Error; err != nil {
 			return nil, err
 		}
 		return r, nil
 
-		// Why not use this ? Because id will be empty when the record is already created
-		// if mb.ab.db.Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.CreatorID, log.ModelName, log.ModelKeys, log.Action).
+		// Why not use this ? Because log.id is empty although the record is already created, there is no advance fetch of the original id here .
+		// if mb.ab.db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
 		// 	Select("*").Updates(log).RowsAffected == 0 {
 		// 	if err := mb.ab.db.Create(log).Error; err != nil {
 		// 		return nil, errors.Wrap(err, "failed to create log")

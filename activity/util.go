@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"cmp"
 	"fmt"
 	"reflect"
 	"strings"
@@ -70,12 +71,12 @@ func ParseSchema(v any) (*schema.Schema, error) {
 	return s, nil
 }
 
-func ParsePrimaryFields(v any) ([]*schema.Field, error) {
-	s, err := ParseSchema(v)
-	if err != nil {
-		return nil, err
+func ParseSchemaWithDB(db *gorm.DB, v any) (*schema.Schema, error) {
+	stmt := &gorm.Statement{DB: db}
+	if err := stmt.Parse(v); err != nil {
+		return nil, errors.Wrap(err, "parse schema with db")
 	}
-	return s.PrimaryFields, nil
+	return stmt.Schema, nil
 }
 
 func parsePrimaryKeys(t reflect.Type) (keys []string) {
@@ -101,12 +102,46 @@ func parsePrimaryKeys(t reflect.Type) (keys []string) {
 }
 
 func ParsePrimaryKeys(v any) []string {
-	fields, err := ParsePrimaryFields(v)
+	s, err := ParseSchema(v)
 	if err == nil {
-		return lo.Map(fields, func(f *schema.Field, _ int) string { return f.Name })
+		return lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string { return f.Name })
 	}
 	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
 	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
+}
+
+const dbKeyTablePrefix = "__table_prefix__"
+
+// scopeWithTablePrefix set table prefix
+// 1. Only scenarios where a Model is provided are supported
+// 2. Previously Table(...) will be overwritten
+func scopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if v, ok := db.Get(dbKeyTablePrefix); ok {
+			if v.(string) != tablePrefix {
+				panic(fmt.Sprintf("table prefix is already set to %s", v))
+			} else {
+				return db
+			}
+		}
+
+		if tablePrefix == "" {
+			return db
+		}
+
+		stmt := db.Statement
+		model := cmp.Or(stmt.Model, stmt.Dest)
+		if model == nil {
+			return db
+		}
+
+		s, err := ParseSchemaWithDB(db, model)
+		if err != nil {
+			db.AddError(err)
+			return db
+		}
+		return db.Set(dbKeyTablePrefix, tablePrefix).Table(tablePrefix + s.Table)
+	}
 }
 
 func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {

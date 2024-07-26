@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -27,7 +28,7 @@ const (
 	paramName = "name"
 )
 
-func profile(db *gorm.DB) presets.ComponentFunc {
+func profile(ab *activity.Builder) presets.ComponentFunc {
 	return func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
@@ -45,8 +46,8 @@ func profile(db *gorm.DB) presets.ComponentFunc {
 			role = roles[0]
 		}
 
-		total := notifierCount(db)(ctx)
-		content := notifierComponent(db)(ctx)
+		total := notifierCount(ab)(ctx)
+		content := notifierComponent(ab)(ctx)
 		icon := VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
 		notification := VMenu().Children(
 			h.Template().Attr("v-slot:activator", "{ props }").Children(

@@ -91,6 +91,43 @@ func NewConfig(db *gorm.DB) Config {
 		panic(err)
 	}
 
+	// @snippet_begin(ActivityExample)
+	db.Exec(`CREATE SCHEMA IF NOT EXISTS cs_portal;`)
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
+		u := ctx.Value(login.UserKey).(*models.User)
+		return &activity.User{
+			ID:     fmt.Sprint(u.ID),
+			Name:   u.Name,
+			Avatar: "",
+		}, nil
+	}).
+		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
+			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+				err = in(pb, mb)
+				if err != nil {
+					return
+				}
+				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+						u := getCurrentUser(ctx.R)
+						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
+							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+								Query: "user_id = ?",
+								Args:  []interface{}{fmt.Sprint(u.ID)},
+							})
+						}
+						return in(model, params, ctx)
+					}
+				})
+				return
+			}
+		}).
+		TablePrefix("cs_portal.").
+		AutoMigrate()
+
+	// ab.Model(l).SkipDelete().SkipCreate()
+	// @snippet_end
+
 	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,
@@ -114,7 +151,7 @@ func NewConfig(db *gorm.DB) Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	configBrand(b, db)
+	configBrand(b, db, ab)
 
 	initPermission(b, db)
 
@@ -169,43 +206,6 @@ func NewConfig(db *gorm.DB) Config {
 		ContextValueFuncs(l10nBuilder.ContextValueProvider)
 
 	utils.Install(b)
-
-	// @snippet_begin(ActivityExample)
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
-		u := ctx.Value(login.UserKey).(*models.User)
-		return &activity.User{
-			ID:     fmt.Sprint(u.ID),
-			Name:   u.Name,
-			Avatar: "",
-		}
-	}).
-		AutoMigrate().
-		WrapLogModelInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
-			return func(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
-				err = in(pb, mb)
-				if err != nil {
-					return
-				}
-				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-						u := getCurrentUser(ctx.R)
-						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
-							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-								Query: "creator_id = ?",
-								Args:  []interface{}{fmt.Sprint(u.ID)},
-							})
-						}
-						return in(model, params, ctx)
-					}
-				})
-				return
-			}
-		})
-
-	// ab.Model(m).EnableActivityInfoTab()
-	// ab.Model(pm).EnableActivityInfoTab()
-	// ab.Model(l).SkipDelete().SkipCreate()
-	// @snippet_end
 
 	publisher.Activity(ab)
 
@@ -289,12 +289,15 @@ func NewConfig(db *gorm.DB) Config {
 				}
 				pmListing := pm.Listing()
 				pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-					u := getCurrentUser(ctx.R)
+					hasUnreadNotesCondition, err := ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+					if err != nil {
+						panic(err)
+					}
 					return []*vx.FilterItem{
 						{
 							Key:          "hasUnreadNotes",
 							Invisible:    true,
-							SQLCondition: ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
+							SQLCondition: hasUnreadNotesCondition,
 						},
 					}
 				})
@@ -323,7 +326,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configListModel(b, ab)
 
-	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(db))
+	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(ab))
 
 	microb := microsite.New(db).Publisher(publisher)
 
@@ -474,7 +477,7 @@ func configMenuOrder(b *presets.Builder) {
 	)
 }
 
-func configBrand(b *presets.Builder, db *gorm.DB) {
+func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder) {
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"
@@ -504,8 +507,7 @@ func configBrand(b *presets.Builder, db *gorm.DB) {
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
-	}).ProfileFunc(profile(db)).
-		NotificationFunc(notifierComponent(db), notifierCount(db)).
+	}).ProfileFunc(profile(ab)).
 		DataOperator(gorm2op.DataOperator(db)).
 		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			r.PageTitle = "Home"
@@ -537,13 +539,15 @@ func configPost(
 		PerPage(10)
 
 	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		u := getCurrentUser(ctx.R)
-
+		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+		if err != nil {
+			panic(err)
+		}
 		return []*vx.FilterItem{
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), ""),
+				SQLCondition: hasUnreadNotesCondition,
 			},
 			{
 				Key:          "created",
@@ -637,13 +641,9 @@ func configPost(
 	return m
 }
 
-func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
+func notifierCount(ab *activity.Builder) func(ctx *web.EventContext) int {
 	return func(ctx *web.EventContext) int {
-		user := getCurrentUser(ctx.R)
-		if user == nil {
-			return 0
-		}
-		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
 		if err != nil {
 			panic(err)
 		}
@@ -655,13 +655,9 @@ func notifierCount(db *gorm.DB) func(ctx *web.EventContext) int {
 	}
 }
 
-func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent {
+func notifierComponent(ab *activity.Builder) func(ctx *web.EventContext) h.HTMLComponent {
 	return func(ctx *web.EventContext) h.HTMLComponent {
-		user := getCurrentUser(ctx.R)
-		if user == nil {
-			return nil
-		}
-		counts, err := activity.GetNotesCounts(db, fmt.Sprint(user.ID), "", nil)
+		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
 		if err != nil {
 			panic(err)
 		}
@@ -701,14 +697,9 @@ func notifierComponent(db *gorm.DB) func(ctx *web.EventContext) h.HTMLComponent 
 
 var noteMarkAllAsRead = "note_mark_all_as_read"
 
-func markAllAsRead(db *gorm.DB) web.EventFunc {
+func markAllAsRead(ab *activity.Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		u := getCurrentUser(ctx.R)
-		if u == nil {
-			return
-		}
-
-		if err = activity.MarkAllNotesAsRead(db, fmt.Sprint(u.ID)); err != nil {
+		if err = ab.MarkAllNotesAsRead(ctx.R.Context()); err != nil {
 			return r, err
 		}
 
