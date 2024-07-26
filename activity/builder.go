@@ -73,7 +73,7 @@ func (ab *Builder) TablePrefix(prefix string) *Builder {
 	if prefix == "" {
 		ab.db = ab.dbPrimitive
 	} else {
-		ab.db = ab.dbPrimitive.Scopes(scopeDynamicTablePrefix(prefix)).Session(&gorm.Session{})
+		ab.db = ab.dbPrimitive.Scopes(scopeWithTablePrefix(prefix)).Session(&gorm.Session{})
 	}
 	return ab
 }
@@ -158,7 +158,7 @@ func (b *Builder) AutoMigrate() (r *Builder) {
 
 func AutoMigrate(db *gorm.DB, tablePrefix string) error {
 	if tablePrefix != "" {
-		db = db.Scopes(scopeDynamicTablePrefix(tablePrefix)).Session(&gorm.Session{})
+		db = db.Scopes(scopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
 	}
 	dst := []any{&ActivityLog{}, &ActivityUser{}}
 	for _, v := range dst {

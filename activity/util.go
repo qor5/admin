@@ -112,14 +112,16 @@ func ParsePrimaryKeys(v any) []string {
 
 const dbKeyTablePrefix = "__table_prefix__"
 
-// scopeDynamicTablePrefix set dynamic table prefix
+// scopeWithTablePrefix set table prefix
 // 1. Only scenarios where a Model is provided are supported
 // 2. Previously Table(...) will be overwritten
-func scopeDynamicTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+func scopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if v, ok := db.Get(dbKeyTablePrefix); ok {
 			if v.(string) != tablePrefix {
 				panic(fmt.Sprintf("table prefix is already set to %s", v))
+			} else {
+				return db
 			}
 		}
 
