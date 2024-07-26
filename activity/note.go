@@ -86,10 +86,8 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, creatorID string, modelName
 	return counts, nil
 }
 
-func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error {
+func markAllNotesAsRead(db *gorm.DB, creatorID string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		tx = tx.Scopes(scopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
-
 		var results []struct {
 			ModelName    string
 			ModelKeys    string
@@ -122,6 +120,7 @@ func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error
 				ModelKeys:  v.ModelKeys,
 				ModelLabel: v.ModelLabel,
 				ModelLink:  v.ModelLink,
+				Detail:     "null",
 			}
 			log.CreatedAt = v.MaxCreatedAt
 			log.UpdatedAt = v.MaxCreatedAt
@@ -191,7 +190,7 @@ func (ab *Builder) MarkAllNotesAsRead(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return markAllNotesAsRead(ab.dbPrimitive, ab.tablePrefix, user.ID)
+	return markAllNotesAsRead(ab.db, user.ID)
 }
 
 // SQLConditionHasUnreadNotes returns a SQL condition that can be used in a WHERE clause to filter records that have unread notes.
