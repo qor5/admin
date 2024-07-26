@@ -87,26 +87,21 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, creatorID string, modelName
 }
 
 func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error {
-	s, err := ParseSchemaWithDB(db, &ActivityLog{})
-	if err != nil {
-		return err
-	}
-	tableName := tablePrefix + s.Table
-
 	return db.Transaction(func(tx *gorm.DB) error {
+		tx = tx.Scopes(scopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
+
 		var results []struct {
 			ModelName    string
 			ModelKeys    string
+			ModelLabel   string
+			ModelLink    string
 			MaxCreatedAt time.Time
 		}
-		if err := db.Raw(fmt.Sprintf(`
-			SELECT model_name, model_keys, MAX(created_at) AS max_created_at
-			FROM %s
-			WHERE action = ? AND deleted_at IS NULL
-			GROUP BY model_name, model_keys;
-			`, tableName), ActionNote,
-		).Scan(&results).Error; err != nil {
-			return errors.Wrap(err, "")
+		if err := tx.Model(&ActivityLog{}).
+			Select("model_name, model_keys, MAX(model_label) AS model_label, MAX(model_link) AS model_link, MAX(created_at) AS max_created_at").
+			Where("action = ?", ActionNote).
+			Group("model_name, model_keys").Scan(&results).Error; err != nil {
+			return errors.Wrap(err, "find created_at of last notes")
 		}
 
 		if len(results) <= 0 {
@@ -114,25 +109,27 @@ func markAllNotesAsRead(db *gorm.DB, tablePrefix string, creatorID string) error
 		}
 
 		if err := tx.Unscoped().Where("creator_id = ? AND action = ?", creatorID, ActionLastView).Delete(&ActivityLog{}).Error; err != nil {
-			return errors.Wrap(err, "")
+			return errors.Wrap(err, "delete last views")
 		}
 
 		var logs []ActivityLog
 		for _, v := range results {
 			log := ActivityLog{
-				CreatorID: creatorID,
-				Action:    ActionLastView,
-				Hidden:    true,
-				ModelName: v.ModelName,
-				ModelKeys: v.ModelKeys,
+				CreatorID:  creatorID,
+				Action:     ActionLastView,
+				Hidden:     true,
+				ModelName:  v.ModelName,
+				ModelKeys:  v.ModelKeys,
+				ModelLabel: v.ModelLabel,
+				ModelLink:  v.ModelLink,
 			}
 			log.CreatedAt = v.MaxCreatedAt
 			log.UpdatedAt = v.MaxCreatedAt
 			logs = append(logs, log)
 		}
 
-		if err := tx.Create(&logs).Error; err != nil {
-			return errors.Wrap(err, "")
+		if err := tx.Create(logs).Error; err != nil {
+			return errors.Wrap(err, "create new last views")
 		}
 
 		return nil
@@ -194,7 +191,7 @@ func (ab *Builder) MarkAllNotesAsRead(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return markAllNotesAsRead(ab.db, ab.tablePrefix, user.ID)
+	return markAllNotesAsRead(ab.dbPrimitive, ab.tablePrefix, user.ID)
 }
 
 // SQLConditionHasUnreadNotes returns a SQL condition that can be used in a WHERE clause to filter records that have unread notes.
