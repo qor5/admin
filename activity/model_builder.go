@@ -33,7 +33,6 @@ const (
 )
 
 // @snippet_begin(ActivityModelBuilder)
-// a unique model builder is consist of typ and presetModel
 type ModelBuilder struct {
 	once sync.Once
 
@@ -280,7 +279,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 				totalNotesCountText = fmt.Sprintf("%d", count.TotalNotesCount)
 			}
 
-			// TODO: Because of the filter of hasUnreadNotes, it seems that you need to reload the list directly.
 			total := h.Div().Class("text-caption bg-grey-lighten-3 rounded px-1").Text(totalNotesCountText)
 			return h.Td(
 				web.Scope().VSlot("{locals}").Init(fmt.Sprintf("{ unreadNotesCount: %d }", count.UnreadNotesCount)).Children(
@@ -492,7 +490,7 @@ func (mb *ModelBuilder) create(
 		}
 		return r, nil
 
-		// Why not use this ? Because id will be empty when the record is already created
+		// Why not use this ? Because log.id is empty although the record is already created, there is no advance fetch of the original id here .
 		// if mb.ab.db.Where("creator_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.CreatorID, log.ModelName, log.ModelKeys, log.Action).
 		// 	Select("*").Updates(log).RowsAffected == 0 {
 		// 	if err := mb.ab.db.Create(log).Error; err != nil {
