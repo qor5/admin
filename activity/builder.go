@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
@@ -21,8 +22,9 @@ type User struct {
 
 // @snippet_begin(ActivityBuilder)
 type Builder struct {
-	models           []*ModelBuilder // registered model builders
-	installedPresets sync.Map        // installed presets builders for admin
+	models            []*ModelBuilder // registered model builders
+	installedPresets  sync.Map        // installed presets builders for admin
+	calledAutoMigrate atomic.Bool     // auto migrate flag
 
 	dbPrimitive     *gorm.DB // primitive db
 	db              *gorm.DB // global db with table prefix scope
@@ -69,6 +71,9 @@ func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) 
 }
 
 func (ab *Builder) TablePrefix(prefix string) *Builder {
+	if ab.calledAutoMigrate.Load() {
+		panic("please set table prefix before auto migrate")
+	}
 	ab.tablePrefix = prefix
 	if prefix == "" {
 		ab.db = ab.dbPrimitive
@@ -145,6 +150,9 @@ func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 }
 
 func (b *Builder) AutoMigrate() (r *Builder) {
+	if !b.calledAutoMigrate.CompareAndSwap(false, true) {
+		panic("already migrated")
+	}
 	if err := AutoMigrate(b.dbPrimitive, b.tablePrefix); err != nil {
 		panic(err)
 	}
