@@ -337,7 +337,7 @@ func fileOrFolderComponent(
 	)
 	menus := &[]h.HTMLComponent{
 		VListItem(h.Text("Rename")).Attr("@click", fmt.Sprintf("locals.edit_%v=true", f.ID)),
-		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
+		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids=[%v]", f.ID)),
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
 				EventFunc(DeleteConfirmationEvent).
@@ -740,7 +740,19 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 			VCol().Cols(1),
 			VRow(
 				VCol(
-					h.Text(fmt.Sprintf("{{locals.select_ids.length}} %s", "Selected")),
+					VCheckbox().HideDetails(true).
+						BaseColor(ColorPrimary).
+						ModelValue(true).
+						Density(DensityCompact).
+						Class("text-"+ColorPrimary).
+						Indeterminate(true).
+						Attr("@click", "locals.select_ids=[]").Children(
+						web.Slot(
+							h.Text(
+								fmt.Sprintf("{{locals.select_ids.length}} %s", "Selected"),
+							)).Name("label"),
+					)).Cols(2),
+				VCol(
 					VBtn("Move to").Size(SizeSmall).Variant(VariantOutlined).
 						Attr(":disabled", "locals.select_ids.length==0").
 						Color(ColorSecondary).Class("ml-4").
@@ -759,7 +771,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(MediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
-			).Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
+			).Class("d-flex align-center").Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
 		).Fluid(true),
 	).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
 		VSlot("{ locals,form}").Init("{select_ids:[]}")
