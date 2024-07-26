@@ -341,7 +341,7 @@ func NewConfig(db *gorm.DB) Config {
 	loginSessionBuilder := initLoginSessionBuilder(db, b, ab)
 	defer func() { loginSessionBuilder.Setup() }()
 
-	configBrand(b, db, loginSessionBuilder)
+	configBrand(b, db, ab, loginSessionBuilder)
 
 	configInputDemo(b, db)
 

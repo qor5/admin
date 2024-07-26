@@ -3,11 +3,11 @@ package activity
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 
 	"github.com/dustin/go-humanize"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -29,6 +29,10 @@ const (
 
 // TODO: 这个 language 在 timeline 也用到，所以就造成 Install 是必须的，这不太对
 func (ab *Builder) Install(b *presets.Builder) error {
+	if actual, loaded := ab.installedPresets.LoadOrStore(b, true); loaded && actual.(bool) {
+		return errors.Errorf("activity: preset %q already installed", b.GetURIPrefix())
+	}
+
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
@@ -40,6 +44,15 @@ func (ab *Builder) Install(b *presets.Builder) error {
 
 	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
 	return ab.logModelInstall(b, mb)
+}
+
+func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
+	installed := false
+	valInstalled, ok := ab.installedPresets.Load(pb)
+	if ok {
+		installed = valInstalled.(bool)
+	}
+	return installed
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {

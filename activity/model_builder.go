@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -34,8 +34,6 @@ const (
 
 // @snippet_begin(ActivityModelBuilder)
 type ModelBuilder struct {
-	once sync.Once
-
 	ref           any                          // model ref
 	typ           reflect.Type                 // model type
 	ab            *Builder                     // activity builder
@@ -77,27 +75,18 @@ func emitLogCreated(evCtx *web.EventContext, log *ActivityLog) {
 	})
 }
 
+func injectorName(mb *presets.ModelBuilder) string {
+	return fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+}
+
 func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSuffix string) h.HTMLComponent {
 	if amb.presetModel == nil {
 		panic("NewTimelineCompo method only supports presets.ModelBuilder")
 	}
 	mb := amb.presetModel
 
-	injectorName := fmt.Sprintf("__activity:%s__", mb.Info().URIName())
+	injectorName := injectorName(mb)
 	dc := mb.GetPresetsBuilder().GetDependencyCenter()
-	amb.once.Do(func() {
-		dc.RegisterInjector(injectorName)
-		dc.MustProvide(injectorName, func() *Builder {
-			return amb.ab
-		})
-		dc.MustProvide(injectorName, func() *ModelBuilder {
-			return amb
-		})
-		dc.MustProvide(injectorName, func() *presets.ModelBuilder {
-			return mb
-		})
-	})
-
 	modelName := ParseModelName(obj)
 
 	log, err := amb.Log(evCtx.R.Context(), ActionLastView, obj, nil)
@@ -125,7 +114,7 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 	})
 }
 
-func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
+func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
 		id := presets.ObjectID(a)
@@ -136,6 +125,20 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			return mb.Info().DetailingHref(id)
 		}
 		return ""
+	})
+
+	pb := mb.GetPresetsBuilder()
+	if !amb.ab.IsPresetInstalled(pb) {
+		pb.GetI18n().
+			RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
+			RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
+			RegisterForModule(language.Japanese, I18nActivityKey, Messages_ja_JP)
+	}
+	dc := mb.GetPresetsBuilder().GetDependencyCenter()
+	injectorName := injectorName(mb)
+	dc.RegisterInjector(injectorName)
+	dc.MustProvide(injectorName, func() (*Builder, *presets.ModelBuilder, *ModelBuilder) {
+		return amb.ab, mb, amb
 	})
 
 	eb := mb.Editing()
@@ -235,10 +238,6 @@ func (amb *ModelBuilder) installPresetsModelBuilder(mb *presets.ModelBuilder) {
 			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 				r, totalCount, err = in(model, params, ctx)
 				if err != nil {
-					return
-				}
-				user, uerr := amb.ab.currentUserFunc(ctx.R.Context())
-				if uerr != nil {
 					return
 				}
 				var modelName string
