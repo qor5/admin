@@ -285,12 +285,13 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			db        = mb.db
-			field     = ctx.Param(ParamField)
-			ids       = strings.Split(ctx.Param(MediaIDS), ",")
-			cfg       = ctx.Param(ParamCfg)
-			objs      []media_library.MediaLibrary
-			deleteIDs []uint
+			db              = mb.db
+			field           = ctx.Param(ParamField)
+			ids             = strings.Split(ctx.Param(MediaIDS), ",")
+			cfg             = ctx.Param(ParamCfg)
+			objs            []media_library.MediaLibrary
+			deleteIDs       []uint
+			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
 			id, err1 := strconv.ParseInt(idStr, 10, 64)
@@ -316,12 +317,27 @@ func doDelete(mb *Builder) web.EventFunc {
 			panic(err)
 		}
 		for _, obj := range objs {
+			if obj.Folder {
+				deleteFolderIDS = append(deleteFolderIDS, obj.ID)
+			}
 			if err = mb.deleteIsAllowed(ctx.R, &obj); err != nil {
 				return
 			}
 		}
+		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
+			if len(deleteFolderIDS) > 0 {
+				if err1 = db.
+					Model(&media_library.MediaLibrary{}).
+					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; err1 != nil {
+					return
+				}
+			}
 
-		err = db.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error
+			if err1 = db.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; err != nil {
+				return
+			}
+			return
+		})
 		if err != nil {
 			panic(err)
 		}

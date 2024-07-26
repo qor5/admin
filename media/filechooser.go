@@ -322,6 +322,7 @@ func fileComponent(
 func fileOrFolderComponent(
 	mb *Builder,
 	field string,
+	tab string,
 	ctx *web.EventContext,
 	f *media_library.MediaLibrary,
 	msgr *Messages,
@@ -340,7 +341,10 @@ func fileOrFolderComponent(
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
 				EventFunc(DeleteConfirmationEvent).
-				Query("field", field).
+				Query(ParamField, field).
+				Query(paramTab, tab).
+				Query(ParamCfg, h.JSONString(cfg)).
+				Query(paramParentID, ctx.Param(paramParentID)).
 				Query(MediaIDS, fmt.Sprint(f.ID)).
 				Go())),
 	}
@@ -350,7 +354,7 @@ func fileOrFolderComponent(
 		clickCardWithoutMoveEvent = web.Plaid().
 			EventFunc(imageJumpPageEvent).
 			Query(ParamField, field).
-			Query(paramTab, ctx.Param(paramTab)).
+			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(paramParentID, f.ID).Go()
 	} else {
@@ -601,7 +605,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 
 	for _, f := range files {
 		var fileComp h.HTMLComponent
-		fileComp = fileOrFolderComponent(mb, field, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
+		fileComp = fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
 		row.AppendChildren(
 			VCol(fileComp).Cols(6).Sm(4).Md(3),
 		)
@@ -747,7 +751,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 					VBtn("Delete").Size(SizeSmall).Variant(VariantOutlined).
 						Color(ColorWarning).Class("ml-2").
-						Attr("@click", web.Plaid().EventFunc(DeleteConfirmationEvent).
+						Attr("@click", web.Plaid().
+							EventFunc(DeleteConfirmationEvent).
 							Query(ParamField, field).
 							Query(paramParentID, parentID).
 							Query(paramTab, tab).

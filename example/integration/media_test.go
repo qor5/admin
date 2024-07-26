@@ -184,6 +184,31 @@ func TestMedia(t *testing.T) {
 			},
 		},
 		{
+			Name:  "MediaLibrary Delete parent folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.DoDeleteEvent).
+					Query(media.MediaIDS, "4").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, 5).Error; err != nil {
+					t.Fatalf("find object err : %v", err)
+					return
+				}
+				if m.ParentId != 0 {
+					t.Fatalf("not update no parent folder %v", m.ParentId)
+					return
+				}
+			},
+		},
+		{
 			Name:  "MediaLibrary Delete Objects",
 			Debug: true,
 			ReqFunc: func() *http.Request {
