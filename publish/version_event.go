@@ -2,6 +2,7 @@ package publish
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
@@ -38,6 +39,7 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 			return
 		}
 
+		//
 		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermUpdate, PermDuplicate) {
 			return r, perm.PermissionDenied
 		}
@@ -201,8 +203,16 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 			return
 		}
 
+		perm.Verbose = true
+		var haveVersionDialogSuffer bool = strings.HasSuffix(mb.Info().URIName(), versionListDialogURISuffix)
+		if haveVersionDialogSuffer {
+			mb.URIName(strings.TrimSuffix(mb.Info().URIName(), versionListDialogURISuffix))
+		}
 		if DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermDelete) {
 			return r, perm.PermissionDenied
+		}
+		if haveVersionDialogSuffer {
+			mb.URIName(mb.Info().URIName() + versionListDialogURISuffix)
 		}
 
 		if err := mb.Editing().Deleter(mb.NewModel(), slug, ctx); err != nil {

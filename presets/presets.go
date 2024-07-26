@@ -556,6 +556,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				if m == nil {
 					continue
 				}
+				//
 				m.menuGroupName = v.name
 				if m.notInMenu {
 					continue
@@ -613,6 +614,7 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			continue
 		}
 
+		//if m.NewModel()
 		if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}

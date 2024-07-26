@@ -260,10 +260,14 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		URIName(pm.Info().URIName() + versionListDialogURISuffix).
 		InMenu(false)
 
+	//var menuGroupName string
+	//for gName,group:=range b.MenuGroup()
 	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+versionListDialogURISuffix))),
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).
+			On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+versionListDialogURISuffix))),
 	)
-
+	// presets:mg_menuName:with_publish_menu_products:1 // normal
+	// presets:with_publish_menu_products // use version
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
 	listingFields := []string{"Version", "Status", "StartAt", "EndAt", "Option"}

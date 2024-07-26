@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/qor/oss"
@@ -56,6 +57,10 @@ func (p *WithPublishProduct) PrimaryColumnValuesBySlug(slug string) map[string]s
 
 // @snippet_end
 
+func (p *WithPublishProduct) PermissionRN() []string {
+	return []string{"a"}
+}
+
 // @snippet_begin(PublishImplementPublishInterfaces)
 var (
 	_ publish.PublishInterface   = (*WithPublishProduct)(nil)
@@ -73,13 +78,76 @@ func (p *WithPublishProduct) GetUnPublishActions(db *gorm.DB, ctx context.Contex
 }
 
 // @snippet_end
+
+type WithPublishMenuProduct struct {
+	gorm.Model
+
+	Name  string
+	Price int
+
+	publish.Status
+	publish.Schedule
+	publish.Version
+}
+
+func (p *WithPublishMenuProduct) PrimarySlug() string {
+	return fmt.Sprintf("%v_%v", p.ID, p.Version.Version)
+}
+
+func (p *WithPublishMenuProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 2 {
+		panic("wrong slug")
+	}
+
+	return map[string]string{
+		"id":      segs[0],
+		"version": segs[1],
+	}
+}
+
+func (p *WithPublishMenuProduct) PermissionRN() []string {
+	return []string{p.Name, strconv.Itoa(int(p.ID))}
+}
+
+func (p *WithPublishMenuProduct) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+	// create publish actions
+	return
+}
+
+func (p *WithPublishMenuProduct) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+	// create unpublish actions
+	return
+}
+
+func configWithPublishMenuProduct(b *presets.Builder) (mb *presets.ModelBuilder) {
+	mb = b.Model(&WithPublishMenuProduct{})
+
+	b.MenuGroup("permissionRN").SubItems("WithPublishMenuProduct")
+	b.GetPermission().CreatePolicies(
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(presets.PermList).On(":presets:mg_permission_rn:*"),
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:mg_permission_rn:with_publish_menu_products:*"),
+	)
+	// preset:model_name:{id}
+	mb.Detailing(publish.VersionsPublishBar, "nm").Drawer(true)
+	mb.Detailing().Section("nm").Viewing("name", "price").Editing("name", "price")
+	return
+}
+
 func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
-	err := db.AutoMigrate(&WithPublishProduct{})
+	err := db.AutoMigrate(
+		&WithPublishProduct{},
+		&WithPublishMenuProduct{},
+	)
 	if err != nil {
 		panic(err)
 	}
 
 	b.DataOperator(gorm2op.DataOperator(db))
+	b.MenuOrder(
+		"WithPublishProduct",
+		"permissionRN",
+	)
 	b.Permission(
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:with_publish_products:*"),
@@ -87,6 +155,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	)
 	// @snippet_begin(PublishConfigureView)
 	mb := b.Model(&WithPublishProduct{})
+	mb2 := configWithPublishMenuProduct(b)
 	dp := mb.Detailing(publish.VersionsPublishBar, "Details").Drawer(true)
 	dp.Section("Details").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -111,6 +180,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	publisher := publish.New(db, nil).Activity(ab)
 	b.Use(publisher)
 	mb.Use(publisher)
+	mb2.Use(publisher)
 	// run the publisher job if Schedule is used
 	go publish.RunPublisher(db, nil, publisher)
 	// @snippet_end

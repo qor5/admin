@@ -13,9 +13,8 @@ import (
 
 var publishData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.with_publish_products (id, created_at, updated_at, deleted_at, name, price, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 200, 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01', '');
-
-
-`, []string{"with_publish_products"}))
+INSERT INTO public.with_publish_menu_products (id, created_at, updated_at, deleted_at, name, price, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 200, 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01', '');
+`, []string{"with_publish_products", "with_publish_menu_products"}))
 
 var emptyData = gofixtures.Data(gofixtures.Sql(``, []string{"with_publish_products"}))
 

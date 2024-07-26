@@ -74,6 +74,10 @@ func (mb *ModelBuilder) GetSingleton() bool {
 	return mb.singleton
 }
 
+//func (mb *ModelBuilder) GetMenuGroupName()string {
+//	return mb.menuGroupName
+//}
+
 func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {
 	mb.rightDrawerWidth = v
 	return mb
@@ -207,6 +211,7 @@ func (b ModelInfo) Verifier() *perm.Verifier {
 		v.SnakeOn("mg_" + b.mb.menuGroupName)
 	}
 	return v.SnakeOn(b.mb.uriName)
+	b.mb.xxx()
 }
 
 func (mb *ModelBuilder) URIName(v string) (r *ModelBuilder) {
