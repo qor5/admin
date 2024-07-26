@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
@@ -20,7 +21,8 @@ type User struct {
 
 // @snippet_begin(ActivityBuilder)
 type Builder struct {
-	models []*ModelBuilder // registered model builders
+	models           []*ModelBuilder // registered model builders
+	installedPresets sync.Map        // installed presets builders for admin
 
 	dbPrimitive     *gorm.DB // primitive db
 	db              *gorm.DB // global db with table prefix scope
@@ -111,7 +113,7 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	amb.IgnoredFields(primaryKeys...)
 
 	if mb, ok := m.(*presets.ModelBuilder); ok {
-		amb.installPresetsModelBuilder(mb)
+		amb.installPresetModelBuilder(mb)
 	}
 
 	ab.models = append(ab.models, amb)

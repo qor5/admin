@@ -91,17 +91,20 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
+		presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
 			h.Div(h.Text(msgr.EditedNFields(len(diffs)))).ClassIf(forceTextColor, forceTextColor != ""),
-			v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-				Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
-				Attr("@click", web.POST().
-					EventFunc(actions.DetailingDrawer).
-					Query(presets.ParamOverlay, actions.Dialog).
-					URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
-					Query(paramHideDetailTop, true).
-					Go(),
-				),
+			h.Iff(presetInstalled, func() h.HTMLComponent {
+				return v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+					Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+					Attr("@click", web.POST().
+						EventFunc(actions.DetailingDrawer).
+						Query(presets.ParamOverlay, actions.Dialog).
+						URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
+						Query(paramHideDetailTop, true).
+						Go(),
+					)
+			}),
 		)
 	case ActionDelete:
 		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
