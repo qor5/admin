@@ -22,7 +22,9 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
 		}, nil
-	}).AutoMigrate()
+	}).
+		// TablePrefix("cms_"). // multitentant if needed
+		AutoMigrate()
 	b.Use(ab)
 
 	// @snippet_end
