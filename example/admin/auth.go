@@ -141,7 +141,6 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 
 	return plogin.NewSessionBuilder(loginBuilder, db).
 		Activity(ab.RegisterModel(&models.User{})).
-		Presets(pb).
 		IsPublicUser(func(u interface{}) bool {
 			user, ok := u.(*models.User)
 			if !ok {

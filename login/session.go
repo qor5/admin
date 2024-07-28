@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -24,12 +23,33 @@ import (
 )
 
 const (
-	I18nLoginSessionKey i18n.ModuleKey = "I18nLoginSessionKey"
-)
-
-const (
 	LoginTokenHashLen = 8 // The hash string length of the token stored in the DB.
 )
+
+func (b *SessionBuilder) Install(pb *presets.Builder) error {
+	if b.pb != nil {
+		return errors.Errorf("profile: already installed")
+	}
+	return b.installPreset(pb)
+}
+
+func (b *SessionBuilder) installPreset(pb *presets.Builder) error {
+	if pb == nil {
+		return errors.Errorf("profile: presets.Builder is nil")
+	}
+
+	b.pb = pb
+	b.pb.GetI18n().
+		RegisterForModule(language.English, I18nAdminLoginKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nAdminLoginKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nAdminLoginKey, Messages_ja_JP)
+
+	type LoginSessionsDialog struct{}
+	mb := b.pb.Model(&LoginSessionsDialog{}).URIName(uriNameLoginSessionsDialog).InMenu(false)
+	mb.RegisterEventFunc(eventLoginSessionsDialog, b.handleEventLoginSessionsDialog)
+	mb.RegisterEventFunc(eventExpireOtherSessions, b.handleEventExpireOtherSessions)
+	return nil
+}
 
 type LoginSession struct {
 	gorm.Model
@@ -47,12 +67,11 @@ type SessionBuilder struct {
 	db           *gorm.DB
 	amb          *activity.ModelBuilder
 	pb           *presets.Builder
-	setup        atomic.Bool
 	isPublicUser func(user any) bool
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
-	return &SessionBuilder{lb: lb, db: db}
+	return (&SessionBuilder{lb: lb, db: db}).setup()
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -61,11 +80,6 @@ func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
 
 func (b *SessionBuilder) Activity(amb *activity.ModelBuilder) *SessionBuilder {
 	b.amb = amb
-	return b
-}
-
-func (b *SessionBuilder) Presets(pb *presets.Builder) *SessionBuilder {
-	b.pb = pb
 	return b
 }
 
@@ -217,11 +231,8 @@ func (b *SessionBuilder) AutoMigrate() (r *SessionBuilder) {
 	return b
 }
 
-func (b *SessionBuilder) Setup() (r *SessionBuilder) {
+func (b *SessionBuilder) setup() (r *SessionBuilder) {
 	b.once.Do(func() {
-		defer func() {
-			b.setup.Store(true)
-		}()
 		logAction := func(r *http.Request, user any, action string) error {
 			if b.amb != nil && user != nil {
 				_, err := b.amb.Log(r.Context(), action, user, nil)
@@ -272,18 +283,6 @@ func (b *SessionBuilder) Setup() (r *SessionBuilder) {
 			AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
 				return logAction(r, user, "totp-code-reused")
 			})
-
-		if b.pb != nil {
-			b.pb.GetI18n().
-				RegisterForModule(language.English, I18nLoginSessionKey, Messages_en_US).
-				RegisterForModule(language.SimplifiedChinese, I18nLoginSessionKey, Messages_zh_CN).
-				RegisterForModule(language.Japanese, I18nLoginSessionKey, Messages_ja_JP)
-
-			type LoginSessionsDialog struct{}
-			mb := b.pb.Model(&LoginSessionsDialog{}).URIName(uriNameLoginSessionsDialog).InMenu(false)
-			mb.RegisterEventFunc(eventLoginSessionsDialog, b.handleEventLoginSessionsDialog)
-			mb.RegisterEventFunc(eventExpireOtherSessions, b.handleEventExpireOtherSessions)
-		}
 	})
 	return b
 }
@@ -295,9 +294,6 @@ const (
 )
 
 func (b *SessionBuilder) OpenSessionsDialog() string {
-	if b.setup.Load() == false {
-		panic("login: SessionBuilder is not setup")
-	}
 	if b.pb == nil {
 		panic("presets.Builder is nil")
 	}
@@ -312,7 +308,7 @@ type dataTableHeader struct {
 }
 
 func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginSessionKey, Messages_en_US).(*Messages)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 	// presetsMsgr := presets.MustGetMessages(ctx.R)
 
 	user := login.GetCurrentUser(ctx.R)
@@ -331,7 +327,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 	raw := `
 		WITH ranked_sessions AS (
 		    SELECT *, ROW_NUMBER() OVER (PARTITION BY "device", "ip" ORDER BY "expired_at" DESC) AS rn
-		    FROM "public"."login_sessions"
+		    FROM login_sessions
 		    WHERE "user_id" = ? AND "deleted_at" IS NULL
 		)
 		SELECT *
@@ -424,7 +420,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 }
 
 func (b *SessionBuilder) handleEventExpireOtherSessions(ctx *web.EventContext) (r web.EventResponse, err error) {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nLoginSessionKey, Messages_en_US).(*Messages)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 
 	user := login.GetCurrentUser(ctx.R)
 	if user == nil {

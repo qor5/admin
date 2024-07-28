@@ -31,7 +31,6 @@ import (
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/profile"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
@@ -339,9 +338,10 @@ func NewConfig(db *gorm.DB) Config {
 	l10nVM.Use(l10nBuilder)
 
 	loginSessionBuilder := initLoginSessionBuilder(db, b, ab)
-	defer func() { loginSessionBuilder.Setup() }()
 
-	configBrand(b, db, ab, loginSessionBuilder)
+	configBrand(b)
+
+	profielBuilder := configProfile(db, ab, loginSessionBuilder)
 
 	configInputDemo(b, db)
 
@@ -357,6 +357,8 @@ func NewConfig(db *gorm.DB) Config {
 		publisher,
 		l10nBuilder,
 		roleBuilder,
+		loginSessionBuilder,
+		profielBuilder,
 	)
 
 	if resetAndImportInitialData {
@@ -483,10 +485,10 @@ func configMenuOrder(b *presets.Builder) {
 	)
 }
 
-func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder) {
-	profileB := profile.New(
+func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder) *plogin.ProfileBuilder {
+	return plogin.NewProfileBuilder(
 		lsb,
-		func(ctx context.Context) (*profile.User, error) {
+		func(ctx context.Context) (*plogin.Profile, error) {
 			evCtx := web.MustGetEventContext(ctx)
 			u := getCurrentUser(evCtx.R)
 			if u == nil {
@@ -496,13 +498,13 @@ func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder, lsb *plo
 			if err != nil {
 				return nil, err
 			}
-			user := &profile.User{
+			user := &plogin.Profile{
 				ID:   fmt.Sprint(u.ID),
 				Name: u.Name,
 				// Avatar: "",
 				Roles:  u.GetRoles(),
 				Status: strcase.ToCamel(u.Status),
-				Fields: []*profile.UserField{
+				Fields: []*plogin.ProfileField{
 					{Name: "Email", Value: u.Account},
 					{Name: "Company", Value: u.Company},
 				},
@@ -526,8 +528,9 @@ func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder, lsb *plo
 			return nil
 		},
 	)
-	profileB.Install(b)
+}
 
+func configBrand(b *presets.Builder) {
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"

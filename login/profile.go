@@ -1,12 +1,14 @@
-package profile
+package login
 
 import (
 	"context"
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/jinzhu/inflection"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -16,14 +18,101 @@ import (
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/language"
 )
+
+func (b *ProfileBuilder) Install(pb *presets.Builder) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.pb != nil {
+		return errors.Errorf("profile: already installed")
+	}
+	b.pb = pb
+	pb.GetI18n().
+		RegisterForModule(language.English, I18nAdminLoginKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nAdminLoginKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nAdminLoginKey, Messages_ja_JP)
+	pb.ProfileFunc(func(evCtx *web.EventContext) h.HTMLComponent {
+		return b.NewCompo(evCtx, "")
+	})
+
+	dc := pb.GetDependencyCenter()
+	injectorName := b.injectorName()
+	dc.RegisterInjector(injectorName)
+	dc.MustProvide(injectorName, func() *ProfileBuilder {
+		return b
+	})
+	return nil
+}
+
+type ProfileField struct {
+	Name  string
+	Value string
+}
+
+type Profile struct {
+	ID          string
+	Name        string
+	Avatar      string
+	Roles       []string
+	Status      string
+	Fields      []*ProfileField
+	NotifCounts []*activity.NoteCount
+}
+
+func (u *Profile) GetFirstRole() string {
+	role := "-"
+	if len(u.Roles) > 0 {
+		role = u.Roles[0]
+	}
+	return role
+}
+
+type ProfileBuilder struct {
+	mu sync.RWMutex
+	pb *presets.Builder
+
+	lsb                *SessionBuilder
+	currentProfileFunc func(ctx context.Context) (*Profile, error)
+	renameCallback     func(ctx context.Context, newName string) error
+}
+
+func NewProfileBuilder(
+	lsb *SessionBuilder,
+	currentProfileFunc func(ctx context.Context) (*Profile, error),
+	renameCallback func(ctx context.Context, newName string) error,
+) *ProfileBuilder {
+	return &ProfileBuilder{
+		lsb:                lsb,
+		currentProfileFunc: currentProfileFunc,
+		renameCallback:     renameCallback,
+	}
+}
+
+func (b *ProfileBuilder) injectorName() string {
+	return "__profile__"
+}
+
+func (b *ProfileBuilder) NewCompo(evCtx *web.EventContext, idSuffix string) h.HTMLComponent {
+	b.mu.RLock()
+	pb := b.pb
+	b.mu.RUnlock()
+	if pb == nil {
+		panic("profile: not installed")
+	}
+	return h.Div().Class("d-flex flex-column align-stretch w-100").Children(
+		b.pb.GetDependencyCenter().MustInject(b.injectorName(), &ProfileCompo{
+			ID: b.pb.GetURIPrefix() + idSuffix,
+		}),
+	)
+}
 
 func init() {
 	stateful.RegisterActionableCompoType(&ProfileCompo{})
 }
 
 type ProfileCompo struct {
-	b *Builder `inject:""`
+	b *ProfileBuilder `inject:""`
 
 	ID string `json:"id"`
 }
@@ -34,11 +123,11 @@ func (c *ProfileCompo) CompoID() string {
 
 func (c *ProfileCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
 	evCtx := web.MustGetEventContext(ctx)
-	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nProfileKey, Messages_en_US).(*Messages)
+	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 }
 
 func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
-	user, err := c.b.currentUserFunc(ctx)
+	user, err := c.b.currentProfileFunc(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +135,7 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	prepend := v.VCard().Flat(true).Children(
 		web.Slot().Name(v.VSlotPrepend).Children(
 			v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
-				Text(ShortName(user.Name)).Children(
+				Text(shortName(user.Name)).Children(
 				h.Iff(user.Avatar != "", func() h.HTMLComponent {
 					return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
 				}),
@@ -115,7 +204,7 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	)
 }
 
-func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponent {
+func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLComponent {
 	_, msgr := c.MustGetEventContext(ctx)
 
 	children := []h.HTMLComponent{}
@@ -144,7 +233,7 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *User) h.HTMLComponen
 			v.VCardText().Class("pa-0").Children(
 				h.Div().Class("d-flex align-center ga-6 pa-6 bg-grey-lighten-4").Children(
 					v.VAvatar().Class("text-h3 font-weight-medium text-primary bg-primary-lighten-2 rounded-lg").Size(80).Density(v.DensityCompact).
-						Text(ShortName(user.Name)).Children(
+						Text(shortName(user.Name)).Children(
 						h.Iff(user.Avatar != "", func() h.HTMLComponent {
 							return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
 						}),

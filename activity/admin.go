@@ -27,7 +27,6 @@ const (
 	paramHideDetailTop                = "hideDetailTop"
 )
 
-// TODO: 这个 language 在 timeline 也用到，所以就造成 Install 是必须的，这不太对
 func (ab *Builder) Install(b *presets.Builder) error {
 	if actual, loaded := ab.installedPresets.LoadOrStore(b, true); loaded && actual.(bool) {
 		return errors.Errorf("activity: preset %q already installed", b.GetURIPrefix())
