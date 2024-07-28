@@ -166,7 +166,7 @@ func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, uid string, mod
 		)
 		
 	    SELECT
-%s
+		%s
 	    FROM NoteRecords n
 	    LEFT JOIN LastViewedAts lva
 	        ON n.model_name = lva.model_name

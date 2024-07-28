@@ -241,7 +241,7 @@ func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {
 		if ok {
 			return bare, nil
 		}
-		return nil, errors.Errorf("multiple model builders found for %v", v)
+		return nil, errors.Errorf("multiple preset model builders found for %v", v)
 	}
 	return ambs[0], nil
 }
