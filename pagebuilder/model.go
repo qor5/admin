@@ -98,7 +98,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
 
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
@@ -106,7 +105,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Label:           inflection.Plural(strcase.ToKebab(c.ModelName)),
 				ModelName:       c.ModelName,
 				ModelID:         strconv.Itoa(int(c.ModelID)),
-				DisplayName:     displayName,
+				DisplayName:     c.DisplayName,
 				ContainerID:     strconv.Itoa(int(c.ID)),
 				URL:             b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
 				Shared:          c.Shared,
@@ -231,7 +230,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		newContainerID, err = b.addSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
-		newModelId, newContainerID, err = b.addContainerToPage(pageID, containerID, pageVersion, locale, modelName)
+		newModelId, newContainerID, err = b.addContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName)
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
@@ -650,7 +649,7 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 	return wh.Where("locale_code = ?", locale)
 }
 
-func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
+func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	model := b.builder.ContainerByName(modelName).NewModel()
 	var dc DemoContainer
 	b.db.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
@@ -694,12 +693,16 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		displayOrder = maxOrder.Float64
 	}
 	modelID = reflectutils.MustGet(model, "ID").(uint)
+	displayName := modelName
+	if b.builder.l10n != nil {
+		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+	}
 	container := Container{
 		PageID:        uint(pageID),
 		PageVersion:   pageVersion,
 		ModelName:     modelName,
 		PageModelName: b.name,
-		DisplayName:   modelName,
+		DisplayName:   displayName,
 		ModelID:       modelID,
 		DisplayOrder:  displayOrder + 1,
 		Locale: l10n.Locale{
@@ -1006,13 +1009,12 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 		if err != nil {
 			return
 		}
-		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
 			IsEditor:    isEditor,
 			IsReadonly:  isReadonly,
 			Device:      device,
 			ContainerId: ec.container.PrimarySlug(),
-			DisplayName: displayName,
+			DisplayName: ec.container.DisplayName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 
@@ -1058,13 +1060,12 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 
 	device, _ := b.builder.getDevice(ctx)
 
-	displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 	input := RenderInput{
 		IsEditor:    isEditor,
 		IsReadonly:  IsReadonly,
 		Device:      device,
 		ContainerId: "",
-		DisplayName: displayName,
+		DisplayName: modelName,
 	}
 	obj := containerBuilder.NewModel()
 	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error

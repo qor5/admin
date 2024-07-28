@@ -105,6 +105,18 @@ func TestPublish(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"publish_EventDuplicateVersion", "Price"},
 		},
+		{
+			Name:  "should allow to open version dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				publishData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products-version-list-dialog?__execute_event__=presets_OpenListingDialog&f_select_id=1_2024-05-20-v01").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Versions List"},
+		},
 	}
 
 	for _, c := range cases {
