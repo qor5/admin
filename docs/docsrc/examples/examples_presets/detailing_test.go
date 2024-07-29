@@ -217,7 +217,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 
 	cases := []multipartestutils.TestCase{
 		{
-			Name:  "page detail show",
+			Name:  "section validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
