@@ -292,13 +292,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			notice = web.Scope(
 				VSnackbar(
 					h.Text(text),
-					web.Slot(
-						VBtn("").Variant("text").
-							Attr("@click", "locals.show = false").
-							Children(VIcon("mdi-close")),
-					).Name("actions"),
 				).Location("top").
-					Timeout(-1).
+					Timeout(2000).
 					Color(color).
 					Attr("v-model", "locals.show"),
 			).VSlot("{ locals }").Init(`{ show: true }`)
