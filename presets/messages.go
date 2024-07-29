@@ -218,7 +218,7 @@ var Messages_ja_JP = &Messages{
 	DeleteConfirmationTextTemplate: ": {id}を削除して本当によろしいですか？",
 	CreatingObjectTitleTemplate:    "{modelName} を作る",
 	EditingObjectTitleTemplate:     "{modelName} {id} を編集する",
-	ListingObjectTitleTemplate:     "リスティング {modelName} ",
+	ListingObjectTitleTemplate:     "{modelName}リスト",
 	DetailingObjectTitleTemplate:   "{modelName} {id} ",
 	FiltersClear:                   "フィルターをクリアする",
 	FiltersAdd:                     "フィルターを追加する",
