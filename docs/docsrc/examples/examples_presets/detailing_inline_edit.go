@@ -105,6 +105,32 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
+func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+
+	cust = b.Model(&Customer{})
+	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
+	dp = cust.Detailing("name_section").Drawer(true)
+	dp.Section("name_section").Label("name must not be empty").Editing("Name").Viewing("Name").Validator(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		if customer.Name == "" {
+			err.GlobalError("customer name must not be empty")
+		}
+		return
+	})
+
+	return
+}
+
 func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	mb *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
