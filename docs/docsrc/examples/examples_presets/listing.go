@@ -108,6 +108,12 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 				DBColumn:  "name",
 			},
 		})
+
+	// if you want to customize the table head, you can use WrapDisplayColumns
+	cl.WrapDisplayColumns(presets.CustomizeTableHead(func(th h.MutableAttrHTMLComponent) {
+		th.SetAttr("style", "min-width: 123px; color: red;")
+	}, "ID"))
+
 	cl.Field("Company").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		c := obj.(*Customer)
 		var comp Company
