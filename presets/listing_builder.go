@@ -16,6 +16,8 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+type DisplayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
+
 type OrderableField struct {
 	FieldName string
 	DBColumn  string
@@ -61,7 +63,7 @@ type ListingBuilder struct {
 	dialogWidth             string
 	dialogHeight            string
 	keywordSearchOff        bool
-	displayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
+	displayColumnsProcessor DisplayColumnsProcessor
 	FieldsBuilder
 
 	once                  sync.Once
@@ -134,8 +136,6 @@ func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	return b
 }
 
-type DisplayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
-
 func (b *ListingBuilder) WrapDisplayColumns(w func(in DisplayColumnsProcessor) DisplayColumnsProcessor) (r *ListingBuilder) {
 	if b.displayColumnsProcessor == nil {
 		b.displayColumnsProcessor = w(func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
@@ -147,7 +147,8 @@ func (b *ListingBuilder) WrapDisplayColumns(w func(in DisplayColumnsProcessor) D
 	return b
 }
 
-func (b *ListingBuilder) DisplayColumnsProcessor(f func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)) (r *ListingBuilder) {
+// Deprecated: Use WrapDisplayColumns instead.
+func (b *ListingBuilder) DisplayColumnsProcessor(f DisplayColumnsProcessor) (r *ListingBuilder) {
 	b.displayColumnsProcessor = f
 	return b
 }
