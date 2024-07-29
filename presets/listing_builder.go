@@ -12,6 +12,7 @@ import (
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -130,6 +131,19 @@ func (b *ListingBuilder) TitleFunc(f func(evCtx *web.EventContext) (string, erro
 
 func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	b.keywordSearchOff = v
+	return b
+}
+
+type DisplayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
+
+func (b *ListingBuilder) WrapDisplayColumns(w func(in DisplayColumnsProcessor) DisplayColumnsProcessor) (r *ListingBuilder) {
+	if b.displayColumnsProcessor == nil {
+		b.displayColumnsProcessor = w(func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
+			return displayColumns, nil
+		})
+	} else {
+		b.displayColumnsProcessor = w(b.displayColumnsProcessor)
+	}
 	return b
 }
 
@@ -344,4 +358,34 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 		),
 	})
 	return
+}
+
+func CustomizeTableHead(f func(th h.MutableAttrHTMLComponent), fields ...string) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+	m := lo.SliceToMap(fields, func(field string) (string, bool) { return field, true })
+	return func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+		return func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
+			displayColumns, err := in(evCtx, displayColumns)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, dc := range displayColumns {
+				if _, ok := m[dc.Name]; ok {
+					w := dc.WrapHeader
+					dc.WrapHeader = func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+						if w != nil {
+							var err error
+							th, err = w(evCtx, col, th)
+							if err != nil {
+								return nil, err
+							}
+						}
+						f(th)
+						return th, nil
+					}
+				}
+			}
+			return displayColumns, nil
+		}
+	}
 }

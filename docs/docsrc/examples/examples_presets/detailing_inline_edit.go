@@ -151,17 +151,24 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need
-	ccmb2.Listing().DisplayColumnsProcessor(func(evCtx *web.EventContext, displayColumns []*presets.DisplayColumn) ([]*presets.DisplayColumn, error) {
-		// You can get the current state of the listing compo this way, if you need.
-		listCompo := presets.ListingCompoFromContext(evCtx.R.Context())
-		log.Printf("ParentID: %v", listCompo.ParentID)
-
-		for _, v := range displayColumns {
-			if v.Name == "ExpireYearMonth" {
-				v.Visible = false
+	ccmb2.Listing().WrapDisplayColumns(func(in presets.DisplayColumnsProcessor) presets.DisplayColumnsProcessor {
+		return func(evCtx *web.EventContext, displayColumns []*presets.DisplayColumn) ([]*presets.DisplayColumn, error) {
+			displayColumns, err := in(evCtx, displayColumns)
+			if err != nil {
+				return nil, err
 			}
+
+			// You can get the current state of the listing compo this way, if you need.
+			listCompo := presets.ListingCompoFromContext(evCtx.R.Context())
+			log.Printf("ParentID: %v", listCompo.ParentID)
+
+			for _, v := range displayColumns {
+				if v.Name == "ExpireYearMonth" {
+					v.Visible = false
+				}
+			}
+			return displayColumns, nil
 		}
-		return displayColumns, nil
 	})
 
 	dp.Field("CreditCards2").Use(ccmb2)
