@@ -206,7 +206,7 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 				return
 			}
 
-			valid, err := b.IsSessionValid(r, presets.ObjectID(user))
+			valid, err := b.IsSessionValid(r, presets.MustObjectID(user))
 			if err != nil || !valid {
 				if r.URL.Path == b.lb.LogoutURL {
 					next.ServeHTTP(w, r)
@@ -243,7 +243,7 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 		b.lb.AfterLogin(func(r *http.Request, user any, extraVals ...any) error {
 			return cmp.Or(
 				logAction(r, user, "login"),
-				b.CreateSession(r, presets.ObjectID(user)),
+				b.CreateSession(r, presets.MustObjectID(user)),
 			)
 		}).
 			AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
@@ -255,7 +255,7 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			AfterLogout(func(r *http.Request, user interface{}, _ ...interface{}) error {
 				return cmp.Or(
 					logAction(r, user, "logout"),
-					b.ExpireCurrentSession(r, presets.ObjectID(user)),
+					b.ExpireCurrentSession(r, presets.MustObjectID(user)),
 				)
 			}).
 			AfterConfirmSendResetPasswordLink(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
@@ -263,20 +263,20 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 				return cmp.Or(
-					b.ExpireAllSessions(presets.ObjectID(user)),
+					b.ExpireAllSessions(presets.MustObjectID(user)),
 					logAction(r, user, "reset-password"),
 				)
 			}).
 			AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
 				return cmp.Or(
-					b.ExpireAllSessions(presets.ObjectID(user)),
+					b.ExpireAllSessions(presets.MustObjectID(user)),
 					logAction(r, user, "change-password"),
 				)
 			}).
 			AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
 				oldToken := extraVals[0].(string)
 				return cmp.Or(
-					b.ExtendSession(r, presets.ObjectID(user), oldToken),
+					b.ExtendSession(r, presets.MustObjectID(user), oldToken),
 					logAction(r, user, "extend-session"),
 				)
 			}).
@@ -315,7 +315,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 	if user == nil {
 		return r, errors.New("login: user not found")
 	}
-	uid := presets.ObjectID(user)
+	uid := presets.MustObjectID(user)
 	currentTokenHash := getStringHash(login.GetSessionToken(b.lb, ctx.R), LoginTokenHashLen)
 
 	var sessions []*LoginSession
@@ -433,7 +433,7 @@ func (b *SessionBuilder) handleEventExpireOtherSessions(ctx *web.EventContext) (
 	if isPublicUser {
 		return r, perm.PermissionDenied
 	}
-	uid := presets.ObjectID(user)
+	uid := presets.MustObjectID(user)
 
 	if err = b.ExpireOtherSessions(ctx.R, uid); err != nil {
 		return r, err
