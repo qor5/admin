@@ -542,6 +542,32 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Update Category",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories?__execute_event__=presets_Update&id=1").
+					AddField("Name", "123").
+					AddField("Path", "").
+					AddField("Description", "321").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m pagebuilder.Category
+				if err := TestDB.First(&m, 1).Error; err != nil {
+					t.Fatalf("update cateogry failed %v", er)
+					return
+				}
+				if m.Name != "123" || m.Description != "321" {
+					t.Fatalf("update cateogry failed %#+v", m)
+					return
+				}
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
