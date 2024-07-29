@@ -69,7 +69,7 @@ func TestMedia(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.CreateFolderEvent).
-					AddField(media.ParamFolderName, "test_create_directory").
+					AddField(media.ParamName, "test_create_directory").
 					AddField(media.ParamParentID, "0").
 					BuildEventFuncRequest()
 				return req
@@ -167,7 +167,7 @@ func TestMedia(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
-					Query(media.MediaIDS, "1").
+					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -192,7 +192,7 @@ func TestMedia(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
-					Query(media.MediaIDS, "4").
+					Query(media.ParamMediaIDS, "4").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -217,7 +217,7 @@ func TestMedia(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
-					Query(media.MediaIDS, "1,2,3,4,5").
+					Query(media.ParamMediaIDS, "1,2,3,4,5").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -229,6 +229,89 @@ func TestMedia(t *testing.T) {
 				}
 				if count != 0 {
 					t.Fatalf("not delete objects count : %d", count)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Rename Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameDialogEvent).
+					Query(media.ParamMediaIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "Name", "Snipaste_2024-06-14_10-06-12.png"},
+		},
+		{
+			Name:  "MediaLibrary Rename",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameEvent).
+					Query(media.ParamMediaIDS, "1").
+					AddField(media.ParamName, "1.png").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, "1").Error; err != nil {
+					t.Fatalf("rename err : %v", err)
+					return
+				}
+				if m.File.FileName != "1.png" {
+					t.Fatalf("rename failed need:<1.png>,got <%s>", m.File.FileName)
+					return
+				}
+			},
+		},
+
+		{
+			Name:  "MediaLibrary Update Description Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UpdateDescriptionDialogEvent).
+					Query(media.ParamMediaIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Update Description", "Description", "123123"},
+		},
+		{
+			Name:  "MediaLibrary Update Description",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UpdateDescriptionEvent).
+					Query(media.ParamMediaIDS, "1").
+					AddField(media.ParamCurrentDescription, "321").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, "1").Error; err != nil {
+					t.Fatalf("update description err : %v", err)
+					return
+				}
+				if m.File.Description != "321" {
+					t.Fatalf("update description failed need:<321>,got <%s>", m.File.Description)
 					return
 				}
 			},

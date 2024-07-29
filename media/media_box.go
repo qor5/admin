@@ -33,12 +33,13 @@ const (
 	MediaBoxConfig      MediaBoxConfigKey = iota
 	I18nMediaLibraryKey i18n.ModuleKey    = "I18nMediaLibraryKey"
 
-	ParamFolderName     = "folder_name"
-	ParamParentID       = "parent_id"
-	ParamSelectFolderID = "select_folder_id"
-	ParamSelectIDS      = "select_ids"
-	ParamField          = "field"
-	ParamCfg            = "cfg"
+	ParamName               = "name"
+	ParamParentID           = "parent_id"
+	ParamSelectFolderID     = "select_folder_id"
+	ParamSelectIDS          = "select_ids"
+	ParamField              = "field"
+	ParamCurrentDescription = "current_description"
+	ParamCfg                = "cfg"
 )
 
 func AutoMigrate(db *gorm.DB) (err error) {
@@ -214,7 +215,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
 			Query("field", field).
-			Query(MediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Query("thumb", thumb).
 			Query("cfg", h.JSONString(cfg)).
 			Go())
@@ -234,7 +235,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 			msgr  = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			field = ctx.Param(ParamField)
 			cfg   = ctx.Param(ParamCfg)
-			ids   = strings.Split(ctx.Param(MediaIDS), ",")
+			ids   = strings.Split(ctx.Param(ParamMediaIDS), ",")
 
 			message string
 		)
@@ -267,7 +268,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 								Query(paramTab, ctx.Param(paramTab)).
 								Query(paramParentID, ctx.Param(paramParentID)).
 								Query(ParamField, field).
-								Query(MediaIDS, ids).
+								Query(ParamMediaIDS, ids).
 								Query(ParamCfg, cfg).
 								Go()),
 					),
@@ -287,7 +288,7 @@ func doDelete(mb *Builder) web.EventFunc {
 		var (
 			db              = mb.db
 			field           = ctx.Param(ParamField)
-			ids             = strings.Split(ctx.Param(MediaIDS), ",")
+			ids             = strings.Split(ctx.Param(ParamMediaIDS), ",")
 			cfg             = ctx.Param(ParamCfg)
 			objs            []media_library.MediaLibrary
 			deleteIDs       []uint
@@ -525,28 +526,11 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			db    = mb.db
-			field = ctx.Param(ParamField)
-			id    = ctx.Param(MediaIDS)
-			cfg   = ctx.Param(ParamCfg)
+			db = mb.db
+			id = ctx.Param(ParamMediaIDS)
 		)
 
-		var obj media_library.MediaLibrary
-		err = db.Where("id = ?", id).First(&obj).Error
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				renderFileChooserDialogContent(
-					ctx,
-					&r,
-					field,
-					mb,
-					stringToCfg(cfg),
-				)
-				// TODO: prompt that the record has been deleted?
-				return r, nil
-			}
-			panic(err)
-		}
+		obj := wrapFirst(mb, ctx, &r)
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
@@ -556,12 +540,45 @@ func updateDescription(mb *Builder) web.EventFunc {
 			return
 		}
 
-		media.File.Description = ctx.Param("CurrentDescription")
+		media.File.Description = ctx.Param(ParamCurrentDescription)
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
 
-		r.RunScript = `vars.snackbarShow = true;`
+		web.AppendRunScripts(&r,
+			`vars.snackbarShow = true;`,
+			web.Plaid().EventFunc(imageJumpPageEvent).
+				Query(paramTab, ctx.Param(paramTab)).
+				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamField, ctx.Param(ParamField)).
+				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Go())
+		return
+	}
+}
+func rename(mb *Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			db = mb.db
+		)
+		obj := wrapFirst(mb, ctx, &r)
+		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
+			return
+		}
+
+		obj.File.FileName = ctx.Param(ParamName)
+		if err = db.Save(&obj).Error; err != nil {
+			return
+		}
+
+		web.AppendRunScripts(&r,
+			`vars.snackbarShow = true;`,
+			web.Plaid().EventFunc(imageJumpPageEvent).
+				Query(paramTab, ctx.Param(paramTab)).
+				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamField, ctx.Param(ParamField)).
+				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Go())
 		return
 	}
 }
@@ -569,7 +586,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 func createFolder(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			dirName  = ctx.Param(ParamFolderName)
+			dirName  = ctx.Param(ParamName)
 			parentID = ctx.ParamAsInt(ParamParentID)
 			m        = &media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
 		)
@@ -597,13 +614,77 @@ func createFolder(mb *Builder) web.EventFunc {
 	}
 }
 
+func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj media_library.MediaLibrary) {
+	var (
+		db    = mb.db
+		field = ctx.Param(ParamField)
+		id    = ctx.Param(ParamMediaIDS)
+		cfg   = ctx.Param(ParamCfg)
+		err   error
+	)
+
+	err = db.Where("id = ?", id).First(&obj).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			renderFileChooserDialogContent(
+				ctx,
+				r,
+				field,
+				mb,
+				stringToCfg(cfg),
+			)
+			// TODO: prompt that the record has been deleted?
+			return
+		}
+		panic(err)
+	}
+	return
+}
+func renameDialog(mb *Builder) web.EventFunc {
+
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		obj := wrapFirst(mb, ctx, &r)
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: renameDialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						web.Slot(h.Text("Rename")).Name("title"),
+						web.Slot(
+							VSpacer(),
+							VBtn("").Icon("mdi-close").
+								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
+						).Name(VSlotAppend),
+						VTextField().Variant(FieldVariantUnderlined).
+							Class("px-6").
+							Label("Name").Attr(web.VField(ParamName, obj.File.FileName)...),
+						VCardActions(
+							VSpacer(),
+							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn("Ok").Color(ColorPrimary).Attr("@click",
+								web.Plaid().EventFunc(RenameEvent).
+									Query(paramTab, ctx.Param(paramTab)).
+									Query(paramParentID, ctx.Param(paramParentID)).
+									Query(ParamField, ctx.Param(ParamField)).
+									Query(ParamCfg, ctx.Param(ParamCfg)).
+									Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
+									Go(),
+							),
+						),
+					),
+				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
+		})
+		return
+	}
+}
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
 			VDialog(
 				VCard(
-					web.Slot(h.Text("New Folder")).Name("title"),
+					web.Slot(h.Text("Rename")).Name("title"),
 					web.Slot(
 						VSpacer(),
 						VBtn("").Icon("mdi-close").
@@ -611,12 +692,12 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 					).Name(VSlotAppend),
 					VTextField().Variant(FieldVariantUnderlined).
 						Class("px-6").
-						Label("Folder Name").Attr(web.VField(ParamFolderName, "")...),
+						Label("Folder Name").Attr(web.VField(ParamName, ctx.Param(ParamName))...),
 					VCardActions(
 						VSpacer(),
 						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
-							web.Plaid().EventFunc(CreateFolderEvent).
+							web.Plaid().EventFunc(RenameEvent).
 								Query(paramTab, ctx.Param(paramTab)).
 								Query(paramParentID, ctx.Param(paramParentID)).
 								Query(ParamField, ctx.Param(ParamField)).
@@ -629,6 +710,43 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 		).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 	})
 	return
+}
+func updateDescriptionDialog(mb *Builder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		obj := wrapFirst(mb, ctx, &r)
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: updateDescriptionDialogPortalName,
+			Body: web.Scope(
+				VDialog(
+					VCard(
+						web.Slot(h.Text("Update Description")).Name("title"),
+						web.Slot(
+							VSpacer(),
+							VBtn("").Icon("mdi-close").
+								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
+						).Name(VSlotAppend),
+						VTextField().Variant(FieldVariantUnderlined).
+							Class("px-6").
+							Label("Description").Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
+						VCardActions(
+							VSpacer(),
+							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn("Ok").Color(ColorPrimary).Attr("@click",
+								web.Plaid().EventFunc(UpdateDescriptionEvent).
+									Query(paramTab, ctx.Param(paramTab)).
+									Query(paramParentID, ctx.Param(paramParentID)).
+									Query(ParamField, ctx.Param(ParamField)).
+									Query(ParamCfg, ctx.Param(ParamCfg)).
+									Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
+									Go(),
+							),
+						),
+					),
+				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
+		})
+		return
+	}
 }
 
 func moveToFolderDialog(mb *Builder) web.EventFunc {

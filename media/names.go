@@ -39,6 +39,8 @@ func folderGroupPortalName(id uint) string {
 }
 
 const (
-	newFolderDialogPortalName    = "media_new_folder_dialog_portal_name"
-	moveToFolderDialogPortalName = "media_move_to_folder_dialog_portal_name"
+	newFolderDialogPortalName         = "media_new_folder_dialog_portal_name"
+	renameDialogPortalName            = "media_rename_dialog_portal_name"
+	updateDescriptionDialogPortalName = "media_update_description_dialog_portal_name"
+	moveToFolderDialogPortalName      = "media_move_to_folder_dialog_portal_name"
 )

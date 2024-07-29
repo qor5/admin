@@ -179,7 +179,7 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
-		id := ctx.ParamAsInt(MediaIDS)
+		id := ctx.ParamAsInt(ParamMediaIDS)
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 
@@ -261,6 +261,7 @@ func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse,
 func fileComponent(
 	mb *Builder,
 	field string,
+	tab string,
 	ctx *web.EventContext,
 	f *media_library.MediaLibrary,
 	msgr *Messages,
@@ -277,7 +278,15 @@ func fileComponent(
 	src := f.File.URL("original")
 	*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
 	*menus = append(*menus,
-		VListItem(h.Text(msgr.DescriptionForAccessibility)),
+		VListItem(h.Text(msgr.DescriptionForAccessibility)).
+			Attr("@click", web.Plaid().
+				EventFunc(UpdateDescriptionDialogEvent).
+				Query(ParamField, field).
+				Query(paramTab, tab).
+				Query(ParamCfg, h.JSONString(cfg)).
+				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+				Go()),
 	)
 	title = h.Div(
 		h.If(
@@ -300,7 +309,7 @@ func fileComponent(
 			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
 			EventFunc(chooseFileEvent).
 			Query(ParamField, field).
-			Query(MediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Go(), field != mediaLibraryListField).
 		AttrIf("@click", imgClickVars, field == mediaLibraryListField)
@@ -308,8 +317,7 @@ func fileComponent(
 	content = h.Components(
 		web.Slot(
 			web.Scope(
-				VTextField().Attr(web.VField("name", f.File.FileName)...).
-					Attr(":variant", fmt.Sprintf(`locals.edit_%v?"%s":"%s"`, f.ID, VariantOutlined, VariantPlain)),
+				VTextField().Attr(web.VField("name", f.File.FileName)...).Variant(VariantPlain),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.If(base.IsImageFormat(f.File.FileName),
@@ -336,7 +344,14 @@ func fileOrFolderComponent(
 		clickCardWithoutMoveEvent = "null"
 	)
 	menus := &[]h.HTMLComponent{
-		VListItem(h.Text("Rename")).Attr("@click", fmt.Sprintf("locals.edit_%v=true", f.ID)),
+		VListItem(h.Text("Rename")).Attr("@click", web.Plaid().
+			EventFunc(RenameDialogEvent).
+			Query(ParamField, field).
+			Query(paramTab, tab).
+			Query(ParamCfg, h.JSONString(cfg)).
+			Query(paramParentID, ctx.Param(paramParentID)).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Go()),
 		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids=[%v]", f.ID)),
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
@@ -345,7 +360,7 @@ func fileOrFolderComponent(
 				Query(paramTab, tab).
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(paramParentID, ctx.Param(paramParentID)).
-				Query(MediaIDS, fmt.Sprint(f.ID)).
+				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Go())),
 	}
 
@@ -358,7 +373,7 @@ func fileOrFolderComponent(
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(paramParentID, f.ID).Go()
 	} else {
-		title, content = fileComponent(mb, field, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
+		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
 	}
 	if inMediaLibrary {
 		clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, f.ID).RunPushState()
@@ -410,7 +425,7 @@ func folderComponent(
 		web.Slot(
 			web.Scope(
 				VTextField().Attr(web.VField("name", f.File.FileName)...).
-					Attr(":variant", fmt.Sprintf(`locals.edit_%v?"%s":"%s"`, f.ID, VariantOutlined, VariantPlain)),
+					Variant(VariantPlain),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.Text(fmt.Sprintf("%v items", count))).Name("subtitle"),
@@ -613,6 +628,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	return web.Scope(
 		web.Portal().Name(newFolderDialogPortalName),
 		web.Portal().Name(moveToFolderDialogPortalName),
+		web.Portal().Name(renameDialogPortalName),
+		web.Portal().Name(updateDescriptionDialogPortalName),
 		VContainer(
 			VRow(
 				VCol(
@@ -629,7 +646,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Attr("@keyup.enter", web.Plaid().
 								EventFunc(imageSearchEvent).
 								Query(ParamField, field).
-								Query(paramTab, ctx.Param(paramTab)).
+								Query(paramTab, tab).
+								Query(paramParentID, parentID).
 								Query(ParamCfg, h.JSONString(cfg)).
 								FieldValue(searchKeywordName(field), web.Var("searchLocals.msg")).
 								Go()).
@@ -769,7 +787,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(paramParentID, parentID).
 							Query(paramTab, tab).
 							Query(ParamCfg, h.JSONString(cfg)).
-							Query(MediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
+							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
 			).Class("d-flex align-center").Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
 		).Fluid(true),
