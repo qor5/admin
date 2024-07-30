@@ -65,13 +65,7 @@ type Messages struct {
 	Delete                        string
 	NoActivitiesYet               string
 
-	HeaderNotes      string
-	HeaderCreatedAt  string
-	HeaderUser       string
-	HeaderAction     string
-	HeaderModelKeys  string
-	HeaderModelLabel string
-	HeaderModelName  string
+	HeaderNotes string
 
 	ActivityLogs string
 	ActivityLog  string
@@ -159,13 +153,7 @@ var Messages_en_US = &Messages{
 	Delete:                        "Delete",
 	NoActivitiesYet:               "No activities yet",
 
-	HeaderNotes:      "Notes",
-	HeaderCreatedAt:  "Date Time",
-	HeaderUser:       "Creator",
-	HeaderAction:     "Action",
-	HeaderModelKeys:  "Keys",
-	HeaderModelLabel: "Menu Name",
-	HeaderModelName:  "Table Name",
+	HeaderNotes: "Notes",
 
 	ActivityLogs: "Activity Logs",
 	ActivityLog:  "Activity Log",
@@ -230,13 +218,7 @@ var Messages_zh_CN = &Messages{
 	Delete:                        "删除",
 	NoActivitiesYet:               "暂无活动",
 
-	HeaderNotes:      "备注",
-	HeaderCreatedAt:  "时间",
-	HeaderUser:       "操作者",
-	HeaderAction:     "操作",
-	HeaderModelKeys:  "主键值",
-	HeaderModelLabel: "菜单名",
-	HeaderModelName:  "表名",
+	HeaderNotes: "备注",
 
 	ActivityLogs: "操作日志",
 	ActivityLog:  "操作日志",
@@ -302,13 +284,7 @@ var Messages_ja_JP = &Messages{
 	Delete:                        "削除",
 	NoActivitiesYet:               "まだアクティビティはありません",
 
-	HeaderNotes:      "ノート",
-	HeaderCreatedAt:  "日時",
-	HeaderUser:       "作成者",
-	HeaderAction:     "アクション",
-	HeaderModelKeys:  "キー",
-	HeaderModelLabel: "メニュー名",
-	HeaderModelName:  "テーブル名",
+	HeaderNotes: "ノート",
 
 	ActivityLogs: "アクティビティ履歴",
 	ActivityLog:  "アクティビティ履歴",

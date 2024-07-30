@@ -54,6 +54,15 @@ func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
 	return installed
 }
 
+func getActionLabel(evCtx *web.EventContext, mb *presets.ModelBuilder, action string) string {
+	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	label := defaultActionLabels(msgr)[action]
+	if label == "" {
+		label = i18n.PT(evCtx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
+	}
+	return label
+}
+
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
 		lb = mb.Listing("CreatedAt", "User", "Action", "ModelKeys", "ModelLabel", "ModelName")
@@ -116,12 +125,12 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 		return map[string]string{
-			"CreatedAt":  msgr.HeaderCreatedAt,
-			"User":       msgr.HeaderUser,
-			"Action":     msgr.HeaderAction,
-			"ModelKeys":  msgr.HeaderModelKeys,
-			"ModelLabel": msgr.HeaderModelLabel,
-			"ModelName":  msgr.HeaderModelName,
+			"CreatedAt":  msgr.ModelCreatedAt,
+			"User":       msgr.ModelUser,
+			"Action":     msgr.ModelAction,
+			"ModelKeys":  msgr.ModelKeys,
+			"ModelLabel": msgr.ModelLabel,
+			"ModelName":  msgr.ModelName,
 		}, nil
 	}))
 
@@ -138,6 +147,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).User.Name))
 		},
 	)
+	lb.Field("Action").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		action := obj.(*ActivityLog).Action
+		label := getActionLabel(ctx, mb, action)
+		return h.Td(h.Div().Attr("v-pre", true).Text(label))
+	})
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
 	lb.Field("ModelName").Label(Messages_en_US.ModelName)
 	lb.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
@@ -170,9 +184,12 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			if action == ActionLastView {
 				continue
 			}
-			label := i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
+			label := actionLabels[action]
+			if label == "" {
+				label = i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
+			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  cmp.Or(label, actionLabels[action], action),
+				Text:  label,
 				Value: action,
 			})
 		}
@@ -269,6 +286,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				log           = obj.(*ActivityLog)
 				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
+				actionLabel   = getActionLabel(ctx, mb, log.Action)
 			)
 			var children []h.HTMLComponent
 			if !hideDetailTop {
@@ -281,7 +299,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 							h.Tbody(
 								h.Tr(h.Td(h.Text(msgr.ModelUser)), h.Td().Attr("v-pre", true).Text(log.User.Name)),
 								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.UserID)),
-								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(log.Action)),
+								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(actionLabel)),
 								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
@@ -329,7 +347,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 					))
 				default:
-					children = append(children, h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)))
+					children = append(children, h.Div().Attr("v-pre", true).Text(msgr.PerformAction(actionLabel, log.Detail)))
 				}
 			}
 
