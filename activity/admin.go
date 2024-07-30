@@ -83,6 +83,18 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return errors.New("should not be used")
 	})
 
+	lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"CreatedAt":  msgr.HeaderCreatedAt,
+			"User":       msgr.HeaderUser,
+			"Action":     msgr.HeaderAction,
+			"ModelKeys":  msgr.HeaderModelKeys,
+			"ModelLabel": msgr.HeaderModelLabel,
+			"ModelName":  msgr.HeaderModelName,
+		}, nil
+	}))
+
 	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
@@ -139,12 +151,14 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		if err != nil {
 			panic(err)
 		}
+
 		for _, action := range actions {
 			if action == ActionLastView {
 				continue
 			}
+			label := i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  cmp.Or(actionLabels[action], action),
+				Text:  cmp.Or(label, actionLabels[action], action),
 				Value: action,
 			})
 		}

@@ -16,6 +16,14 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+type ListingStyle string
+
+const (
+	ListingStylePage   ListingStyle = "Page"
+	ListingStyleDialog ListingStyle = "Dialog"
+	ListingStyleNested ListingStyle = "Nested"
+)
+
 type DisplayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
 
 type OrderableField struct {
@@ -40,8 +48,8 @@ type ListingBuilder struct {
 
 	// title is the title of the listing page.
 	// its default value is "Listing ${modelName}".
-	title     string
-	titleFunc func(evCtx *web.EventContext) (string, error)
+	title              string
+	titleComponentFunc func(evCtx *web.EventContext, style ListingStyle, title string) (string, h.HTMLComponent, error)
 
 	// perPage is the number of records per page.
 	// if request query param "per_page" is set, it will be set to that value.
@@ -126,8 +134,8 @@ func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) TitleFunc(f func(evCtx *web.EventContext) (string, error)) (r *ListingBuilder) {
-	b.titleFunc = f
+func (b *ListingBuilder) TitleComponent(f func(evCtx *web.EventContext, style ListingStyle, title string) (string, h.HTMLComponent, error)) (r *ListingBuilder) {
+	b.titleComponentFunc = f
 	return b
 }
 
@@ -240,7 +248,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		return r, perm.PermissionDenied
 	}
 
-	title, err := b.getTitle(evCtx)
+	title, _, err := b.getTitle(evCtx, ListingStylePage)
 	if err != nil {
 		return r, err
 	}
@@ -265,15 +273,15 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	return
 }
 
-func (b *ListingBuilder) getTitle(evCtx *web.EventContext) (string, error) {
-	if b.titleFunc != nil {
-		return b.titleFunc(evCtx)
-	}
+func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (string, h.HTMLComponent, error) {
 	title := b.title
 	if title == "" {
 		title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
 	}
-	return title, nil
+	if b.titleComponentFunc != nil {
+		return b.titleComponentFunc(evCtx, style, title)
+	}
+	return title, h.Div().Attr("v-pre", true).Text(title), nil
 }
 
 func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
@@ -282,7 +290,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		return
 	}
 
-	title, err := b.getTitle(evCtx)
+	_, titleCompo, err := b.getTitle(evCtx, ListingStyleDialog)
 	if err != nil {
 		return r, err
 	}
@@ -304,7 +312,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 
 	content := VCard().Attr("id", compo.CompoID()).Children(
 		VCardTitle().Class("d-flex align-center").Children(
-			h.Text(title),
+			titleCompo,
 			VSpacer(),
 			h.Div().Id(compo.ActionsComponentTeleportToID()),
 			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
@@ -361,8 +369,8 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	return
 }
 
-func CustomizeTableHead(f func(th h.MutableAttrHTMLComponent), fields ...string) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
-	m := lo.SliceToMap(fields, func(field string) (string, bool) { return field, true })
+func CustomizeColumnHeader(f func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error), fields ...string) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+	m := lo.SliceToMap(fields, func(field string) (string, struct{}) { return field, struct{}{} })
 	return func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
 		return func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
 			displayColumns, err := in(evCtx, displayColumns)
@@ -371,19 +379,44 @@ func CustomizeTableHead(f func(th h.MutableAttrHTMLComponent), fields ...string)
 			}
 
 			for _, dc := range displayColumns {
-				if _, ok := m[dc.Name]; ok {
-					w := dc.WrapHeader
-					dc.WrapHeader = func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
-						if w != nil {
-							var err error
-							th, err = w(evCtx, col, th)
-							if err != nil {
-								return nil, err
-							}
-						}
-						f(th)
-						return th, nil
+				if len(m) > 0 {
+					if _, ok := m[dc.Name]; !ok {
+						continue
 					}
+				}
+				w := dc.WrapHeader
+				dc.WrapHeader = func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+					if w != nil {
+						var err error
+						th, err = w(evCtx, col, th)
+						if err != nil {
+							return nil, err
+						}
+					}
+					return f(evCtx, col, th)
+				}
+			}
+			return displayColumns, nil
+		}
+	}
+}
+
+func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]string, error)) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+	return func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+		return func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
+			displayColumns, err := in(evCtx, displayColumns)
+			if err != nil {
+				return nil, err
+			}
+
+			m, err := mapper(evCtx)
+			if err != nil {
+				return nil, err
+			}
+			for _, dc := range displayColumns {
+				v, ok := m[dc.Name]
+				if ok {
+					dc.Label = v
 				}
 			}
 			return displayColumns, nil

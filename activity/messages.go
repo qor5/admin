@@ -64,6 +64,14 @@ type Messages struct {
 	Cancel                        string
 	Delete                        string
 	NoActivitiesYet               string
+
+	HeaderNotes      string
+	HeaderCreatedAt  string
+	HeaderUser       string
+	HeaderAction     string
+	HeaderModelKeys  string
+	HeaderModelLabel string
+	HeaderModelName  string
 }
 
 func (msgr *Messages) LastEditedAt(desc string) string {
@@ -147,6 +155,14 @@ var Messages_en_US = &Messages{
 	Cancel:                        "Cancel",
 	Delete:                        "Delete",
 	NoActivitiesYet:               "No activities yet",
+
+	HeaderNotes:      "Notes",
+	HeaderCreatedAt:  "Date Time",
+	HeaderUser:       "Creator",
+	HeaderAction:     "Action",
+	HeaderModelKeys:  "Keys",
+	HeaderModelLabel: "Menu Name",
+	HeaderModelName:  "Table Name",
 }
 
 var Messages_zh_CN = &Messages{
@@ -207,6 +223,14 @@ var Messages_zh_CN = &Messages{
 	Cancel:                        "取消",
 	Delete:                        "删除",
 	NoActivitiesYet:               "暂无活动",
+
+	HeaderNotes:      "备注",
+	HeaderCreatedAt:  "时间",
+	HeaderUser:       "操作者",
+	HeaderAction:     "操作",
+	HeaderModelKeys:  "主键值",
+	HeaderModelLabel: "菜单名",
+	HeaderModelName:  "表名",
 }
 
 var Messages_ja_JP = &Messages{
@@ -268,4 +292,12 @@ var Messages_ja_JP = &Messages{
 	Cancel:                        "キャンセル",
 	Delete:                        "削除",
 	NoActivitiesYet:               "まだアクティビティはありません",
+
+	HeaderNotes:      "ノート",
+	HeaderCreatedAt:  "日時",
+	HeaderUser:       "作成者",
+	HeaderAction:     "アクション",
+	HeaderModelKeys:  "キー",
+	HeaderModelLabel: "メニュー名",
+	HeaderModelName:  "テーブル名",
 }

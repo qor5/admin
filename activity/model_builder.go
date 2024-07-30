@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/samber/lo"
 	"github.com/sunfmin/reflectutils"
@@ -294,6 +295,12 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 				),
 			)
 		}).Label(ListFieldLabelNotes)
+		lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+			return map[string]string{
+				ListFieldNotes: msgr.HeaderNotes,
+			}, nil
+		}))
 	}
 }
 

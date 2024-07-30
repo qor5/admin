@@ -114,7 +114,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		return r, perm.PermissionDenied
 	}
 
-	title, err := b.getTitle(evCtx)
+	_, titleCompo, err := b.getTitle(evCtx, ListingStyleNested)
 	if err != nil {
 		return r, err
 	}
@@ -135,7 +135,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 	return web.Scope().VSlot("{ form }").Children(
 		VCard().Elevation(0).Class("ma-n2").Children(
 			VCardTitle().Class("d-flex align-center").Children(
-				h.Text(title),
+				titleCompo,
 				VSpacer(),
 				h.Div().Id(compo.ActionsComponentTeleportToID()),
 			),

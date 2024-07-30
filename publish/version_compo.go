@@ -274,10 +274,20 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	lb := mb.Listing(listingFields...).
 		DialogWidth("900px").
-		TitleFunc(func(evCtx *web.EventContext) (string, error) {
+		TitleComponent(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
-			return msgr.VersionsList, nil
+			return msgr.VersionsList, h.Div().Attr("v-pre", true).Text(msgr.VersionsList), nil
 		}).
+		WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			return map[string]string{
+				"Version": msgr.HeaderVersion,
+				"Status":  msgr.HeaderStatus,
+				"StartAt": msgr.HeaderStartAt,
+				"EndAt":   msgr.HeaderEndAt,
+				"Option":  msgr.HeaderOption,
+			}, nil
+		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
