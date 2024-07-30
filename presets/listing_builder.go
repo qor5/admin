@@ -248,7 +248,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		return r, perm.PermissionDenied
 	}
 
-	title, _, err := b.getTitle(evCtx, ListingStylePage)
+	title, titleCompo, err := b.getTitle(evCtx, ListingStylePage)
 	if err != nil {
 		return r, err
 	}
@@ -263,6 +263,9 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		LongStyleSearchBox: false,
 	}
 
+	if titleCompo != nil {
+		evCtx.WithContextValue(ctxPageTitleComponent, titleCompo)
+	}
 	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
 	r.Body = VLayout(
@@ -273,15 +276,15 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	return
 }
 
-func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (string, h.HTMLComponent, error) {
-	title := b.title
+func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (title string, titleCompo h.HTMLComponent, err error) {
+	title = b.title
 	if title == "" {
 		title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
 	}
 	if b.titleComponentFunc != nil {
 		return b.titleComponentFunc(evCtx, style, title)
 	}
-	return title, h.Div().Attr("v-pre", true).Text(title), nil
+	return title, nil, nil
 }
 
 func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
@@ -290,9 +293,12 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		return
 	}
 
-	_, titleCompo, err := b.getTitle(evCtx, ListingStyleDialog)
+	title, titleCompo, err := b.getTitle(evCtx, ListingStyleDialog)
 	if err != nil {
 		return r, err
+	}
+	if titleCompo == nil {
+		titleCompo = h.Div().Attr("v-pre", true).Text(title)
 	}
 
 	evCtx.WithContextValue(ctxInDialog, true)

@@ -114,10 +114,14 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		return r, perm.PermissionDenied
 	}
 
-	_, titleCompo, err := b.getTitle(evCtx, ListingStyleNested)
+	title, titleCompo, err := b.getTitle(evCtx, ListingStyleNested)
 	if err != nil {
 		return r, err
 	}
+	if titleCompo == nil {
+		titleCompo = h.Div().Attr("v-pre", true).Text(title)
+	}
+
 	evCtx.WithContextValue(ctxInDialog, true)
 
 	injectorName := b.injectorName()

@@ -1008,13 +1008,16 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
-		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
-
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		var pageTitleComp h.HTMLComponent
 		if b.pageTitleFunc != nil {
 			pageTitleComp = b.pageTitleFunc(ctx)
 		} else {
+			innerPageTitleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
+			if !ok {
+				innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+			}
+			actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 			pageTitleComp = h.Div(
 				VAppBarNavIcon().
 					Density("compact").
@@ -1022,7 +1025,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Attr("v-if", "!vars.navDrawer").
 					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 				h.Div(
-					VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+					innerPageTitleCompo,
 				).Class("mr-auto"),
 				h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 					return h.Div().Id(actionsComponentTeleportToID)

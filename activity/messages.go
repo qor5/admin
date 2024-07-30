@@ -72,6 +72,8 @@ type Messages struct {
 	HeaderModelKeys  string
 	HeaderModelLabel string
 	HeaderModelName  string
+
+	TitleActivityLogs string
 }
 
 func (msgr *Messages) LastEditedAt(desc string) string {
@@ -163,6 +165,8 @@ var Messages_en_US = &Messages{
 	HeaderModelKeys:  "Keys",
 	HeaderModelLabel: "Menu Name",
 	HeaderModelName:  "Table Name",
+
+	TitleActivityLogs: "Activity Logs",
 }
 
 var Messages_zh_CN = &Messages{
@@ -231,6 +235,8 @@ var Messages_zh_CN = &Messages{
 	HeaderModelKeys:  "主键值",
 	HeaderModelLabel: "菜单名",
 	HeaderModelName:  "表名",
+
+	TitleActivityLogs: "操作日志",
 }
 
 var Messages_ja_JP = &Messages{
@@ -300,4 +306,6 @@ var Messages_ja_JP = &Messages{
 	HeaderModelKeys:  "キー",
 	HeaderModelLabel: "メニュー名",
 	HeaderModelName:  "テーブル名",
+
+	TitleActivityLogs: "アクティビティ履歴",
 }

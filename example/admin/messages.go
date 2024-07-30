@@ -186,9 +186,9 @@ type Messages_ModelsI18nModuleKey struct {
 	ListModels               string
 	MicrositeModels          string
 	Workers                  string
-	ActivityLogs             string
-	ActivityLog              string
-	MediaLibrary             string
+	// ActivityLogs             string
+	// ActivityLog              string
+	MediaLibrary string
 
 	PagesID         string
 	PagesTitle      string
@@ -340,9 +340,9 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ListModels:               "发布带排序及分页模块 示例",
 	MicrositeModels:          "Microsite 示例",
 	Workers:                  "后台工作进程管理",
-	ActivityLogs:             "操作日志",
-	ActivityLog:              "操作日志",
-	MediaLibrary:             "媒体库",
+	// ActivityLogs:             "操作日志",
+	// ActivityLog:              "操作日志",
+	MediaLibrary: "媒体库",
 
 	PagesID:         "ID",
 	PagesTitle:      "标题",
@@ -494,9 +494,9 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ListModels:               "リストモデル",
 	MicrositeModels:          "マイクロサイトモデル",
 	Workers:                  "ワーカーズ",
-	ActivityLogs:             "アクティビティ履歴",
-	ActivityLog:              "アクティビティ履歴",
-	MediaLibrary:             "メディアライブラリ",
+	// ActivityLogs:             "アクティビティ履歴",
+	// ActivityLog:              "アクティビティ履歴",
+	MediaLibrary: "メディアライブラリ",
 
 	PagesID:         "ID",
 	PagesTitle:      "タイトル",
