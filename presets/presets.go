@@ -676,7 +676,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 						),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("@click", web.Plaid().Query(queryName, supportLanguages[0].String()).Go()),
+			).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, supportLanguages[0].String()).Go()),
 		)
 	}
 
@@ -701,7 +701,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 					VListItemTitle(
 						h.Div(h.Text(display.Self.Name(tag))),
 					),
-				).Attr("@click", web.Plaid().Query(queryName, tag.String()).Go()),
+				).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, tag.String()).Go()),
 			),
 		)
 	}
