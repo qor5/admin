@@ -179,7 +179,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			}
 			label := actionLabels[action]
 			if label == "" {
-				label = i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
+				label = i18n.PT(ctx.R, presets.ModelsI18nModuleKey, I18nActionLabelPrefix, action)
 			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
 				Text:  label,
@@ -205,11 +205,16 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		var modelOptions []*vuetifyx.SelectItem
-		for _, m := range ab.models {
-			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
-				Text:  m.typ.Name(),
-				Value: m.typ.Name(),
+		modelNames := []string{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_name AS model_name").Pluck("model_name", &modelNames).Error
+		if err != nil {
+			panic(err)
+		}
+		var modelNameOptions []*vuetifyx.SelectItem
+		for _, modelName := range modelNames {
+			modelNameOptions = append(modelNameOptions, &vuetifyx.SelectItem{
+				Text:  i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName),
+				Value: modelName,
 			})
 		}
 
@@ -237,13 +242,13 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Options:      userOptions,
 			})
 		}
-		if len(modelOptions) > 0 {
+		if len(modelNameOptions) > 0 {
 			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "model",
+				Key:          "model_name",
 				Label:        msgr.FilterModel,
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `model_name %s ?`,
-				Options:      modelOptions,
+				Options:      modelNameOptions,
 			})
 		}
 		return filterData
