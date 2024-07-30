@@ -49,7 +49,7 @@ func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventCont
 }
 
 func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forceTextColor string) h.HTMLComponent {
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 	switch log.Action {
 	case ActionNote:
 		note := &Note{}
@@ -109,7 +109,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 	case ActionDelete:
 		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
 	default:
-		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(getActionLabel(evCtx, log.Action), log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	"github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -123,8 +124,9 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 		fb.ComponentFunc(DefaultVersionComponentFunc(mb))
 	}
 
-	mb.Listing().WrapSearchFunc(makeSearchFunc(mb, db))
-	mb.Listing().RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+	lb := mb.Listing()
+	lb.WrapSearchFunc(makeSearchFunc(mb, db))
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
 	})
@@ -132,9 +134,15 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	setter := makeSetVersionSetterFunc(db)
 	ed.WrapSetterFunc(setter)
 
-	mb.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
-	mb.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))
-
+	lb.Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
+	lb.Field(ListingFieldLive).ComponentFunc(liveFunc(db))
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			ListingFieldDraftCount: msgr.HeaderDraftCount,
+			ListingFieldLive:       msgr.HeaderLive,
+		}, nil
+	}))
 	configureVersionListDialog(db, b, pb, mb)
 }
 

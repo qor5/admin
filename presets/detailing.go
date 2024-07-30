@@ -7,13 +7,20 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+)
+
+type DetailingStyle string
+
+const (
+	DetailingStylePage   DetailingStyle = "Page"
+	DetailingStyleDrawer DetailingStyle = "Drawer"
+	DetailingStyleDialog DetailingStyle = "Dialog"
 )
 
 type DetailingBuilder struct {
@@ -23,6 +30,7 @@ type DetailingBuilder struct {
 	fetcher            FetchFunc
 	tabPanels          []TabComponentFunc
 	sidePanel          ObjectComponentFunc
+	titleFunc          func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
 	SectionsBuilder
@@ -96,6 +104,12 @@ func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 	return b
 }
 
+// The title must not return empty, and titleCompo can return nil
+func (b *DetailingBuilder) Title(f func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *DetailingBuilder) {
+	b.titleFunc = f
+	return b
+}
+
 func (b *DetailingBuilder) AfterTitleCompFunc(v ObjectComponentFunc) (r *DetailingBuilder) {
 	if v == nil {
 		panic("value required")
@@ -130,6 +144,8 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 	return b
 }
 
+type ctxKeyDetailingStyle struct{}
+
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.Param(ParamID)
 	r.Body = VContainer(h.Text(id))
@@ -154,7 +170,24 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	r.PageTitle = msgr.DetailingObjectTitle(inflection.Singular(b.mb.label), getPageTitle(obj, id))
+	title := msgr.DetailingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, id))
+	if b.titleFunc != nil {
+		style, ok := ctx.ContextValue(ctxKeyDetailingStyle{}).(DetailingStyle)
+		if !ok {
+			style = DetailingStylePage
+		}
+
+		title, titleCompo, err := b.titleFunc(ctx, obj, style, title)
+		if err != nil {
+			return r, err
+		}
+		if titleCompo != nil {
+			ctx.WithContextValue(ctxPageTitleComponent, titleCompo)
+		}
+		r.PageTitle = title
+	} else {
+		r.PageTitle = title
+	}
 	if b.afterTitleCompFunc != nil {
 		ctx.WithContextValue(ctxDetailingAfterTitleComponent, b.afterTitleCompFunc(obj, ctx))
 	}
@@ -215,26 +248,33 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		return
 	}
 
+	overlayType := ctx.R.FormValue(ParamOverlay)
+	closeBtnVarScript := CloseRightDrawerVarScript
+	style := DetailingStyleDrawer
+	if overlayType == actions.Dialog {
+		closeBtnVarScript = CloseDialogVarScript
+		style = DetailingStyleDialog
+	}
+	ctx.WithContextValue(ctxKeyDetailingStyle{}, style)
 	pr, err := b.GetPageFunc()(ctx)
 	if err != nil {
 		return
 	}
-
-	overlayType := ctx.R.FormValue(ParamOverlay)
-	closeBtnVarScript := CloseRightDrawerVarScript
-	if overlayType == actions.Dialog {
-		closeBtnVarScript = CloseDialogVarScript
+	titleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
+	if !ok {
+		titleCompo = h.Text(pr.PageTitle)
+	} else {
+		ctx.WithContextValue(ctxPageTitleComponent, nil)
 	}
-
-	title := h.Div(h.Text(pr.PageTitle)).Class("d-flex")
+	header := h.Div(titleCompo).Class("d-flex")
 	if v, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
-		title.AppendChildren(VSpacer(), v)
+		header.AppendChildren(VSpacer(), v)
 	}
 
 	comp := web.Scope(
 		VLayout(
 			VAppBar(
-				VAppBarTitle(title).Class("pl-2"),
+				VAppBarTitle(header).Class("pl-2"),
 				VBtn("").Icon("mdi-close").
 					Attr("@click.stop", closeBtnVarScript),
 			).Color("white").Elevation(0),

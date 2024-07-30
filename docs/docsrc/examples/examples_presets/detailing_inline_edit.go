@@ -205,9 +205,9 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need
-	ccmb2.Listing().WrapDisplayColumns(func(in presets.DisplayColumnsProcessor) presets.DisplayColumnsProcessor {
-		return func(evCtx *web.EventContext, displayColumns []*presets.DisplayColumn) ([]*presets.DisplayColumn, error) {
-			displayColumns, err := in(evCtx, displayColumns)
+	ccmb2.Listing().WrapColumns(func(in presets.ColumnsProcessor) presets.ColumnsProcessor {
+		return func(evCtx *web.EventContext, columns []*presets.Column) ([]*presets.Column, error) {
+			columns, err := in(evCtx, columns)
 			if err != nil {
 				return nil, err
 			}
@@ -216,12 +216,12 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 			listCompo := presets.ListingCompoFromContext(evCtx.R.Context())
 			log.Printf("ParentID: %v", listCompo.ParentID)
 
-			for _, v := range displayColumns {
+			for _, v := range columns {
 				if v.Name == "ExpireYearMonth" {
 					v.Visible = false
 				}
 			}
-			return displayColumns, nil
+			return columns, nil
 		}
 	})
 

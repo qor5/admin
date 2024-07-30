@@ -28,7 +28,7 @@ func init() {
 	stateful.RegisterActionableCompoType((*ListingCompo)(nil))
 }
 
-type DisplayColumnBare struct {
+type DisplayColumn struct {
 	Name    string `json:"name"`
 	Visible bool   `json:"visible"`
 }
@@ -48,17 +48,17 @@ type ListingCompo struct {
 
 	activeFilterTabQuery string
 
-	ID                 string               `json:"id"`
-	Popup              bool                 `json:"popup"`
-	LongStyleSearchBox bool                 `json:"long_style_search_box"`
-	SelectedIds        []string             `json:"selected_ids" query:",omitempty"`
-	Keyword            string               `json:"keyword" query:",omitempty"`
-	OrderBys           []ColOrderBy         `json:"order_bys" query:",omitempty"`
-	Page               int64                `json:"page" query:",omitempty"`
-	PerPage            int64                `json:"per_page" query:",omitempty;cookie"`
-	DisplayColumns     []*DisplayColumnBare `json:"display_columns" query:",omitempty;cookie"`
-	ActiveFilterTab    string               `json:"active_filter_tab" query:",omitempty"`
-	FilterQuery        string               `json:"filter_query" query:";method:bare,f_"`
+	ID                 string           `json:"id"`
+	Popup              bool             `json:"popup"`
+	LongStyleSearchBox bool             `json:"long_style_search_box"`
+	SelectedIds        []string         `json:"selected_ids" query:",omitempty"`
+	Keyword            string           `json:"keyword" query:",omitempty"`
+	OrderBys           []ColOrderBy     `json:"order_bys" query:",omitempty"`
+	Page               int64            `json:"page" query:",omitempty"`
+	PerPage            int64            `json:"per_page" query:",omitempty;cookie"`
+	DisplayColumns     []*DisplayColumn `json:"display_columns" query:",omitempty;cookie"`
+	ActiveFilterTab    string           `json:"active_filter_tab" query:",omitempty"`
+	FilterQuery        string           `json:"filter_query" query:";method:bare,f_"`
 
 	OnMounted string `json:"on_mounted"`
 	ParentID  string `json:"parent_id,omitempty"`
@@ -422,12 +422,12 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.Wrap(err, "searcher error"))
 	}
 
-	btnConfigColumns, columns, err := c.getDisplayColumns(ctx)
+	btnConfigColumns, columns, err := c.getColumns(ctx)
 	if err != nil {
-		panic(errors.Wrap(err, "display columns error"))
+		panic(errors.Wrap(err, "get columns error"))
 	}
 
-	fieldColumn := lo.SliceToMap(columns, func(col *DisplayColumn) (string, *DisplayColumn) {
+	fieldColumn := lo.SliceToMap(columns, func(col *Column) (string, *Column) {
 		return col.Name, col
 	})
 	dataTable := vx.DataTable(objs).
@@ -562,76 +562,76 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	return h.Components(dataTable, dataTableAdditions)
 }
 
-type DisplayColumn struct {
-	*DisplayColumnBare
-	Label      string                                                                                                               `json:"label"`
-	WrapHeader func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) `json:"-"`
+type Column struct {
+	*DisplayColumn
+	Label      string                                                                                                        `json:"label"`
+	WrapHeader func(evCtx *web.EventContext, col *Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) `json:"-"`
 }
 
-func (c *ListingCompo) getDisplayColumns(ctx context.Context) (btnConfigure h.HTMLComponent, wrappers []*DisplayColumn, err error) {
+func (c *ListingCompo) getColumns(ctx context.Context) (btnConfigure h.HTMLComponent, columns []*Column, err error) {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
-	var availableColumns []*DisplayColumnBare
+	var availableColumns []*DisplayColumn
 	for _, f := range c.lb.fields {
 		if c.lb.mb.Info().Verifier().Do(PermList).SnakeOn("f_"+f.name).WithReq(evCtx.R).IsAllowed() != nil {
 			continue
 		}
-		availableColumns = append(availableColumns, &DisplayColumnBare{
+		availableColumns = append(availableColumns, &DisplayColumn{
 			Name:    f.name,
 			Visible: true,
 		})
 	}
 
-	displayColumns := []*DisplayColumnBare{}
+	displayColumns := []*DisplayColumn{}
 	if err := JsonCopy(&displayColumns, c.DisplayColumns); err != nil {
 		return nil, nil, err
 	}
 	// if there is abnormal data, restore the default
 	if len(displayColumns) != len(availableColumns) ||
 		// names not match
-		!lo.EveryBy(displayColumns, func(dc *DisplayColumnBare) bool {
-			return lo.ContainsBy(availableColumns, func(ac *DisplayColumnBare) bool {
+		!lo.EveryBy(displayColumns, func(dc *DisplayColumn) bool {
+			return lo.ContainsBy(availableColumns, func(ac *DisplayColumn) bool {
 				return ac.Name == dc.Name
 			})
 		}) {
 		displayColumns = availableColumns
 	}
 
-	allInvisible := lo.EveryBy(displayColumns, func(dc *DisplayColumnBare) bool {
+	allInvisible := lo.EveryBy(displayColumns, func(dc *DisplayColumn) bool {
 		return !dc.Visible
 	})
 	for _, col := range displayColumns {
 		if allInvisible {
 			col.Visible = true
 		}
-		wrappers = append(wrappers, &DisplayColumn{
-			DisplayColumnBare: col,
-			Label:             i18n.PT(evCtx.R, ModelsI18nModuleKey, c.lb.mb.label, c.lb.mb.getLabel(c.lb.Field(col.Name).NameLabel)),
+		columns = append(columns, &Column{
+			DisplayColumn: col,
+			Label:         i18n.PT(evCtx.R, ModelsI18nModuleKey, c.lb.mb.label, c.lb.mb.getLabel(c.lb.Field(col.Name).NameLabel)),
 		})
 	}
 
-	if c.lb.displayColumnsProcessor != nil {
+	if c.lb.columnsProcessor != nil {
 		var err error
-		wrappers, err = c.lb.displayColumnsProcessor(evCtx, wrappers)
+		columns, err = c.lb.columnsProcessor(evCtx, columns)
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
 	if !c.lb.selectableColumns {
-		return nil, wrappers, nil
+		return nil, columns, nil
 	}
 
 	return web.Scope().
 			VSlot("{ locals: xlocals }").
-			Init(fmt.Sprintf(`{selectColumnsMenu: false, displayColumns: %s}`, h.JSONString(wrappers))).
+			Init(fmt.Sprintf(`{selectColumnsMenu: false, columns: %s}`, h.JSONString(columns))).
 			Children(
 				VMenu().CloseOnContentClick(false).Width(240).Attr("v-model", "xlocals.selectColumnsMenu").Children(
 					web.Slot().Name("activator").Scope("{ props }").Children(
 						VBtn("").Icon("mdi-cog").Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
 					),
 					VList().Density(DensityCompact).Children(
-						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "xlocals.displayColumns", "handle", ".handle", "animation", "300").Children(
+						h.Tag("vx-draggable").Attr("item-key", "name").Attr("v-model", "xlocals.columns", "handle", ".handle", "animation", "300").Children(
 							h.Template().Attr("#item", " { element } ").Children(
 								VListItem(
 									VListItemTitle(
@@ -651,14 +651,14 @@ func (c *ListingCompo) getDisplayColumns(ctx context.Context) (btnConfigure h.HT
 								xlocals.selectColumnsMenu = false; 
 								%s`,
 								stateful.ReloadAction(ctx, c, nil,
-									stateful.WithAppendFix(`v.compo.display_columns = xlocals.displayColumns.map(({ label, ...rest }) => rest)`),
+									stateful.WithAppendFix(`v.compo.display_columns = xlocals.columns.map(({ label, ...rest }) => rest)`),
 								).Go(),
 							)),
 						),
 					),
 				),
 			),
-		wrappers, nil
+		columns, nil
 }
 
 func (c *ListingCompo) cardActionsFooter(ctx context.Context) h.HTMLComponent {

@@ -461,11 +461,11 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 	item := VListItem(
 		// VRow(
 		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
-		// 	VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+		// 	VCol(h.Text(m.Info().LabelName(ctx, false))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
 
 		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
 		VListItemTitle(
-			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+			h.Text(m.Info().LabelName(ctx, false)),
 		),
 	).Class("rounded-lg").
 		Value(m.label)
@@ -1008,13 +1008,18 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
-		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
-
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		var pageTitleComp h.HTMLComponent
 		if b.pageTitleFunc != nil {
 			pageTitleComp = b.pageTitleFunc(ctx)
 		} else {
+			innerPageTitleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
+			if !ok {
+				innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+			} else {
+				ctx.WithContextValue(ctxPageTitleComponent, nil)
+			}
+			actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 			pageTitleComp = h.Div(
 				VAppBarNavIcon().
 					Density("compact").
@@ -1022,7 +1027,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Attr("v-if", "!vars.navDrawer").
 					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 				h.Div(
-					VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
+					innerPageTitleCompo,
 				).Class("mr-auto"),
 				h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 					return h.Div().Id(actionsComponentTeleportToID)

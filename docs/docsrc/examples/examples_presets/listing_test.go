@@ -36,7 +36,7 @@ func TestPresetsListingCustomizationFields(t *testing.T) {
 	PresetsListingCustomizationFields(pb, TestDB)
 	cases := []multipartestutils.TestCase{
 		{
-			Name:  "WrapDisplayColumns",
+			Name:  "WrapColumns",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/customers", nil)
