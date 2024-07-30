@@ -500,7 +500,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		// avoid zero value display
+		// avoid the display of zero value
 		var val any
 		if p.CategoryID != 0 {
 			val = p.CategoryID
