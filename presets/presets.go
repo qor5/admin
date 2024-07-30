@@ -1016,6 +1016,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			innerPageTitleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
 			if !ok {
 				innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+			} else {
+				ctx.WithContextValue(ctxPageTitleComponent, nil)
 			}
 			actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 			pageTitleComp = h.Div(

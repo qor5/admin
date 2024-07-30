@@ -83,22 +83,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return errors.New("should not be used")
 	})
 
-	lb.TitleComponent(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return msgr.TitleActivityLogs, nil, nil
-	})
-	lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return map[string]string{
-			"CreatedAt":  msgr.HeaderCreatedAt,
-			"User":       msgr.HeaderUser,
-			"Action":     msgr.HeaderAction,
-			"ModelKeys":  msgr.HeaderModelKeys,
-			"ModelLabel": msgr.HeaderModelLabel,
-			"ModelName":  msgr.HeaderModelName,
-		}, nil
-	}))
-
 	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
@@ -114,6 +98,23 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		return logs, totalCount, nil
 	})
+
+	lb.TitleComponent(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		return msgr.TitleActivityLogs, nil, nil
+	})
+
+	lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"CreatedAt":  msgr.HeaderCreatedAt,
+			"User":       msgr.HeaderUser,
+			"Action":     msgr.HeaderAction,
+			"ModelKeys":  msgr.HeaderModelKeys,
+			"ModelLabel": msgr.HeaderModelLabel,
+			"ModelName":  msgr.HeaderModelName,
+		}, nil
+	}))
 
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
@@ -245,6 +246,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 		return filterTabs
+	})
+
+	dp.TitleComponent(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		return msgr.TitleActivityLog, nil, nil
 	})
 
 	dp.Field("Detail").ComponentFunc(

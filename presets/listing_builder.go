@@ -129,12 +129,14 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 	return b
 }
 
+// Deprecated: Use TitleComponent instead.
 func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
 	b.title = title
 	return b
 }
 
-func (b *ListingBuilder) TitleComponent(f func(evCtx *web.EventContext, style ListingStyle, title string) (string, h.HTMLComponent, error)) (r *ListingBuilder) {
+// The title must not return empty, and titleCompo can return nil
+func (b *ListingBuilder) TitleComponent(f func(evCtx *web.EventContext, style ListingStyle, currentTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
 	b.titleComponentFunc = f
 	return b
 }
@@ -252,6 +254,9 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	if err != nil {
 		return r, err
 	}
+	if titleCompo != nil {
+		evCtx.WithContextValue(ctxPageTitleComponent, titleCompo)
+	}
 	r.PageTitle = title
 
 	evCtx.WithContextValue(ctxInDialog, false)
@@ -261,10 +266,6 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		ID:                 injectorName + "_page",
 		Popup:              false,
 		LongStyleSearchBox: false,
-	}
-
-	if titleCompo != nil {
-		evCtx.WithContextValue(ctxPageTitleComponent, titleCompo)
 	}
 	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
