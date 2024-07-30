@@ -500,10 +500,17 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return vx.VXAutocomplete().Label(msgr.Category).
-			Attr(web.VField(field.Name, p.CategoryID)...).
-			Multiple(false).Chips(false).
-			Items(categories).ItemText("Path").ItemValue("ID").
+		// avoid zero value display
+		var val any
+		if p.CategoryID != 0 {
+			val = p.CategoryID
+		}
+
+		return VAutocomplete().Label(msgr.Category).
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, val)...).
+			Multiple(false).Chips(false).Clearable(true).
+			Items(categories).ItemTitle("Path").ItemValue("ID").
 			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
 	})
 
