@@ -9,6 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -142,6 +144,17 @@ func scopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db.Set(dbKeyTablePrefix, tablePrefix).Table(tablePrefix + s.Table)
 	}
+}
+
+const I18nActionLabelPrefix = "ActivityAction"
+
+func getActionLabel(evCtx *web.EventContext, action string) string {
+	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	label := defaultActionLabels(msgr)[action]
+	if label == "" {
+		label = i18n.PT(evCtx.R, presets.ModelsI18nModuleKey, I18nActionLabelPrefix, action)
+	}
+	return label
 }
 
 func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {

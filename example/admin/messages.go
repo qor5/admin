@@ -294,8 +294,8 @@ type Messages_ModelsI18nModuleKey struct {
 	ContactFormsActionUrl          string
 	ContactFormsPrivacyPolicy      string
 
-	ActivityLogsLogIn         string
-	ActivityLogsExtendSession string
+	ActivityActionLogIn         string
+	ActivityActionExtendSession string
 }
 
 var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -446,8 +446,8 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsActionUrl:          "ContactFormsActionUrl",
 	ContactFormsPrivacyPolicy:      "ContactFormsPrivacyPolicy",
 
-	ActivityLogsLogIn:         "登录",
-	ActivityLogsExtendSession: "延长会话",
+	ActivityActionLogIn:         "登录",
+	ActivityActionExtendSession: "延长会话",
 }
 
 var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -598,6 +598,6 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsActionUrl:          "アクションURL",
 	ContactFormsPrivacyPolicy:      "プライバシーポリシー",
 
-	ActivityLogsLogIn:         "ログイン",
-	ActivityLogsExtendSession: "セッション延長",
+	ActivityActionLogIn:         "ログイン",
+	ActivityActionExtendSession: "セッション延長",
 }

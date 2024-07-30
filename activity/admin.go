@@ -54,15 +54,6 @@ func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
 	return installed
 }
 
-func getActionLabel(evCtx *web.EventContext, mb *presets.ModelBuilder, action string) string {
-	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-	label := defaultActionLabels(msgr)[action]
-	if label == "" {
-		label = i18n.PT(evCtx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), action)
-	}
-	return label
-}
-
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
 		lb = mb.Listing("CreatedAt", "User", "Action", "ModelKeys", "ModelLabel", "ModelName")
@@ -149,7 +140,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	)
 	lb.Field("Action").Label(Messages_en_US.ModelAction).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		action := obj.(*ActivityLog).Action
-		label := getActionLabel(ctx, mb, action)
+		label := getActionLabel(ctx, action)
 		return h.Td(h.Div().Attr("v-pre", true).Text(label))
 	})
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
@@ -288,7 +279,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				log           = obj.(*ActivityLog)
 				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
-				actionLabel   = getActionLabel(ctx, mb, log.Action)
+				actionLabel   = getActionLabel(ctx, log.Action)
 			)
 			var children []h.HTMLComponent
 			if !hideDetailTop {
