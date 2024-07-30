@@ -79,6 +79,7 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 		elementHover:        true,
 		alwaysShowListLabel: false,
 		isList:              false,
+		disableLabel:        false,
 	}
 	r.editingFB.Model(d.mb.model)
 	r.editingFB.defaults = d.mb.writeFields.defaults
@@ -178,7 +179,8 @@ type SectionBuilder struct {
 	componentEditFunc FieldComponentFunc
 	father            *SectionsBuilder
 
-	isList bool
+	isList       bool
+	disableLabel bool
 	// Only when isList is false, the following param will take effect
 	// control Delete button in the show component
 	componentEditBtnFunc ObjectBoolFunc
@@ -332,6 +334,12 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 
 func (b *SectionBuilder) Label(label string) (r *SectionBuilder) {
 	b.father.Field(b.name).Label(label)
+	b.label = label
+	return b
+}
+
+func (b *SectionBuilder) DisableLabel() (r *SectionBuilder) {
+	b.disableLabel = true
 	return b
 }
 
@@ -398,7 +406,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 	content := h.Div()
-	if b.label != "" {
+	if b.label != "" && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
 		content.AppendChildren(
 			h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2"),
@@ -462,7 +470,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 
 	content := h.Div()
 
-	if b.label != "" {
+	if b.label != "" && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
 		label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 		content.AppendChildren(label)
@@ -568,7 +576,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 	label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 	rows := h.Div()
 
-	if b.alwaysShowListLabel {
+	if b.alwaysShowListLabel && !b.disableLabel {
 		rows.AppendChildren(label)
 	}
 
@@ -577,7 +585,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		reflectutils.ForEach(list, func(elementObj interface{}) {
 			defer func() { i++ }()
 			if i == 0 {
-				if b.label != "" && !b.alwaysShowListLabel {
+				if b.label != "" && !b.alwaysShowListLabel && !b.disableLabel {
 					rows.AppendChildren(label)
 				}
 			}
