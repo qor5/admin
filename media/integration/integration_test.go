@@ -2,6 +2,8 @@ package integration_test
 
 import (
 	"embed"
+	"github.com/qor5/admin/v3/media"
+	"os"
 	"testing"
 
 	"github.com/qor/oss/filesystem"
@@ -76,13 +78,19 @@ func TestCrop(t *testing.T) {
 
 	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
 	m := media_library.MediaLibrary{}
+	m1 := media_library.MediaLibrary{}
 
 	err = m.File.Scan(fh)
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = base.SaveUploadAndCropImage(db, &m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	TestDB.Order("id desc").First(&m1)
 
-	moption := m.GetMediaOption()
+	moption := m1.GetMediaOption()
 	if moption.CropOptions == nil {
 		moption.CropOptions = make(map[string]*base.CropOption)
 	}
@@ -93,13 +101,72 @@ func TestCrop(t *testing.T) {
 		Height: 40,
 	}
 	moption.Crop = true
-	err = m.ScanMediaOptions(moption)
+	err = m1.ScanMediaOptions(moption)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	err = base.SaveUploadAndCropImage(db, &m1)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	var file os.FileInfo
+	if file, err = os.Stat("/tmp/media_test" + m1.File.URL("original")); err != nil {
+		t.Fatalf("open file error %v", err)
+		return
+	}
+	if file.Size() < 2<<10 {
+		t.Fatalf("crop file error %v", file.Size())
+		return
+	}
+	if file, err = os.Stat("/tmp/media_test" + m1.File.URL()); err != nil {
+		t.Fatalf("open file error %v", err)
+		return
+	}
+	if file.Size() == 0 {
+		t.Fatalf("crop file error %v", file.Size())
+		return
+	}
+}
+
+func TestCopy(t *testing.T) {
+	db := setup()
+	f, err := box.ReadFile("testfile.png")
+	if err != nil {
+		panic(err)
+	}
+
+	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
+	m := media_library.MediaLibrary{}
+
+	err = m.File.Scan(fh)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 	err = base.SaveUploadAndCropImage(db, &m)
 	if err != nil {
 		t.Fatal(err)
+		return
 	}
+	oldID := m.ID
+	if m, err = media.CopyMediaLiMediaLibrary(db, int(oldID)); err != nil {
+		t.Fatalf("copy error :%v", err)
+		return
+	}
+	if oldID == m.ID {
+		t.Fatalf("copy failed")
+		return
+	}
+	var file os.FileInfo
+	if file, err = os.Stat("/tmp/media_test" + m.File.URL()); err != nil {
+		t.Fatalf("open file error %v", err)
+		return
+	}
+	if file.Size() == 0 {
+		t.Fatalf("crop file error %v", file.Size())
+		return
+	}
+
 }
