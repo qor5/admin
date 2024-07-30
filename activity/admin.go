@@ -147,13 +147,12 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).User.Name))
 		},
 	)
-	lb.Field("Action").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	lb.Field("Action").Label(Messages_en_US.ModelAction).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		action := obj.(*ActivityLog).Action
 		label := getActionLabel(ctx, mb, action)
 		return h.Td(h.Div().Attr("v-pre", true).Text(label))
 	})
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
-	lb.Field("ModelName").Label(Messages_en_US.ModelName)
 	lb.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
@@ -162,6 +161,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).ModelLabel))
 		},
 	)
+	lb.Field("ModelName").Label(Messages_en_US.ModelName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Td(h.Div().Attr("v-pre", true).Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, obj.(*ActivityLog).ModelName)))
+	})
 
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -300,7 +302,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 								h.Tr(h.Td(h.Text(msgr.ModelUser)), h.Td().Attr("v-pre", true).Text(log.User.Name)),
 								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.UserID)),
 								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(actionLabel)),
-								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
+								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(
+									i18n.T(ctx.R, presets.ModelsI18nModuleKey, obj.(*ActivityLog).ModelName),
+								)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
