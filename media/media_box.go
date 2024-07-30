@@ -913,7 +913,7 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 			return
 		}
 	}
-	m.ID = 0
+	m.Model = gorm.Model{ID: 0}
 	m.File.FileName = fileName
 	err = base.SaveUploadAndCropImage(db, &m)
 	return

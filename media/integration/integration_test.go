@@ -151,6 +151,7 @@ func TestCopy(t *testing.T) {
 		return
 	}
 	oldID := m.ID
+	oldCreatedTime := m.CreatedAt
 	if m, err = media.CopyMediaLiMediaLibrary(db, int(oldID)); err != nil {
 		t.Fatalf("copy error :%v", err)
 		return
@@ -166,6 +167,10 @@ func TestCopy(t *testing.T) {
 	}
 	if file.Size() == 0 {
 		t.Fatalf("crop file error %v", file.Size())
+		return
+	}
+	if m.CreatedAt == oldCreatedTime {
+		t.Fatalf("crop file time error  %v :%v", m.CreatedAt, oldCreatedTime)
 		return
 	}
 
