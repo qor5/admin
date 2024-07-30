@@ -278,7 +278,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			return msgr.VersionsList, nil, nil
 		}).
-		WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			return map[string]string{
 				"Version": msgr.HeaderVersion,

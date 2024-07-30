@@ -104,7 +104,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return msgr.TitleActivityLogs, nil, nil
 	})
 
-	lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 		return map[string]string{
 			"CreatedAt":  msgr.HeaderCreatedAt,

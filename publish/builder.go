@@ -136,7 +136,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 	lb.Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
 	lb.Field(ListingFieldLive).ComponentFunc(liveFunc(db))
-	lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		return map[string]string{
 			ListingFieldDraftCount: msgr.HeaderDraftCount,

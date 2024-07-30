@@ -24,7 +24,7 @@ const (
 	ListingStyleNested ListingStyle = "Nested"
 )
 
-type DisplayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
+type ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
 
 type OrderableField struct {
 	FieldName string
@@ -60,14 +60,14 @@ type ListingBuilder struct {
 	// 3. all data will be returned in one page.
 	disablePagination bool
 
-	orderBy                 string
-	orderableFields         []*OrderableField
-	selectableColumns       bool
-	conditions              []*SQLCondition
-	dialogWidth             string
-	dialogHeight            string
-	keywordSearchOff        bool
-	displayColumnsProcessor DisplayColumnsProcessor
+	orderBy           string
+	orderableFields   []*OrderableField
+	selectableColumns bool
+	conditions        []*SQLCondition
+	dialogWidth       string
+	dialogHeight      string
+	keywordSearchOff  bool
+	columnsProcessor  ColumnsProcessor
 	FieldsBuilder
 
 	once                  sync.Once
@@ -136,20 +136,20 @@ func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) WrapDisplayColumns(w func(in DisplayColumnsProcessor) DisplayColumnsProcessor) (r *ListingBuilder) {
-	if b.displayColumnsProcessor == nil {
-		b.displayColumnsProcessor = w(func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
-			return displayColumns, nil
+func (b *ListingBuilder) WrapColumns(w func(in ColumnsProcessor) ColumnsProcessor) (r *ListingBuilder) {
+	if b.columnsProcessor == nil {
+		b.columnsProcessor = w(func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			return columns, nil
 		})
 	} else {
-		b.displayColumnsProcessor = w(b.displayColumnsProcessor)
+		b.columnsProcessor = w(b.columnsProcessor)
 	}
 	return b
 }
 
-// Deprecated: Use WrapDisplayColumns instead.
-func (b *ListingBuilder) DisplayColumnsProcessor(f DisplayColumnsProcessor) (r *ListingBuilder) {
-	b.displayColumnsProcessor = f
+// Deprecated: Use WrapColumns instead.
+func (b *ListingBuilder) DisplayColumnsProcessor(f ColumnsProcessor) (r *ListingBuilder) {
+	b.columnsProcessor = f
 	return b
 }
 
@@ -363,23 +363,23 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	return
 }
 
-func CustomizeColumnHeader(f func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error), fields ...string) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
+func CustomizeColumnHeader(f func(evCtx *web.EventContext, col *Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error), fields ...string) func(in ColumnsProcessor) ColumnsProcessor {
 	m := lo.SliceToMap(fields, func(field string) (string, struct{}) { return field, struct{}{} })
-	return func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
-		return func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
-			displayColumns, err := in(evCtx, displayColumns)
+	return func(in ColumnsProcessor) ColumnsProcessor {
+		return func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			columns, err := in(evCtx, columns)
 			if err != nil {
 				return nil, err
 			}
 
-			for _, dc := range displayColumns {
+			for _, dc := range columns {
 				if len(m) > 0 {
 					if _, ok := m[dc.Name]; !ok {
 						continue
 					}
 				}
 				w := dc.WrapHeader
-				dc.WrapHeader = func(evCtx *web.EventContext, col *DisplayColumn, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+				dc.WrapHeader = func(evCtx *web.EventContext, col *Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
 					if w != nil {
 						var err error
 						th, err = w(evCtx, col, th)
@@ -390,15 +390,15 @@ func CustomizeColumnHeader(f func(evCtx *web.EventContext, col *DisplayColumn, t
 					return f(evCtx, col, th)
 				}
 			}
-			return displayColumns, nil
+			return columns, nil
 		}
 	}
 }
 
-func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]string, error)) func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
-	return func(in DisplayColumnsProcessor) DisplayColumnsProcessor {
-		return func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error) {
-			displayColumns, err := in(evCtx, displayColumns)
+func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]string, error)) func(in ColumnsProcessor) ColumnsProcessor {
+	return func(in ColumnsProcessor) ColumnsProcessor {
+		return func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			columns, err := in(evCtx, columns)
 			if err != nil {
 				return nil, err
 			}
@@ -407,13 +407,13 @@ func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]strin
 			if err != nil {
 				return nil, err
 			}
-			for _, dc := range displayColumns {
+			for _, dc := range columns {
 				v, ok := m[dc.Name]
 				if ok {
 					dc.Label = v
 				}
 			}
-			return displayColumns, nil
+			return columns, nil
 		}
 	}
 }

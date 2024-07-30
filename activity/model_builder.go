@@ -295,7 +295,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 				),
 			)
 		}).Label(ListFieldLabelNotes)
-		lb.WrapDisplayColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 			return map[string]string{
 				ListFieldNotes: msgr.HeaderNotes,
