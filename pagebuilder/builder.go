@@ -500,11 +500,16 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return vx.VXAutocomplete().Label(msgr.Category).
-			Attr(web.VField(field.Name, p.CategoryID)...).
+		complete := vx.VXAutocomplete().Label(msgr.Category).
 			Multiple(false).Chips(false).
 			Items(categories).ItemText("Path").ItemValue("ID").
 			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+		if p.CategoryID > 0 {
+			complete.Attr(web.VField(field.Name, p.CategoryID)...)
+		} else {
+			complete.Attr(web.VField(field.Name, "")...)
+		}
+		return complete
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
