@@ -399,7 +399,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorSecondary).
+				Class("text-none text-caption font-weight-regular").
+				Attr("@click", "vars.presetsListingDialog=false"),
 		)
 	})
 	lb.FooterAction("OK").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
@@ -407,7 +409,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
-		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantTonal).Size(v.SizeSmall).
+			Class("text-none text-caption font-weight-regular bg-secondary text-on-secondary").Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),
