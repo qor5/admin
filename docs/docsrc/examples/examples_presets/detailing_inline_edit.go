@@ -1,6 +1,8 @@
 package examples_presets
 
 import (
+	"log"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -103,6 +105,32 @@ func PresetsDetailInlineEditInspectTables(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
+func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+
+	cust = b.Model(&Customer{})
+	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
+	dp = cust.Detailing("name_section").Drawer(true)
+	dp.Section("name_section").Label("name must not be empty").Editing("Name").Viewing("Name").Validator(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		if customer.Name == "" {
+			err.GlobalError("customer name must not be empty")
+		}
+		return
+	})
+
+	return
+}
+
 func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	mb *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
@@ -122,6 +150,27 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	dp.Field("CreditCards").Use(ccmb)
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
+	// force ignore ExpireYearMonth column if you need
+	ccmb2.Listing().WrapDisplayColumns(func(in presets.DisplayColumnsProcessor) presets.DisplayColumnsProcessor {
+		return func(evCtx *web.EventContext, displayColumns []*presets.DisplayColumn) ([]*presets.DisplayColumn, error) {
+			displayColumns, err := in(evCtx, displayColumns)
+			if err != nil {
+				return nil, err
+			}
+
+			// You can get the current state of the listing compo this way, if you need.
+			listCompo := presets.ListingCompoFromContext(evCtx.R.Context())
+			log.Printf("ParentID: %v", listCompo.ParentID)
+
+			for _, v := range displayColumns {
+				if v.Name == "ExpireYearMonth" {
+					v.Visible = false
+				}
+			}
+			return displayColumns, nil
+		}
+	})
+
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
 }

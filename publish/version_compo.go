@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/iancoleman/strcase"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -260,7 +261,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		InMenu(false)
 
 	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s_version_list_dialog:*", pm.Info().URIName())),
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+versionListDialogURISuffix))),
 	)
 
 	listingHref := mb.Info().ListingHref()

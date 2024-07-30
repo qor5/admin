@@ -103,7 +103,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.ModelBuilder, db *gorm.DB) {
 	ed := mb.Editing()
-	creating := ed.Creating().Except(VersionsPublishBar)
+	ed.Creating().Except(VersionsPublishBar)
 	// On demand, currently only supported detailing
 	// var fb *presets.FieldBuilder
 	// if !mb.HasDetailing() {
@@ -131,7 +131,6 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 	setter := makeSetVersionSetterFunc(db)
 	ed.WrapSetterFunc(setter)
-	creating.WrapSetterFunc(setter)
 
 	mb.Listing().Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
 	mb.Listing().Field(ListingFieldLive).ComponentFunc(liveFunc(db))

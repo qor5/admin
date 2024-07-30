@@ -30,3 +30,24 @@ func TestPresetsListingKeywordSearchOff(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsListingCustomizationFields(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsListingCustomizationFields(pb, TestDB)
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "WrapDisplayColumns",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/customers", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{`min-width: 123px; color: red;`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

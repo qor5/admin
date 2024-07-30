@@ -306,8 +306,10 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	cl.SearchColumns("users.Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		u := getCurrentUser(ctx.R)
-
+		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(user).SQLConditionHasUnreadNotes(ctx.R.Context(), "users.")
+		if err != nil {
+			panic(err)
+		}
 		return []*vx.FilterItem{
 			{
 				Key:          "created",
@@ -334,7 +336,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			{
 				Key:          "hasUnreadNotes",
 				Invisible:    true,
-				SQLCondition: ab.MustGetModelBuilder(user).SQLConditionHasUnreadNotes(fmt.Sprint(u.ID), "users."),
+				SQLCondition: hasUnreadNotesCondition,
 			},
 			{
 				Key:          "registration_date",

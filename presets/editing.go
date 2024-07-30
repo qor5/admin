@@ -61,12 +61,27 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 
 	if b.mb.creating == nil {
 		b.mb.creating = &EditingBuilder{
-			mb:        b.mb,
-			Fetcher:   b.Fetcher,
-			Setter:    b.Setter,
-			Saver:     b.Saver,
-			Deleter:   b.Deleter,
-			Validator: b.Validator,
+			mb: b.mb,
+			Fetcher: func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
+				return b.Fetcher(obj, id, ctx)
+			},
+			Setter: func(obj interface{}, ctx *web.EventContext) {
+				if b.Setter != nil {
+					b.Setter(obj, ctx)
+				}
+			},
+			Saver: func(obj interface{}, id string, ctx *web.EventContext) error {
+				return b.Saver(obj, id, ctx)
+			},
+			Deleter: func(obj interface{}, id string, ctx *web.EventContext) error {
+				return b.Deleter(obj, id, ctx)
+			},
+			Validator: func(obj interface{}, ctx *web.EventContext) (r web.ValidationErrors) {
+				if b.Validator == nil {
+					return r
+				}
+				return b.Validator(obj, ctx)
+			},
 		}
 	}
 
@@ -277,13 +292,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			notice = web.Scope(
 				VSnackbar(
 					h.Text(text),
-					web.Slot(
-						VBtn("").Variant("text").
-							Attr("@click", "locals.show = false").
-							Children(VIcon("mdi-close")),
-					).Name("actions"),
 				).Location("top").
-					Timeout(-1).
+					Timeout(2000).
 					Color(color).
 					Attr("v-model", "locals.show"),
 			).VSlot("{ locals }").Init(`{ show: true }`)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
@@ -18,17 +20,18 @@ type User struct {
 	Avatar string
 }
 
-type CurrentUserFunc func(ctx context.Context) *User
-
 // @snippet_begin(ActivityBuilder)
-// Builder struct contains all necessary fields
 type Builder struct {
-	models []*ModelBuilder // registered model builders
+	models            []*ModelBuilder // registered model builders
+	installedPresets  sync.Map        // installed presets builders for admin
+	calledAutoMigrate atomic.Bool     // auto migrate flag
 
-	db              *gorm.DB                 // global db
-	logModelInstall presets.ModelInstallFunc // log model install
+	dbPrimitive     *gorm.DB // primitive db
+	db              *gorm.DB // global db with table prefix scope
+	tablePrefix     string
+	logModelInstall presets.ModelInstallFunc // admin preset install
 	permPolicy      *perm.PolicyBuilder      // permission policy
-	currentUserFunc CurrentUserFunc
+	currentUserFunc func(ctx context.Context) (*User, error)
 	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
 }
 
@@ -54,9 +57,9 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 	return ab
 }
 
-// New initializes a new Builder instance with a provided database connection and an optional activity log model.
-func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
+func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) *Builder {
 	ab := &Builder{
+		dbPrimitive:     db,
 		db:              db,
 		currentUserFunc: currentUserFunc,
 		permPolicy: perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
@@ -67,7 +70,19 @@ func New(db *gorm.DB, currentUserFunc CurrentUserFunc) *Builder {
 	return ab
 }
 
-// RegisterModels register mutiple models
+func (ab *Builder) TablePrefix(prefix string) *Builder {
+	if ab.calledAutoMigrate.Load() {
+		panic("please set table prefix before auto migrate")
+	}
+	ab.tablePrefix = prefix
+	if prefix == "" {
+		ab.db = ab.dbPrimitive
+	} else {
+		ab.db = ab.dbPrimitive.Scopes(scopeWithTablePrefix(prefix)).Session(&gorm.Session{})
+	}
+	return ab
+}
+
 func (ab *Builder) RegisterModels(models ...any) *Builder {
 	for _, model := range models {
 		ab.RegisterModel(model)
@@ -75,7 +90,6 @@ func (ab *Builder) RegisterModels(models ...any) *Builder {
 	return ab
 }
 
-// RegisterModel Model register a model and return model builder
 func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	if amb, exist := ab.GetModelBuilder(m); exist {
 		return amb
@@ -104,14 +118,13 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 	amb.IgnoredFields(primaryKeys...)
 
 	if mb, ok := m.(*presets.ModelBuilder); ok {
-		amb.installPresetsModelBuilder(mb)
+		amb.installPresetModelBuilder(mb)
 	}
 
 	ab.models = append(ab.models, amb)
 	return amb
 }
 
-// GetModelBuilder 	get model builder
 func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	if _, ok := v.(*presets.ModelBuilder); ok {
 		return lo.Find(ab.models, func(amb *ModelBuilder) bool {
@@ -124,7 +137,6 @@ func (ab *Builder) GetModelBuilder(v any) (*ModelBuilder, bool) {
 	})
 }
 
-// MustGetModelBuilder 	get model builder
 func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	amb, ok := ab.GetModelBuilder(v)
 	if !ok {
@@ -133,29 +145,34 @@ func (ab *Builder) MustGetModelBuilder(v any) *ModelBuilder {
 	return amb
 }
 
-// GetModelBuilders get all model builders
 func (ab *Builder) GetModelBuilders() []*ModelBuilder {
 	return ab.models
 }
 
 func (b *Builder) AutoMigrate() (r *Builder) {
-	if err := AutoMigrate(b.db); err != nil {
+	if !b.calledAutoMigrate.CompareAndSwap(false, true) {
+		panic("already migrated")
+	}
+	if err := AutoMigrate(b.dbPrimitive, b.tablePrefix); err != nil {
 		panic(err)
 	}
 	return b
 }
 
-func AutoMigrate(db *gorm.DB) error {
+func AutoMigrate(db *gorm.DB, tablePrefix string) error {
+	if tablePrefix != "" {
+		db = db.Scopes(scopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
+	}
 	dst := []any{&ActivityLog{}, &ActivityUser{}}
 	for _, v := range dst {
-		err := db.AutoMigrate(v)
+		err := db.Model(v).AutoMigrate(v)
 		if err != nil {
 			return errors.Wrap(err, "auto migrate")
 		}
 		if vv, ok := v.(interface {
-			AfterMigrate(tx *gorm.DB) error
+			AfterMigrate(tx *gorm.DB, tablePrefix string) error
 		}); ok {
-			err := vv.AfterMigrate(db)
+			err := vv.AfterMigrate(db, tablePrefix)
 			if err != nil {
 				return err
 			}
@@ -183,17 +200,17 @@ func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*Use
 	}), nil
 }
 
-func (ab *Builder) supplyCreators(ctx context.Context, logs []*ActivityLog) error {
-	creatorIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
-		return log.CreatorID
+func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
+	userIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
+		return log.UserID
 	}))
-	creators, err := ab.findUsers(ctx, creatorIDs)
+	users, err := ab.findUsers(ctx, userIDs)
 	if err != nil {
 		return err
 	}
 	for _, log := range logs {
-		if creator, ok := creators[log.CreatorID]; ok {
-			log.Creator = *creator
+		if user, ok := users[log.UserID]; ok {
+			log.User = *user
 		}
 	}
 	return nil
@@ -205,7 +222,7 @@ func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys str
 	if err != nil {
 		return nil, err
 	}
-	if err := ab.supplyCreators(ctx, logs); err != nil {
+	if err := ab.supplyUsers(ctx, logs); err != nil {
 		return nil, err
 	}
 	return logs, nil

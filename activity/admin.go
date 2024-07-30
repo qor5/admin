@@ -7,8 +7,10 @@ import (
 	"net/url"
 
 	"github.com/dustin/go-humanize"
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -26,6 +28,10 @@ const (
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
+	if actual, loaded := ab.installedPresets.LoadOrStore(b, true); loaded && actual.(bool) {
+		return errors.Errorf("activity: preset %q already installed", b.GetURIPrefix())
+	}
+
 	b.GetI18n().
 		RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
@@ -39,53 +45,58 @@ func (ab *Builder) Install(b *presets.Builder) error {
 	return ab.logModelInstall(b, mb)
 }
 
-func defaultActionLabels(msgr *Messages) map[string]string {
-	return map[string]string{
-		"":           msgr.ActionAll,
-		ActionView:   msgr.ActionView,
-		ActionEdit:   msgr.ActionEdit,
-		ActionCreate: msgr.ActionCreate,
-		ActionDelete: msgr.ActionDelete,
-		ActionNote:   msgr.ActionNote,
+func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
+	installed := false
+	valInstalled, ok := ab.installedPresets.Load(pb)
+	if ok {
+		installed = valInstalled.(bool)
 	}
+	return installed
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
 	var (
-		lb = mb.Listing("CreatedAt", "Creator", "Action", "ModelKeys", "ModelLabel", "ModelName")
+		lb = mb.Listing("CreatedAt", "User", "Action", "ModelKeys", "ModelLabel", "ModelName")
 		dp = mb.Detailing("Detail").Drawer(true)
+		eb = mb.Editing()
 	)
 
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(model any, id string, ctx *web.EventContext) (r any, err error) {
-			r, err = in(model, id, ctx)
-			if err != nil {
-				return
-			}
-			log := r.(*ActivityLog)
-			if err := ab.supplyCreators(ctx.R.Context(), []*ActivityLog{log}); err != nil {
-				return nil, err
-			}
-			return log, nil
+	// should use own DataOperator
+
+	op := gorm2op.DataOperator(ab.db)
+	dp.FetchFunc(func(obj any, id string, ctx *web.EventContext) (r any, err error) {
+		r, err = op.Fetch(obj, id, ctx)
+		if err != nil {
+			return r, err
 		}
+		log := r.(*ActivityLog)
+		if err := ab.supplyUsers(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+			return nil, err
+		}
+		return log, nil
 	})
 
-	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
-			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-				Query: "hidden = ?",
-				Args:  []any{false},
-			})
-			r, totalCount, err = in(model, params, ctx)
-			if totalCount <= 0 {
-				return
-			}
-			logs := r.([]*ActivityLog)
-			if err := ab.supplyCreators(ctx.R.Context(), logs); err != nil {
-				return nil, 0, err
-			}
-			return logs, totalCount, nil
+	eb.SaveFunc(func(obj any, id string, ctx *web.EventContext) error {
+		return errors.New("should not be used")
+	})
+	eb.DeleteFunc(func(obj any, id string, ctx *web.EventContext) error {
+		return errors.New("should not be used")
+	})
+
+	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+			Query: "hidden = ?",
+			Args:  []any{false},
+		})
+		r, totalCount, err = op.Search(model, params, ctx)
+		if totalCount <= 0 {
+			return
 		}
+		logs := r.([]*ActivityLog)
+		if err := ab.supplyUsers(ctx.R.Context(), logs); err != nil {
+			return nil, 0, err
+		}
+		return logs, totalCount, nil
 	})
 
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
@@ -96,9 +107,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Text(obj.(*ActivityLog).CreatedAt.Format(timeFormat)))
 		},
 	)
-	lb.Field("Creator").Label(Messages_en_US.ModelCreator).ComponentFunc(
+	lb.Field("User").Label(Messages_en_US.ModelUser).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).Creator.Name))
+			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).User.Name))
 		},
 	)
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
@@ -119,7 +130,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		var actionOptions []*vuetifyx.SelectItem
 		for _, action := range DefaultActions {
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  actionLabels[action],
+				Text:  cmp.Or(actionLabels[action], action),
 				Value: action,
 			})
 		}
@@ -129,27 +140,30 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			panic(err)
 		}
 		for _, action := range actions {
+			if action == ActionLastView {
+				continue
+			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  string(action),
-				Value: string(action),
+				Text:  cmp.Or(actionLabels[action], action),
+				Value: action,
 			})
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		creatorIDs := []string{}
-		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT creator_id AS id").Pluck("id", &creatorIDs).Error
+		userIDs := []string{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT user_id AS id").Pluck("id", &userIDs).Error
 		if err != nil {
 			panic(err)
 		}
-		creators, err := ab.findUsers(ctx.R.Context(), creatorIDs)
+		users, err := ab.findUsers(ctx.R.Context(), userIDs)
 		if err != nil {
 			panic(err)
 		}
-		var creatorOptions []*vuetifyx.SelectItem
-		for _, creator := range creators {
-			creatorOptions = append(creatorOptions, &vuetifyx.SelectItem{
-				Text:  creator.Name,
-				Value: creator.ID,
+		var userOptions []*vuetifyx.SelectItem
+		for _, user := range users {
+			userOptions = append(userOptions, &vuetifyx.SelectItem{
+				Text:  user.Name,
+				Value: user.ID,
 			})
 		}
 
@@ -176,13 +190,13 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				SQLCondition: `created_at %s ?`,
 			},
 		}
-		if len(creatorOptions) > 0 {
+		if len(userOptions) > 0 {
 			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "creator_id",
-				Label:        msgr.FilterCreator,
+				Key:          "user_id",
+				Label:        msgr.FilterUser,
 				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `creator_id %s ?`,
-				Options:      creatorOptions,
+				SQLCondition: `user_id %s ?`,
+				Options:      userOptions,
 			})
 		}
 		if len(modelOptions) > 0 {
@@ -199,17 +213,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	lb.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		filterTabs := []*presets.FilterTab{
+			{
+				Label: msgr.ActionAll,
+				Query: url.Values{},
+			},
+		}
 		actionLabels := defaultActionLabels(msgr)
-		return lo.Map(append([]string{""}, DefaultActions...), func(action string, _ int) *presets.FilterTab {
-			filterTab := &presets.FilterTab{
-				Label: actionLabels[action],
+		for _, action := range DefaultActions {
+			filterTabs = append(filterTabs, &presets.FilterTab{
+				Label: cmp.Or(actionLabels[action], action),
 				Query: url.Values{"action": []string{action}},
-			}
-			if action == "" {
-				filterTab.Query.Del("action")
-			}
-			return filterTab
-		})
+			})
+		}
+		return filterTabs
 	})
 
 	dp.Field("Detail").ComponentFunc(
@@ -228,8 +245,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 					VCardText().Class("pa-0 pt-3").Children(
 						VTable(
 							h.Tbody(
-								h.Tr(h.Td(h.Text(msgr.ModelCreator)), h.Td().Attr("v-pre", true).Text(log.Creator.Name)),
-								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.CreatorID)),
+								h.Tr(h.Td(h.Text(msgr.ModelUser)), h.Td().Attr("v-pre", true).Text(log.User.Name)),
+								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.UserID)),
 								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(log.Action)),
 								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),

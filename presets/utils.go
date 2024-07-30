@@ -1,14 +1,18 @@
 package presets
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"reflect"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -121,4 +125,48 @@ func toValidationErrors(err error) *web.ValidationErrors {
 	vErr := &web.ValidationErrors{}
 	vErr.GlobalError(err.Error())
 	return vErr
+}
+
+func ObjectID(obj any) string {
+	var id string
+	if slugger, ok := obj.(SlugEncoder); ok {
+		id = slugger.PrimarySlug()
+	} else {
+		v, err := reflectutils.Get(obj, "ID")
+		if err == nil {
+			if v == "" {
+				return ""
+			}
+			if reflect.ValueOf(v).IsZero() {
+				return ""
+			}
+			id = fmt.Sprint(v)
+		}
+	}
+	return id
+}
+
+func MustObjectID(obj any) string {
+	id := ObjectID(obj)
+	if id == "" {
+		panic("empty object id")
+	}
+	return id
+}
+
+func JsonCopy(dst, src any) error {
+	data, err := json.Marshal(src)
+	if err != nil {
+		return errors.Wrap(err, "JsonCopy marshal")
+	}
+	if err := json.Unmarshal(data, dst); err != nil {
+		return errors.Wrap(err, "JsonCopy unmarshal")
+	}
+	return nil
+}
+
+func MustJsonCopy(dst, src any) {
+	if err := JsonCopy(dst, src); err != nil {
+		panic(err)
+	}
 }
