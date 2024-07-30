@@ -99,7 +99,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return logs, totalCount, nil
 	})
 
-	lb.TitleComponent(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
+	lb.Title(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 		return msgr.TitleActivityLogs, nil, nil
 	})
@@ -248,7 +248,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return filterTabs
 	})
 
-	dp.TitleComponent(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
+	dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 		return msgr.TitleActivityLog, nil, nil
 	})

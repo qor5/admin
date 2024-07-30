@@ -32,7 +32,7 @@ type DetailingBuilder struct {
 	fetcher            FetchFunc
 	tabPanels          []TabComponentFunc
 	sidePanel          ObjectComponentFunc
-	titleComponentFunc func(evCtx *web.EventContext, obj any, style DetailingStyle, title string) (string, h.HTMLComponent, error)
+	titleFunc          func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
 	SectionsBuilder
@@ -107,8 +107,8 @@ func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 }
 
 // The title must not return empty, and titleCompo can return nil
-func (b *DetailingBuilder) TitleComponent(f func(evCtx *web.EventContext, obj any, style DetailingStyle, currentTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *DetailingBuilder) {
-	b.titleComponentFunc = f
+func (b *DetailingBuilder) Title(f func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *DetailingBuilder) {
+	b.titleFunc = f
 	return b
 }
 
@@ -173,13 +173,13 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	msgr := MustGetMessages(ctx.R)
 	title := msgr.DetailingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, inflection.Singular(b.mb.label)), getPageTitle(obj, id))
-	if b.titleComponentFunc != nil {
+	if b.titleFunc != nil {
 		style, ok := ctx.ContextValue(ctxKeyDetailingStyle{}).(DetailingStyle)
 		if !ok {
 			style = DetailingStylePage
 		}
 
-		title, titleCompo, err := b.titleComponentFunc(ctx, obj, style, title)
+		title, titleCompo, err := b.titleFunc(ctx, obj, style, title)
 		if err != nil {
 			return r, err
 		}

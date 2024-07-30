@@ -274,7 +274,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	lb := mb.Listing(listingFields...).
 		DialogWidth("900px").
-		TitleComponent(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
+		Title(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			return msgr.VersionsList, nil, nil
 		}).

@@ -45,11 +45,7 @@ type ListingBuilder struct {
 	cellWrapperFunc vx.CellWrapperFunc
 	Searcher        SearchFunc
 	searchColumns   []string
-
-	// title is the title of the listing page.
-	// its default value is "Listing ${modelName}".
-	title              string
-	titleComponentFunc func(evCtx *web.EventContext, style ListingStyle, title string) (string, h.HTMLComponent, error)
+	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 
 	// perPage is the number of records per page.
 	// if request query param "per_page" is set, it will be set to that value.
@@ -129,15 +125,9 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 	return b
 }
 
-// Deprecated: Use TitleComponent instead.
-func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
-	b.title = title
-	return b
-}
-
 // The title must not return empty, and titleCompo can return nil
-func (b *ListingBuilder) TitleComponent(f func(evCtx *web.EventContext, style ListingStyle, currentTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
-	b.titleComponentFunc = f
+func (b *ListingBuilder) Title(f func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
+	b.titleFunc = f
 	return b
 }
 
@@ -278,12 +268,9 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 }
 
 func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (title string, titleCompo h.HTMLComponent, err error) {
-	title = b.title
-	if title == "" {
-		title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
-	}
-	if b.titleComponentFunc != nil {
-		return b.titleComponentFunc(evCtx, style, title)
+	title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	if b.titleFunc != nil {
+		return b.titleFunc(evCtx, style, title)
 	}
 	return title, nil, nil
 }

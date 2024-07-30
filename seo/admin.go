@@ -74,7 +74,9 @@ func (b *Builder) Install(pb *presets.Builder) error {
 }
 
 func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
-	listing := seoModel.Listing("Name").Title("SEO")
+	listing := seoModel.Listing("Name").Title(func(evCtx *web.EventContext, style presets.ListingStyle, currentTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		return "SEO", nil, nil
+	})
 	// disable new btn globally, no one can add new SEO record after the server start up.
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return nil
