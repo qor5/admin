@@ -40,7 +40,6 @@ func fileChooser(mb *Builder) web.EventFunc {
 						).Color(ColorBackground).
 							// MaxHeight(64).
 							Flat(true),
-						web.Portal().Name(deleteConfirmPortalName(field)),
 						web.Portal(
 							fileChooserDialogContent(mb, field, ctx, cfg),
 						).Name(dialogContentPortalName(field)),
@@ -275,10 +274,19 @@ func fileComponent(
 	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
 	imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(base.IsImageFormat(f.File.FileName)))
 
-	src := f.File.URL("original")
+	src := f.File.URL()
 	*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
 	*menus = append(*menus,
-		VListItem(h.Text(msgr.DescriptionForAccessibility)).
+		VListItem(h.Text("Copy")).Attr("@click", web.Plaid().
+			EventFunc(CopyFileEvent).
+			Query(ParamField, field).
+			Query(paramTab, tab).
+			Query(ParamCfg, h.JSONString(cfg)).
+			Query(paramParentID, ctx.Param(paramParentID)).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Go()),
+		VListItem(
+			h.Text(msgr.DescriptionForAccessibility)).
 			Attr("@click", web.Plaid().
 				EventFunc(UpdateDescriptionDialogEvent).
 				Query(ParamField, field).
@@ -493,10 +501,11 @@ func imageDialog() h.HTMLComponent {
 	return VDialog(
 		VCard(
 			VBtn("").Icon("mdi-close").
+				Color(ColorSurface).
 				Variant(VariantText).Attr("@click", "vars.imagePreview=false").
 				Class("position-absolute right-0 top-0").Attr("style", "z-index:2"),
 			VImg().Attr(":src", "vars.imageSrc").Width(658),
-		).Class("position-relative"),
+		).Class("position-relative").Color(ColorBlack),
 	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
 }
 
@@ -626,6 +635,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		)
 	}
 	return web.Scope(
+		web.Portal().Name(deleteConfirmPortalName(field)),
 		web.Portal().Name(newFolderDialogPortalName),
 		web.Portal().Name(moveToFolderDialogPortalName),
 		web.Portal().Name(renameDialogPortalName),
@@ -686,8 +696,9 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTypeKey, web.Var("$event")).
 								Go(),
 						).
-						Density(DensityCompact).Variant(FieldVariantSolo),
-				).Cols(3),
+						Density(DensityCompact).Variant(VariantTonal).Flat(true),
+				).Cols(2),
+
 				VCol(
 					VSelect().Items([]selectItem{
 						{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
@@ -701,7 +712,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(ParamCfg, h.JSONString(cfg)).
 								Query(paramOrderByKey, web.Var("$event")).Go(),
 						).
-						Density(DensityCompact).Variant(FieldVariantSolo),
+						Density(DensityCompact).Variant(VariantTonal).Flat(true),
 				).Cols(3),
 				VCol(
 					h.If(

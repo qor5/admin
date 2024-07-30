@@ -24,6 +24,7 @@ const (
 	MoveToFolderDialogEvent      = "mediaLibrary_MoveToFolderDialogEvent"
 	MoveToFolderEvent            = "mediaLibrary_MoveToFolderEvent"
 	NextFolderEvent              = "mediaLibrary_NextFolderEvent"
+	CopyFileEvent                = "mediaLibrary_CopyFileEvent"
 )
 
 func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
@@ -46,4 +47,5 @@ func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
 	hub.RegisterEventFunc(MoveToFolderDialogEvent, moveToFolderDialog(mb))
 	hub.RegisterEventFunc(MoveToFolderEvent, moveToFolder(mb))
 	hub.RegisterEventFunc(NextFolderEvent, nextFolder(mb))
+	hub.RegisterEventFunc(CopyFileEvent, copyFile(mb))
 }

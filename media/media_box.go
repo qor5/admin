@@ -684,7 +684,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 		Body: web.Scope(
 			VDialog(
 				VCard(
-					web.Slot(h.Text("Rename")).Name("title"),
+					web.Slot(h.Text("New Folder")).Name("title"),
 					web.Slot(
 						VSpacer(),
 						VBtn("").Icon("mdi-close").
@@ -697,7 +697,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 						VSpacer(),
 						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
-							web.Plaid().EventFunc(RenameEvent).
+							web.Plaid().EventFunc(CreateFolderEvent).
 								Query(paramTab, ctx.Param(paramTab)).
 								Query(paramParentID, ctx.Param(paramParentID)).
 								Query(ParamField, ctx.Param(ParamField)).
@@ -896,4 +896,45 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		}
 	}
 	return
+}
+
+func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary, err error) {
+	if err = db.First(&m, id).Error; err != nil {
+		return
+	}
+	fileName := m.File.FileName
+	if !m.Folder {
+		var fi base.FileInterface
+		if fi, err = m.File.Retrieve(m.File.URL()); err != nil {
+			return
+		}
+		m.File = media_library.MediaLibraryStorage{}
+		if err = m.File.Scan(fi); err != nil {
+			return
+		}
+	}
+	m.ID = 0
+	m.File.FileName = fileName
+	err = base.SaveUploadAndCropImage(db, &m)
+	return
+}
+
+func copyFile(mb *Builder) web.EventFunc {
+	db := mb.db
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		id := ctx.ParamAsInt(ParamMediaIDS)
+		if _, err = CopyMediaLiMediaLibrary(db, id); err != nil {
+			return
+		}
+		web.AppendRunScripts(&r,
+			web.Plaid().EventFunc(imageJumpPageEvent).
+				Query(paramTab, ctx.Param(paramTab)).
+				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamField, ctx.Param(ParamField)).
+				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Go(),
+		)
+		presets.ShowMessage(&r, "copy success", ColorSuccess)
+		return
+	}
 }
