@@ -9,10 +9,13 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	b.GetI18n().SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)
+
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
