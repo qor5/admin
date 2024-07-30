@@ -133,6 +133,9 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Go() + ";" + pushState.RunPushState() +
 			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
+	renameEvent := web.Plaid().
+		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
+		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -159,10 +162,8 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
 														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
 														Attr("v-if", "element.editShow").
-														Attr("@blur", "element.editShow=false").
-														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
-															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
+														Attr("@blur", "element.editShow=false;"+renameEvent).
+														Attr("@keyup.enter", renameEvent),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
@@ -842,7 +843,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover {
 			  cursor: pointer;
 			}
-			
+
 			.wrapper-shadow:hover .editor-add {
 			  opacity: 1;
 			}
