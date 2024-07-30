@@ -61,6 +61,14 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		eb = mb.Editing()
 	)
 
+	mb.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ActivityLog
+		}
+		return msgr.ActivityLogs
+	})
+
 	// should use own DataOperator
 
 	op := gorm2op.DataOperator(ab.db)
@@ -99,10 +107,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return logs, totalCount, nil
 	})
 
-	lb.Title(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return msgr.TitleActivityLogs, nil, nil
-	})
+	// use mb.LabelName handle this now
+	// lb.Title(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	// 	return msgr.ActivityLogs, nil, nil
+	// })
 
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -248,10 +257,11 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return filterTabs
 	})
 
-	dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-		return msgr.TitleActivityLog, nil, nil
-	})
+	// use mb.LabelName handle this now
+	// dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	// 	return msgr.ActivityLog, nil, nil
+	// })
 
 	dp.Field("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {

@@ -7,10 +7,8 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
@@ -172,7 +170,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	title := msgr.DetailingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, inflection.Singular(b.mb.label)), getPageTitle(obj, id))
+	title := msgr.DetailingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, id))
 	if b.titleFunc != nil {
 		style, ok := ctx.ContextValue(ctxKeyDetailingStyle{}).(DetailingStyle)
 		if !ok {

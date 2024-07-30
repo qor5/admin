@@ -461,11 +461,11 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 	item := VListItem(
 		// VRow(
 		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
-		// 	VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+		// 	VCol(h.Text(m.Info().LabelName(ctx, false))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
 
 		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
 		VListItemTitle(
-			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+			h.Text(m.Info().LabelName(ctx, false)),
 		),
 	).Class("rounded-lg").
 		Value(m.label)

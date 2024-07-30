@@ -8,7 +8,6 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -268,7 +267,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 }
 
 func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (title string, titleCompo h.HTMLComponent, err error) {
-	title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
+	title = MustGetMessages(evCtx.R).ListingObjectTitle(b.mb.Info().LabelName(evCtx, false))
 	if b.titleFunc != nil {
 		return b.titleFunc(evCtx, style, title)
 	}

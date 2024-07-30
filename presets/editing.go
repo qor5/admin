@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -214,7 +212,7 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	msgr := MustGetMessages(ctx.R)
-	title := msgr.EditingObjectTitle(i18n.T(ctx.R, ModelsI18nModuleKey, inflection.Singular(b.mb.label)), "")
+	title := msgr.EditingObjectTitle(b.mb.Info().LabelName(ctx, true), "")
 	r.PageTitle = title
 	obj, err := b.Fetcher(b.mb.NewModel(), "", ctx)
 	if err == ErrRecordNotFound {
@@ -241,10 +239,11 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	}
 
 	buttonLabel := msgr.Create
+	labelName := b.mb.Info().LabelName(ctx, true)
 	var disableUpdateBtn bool
 	var title h.HTMLComponent
 	title = h.Text(msgr.CreatingObjectTitle(
-		i18n.T(ctx.R, ModelsI18nModuleKey, inflection.Singular(b.mb.label)),
+		labelName,
 	))
 	if len(id) > 0 {
 		if obj == nil {
@@ -257,7 +256,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		disableUpdateBtn = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 		buttonLabel = msgr.Update
 		editingTitleText := msgr.EditingObjectTitle(
-			i18n.T(ctx.R, ModelsI18nModuleKey, inflection.Singular(b.mb.label)),
+			labelName,
 			getPageTitle(obj, id))
 		if b.editingTitleFunc != nil {
 			title = b.editingTitleFunc(obj, editingTitleText, ctx)
