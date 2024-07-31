@@ -215,7 +215,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		"CampaignDetail",
 	)
 	detail.Section("CampaignDetail").Editing("Title").
-		Validator(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			c := obj.(*Campaign)
 			if c.Title == "" {
 				err.GlobalError("title could not be empty")
