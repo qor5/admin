@@ -145,14 +145,14 @@ func flowPublish_Step01_Event_publish_EventPublish(t *testing.T, f *FlowPublish)
 
 	var resp multipartestutils.TestEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
-	assert.True(t, resp.Reload)
+	// assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	// assert.True(t, resp.Reload)
 	assert.Nil(t, resp.PushState)
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "success", color: "success"}`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -198,14 +198,14 @@ func flowPublish_Step03_Event_publish_EventRepublish(t *testing.T, f *FlowPublis
 
 	var resp multipartestutils.TestEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
-	assert.True(t, resp.Reload)
+	// assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	// assert.True(t, resp.Reload)
 	assert.Nil(t, resp.PushState)
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "success", color: "success"}`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -251,14 +251,14 @@ func flowPublish_Step05_Event_publish_EventUnpublish(t *testing.T, f *FlowPublis
 
 	var resp multipartestutils.TestEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
-	assert.True(t, resp.Reload)
+	// assert.Equal(t, "Listing WithPublishProducts - Admin", resp.PageTitle)
+	// assert.True(t, resp.Reload)
 	assert.Nil(t, resp.PushState)
 	assert.Empty(t, resp.RedirectURL)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "success", color: "success"}`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Unpublish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }

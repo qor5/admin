@@ -128,7 +128,7 @@ func schedule(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		web.AppendRunScripts(&r, "locals.schedulePublishDialog = false")
 		r.Emit(mb.NotifModelsUpdated(), presets.PayloadModelsUpdated{
 			Ids:    []string{slug},
-			Models: []any{obj},
+			Models: map[string]any{slug: obj},
 		})
 		return r, nil
 	}

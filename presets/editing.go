@@ -469,12 +469,14 @@ func (b *EditingBuilder) doUpdate(
 	if id == "" {
 		r.Emit(
 			b.mb.NotifModelsCreated(),
-			PayloadModelsCreated{Models: []any{obj}},
+			PayloadModelsCreated{
+				Models: []any{obj},
+			},
 		)
 	} else {
 		r.Emit(
 			b.mb.NotifModelsUpdated(),
-			PayloadModelsUpdated{Ids: []string{id}, Models: []any{obj}},
+			PayloadModelsUpdated{Ids: []string{id}, Models: map[string]any{id: obj}},
 		)
 	}
 

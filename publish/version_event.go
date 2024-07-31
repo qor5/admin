@@ -84,7 +84,9 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 		}
 
 		web.AppendRunScripts(&r, "locals.commonConfirmDialog = false")
-		r.Emit(mb.NotifModelsCreated(), presets.PayloadModelsCreated{Models: []any{obj}})
+		r.Emit(mb.NotifModelsCreated(), presets.PayloadModelsCreated{
+			Models: []any{obj},
+		})
 		r.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: slug})
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
@@ -155,7 +157,7 @@ func renameVersion(mb *presets.ModelBuilder) web.EventFunc {
 		web.AppendRunScripts(&r, "locals.renameVersionDialog = false")
 		r.Emit(mb.NotifModelsUpdated(), presets.PayloadModelsUpdated{
 			Ids:    []string{id},
-			Models: []any{obj},
+			Models: map[string]any{id: obj},
 		})
 		return
 	}
