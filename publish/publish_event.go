@@ -3,7 +3,9 @@ package publish
 import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"gorm.io/gorm"
 )
 
@@ -35,8 +37,9 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, act
 		if script := ctx.R.FormValue(ParamScriptAfterPublish); script != "" {
 			web.AppendRunScripts(&r, script)
 		} else {
-			presets.ShowMessage(&r, "success", "")
-			r.Reload = true
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			presets.ShowMessage(&r, msgr.SuccessfullyPublish, v.ColorSuccess)
+			web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
 		}
 		return
 	}
@@ -67,8 +70,9 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 			}
 		}
 
-		presets.ShowMessage(&r, "success", "")
-		r.Reload = true
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		presets.ShowMessage(&r, msgr.SuccessfullyUnPublish, v.ColorSuccess)
+		web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
 		return
 	}
 }

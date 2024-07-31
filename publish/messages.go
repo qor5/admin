@@ -29,6 +29,8 @@ type Messages struct {
 	SwitchedToNewVersion                    string
 	SuccessfullyCreated                     string
 	SuccessfullyRename                      string
+	SuccessfullyPublish                     string
+	SuccessfullyUnPublish                   string
 	OnlineVersion                           string
 	VersionsList                            string
 	AllVersions                             string
@@ -85,6 +87,8 @@ var Messages_en_US = &Messages{
 	SwitchedToNewVersion:                    "Switched To New Version",
 	SuccessfullyCreated:                     "Successfully Created",
 	SuccessfullyRename:                      "Successfully Rename",
+	SuccessfullyPublish:                     "Successfully Publish",
+	SuccessfullyUnPublish:                   "Successfully Unpublish",
 	OnlineVersion:                           "Online Version",
 	VersionsList:                            "Versions List",
 	AllVersions:                             "All versions",
@@ -136,6 +140,8 @@ var Messages_zh_CN = &Messages{
 	SwitchedToNewVersion:                    "切换到新版本",
 	SuccessfullyCreated:                     "成功创建",
 	SuccessfullyRename:                      "成功命名",
+	SuccessfullyPublish:                     "成功发布",
+	SuccessfullyUnPublish:                   "已取消发布",
 	OnlineVersion:                           "在线版本",
 	VersionsList:                            "版本列表",
 	AllVersions:                             "所有版本",
@@ -187,6 +193,8 @@ var Messages_ja_JP = &Messages{
 	SwitchedToNewVersion:                    "新規バージョンに変更する",
 	SuccessfullyCreated:                     "作成に成功しました",
 	SuccessfullyRename:                      "名付けに成功しました",
+	SuccessfullyPublish:                     "公開に成功しました",
+	SuccessfullyUnPublish:                   "非公開に成功しました",
 	OnlineVersion:                           "オンラインバージョン",
 	VersionsList:                            "バージョンリスト",
 	AllVersions:                             "全てのバージョン",
