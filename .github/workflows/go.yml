@@ -49,7 +49,7 @@ jobs:
         sudo apt-get -y install libvips-dev
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v3
       with:
         aws-region: ap-northeast-1
         role-to-assume: arn:aws:iam::475867236237:role/qor5-test-example-ci-github-actions-upload-assets
