@@ -43,7 +43,6 @@ type Builder struct {
 	homePageLayoutConfig                  *LayoutConfig
 	notFoundPageLayoutConfig              *LayoutConfig
 	brandFunc                             ComponentFunc
-	pageTitleFunc                         ComponentFunc
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
@@ -205,11 +204,6 @@ func (b *Builder) NotFoundFunc(v web.PageFunc) (r *Builder) {
 
 func (b *Builder) BrandFunc(v ComponentFunc) (r *Builder) {
 	b.brandFunc = v
-	return b
-}
-
-func (b *Builder) PageTitleFunc(v ComponentFunc) (r *Builder) {
-	b.pageTitleFunc = v
 	return b
 }
 
@@ -1010,30 +1004,26 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		var pageTitleComp h.HTMLComponent
-		if b.pageTitleFunc != nil {
-			pageTitleComp = b.pageTitleFunc(ctx)
+		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
+		if !ok {
+			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+
 		} else {
-			innerPageTitleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
-			if !ok {
-				innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
-			} else {
-				ctx.WithContextValue(ctxPageTitleComponent, nil)
-			}
-			actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
-			pageTitleComp = h.Div(
-				VAppBarNavIcon().
-					Density("compact").
-					Class("mr-2").
-					Attr("v-if", "!vars.navDrawer").
-					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				h.Div(
-					innerPageTitleCompo,
-				).Class("mr-auto"),
-				h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
-					return h.Div().Id(actionsComponentTeleportToID)
-				}),
-			).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
+			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
+		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
+		pageTitleComp = h.Div(
+			VAppBarNavIcon().
+				Density("compact").
+				Class("mr-2").
+				Attr("v-if", "!vars.navDrawer").
+				On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+			innerPageTitleCompo,
+			VSpacer(),
+			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
+				return h.Div().Id(actionsComponentTeleportToID)
+			}),
+		).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
 		pr.Body = VCard(
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).

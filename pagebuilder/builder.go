@@ -602,60 +602,24 @@ func (b *Builder) configDetailLayoutFunc(
 	pm *presets.ModelBuilder,
 	db *gorm.DB,
 ) {
-	oldDetailLayout := pb.GetDetailLayoutFunc()
-	oldLayout := pb.GetLayoutFunc()
-	pb.LayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
-		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			pb.PageTitleFunc(nil)
-			return oldLayout(in, cfg)(ctx)
-		}
-	})
-
 	// change old detail layout
-	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
-		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			pb.PageTitleFunc(nil)
-			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") {
-				pr, err = oldDetailLayout(in, cfg)(ctx)
-				return
-			}
-			id := ctx.Param(presets.ParamID)
-			if id == "" {
-				return pb.DefaultNotFoundPageFunc(ctx)
-			}
+	pm.Detailing().AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return publish.DefaultVersionBar(db)(obj, ctx)
 
-			obj := pm.NewModel()
-			obj, err = pm.Detailing().GetFetchFunc()(obj, id, ctx)
-			if err != nil {
-				if errors.Is(err, presets.ErrRecordNotFound) {
-					return pb.DefaultNotFoundPageFunc(ctx)
-				}
-				return
-			}
-			var pageAppbarContent []h.HTMLComponent
-			pageAppbarContent = h.Components(
-				VAppBarNavIcon().
-					Density(DensityCompact).
-					Class("mr-2").
-					Attr("v-if", "!vars.navDrawer").
-					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				h.Div(
-					VToolbarTitle(
-						b.GetPageTitle()(ctx),
-					),
-				).Class("mr-auto"),
-				VSpacer(),
-				publish.DefaultVersionBar(db)(obj, ctx),
-			)
-
-			pb.PageTitleFunc(func(ctx *web.EventContext) h.HTMLComponent {
-				return h.Div(
-					pageAppbarContent...,
-				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px")
-			})
-			pr, err = oldDetailLayout(in, cfg)(ctx)
-			return
-		}
+	})
+	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		var pageAppbarContent []h.HTMLComponent
+		pageAppbarContent = h.Components(
+			VToolbarTitle(
+				b.GetPageTitle()(ctx),
+			),
+			VSpacer(),
+			publish.DefaultVersionBar(db)(obj, ctx),
+		)
+		titleCompo = h.Div(
+			pageAppbarContent...,
+		).Class("d-flex align-center  justify-space-between  w-100")
+		return
 	})
 	return
 }
