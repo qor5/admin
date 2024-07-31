@@ -266,7 +266,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 							Attr("@click", web.Plaid().
 								EventFunc(DoDeleteEvent).
 								Query(paramTab, ctx.Param(paramTab)).
-								Query(paramParentID, ctx.Param(paramParentID)).
+								Query(ParamParentID, ctx.Param(ParamParentID)).
 								Query(ParamField, field).
 								Query(ParamMediaIDS, ids).
 								Query(ParamCfg, cfg).
@@ -549,7 +549,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Query(paramTab, ctx.Param(paramTab)).
-				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamField, ctx.Param(ParamField)).
 				Query(ParamCfg, ctx.Param(ParamCfg)).
 				Go())
@@ -579,7 +579,7 @@ func rename(mb *Builder) web.EventFunc {
 			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Query(paramTab, ctx.Param(paramTab)).
-				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamField, ctx.Param(ParamField)).
 				Query(ParamCfg, ctx.Param(ParamCfg)).
 				Go())
@@ -610,7 +610,7 @@ func createFolder(mb *Builder) web.EventFunc {
 		}
 		r.RunScript = web.Plaid().EventFunc(imageJumpPageEvent).
 			Query(paramTab, ctx.Param(paramTab)).
-			Query(paramParentID, ctx.Param(paramParentID)).
+			Query(ParamParentID, ctx.Param(ParamParentID)).
 			Query(ParamField, ctx.Param(ParamField)).
 			Query(ParamCfg, ctx.Param(ParamCfg)).
 			Go()
@@ -676,7 +676,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 								Attr("@click",
 									web.Plaid().EventFunc(RenameEvent).
 										Query(paramTab, ctx.Param(paramTab)).
-										Query(paramParentID, ctx.Param(paramParentID)).
+										Query(ParamParentID, ctx.Param(ParamParentID)).
 										Query(ParamField, ctx.Param(ParamField)).
 										Query(ParamCfg, ctx.Param(ParamCfg)).
 										Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
@@ -711,7 +711,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
 							web.Plaid().EventFunc(CreateFolderEvent).
 								Query(paramTab, ctx.Param(paramTab)).
-								Query(paramParentID, ctx.Param(paramParentID)).
+								Query(ParamParentID, ctx.Param(ParamParentID)).
 								Query(ParamField, ctx.Param(ParamField)).
 								Query(ParamCfg, ctx.Param(ParamCfg)).
 								Go(),
@@ -746,7 +746,7 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 							VBtn("Ok").Color(ColorPrimary).Attr("@click",
 								web.Plaid().EventFunc(UpdateDescriptionEvent).
 									Query(paramTab, ctx.Param(paramTab)).
-									Query(paramParentID, ctx.Param(paramParentID)).
+									Query(ParamParentID, ctx.Param(ParamParentID)).
 									Query(ParamField, ctx.Param(ParamField)).
 									Query(ParamCfg, ctx.Param(ParamCfg)).
 									Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
@@ -790,7 +790,7 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 								Attr("@click", web.Plaid().
 									EventFunc(MoveToFolderEvent).
 									Query(paramTab, ctx.Param(paramTab)).
-									Query(paramParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
+									Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
 									Query(ParamField, ctx.Param(ParamField)).
 									Query(ParamCfg, ctx.Param(ParamCfg)).
 									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
@@ -829,7 +829,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		r.RunScript = web.Plaid().
 			EventFunc(imageJumpPageEvent).
 			Query(paramTab, ctx.Param(paramTab)).
-			Query(paramParentID, selectFolderID).
+			Query(ParamParentID, selectFolderID).
 			Query(ParamField, ctx.Param(ParamField)).
 			Query(ParamCfg, ctx.Param(ParamCfg)).
 			Go()
@@ -911,6 +911,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 }
 
 func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary, err error) {
+
 	if err = db.First(&m, id).Error; err != nil {
 		return
 	}
@@ -947,7 +948,7 @@ func copyFile(mb *Builder) web.EventFunc {
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Query(paramTab, ctx.Param(paramTab)).
-				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamField, ctx.Param(ParamField)).
 				Query(ParamCfg, ctx.Param(ParamCfg)).
 				Go(),
