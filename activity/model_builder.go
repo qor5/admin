@@ -68,8 +68,10 @@ func emitLogCreated(evCtx *web.EventContext, log *ActivityLog) {
 			if err = in(ctx, r); err != nil {
 				return
 			}
+			id := fmt.Sprint(log.ID)
 			r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
-				Models: []any{log},
+				Ids:    []string{id},
+				Models: map[string]any{id: log},
 			})
 			return
 		}
