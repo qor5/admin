@@ -62,7 +62,6 @@ const (
 	paramOrderByKey = "order_by"
 	paramTypeKey    = "type"
 	paramTab        = "tab"
-	paramParentID   = "parent_id"
 
 	orderByCreatedAt     = "created_at"
 	orderByCreatedAtDESC = "created_at_desc"
@@ -283,7 +282,7 @@ func fileComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(paramParentID, ctx.Param(paramParentID)).
+			Query(ParamParentID, ctx.Param(ParamParentID)).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
 		VListItem(
@@ -293,7 +292,7 @@ func fileComponent(
 				Query(ParamField, field).
 				Query(paramTab, tab).
 				Query(ParamCfg, h.JSONString(cfg)).
-				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Go()),
 	)
@@ -358,7 +357,7 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(paramParentID, ctx.Param(paramParentID)).
+			Query(ParamParentID, ctx.Param(ParamParentID)).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
 		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids=[%v]", f.ID)),
@@ -368,7 +367,7 @@ func fileOrFolderComponent(
 				Query(ParamField, field).
 				Query(paramTab, tab).
 				Query(ParamCfg, h.JSONString(cfg)).
-				Query(paramParentID, ctx.Param(paramParentID)).
+				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Go())),
 	}
@@ -380,14 +379,15 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(paramParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
+			Query(ParamParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
+		if inMediaLibrary {
+			clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, f.ID).RunPushState()
+		}
 	} else {
 		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
 
 	}
-	if inMediaLibrary {
-		clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, f.ID).RunPushState()
-	}
+
 	return VCard(
 		VCheckbox().
 			Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
@@ -483,7 +483,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 	var clickEvent string
 
 	if inMediaLibrary {
-		clickEvent += web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, currentID).RunPushState() + ";"
+		clickEvent += web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, currentID).RunPushState() + ";"
 	}
 
 	clickEvent += web.Plaid().
@@ -491,7 +491,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 		Query(paramTab, ctx.Param(paramTab)).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
-		Query(paramParentID, currentID).
+		Query(ParamParentID, currentID).
 		Go()
 
 	item.Attr("@click.prevent", clickEvent)
@@ -503,9 +503,8 @@ func imageDialog() h.HTMLComponent {
 	return VDialog(
 		VCard(
 			VBtn("").Icon("mdi-close").
-				Color(ColorSurface).
-				Variant(VariantText).Attr("@click", "vars.imagePreview=false").
-				Class("position-absolute right-0 top-0").Attr("style", "z-index:2"),
+				Variant(VariantPlain).Attr("@click", "vars.imagePreview=false").
+				Class("position-absolute right-0 top-0").Attr("style", "z-index:2;"),
 			VImg().Attr(":src", "vars.imageSrc").Width(658),
 		).Class("position-relative").Color(ColorBlack),
 	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
@@ -520,7 +519,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		tab            = ctx.Param(paramTab)
 		orderByVal     = ctx.Param(paramOrderByKey)
 		typeVal        = ctx.Param(paramTypeKey)
-		parentID       = ctx.ParamAsInt(paramParentID)
+		parentID       = ctx.ParamAsInt(ParamParentID)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
 		wh             = db.Model(&media_library.MediaLibrary{})
@@ -627,7 +626,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Go()
 	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
 	if inMediaLibrary {
-		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{paramParentID}).Query(paramTab, web.Var("$event")).RunPushState()
+		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 
 	for _, f := range files {
@@ -701,7 +700,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 									Query(paramTab, tab).
 									Query(ParamField, field).
 									Query(ParamCfg, h.JSONString(cfg)).
-									Query(paramParentID, ctx.Param(paramParentID)).Go()),
+									Query(ParamParentID, ctx.Param(ParamParentID)).Go()),
 					),
 					h.If(mb.uploadIsAllowed(ctx.R) == nil,
 						h.Div(
@@ -739,7 +738,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							FieldValue(currentPageName(field), web.Var("$event")).
 							EventFunc(imageJumpPageEvent).
 							Query(paramTab, tab).
-							Query(paramParentID, parentID).
+							Query(ParamParentID, parentID).
 							Query(ParamField, field).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Go()),
@@ -774,7 +773,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 						Attr("@click", web.Plaid().
 							EventFunc(DeleteConfirmationEvent).
 							Query(ParamField, field).
-							Query(paramParentID, parentID).
+							Query(ParamParentID, parentID).
 							Query(paramTab, tab).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
@@ -800,7 +799,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 	} else {
 		clickEvent = clickEvent.
 			Query(paramTab, web.Var("vars.media_tab")).
-			Query(paramParentID, web.Var("vars.media_parent_id"))
+			Query(ParamParentID, web.Var("vars.media_parent_id"))
 	}
 
 	return web.Scope(
