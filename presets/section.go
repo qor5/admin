@@ -280,7 +280,7 @@ func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
 	return b
 }
 
-func (b *SectionBuilder) Validator(v ValidateFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) ValidateFunc(v ValidateFunc) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
