@@ -5,8 +5,7 @@ import (
 )
 
 type PayloadModelsCreated struct {
-	Ids    []string       `json:"ids"`
-	Models map[string]any `json:"models"`
+	Models []any `json:"models"`
 }
 
 func (mb *ModelBuilder) NotifModelsCreated() string {
