@@ -108,7 +108,30 @@ func TestPageBuilder(t *testing.T) {
 				`presets_Edit`,
 			},
 		},
-
+		{
+			Name:  "Page New Title Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages?__execute_event__=presets_Update").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Title"},
+		},
+		{
+			Name:  "Category New Title Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/categories?__execute_event__=presets_Update").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name is required"},
+		},
 		{
 			Name:  "Add a new page",
 			Debug: true,
