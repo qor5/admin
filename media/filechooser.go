@@ -735,9 +735,11 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					VPagination().
 						Length(pagesCount).
 						ModelValue(int(currentPageInt)).
-						Attr("@input", web.Plaid().
+						Attr("@update:model-value", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
 							EventFunc(imageJumpPageEvent).
+							Query(paramTab, tab).
+							Query(paramParentID, parentID).
 							Query(ParamField, field).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Go()),
