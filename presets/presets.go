@@ -1062,7 +1062,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							toolbar,
 							VCard(
 								menu,
-							).Class("ma-4").Variant(VariantText),
+							).Class("menu-content my-4 ml-4 pr-4").Variant(VariantText),
 						),
 						// VDivider(),
 						profile,
