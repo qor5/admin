@@ -98,7 +98,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.DisplayName)
 
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
@@ -106,7 +105,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Label:           inflection.Plural(strcase.ToKebab(c.ModelName)),
 				ModelName:       c.ModelName,
 				ModelID:         strconv.Itoa(int(c.ModelID)),
-				DisplayName:     displayName,
+				DisplayName:     c.DisplayName,
 				ContainerID:     strconv.Itoa(int(c.ID)),
 				URL:             b.builder.ContainerByName(c.ModelName).mb.Info().ListingHref(),
 				Shared:          c.Shared,
@@ -133,6 +132,9 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Go() + ";" + pushState.RunPushState() +
 			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
+	renameEvent := web.Plaid().
+		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
+		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -159,10 +161,8 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
 														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
 														Attr("v-if", "element.editShow").
-														Attr("@blur", "element.editShow=false").
-														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
-															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
+														Attr("@blur", "element.editShow=false;"+renameEvent).
+														Attr("@keyup.enter", renameEvent),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
@@ -231,7 +231,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		newContainerID, err = b.addSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
-		newModelId, newContainerID, err = b.addContainerToPage(pageID, containerID, pageVersion, locale, modelName)
+		newModelId, newContainerID, err = b.addContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName)
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
@@ -650,7 +650,7 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 	return wh.Where("locale_code = ?", locale)
 }
 
-func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
+func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	model := b.builder.ContainerByName(modelName).NewModel()
 	var dc DemoContainer
 	b.db.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
@@ -694,12 +694,16 @@ func (b *ModelBuilder) addContainerToPage(pageID int, containerID, pageVersion, 
 		displayOrder = maxOrder.Float64
 	}
 	modelID = reflectutils.MustGet(model, "ID").(uint)
+	displayName := modelName
+	if b.builder.l10n != nil {
+		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+	}
 	container := Container{
 		PageID:        uint(pageID),
 		PageVersion:   pageVersion,
 		ModelName:     modelName,
 		PageModelName: b.name,
-		DisplayName:   modelName,
+		DisplayName:   displayName,
 		ModelID:       modelID,
 		DisplayOrder:  displayOrder + 1,
 		Locale: l10n.Locale{
@@ -810,7 +814,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  opacity: 0;
 			  top: 0;
 			  left: 0;
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset;
 			}
 			
 			
@@ -842,7 +846,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover {
 			  cursor: pointer;
 			}
-			
+
 			.wrapper-shadow:hover .editor-add {
 			  opacity: 1;
 			}
@@ -850,7 +854,6 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover .editor-add div {
 			  height: 6px;
 			}
-			
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
@@ -887,18 +890,23 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
               white-space: nowrap;
 			  letter-spacing: 0.04px;	
 			}
-			
+            .unfocused .editor-add {
+			  opacity: 0 !important;
+			}
+   			.unfocused .inner-shadow{
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset !important;
+			}
 			.highlight .editor-bar {
 			  opacity: 1;
               pointer-events: auto;
 			}
-			
+
 			.highlight .editor-add {
 			  opacity: 1;
 			}
-			
 			.highlight .inner-shadow {
 			  opacity: 1;
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
 			}
 `))
 		}
@@ -1006,13 +1014,12 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 		if err != nil {
 			return
 		}
-		displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, ec.container.DisplayName)
 		input := RenderInput{
 			IsEditor:    isEditor,
 			IsReadonly:  isReadonly,
 			Device:      device,
 			ContainerId: ec.container.PrimarySlug(),
-			DisplayName: displayName,
+			DisplayName: ec.container.DisplayName,
 		}
 		pure := ec.builder.renderFunc(obj, &input, ctx)
 
@@ -1058,13 +1065,12 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 
 	device, _ := b.builder.getDevice(ctx)
 
-	displayName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 	input := RenderInput{
 		IsEditor:    isEditor,
 		IsReadonly:  IsReadonly,
 		Device:      device,
 		ContainerId: "",
-		DisplayName: displayName,
+		DisplayName: modelName,
 	}
 	obj := containerBuilder.NewModel()
 	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error

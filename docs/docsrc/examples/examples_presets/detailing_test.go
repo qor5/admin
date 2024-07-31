@@ -210,3 +210,55 @@ func TestPresetsDetailActionsComponent(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailSectionValidate(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailInlineEditValidate(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "section validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&detailField=name_section&id=12").
+					AddField("name_section.Name", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"message: \"customer name must not be empty\""},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailSectionLabel(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailSectionLabel(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "section label",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_DetailingDrawer&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"section_with_label", "section_list_with_label"},
+			ExpectPortalUpdate0NotContains:     []string{"section_without_label", "section_list_without_label"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

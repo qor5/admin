@@ -43,7 +43,7 @@ func initPermission(b *presets.Builder, db *gorm.DB) {
 				switch v := obj.(type) {
 				case *activity.ActivityLog:
 					u := getCurrentUser(r)
-					if fmt.Sprint(u.GetID()) == v.CreatorID {
+					if fmt.Sprint(u.GetID()) == v.UserID {
 						c["is_authorized"] = true
 					} else {
 						c["is_authorized"] = false

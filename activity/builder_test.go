@@ -16,12 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var (
-	db          *gorm.DB
-	pb          = presets.New()
-	pageModel   = pb.Model(&Page{})
-	widgetModel = pb.Model(&Widget{})
-)
+var db *gorm.DB
 
 type (
 	Page struct {
@@ -55,7 +50,7 @@ func TestMain(m *testing.M) {
 	db = env.DB
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = AutoMigrate(db); err != nil {
+	if err = AutoMigrate(db, ""); err != nil {
 		panic(err)
 	}
 	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
@@ -71,8 +66,8 @@ var currentUser = &User{
 	Avatar: "https://i.pravatar.cc/300",
 }
 
-func testCurrentUser(ctx context.Context) *User {
-	return currentUser
+func testCurrentUser(ctx context.Context) (*User, error) {
+	return currentUser, nil
 }
 
 func resetDB() {
@@ -82,9 +77,13 @@ func resetDB() {
 }
 
 func TestModelKeys(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+	widgetModel := pb.Model(&Widget{})
+
 	resetDB()
 
-	if err := AutoMigrate(db); err != nil {
+	if err := AutoMigrate(db, ""); err != nil {
 		panic(err)
 	}
 
@@ -124,6 +123,9 @@ func TestModelKeys(t *testing.T) {
 }
 
 func TestModelLink(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).LinkFunc(func(v any) string {
@@ -145,6 +147,9 @@ func TestModelLink(t *testing.T) {
 }
 
 func TestModelTypeHanders(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, new any, prefixField string) (diffs []Diff) {
@@ -226,7 +231,10 @@ func TestModelTypeHanders(t *testing.T) {
 	}
 }
 
-func TestCreatorInferface(t *testing.T) {
+func TestUser(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 
@@ -239,12 +247,14 @@ func TestCreatorInferface(t *testing.T) {
 	if err := db.First(record).Error; err != nil {
 		t.Fatal(err)
 	}
-	if record.CreatorID != "1" {
-		t.Errorf("want the user id %v, but got %v", "1", record.CreatorID)
+	if record.UserID != "1" {
+		t.Errorf("want the user id %v, but got %v", "1", record.UserID)
 	}
 }
 
 func TestGetActivityLogs(t *testing.T) {
+	pb := presets.New()
+
 	builder := New(db, testCurrentUser)
 	pb.Use(builder)
 
@@ -286,11 +296,13 @@ func TestGetActivityLogs(t *testing.T) {
 		if log.ModelKeys != "1:v1" {
 			t.Errorf("expected model keys '1:v1', but got %s", log.ModelKeys)
 		}
-		require.Equal(t, log.CreatorID, currentUser.ID)
+		require.Equal(t, log.UserID, currentUser.ID)
 	}
 }
 
 func TestMutliModelBuilder(t *testing.T) {
+	pb := presets.New()
+
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
 	pb.DataOperator(gorm2op.DataOperator(db))
@@ -312,8 +324,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add create record
 	db.Create(data1)
 	builder.OnCreate(ctx, data1)
-	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
-	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 	{
 		for _, id := range []string{"1", "2"} {
 			var log ActivityLog
@@ -338,11 +350,11 @@ func TestMutliModelBuilder(t *testing.T) {
 
 	data2.Title = "test2-1"
 	data2.Description = "Description2-1"
-	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 
 	data3.Title = "test3-1"
 	data3.Description = "Description3-1"
-	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 
 	{
 		var log1 ActivityLog
@@ -381,8 +393,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add delete record
 	db.Delete(data1)
 	builder.OnDelete(ctx, data1)
-	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
-	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "creator", "Test User"))})
+	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 	{
 		for _, id := range []string{"1", "3"} {
 			var log ActivityLog

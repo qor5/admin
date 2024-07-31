@@ -166,3 +166,24 @@ func PresetsEditingCustomizationTabs(b *presets.Builder, db *gorm.DB) (
 }
 
 // @snippet_end
+
+func PresetsEditingValidate(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	db.AutoMigrate(&Company{})
+	mb = b.Model(&Company{})
+	mb.Listing("ID", "Name")
+	mb.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		company := obj.(*Company)
+		if company.Name == "" {
+			err.GlobalError("name must not be empty")
+		}
+		return
+	})
+
+	return
+}

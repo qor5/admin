@@ -274,10 +274,20 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	lb := mb.Listing(listingFields...).
 		DialogWidth("900px").
-		TitleFunc(func(evCtx *web.EventContext) (string, error) {
+		Title(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
-			return msgr.VersionsList, nil
+			return msgr.VersionsList, nil, nil
 		}).
+		WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			return map[string]string{
+				"Version": msgr.HeaderVersion,
+				"Status":  msgr.HeaderStatus,
+				"StartAt": msgr.HeaderStartAt,
+				"EndAt":   msgr.HeaderEndAt,
+				"Option":  msgr.HeaderOption,
+			}, nil
+		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -389,7 +399,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorSecondary).
+				Class("text-none text-caption font-weight-regular").
+				Attr("@click", "vars.presetsListingDialog=false"),
 		)
 	})
 	lb.FooterAction("OK").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
@@ -397,7 +409,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
-		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantTonal).Size(v.SizeSmall).
+			Class("text-none text-caption font-weight-regular bg-secondary text-on-secondary").Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),

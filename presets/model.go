@@ -11,6 +11,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
 )
@@ -26,6 +27,7 @@ type ModelBuilder struct {
 	uriName             string
 	defaultURLQueryFunc func(*http.Request) url.Values
 	label               string
+	labelNameFunc       func(evCtx *web.EventContext, singular bool) string
 	fieldLabels         []string
 	placeholders        []string
 	listing             *ListingBuilder
@@ -81,6 +83,11 @@ func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {
 
 func (mb *ModelBuilder) Link(v string) *ModelBuilder {
 	mb.link = v
+	return mb
+}
+
+func (mb *ModelBuilder) LabelName(f func(evCtx *web.EventContext, singular bool) string) *ModelBuilder {
+	mb.labelNameFunc = f
 	return mb
 }
 
@@ -199,6 +206,17 @@ func (b ModelInfo) URIName() string {
 
 func (b ModelInfo) Label() string {
 	return b.mb.label
+}
+
+func (b ModelInfo) LabelName(evCtx *web.EventContext, singular bool) string {
+	if b.mb.labelNameFunc != nil {
+		return b.mb.labelNameFunc(evCtx, singular)
+	}
+	key := b.mb.label
+	if singular {
+		key = inflection.Singular(key)
+	}
+	return i18n.T(evCtx.R, ModelsI18nModuleKey, key)
 }
 
 func (b ModelInfo) Verifier() *perm.Verifier {

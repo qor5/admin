@@ -58,5 +58,9 @@ func SamplesHandler(mux examples.Muxer) {
 		DatePickersPath,
 		DatePickersPB.Wrap(examples_vuetify.DemoVuetifyLayout),
 	)
+	mux.Handle(
+		AutoCompleteDemoPath,
+		AutoCompleteDemoPB.Wrap(examples_vuetify.DemoVuetifyLayout),
+	)
 	return
 }

@@ -12,6 +12,7 @@ const (
 	ctxActionsComponentTeleportToID
 	ctxDetailingAfterTitleComponent
 	ctxEventFuncAddonWrapper
+	ctxPageTitleComponent
 )
 
 func IsInDialog(ctx *web.EventContext) bool {

@@ -9,20 +9,25 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	b.GetI18n().SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)
+
 	// @snippet_begin(NewActivitySample)
 	b.DataOperator(gorm2op.DataOperator(db))
 
-	ab := activity.New(db, func(ctx context.Context) *activity.User {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
 			ID:     "1",
 			Name:   "John",
 			Avatar: "https://i.pravatar.cc/300",
-		}
-	}).AutoMigrate()
+		}, nil
+	}).
+		// TablePrefix("cms_"). // multitentant if needed
+		AutoMigrate()
 	b.Use(ab)
 
 	// @snippet_end

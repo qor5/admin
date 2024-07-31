@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 )
@@ -24,7 +23,9 @@ INSERT INTO "public"."with_activity_products" ("id", "created_at", "updated_at",
 ('22', '2024-07-16 03:35:10.242888+00', '2024-07-16 03:35:10.242888+00', NULL, 'Jordan 1 Retro High', '10010', '250'),
 ('23', '2024-07-16 03:40:10.242888+00', '2024-07-16 03:40:10.242888+00', NULL, 'Under Armour Curry 7', '10011', '140');
 
-INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted_at", "creator_id", "action", "hidden", "model_name", "model_keys", "model_label", "model_link", "detail") VALUES ('29', '2024-07-16 02:50:10.250739+00', '2024-07-16 02:50:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null'),
+INSERT INTO "activity_users" ("id", "created_at", "updated_at", "deleted_at", "name", "avatar") VALUES ('1', '2024-07-26 08:03:52.17526+00', '2024-07-30 07:59:17.439158+00', NULL, 'John', 'https://i.pravatar.cc/300');
+
+INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted_at", "user_id", "action", "hidden", "model_name", "model_keys", "model_label", "model_link", "detail") VALUES ('29', '2024-07-16 02:50:10.250739+00', '2024-07-16 02:50:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null'),
 ('45', '2024-07-16 02:56:45.176698+00', '2024-07-16 02:56:45.177268+00', NULL, '1', 'Note', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', '{"note":"The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.","last_edited_at":"0001-01-01T00:00:00Z"}'),
 ('44', '2024-07-16 02:56:42.273117+00', '2024-07-16 02:56:42.275043+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null'),
 ('30', '2024-07-16 02:55:10.250739+00', '2024-07-16 02:55:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '14', 'with-activity-products', '/examples/activity-example/with-activity-products/14', 'null'),
@@ -41,10 +42,10 @@ INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted
 ('38', '2024-07-16 03:35:10.250739+00', '2024-07-16 03:35:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', 'null'),
 ('40', '2024-07-16 02:55:26.074417+00', '2024-07-16 02:55:26.075726+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null'),
 ('39', '2024-07-16 03:40:10.250739+00', '2024-07-16 03:40:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null');
-`, []string{"with_activity_products", "activity_logs"}))
+`, []string{"with_activity_products", "activity_logs", "activity_users"}))
 
 func TestActivity(t *testing.T) {
-	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	pb := presets.New()
 	ActivityExample(pb, TestDB)
 
 	dbr, _ := TestDB.DB()
@@ -187,6 +188,36 @@ func TestActivity(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully deleted note", "45"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestActivityAdmin(t *testing.T) {
+	pb := presets.New()
+	ActivityExample(pb, TestDB)
+
+	dbr, _ := TestDB.DB()
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "Index Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				"操作日志列表",
+				"全部", "创建", "编辑", "删除", "备注",
+				"<vx-filter", "操作类型", "操作时间", "操作者", "操作表名", "</vx-filter>",
+				"时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+			},
 		},
 	}
 

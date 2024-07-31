@@ -42,6 +42,15 @@ type Messages struct {
 	Rename                 string
 	PageOverView           string
 	Duplicate              string
+
+	HeaderVersion string
+	HeaderStatus  string
+	HeaderStartAt string
+	HeaderEndAt   string
+	HeaderOption  string
+
+	HeaderDraftCount string
+	HeaderLive       string
 }
 
 func (msgr *Messages) DeleteVersionConfirmationText(versionName string) string {
@@ -89,6 +98,15 @@ var Messages_en_US = &Messages{
 	Rename:                 "Rename",
 	PageOverView:           "Page Overview",
 	Duplicate:              "Duplicate",
+
+	HeaderVersion: "Version",
+	HeaderStatus:  "Status",
+	HeaderStartAt: "Start At",
+	HeaderEndAt:   "End At",
+	HeaderOption:  "Option",
+
+	HeaderDraftCount: "Draft Count",
+	HeaderLive:       "Live",
 }
 
 var Messages_zh_CN = &Messages{
@@ -131,6 +149,15 @@ var Messages_zh_CN = &Messages{
 	Rename:                 "重命名",
 	PageOverView:           "页面概览",
 	Duplicate:              "复制",
+
+	HeaderVersion: "版本",
+	HeaderStatus:  "状态",
+	HeaderStartAt: "开始时间",
+	HeaderEndAt:   "结束时间",
+	HeaderOption:  "操作",
+
+	HeaderDraftCount: "草稿数",
+	HeaderLive:       "发布状态",
 }
 
 var Messages_ja_JP = &Messages{
@@ -172,4 +199,13 @@ var Messages_ja_JP = &Messages{
 	FilterTabNamedVersions: "名付け済みバージョン",
 	Rename:                 "名前の変更",
 	PageOverView:           "ページ概要",
+
+	HeaderVersion: "バージョン",
+	HeaderStatus:  "ステータス",
+	HeaderStartAt: "開始日時",
+	HeaderEndAt:   "終了日時",
+	HeaderOption:  "オプション",
+
+	HeaderDraftCount: "下書き数",
+	HeaderLive:       "更新中",
 }
