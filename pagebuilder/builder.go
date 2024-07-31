@@ -468,7 +468,16 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		err = pageValidator(ctx.R.Context(), c, db, b.l10n)
 		return
 	})
-
+	eb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return VTextField().
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, field.Value(obj))...).
+			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
+	})
 	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -678,6 +687,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
+	eb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().Label(field.Label).
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, field.Value(obj))...).
+			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
+	})
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
@@ -685,9 +705,9 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label("Path").
+		return VTextField().Label(field.Label).
 			Variant(FieldVariantUnderlined).
-			Attr(web.VField("Path", strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {

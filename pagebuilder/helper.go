@@ -24,6 +24,8 @@ LEFT JOIN page_builder_categories categories ON category_id = categories.id AND 
 WHERE pages.deleted_at IS NULL AND categories.deleted_at IS NULL
 `
 	invalidPathMsg  = "Invalid Path"
+	invalidTitleMsg = "Invalid Title"
+	invalidNameMsg  = "Invalid Name"
 	invalidSlugMsg  = "Invalid Slug"
 	conflictSlugMsg = "Conflicting Slug"
 	conflictPathMsg = "Conflicting Path"
@@ -41,6 +43,11 @@ type pagePathInfo struct {
 }
 
 func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+	if p.Title == "" {
+		err.FieldError("Page.Title", invalidTitleMsg)
+		return
+	}
+
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
@@ -84,6 +91,11 @@ func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder)
 }
 
 func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+	if category.Name == "" {
+		err.FieldError("Category.Name", invalidNameMsg)
+		return
+	}
+
 	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
 		err.FieldError("Category.Category", invalidPathMsg)
