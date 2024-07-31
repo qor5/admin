@@ -467,12 +467,10 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	if id == "" {
-		objID := MustObjectID(obj)
 		r.Emit(
 			b.mb.NotifModelsCreated(),
 			PayloadModelsCreated{
-				Ids:    []string{objID},
-				Models: map[string]any{objID: obj},
+				Models: []any{obj},
 			},
 		)
 	} else {

@@ -85,8 +85,7 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 
 		web.AppendRunScripts(&r, "locals.commonConfirmDialog = false")
 		r.Emit(mb.NotifModelsCreated(), presets.PayloadModelsCreated{
-			Ids:    []string{slug},
-			Models: map[string]any{slug: obj},
+			Models: []any{obj},
 		})
 		r.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: slug})
 

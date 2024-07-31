@@ -211,16 +211,20 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		children = append(children, h.Div().Class("text-body-2 text-grey align-self-center mb-4").Text(msgr.NoActivitiesYet))
 	}
 
-	reloadAction := fmt.Sprintf(`
-	if (!!payload.models && Object.keys(payload.models).length > 0 && Object.values(payload.models).every(obj => obj.Hidden === true)) {
-		return
-	}
-	%s
-	`, stateful.ReloadAction(ctx, c, nil).Go())
 	return stateful.Actionable(ctx, c,
 		web.Listen(
-			presets.NotifModelsCreated(&ActivityLog{}), reloadAction,
-			presets.NotifModelsUpdated(&ActivityLog{}), reloadAction,
+			presets.NotifModelsCreated(&ActivityLog{}), fmt.Sprintf(`
+			if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
+				return
+			}
+			%s
+			`, stateful.ReloadAction(ctx, c, nil).Go()),
+			presets.NotifModelsUpdated(&ActivityLog{}), fmt.Sprintf(`
+			if (!!payload.models && Object.keys(payload.models).length > 0 && Object.values(payload.models).every(obj => obj.Hidden === true)) {
+				return
+			}
+			%s
+			`, stateful.ReloadAction(ctx, c, nil).Go()),
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
@@ -278,10 +282,8 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 	}
 
 	presets.ShowMessage(&r, msgr.SuccessfullyCreatedNote, v.ColorSuccess)
-	id := fmt.Sprint(log.ID)
 	r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
-		Ids:    []string{id},
-		Models: map[string]any{id: log},
+		Models: []any{log},
 	})
 	return
 }
