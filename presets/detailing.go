@@ -430,7 +430,7 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 
 	r.Emit(b.mb.NotifModelsUpdated(), PayloadModelsUpdated{
 		Ids:    []string{id},
-		Models: []any{obj},
+		Models: map[string]any{id: obj},
 	})
 	return r, nil
 }
@@ -634,4 +634,23 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 	})
 
 	return
+}
+
+const fieldRefreshOnUpdate = "__RefreshOnUpdate__"
+
+func (b *DetailingBuilder) EnableRefreshOnUpdate() *DetailingBuilder {
+	b.Field(fieldRefreshOnUpdate).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		slug := obj.(SlugEncoder).PrimarySlug()
+
+		qs := ctx.R.URL.Query()
+		eventFuncID := qs.Get(web.EventFuncIDName)
+		delete(qs, web.EventFuncIDName)
+
+		refresh := web.Plaid().URL(ctx.R.URL.Path).Queries(qs)
+		if eventFuncID != "" {
+			refresh.EventFunc(eventFuncID)
+		}
+		return web.Listen(b.mb.NotifModelsUpdated(), fmt.Sprintf(`payload.ids.includes(%q) && %s`, slug, refresh.Go()))
+	})
+	return b
 }
