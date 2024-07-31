@@ -126,7 +126,7 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 		presets.ShowMessage(&r, MustGetTranslation(ctx.R, "SuccessfullyLocalized"), "")
 
 		// refresh current page
-		r.Reload = true
+		web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
 		return
 	}
 }

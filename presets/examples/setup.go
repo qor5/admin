@@ -113,7 +113,7 @@ func (*Product) TableName() string {
 }
 
 func addListener(v any) h.HTMLComponent {
-	simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
+	simpleReload := web.Plaid().MergeQuery(true).Go()
 	return web.Listen(
 		presets.NotifModelsCreated(v), simpleReload,
 		presets.NotifModelsUpdated(v), simpleReload,
@@ -473,7 +473,7 @@ func Preset1(db *gorm.DB) (r *presets.Builder) {
 		return vx.Card(detail).HeaderTitle("Details").
 			Actions(
 				web.Listen(
-					m.NotifModelsUpdated(), web.Plaid().PushState(true).MergeQuery(true).Go(),
+					m.NotifModelsUpdated(), web.Plaid().MergeQuery(true).Go(),
 				),
 				VBtn("Agree Terms").
 					Variant(VariantFlat).Class("mr-2").
