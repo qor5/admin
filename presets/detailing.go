@@ -182,7 +182,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 			return r, err
 		}
 		if titleCompo != nil {
-			ctx.WithContextValue(ctxPageTitleComponent, titleCompo)
+			ctx.WithContextValue(CtxPageTitleComponent, titleCompo)
 		}
 		r.PageTitle = title
 	} else {
@@ -260,11 +260,11 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	if err != nil {
 		return
 	}
-	titleCompo, ok := ctx.ContextValue(ctxPageTitleComponent).(h.HTMLComponent)
+	titleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 	if !ok {
 		titleCompo = h.Text(pr.PageTitle)
 	} else {
-		ctx.WithContextValue(ctxPageTitleComponent, nil)
+		ctx.WithContextValue(CtxPageTitleComponent, nil)
 	}
 	header := h.Div(titleCompo).Class("d-flex")
 	if v, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
