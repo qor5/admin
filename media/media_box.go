@@ -565,8 +565,12 @@ func rename(mb *Builder) web.EventFunc {
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
+		if obj.Folder {
+			obj.File.FileName = ctx.Param(ParamName)
+		} else {
+			obj.File.FileName = ctx.Param(ParamName) + path.Ext(obj.File.FileName)
+		}
 
-		obj.File.FileName = ctx.Param(ParamName) + path.Ext(obj.File.FileName)
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
