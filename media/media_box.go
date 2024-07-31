@@ -566,7 +566,7 @@ func rename(mb *Builder) web.EventFunc {
 			return
 		}
 
-		obj.File.FileName = ctx.Param(ParamName)
+		obj.File.FileName = ctx.Param(ParamName) + path.Ext(obj.File.FileName)
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
@@ -644,6 +644,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := wrapFirst(mb, ctx, &r)
+		fileName := strings.TrimSuffix(obj.File.FileName, path.Ext(obj.File.FileName))
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: renameDialogPortalName,
 			Body: web.Scope(
@@ -657,7 +658,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 						).Name(VSlotAppend),
 						VTextField().Variant(FieldVariantUnderlined).
 							Class("px-6").
-							Label("Name").Attr(web.VField(ParamName, obj.File.FileName)...),
+							Label("Name").Attr(web.VField(ParamName, fileName)...),
 						VCardActions(
 							VSpacer(),
 							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),

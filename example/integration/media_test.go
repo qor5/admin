@@ -262,7 +262,8 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "Name", "Snipaste_2024-06-14_10-06-12.png"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "Name", "Snipaste_2024-06-14_10-06-12"},
+			ExpectPortalUpdate0NotContains:     []string{".png"},
 		},
 		{
 			Name:  "MediaLibrary Rename",
@@ -274,7 +275,7 @@ func TestMedia(t *testing.T) {
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.RenameEvent).
 					Query(media.ParamMediaIDS, "1").
-					AddField(media.ParamName, "1.png").
+					AddField(media.ParamName, "1").
 					BuildEventFuncRequest()
 				return req
 			},
