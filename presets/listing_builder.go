@@ -244,7 +244,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		return r, err
 	}
 	if titleCompo != nil {
-		evCtx.WithContextValue(ctxPageTitleComponent, titleCompo)
+		evCtx.WithContextValue(CtxPageTitleComponent, titleCompo)
 	}
 	r.PageTitle = title
 

@@ -33,6 +33,7 @@ func fileChooser(mb *Builder) web.EventFunc {
 						VToolbar(
 							VToolbarTitle(msgr.ChooseAFile),
 							VSpacer(),
+							searchComponent(ctx, field, cfg, false),
 							VBtn("").
 								Icon("mdi-close").
 								Theme(ThemeDark).
@@ -50,7 +51,7 @@ func fileChooser(mb *Builder) web.EventFunc {
 					Transition("dialog-bottom-transition").
 					// Scrollable(true).
 					Attr("v-model", "vars.showFileChooser"),
-			).VSlot("{form}"),
+			).VSlot("{form,locals}"),
 		})
 		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
 		return
@@ -379,9 +380,10 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(paramParentID, f.ID).Go()
+			Query(paramParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
 	} else {
 		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
+
 	}
 	if inMediaLibrary {
 		clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(paramParentID, f.ID).RunPushState()
@@ -623,8 +625,9 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Go()
+	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
 	if inMediaLibrary {
-		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(paramTab, web.Var("$event")).RunPushState()
+		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{paramParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 
 	for _, f := range files {
@@ -641,32 +644,6 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		web.Portal().Name(renameDialogPortalName),
 		web.Portal().Name(updateDescriptionDialogPortalName),
 		VContainer(
-			VRow(
-				VCol(
-					web.Scope(
-						VTextField().
-							Density(DensityCompact).
-							Variant(FieldVariantOutlined).
-							Label(msgr.Search).
-							Flat(true).
-							Clearable(true).
-							HideDetails(true).
-							SingleLine(true).
-							Attr("v-model", "searchLocals.msg").
-							Attr("@keyup.enter", web.Plaid().
-								EventFunc(imageSearchEvent).
-								Query(ParamField, field).
-								Query(paramTab, tab).
-								Query(paramParentID, parentID).
-								Query(ParamCfg, h.JSONString(cfg)).
-								FieldValue(searchKeywordName(field), web.Var("searchLocals.msg")).
-								Go()).
-							Children(
-								web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-							).MaxWidth(320),
-					).VSlot("{locals:searchLocals}").Init(fmt.Sprintf(`{msg:"%s"}`, keyword)),
-				),
-			),
 			VRow(
 				VCol(
 					web.Scope(
@@ -758,9 +735,11 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					VPagination().
 						Length(pagesCount).
 						ModelValue(int(currentPageInt)).
-						Attr("@input", web.Plaid().
+						Attr("@update:model-value", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
 							EventFunc(imageJumpPageEvent).
+							Query(paramTab, tab).
+							Query(paramParentID, parentID).
 							Query(ParamField, field).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Go()),
@@ -804,4 +783,39 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		).Fluid(true),
 	).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
 		VSlot("{ locals,form}").Init("{select_ids:[]}")
+}
+
+func searchComponent(ctx *web.EventContext, field string, cfg *media_library.MediaBoxConfig, inMediaLibrary bool) h.HTMLComponent {
+
+	var (
+		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+	)
+	clickEvent := web.Plaid().
+		EventFunc(imageSearchEvent).
+		Query(ParamField, field).
+		Query(ParamCfg, h.JSONString(cfg)).
+		FieldValue(searchKeywordName(field), web.Var("searchLocals.msg"))
+	if inMediaLibrary {
+		clickEvent = clickEvent.MergeQuery(true)
+	} else {
+		clickEvent = clickEvent.
+			Query(paramTab, web.Var("vars.media_tab")).
+			Query(paramParentID, web.Var("vars.media_parent_id"))
+	}
+
+	return web.Scope(
+		VTextField().
+			Density(DensityCompact).
+			Variant(FieldVariantOutlined).
+			Label(msgr.Search).
+			Flat(true).
+			Clearable(true).
+			HideDetails(true).
+			SingleLine(true).
+			Attr("v-model", "searchLocals.msg").
+			Attr("@keyup.enter", clickEvent.Go()).
+			Children(
+				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+			).MaxWidth(320),
+	).VSlot("{locals:searchLocals}").Init(fmt.Sprintf(`{msg:""}`))
 }

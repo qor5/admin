@@ -565,8 +565,12 @@ func rename(mb *Builder) web.EventFunc {
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
+		if obj.Folder {
+			obj.File.FileName = ctx.Param(ParamName)
+		} else {
+			obj.File.FileName = ctx.Param(ParamName) + path.Ext(obj.File.FileName)
+		}
 
-		obj.File.FileName = ctx.Param(ParamName)
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
@@ -644,6 +648,12 @@ func renameDialog(mb *Builder) web.EventFunc {
 
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := wrapFirst(mb, ctx, &r)
+		var fileName string
+		if obj.Folder {
+			fileName = obj.File.FileName
+		} else {
+			fileName = strings.TrimSuffix(obj.File.FileName, path.Ext(obj.File.FileName))
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: renameDialogPortalName,
 			Body: web.Scope(
@@ -657,19 +667,21 @@ func renameDialog(mb *Builder) web.EventFunc {
 						).Name(VSlotAppend),
 						VTextField().Variant(FieldVariantUnderlined).
 							Class("px-6").
-							Label("Name").Attr(web.VField(ParamName, obj.File.FileName)...),
+							Label("Name").Attr(web.VField(ParamName, fileName)...),
 						VCardActions(
 							VSpacer(),
 							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn("Ok").Color(ColorPrimary).Attr("@click",
-								web.Plaid().EventFunc(RenameEvent).
-									Query(paramTab, ctx.Param(paramTab)).
-									Query(paramParentID, ctx.Param(paramParentID)).
-									Query(ParamField, ctx.Param(ParamField)).
-									Query(ParamCfg, ctx.Param(ParamCfg)).
-									Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
-									Go(),
-							),
+							VBtn("Ok").Color(ColorPrimary).
+								Attr(":disabled", fmt.Sprintf("!form.%s", ParamName)).
+								Attr("@click",
+									web.Plaid().EventFunc(RenameEvent).
+										Query(paramTab, ctx.Param(paramTab)).
+										Query(paramParentID, ctx.Param(paramParentID)).
+										Query(ParamField, ctx.Param(ParamField)).
+										Query(ParamCfg, ctx.Param(ParamCfg)).
+										Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
+										Go(),
+								),
 						),
 					),
 				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
@@ -905,7 +917,13 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 	fileName := m.File.FileName
 	if !m.Folder {
 		var fi base.FileInterface
-		if fi, err = m.File.Retrieve(m.File.URL()); err != nil {
+		if fileHeader := m.File.GetFileHeader(); fileHeader != nil {
+			fi, err = m.File.GetFileHeader().Open()
+		} else {
+			fi, err = m.File.Retrieve(m.File.URL())
+		}
+		defer fi.Close()
+		if err != nil {
 			return
 		}
 		m.File = media_library.MediaLibraryStorage{}
