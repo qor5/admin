@@ -212,7 +212,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	reloadAction := fmt.Sprintf(`
-	if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
+	if (!!payload.models && Object.keys(payload.models).length > 0 && Object.values(payload.models).every(obj => obj.Hidden === true)) {
 		return
 	}
 	%s
@@ -221,7 +221,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		web.Listen(
 			presets.NotifModelsCreated(&ActivityLog{}), reloadAction,
 			presets.NotifModelsUpdated(&ActivityLog{}), reloadAction,
-			presets.NotifModelsDeleted(&ActivityLog{}), reloadAction,
+			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
 			v.VDialog().MaxWidth("520px").
@@ -278,8 +278,10 @@ func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (
 	}
 
 	presets.ShowMessage(&r, msgr.SuccessfullyCreatedNote, v.ColorSuccess)
+	id := fmt.Sprint(log.ID)
 	r.Emit(presets.NotifModelsCreated(&ActivityLog{}), presets.PayloadModelsCreated{
-		Models: []any{log},
+		Ids:    []string{id},
+		Models: map[string]any{id: log},
 	})
 	return
 }
@@ -340,9 +342,11 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 	}
 
 	presets.ShowMessage(&r, msgr.SuccessfullyUpdatedNote, v.ColorSuccess)
+
+	id := fmt.Sprint(log.ID)
 	r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
-		Ids:    []string{fmt.Sprint(log.ID)},
-		Models: []any{log},
+		Ids:    []string{id},
+		Models: map[string]any{id: log},
 	})
 	return
 }

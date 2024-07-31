@@ -52,7 +52,7 @@ func NewListenerModelsDeleted(mb *presets.ModelBuilder, slug string) h.HTMLCompo
 		if (!payload.ids.includes(%q)) {
 			return
 		}		
-		if (addon.next_version_slug) {
+		if (addon && addon.next_version_slug) {
 			%s
 		} else {
 			%s
