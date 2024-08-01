@@ -43,7 +43,6 @@ import (
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
@@ -290,33 +289,27 @@ func NewConfig(db *gorm.DB) Config {
 				}
 				pmListing := pm.Listing()
 				pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-					hasUnreadNotesCondition, err := ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+					item, err := ab.MustGetModelBuilder(pm).NewHasUnreadNotesFilterItem(ctx.R.Context(), "")
 					if err != nil {
 						panic(err)
 					}
-					return []*vx.FilterItem{
-						{
-							Key:          "hasUnreadNotes",
-							Invisible:    true,
-							SQLCondition: hasUnreadNotesCondition,
-						},
-					}
+					return []*vx.FilterItem{item}
 				})
 
 				pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 					msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+					tab, err := ab.MustGetModelBuilder(pm).NewHasUnreadNotesFilterTab(ctx.R.Context())
+					if err != nil {
+						panic(err)
+					}
 					return []*presets.FilterTab{
 						{
 							Label: msgr.FilterTabsAll,
 							ID:    "all",
 							Query: url.Values{"all": []string{"1"}},
 						},
-						{
-							Label: msgr.FilterTabsHasUnreadNotes,
-							ID:    "hasUnreadNotes",
-							Query: url.Values{"hasUnreadNotes": []string{"1"}},
-						},
+						tab,
 					}
 				})
 				return nil
@@ -326,8 +319,6 @@ func NewConfig(db *gorm.DB) Config {
 	b.Use(pageBuilder)
 
 	configListModel(b, ab)
-
-	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(ab))
 
 	microb := microsite.New(db).Publisher(publisher)
 
@@ -588,16 +579,12 @@ func configPost(
 		PerPage(10)
 
 	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+		item, err := ab.MustGetModelBuilder(m).NewHasUnreadNotesFilterItem(ctx.R.Context(), "")
 		if err != nil {
 			panic(err)
 		}
 		return []*vx.FilterItem{
-			{
-				Key:          "hasUnreadNotes",
-				Invisible:    true,
-				SQLCondition: hasUnreadNotesCondition,
-			},
+			item,
 			{
 				Key:          "created",
 				Label:        "Create Time",
@@ -646,17 +633,17 @@ func configPost(
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+		tab, err := ab.MustGetModelBuilder(m).NewHasUnreadNotesFilterTab(ctx.R.Context())
+		if err != nil {
+			panic(err)
+		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
-			{
-				Label: msgr.FilterTabsHasUnreadNotes,
-				ID:    "hasUnreadNotes",
-				Query: url.Values{"hasUnreadNotes": []string{"1"}},
-			},
+			tab,
 		}
 	})
 
@@ -688,71 +675,4 @@ func configPost(
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 	return m
-}
-
-func notifierCount(ab *activity.Builder) func(ctx *web.EventContext) int {
-	return func(ctx *web.EventContext) int {
-		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
-		if err != nil {
-			panic(err)
-		}
-		total := lo.SumBy(counts, func(item *activity.NoteCount) int {
-			return int(item.UnreadNotesCount)
-		})
-		// TODO: listen to auto update ?
-		return total
-	}
-}
-
-func notifierComponent(ab *activity.Builder) func(ctx *web.EventContext) h.HTMLComponent {
-	return func(ctx *web.EventContext) h.HTMLComponent {
-		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
-		if err != nil {
-			panic(err)
-		}
-
-		groups := lo.GroupBy(counts, func(item *activity.NoteCount) string {
-			return item.ModelName
-		})
-
-		by := func(item *activity.NoteCount) int { return int(item.UnreadNotesCount) }
-
-		a, b, c := lo.SumBy(groups["Page"], by), lo.SumBy(groups["Post"], by), lo.SumBy(groups["User"], by)
-
-		// TODO: listen to auto update ?
-		return v.VList(
-			v.VListItem(
-				v.VListItemTitle(h.Text("Pages")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
-			).Lines(2).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			v.VListItem(
-				v.VListItemTitle(h.Text("Posts")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
-			).Lines(2).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			v.VListItem(
-				v.VListItemTitle(h.Text("Users")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
-			).Lines(2).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			h.If(a+b+c > 0,
-				v.VListItem(
-					v.VListItemSubtitle(h.Text("Mark all as read")),
-				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
-			),
-		)
-		// .Class("mx-auto")
-		// .Attr("max-width", "140")
-	}
-}
-
-var noteMarkAllAsRead = "note_mark_all_as_read"
-
-func markAllAsRead(ab *activity.Builder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		if err = ab.MarkAllNotesAsRead(ctx.R.Context()); err != nil {
-			return r, err
-		}
-
-		r.Reload = true
-		return
-	}
 }

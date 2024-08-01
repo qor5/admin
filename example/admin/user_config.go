@@ -307,11 +307,12 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	cl.SearchColumns("users.Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(user).SQLConditionHasUnreadNotes(ctx.R.Context(), "users.")
+		item, err := ab.MustGetModelBuilder(user).NewHasUnreadNotesFilterItem(ctx.R.Context(), "users.")
 		if err != nil {
 			panic(err)
 		}
 		return []*vx.FilterItem{
+			item,
 			{
 				Key:          "created",
 				Label:        "Create Time",
@@ -335,11 +336,6 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				},
 			},
 			{
-				Key:          "hasUnreadNotes",
-				Invisible:    true,
-				SQLCondition: hasUnreadNotesCondition,
-			},
-			{
 				Key:          "registration_date",
 				Label:        "Registration Date",
 				ItemType:     vx.ItemTypeDate,
@@ -359,6 +355,10 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+		tab, err := ab.MustGetModelBuilder(user).NewHasUnreadNotesFilterTab(ctx.R.Context())
+		if err != nil {
+			panic(err)
+		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabsAll,
@@ -368,11 +368,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				Label: msgr.FilterTabsActive,
 				Query: url.Values{"status": []string{"active"}},
 			},
-			{
-				Label: msgr.FilterTabsHasUnreadNotes,
-				ID:    "hasUnreadNotes",
-				Query: url.Values{"hasUnreadNotes": []string{"1"}},
-			},
+			tab,
 		}
 	})
 }

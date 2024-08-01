@@ -3,10 +3,15 @@ package activity
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
@@ -14,6 +19,7 @@ import (
 type NoteCount struct {
 	ModelName        string
 	ModelKeys        string
+	ModelLabel       string
 	UnreadNotesCount int64
 	TotalNotesCount  int64
 }
@@ -56,7 +62,7 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 
 	raw := fmt.Sprintf(`
 	WITH NoteRecords AS (
-		SELECT model_name, model_keys, created_at, user_id
+		SELECT model_name, model_keys, model_label, created_at, user_id
 		FROM %s
 		WHERE action = ? AND deleted_at IS NULL
 			%s
@@ -71,6 +77,7 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 	SELECT
 		n.model_name,
 		n.model_keys,
+		MAX(n.model_label) AS model_label,
 		COUNT(CASE WHEN n.user_id <> ? AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at) THEN 1 END) AS unread_notes_count,
 		COUNT(*) AS total_notes_count
 	FROM NoteRecords n
@@ -201,4 +208,32 @@ func (amb *ModelBuilder) SQLConditionHasUnreadNotes(ctx context.Context, columnP
 		return "", err
 	}
 	return sqlConditionHasUnreadNotes(amb.ab.db, amb.ab.tablePrefix, user.ID, ParseModelName(amb.ref), amb.keyColumns, ModelKeysSeparator, columnPrefix)
+}
+
+const KeyHasUnreadNotes = "hasUnreadNotes"
+
+func (amb *ModelBuilder) NewHasUnreadNotesFilterItem(ctx context.Context, columnPrefix string) (*vx.FilterItem, error) {
+	hasUnreadNotesCondition, err := amb.SQLConditionHasUnreadNotes(ctx, columnPrefix)
+	if err != nil {
+		return nil, err
+	}
+	return &vx.FilterItem{
+		Key:          KeyHasUnreadNotes,
+		Invisible:    true,
+		SQLCondition: hasUnreadNotesCondition,
+	}, nil
+}
+
+func (amb *ModelBuilder) NewHasUnreadNotesFilterTab(ctx context.Context) (*presets.FilterTab, error) {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	return &presets.FilterTab{
+		Label: msgr.FilterTabsHasUnreadNotes,
+		ID:    KeyHasUnreadNotes,
+		Query: url.Values{KeyHasUnreadNotes: []string{"1"}},
+	}, nil
+}
+
+func GetHasUnreadNotesHref(listingHref string) string {
+	return fmt.Sprintf("/%s?active_filter_tab=%s&f_%s=1", listingHref, KeyHasUnreadNotes, KeyHasUnreadNotes)
 }

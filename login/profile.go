@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
@@ -169,15 +168,24 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	for _, modelName := range modelNames {
 		counts := groups[modelName]
 		title := i18n.T(evCtx.R, presets.ModelsI18nModuleKey, modelName)
-		// TODO: href? model label?
-		href := fmt.Sprintf(
-			"/%s?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1",
-			strings.ToLower(inflection.Plural(modelName)),
-		)
-		listItems = append(listItems, v.VListItem().Href(href).Children(
+
+		listItem := v.VListItem().Children(
 			v.VListItemTitle(h.Text(title)),
 			v.VListItemSubtitle(h.Text(msgr.UnreadMessages(lo.SumBy(counts, unreadBy)))),
-		))
+		)
+
+		var href string
+		hasModelLabel, ok := lo.Find(counts, func(item *activity.NoteCount) bool {
+			return item.ModelLabel != "" && item.ModelLabel != activity.NopModelLabel
+		})
+		if ok {
+			href = activity.GetHasUnreadNotesHref(hasModelLabel.ModelLabel)
+		}
+		if href != "" {
+			listItem.Href(href)
+		}
+
+		listItems = append(listItems, listItem)
 	}
 
 	icon := v.VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")

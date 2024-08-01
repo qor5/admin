@@ -147,7 +147,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	lb.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
-				return h.Td(h.Text("-"))
+				return h.Td(h.Text(NopModelLabel))
 			}
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).ModelLabel))
 		},
@@ -301,7 +301,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(
 									i18n.T(ctx.R, presets.ModelsI18nModuleKey, obj.(*ActivityLog).ModelName),
 								)),
-								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),
+								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, NopModelLabel))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(

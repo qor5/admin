@@ -25,6 +25,8 @@ const (
 	FieldTimeline       string = "__ActivityTimeline__"
 	ListFieldNotes      string = "__ActivityNotes__"
 	ListFieldLabelNotes string = "Notes"
+
+	NopModelLabel = "-"
 )
 
 const (
@@ -472,7 +474,7 @@ func (mb *ModelBuilder) create(
 		Action:     action,
 		ModelName:  modelName,
 		ModelKeys:  modelKeys,
-		ModelLabel: "-",
+		ModelLabel: "",
 		ModelLink:  modelLink,
 	}
 	if mb.presetModel != nil {

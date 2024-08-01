@@ -69,6 +69,8 @@ type Messages struct {
 
 	ActivityLogs string
 	ActivityLog  string
+
+	FilterTabsHasUnreadNotes string
 }
 
 func (msgr *Messages) LastEditedAt(desc string) string {
@@ -157,6 +159,8 @@ var Messages_en_US = &Messages{
 
 	ActivityLogs: "Activity Logs",
 	ActivityLog:  "Activity Log",
+
+	FilterTabsHasUnreadNotes: "Has Unread Notes",
 }
 
 var Messages_zh_CN = &Messages{
@@ -223,6 +227,8 @@ var Messages_zh_CN = &Messages{
 
 	ActivityLogs: "操作日志",
 	ActivityLog:  "操作日志",
+
+	FilterTabsHasUnreadNotes: "未读备注",
 }
 
 var Messages_ja_JP = &Messages{
@@ -289,4 +295,6 @@ var Messages_ja_JP = &Messages{
 
 	ActivityLogs: "アクティビティ履歴",
 	ActivityLog:  "アクティビティ履歴",
+
+	FilterTabsHasUnreadNotes: "未読ノート",
 }
