@@ -100,7 +100,7 @@ func (b *ProfileBuilder) NewCompo(evCtx *web.EventContext, idSuffix string) h.HT
 	if pb == nil {
 		panic("profile: not installed")
 	}
-	return h.Div().Class("d-flex flex-column align-stretch w-100").Children(
+	return h.Div().Class("w-100").Children(
 		b.pb.GetDependencyCenter().MustInject(b.injectorName(), &ProfileCompo{
 			ID: b.pb.GetURIPrefix() + idSuffix,
 		}),
@@ -132,30 +132,22 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	prepend := v.VCard().Flat(true).Children(
-		web.Slot().Name(v.VSlotPrepend).Children(
-			v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
-				Text(shortName(user.Name)).Children(
-				h.Iff(user.Avatar != "", func() h.HTMLComponent {
-					return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
-				}),
-			),
+	return stateful.Actionable(ctx, c, h.Div().Class("d-flex align-center ga-2 pa-3").Children(
+		v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
+			Text(shortName(user.Name)).Children(
+			h.Iff(user.Avatar != "", func() h.HTMLComponent {
+				return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
+			}),
 		),
-		web.Slot().Name(v.VSlotTitle).Children(
+		h.Div().Class("d-flex flex-column flex-1-1").Style("max-width: 119px").Children(
 			h.Div().Class("d-flex align-center ga-2 pt-1").Children(
-				h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-2 text-secondary"),
+				h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-2 text-secondary text-truncate"),
 				c.userCompo(ctx, user),
 			),
+			h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
 		),
-		web.Slot().Name(v.VSlotSubtitle).Children(
-			h.Div().Class("text-overline").Text(strings.ToUpper(user.GetFirstRole())),
-		),
-	)
-	return stateful.Actionable(ctx, c, h.Div().Class("d-flex align-center ga-0").Children(
-		prepend,
-		v.VSpacer(),
 		h.Iff(len(user.NotifCounts) > 0, func() h.HTMLComponent {
-			return h.Div().Class("d-flex align-center px-4 border-s-sm h-50").Children(
+			return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
 				c.bellCompo(ctx, user.NotifCounts),
 			)
 		}),
@@ -163,7 +155,7 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 }
 
 func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.NoteCount) h.HTMLComponent {
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	unreadBy := func(item *activity.NoteCount) int { return int(item.UnreadNotesCount) }
 	unreadCount := lo.SumBy(notifCounts, unreadBy)
@@ -176,12 +168,11 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	sort.Strings(modelNames)
 	for _, modelName := range modelNames {
 		counts := groups[modelName]
-		title := inflection.Plural(modelName)
-		// TODO: i18n
-		// TODO: href?
+		title := i18n.T(evCtx.R, presets.ModelsI18nModuleKey, modelName)
+		// TODO: href? model label?
 		href := fmt.Sprintf(
 			"/%s?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1",
-			strings.ToLower(title),
+			strings.ToLower(inflection.Plural(modelName)),
 		)
 		listItems = append(listItems, v.VListItem().Href(href).Children(
 			v.VListItemTitle(h.Text(title)),
@@ -238,11 +229,11 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLCompo
 							return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
 						}),
 					),
-					h.Div().Class("flex-grow-1 d-flex flex-column ga-4").Children(
+					h.Div().Class("flex-1-1 d-flex flex-column ga-4").Style("max-width:148px").Children(
 						h.Div().Class("d-flex flex-column").Children(
 							web.Scope().VSlot(`{ locals: xlocals }`).Init(fmt.Sprintf(`{editShow:false, name: %q}`, user.Name)).Children(
 								h.Div().Attr("v-if", "!xlocals.editShow").Class("d-flex align-center ga-2").Children(
-									h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-1 font-weight-medium"),
+									h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-1 font-weight-medium text-truncate"),
 									v.VBtn("").Size(20).Variant(v.VariantText).Color(v.ColorGreyDarken1).
 										Attr("@click", "xlocals.editShow = true").Children(
 										v.VIcon("mdi-pencil-outline"),

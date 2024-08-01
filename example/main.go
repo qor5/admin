@@ -12,6 +12,7 @@ import (
 func main() {
 	h := admin.Router(admin.ConnectDB())
 
+	host := osenv.Get("HOST", "The host to serve the admin on", "")
 	port := osenv.Get("PORT", "The port to serve the admin on", "9000")
 
 	fmt.Println("Served at http://localhost:" + port)
@@ -24,7 +25,7 @@ func main() {
 			),
 		),
 	)
-	err := http.ListenAndServe(":"+port, mux)
+	err := http.ListenAndServe(host+":"+port, mux)
 	if err != nil {
 		panic(err)
 	}
