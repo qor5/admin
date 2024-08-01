@@ -468,7 +468,16 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		err = pageValidator(ctx.R.Context(), c, db, b.l10n)
 		return
 	})
-
+	eb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return VTextField().
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, field.Value(obj))...).
+			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
+	})
 	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -500,11 +509,16 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return vx.VXAutocomplete().Label(msgr.Category).
-			Attr(web.VField(field.Name, p.CategoryID)...).
+		complete := vx.VXAutocomplete().Label(msgr.Category).
 			Multiple(false).Chips(false).
 			Items(categories).ItemText("Path").ItemValue("ID").
 			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+		if p.CategoryID > 0 {
+			complete.Attr(web.VField(field.Name, p.CategoryID)...)
+		} else {
+			complete.Attr(web.VField(field.Name, "")...)
+		}
+		return complete
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -597,60 +611,24 @@ func (b *Builder) configDetailLayoutFunc(
 	pm *presets.ModelBuilder,
 	db *gorm.DB,
 ) {
-	oldDetailLayout := pb.GetDetailLayoutFunc()
-	oldLayout := pb.GetLayoutFunc()
-	pb.LayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
-		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			pb.PageTitleFunc(nil)
-			return oldLayout(in, cfg)(ctx)
-		}
-	})
-
 	// change old detail layout
-	pb.DetailLayoutFunc(func(in web.PageFunc, cfg *presets.LayoutConfig) (out web.PageFunc) {
-		return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-			pb.PageTitleFunc(nil)
-			if !strings.Contains(ctx.R.RequestURI, "/"+pm.Info().URIName()+"/") {
-				pr, err = oldDetailLayout(in, cfg)(ctx)
-				return
-			}
-			id := ctx.Param(presets.ParamID)
-			if id == "" {
-				return pb.DefaultNotFoundPageFunc(ctx)
-			}
+	pm.Detailing().AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return publish.DefaultVersionBar(db)(obj, ctx)
 
-			obj := pm.NewModel()
-			obj, err = pm.Detailing().GetFetchFunc()(obj, id, ctx)
-			if err != nil {
-				if errors.Is(err, presets.ErrRecordNotFound) {
-					return pb.DefaultNotFoundPageFunc(ctx)
-				}
-				return
-			}
-			var pageAppbarContent []h.HTMLComponent
-			pageAppbarContent = h.Components(
-				VAppBarNavIcon().
-					Density(DensityCompact).
-					Class("mr-2").
-					Attr("v-if", "!vars.navDrawer").
-					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				h.Div(
-					VToolbarTitle(
-						b.GetPageTitle()(ctx),
-					),
-				).Class("mr-auto"),
-				VSpacer(),
-				publish.DefaultVersionBar(db)(obj, ctx),
-			)
-
-			pb.PageTitleFunc(func(ctx *web.EventContext) h.HTMLComponent {
-				return h.Div(
-					pageAppbarContent...,
-				).Class("d-flex align-center  justify-space-between   border-b w-100").Style("height: 48px")
-			})
-			pr, err = oldDetailLayout(in, cfg)(ctx)
-			return
-		}
+	})
+	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		var pageAppbarContent []h.HTMLComponent
+		pageAppbarContent = h.Components(
+			VToolbarTitle(
+				b.GetPageTitle()(ctx),
+			),
+			VSpacer(),
+			publish.DefaultVersionBar(db)(obj, ctx),
+		)
+		titleCompo = h.Div(
+			pageAppbarContent...,
+		).Class("d-flex align-center  justify-space-between  w-100")
+		return
 	})
 	return
 }
@@ -709,6 +687,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
+	eb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+
+		return VTextField().Label(field.Label).
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.Name, field.Value(obj))...).
+			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
+	})
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
@@ -716,9 +705,9 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label("Path").
+		return VTextField().Label(field.Label).
 			Variant(FieldVariantUnderlined).
-			Attr(web.VField("Path", strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
@@ -752,11 +741,12 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		return
 	})
 
-	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		c := obj.(*Category)
-		c.Path = path.Clean(c.Path)
-		err = db.Save(c).Error
-		return
+	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			c := obj.(*Category)
+			c.Path = path.Clean(c.Path)
+			return in(obj, id, ctx)
+		}
 	})
 	if b.ab != nil {
 		pm.Use(b.ab)

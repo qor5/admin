@@ -8,12 +8,22 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 )
+
+type ListingStyle string
+
+const (
+	ListingStylePage   ListingStyle = "Page"
+	ListingStyleDialog ListingStyle = "Dialog"
+	ListingStyleNested ListingStyle = "Nested"
+)
+
+type ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
 
 type OrderableField struct {
 	FieldName string
@@ -34,11 +44,7 @@ type ListingBuilder struct {
 	cellWrapperFunc vx.CellWrapperFunc
 	Searcher        SearchFunc
 	searchColumns   []string
-
-	// title is the title of the listing page.
-	// its default value is "Listing ${modelName}".
-	title     string
-	titleFunc func(evCtx *web.EventContext) (string, error)
+	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 
 	// perPage is the number of records per page.
 	// if request query param "per_page" is set, it will be set to that value.
@@ -53,14 +59,14 @@ type ListingBuilder struct {
 	// 3. all data will be returned in one page.
 	disablePagination bool
 
-	orderBy                 string
-	orderableFields         []*OrderableField
-	selectableColumns       bool
-	conditions              []*SQLCondition
-	dialogWidth             string
-	dialogHeight            string
-	keywordSearchOff        bool
-	displayColumnsProcessor func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)
+	orderBy           string
+	orderableFields   []*OrderableField
+	selectableColumns bool
+	conditions        []*SQLCondition
+	dialogWidth       string
+	dialogHeight      string
+	keywordSearchOff  bool
+	columnsProcessor  ColumnsProcessor
 	FieldsBuilder
 
 	once                  sync.Once
@@ -118,12 +124,8 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 	return b
 }
 
-func (b *ListingBuilder) Title(title string) (r *ListingBuilder) {
-	b.title = title
-	return b
-}
-
-func (b *ListingBuilder) TitleFunc(f func(evCtx *web.EventContext) (string, error)) (r *ListingBuilder) {
+// The title must not return empty, and titleCompo can return nil
+func (b *ListingBuilder) Title(f func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
 	b.titleFunc = f
 	return b
 }
@@ -133,8 +135,20 @@ func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) DisplayColumnsProcessor(f func(evCtx *web.EventContext, displayColumns []*DisplayColumn) ([]*DisplayColumn, error)) (r *ListingBuilder) {
-	b.displayColumnsProcessor = f
+func (b *ListingBuilder) WrapColumns(w func(in ColumnsProcessor) ColumnsProcessor) (r *ListingBuilder) {
+	if b.columnsProcessor == nil {
+		b.columnsProcessor = w(func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			return columns, nil
+		})
+	} else {
+		b.columnsProcessor = w(b.columnsProcessor)
+	}
+	return b
+}
+
+// Deprecated: Use WrapColumns instead.
+func (b *ListingBuilder) DisplayColumnsProcessor(f ColumnsProcessor) (r *ListingBuilder) {
+	b.columnsProcessor = f
 	return b
 }
 
@@ -225,9 +239,12 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		return r, perm.PermissionDenied
 	}
 
-	title, err := b.getTitle(evCtx)
+	title, titleCompo, err := b.getTitle(evCtx, ListingStylePage)
 	if err != nil {
 		return r, err
+	}
+	if titleCompo != nil {
+		evCtx.WithContextValue(CtxPageTitleComponent, titleCompo)
 	}
 	r.PageTitle = title
 
@@ -239,7 +256,6 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 		Popup:              false,
 		LongStyleSearchBox: false,
 	}
-
 	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
 	r.Body = VLayout(
@@ -250,15 +266,12 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	return
 }
 
-func (b *ListingBuilder) getTitle(evCtx *web.EventContext) (string, error) {
+func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (title string, titleCompo h.HTMLComponent, err error) {
+	title = MustGetMessages(evCtx.R).ListingObjectTitle(b.mb.Info().LabelName(evCtx, false))
 	if b.titleFunc != nil {
-		return b.titleFunc(evCtx)
+		return b.titleFunc(evCtx, style, title)
 	}
-	title := b.title
-	if title == "" {
-		title = MustGetMessages(evCtx.R).ListingObjectTitle(i18n.T(evCtx.R, ModelsI18nModuleKey, b.mb.label))
-	}
-	return title, nil
+	return title, nil, nil
 }
 
 func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.EventResponse, err error) {
@@ -267,9 +280,12 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		return
 	}
 
-	title, err := b.getTitle(evCtx)
+	title, titleCompo, err := b.getTitle(evCtx, ListingStyleDialog)
 	if err != nil {
 		return r, err
+	}
+	if titleCompo == nil {
+		titleCompo = h.Div().Attr("v-pre", true).Text(title)
 	}
 
 	evCtx.WithContextValue(ctxInDialog, true)
@@ -289,7 +305,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 
 	content := VCard().Attr("id", compo.CompoID()).Children(
 		VCardTitle().Class("d-flex align-center").Children(
-			h.Text(title),
+			titleCompo,
 			VSpacer(),
 			h.Div().Id(compo.ActionsComponentTeleportToID()),
 			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
@@ -344,4 +360,59 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 		),
 	})
 	return
+}
+
+func CustomizeColumnHeader(f func(evCtx *web.EventContext, col *Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error), fields ...string) func(in ColumnsProcessor) ColumnsProcessor {
+	m := lo.SliceToMap(fields, func(field string) (string, struct{}) { return field, struct{}{} })
+	return func(in ColumnsProcessor) ColumnsProcessor {
+		return func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			columns, err := in(evCtx, columns)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, dc := range columns {
+				if len(m) > 0 {
+					if _, ok := m[dc.Name]; !ok {
+						continue
+					}
+				}
+				w := dc.WrapHeader
+				dc.WrapHeader = func(evCtx *web.EventContext, col *Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+					if w != nil {
+						var err error
+						th, err = w(evCtx, col, th)
+						if err != nil {
+							return nil, err
+						}
+					}
+					return f(evCtx, col, th)
+				}
+			}
+			return columns, nil
+		}
+	}
+}
+
+func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]string, error)) func(in ColumnsProcessor) ColumnsProcessor {
+	return func(in ColumnsProcessor) ColumnsProcessor {
+		return func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+			columns, err := in(evCtx, columns)
+			if err != nil {
+				return nil, err
+			}
+
+			m, err := mapper(evCtx)
+			if err != nil {
+				return nil, err
+			}
+			for _, dc := range columns {
+				v, ok := m[dc.Name]
+				if ok {
+					dc.Label = v
+				}
+			}
+			return columns, nil
+		}
+	}
 }

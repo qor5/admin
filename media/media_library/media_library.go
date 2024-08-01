@@ -23,7 +23,9 @@ type MediaLibrary struct {
 	gorm.Model
 	SelectedType string
 	File         MediaLibraryStorage `sql:"size:4294967295;" mediaLibrary:"url:/system/{{class}}/{{primary_key}}/{{column}}.{{extension}}"`
-	UserID       uint                `sql:"index"`
+	UserID       uint                `gorm:"index"`
+	Folder       bool                `gorm:"default:false"`
+	ParentId     uint                `gorm:"index;default:0"`
 }
 
 type MediaOption struct {

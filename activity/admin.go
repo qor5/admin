@@ -61,6 +61,14 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		eb = mb.Editing()
 	)
 
+	mb.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ActivityLog
+		}
+		return msgr.ActivityLogs
+	})
+
 	// should use own DataOperator
 
 	op := gorm2op.DataOperator(ab.db)
@@ -99,6 +107,24 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return logs, totalCount, nil
 	})
 
+	// use mb.LabelName handle this now
+	// lb.Title(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	// 	return msgr.ActivityLogs, nil, nil
+	// })
+
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"CreatedAt":  msgr.ModelCreatedAt,
+			"User":       msgr.ModelUser,
+			"Action":     msgr.ModelAction,
+			"ModelKeys":  msgr.ModelKeys,
+			"ModelLabel": msgr.ModelLabel,
+			"ModelName":  msgr.ModelName,
+		}, nil
+	}))
+
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
 
@@ -112,8 +138,12 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).User.Name))
 		},
 	)
+	lb.Field("Action").Label(Messages_en_US.ModelAction).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		action := obj.(*ActivityLog).Action
+		label := getActionLabel(ctx, action)
+		return h.Td(h.Div().Attr("v-pre", true).Text(label))
+	})
 	lb.Field("ModelKeys").Label(Messages_en_US.ModelKeys)
-	lb.Field("ModelName").Label(Messages_en_US.ModelName)
 	lb.Field("ModelLabel").Label(Messages_en_US.ModelLabel).ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			if obj.(*ActivityLog).ModelLabel == "" {
@@ -122,6 +152,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Td(h.Div().Attr("v-pre", true).Text(obj.(*ActivityLog).ModelLabel))
 		},
 	)
+	lb.Field("ModelName").Label(Messages_en_US.ModelName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Td(h.Div().Attr("v-pre", true).Text(i18n.T(ctx.R, presets.ModelsI18nModuleKey, obj.(*ActivityLog).ModelName)))
+	})
 
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -139,12 +172,17 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		if err != nil {
 			panic(err)
 		}
+
 		for _, action := range actions {
 			if action == ActionLastView {
 				continue
 			}
+			label := actionLabels[action]
+			if label == "" {
+				label = i18n.PT(ctx.R, presets.ModelsI18nModuleKey, I18nActionLabelPrefix, action)
+			}
 			actionOptions = append(actionOptions, &vuetifyx.SelectItem{
-				Text:  cmp.Or(actionLabels[action], action),
+				Text:  label,
 				Value: action,
 			})
 		}
@@ -167,11 +205,16 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		var modelOptions []*vuetifyx.SelectItem
-		for _, m := range ab.models {
-			modelOptions = append(modelOptions, &vuetifyx.SelectItem{
-				Text:  m.typ.Name(),
-				Value: m.typ.Name(),
+		modelNames := []string{}
+		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_name AS model_name").Pluck("model_name", &modelNames).Error
+		if err != nil {
+			panic(err)
+		}
+		var modelNameOptions []*vuetifyx.SelectItem
+		for _, modelName := range modelNames {
+			modelNameOptions = append(modelNameOptions, &vuetifyx.SelectItem{
+				Text:  i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName),
+				Value: modelName,
 			})
 		}
 
@@ -199,13 +242,13 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Options:      userOptions,
 			})
 		}
-		if len(modelOptions) > 0 {
+		if len(modelNameOptions) > 0 {
 			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "model",
+				Key:          "model_name",
 				Label:        msgr.FilterModel,
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `model_name %s ?`,
-				Options:      modelOptions,
+				Options:      modelNameOptions,
 			})
 		}
 		return filterData
@@ -229,12 +272,19 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return filterTabs
 	})
 
+	// use mb.LabelName handle this now
+	// dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
+	// 	return msgr.ActivityLog, nil, nil
+	// })
+
 	dp.Field("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 			var (
 				log           = obj.(*ActivityLog)
 				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
 				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
+				actionLabel   = getActionLabel(ctx, log.Action)
 			)
 			var children []h.HTMLComponent
 			if !hideDetailTop {
@@ -247,8 +297,10 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 							h.Tbody(
 								h.Tr(h.Td(h.Text(msgr.ModelUser)), h.Td().Attr("v-pre", true).Text(log.User.Name)),
 								h.Tr(h.Td(h.Text(msgr.ModelUserID)), h.Td().Attr("v-pre", true).Text(log.UserID)),
-								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(log.Action)),
-								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(log.ModelName)),
+								h.Tr(h.Td(h.Text(msgr.ModelAction)), h.Td().Attr("v-pre", true).Text(actionLabel)),
+								h.Tr(h.Td(h.Text(msgr.ModelName)), h.Td().Attr("v-pre", true).Text(
+									i18n.T(ctx.R, presets.ModelsI18nModuleKey, obj.(*ActivityLog).ModelName),
+								)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, "-"))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
@@ -295,7 +347,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 					))
 				default:
-					children = append(children, h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)))
+					children = append(children, h.Div().Attr("v-pre", true).Text(msgr.PerformAction(actionLabel, log.Detail)))
 				}
 			}
 

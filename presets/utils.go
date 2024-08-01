@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
@@ -133,6 +134,12 @@ func ObjectID(obj any) string {
 	} else {
 		v, err := reflectutils.Get(obj, "ID")
 		if err == nil {
+			if v == "" {
+				return ""
+			}
+			if reflect.ValueOf(v).IsZero() {
+				return ""
+			}
 			id = fmt.Sprint(v)
 		}
 	}

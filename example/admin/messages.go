@@ -146,7 +146,6 @@ type Messages_ModelsI18nModuleKey struct {
 	ListModels               string
 	MicrositeModels          string
 	Workers                  string
-	ActivityLogs             string
 	MediaLibrary             string
 
 	PagesID         string
@@ -254,6 +253,9 @@ type Messages_ModelsI18nModuleKey struct {
 	ContactFormsThankyouMessage    string
 	ContactFormsActionUrl          string
 	ContactFormsPrivacyPolicy      string
+
+	ActivityActionLogIn         string
+	ActivityActionExtendSession string
 }
 
 var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -296,7 +298,6 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ListModels:               "发布带排序及分页模块 示例",
 	MicrositeModels:          "Microsite 示例",
 	Workers:                  "后台工作进程管理",
-	ActivityLogs:             "操作日志",
 	MediaLibrary:             "媒体库",
 
 	PagesID:         "ID",
@@ -404,6 +405,9 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsThankyouMessage:    "ContactFormsThankyouMessage",
 	ContactFormsActionUrl:          "ContactFormsActionUrl",
 	ContactFormsPrivacyPolicy:      "ContactFormsPrivacyPolicy",
+
+	ActivityActionLogIn:         "登录",
+	ActivityActionExtendSession: "延长会话",
 }
 
 var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -446,7 +450,6 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ListModels:               "リストモデル",
 	MicrositeModels:          "マイクロサイトモデル",
 	Workers:                  "ワーカーズ",
-	ActivityLogs:             "アクティビティ履歴",
 	MediaLibrary:             "メディアライブラリ",
 
 	PagesID:         "ID",
@@ -554,4 +557,7 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsThankyouMessage:    "サンキューメッセージ",
 	ContactFormsActionUrl:          "アクションURL",
 	ContactFormsPrivacyPolicy:      "プライバシーポリシー",
+
+	ActivityActionLogIn:         "ログイン",
+	ActivityActionExtendSession: "セッション延長",
 }

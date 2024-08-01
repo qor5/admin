@@ -49,7 +49,7 @@ func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventCont
 }
 
 func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forceTextColor string) h.HTMLComponent {
-	_, msgr := c.MustGetEventContext(ctx)
+	evCtx, msgr := c.MustGetEventContext(ctx)
 	switch log.Action {
 	case ActionNote:
 		note := &Note{}
@@ -109,7 +109,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 	case ActionDelete:
 		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
 	default:
-		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(log.Action, log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(getActionLabel(evCtx, log.Action), log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
 	}
 }
 
@@ -211,17 +211,21 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		children = append(children, h.Div().Class("text-body-2 text-grey align-self-center mb-4").Text(msgr.NoActivitiesYet))
 	}
 
-	reloadAction := fmt.Sprintf(`
-	if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
-		return
-	}
-	%s
-	`, stateful.ReloadAction(ctx, c, nil).Go())
 	return stateful.Actionable(ctx, c,
 		web.Listen(
-			presets.NotifModelsCreated(&ActivityLog{}), reloadAction,
-			presets.NotifModelsUpdated(&ActivityLog{}), reloadAction,
-			presets.NotifModelsDeleted(&ActivityLog{}), reloadAction,
+			presets.NotifModelsCreated(&ActivityLog{}), fmt.Sprintf(`
+			if (!!payload.models && payload.models.length > 0 && payload.models.every(obj => obj.Hidden === true)) {
+				return
+			}
+			%s
+			`, stateful.ReloadAction(ctx, c, nil).Go()),
+			presets.NotifModelsUpdated(&ActivityLog{}), fmt.Sprintf(`
+			if (!!payload.models && Object.keys(payload.models).length > 0 && Object.values(payload.models).every(obj => obj.Hidden === true)) {
+				return
+			}
+			%s
+			`, stateful.ReloadAction(ctx, c, nil).Go()),
+			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
 			v.VDialog().MaxWidth("520px").
@@ -340,9 +344,11 @@ func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (
 	}
 
 	presets.ShowMessage(&r, msgr.SuccessfullyUpdatedNote, v.ColorSuccess)
+
+	id := fmt.Sprint(log.ID)
 	r.Emit(presets.NotifModelsUpdated(&ActivityLog{}), presets.PayloadModelsUpdated{
-		Ids:    []string{fmt.Sprint(log.ID)},
-		Models: []any{log},
+		Ids:    []string{id},
+		Models: map[string]any{id: log},
 	})
 	return
 }

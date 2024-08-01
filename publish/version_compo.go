@@ -66,11 +66,12 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		if !ok {
 			panic("obj should be SlugEncoder")
 		}
+		slug := primarySlugger.PrimarySlug()
 
 		div := h.Div().Class("w-100 d-inline-flex")
 		div.AppendChildren(
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				Query(presets.ParamID, primarySlugger.PrimarySlug()).Go(),
+				Query(presets.ParamID, slug).Go(),
 				utilsMsgr),
 		)
 
@@ -81,12 +82,12 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
-				h.Text(version.EmbedVersion().VersionName),
+				h.Text(`{{ xlocals.versionName }}`),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:40px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
-					Query(filterKeySelected, primarySlugger.PrimarySlug()).
+					Query(filterKeySelected, slug).
 					Go()).
 				Class(v.W100)
 			if status, ok = obj.(StatusInterface); ok {
@@ -95,7 +96,10 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			versionSwitch.AppendChildren(v.VSpacer())
 			versionSwitch.AppendIcon("mdi-chevron-down")
 
-			div.AppendChildren(versionSwitch)
+			div.AppendChildren(web.Scope().VSlot(" { locals: xlocals } ").Init(fmt.Sprintf("{versionName: %q}", version.EmbedVersion().VersionName)).Children(
+				versionSwitch,
+				web.Listen(mb.NotifModelsUpdated(), fmt.Sprintf(`xlocals.versionName = payload.models[%q]?.VersionName ?? xlocals.versionName;`, slug)),
+			))
 
 			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
 				div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
@@ -162,7 +166,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				clickEvent := web.Plaid().
 					EventFunc(eventSchedulePublishDialog).
 					Query(presets.ParamOverlay, actions.Dialog).
-					Query(presets.ParamID, primarySlugger.PrimarySlug()).
+					Query(presets.ParamID, slug).
 					URL(mb.Info().ListingHref()).Go()
 				if config.Top {
 					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
@@ -181,7 +185,6 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 
 		children := []h.HTMLComponent{div}
 		if !config.DisableListeners {
-			slug := primarySlugger.PrimarySlug()
 			children = append(children,
 				NewListenerVersionSelected(mb, slug),
 				NewListenerModelsDeleted(mb, slug),
@@ -274,10 +277,20 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 	lb := mb.Listing(listingFields...).
 		DialogWidth("900px").
-		TitleFunc(func(evCtx *web.EventContext) (string, error) {
+		Title(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
-			return msgr.VersionsList, nil
+			return msgr.VersionsList, nil, nil
 		}).
+		WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+			return map[string]string{
+				"Version": msgr.HeaderVersion,
+				"Status":  msgr.HeaderStatus,
+				"StartAt": msgr.HeaderStartAt,
+				"EndAt":   msgr.HeaderEndAt,
+				"Option":  msgr.HeaderOption,
+			}, nil
+		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
@@ -389,7 +402,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantElevated).Attr("@click", "vars.presetsListingDialog=false"),
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorSecondary).
+				Class("text-none text-caption font-weight-regular").
+				Attr("@click", "vars.presetsListingDialog=false"),
 		)
 	})
 	lb.FooterAction("OK").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
@@ -397,7 +412,9 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
-		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantElevated).Color(v.ColorSecondary).Attr("@click",
+
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantTonal).Size(v.SizeSmall).
+			Class("text-none text-caption font-weight-regular bg-secondary text-on-secondary").Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),

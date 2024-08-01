@@ -17,8 +17,8 @@ func NotifModelsCreated(v any) string {
 }
 
 type PayloadModelsUpdated struct {
-	Ids    []string `json:"ids"`
-	Models []any    `json:"models"`
+	Ids    []string       `json:"ids"`
+	Models map[string]any `json:"models"`
 }
 
 func (mb *ModelBuilder) NotifModelsUpdated() string {

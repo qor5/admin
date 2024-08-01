@@ -26,7 +26,7 @@ type Note struct {
 }
 
 func addListener(_ *web.EventContext, v any) h.HTMLComponent {
-	simpleReload := web.Plaid().PushState(true).MergeQuery(true).Go()
+	simpleReload := web.Plaid().MergeQuery(true).Go()
 	return web.Listen(
 		presets.NotifModelsCreated(v), simpleReload,
 		presets.NotifModelsUpdated(v), simpleReload,
@@ -151,7 +151,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 		return vx.Card(detail).HeaderTitle("Details").Variant(VariantElevated).
 			Actions(
 				web.Listen(
-					cust.NotifModelsUpdated(), web.Plaid().PushState(true).MergeQuery(true).Go(),
+					cust.NotifModelsUpdated(), web.Plaid().MergeQuery(true).Go(),
 				),
 				VBtn("Agree Terms").
 					Class("mr-2").

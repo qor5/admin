@@ -132,6 +132,9 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Go() + ";" + pushState.RunPushState() +
 			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
+	renameEvent := web.Plaid().
+		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
+		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -158,10 +161,8 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
 														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
 														Attr("v-if", "element.editShow").
-														Attr("@blur", "element.editShow=false").
-														Attr("@keyup.enter", web.Plaid().
-															URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
-															EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()),
+														Attr("@blur", "element.editShow=false;"+renameEvent).
+														Attr("@keyup.enter", renameEvent),
 													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
@@ -813,7 +814,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  opacity: 0;
 			  top: 0;
 			  left: 0;
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset;
 			}
 			
 			
@@ -845,7 +846,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover {
 			  cursor: pointer;
 			}
-			
+
 			.wrapper-shadow:hover .editor-add {
 			  opacity: 1;
 			}
@@ -853,7 +854,6 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover .editor-add div {
 			  height: 6px;
 			}
-			
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
@@ -890,18 +890,23 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
               white-space: nowrap;
 			  letter-spacing: 0.04px;	
 			}
-			
+            .unfocused .editor-add {
+			  opacity: 0 !important;
+			}
+   			.unfocused .inner-shadow{
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset !important;
+			}
 			.highlight .editor-bar {
 			  opacity: 1;
               pointer-events: auto;
 			}
-			
+
 			.highlight .editor-add {
 			  opacity: 1;
 			}
-			
 			.highlight .inner-shadow {
 			  opacity: 1;
+			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
 			}
 `))
 		}

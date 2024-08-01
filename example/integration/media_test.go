@@ -4,6 +4,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/admin/v3/media/media_library"
+
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/web/v3"
+
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
 	"gorm.io/gorm"
@@ -14,9 +19,13 @@ import (
 )
 
 var mediaTestData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file) VALUES (1, '2024-06-14 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', '{"FileName":"Snipaste_2024-06-14_10-06-12.png","Url":"/system/media_libraries/1/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
-INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_at, selected_type, file) VALUES (2, 888, '2024-06-15 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', '{"FileName":"test_search1.png","Url":"/system/media_libraries/2/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
-INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_at, selected_type, file) VALUES (3, 999,'2024-06-14 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', '{"FileName":"test_search2.png","Url":"/system/media_libraries/3/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, folder,file) VALUES (1, '2024-06-14 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', false,'{"FileName":"Snipaste_2024-06-14_10-06-12.png","Url":"/system/media_libraries/1/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
+INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_at, selected_type, folder,file) VALUES (2, 888, '2024-06-15 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', false, '{"FileName":"test_search1.png","Url":"/system/media_libraries/2/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
+INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_at, selected_type,folder, file) VALUES (3, 999,'2024-06-14 02:06:15.811153 +00:00', '2024-06-19 08:25:12.954584 +00:00', null, 'image', false, '{"FileName":"test_search2.png","Url":"/system/media_libraries/3/file.png","Width":1598,"Height":966,"FileSizes":{"@qor_preview":7140,"default":128870,"original":128870},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0},"og":{"Width":1200,"Height":630,"Padding":false,"Sm":0,"Cols":0},"twitter-large":{"Width":1200,"Height":600,"Padding":false,"Sm":0,"Cols":0},"twitter-small":{"Width":630,"Height":630,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"123123"}');
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (4, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (5, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 4);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (6, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test.png","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
+
 `, []string{"media_libraries"}))
 
 func TestMedia(t *testing.T) {
@@ -31,7 +40,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-06-19-v01_International?__execute_event__=mediaLibrary_ChooseFileEvent&field=SEO.OpenGraphImageFromMediaLibrary&media_id=1").
+					PageURL("/pages/1_2024-06-19-v01_International?__execute_event__=mediaLibrary_ChooseFileEvent&field=SEO.OpenGraphImageFromMediaLibrary&media_ids=1").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -51,6 +60,319 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"test_search1.png", "test_search2.png"},
+		},
+		{
+			Name:  "MediaLibrary Create Folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.CreateFolderEvent).
+					AddField(media.ParamName, "test_create_directory").
+					AddField(media.ParamParentID, "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m *media_library.MediaLibrary
+				if err := TestDB.Order("id desc").First(&m).Error; err != nil {
+					t.Fatalf("create directory err : %v", err)
+					return
+				}
+				if !m.Folder || m.File.FileName != "test_create_directory" {
+					t.Fatalf("create directory : %#+v", m)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary New Folder Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.NewFolderDialogEvent).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "New Folder"},
+		},
+		{
+			Name:  "MediaLibrary Move To Folder Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.MoveToFolderDialogEvent).
+					Query(media.ParamSelectIDS, "1,2,3").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Director", "0_folder_portal_name"},
+			ExpectPortalUpdate0NotContains:     []string{"test001"},
+		},
+		{
+			Name:  "MediaLibrary Next Folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.NextFolderEvent).
+					Query(media.ParamSelectFolderID, "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001"},
+			ExpectPortalUpdate0NotContains:     []string{"test002"},
+		},
+
+		{
+			Name:  "MediaLibrary Move To Folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.MoveToFolderEvent).
+					Query(media.ParamSelectFolderID, "5").
+					Query(media.ParamSelectIDS, "1,2,3").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				if err := TestDB.Where("id in (1,2,3) and parent_id=5 ").Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+					t.Fatalf("move to folder err : %v", err)
+					return
+				}
+				if count != 3 {
+					t.Fatalf("move to folder count : %d", count)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Delete Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.DeleteConfirmationEvent).
+					Query(media.ParamMediaIDS, "1,2,3").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Are you sure you want to delete"},
+		},
+		{
+			Name:  "MediaLibrary Delete One object",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.DoDeleteEvent).
+					Query(media.ParamMediaIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+					t.Fatalf("delete object err : %v", err)
+					return
+				}
+				if count != 5 {
+					t.Fatalf("not delete object count : %d", count)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Delete parent folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.DoDeleteEvent).
+					Query(media.ParamMediaIDS, "4").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, 5).Error; err != nil {
+					t.Fatalf("find object err : %v", err)
+					return
+				}
+				if m.ParentId != 0 {
+					t.Fatalf("not update no parent folder %v", m.ParentId)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Delete Objects",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.DoDeleteEvent).
+					Query(media.ParamMediaIDS, "1,2,3,4,5,6").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+					t.Fatalf("delete objects err : %v", err)
+					return
+				}
+				if count != 0 {
+					t.Fatalf("not delete objects count : %d", count)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Rename Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameDialogEvent).
+					Query(media.ParamMediaIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "Name", "Snipaste_2024-06-14_10-06-12"},
+			ExpectPortalUpdate0NotContains:     []string{".png"},
+		},
+		{
+			Name:  "MediaLibrary Rename Folder Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameDialogEvent).
+					Query(media.ParamMediaIDS, "6").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "Name", "test.png"},
+		},
+		{
+			Name:  "MediaLibrary Rename",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameEvent).
+					Query(media.ParamMediaIDS, "1").
+					AddField(media.ParamName, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, "1").Error; err != nil {
+					t.Fatalf("rename err : %v", err)
+					return
+				}
+				if m.File.FileName != "1.png" {
+					t.Fatalf("rename failed need:<1.png>,got <%s>", m.File.FileName)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Rename Folder",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.RenameEvent).
+					Query(media.ParamMediaIDS, "6").
+					AddField(media.ParamName, "test").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, "6").Error; err != nil {
+					t.Fatalf("rename err : %v", err)
+					return
+				}
+				if m.File.FileName != "test" {
+					t.Fatalf("rename failed need:<test>,got <%s>", m.File.FileName)
+					return
+				}
+			},
+		},
+		{
+			Name:  "MediaLibrary Update Description Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UpdateDescriptionDialogEvent).
+					Query(media.ParamMediaIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Update Description", "Description", "123123"},
+		},
+		{
+			Name:  "MediaLibrary Update Description",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UpdateDescriptionEvent).
+					Query(media.ParamMediaIDS, "1").
+					AddField(media.ParamCurrentDescription, "321").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				if err := TestDB.First(&m, "1").Error; err != nil {
+					t.Fatalf("update description err : %v", err)
+					return
+				}
+				if m.File.Description != "321" {
+					t.Fatalf("update description failed need:<321>,got <%s>", m.File.Description)
+					return
+				}
+			},
 		},
 	}
 

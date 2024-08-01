@@ -64,6 +64,11 @@ type Messages struct {
 	Cancel                        string
 	Delete                        string
 	NoActivitiesYet               string
+
+	HeaderNotes string
+
+	ActivityLogs string
+	ActivityLog  string
 }
 
 func (msgr *Messages) LastEditedAt(desc string) string {
@@ -110,7 +115,7 @@ var Messages_en_US = &Messages{
 	FilterAction:    "Action",
 	FilterCreatedAt: "Create Time",
 	FilterUser:      "Creator",
-	FilterModel:     "Model Name",
+	FilterModel:     "Table Name",
 
 	DiffDetail:  "Detail",
 	DiffAdd:     "New",
@@ -147,6 +152,11 @@ var Messages_en_US = &Messages{
 	Cancel:                        "Cancel",
 	Delete:                        "Delete",
 	NoActivitiesYet:               "No activities yet",
+
+	HeaderNotes: "Notes",
+
+	ActivityLogs: "Activity Logs",
+	ActivityLog:  "Activity Log",
 }
 
 var Messages_zh_CN = &Messages{
@@ -159,7 +169,7 @@ var Messages_zh_CN = &Messages{
 	ActionNote:   "备注",
 
 	ModelUserID:    "操作者ID",
-	ModelCreatedAt: "日期时间",
+	ModelCreatedAt: "时间",
 	ModelAction:    "操作",
 	ModelUser:      "操作者",
 	ModelKeys:      "表的主键值",
@@ -170,16 +180,17 @@ var Messages_zh_CN = &Messages{
 
 	FilterAction:    "操作类型",
 	FilterCreatedAt: "操作时间",
-	FilterUser:      "操作人",
-	FilterModel:     "操作对象",
-	DiffDetail:      "详情",
-	DiffAdd:         "新加",
-	DiffDelete:      "删除",
-	DiffChanges:     "修改",
-	DiffField:       "字段",
-	DiffOld:         "之前的值",
-	DiffNew:         "当前的值",
-	DiffValue:       "值",
+	FilterUser:      "操作者",
+	FilterModel:     "操作表名",
+
+	DiffDetail:  "详情",
+	DiffAdd:     "新加",
+	DiffDelete:  "删除",
+	DiffChanges: "修改",
+	DiffField:   "字段",
+	DiffOld:     "之前的值",
+	DiffNew:     "当前的值",
+	DiffValue:   "值",
 
 	AddedANote:                    "添加了一个备注：",
 	LastEditedAtTemplate:          "编辑于 {desc}",
@@ -207,6 +218,11 @@ var Messages_zh_CN = &Messages{
 	Cancel:                        "取消",
 	Delete:                        "删除",
 	NoActivitiesYet:               "暂无活动",
+
+	HeaderNotes: "备注",
+
+	ActivityLogs: "操作日志",
+	ActivityLog:  "操作日志",
 }
 
 var Messages_ja_JP = &Messages{
@@ -231,7 +247,7 @@ var Messages_ja_JP = &Messages{
 	FilterAction:    "アクション",
 	FilterCreatedAt: "作成日時",
 	FilterUser:      "作成者",
-	FilterModel:     "モデル名",
+	FilterModel:     "テーブル名",
 
 	DiffDetail:  "詳細",
 	DiffAdd:     "追加",
@@ -268,4 +284,9 @@ var Messages_ja_JP = &Messages{
 	Cancel:                        "キャンセル",
 	Delete:                        "削除",
 	NoActivitiesYet:               "まだアクティビティはありません",
+
+	HeaderNotes: "ノート",
+
+	ActivityLogs: "アクティビティ履歴",
+	ActivityLog:  "アクティビティ履歴",
 }

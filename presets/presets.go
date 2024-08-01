@@ -43,7 +43,6 @@ type Builder struct {
 	homePageLayoutConfig                  *LayoutConfig
 	notFoundPageLayoutConfig              *LayoutConfig
 	brandFunc                             ComponentFunc
-	pageTitleFunc                         ComponentFunc
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
@@ -205,11 +204,6 @@ func (b *Builder) NotFoundFunc(v web.PageFunc) (r *Builder) {
 
 func (b *Builder) BrandFunc(v ComponentFunc) (r *Builder) {
 	b.brandFunc = v
-	return b
-}
-
-func (b *Builder) PageTitleFunc(v ComponentFunc) (r *Builder) {
-	b.pageTitleFunc = v
 	return b
 }
 
@@ -461,11 +455,11 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 	item := VListItem(
 		// VRow(
 		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
-		// 	VCol(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+		// 	VCol(h.Text(m.Info().LabelName(ctx, false))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
 
 		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
 		VListItemTitle(
-			h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, m.label)),
+			h.Text(m.Info().LabelName(ctx, false)),
 		),
 	).Class("rounded-lg").
 		Value(m.label)
@@ -676,7 +670,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 						),
 					).Class("pa-0").Density(DensityCompact),
 				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("@click", web.Plaid().Query(queryName, supportLanguages[0].String()).Go()),
+			).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, supportLanguages[0].String()).Go()),
 		)
 	}
 
@@ -701,7 +695,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 					VListItemTitle(
 						h.Div(h.Text(display.Self.Name(tag))),
 					),
-				).Attr("@click", web.Plaid().Query(queryName, tag.String()).Go()),
+				).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, tag.String()).Go()),
 			),
 		)
 	}
@@ -1008,27 +1002,28 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		// _ := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 
-		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
-
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle))
 		var pageTitleComp h.HTMLComponent
-		if b.pageTitleFunc != nil {
-			pageTitleComp = b.pageTitleFunc(ctx)
+		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
+		if !ok {
+			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+
 		} else {
-			pageTitleComp = h.Div(
-				VAppBarNavIcon().
-					Density("compact").
-					Class("mr-2").
-					Attr("v-if", "!vars.navDrawer").
-					On("click.stop", "vars.navDrawer = !vars.navDrawer"),
-				h.Div(
-					VToolbarTitle(innerPr.PageTitle), // Class("text-h6 font-weight-regular"),
-				).Class("mr-auto"),
-				h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
-					return h.Div().Id(actionsComponentTeleportToID)
-				}),
-			).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
+			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
+		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
+		pageTitleComp = h.Div(
+			VAppBarNavIcon().
+				Density("compact").
+				Class("mr-2").
+				Attr("v-if", "!vars.navDrawer").
+				On("click.stop", "vars.navDrawer = !vars.navDrawer"),
+			innerPageTitleCompo,
+			VSpacer(),
+			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
+				return h.Div().Id(actionsComponentTeleportToID)
+			}),
+		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
@@ -1057,16 +1052,19 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							toolbar,
 							VCard(
 								menu,
-							).Class("ma-4").Variant(VariantText),
+							).Class("menu-content my-4 ml-4 pr-4").Variant(VariantText),
 						),
 						// VDivider(),
 						profile,
-					).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
+					).Class("ma-2 border-sm rounded elevation-0").Attr("style",
 						"height: calc(100% - 16px);"),
 					// ).Class("ma-2").
 					// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
 				).
-					Width(320).
+					// 256px is directly The measured size in figma
+					// in actual use, need plus 8px for padding left and right
+					// plus border 2px
+					Width(256+8+8+2).
 					// App(true).
 					// Clipped(true).
 					// Fixed(true).
@@ -1086,9 +1084,11 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						Color(b.progressBarColor),
 					VAppBar(
 						pageTitleComp,
-					).Elevation(0),
+					).Elevation(0).Attr("height", 100),
 					innerPr.Body,
-				).Class("overflow-y-auto").Attr("style", "height:100vh"),
+				).
+					Class("overflow-y-auto main-container").
+					Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
 			),
 		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 

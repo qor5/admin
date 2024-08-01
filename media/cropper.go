@@ -15,12 +15,12 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-const mediaID = "media_id"
+const ParamMediaIDS = "media_ids"
 
 func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *media_library.MediaBoxConfig) {
 	field = ctx.R.FormValue("field")
 
-	id = ctx.ParamAsInt(mediaID)
+	id = ctx.ParamAsInt(ParamMediaIDS)
 	thumb = ctx.R.FormValue("thumb")
 	cfg = stringToCfg(ctx.R.FormValue("cfg"))
 	return
@@ -79,7 +79,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 									BeforeScript("cropLocals.cropping = true").
 									EventFunc(cropImageEvent).
 									Query("field", field).
-									Query(mediaID, fmt.Sprint(id)).
+									Query(ParamMediaIDS, fmt.Sprint(id)).
 									Query("thumb", thumb).
 									Query("CropOption", web.Var("cropLocals.CropOption")).
 									Query("cfg", h.JSONString(cfg)).
