@@ -31,8 +31,8 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		i18nBuilder := vh.I18n()
 		var langs []languageItem
 		var currLangVal string
+		qn := i18nBuilder.GetQueryName()
 		if ls := i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
-			qn := i18nBuilder.GetQueryName()
 			lang := ctx.R.FormValue(qn)
 			if lang == "" {
 				lang = i18nBuilder.GetCurrentLangFromCookie(ctx.R)
@@ -40,16 +40,12 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			accept := ctx.R.Header.Get("Accept-Language")
 			_, mi := language.MatchStrings(language.NewMatcher(ls), lang, accept)
 			for i, l := range ls {
-				u, _ := url.Parse(ctx.R.RequestURI)
-				qs := u.Query()
-				qs.Set(qn, l.String())
-				u.RawQuery = qs.Encode()
 				if i == mi {
-					currLangVal = u.String()
+					currLangVal = l.String()
 				}
 				langs = append(langs, languageItem{
 					Label: display.Self.Name(l),
-					Value: u.String(),
+					Value: l.String(),
 				})
 			}
 		}
@@ -128,7 +124,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 						ItemTitle("Label").
 						ItemValue("Value").
 						Attr("v-model", `selectLocals.currLangVal`).
-						Attr("@change", `window.location.href=selectLocals.currLangVal`).
+						Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()).
 						Variant(VariantOutlined).
 						Density(DensityCompact).
 						Class("mt-12").
