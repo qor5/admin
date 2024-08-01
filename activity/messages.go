@@ -115,7 +115,7 @@ var Messages_en_US = &Messages{
 	FilterAction:    "Action",
 	FilterCreatedAt: "Create Time",
 	FilterUser:      "Creator",
-	FilterModel:     "Table Name",
+	FilterModel:     "Model Name",
 
 	DiffDetail:  "Detail",
 	DiffAdd:     "New",
@@ -169,7 +169,7 @@ var Messages_zh_CN = &Messages{
 	ActionNote:   "备注",
 
 	ModelUserID:    "操作者ID",
-	ModelCreatedAt: "时间",
+	ModelCreatedAt: "日期时间",
 	ModelAction:    "操作",
 	ModelUser:      "操作者",
 	ModelKeys:      "表的主键值",
@@ -180,8 +180,8 @@ var Messages_zh_CN = &Messages{
 
 	FilterAction:    "操作类型",
 	FilterCreatedAt: "操作时间",
-	FilterUser:      "操作者",
-	FilterModel:     "操作表名",
+	FilterUser:      "操作人",
+	FilterModel:     "操作对象",
 
 	DiffDetail:  "详情",
 	DiffAdd:     "新加",
@@ -247,7 +247,7 @@ var Messages_ja_JP = &Messages{
 	FilterAction:    "アクション",
 	FilterCreatedAt: "作成日時",
 	FilterUser:      "作成者",
-	FilterModel:     "テーブル名",
+	FilterModel:     "モデル名",
 
 	DiffDetail:  "詳細",
 	DiffAdd:     "追加",
