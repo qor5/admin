@@ -379,7 +379,10 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(paramParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
+			Query(ParamParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
+		if inMediaLibrary {
+			clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, f.ID).RunPushState()
+		}
 	} else {
 		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
 
@@ -623,7 +626,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Go()
 	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
 	if inMediaLibrary {
-		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{paramParentID}).Query(paramTab, web.Var("$event")).RunPushState()
+		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 
 	for _, f := range files {
@@ -796,7 +799,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 	} else {
 		clickEvent = clickEvent.
 			Query(paramTab, web.Var("vars.media_tab")).
-			Query(paramParentID, web.Var("vars.media_parent_id"))
+			Query(ParamParentID, web.Var("vars.media_parent_id"))
 	}
 
 	return web.Scope(
