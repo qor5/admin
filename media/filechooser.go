@@ -275,7 +275,6 @@ func fileComponent(
 	imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(base.IsImageFormat(f.File.FileName)))
 
 	src := f.File.URL()
-	*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
 	*menus = append(*menus,
 		VListItem(h.Text("Copy")).Attr("@click", web.Plaid().
 			EventFunc(CopyFileEvent).
@@ -296,6 +295,9 @@ func fileComponent(
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Go()),
 	)
+	if base.IsImageFormat(f.File.FileName) {
+		*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	}
 	title = h.Div(
 		h.If(
 			base.IsImageFormat(f.File.FileName),
