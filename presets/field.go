@@ -666,7 +666,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			if len(rowsComp) > 0 {
 				var titleComp h.HTMLComponent
 				if t.Title != "" {
-					titleComp = h.Label(t.Title).Class("v-label theme--light text-caption")
+					titleComp = h.Label(i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), t.Title)).Class("v-label theme--light text-caption")
 				}
 				comp = h.Div(
 					titleComp,
