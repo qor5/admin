@@ -126,6 +126,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
+		parentID := ctx.ParamAsInt(ParamParentID)
 
 		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
@@ -134,7 +135,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
-			m := media_library.MediaLibrary{}
+			m := media_library.MediaLibrary{ParentId: uint(parentID)}
 
 			if base.IsImageFormat(fh.Filename) {
 				m.SelectedType = media_library.ALLOW_TYPE_IMAGE
@@ -719,6 +720,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 										web.Plaid().
 											BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
 											EventFunc(uploadFileEvent).
+											Query(paramTab, tab).
+											Query(ParamParentID, parentID).
 											Query(ParamField, field).
 											Query(ParamCfg, h.JSONString(cfg)).
 											Go()),

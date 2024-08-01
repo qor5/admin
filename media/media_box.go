@@ -920,7 +920,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 							PrependIcon("mdi-folder").
 							Attr(":active", fmt.Sprintf(`form.%s==%v`, ParamSelectFolderID, record.ID)).
 							Attr("@click", fmt.Sprintf("form.%s=%v;", ParamSelectFolderID, record.ID)+
-								fmt.Sprintf(`if (!locals.folder%v){locals.folder%v=1;%s}`, record.ID, record.ID,
+								fmt.Sprintf(`if (!dialogLocals.folder%v){dialogLocals.folder%v=1;%s}`, record.ID, record.ID,
 									web.Plaid().
 										EventFunc(NextFolderEvent).
 										Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
