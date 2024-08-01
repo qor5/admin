@@ -37,6 +37,8 @@ type MediaBoxConfig struct {
 	BackgroundColor string
 	// disable crop
 	DisableCrop bool
+	// allow to accept media_box only with URL
+	SimpleIMGURL bool
 }
 
 func (mediaBox *MediaBox) Scan(data interface{}) (err error) {

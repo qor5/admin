@@ -205,7 +205,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				h.A().Text(f.FileName).Href(f.Url).Target("_blank"),
 			).Style("text-align:center"),
 		),
-		h.If(base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey),
+		h.If(base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey) && !cfg.SimpleIMGURL,
 			VCardActions(
 				thumbName(thumb, size, fileSize, f),
 			),
@@ -373,7 +373,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				Go(),
 			).Disabled(disabled),
 	)
-	if mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
+	if (mediaBox != nil && mediaBox.ID.String() != "" && mediaBox.ID.String() != "0") ||
+		(cfg.SimpleIMGURL && mediaBox != nil && mediaBox.Url != "") {
 		btnRow.AppendChildren(
 			VBtn(msgr.Delete).
 				Variant(VariantTonal).Color(ColorError).Size(SizeXSmall).PrependIcon("mdi-delete-outline").
@@ -389,39 +390,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	if !readonly {
 		c.AppendChildren(btnRow.Class())
 	}
-	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
-		row := VRow()
-		if len(cfg.Sizes) == 0 {
-			row.AppendChildren(
-				VCol(
-					mediaBoxThumb(msgr, cfg, mediaBox, field, base.DefaultSizeKey, disabled),
-				).Cols(6).Sm(4).Class("pl-0"),
-			)
-		} else {
-			var keys []string
-			for k := range cfg.Sizes {
-				keys = append(keys, k)
-			}
-
-			sort.Strings(keys)
-
-			for _, k := range keys {
-				sm := cfg.Sizes[k].Sm
-				if sm == 0 {
-					sm = 4
-				}
-				cols := cfg.Sizes[k].Cols
-				if cols == 0 {
-					cols = 6
-				}
-				row.AppendChildren(
-					VCol(
-						mediaBoxThumb(msgr, cfg, mediaBox, field, k, disabled),
-					).Cols(cols).Sm(sm).Class("pl-0"),
-				)
-			}
-		}
-
+	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" && !cfg.SimpleIMGURL {
+		row := appendMediaBoxThumb(cfg, msgr, mediaBox, field, disabled)
 		c.AppendChildren(row)
 
 		fieldName := fmt.Sprintf("%s.Description", field)
@@ -449,10 +419,17 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				),
 			)
 		}
+	} else if cfg.SimpleIMGURL {
+		mediaBox.FileName = "simple.png"
+		if mediaBox.Url != "" {
+			row := appendMediaBoxThumb(cfg, msgr, mediaBox, field, disabled)
+			c.AppendChildren(row)
+		}
 	}
 
 	mediaBoxValue := ""
-	if mediaBox.ID.String() != "" && mediaBox.ID.String() != "0" {
+	if (mediaBox.ID.String() != "" && mediaBox.ID.String() != "0") ||
+		cfg.SimpleIMGURL {
 		mediaBoxValue = h.JSONString(mediaBox)
 	}
 
@@ -462,6 +439,58 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		h.Input("").Type("hidden").
 			Attr(web.VField(fmt.Sprintf("%s.Values", field), mediaBoxValue)...),
 	)
+}
+
+func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, mediaBox *media_library.MediaBox, field string, disabled bool) h.HTMLComponent {
+	row := VRow()
+	if len(cfg.Sizes) == 0 {
+		row.AppendChildren(
+			VCol(
+				mediaBoxThumb(msgr, cfg, mediaBox, field, base.DefaultSizeKey, disabled),
+			).Cols(6).Sm(4).Class("pl-0"),
+		)
+	} else {
+		var keys []string
+		for k := range cfg.Sizes {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			sm := cfg.Sizes[k].Sm
+			if sm == 0 {
+				sm = 4
+			}
+			cols := cfg.Sizes[k].Cols
+			if cols == 0 {
+				cols = 6
+			}
+			row.AppendChildren(
+				VCol(
+					mediaBoxThumb(msgr, cfg, mediaBox, field, k, disabled),
+				).Cols(cols).Sm(sm).Class("pl-0"),
+			)
+		}
+	}
+	return row
+}
+
+func SimpleMediaBox(url, fieldName string, readOnly bool, cfg *media_library.MediaBoxConfig, db *gorm.DB) *QMediaBoxBuilder {
+	mdx := media_library.MediaBox{Url: url}
+	if cfg == nil {
+		cfg = &media_library.MediaBoxConfig{
+			AllowType:    "image",
+			DisableCrop:  true,
+			SimpleIMGURL: true,
+		}
+	}
+	return QMediaBox(db).
+		FieldName(fieldName).
+		Value(&mdx).
+		Config(cfg).
+		Disabled(readOnly).
+		Readonly(readOnly)
 }
 
 func MediaBoxListFunc() presets.FieldComponentFunc {
