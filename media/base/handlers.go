@@ -8,7 +8,7 @@ import (
 	"image/draw"
 	"image/gif"
 	_ "image/jpeg"
-	"io/ioutil"
+	"io"
 	"math"
 
 	"github.com/disintegration/imaging"
@@ -100,7 +100,7 @@ func resizeImageTo(img image.Image, size *Size, format imaging.Format) image.Ima
 }
 
 func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err error) {
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return
 	}

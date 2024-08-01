@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"slices"
 	"sort"
@@ -947,22 +948,24 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 	fileName := m.File.FileName
 	if !m.Folder {
 		var fi base.FileInterface
-		if fileHeader := m.File.GetFileHeader(); fileHeader != nil {
-			fi, err = m.File.GetFileHeader().Open()
-		} else {
-			fi, err = m.File.Retrieve(m.File.URL())
-		}
-		defer fi.Close()
+		fi, err = m.File.Retrieve(m.File.URL())
+
 		if err != nil {
 			return
 		}
+		defer fi.Close()
 		m.File = media_library.MediaLibraryStorage{}
-		if err = m.File.Scan(fi); err != nil {
+		var body []byte
+		if body, err = io.ReadAll(fi); err != nil {
+			return
+		}
+		mf := base.NewMemoryFile(fileName, body)
+
+		if err = m.File.Scan(mf); err != nil {
 			return
 		}
 	}
 	m.Model = gorm.Model{ID: 0}
-	m.File.FileName = fileName
 	err = base.SaveUploadAndCropImage(db, &m)
 	return
 }
