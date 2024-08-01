@@ -52,7 +52,7 @@ type ModelBuilder struct {
 type ctxKeyUnreadCounts struct{}
 
 func NotifiLastViewedAtUpdated(modelName string) string {
-	return fmt.Sprintf("activity_NotifModelsCreated_%s", modelName)
+	return fmt.Sprintf("activity_NotifiLastViewedAtUpdated_%s", modelName)
 }
 
 type PayloadLastViewedAtUpdated struct {

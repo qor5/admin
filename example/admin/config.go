@@ -95,7 +95,6 @@ func NewConfig(db *gorm.DB) Config {
 	}
 
 	// @snippet_begin(ActivityExample)
-	db.Exec(`CREATE SCHEMA IF NOT EXISTS cs_portal;`)
 	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
@@ -125,7 +124,7 @@ func NewConfig(db *gorm.DB) Config {
 				return
 			}
 		}).
-		TablePrefix("cs_portal.").
+		TablePrefix("cms_").
 		AutoMigrate()
 
 	// ab.Model(l).SkipDelete().SkipCreate()

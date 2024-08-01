@@ -190,6 +190,14 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 					return icon
 				}),
 			),
+			h.Components(
+				lo.Map(modelNames, func(modelName string, _ int) h.HTMLComponent {
+					return web.Listen(
+						activity.NotifiLastViewedAtUpdated(modelName),
+						stateful.ReloadAction(ctx, c, nil).Go(),
+					)
+				})...,
+			),
 		),
 		v.VCard(v.VList(listItems...)),
 	)
