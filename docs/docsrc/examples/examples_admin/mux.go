@@ -40,4 +40,5 @@ func SamplesHandler(mux webexamples.Muxer) {
 	examples.AddPresetExample(mux, SEOExampleBasic)
 	examples.AddPresetExample(mux, ActivityExample)
 	examples.AddPresetExample(mux, PageBuilderExample)
+	examples.AddPresetExample(mux, MediaExample)
 }
