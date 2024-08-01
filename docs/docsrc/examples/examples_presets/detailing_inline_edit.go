@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/web/v3"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -66,11 +67,18 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	mediaBuilder := media.New(db)
 	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
 
+	type i18nMessage struct {
+		CustomersDetailsTitle string
+	}
+	b.GetI18n().SupportLanguages(language.English, language.Japanese).
+		RegisterForModule(language.English, presets.ModelsI18nModuleKey, i18nMessage{CustomersDetailsTitle: "Hello_EN"}).
+		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, i18nMessage{CustomersDetailsTitle: "Hello_JP"})
+
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("Details").Drawer(true)
 	sb := dp.Section("Details").
 		Editing(&presets.FieldsSection{
-			Title: "Hello",
+			Title: "DetailsTitle",
 			Rows: [][]string{
 				{"Name", "Email"},
 				{"Description"},

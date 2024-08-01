@@ -102,6 +102,21 @@ func TestPresetsDetailing(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Felix 1", "<strong>abc@example.com</strong>"},
 		},
+		{
+			Name:  "field section title i18n",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb1
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_DetailingDrawer" +
+						"&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Hello_EN"},
+		},
 	}
 
 	for _, c := range cases {
