@@ -126,6 +126,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
+		parentID := ctx.ParamAsInt(ParamParentID)
 
 		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
@@ -134,7 +135,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
-			m := media_library.MediaLibrary{}
+			m := media_library.MediaLibrary{ParentId: uint(parentID)}
 
 			if base.IsImageFormat(fh.Filename) {
 				m.SelectedType = media_library.ALLOW_TYPE_IMAGE
@@ -275,7 +276,6 @@ func fileComponent(
 	imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(base.IsImageFormat(f.File.FileName)))
 
 	src := f.File.URL()
-	*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
 	*menus = append(*menus,
 		VListItem(h.Text("Copy")).Attr("@click", web.Plaid().
 			EventFunc(CopyFileEvent).
@@ -296,6 +296,9 @@ func fileComponent(
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Go()),
 	)
+	if base.IsImageFormat(f.File.FileName) {
+		*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	}
 	title = h.Div(
 		h.If(
 			base.IsImageFormat(f.File.FileName),
@@ -325,7 +328,7 @@ func fileComponent(
 	content = h.Components(
 		web.Slot(
 			web.Scope(
-				VTextField().Attr(web.VField("name", f.File.FileName)...).Variant(VariantPlain),
+				VTextField().Attr(web.VField("name", f.File.FileName)...).Readonly(true).Variant(VariantPlain),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.If(base.IsImageFormat(f.File.FileName),
@@ -435,7 +438,7 @@ func folderComponent(
 		web.Slot(
 			web.Scope(
 				VTextField().Attr(web.VField("name", f.File.FileName)...).
-					Variant(VariantPlain),
+					Variant(VariantPlain).Readonly(true),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.Text(fmt.Sprintf("%v items", count))).Name("subtitle"),
@@ -717,6 +720,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 										web.Plaid().
 											BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
 											EventFunc(uploadFileEvent).
+											Query(paramTab, tab).
+											Query(ParamParentID, parentID).
 											Query(ParamField, field).
 											Query(ParamCfg, h.JSONString(cfg)).
 											Go()),

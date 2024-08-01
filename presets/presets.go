@@ -956,7 +956,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 
 		toolbar := VContainer(
 			VRow(
-				VCol(b.RunBrandFunc(ctx)).Cols(8),
+				VCol(b.RunBrandFunc(ctx)).Cols(7),
 				VCol(
 					b.RunSwitchLanguageFunc(ctx),
 					// VBtn("").Children(
@@ -964,7 +964,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					//	VIcon("mdi-menu-down"),
 					// ).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols(2),
+				).Cols(3),
 
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
