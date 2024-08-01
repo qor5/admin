@@ -327,7 +327,7 @@ func fileComponent(
 	content = h.Components(
 		web.Slot(
 			web.Scope(
-				VTextField().Attr(web.VField("name", f.File.FileName)...).Variant(VariantPlain),
+				VTextField().Attr(web.VField("name", f.File.FileName)...).Readonly(true).Variant(VariantPlain),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.If(base.IsImageFormat(f.File.FileName),
@@ -437,7 +437,7 @@ func folderComponent(
 		web.Slot(
 			web.Scope(
 				VTextField().Attr(web.VField("name", f.File.FileName)...).
-					Variant(VariantPlain),
+					Variant(VariantPlain).Readonly(true),
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.Text(fmt.Sprintf("%v items", count))).Name("subtitle"),
