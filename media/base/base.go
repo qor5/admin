@@ -98,6 +98,10 @@ func (b *Base) Scan(data interface{}) (err error) {
 				return err
 			}
 		}
+	case *MemoryFile:
+		b.FileHeader = values
+		b.FileName = filepath.Base(values.name)
+		return
 	default:
 		err = errors.New("unsupported driver -> Scan pair for MediaLibrary")
 	}
@@ -262,4 +266,34 @@ func (b Base) IsVideo() bool {
 
 func (b Base) IsSVG() bool {
 	return IsSVGFormat(b.URL())
+}
+
+type MemoryFile struct {
+	reader *bytes.Reader
+	name   string
+}
+
+func (m *MemoryFile) Close() error {
+	return nil
+}
+
+func (m *MemoryFile) Read(p []byte) (int, error) {
+	return m.reader.Read(p)
+}
+
+func (m *MemoryFile) Seek(offset int64, whence int) (int64, error) {
+	return m.reader.Seek(offset, whence)
+}
+
+func (m *MemoryFile) ReadAt(p []byte, off int64) (int, error) {
+	return m.reader.ReadAt(p, off)
+}
+func (m *MemoryFile) Open() (multipart.File, error) {
+	return m, nil
+}
+func NewMemoryFile(filename string, data []byte) *MemoryFile {
+	return &MemoryFile{
+		name:   filename,
+		reader: bytes.NewReader(data),
+	}
 }
