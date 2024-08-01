@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -62,16 +63,69 @@ type LoginSession struct {
 }
 
 type SessionBuilder struct {
-	once         sync.Once
+	once              sync.Once
+	calledAutoMigrate atomic.Bool // auto migrate flag
+
 	lb           *login.Builder
-	db           *gorm.DB
+	dbPrimitive  *gorm.DB // primitive db
+	db           *gorm.DB // global db with table prefix scope
+	tablePrefix  string
 	amb          *activity.ModelBuilder
 	pb           *presets.Builder
 	isPublicUser func(user any) bool
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
-	return (&SessionBuilder{lb: lb, db: db}).setup()
+	return (&SessionBuilder{
+		lb:          lb,
+		db:          db,
+		dbPrimitive: db,
+	}).setup()
+}
+
+func (b *SessionBuilder) TablePrefix(prefix string) *SessionBuilder {
+	if b.calledAutoMigrate.Load() {
+		panic("please set table prefix before auto migrate")
+	}
+	b.tablePrefix = prefix
+	if prefix == "" {
+		b.db = b.dbPrimitive
+	} else {
+		b.db = b.dbPrimitive.Scopes(activity.ScopeWithTablePrefix(prefix)).Session(&gorm.Session{})
+	}
+	return b
+}
+
+func (b *SessionBuilder) AutoMigrate() (r *SessionBuilder) {
+	if !b.calledAutoMigrate.CompareAndSwap(false, true) {
+		panic("already migrated")
+	}
+	if err := AutoMigrateSession(b.dbPrimitive, b.tablePrefix); err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func AutoMigrateSession(db *gorm.DB, tablePrefix string) error {
+	if tablePrefix != "" {
+		db = db.Scopes(activity.ScopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
+	}
+	dst := []any{&LoginSession{}}
+	for _, v := range dst {
+		err := db.Model(v).AutoMigrate(v)
+		if err != nil {
+			return errors.Wrap(err, "auto migrate")
+		}
+		if vv, ok := v.(interface {
+			AfterMigrate(tx *gorm.DB, tablePrefix string) error
+		}); ok {
+			err := vv.AfterMigrate(db, tablePrefix)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -221,16 +275,6 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 	}
 }
 
-func (b *SessionBuilder) AutoMigrate() (r *SessionBuilder) {
-	if b.db == nil {
-		panic("db is nil")
-	}
-	if err := b.db.AutoMigrate(&LoginSession{}); err != nil {
-		panic(err)
-	}
-	return b
-}
-
 func (b *SessionBuilder) setup() (r *SessionBuilder) {
 	b.once.Do(func() {
 		logAction := func(r *http.Request, user any, action string) error {
@@ -320,21 +364,27 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 
 	var sessions []*LoginSession
 
+	s, err := activity.ParseSchemaWithDB(b.db, &LoginSession{})
+	if err != nil {
+		return r, err
+	}
+	tableName := b.tablePrefix + s.Table
+
 	// Only one record with the same `device+ip` is returned unless they are not expired.
 	// Order by `expired_at` in descending order.
 	// If the token is the current one, it should be the first one.
 	// Max 100 records returned.
-	raw := `
+	raw := fmt.Sprintf(`
 		WITH ranked_sessions AS (
 		    SELECT *, ROW_NUMBER() OVER (PARTITION BY "device", "ip" ORDER BY "expired_at" DESC) AS rn
-		    FROM login_sessions
+		    FROM %s
 		    WHERE "user_id" = ? AND "deleted_at" IS NULL
 		)
 		SELECT *
 		FROM ranked_sessions
 		WHERE rn = 1 OR "expired_at" >= NOW()
 		ORDER BY CASE WHEN "token_hash" = ? THEN 0 ELSE 1 END, "expired_at" DESC
-		LIMIT 100;`
+		LIMIT 100;`, tableName)
 	if err := b.db.Raw(raw, uid, currentTokenHash).Scan(&sessions).Error; err != nil {
 		return r, errors.Wrap(err, "login: failed to find sessions")
 	}

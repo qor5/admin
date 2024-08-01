@@ -114,10 +114,10 @@ func ParsePrimaryKeys(v any) []string {
 
 const dbKeyTablePrefix = "__table_prefix__"
 
-// scopeWithTablePrefix set table prefix
+// ScopeWithTablePrefix set table prefix
 // 1. Only scenarios where a Model is provided are supported
 // 2. Previously Table(...) will be overwritten
-func scopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+func ScopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if v, ok := db.Get(dbKeyTablePrefix); ok {
 			if v.(string) != tablePrefix {
