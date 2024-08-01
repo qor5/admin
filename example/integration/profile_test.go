@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor5/admin/v3/example/models"
-
 	"github.com/theplant/gofixtures"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/web/v3/multipartestutils"
 )
 
@@ -17,32 +18,39 @@ INSERT INTO public.users (id, created_at, updated_at, deleted_at, name, company,
 `, []string{"users"}))
 
 func TestProfile(t *testing.T) {
-	h := admin.TestHandler(TestDB, nil)
+	h := admin.TestHandler(TestDB, &models.User{
+		Model: gorm.Model{ID: 1},
+		Roles: []role.Role{
+			{
+				Name: models.RoleAdmin,
+			},
+		},
+	})
+
 	dbr, _ := TestDB.DB()
+	profileData.TruncatePut(dbr)
 
 	cases := []multipartestutils.TestCase{
-		{
-			Name:  "login",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				profileData.TruncatePut(dbr)
-				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/auth/userpass/login").
-					AddField("account", "qor@theplant.jp").
-					AddField("password", "123").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectPageBodyNotContains: []string{`/auth/userpass/login`},
-		},
 		{
 			Name:  "rename",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				profileData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/profile?__execute_event__=accountRenameEvent&id=1").
-					AddField("name", "123@theplant.jp").
+					PageURL("/?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*login.ProfileCompo",
+			"compo": {
+				"id": ""
+			},
+			"injector": "__profile__",
+			"sync_query": false,
+			"method": "Rename",
+			"request": {
+				"name": "123@theplant.jp"
+			}
+		}
+							`).
 					BuildEventFuncRequest()
 				return req
 			},
@@ -58,9 +66,8 @@ func TestProfile(t *testing.T) {
 			Name:  "login Sessions",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				profileData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/profile?__execute_event__=loginSessionDialogEvent&id=1").
+					PageURL("/login-sessions-dialog?__execute_event__=loginSession_eventLoginSessionsDialog").
 					BuildEventFuncRequest()
 				return req
 			},
