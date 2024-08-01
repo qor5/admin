@@ -126,7 +126,9 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			c.actionsComponent(ctx),
 		),
 		VCard().Elevation(0).Children(
-			c.tabsFilter(ctx),
+			h.Tag("div").Children(
+				c.tabsFilter(ctx),
+			).Class("ml-2"),
 			c.toolbarSearch(ctx),
 			VCardText().Class("pa-2").Children(
 				c.dataTable(ctx),
@@ -757,9 +759,9 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			onClick.Query(ParamParentID, c.ParentID)
 		}
 		return VBtn(msgr.New).
-			Color(ColorPrimary).
-			Variant(VariantFlat).
-			Theme("dark").Class("ml-2").
+			Color(ColorSecondary).
+			Variant(VariantElevated).
+			Theme("light").Class("ml-2").
 			Attr("@click", onClick.Go())
 	}()
 

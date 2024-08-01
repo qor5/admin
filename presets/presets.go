@@ -1023,7 +1023,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 				return h.Div().Id(actionsComponentTeleportToID)
 			}),
-		).Class("d-flex align-center mx-2 border-b w-100").Style("height: 48px")
+		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
 			h.Template(
 				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
@@ -1056,12 +1056,15 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						),
 						// VDivider(),
 						profile,
-					).Class("ma-2 border-sm rounded-lg elevation-0").Attr("style",
+					).Class("ma-2 border-sm rounded elevation-0").Attr("style",
 						"height: calc(100% - 16px);"),
 					// ).Class("ma-2").
 					// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
 				).
-					Width(320).
+					// 256px is directly The measured size in figma
+					// in actual use, need plus 8px for padding left and right
+					// plus border 2px
+					Width(256+8+8+2).
 					// App(true).
 					// Clipped(true).
 					// Fixed(true).
@@ -1081,9 +1084,11 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 						Color(b.progressBarColor),
 					VAppBar(
 						pageTitleComp,
-					).Elevation(0),
+					).Elevation(0).Attr("height", 100),
 					innerPr.Body,
-				).Class("overflow-y-auto").Attr("style", "height:100vh"),
+				).
+					Class("overflow-y-auto main-container").
+					Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
 			),
 		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
