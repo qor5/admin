@@ -67,10 +67,10 @@ func TestPresetsDetailing(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&detailField=field_section&id=12").
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&detailField=Details&id=12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"field_section.Name", "field_section.Email"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Details.Name", "Details.Email"},
 		},
 		{
 			Name:  "page detail update",
@@ -78,10 +78,10 @@ func TestPresetsDetailing(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&detailField=field_section&id=12").
-					AddField("field_section.Name", "123123").
-					AddField("field_section.Email", "abc@example.com").
-					AddField("field_section.Description", "hello description").
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&detailField=Details&id=12").
+					AddField("Details.Name", "123123").
+					AddField("Details.Email", "abc@example.com").
+					AddField("Details.Description", "hello description").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"123123", "abc@example.com", "hello description"},
