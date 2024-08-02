@@ -260,7 +260,18 @@ func (b *ModelBuilder) moveContainer(ctx *web.EventContext) (r web.EventResponse
 		}
 		return
 	})
-	r.RunScript = web.Plaid().PushState(true).EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
+	web.AppendRunScripts(&r,
+		web.Plaid().PushState(true).
+			EventFunc(ReloadRenderPageOrTemplateEvent).
+			AfterScript(
+				web.Plaid().
+					Form(nil).
+					EventFunc(ShowSortedContainerDrawerEvent).
+					MergeQuery(true).
+					Query(paramStatus,
+						ctx.Param(paramStatus)).Go()).
+			MergeQuery(true).Go(),
+	)
 	return
 }
 
