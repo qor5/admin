@@ -461,7 +461,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		VListItemTitle(
 			h.Text(m.Info().LabelName(ctx, false)),
 		),
-	).Class("rounded-lg").
+	).Class("rounded").
 		Value(m.label)
 	// .ActiveClass("bg-red")
 	// Attr("color", "primary")
@@ -1056,7 +1056,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							toolbar,
 							VCard(
 								menu,
-							).Class("menu-content my-4 ml-4 pr-4").Variant(VariantText),
+							).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
 						),
 						// VDivider(),
 						profile,
