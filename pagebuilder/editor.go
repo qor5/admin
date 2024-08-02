@@ -491,8 +491,6 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		}
 	}
 	r.Attr("data-container-id", containerDataID)
-	r.Attr("onmouseenter", "if(!event.currentTarget.classList.contains('highlight')){document.querySelectorAll('.highlight').forEach(item=>{item.classList.add('unfocused')})}")
-	r.Attr("onmouseleave", "if(!event.currentTarget.classList.contains('highlight')){document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('unfocused')})}")
 	return r
 }
 

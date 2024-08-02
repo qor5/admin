@@ -548,7 +548,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	})
 
 	// pm detailing page  detail-field
-	detailPageEditor(dp, b.db)
+	detailPageEditor(dp, b)
 	// pm detailing side panel
 	// pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 

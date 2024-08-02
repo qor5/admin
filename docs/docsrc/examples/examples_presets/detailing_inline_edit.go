@@ -2,6 +2,7 @@ package examples_presets
 
 import (
 	"fmt"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"log"
 
 	"github.com/qor5/admin/v3/media"
@@ -182,12 +183,28 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	cust = b.Model(&Customer{})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
 	dp = cust.Detailing("name_section").Drawer(true)
-	dp.Section("name_section").Label("name must not be empty").Editing("Name").Viewing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	dp.Section("name_section").Label("name must not be empty, no longer than 6").
+		Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
 		if customer.Name == "" {
 			err.GlobalError("customer name must not be empty")
 		}
+		if len(customer.Name) > 6 {
+			err.FieldError("name_section.Name", "customer name must no longer than 6")
+		}
 		return
+	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return v.VTextField().
+			Variant(v.VariantOutlined).
+			Density(v.DensityCompact).
+			Attr(web.VField("name_section.Name", customer.Name)...).
+			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
 	})
 
 	return
