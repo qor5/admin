@@ -363,7 +363,7 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 	})
 }
 
-func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
+func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
 	return web.Scope(VDialog(
 		VCard(
@@ -387,7 +387,7 @@ func changePasswordDialog(vh *login.ViewHelper, ctx *web.EventContext, showVar s
 	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
-func defaultChangePasswordDialogContent(vh *login.ViewHelper, pb *presets.Builder) func(ctx *web.EventContext) HTMLComponent {
+func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder) func(ctx *web.EventContext) HTMLComponent {
 	return func(ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(

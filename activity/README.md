@@ -5,7 +5,9 @@
 - Firstly, you should create an activity instance in your project.
 
   ```go
-  activity := activity.New(db, currentUserFunc)
+  ab := activity.New(db, currentUserFunc).
+                TablePrefix("cms_"). // if needed
+                AutoMigrate() // if needed
   ```
 
   - db (Required): The database where activity_logs is stored.
@@ -14,28 +16,28 @@
 - Register activity into presets
 
   ```go
-  activityBuilder.Install(presetsBuilder)
+  ab.Install(presetsBuilder)
   ```
 
 - Register normal model or a `presets.ModelBuilder` into activity
 
   ```go
-  activity.RegisterModel(normalModel) // It need you to record the activity log manually
-  activity.RegisterModel(presetModel) // It will record the activity log automatically when you create, update or delete the model data via preset admin
+  ab.RegisterModel(normalModel) // It need you to record the activity log manually
+  ab.RegisterModel(presetModel) // It will record the activity log automatically when you create, update or delete the model data via preset admin
   ```
 
 - Skip recording activity log for preset model if you don't want to record the activity log automatically
 
   ```go
-  activity.RegisterModel(presetModel).SkipCreate().SkipUpdate().SkipDelete()
+  ab.RegisterModel(presetModel).SkipCreate().SkipUpdate().SkipDelete()
   ```
 
 - Configure more options for the `presets.ModelBuilder` to record more custom information
 
   ```go
-  activity.RegisterModel(presetModel).AddKeys("ID", "Version") // will record value of the ID and Version field as the keyword of a model table
-  activity.RegisterModel(presetModel).AddIgnoredFields("UpdateAt") // will ignore the UpdateAt field when recording activity log for update operation
-  activity.RegisterModel(presetModel).AddTypeHanders(
+  ab.RegisterModel(presetModel).AddKeys("ID", "Version") // will record value of the ID and Version field as the keyword of a model table
+  ab.RegisterModel(presetModel).AddIgnoredFields("UpdateAt") // will ignore the UpdateAt field when recording activity log for update operation
+  ab.RegisterModel(presetModel).AddTypeHanders(
     time.Time{},
     func(old, new any, prefixField string) []Diff {
   		oldString := old.(time.Time).Format(time.RFC3339)
@@ -55,15 +57,15 @@
   - When a struct type only have one `activity.ModelBuilder`, you can use `activity` to record the log directly.
 
     ```go
-      activity.OnEdit(ctx, old, new)
-      activity.OnCreate(ctx, obj)
+      ab.OnEdit(ctx, old, new)
+      ab.OnCreate(ctx, obj)
     ```
 
   - When a struct type have multiple `activity.ModelBuilder`, you need to get the corresponding `activity.ModelBuilder` and then use it to record the log.
 
     ```go
-      activity.MustGetModelBuilder(presetModel1).OnEdit(ctx, old, new)
-      activity.MustGetModelBuilder(presetModel2).OnCreate(ctx, obj)
+      ab.MustGetModelBuilder(presetModel1).OnEdit(ctx, old, new)
+      ab.MustGetModelBuilder(presetModel2).OnCreate(ctx, obj)
     ```
 
 - Add ListFieldNotes to Listing Builder

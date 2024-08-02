@@ -114,10 +114,10 @@ func ParsePrimaryKeys(v any) []string {
 
 const dbKeyTablePrefix = "__table_prefix__"
 
-// scopeWithTablePrefix set table prefix
+// ScopeWithTablePrefix set table prefix
 // 1. Only scenarios where a Model is provided are supported
 // 2. Previously Table(...) will be overwritten
-func scopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
+func ScopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if v, ok := db.Get(dbKeyTablePrefix); ok {
 			if v.(string) != tablePrefix {
@@ -157,7 +157,7 @@ func getActionLabel(evCtx *web.EventContext, action string) string {
 	return label
 }
 
-func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {
+func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, error) {
 	if slug == "" {
 		return FetchOld(db, ref)
 	}
@@ -176,14 +176,14 @@ func FetchOldWithSlug(db *gorm.DB, ref any, slug string) (any, bool) {
 		db = db.Where("id = ?", slug)
 	}
 
-	if db.First(old).Error != nil {
-		return nil, false
+	if err := db.First(old).Error; err != nil {
+		return nil, errors.Wrap(err, "fetch old with slug")
 	}
 
-	return old, true
+	return old, nil
 }
 
-func FetchOld(db *gorm.DB, ref any) (any, bool) {
+func FetchOld(db *gorm.DB, ref any) (any, error) {
 	var (
 		rtRef = reflect.Indirect(reflect.ValueOf(ref))
 		old   = reflect.New(rtRef.Type()).Interface()
@@ -191,13 +191,12 @@ func FetchOld(db *gorm.DB, ref any) (any, bool) {
 		vars  []any
 	)
 
-	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(ref); err != nil {
-		return nil, false
+	s, err := ParseSchemaWithDB(db, ref)
+	if err != nil {
+		return nil, err
 	}
-
-	for _, dbName := range stmt.Schema.DBNames {
-		if field := stmt.Schema.LookUpField(dbName); field != nil && field.PrimaryKey {
+	for _, dbName := range s.DBNames {
+		if field := s.LookUpField(dbName); field != nil && field.PrimaryKey {
 			if value, isZero := field.ValueOf(db.Statement.Context, rtRef); !isZero {
 				sqls = append(sqls, fmt.Sprintf("%v = ?", dbName))
 				vars = append(vars, value)
@@ -206,12 +205,12 @@ func FetchOld(db *gorm.DB, ref any) (any, bool) {
 	}
 
 	if len(sqls) == 0 || len(vars) == 0 || len(sqls) != len(vars) {
-		return nil, false
+		return nil, errors.New("no primary key found")
 	}
 
-	if db.Where(strings.Join(sqls, " AND "), vars...).First(old).Error != nil {
-		return nil, false
+	if err := db.Where(strings.Join(sqls, " AND "), vars...).First(old).Error; err != nil {
+		return nil, errors.Wrap(err, "fetch old")
 	}
 
-	return old, true
+	return old, nil
 }

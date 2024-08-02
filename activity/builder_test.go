@@ -9,7 +9,6 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
@@ -343,10 +342,12 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add edit record
 	data1.Title = "test1-1"
 	data1.Description = "Description1-1"
-	old, _ := FetchOld(db, data1)
-	db.Save(data1)
-	_, err := builder.OnEdit(ctx, old, data1)
-	assert.NoError(t, err)
+
+	old, err := FetchOld(db, data1)
+	require.NoError(t, err)
+	require.NoError(t, db.Save(data1).Error)
+	_, err = builder.OnEdit(ctx, old, data1)
+	require.NoError(t, err)
 
 	data2.Title = "test2-1"
 	data2.Description = "Description2-1"

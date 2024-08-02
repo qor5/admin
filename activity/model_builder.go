@@ -25,6 +25,8 @@ const (
 	FieldTimeline       string = "__ActivityTimeline__"
 	ListFieldNotes      string = "__ActivityNotes__"
 	ListFieldLabelNotes string = "Notes"
+
+	NopModelLabel = "-"
 )
 
 const (
@@ -52,7 +54,7 @@ type ModelBuilder struct {
 type ctxKeyUnreadCounts struct{}
 
 func NotifiLastViewedAtUpdated(modelName string) string {
-	return fmt.Sprintf("activity_NotifModelsCreated_%s", modelName)
+	return fmt.Sprintf("activity_NotifiLastViewedAtUpdated_%s", modelName)
 }
 
 type PayloadLastViewedAtUpdated struct {
@@ -472,7 +474,7 @@ func (mb *ModelBuilder) create(
 		Action:     action,
 		ModelName:  modelName,
 		ModelKeys:  modelKeys,
-		ModelLabel: "-",
+		ModelLabel: "",
 		ModelLink:  modelLink,
 	}
 	if mb.presetModel != nil {

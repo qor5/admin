@@ -12,12 +12,15 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/iancoleman/strcase"
+	"github.com/pkg/errors"
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
+	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
@@ -40,7 +43,6 @@ import (
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
@@ -54,9 +56,10 @@ var assets embed.FS
 var PublishStorage oss.StorageInterface = filesystem.New("publish")
 
 type Config struct {
-	pb          *presets.Builder
-	pageBuilder *pagebuilder.Builder
-	Publisher   *publish.Builder
+	pb                  *presets.Builder
+	pageBuilder         *pagebuilder.Builder
+	Publisher           *publish.Builder
+	loginSessionBuilder *plogin.SessionBuilder
 }
 
 var (
@@ -76,7 +79,6 @@ func NewConfig(db *gorm.DB) Config {
 		&models.Post{},
 		&models.InputDemo{},
 		&models.User{},
-		&models.LoginSession{},
 		&models.ListModel{},
 		&role.Role{},
 		&perm.DefaultDBPolicy{},
@@ -92,7 +94,6 @@ func NewConfig(db *gorm.DB) Config {
 	}
 
 	// @snippet_begin(ActivityExample)
-	db.Exec(`CREATE SCHEMA IF NOT EXISTS cs_portal;`)
 	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		u := ctx.Value(login.UserKey).(*models.User)
 		return &activity.User{
@@ -122,7 +123,7 @@ func NewConfig(db *gorm.DB) Config {
 				return
 			}
 		}).
-		TablePrefix("cs_portal.").
+		TablePrefix("cms_").
 		AutoMigrate()
 
 	// ab.Model(l).SkipDelete().SkipCreate()
@@ -143,7 +144,7 @@ func NewConfig(db *gorm.DB) Config {
 		Session:  sess,
 		Endpoint: publishURL,
 	}))
-	b := presets.New().RightDrawerWidth("700")
+	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
 	js, _ := assets.ReadFile("assets/fontcolor.min.js")
@@ -151,7 +152,6 @@ func NewConfig(db *gorm.DB) Config {
 	richeditor.PluginsJS = [][]byte{js}
 	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-	configBrand(b, db, ab)
 
 	initPermission(b, db)
 
@@ -289,33 +289,27 @@ func NewConfig(db *gorm.DB) Config {
 				}
 				pmListing := pm.Listing()
 				pmListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-					hasUnreadNotesCondition, err := ab.MustGetModelBuilder(pm).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+					item, err := ab.MustGetModelBuilder(pm).NewHasUnreadNotesFilterItem(ctx.R.Context(), "")
 					if err != nil {
 						panic(err)
 					}
-					return []*vx.FilterItem{
-						{
-							Key:          "hasUnreadNotes",
-							Invisible:    true,
-							SQLCondition: hasUnreadNotesCondition,
-						},
-					}
+					return []*vx.FilterItem{item}
 				})
 
 				pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 					msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+					tab, err := ab.MustGetModelBuilder(pm).NewHasUnreadNotesFilterTab(ctx.R.Context())
+					if err != nil {
+						panic(err)
+					}
 					return []*presets.FilterTab{
 						{
 							Label: msgr.FilterTabsAll,
 							ID:    "all",
 							Query: url.Values{"all": []string{"1"}},
 						},
-						{
-							Label: msgr.FilterTabsHasUnreadNotes,
-							ID:    "hasUnreadNotes",
-							Query: url.Values{"hasUnreadNotes": []string{"1"}},
-						},
+						tab,
 					}
 				})
 				return nil
@@ -326,8 +320,6 @@ func NewConfig(db *gorm.DB) Config {
 
 	configListModel(b, ab)
 
-	b.GetWebBuilder().RegisterEventFunc(noteMarkAllAsRead, markAllAsRead(ab))
-
 	microb := microsite.New(db).Publisher(publisher)
 
 	l10nBuilder.Activity(ab)
@@ -335,15 +327,18 @@ func NewConfig(db *gorm.DB) Config {
 	l10nM.Use(l10nBuilder)
 	l10nVM.Use(l10nBuilder)
 
-	initLoginBuilder(db, b, ab)
+	loginSessionBuilder := initLoginSessionBuilder(db, b, ab)
+
+	configBrand(b)
+
+	profielBuilder := configProfile(db, ab, loginSessionBuilder)
 
 	configInputDemo(b, db)
 
 	configOrder(b, db)
 	configECDashboard(b, db)
 
-	configUser(b, ab, db, publisher)
-	configProfile(b, db)
+	configUser(b, ab, db, publisher, loginSessionBuilder)
 
 	b.Use(
 		mediab,
@@ -352,6 +347,8 @@ func NewConfig(db *gorm.DB) Config {
 		publisher,
 		l10nBuilder,
 		roleBuilder,
+		loginSessionBuilder,
+		profielBuilder,
 	)
 
 	if resetAndImportInitialData {
@@ -361,9 +358,10 @@ func NewConfig(db *gorm.DB) Config {
 	}
 
 	return Config{
-		pb:          b,
-		pageBuilder: pageBuilder,
-		Publisher:   publisher,
+		pb:                  b,
+		pageBuilder:         pageBuilder,
+		Publisher:           publisher,
+		loginSessionBuilder: loginSessionBuilder,
 	}
 }
 
@@ -477,7 +475,52 @@ func configMenuOrder(b *presets.Builder) {
 	)
 }
 
-func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder) {
+func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder) *plogin.ProfileBuilder {
+	return plogin.NewProfileBuilder(
+		lsb,
+		func(ctx context.Context) (*plogin.Profile, error) {
+			evCtx := web.MustGetEventContext(ctx)
+			u := getCurrentUser(evCtx.R)
+			if u == nil {
+				return nil, perm.PermissionDenied
+			}
+			notifiCounts, err := ab.GetNotesCounts(ctx, "", nil)
+			if err != nil {
+				return nil, err
+			}
+			user := &plogin.Profile{
+				ID:   fmt.Sprint(u.ID),
+				Name: u.Name,
+				// Avatar: "",
+				Roles:  u.GetRoles(),
+				Status: strcase.ToCamel(u.Status),
+				Fields: []*plogin.ProfileField{
+					{Name: "Email", Value: u.Account},
+					{Name: "Company", Value: u.Company},
+				},
+				NotifCounts: notifiCounts,
+			}
+			if u.OAuthAvatar != "" {
+				user.Avatar = u.OAuthAvatar
+			}
+			return user, nil
+		},
+		func(ctx context.Context, newName string) error {
+			evCtx := web.MustGetEventContext(ctx)
+			u := getCurrentUser(evCtx.R)
+			if u == nil {
+				return perm.PermissionDenied
+			}
+			u.Name = newName
+			if err := db.Save(u).Error; err != nil {
+				return errors.Wrap(err, "failed to update user name")
+			}
+			return nil
+		},
+	)
+}
+
+func configBrand(b *presets.Builder) {
 	b.BrandFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		logo := "https://qor5.com/img/qor-logo.png"
@@ -507,16 +550,13 @@ func configBrand(b *presets.Builder, db *gorm.DB, ab *activity.Builder) {
 				h.Script("function updateCountdown(){const now=new Date();const nextEvenHour=new Date(now);nextEvenHour.setHours(nextEvenHour.getHours()+(nextEvenHour.getHours()%2===0?2:1),0,0,0);const timeLeft=nextEvenHour-now;const hours=Math.floor(timeLeft/(60*60*1000));const minutes=Math.floor((timeLeft%(60*60*1000))/(60*1000));const seconds=Math.floor((timeLeft%(60*1000))/1000);const countdownElem=document.getElementById(\"countdown\");countdownElem.innerText=`${hours.toString().padStart(2,\"0\")}:${minutes.toString().padStart(2,\"0\")}:${seconds.toString().padStart(2,\"0\")}`}updateCountdown();setInterval(updateCountdown,1000);"),
 			),
 		).Class("mb-n4 mt-n2")
-	}).ProfileFunc(profile(ab)).
-		DataOperator(gorm2op.DataOperator(db)).
-		HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			r.PageTitle = "Home"
-			r.Body = Dashboard()
-			return
-		}).
-		NotFoundPageLayoutConfig(&presets.LayoutConfig{
-			NotificationCenterInvisible: true,
-		})
+	}).HomePageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		r.PageTitle = "Home"
+		r.Body = Dashboard()
+		return
+	}).NotFoundPageLayoutConfig(&presets.LayoutConfig{
+		NotificationCenterInvisible: true,
+	})
 }
 
 func configPost(
@@ -539,16 +579,12 @@ func configPost(
 		PerPage(10)
 
 	mListing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(m).SQLConditionHasUnreadNotes(ctx.R.Context(), "")
+		item, err := ab.MustGetModelBuilder(m).NewHasUnreadNotesFilterItem(ctx.R.Context(), "")
 		if err != nil {
 			panic(err)
 		}
 		return []*vx.FilterItem{
-			{
-				Key:          "hasUnreadNotes",
-				Invisible:    true,
-				SQLCondition: hasUnreadNotesCondition,
-			},
+			item,
 			{
 				Key:          "created",
 				Label:        "Create Time",
@@ -597,17 +633,17 @@ func configPost(
 	mListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+		tab, err := ab.MustGetModelBuilder(m).NewHasUnreadNotesFilterTab(ctx.R.Context())
+		if err != nil {
+			panic(err)
+		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabsAll,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}},
 			},
-			{
-				Label: msgr.FilterTabsHasUnreadNotes,
-				ID:    "hasUnreadNotes",
-				Query: url.Values{"hasUnreadNotes": []string{"1"}},
-			},
+			tab,
 		}
 	})
 
@@ -639,71 +675,4 @@ func configPost(
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 	return m
-}
-
-func notifierCount(ab *activity.Builder) func(ctx *web.EventContext) int {
-	return func(ctx *web.EventContext) int {
-		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
-		if err != nil {
-			panic(err)
-		}
-		total := lo.SumBy(counts, func(item *activity.NoteCount) int {
-			return int(item.UnreadNotesCount)
-		})
-		// TODO: listen to auto update ?
-		return total
-	}
-}
-
-func notifierComponent(ab *activity.Builder) func(ctx *web.EventContext) h.HTMLComponent {
-	return func(ctx *web.EventContext) h.HTMLComponent {
-		counts, err := ab.GetNotesCounts(ctx.R.Context(), "", nil)
-		if err != nil {
-			panic(err)
-		}
-
-		groups := lo.GroupBy(counts, func(item *activity.NoteCount) string {
-			return item.ModelName
-		})
-
-		by := func(item *activity.NoteCount) int { return int(item.UnreadNotesCount) }
-
-		a, b, c := lo.SumBy(groups["Page"], by), lo.SumBy(groups["Post"], by), lo.SumBy(groups["User"], by)
-
-		// TODO: listen to auto update ?
-		return v.VList(
-			v.VListItem(
-				v.VListItemTitle(h.Text("Pages")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", a))),
-			).Lines(2).Href("/pages?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			v.VListItem(
-				v.VListItemTitle(h.Text("Posts")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", b))),
-			).Lines(2).Href("/posts?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			v.VListItem(
-				v.VListItemTitle(h.Text("Users")),
-				v.VListItemSubtitle(h.Text(fmt.Sprintf("%d unread notes", c))),
-			).Lines(2).Href("/users?active_filter_tab=hasUnreadNotes&f_hasUnreadNotes=1"),
-			h.If(a+b+c > 0,
-				v.VListItem(
-					v.VListItemSubtitle(h.Text("Mark all as read")),
-				).Attr("@click", web.Plaid().EventFunc(noteMarkAllAsRead).Go()),
-			),
-		)
-		// .Class("mx-auto")
-		// .Attr("max-width", "140")
-	}
-}
-
-var noteMarkAllAsRead = "note_mark_all_as_read"
-
-func markAllAsRead(ab *activity.Builder) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		if err = ab.MarkAllNotesAsRead(ctx.R.Context()); err != nil {
-			return r, err
-		}
-
-		r.Reload = true
-		return
-	}
 }

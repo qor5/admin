@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/role"
@@ -27,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder) {
+func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder, loginSessionBuilder *plogin.SessionBuilder) {
 	user := b.Model(&models.User{})
 	// MenuIcon("people")
 	defer func() { ab.RegisterModel(user) }()
@@ -111,7 +112,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 		if err != nil {
 			return r, err
 		}
-		err = expireAllSessionLogs(db, u.ID)
+		err = loginSessionBuilder.ExpireAllSessions(fmt.Sprint(u.ID))
 		if err != nil {
 			return r, err
 		}
@@ -306,11 +307,12 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	cl.SearchColumns("users.Name", "Account")
 
 	cl.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
-		hasUnreadNotesCondition, err := ab.MustGetModelBuilder(user).SQLConditionHasUnreadNotes(ctx.R.Context(), "users.")
+		item, err := ab.MustGetModelBuilder(user).NewHasUnreadNotesFilterItem(ctx.R.Context(), "users.")
 		if err != nil {
 			panic(err)
 		}
 		return []*vx.FilterItem{
+			item,
 			{
 				Key:          "created",
 				Label:        "Create Time",
@@ -334,11 +336,6 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				},
 			},
 			{
-				Key:          "hasUnreadNotes",
-				Invisible:    true,
-				SQLCondition: hasUnreadNotesCondition,
-			},
-			{
 				Key:          "registration_date",
 				Label:        "Registration Date",
 				ItemType:     vx.ItemTypeDate,
@@ -358,6 +355,10 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	cl.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 
+		tab, err := ab.MustGetModelBuilder(user).NewHasUnreadNotesFilterTab(ctx.R.Context())
+		if err != nil {
+			panic(err)
+		}
 		return []*presets.FilterTab{
 			{
 				Label: msgr.FilterTabsAll,
@@ -367,11 +368,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				Label: msgr.FilterTabsActive,
 				Query: url.Values{"status": []string{"active"}},
 			},
-			{
-				Label: msgr.FilterTabsHasUnreadNotes,
-				ID:    "hasUnreadNotes",
-				Query: url.Values{"hasUnreadNotes": []string{"1"}},
-			},
+			tab,
 		}
 	})
 }

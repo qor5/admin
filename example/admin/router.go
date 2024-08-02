@@ -17,8 +17,6 @@ import (
 var favicon []byte
 
 const (
-	logoutURL = "/auth/logout"
-
 	exportOrdersURL = "/export-orders"
 )
 
@@ -45,7 +43,7 @@ func Router(db *gorm.DB) http.Handler {
 	c := NewConfig(db)
 
 	mux := http.NewServeMux()
-	loginBuilder.Mount(mux)
+	c.loginSessionBuilder.Mount(mux)
 	//	mux.Handle("/frontstyle.css", c.pb.GetWebBuilder().PacksHandler("text/css", web.ComponentsPack(`
 	// :host {
 	//	all: initial;
@@ -81,8 +79,7 @@ func Router(db *gorm.DB) http.Handler {
 
 	cr := chi.NewRouter()
 	cr.Use(
-		loginBuilder.Middleware(),
-		validateSessionToken(db),
+		c.loginSessionBuilder.Middleware(),
 		withRoles(db),
 		securityMiddleware(),
 	)

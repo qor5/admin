@@ -78,7 +78,7 @@ func (ab *Builder) TablePrefix(prefix string) *Builder {
 	if prefix == "" {
 		ab.db = ab.dbPrimitive
 	} else {
-		ab.db = ab.dbPrimitive.Scopes(scopeWithTablePrefix(prefix)).Session(&gorm.Session{})
+		ab.db = ab.dbPrimitive.Scopes(ScopeWithTablePrefix(prefix)).Session(&gorm.Session{})
 	}
 	return ab
 }
@@ -161,7 +161,7 @@ func (b *Builder) AutoMigrate() (r *Builder) {
 
 func AutoMigrate(db *gorm.DB, tablePrefix string) error {
 	if tablePrefix != "" {
-		db = db.Scopes(scopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
+		db = db.Scopes(ScopeWithTablePrefix(tablePrefix)).Session(&gorm.Session{})
 	}
 	dst := []any{&ActivityLog{}, &ActivityUser{}}
 	for _, v := range dst {
@@ -241,7 +241,7 @@ func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {
 		if ok {
 			return bare, nil
 		}
-		return nil, errors.Errorf("multiple model builders found for %v", v)
+		return nil, errors.Errorf("multiple preset model builders found for %v", v)
 	}
 	return ambs[0], nil
 }
