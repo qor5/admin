@@ -84,7 +84,7 @@ func TestPresetsDetailing(t *testing.T) {
 					AddField("Details.Description", "hello description").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"abc@example.com"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"123123", "abc@example.com", "hello description"},
 		},
 
 		{
@@ -115,7 +115,7 @@ func TestPresetsDetailing(t *testing.T) {
 						"&id=12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Hello_EN"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Field_section_EN", "Section_EN"},
 		},
 	}
 
