@@ -628,7 +628,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				Class("primary--text").
 				Density(DensityCompact).
 				Attr("v-model:opened", "locals.menuOpened").
-				Attr("v-model:selected", "locals.selection"),
+				Attr("v-model:selected", "locals.selection").
+				Attr("color", "transparent"),
 			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
 		).VSlot("{ locals }").Init(
 			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
