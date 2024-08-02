@@ -68,31 +68,30 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
 
 	type i18nMessage struct {
-		CustomersDetailsTitle string
+		CustomersFieldSectionTitle string
+		CustomersSectionTitle      string
 	}
 	b.GetI18n().SupportLanguages(language.English, language.Japanese).
-		RegisterForModule(language.English, presets.ModelsI18nModuleKey, i18nMessage{CustomersDetailsTitle: "Hello_EN"}).
-		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, i18nMessage{CustomersDetailsTitle: "Hello_JP"})
+		RegisterForModule(language.English, presets.ModelsI18nModuleKey, i18nMessage{
+			CustomersFieldSectionTitle: "Field_section_EN",
+			CustomersSectionTitle:      "Section_EN",
+		}).
+		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, i18nMessage{
+			CustomersFieldSectionTitle: "Field_section_JP",
+			CustomersSectionTitle:      "Section_JP",
+		})
 
 	cust = b.Model(&Customer{})
-	dp = cust.Detailing("Details").Drawer(true)
-	sb := dp.Section("Details").
+	dp = cust.Detailing("field_section", "section").Drawer(true)
+	dp.Section("field_section").DisableLabel().
 		Editing(&presets.FieldsSection{
-			Title: "DetailsTitle",
+			Title: "FieldSectionTitle",
 			Rows: [][]string{
-				{"Name", "Email"},
-				{"Description"},
+				{"Name"},
 			},
-		}, "Avatar")
-
-	sb.EditingField("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Input("").Attr(web.VField("Details."+field.Name, field.Value(obj))...)
-	})
-
-	sb.ViewingField("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return h.Strong(obj.(*Customer).Email)
-	})
-
+		})
+	dp.Section("section").Label("SectionTitle").
+		Editing([]string{"Name", "Email"})
 	return
 }
 
