@@ -20,6 +20,7 @@ INSERT INTO public.users (id, created_at, updated_at, deleted_at, name, company,
 func TestProfile(t *testing.T) {
 	h := admin.TestHandler(TestDB, &models.User{
 		Model: gorm.Model{ID: 1},
+		Name:  "qor@theplant.jp",
 		Roles: []role.Role{
 			{
 				Name: models.RoleAdmin,
@@ -31,6 +32,17 @@ func TestProfile(t *testing.T) {
 	profileData.TruncatePut(dbr)
 
 	cases := []multipartestutils.TestCase{
+		{
+			Name:  "index",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `ADMIN`},
+		},
 		{
 			Name:  "rename",
 			Debug: true,
@@ -71,7 +83,7 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `Time`, `Device`, `IP`, `Status`},
 		},
 	}
 
