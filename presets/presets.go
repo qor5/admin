@@ -723,11 +723,14 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	_ = oldIcon
 	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
-			VRow(
-				VCol(
-					VIcon("mdi-translate")).Cols(1),
-				VCol(VIcon("mdi-menu-down")).Cols(1),
-			).Attr("v-bind", "props"),
+			h.Div(
+				VBtn("").Children(
+					languageSwitchIcon,
+					//VIcon("mdi-menu-down"),
+				).Attr("variant", "text").
+					Attr("icon", "").
+					Class("i18n-switcher-btn"),
+			).Attr("v-bind", "props").Style("display: inline-block;"),
 		),
 		VList(
 			languages...,
@@ -965,8 +968,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					//	VIcon("mdi-menu-down"),
 					// ).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols(3),
-
+				).Cols(3).Class("text-right"),
+				VDivider().Attr("vertical", true).Class("i18n-divider"),
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
 						Class("text-grey-darken-1").
