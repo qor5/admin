@@ -461,7 +461,7 @@ func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (
 		VListItemTitle(
 			h.Text(m.Info().LabelName(ctx, false)),
 		),
-	).Class("rounded-lg").
+	).Class("rounded").
 		Value(m.label)
 	// .ActiveClass("bg-red")
 	// Attr("color", "primary")
@@ -628,7 +628,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				Class("primary--text").
 				Density(DensityCompact).
 				Attr("v-model:opened", "locals.menuOpened").
-				Attr("v-model:selected", "locals.selection"),
+				Attr("v-model:selected", "locals.selection").
+				Attr("color", "transparent"),
 			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
 		).VSlot("{ locals }").Init(
 			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
@@ -722,11 +723,14 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 	_ = oldIcon
 	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
-			VRow(
-				VCol(
-					VIcon("mdi-translate")).Cols(1),
-				VCol(VIcon("mdi-menu-down")).Cols(1),
-			).Attr("v-bind", "props"),
+			h.Div(
+				VBtn("").Children(
+					languageSwitchIcon,
+					//VIcon("mdi-menu-down"),
+				).Attr("variant", "text").
+					Attr("icon", "").
+					Class("i18n-switcher-btn"),
+			).Attr("v-bind", "props").Style("display: inline-block;"),
 		),
 		VList(
 			languages...,
@@ -965,13 +969,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					//	VIcon("mdi-menu-down"),
 					// ).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols(3),
-
+				).Cols(3).Class("text-right"),
+				VDivider().Attr("vertical", true).Class("i18n-divider"),
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
-						Class("text-grey-darken-1").
+						Class("text-grey-darken-1 menu-control-icon").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
-				).Cols(2),
+				).Cols(2).Class("position-relative"),
 			).Attr("align", "center").Attr("justify", "center"),
 		)
 
@@ -1053,7 +1057,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							toolbar,
 							VCard(
 								menu,
-							).Class("menu-content my-4 ml-4 pr-4").Variant(VariantText),
+							).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
 						),
 						// VDivider(),
 						profile,

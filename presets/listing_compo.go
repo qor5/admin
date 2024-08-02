@@ -737,7 +737,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		}
 
 		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
-			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).Class("ml-2").
+			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantElevated).Class("ml-2").
 			Attr("@click", stateful.PostAction(ctx, c, c.OpenActionDialog, OpenActionDialogRequest{
 				Name: ba.name,
 			}).Go()),
