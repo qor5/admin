@@ -819,6 +819,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 			Query(paramTab, web.Var("vars.media_tab")).
 			Query(ParamParentID, web.Var("vars.media_parent_id"))
 	}
+	event := clickEvent.Go()
 
 	return VTextField().
 		Density(DensityCompact).
@@ -830,7 +831,8 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		SingleLine(true).
 		Attr("v-model", "vars.searchMsg").
 		Attr(web.VAssign("vars", `{searchMsg:""}`)...).
-		Attr("@keyup.enter", clickEvent.Go()).
+		Attr("@click:clear", `vars.searchMsg="";`+event).
+		Attr("@keyup.enter", event).
 		Children(
 			web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
 		).MaxWidth(320)
