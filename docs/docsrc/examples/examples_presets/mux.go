@@ -43,6 +43,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailNestedMany)
 	addExample(mux, db, PresetsDetailInlineEditFieldSections)
 	addExample(mux, db, PresetsDetailInlineEditValidate)
+	addExample(mux, db, PresetsDetailInlineEditFieldValidate)
 	addExample(mux, db, PresetsDetailSimple)
 	return
 }

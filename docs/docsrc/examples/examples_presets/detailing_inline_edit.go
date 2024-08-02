@@ -2,6 +2,7 @@ package examples_presets
 
 import (
 	"fmt"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"log"
 
 	"github.com/qor5/admin/v3/media"
@@ -188,6 +189,45 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			err.GlobalError("customer name must not be empty")
 		}
 		return
+	})
+
+	return
+}
+
+func PresetsDetailInlineEditFieldValidate(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+
+	cust = b.Model(&Customer{})
+	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
+	dp = cust.Detailing("name_section").Drawer(true)
+	dp.Section("name_section").Label("name must not be empty").Viewing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		if customer.Name == "" {
+			err.FieldError("name_section.Name", "customer name must not be empty")
+		}
+		return
+	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return v.VTextField().
+			Variant(v.VariantOutlined).
+			Density(v.DensityCompact).
+			HideDetails(true).
+			Attr(web.VField("name_section.Name", customer.Name)...).
+			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
 	})
 
 	return

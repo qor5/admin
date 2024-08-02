@@ -166,9 +166,15 @@ func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) 
 	).Class("d-flex align-center ma-2").Style("height:40px")
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
+func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
+	db := b.db
 	dp.Section("Page").
 		Editing("Title", "Slug", "CategoryID").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			c := obj.(*Page)
+			err = pageValidator(ctx.R.Context(), c, db, b.l10n)
+			return
+		}).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			var (
@@ -203,7 +209,8 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 					Variant(VariantOutlined).
 					Density(DensityCompact).
 					HideDetails(true).
-					Attr(web.VField("Page.Title", p.Title)...),
+					Attr(web.VField("Page.Title", p.Title)...).
+					ErrorMessages(vErr.GetFieldErrors("Page.Title")...),
 			),
 			detailingRow("Slug",
 				VTextField().
