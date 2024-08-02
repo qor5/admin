@@ -215,8 +215,8 @@ func TestActivityAdmin(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
 				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作者", "操作表名", "</vx-filter>",
-				"时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
+				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
 			},
 		},
 	}
