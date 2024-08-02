@@ -357,7 +357,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		b.configTemplateAndPage(pb, r)
 		b.configSharedContainer(pb, r)
 		b.configDetail(r)
-		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Page Categories")
 		if err = b.categoryInstall(pb, categoryM); err != nil {
 			return
 		}
