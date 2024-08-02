@@ -972,9 +972,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				VDivider().Attr("vertical", true).Class("i18n-divider"),
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
-						Class("text-grey-darken-1").
+						Class("text-grey-darken-1 menu-control-icon").
 						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
-				).Cols(2),
+				).Cols(2).Class("position-relative"),
 			).Attr("align", "center").Attr("justify", "center"),
 		)
 
