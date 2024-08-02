@@ -183,36 +183,14 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	cust = b.Model(&Customer{})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
 	dp = cust.Detailing("name_section").Drawer(true)
-	dp.Section("name_section").Label("name must not be empty").Editing("Name").Viewing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	dp.Section("name_section").Label("name must not be empty, no longer than 6").
+		Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
 		if customer.Name == "" {
 			err.GlobalError("customer name must not be empty")
 		}
-		return
-	})
-
-	return
-}
-
-func PresetsDetailInlineEditFieldValidate(b *presets.Builder, db *gorm.DB) (
-	cust *presets.ModelBuilder,
-	cl *presets.ListingBuilder,
-	ce *presets.EditingBuilder,
-	dp *presets.DetailingBuilder,
-) {
-	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
-	if err != nil {
-		panic(err)
-	}
-	b.DataOperator(gorm2op.DataOperator(db))
-
-	cust = b.Model(&Customer{})
-	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
-	dp = cust.Detailing("name_section").Drawer(true)
-	dp.Section("name_section").Editing("Name").Label("name must not be empty").Viewing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		customer := obj.(*Customer)
-		if customer.Name == "" {
-			err.FieldError("name_section.Name", "customer name must not be empty")
+		if len(customer.Name) > 6 {
+			err.FieldError("name_section.Name", "customer name must no longer than 6")
 		}
 		return
 	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -225,7 +203,6 @@ func PresetsDetailInlineEditFieldValidate(b *presets.Builder, db *gorm.DB) (
 		return v.VTextField().
 			Variant(v.VariantOutlined).
 			Density(v.DensityCompact).
-			HideDetails(true).
 			Attr(web.VField("name_section.Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
 	})
