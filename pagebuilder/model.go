@@ -865,6 +865,9 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.wrapper-shadow:hover .editor-add div {
 			  height: 6px;
 			}
+			.highlight .editor-add div{
+              height: 3px !important;	
+			}		
 			.editor-bar {
 			  position: absolute;
 			  z-index: 9999;
@@ -901,23 +904,14 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
               white-space: nowrap;
 			  letter-spacing: 0.04px;	
 			}
-            .unfocused .editor-add {
-			  opacity: 0 !important;
-			}
-   			.unfocused .inner-shadow{
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset !important;
-			}
 			.highlight .editor-bar {
 			  opacity: 1;
               pointer-events: auto;
 			}
+		
 
-			.highlight .editor-add {
-			  opacity: 1;
-			}
 			.highlight .inner-shadow {
 			  opacity: 1;
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset;
 			}
 `))
 		}

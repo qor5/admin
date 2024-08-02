@@ -474,7 +474,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r.AppendChildren(h.Div().Class("inner-shadow"))
 			r = h.Div(
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('unfocused');item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(
@@ -491,8 +491,6 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		}
 	}
 	r.Attr("data-container-id", containerDataID)
-	r.Attr("onmouseenter", "if(!event.currentTarget.classList.contains('highlight')){document.querySelectorAll('.highlight').forEach(item=>{item.classList.add('unfocused')})}")
-	r.Attr("onmouseleave", "if(!event.currentTarget.classList.contains('highlight')){document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('unfocused')})}")
 	return r
 }
 
