@@ -83,13 +83,23 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("field_section", "section").Drawer(true)
-	dp.Section("field_section").DisableLabel().
+	sb := dp.Section("field_section").
 		Editing(&presets.FieldsSection{
 			Title: "FieldSectionTitle",
 			Rows: [][]string{
-				{"Name"},
+				{"Name", "Email"},
+				{"Description"},
 			},
-		})
+		}, "Avatar")
+
+	sb.EditingField("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Input("").Attr(web.VField("Details."+field.Name, field.Value(obj))...)
+	})
+
+	sb.ViewingField("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Strong(obj.(*Customer).Email)
+	})
+
 	dp.Section("section").Label("SectionTitle").
 		Editing([]string{"Name", "Email"})
 	return
