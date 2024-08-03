@@ -540,7 +540,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		if c.lb.disablePagination {
 			return dataTable
 		}
-		dataTableAdditions = h.Div().Class("mt-2").Children(
+		dataTableAdditions = h.Div().Style("margin-top:26px").Children(
 			vx.VXTablePagination().
 				Total(int64(totalCount)).
 				CurrPage(searchParams.Page).
