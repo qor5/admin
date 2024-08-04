@@ -304,11 +304,11 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 	};`, compo.CompoID())
 
 	content := VCard().Attr("id", compo.CompoID()).Children(
-		VCardTitle().Class("d-flex align-center").Children(
+		VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(
 			titleCompo,
 			VSpacer(),
 			h.Div().Id(compo.ActionsComponentTeleportToID()),
-			VBtn("").Elevation(0).Icon("mdi-close").Class("ml-2").Attr("@click", CloseListingDialogVarScript),
+			VBtn("").Elevation(0).Size(SizeXSmall).Icon("mdi-close").Class("ml-2 dialog-close-btn").Attr("@click", CloseListingDialogVarScript),
 		),
 		VCardText().Class("pa-0").Children(
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),

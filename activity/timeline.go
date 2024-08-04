@@ -180,7 +180,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 						h.Div().Attr("v-pre", true).Text(userName).Class("font-weight-medium").ClassIf("text-grey", i != 0),
 					),
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						h.Div().Style("width: 16px"),
+						h.Div().Style("width: 16px; flex-shrink:0"),
 						c.humanContent(ctx, log, lo.If(i != 0, "text-grey").Else("")),
 					),
 				),

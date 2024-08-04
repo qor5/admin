@@ -112,7 +112,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 						h.Text(se),
 					).Class(fmt.Sprintf("bg-%s", ColorGreyLighten3)),
 					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorBlack).
-						Class("rounded-sm").Height(40).Variant(VariantFlat),
+						Class("rounded").Height(36).Variant(VariantElevated),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
 				Attr("@click",
@@ -120,9 +120,9 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 				),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
-				VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
+				VBtn("").Icon("mdi-content-copy").Color(ColorSecondary).Width(20).Height(20).Variant(VariantText).Size(SizeXSmall).Class("ml-1 fix-btn-icon").
 					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: "%s"}`, copyURL, ColorSuccess)),
-			).Class("d-inline-flex align-center"),
+			).Class("d-inline-flex align-center py-4"),
 		).Class("my-10")
 	}
 }
