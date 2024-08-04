@@ -84,7 +84,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			versionSwitch = v.VChip(
 				h.Text(`{{ xlocals.versionName }}`),
 			).Label(true).Variant(v.VariantOutlined).
-				Attr("style", "height:40px;").
+				Attr("style", "height:36px;").
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, slug).
@@ -102,8 +102,8 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			))
 
 			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
-				div.AppendChildren(v.VBtn(msgr.Duplicate).PrependIcon("mdi-file-document-multiple").
-					Height(40).Class("ml-2").Variant(v.VariantOutlined).
+				div.AppendChildren(v.VBtn(msgr.Duplicate).
+					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
@@ -120,7 +120,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					}
 					publishBtn = h.Div(
 						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
-							Class("rounded-s ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40),
+							Class("rounded-s ml-2").Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
 					)
 				}
 			case StatusOnline:
@@ -141,11 +141,11 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					publishBtn = h.Div(
 						h.Iff(unPublishEvent != "", func() h.HTMLComponent {
 							return v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
-								Class("ml-2").Variant(v.VariantFlat).Color(v.ColorError).Height(40)
+								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
 						}),
 						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
 							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-								Class("ml-2").Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40)
+								Class("ml-2").ClassIf("rounded-0 rounded-s", true).Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
 						}),
 					).Class("d-inline-flex")
 				}
@@ -172,10 +172,10 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 						Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
 						BgColor(v.ColorPrimaryLighten2).Readonly(true).
-						Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption")
+						Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
 				} else {
-					scheduleBtn = v.VBtn("").Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("ml-1 rounded-e").
-						Variant(v.VariantFlat).Color(v.ColorPrimary).Height(40).Attr("@click", clickEvent)
+					scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
+						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).Attr("@click", clickEvent)
 				}
 				div.AppendChildren(scheduleBtn)
 				// SchedulePublishDialog
@@ -402,7 +402,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					`, selected, filter.Encode(), filterKeySelected))).Go(),
 				),
 			),
-			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorSecondary).
+			v.VBtn(utilsMsgr.Cancel).Variant(v.VariantOutlined).Size(v.SizeSmall).
 				Class("text-none text-caption font-weight-regular").
 				Attr("@click", "vars.presetsListingDialog=false"),
 		)

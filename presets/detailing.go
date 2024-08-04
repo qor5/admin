@@ -237,7 +237,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 			actionButtonsCompo,
 			tabsContent,
 		),
-	).Fluid(true)
+	).Fluid(true).Class("px-0 pt-0")
 
 	return
 }
