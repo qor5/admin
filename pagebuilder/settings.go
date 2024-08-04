@@ -120,7 +120,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 				),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
-				VBtn("").Icon("mdi-file-document-multiple").Variant(VariantText).Size(SizeXSmall).Class("ml-1").
+				VBtn("").Icon("mdi-content-copy").Color(ColorSecondary).Width(20).Height(20).Variant(VariantText).Size(SizeXSmall).Class("ml-1 fix-btn-icon").
 					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: "%s"}`, copyURL, ColorSuccess)),
 			).Class("d-inline-flex align-center py-4"),
 		).Class("my-10")
