@@ -418,6 +418,19 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 		return r, nil
 	}
 
+	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: f.FieldPortalName(),
+			Body: f.editComponent(obj, &FieldContext{
+				ModelInfo: b.mb.modelInfo,
+				FormKey:   f.name,
+				Name:      f.name,
+				Label:     f.label,
+			}, ctx),
+		})
+		return
+	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
 		Body: f.viewComponent(obj, &FieldContext{
@@ -512,6 +525,14 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	if err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
+	}
+
+	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: f.FieldPortalName(),
+			Body: f.listComponent(obj, nil, ctx, -1, int(index), -1),
+		})
+		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

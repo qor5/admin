@@ -235,13 +235,12 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 		var (
 			msgr  = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			field = ctx.Param(ParamField)
-			cfg   = ctx.Param(ParamCfg)
 			ids   = strings.Split(ctx.Param(ParamMediaIDS), ",")
 
 			message string
 		)
 		if len(ids) == 0 {
-			presets.ShowMessage(&r, "faield", ColorWarning)
+			presets.ShowMessage(&r, "failed", ColorWarning)
 			return
 		} else if len(ids) == 1 {
 			message = msgr.DeleteConfirmationText(ids[0])
@@ -266,11 +265,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
 								EventFunc(DoDeleteEvent).
-								Query(paramTab, ctx.Param(paramTab)).
-								Query(ParamParentID, ctx.Param(ParamParentID)).
-								Query(ParamField, field).
-								Query(ParamMediaIDS, ids).
-								Query(ParamCfg, cfg).
+								Queries(ctx.Queries()).
 								Go()),
 					),
 				),
@@ -381,7 +376,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 				Variant(VariantTonal).Color(ColorError).Size(SizeXSmall).PrependIcon("mdi-delete-outline").
 				Class("rounded-sm ml-2").
 				Attr("style", "text-transform: none").
-				Attr("@click", web.Plaid().EventFunc(deleteFileEvent).
+				Attr("@click", web.Plaid().
+					EventFunc(deleteFileEvent).
 					Query(ParamField, field).
 					Query(ParamCfg, h.JSONString(cfg)).
 					Go(),
@@ -578,10 +574,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 		web.AppendRunScripts(&r,
 			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
-				Query(paramTab, ctx.Param(paramTab)).
-				Query(ParamParentID, ctx.Param(ParamParentID)).
-				Query(ParamField, ctx.Param(ParamField)).
-				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Queries(ctx.Queries()).
 				Go())
 		return
 	}
@@ -608,10 +601,7 @@ func rename(mb *Builder) web.EventFunc {
 		web.AppendRunScripts(&r,
 			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
-				Query(paramTab, ctx.Param(paramTab)).
-				Query(ParamParentID, ctx.Param(ParamParentID)).
-				Query(ParamField, ctx.Param(ParamField)).
-				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Queries(ctx.Queries()).
 				Go())
 		return
 	}
@@ -638,11 +628,9 @@ func createFolder(mb *Builder) web.EventFunc {
 		if err = mb.db.Save(&m).Error; err != nil {
 			return
 		}
-		r.RunScript = web.Plaid().EventFunc(imageJumpPageEvent).
-			Query(paramTab, ctx.Param(paramTab)).
-			Query(ParamParentID, ctx.Param(ParamParentID)).
-			Query(ParamField, ctx.Param(ParamField)).
-			Query(ParamCfg, ctx.Param(ParamCfg)).
+		r.RunScript = web.Plaid().
+			EventFunc(imageJumpPageEvent).
+			Queries(ctx.Queries()).
 			Go()
 		return
 	}
@@ -705,11 +693,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 								Attr(":disabled", fmt.Sprintf("!form.%s", ParamName)).
 								Attr("@click",
 									web.Plaid().EventFunc(RenameEvent).
-										Query(paramTab, ctx.Param(paramTab)).
-										Query(ParamParentID, ctx.Param(ParamParentID)).
-										Query(ParamField, ctx.Param(ParamField)).
-										Query(ParamCfg, ctx.Param(ParamCfg)).
-										Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
+										Queries(ctx.Queries()).
 										Go(),
 								),
 						),
@@ -721,6 +705,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 	}
 }
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	r.RunScript = `vars.searchMsg=""`
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
@@ -740,10 +725,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 						VBtn("Ok").Color(ColorPrimary).Attr("@click",
 							web.Plaid().EventFunc(CreateFolderEvent).
-								Query(paramTab, ctx.Param(paramTab)).
-								Query(ParamParentID, ctx.Param(ParamParentID)).
-								Query(ParamField, ctx.Param(ParamField)).
-								Query(ParamCfg, ctx.Param(ParamCfg)).
+								Queries(ctx.Queries()).
 								Go(),
 						),
 					),
@@ -775,11 +757,7 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
 							VBtn("Ok").Color(ColorPrimary).Attr("@click",
 								web.Plaid().EventFunc(UpdateDescriptionEvent).
-									Query(paramTab, ctx.Param(paramTab)).
-									Query(ParamParentID, ctx.Param(ParamParentID)).
-									Query(ParamField, ctx.Param(ParamField)).
-									Query(ParamCfg, ctx.Param(ParamCfg)).
-									Query(ParamMediaIDS, ctx.Param(ParamMediaIDS)).
+									Queries(ctx.Queries()).
 									Go(),
 							),
 						),
@@ -819,11 +797,9 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 							VBtn("Save").Color(ColorPrimary).
 								Attr("@click", web.Plaid().
 									EventFunc(MoveToFolderEvent).
-									Query(paramTab, ctx.Param(paramTab)).
+									Queries(ctx.Queries()).
 									Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
-									Query(ParamField, ctx.Param(ParamField)).
-									Query(ParamCfg, ctx.Param(ParamCfg)).
-									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).Go()),
+									Go()),
 						),
 					).Height(571).Width(658).Class("pa-6"),
 				).MaxWidth(658).Attr("v-model", "dialogLocals.show"),
@@ -838,8 +814,12 @@ func moveToFolder(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			selectFolderID = ctx.Param(ParamSelectFolderID)
+			field          = ctx.Param(ParamField)
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 		)
+
+		queries := ctx.Queries()
+		delete(queries, searchKeywordName(field))
 		var ids []uint
 
 		for _, idStr := range selectIDs {
@@ -858,10 +838,8 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		r.RunScript = web.Plaid().
 			EventFunc(imageJumpPageEvent).
-			Query(paramTab, ctx.Param(paramTab)).
+			Queries(queries).
 			Query(ParamParentID, selectFolderID).
-			Query(ParamField, ctx.Param(ParamField)).
-			Query(ParamCfg, ctx.Param(ParamCfg)).
 			Go()
 		return
 	}
@@ -919,8 +897,9 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 						).Attr("v-bind", "props").
 							PrependIcon("mdi-folder").
 							Attr(":active", fmt.Sprintf(`form.%s==%v`, ParamSelectFolderID, record.ID)).
+							Attr(web.VAssign("locals", fmt.Sprintf(`{folder%v:0}`, record.ID))...).
 							Attr("@click", fmt.Sprintf("form.%s=%v;", ParamSelectFolderID, record.ID)+
-								fmt.Sprintf(`if (!dialogLocals.folder%v){dialogLocals.folder%v=1;%s}`, record.ID, record.ID,
+								fmt.Sprintf(`if (!locals.folder%v){locals.folder%v=1;%s}`, record.ID, record.ID,
 									web.Plaid().
 										EventFunc(NextFolderEvent).
 										Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
@@ -979,10 +958,7 @@ func copyFile(mb *Builder) web.EventFunc {
 		}
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(imageJumpPageEvent).
-				Query(paramTab, ctx.Param(paramTab)).
-				Query(ParamParentID, ctx.Param(ParamParentID)).
-				Query(ParamField, ctx.Param(ParamField)).
-				Query(ParamCfg, ctx.Param(ParamCfg)).
+				Queries(ctx.Queries()).
 				Go(),
 		)
 		presets.ShowMessage(&r, "copy success", ColorSuccess)

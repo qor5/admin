@@ -357,7 +357,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		b.configTemplateAndPage(pb, r)
 		b.configSharedContainer(pb, r)
 		b.configDetail(r)
-		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Categories")
+		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Page Categories")
 		if err = b.categoryInstall(pb, categoryM); err != nil {
 			return
 		}
@@ -474,6 +474,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			vErr = *ve
 		}
 		return VTextField().
+			Label(field.Label).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, field.Value(obj))...).
 			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
@@ -486,6 +487,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		return VTextField().
 			Variant(FieldVariantUnderlined).
+			Label(field.Label).
 			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
@@ -509,9 +511,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		complete := vx.VXAutocomplete().Label(msgr.Category).
+		complete := VAutocomplete().
+			Label(msgr.Category).
+			Variant(FieldVariantUnderlined).
 			Multiple(false).Chips(false).
-			Items(categories).ItemText("Path").ItemValue("ID").
+			Items(categories).ItemTitle("Path").ItemValue("ID").
 			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
 		if p.CategoryID > 0 {
 			complete.Attr(web.VField(field.Name, p.CategoryID)...)
@@ -548,7 +552,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	})
 
 	// pm detailing page  detail-field
-	detailPageEditor(dp, b.db)
+	detailPageEditor(dp, b)
 	// pm detailing side panel
 	// pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
 

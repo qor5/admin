@@ -78,11 +78,11 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 								Attr("@click", web.Plaid().
 									BeforeScript("cropLocals.cropping = true").
 									EventFunc(cropImageEvent).
-									Query("field", field).
+									Query(ParamField, field).
 									Query(ParamMediaIDS, fmt.Sprint(id)).
 									Query("thumb", thumb).
 									Query("CropOption", web.Var("cropLocals.CropOption")).
-									Query("cfg", h.JSONString(cfg)).
+									Query(ParamCfg, h.JSONString(cfg)).
 									Go()),
 						).Class("pl-2 pr-2"),
 						VCardText(

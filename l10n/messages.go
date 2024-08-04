@@ -51,7 +51,7 @@ var Messages_ja_JP = &Messages{
 	SuccessfullyLocalized: "ローカライズに成功しました",
 	Location:              "場所",
 	Colon:                 ":",
-	International:         "インターナショナル",
+	International:         "国際的",
 	China:                 "中国",
 	Japan:                 "日本",
 }

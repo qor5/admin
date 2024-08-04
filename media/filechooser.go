@@ -284,6 +284,7 @@ func fileComponent(
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(ParamParentID, ctx.Param(ParamParentID)).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Go()),
 		VListItem(
 			h.Text(msgr.DescriptionForAccessibility)).
@@ -294,6 +295,7 @@ func fileComponent(
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 				Go()),
 	)
 	if base.IsImageFormat(f.File.FileName) {
@@ -361,6 +363,7 @@ func fileOrFolderComponent(
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(ParamParentID, ctx.Param(ParamParentID)).
+			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
 		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids=[%v]", f.ID)),
@@ -372,6 +375,7 @@ func fileOrFolderComponent(
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 				Go())),
 	}
 
@@ -382,6 +386,7 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
+			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Query(ParamParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
 		if inMediaLibrary {
 			clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, f.ID).RunPushState()
@@ -495,6 +500,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Query(ParamParentID, currentID).
+		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 		Go()
 
 	item.Attr("@click.prevent", clickEvent)
@@ -626,6 +632,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Query(paramTab, web.Var("$event")).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
+		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 		Go()
 	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
 	if inMediaLibrary {
@@ -672,6 +679,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
+								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 								Query(paramTypeKey, web.Var("$event")).
 								Go(),
 						).
@@ -689,6 +697,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
+								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 								Query(paramOrderByKey, web.Var("$event")).Go(),
 						).
 						Density(DensityCompact).Variant(VariantTonal).Flat(true),
@@ -703,7 +712,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 									Query(paramTab, tab).
 									Query(ParamField, field).
 									Query(ParamCfg, h.JSONString(cfg)).
-									Query(ParamParentID, ctx.Param(ParamParentID)).Go()),
+									Query(ParamParentID, ctx.Param(ParamParentID)).
+									Go()),
 					),
 					h.If(mb.uploadIsAllowed(ctx.R) == nil,
 						h.Div(
@@ -745,6 +755,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(paramTab, tab).
 							Query(ParamParentID, parentID).
 							Query(ParamField, field).
+							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Go()),
 				).Cols(10),
@@ -771,6 +782,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 						Attr("@click", web.Plaid().EventFunc(MoveToFolderDialogEvent).
 							Query(ParamField, field).
 							Query(paramTab, tab).
+							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 					VBtn("Delete").Size(SizeSmall).Variant(VariantOutlined).
@@ -780,6 +792,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamField, field).
 							Query(ParamParentID, parentID).
 							Query(paramTab, tab).
+							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
@@ -798,7 +811,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		EventFunc(imageSearchEvent).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
-		FieldValue(searchKeywordName(field), web.Var("searchLocals.msg"))
+		Query(searchKeywordName(field), web.Var("vars.searchMsg"))
 	if inMediaLibrary {
 		clickEvent = clickEvent.MergeQuery(true)
 	} else {
@@ -806,20 +819,21 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 			Query(paramTab, web.Var("vars.media_tab")).
 			Query(ParamParentID, web.Var("vars.media_parent_id"))
 	}
+	event := clickEvent.Go()
 
-	return web.Scope(
-		VTextField().
-			Density(DensityCompact).
-			Variant(FieldVariantOutlined).
-			Label(msgr.Search).
-			Flat(true).
-			Clearable(true).
-			HideDetails(true).
-			SingleLine(true).
-			Attr("v-model", "searchLocals.msg").
-			Attr("@keyup.enter", clickEvent.Go()).
-			Children(
-				web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
-			).MaxWidth(320),
-	).VSlot("{locals:searchLocals}").Init(fmt.Sprintf(`{msg:""}`))
+	return VTextField().
+		Density(DensityCompact).
+		Variant(FieldVariantOutlined).
+		Label(msgr.Search).
+		Flat(true).
+		Clearable(true).
+		HideDetails(true).
+		SingleLine(true).
+		Attr("v-model", "vars.searchMsg").
+		Attr(web.VAssign("vars", `{searchMsg:""}`)...).
+		Attr("@click:clear", `vars.searchMsg="";`+event).
+		Attr("@keyup.enter", event).
+		Children(
+			web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+		).MaxWidth(320)
 }

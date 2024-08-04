@@ -513,6 +513,9 @@ func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.Ev
 	if b.validator != nil {
 		if vErr := b.validator(obj, ctx); vErr.GetGlobalError() != "" {
 			return errors.New(vErr.GetGlobalError())
+		} else if vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			return
 		}
 	}
 	err = b.father.mb.editing.Saver(obj, id, ctx)
@@ -543,6 +546,9 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	if b.validator != nil {
 		if vErr := b.validator(obj, ctx); vErr.GetGlobalError() != "" {
 			return errors.New(vErr.GetGlobalError())
+		} else if vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			return
 		}
 	}
 	err = b.father.mb.editing.Saver(obj, id, ctx)

@@ -829,6 +829,7 @@ func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width 
 			Attr("v-model", "vars.presetsRightDrawer").
 			Location(LocationRight).
 			Temporary(true).
+			Persistent(true).
 			// Fixed(true).
 			Width(width).
 			Attr(":height", `"100%"`),

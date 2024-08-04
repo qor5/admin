@@ -84,7 +84,7 @@ func TestPresetsDetailing(t *testing.T) {
 					AddField("Details.Description", "hello description").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"abc@example.com"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"123123", "abc@example.com", "hello description"},
 		},
 
 		{
@@ -115,7 +115,7 @@ func TestPresetsDetailing(t *testing.T) {
 						"&id=12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Hello_EN"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Field_section_EN", "Section_EN"},
 		},
 	}
 
@@ -232,7 +232,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 
 	cases := []multipartestutils.TestCase{
 		{
-			Name:  "section validate",
+			Name:  "section validate globe err",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
@@ -242,6 +242,18 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{"message: \"customer name must not be empty\""},
+		},
+		{
+			Name:  "section validate field err",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&detailField=name_section&id=12").
+					AddField("name_section.Name", "longlonglong name").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
 		},
 	}
 

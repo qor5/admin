@@ -161,14 +161,20 @@ func templateSettings(_ *gorm.DB, pm *presets.ModelBuilder) presets.FieldCompone
 
 func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) {
 	return h.Div(
-		h.Div(h.Text(label)).Class("text-subtitle-2").Style("width:180px;height:20px"),
+		h.Div(h.Text(label)).Class("text-subtitle-2 mb-5").Style("width:180px;height:20px"),
 		h.Div(showComp).Class("text-body-1 ml-2 w-100"),
-	).Class("d-flex align-center ma-2").Style("height:40px")
+	).Class("d-flex align-center ma-2").Style("height:60px")
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
+func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
+	db := b.db
 	dp.Section("Page").
 		Editing("Title", "Slug", "CategoryID").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			c := obj.(*Page)
+			err = pageValidator(ctx.R.Context(), c, db, b.l10n)
+			return
+		}).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			var (
@@ -202,23 +208,21 @@ func detailPageEditor(dp *presets.DetailingBuilder, db *gorm.DB) {
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
-					HideDetails(true).
-					Attr(web.VField("Page.Title", p.Title)...),
+					Attr(web.VField("Page.Title", p.Title)...).
+					ErrorMessages(vErr.GetFieldErrors("Page.Title")...),
 			),
 			detailingRow("Slug",
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
-					HideDetails(true).
 					Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
 					Prefix("/").
-					ErrorMessages(vErr.GetFieldErrors("Page.Category")...),
+					ErrorMessages(vErr.GetFieldErrors("Page.Slug")...),
 			),
 			detailingRow(msgr.Category,
 				VAutocomplete().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
-					HideDetails(true).
 					Attr(web.VField("Page.CategoryID", p.CategoryID)...).
 					Multiple(false).Chips(false).
 					Items(categories).ItemTitle("Path").ItemValue("ID").
