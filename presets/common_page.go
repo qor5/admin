@@ -57,7 +57,7 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 				web.ParentSizeObserver("{ width, height }").Children(
 					VRow(
 						VCol(asideContent).Attr(":cols", `width>900?8:12`),
-						VCol(sidePanel).Attr(":cols", `width>900?4:12`).Class("pl-15 pr-4 pt-23"),
+						VCol(sidePanel).Attr(":cols", `width>900?4:12`).Attr(":class", `width > 900 ? 'pl-15 pr-4 pt-23': ''`),
 					),
 				),
 			).Class("pt-0")
