@@ -1519,7 +1519,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.ps.ServeHTTP(w, r)
 }
 
-func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
+func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
 		web.Plaid().
 			PushState(true).
@@ -1548,6 +1548,8 @@ func (b *Builder) generateEditorBarJsFunction(_ *web.EventContext) string {
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramMoveDirection, web.Var("msg_type")).
 		Query(paramModelID, web.Var("model_id")).
+		Query(paramStatus, ctx.Param(paramStatus)).
+		Query(paramContainerDataID, ctx.Param(paramContainerDataID)).
 		Go()
 	return fmt.Sprintf(`
 function(e){

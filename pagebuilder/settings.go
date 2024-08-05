@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
@@ -172,6 +173,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 		Editing("Title", "Slug", "CategoryID").
 		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			c := obj.(*Page)
+			c.Slug = path.Join("/", c.Slug)
 			err = pageValidator(ctx.R.Context(), c, db, b.l10n)
 			return
 		}).

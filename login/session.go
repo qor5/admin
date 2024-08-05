@@ -136,6 +136,10 @@ func (b *SessionBuilder) Activity(amb *activity.ModelBuilder) *SessionBuilder {
 	b.amb = amb
 	return b
 }
+func (b *SessionBuilder) Secret(v string) *SessionBuilder {
+	b.lb.Secret(v)
+	return b
+}
 
 func (b *SessionBuilder) IsPublicUser(f func(user any) bool) *SessionBuilder {
 	b.isPublicUser = f
