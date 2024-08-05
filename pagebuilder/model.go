@@ -309,7 +309,11 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 		}
 		return
 	})
-	r.RunScript = web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go()
+	web.AppendRunScripts(&r,
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).
+			Query(paramContainerDataID, ctx.Param(paramContainerDataID)).Go(),
+	)
 	return
 }
 
