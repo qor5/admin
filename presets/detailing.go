@@ -231,7 +231,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
 	}
 
-	r.Body = VContainer().ClassIf("mt-n3", actionButtonsCompo != nil).Children(
+	r.Body = VContainer().Children(
 		notice,
 		h.Div().Class("d-flex flex-column ga-3").Children(
 			actionButtonsCompo,
