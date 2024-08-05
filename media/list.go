@@ -30,7 +30,7 @@ func configList(b *presets.Builder, mb *Builder) {
 				web.Portal(
 					fileChooserDialogContent(mb, filed, ctx, cfg),
 				).Name(dialogContentPortalName(filed)),
-			).Attr(web.VAssign("vars", "{chooseFile:false}")...),
+			),
 		)
 		return
 	})
