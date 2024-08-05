@@ -116,6 +116,7 @@ func TestPresetsDetailing(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Field_section_EN", "Section_EN"},
+			ExpectPortalUpdate0NotContains:     []string{"Wrong"},
 		},
 	}
 
