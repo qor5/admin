@@ -53,7 +53,7 @@ func fileChooser(mb *Builder) web.EventFunc {
 					Attr("v-model", "vars.showFileChooser"),
 			).VSlot("{form,locals}"),
 		})
-		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true }, 100)`
+		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true; }, 100)`
 		return
 	}
 }
@@ -159,6 +159,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 		}
 
 		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
+		r.RunScript = `vars.searchMsg = ""`
 		return
 	}
 }
@@ -269,6 +270,7 @@ func fileComponent(
 	initCroppingVars []string,
 	event *string,
 	menus *[]h.HTMLComponent,
+	inMediaLibrary bool,
 ) (title h.HTMLComponent, content h.HTMLComponent) {
 	_, needCrop := mergeNewSizes(f, cfg)
 	croppingVar := fileCroppingVarName(f.ID)
@@ -298,8 +300,15 @@ func fileComponent(
 				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 				Go()),
 	)
-	if base.IsImageFormat(f.File.FileName) {
-		*event = fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	clickEvent := fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	if base.IsImageFormat(f.File.FileName) && inMediaLibrary {
+		*event = clickEvent
+	}
+	fileNameComp := VTextField().
+		Attr(web.VField("name", f.File.FileName)...).
+		Readonly(true).Variant(VariantPlain)
+	if !inMediaLibrary {
+		fileNameComp.Attr("@click", clickEvent)
 	}
 	title = h.Div(
 		h.If(
@@ -330,7 +339,7 @@ func fileComponent(
 	content = h.Components(
 		web.Slot(
 			web.Scope(
-				VTextField().Attr(web.VField("name", f.File.FileName)...).Readonly(true).Variant(VariantPlain),
+				fileNameComp,
 			).VSlot(`{form}`),
 		).Name("title"),
 		web.Slot(h.If(base.IsImageFormat(f.File.FileName),
@@ -353,7 +362,7 @@ func fileOrFolderComponent(
 ) h.HTMLComponent {
 	var (
 		title, content            h.HTMLComponent
-		checkEvent                = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v; arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, f.ID)
+		checkEvent                = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, f.ID)
 		clickCardWithoutMoveEvent = "null"
 	)
 	menus := &[]h.HTMLComponent{
@@ -366,7 +375,7 @@ func fileOrFolderComponent(
 			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
-		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids=[%v]", f.ID)),
+		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
 				EventFunc(DeleteConfirmationEvent).
@@ -392,12 +401,13 @@ func fileOrFolderComponent(
 			clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, f.ID).RunPushState()
 		}
 	} else {
-		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus)
+		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, menus, inMediaLibrary)
 
 	}
 
 	return VCard(
 		VCheckbox().
+			Color(ColorPrimary).
 			Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
 			Attr("@update:model-value", checkEvent).
 			Attr("style", "z-index:2").
@@ -426,7 +436,7 @@ func fileOrFolderComponent(
 		).Class("pa-0"),
 	).Class("position-relative").
 		Hover(true).
-		Attr("@click", fmt.Sprintf("if( locals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardWithoutMoveEvent))
+		Attr("@click", fmt.Sprintf("if(locals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardWithoutMoveEvent))
 }
 
 func folderComponent(
@@ -796,10 +806,10 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
-			).Class("d-flex align-center").Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
+			).Class("d-flex align-center").Attr("v-if", "(locals.select_ids && locals.select_ids.length>0)"),
 		).Fluid(true),
 	).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
-		VSlot("{ locals,form}").Init("{select_ids:[]}")
+		VSlot("{ locals,form}").Init(`{select_ids:[]}`)
 }
 
 func searchComponent(ctx *web.EventContext, field string, cfg *media_library.MediaBoxConfig, inMediaLibrary bool) h.HTMLComponent {

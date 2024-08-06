@@ -26,9 +26,11 @@ func configList(b *presets.Builder, mb *Builder) {
 			searchComponent(ctx, filed, cfg, true),
 		).Class(W100, "d-flex align-center"))
 		r.Body = h.Components(
-			web.Portal(
-				fileChooserDialogContent(mb, filed, ctx, cfg),
-			).Name(dialogContentPortalName(filed)),
+			h.Div(
+				web.Portal(
+					fileChooserDialogContent(mb, filed, ctx, cfg),
+				).Name(dialogContentPortalName(filed)),
+			),
 		)
 		return
 	})

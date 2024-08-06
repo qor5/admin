@@ -904,6 +904,8 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 const (
 	ConfirmDialogConfirmEvent     = "presets_ConfirmDialog_ConfirmEvent"
 	ConfirmDialogPromptText       = "presets_ConfirmDialog_PromptText"
+	ConfirmDialogOKText           = "presets_ConfirmDialog_OKText"
+	ConfirmDialogCancelText       = "presets_ConfirmDialog_CancelText"
 	ConfirmDialogDialogPortalName = "presets_ConfirmDialog_DialogPortalName"
 )
 
@@ -919,6 +921,14 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	if v := ctx.R.FormValue(ConfirmDialogPromptText); v != "" {
 		promptText = v
 	}
+	okText := msgr.OK
+	if v := ctx.R.FormValue(ConfirmDialogOKText); v != "" {
+		okText = v
+	}
+	cancelText := msgr.Cancel
+	if v := ctx.R.FormValue(ConfirmDialogCancelText); v != "" {
+		cancelText = v
+	}
 
 	portal := DefaultConfirmDialogPortalName
 	if v := ctx.R.FormValue(ConfirmDialogDialogPortalName); v != "" {
@@ -932,12 +942,12 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
 				VCardActions(
 					VSpacer(),
-					VBtn(msgr.Cancel).
+					VBtn(cancelText).
 						Variant(VariantFlat).
 						Class("ml-2").
 						On("click", "locals.show = false"),
 
-					VBtn(msgr.OK).
+					VBtn(okText).
 						Color("primary").
 						Variant(VariantFlat).
 						Theme(ThemeDark).

@@ -407,9 +407,8 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 	content := h.Div()
 	if b.label != "" && !b.disableLabel {
-		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
 		content.AppendChildren(
-			h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2"),
+			h.Div(h.Span(field.Label).Style("fontSize:16px; font-weight:500;")).Class("mb-2"),
 		)
 	}
 

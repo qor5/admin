@@ -128,12 +128,16 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		VCard().Elevation(0).Children(
 			h.Tag("div").Children(
 				c.tabsFilter(ctx),
-			).Class("ml-2"),
-			c.toolbarSearch(ctx),
-			VCardText().Class("pa-2").Children(
+			).Class("px-6"),
+			h.Div(
+				c.toolbarSearch(ctx),
+			).Class(("px-4")),
+			VCardText().Class("px-6 pt-2").Children(
 				c.dataTable(ctx),
 			),
-			c.cardActionsFooter(ctx),
+			h.Div(
+				c.cardActionsFooter(ctx),
+			).Class(("px-4 pb-2")),
 		),
 	).MarshalHTML(ctx)
 }
@@ -540,7 +544,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		if c.lb.disablePagination {
 			return dataTable
 		}
-		dataTableAdditions = h.Div().Class("mt-2").Children(
+		dataTableAdditions = h.Div().Style("margin-top:26px").Children(
 			vx.VXTablePagination().
 				Total(int64(totalCount)).
 				CurrPage(searchParams.Page).

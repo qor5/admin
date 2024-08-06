@@ -71,15 +71,18 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	type i18nMessage struct {
 		CustomersFieldSectionTitle string
 		CustomersSectionTitle      string
+		CustomersSectionEN         string
 	}
 	b.GetI18n().SupportLanguages(language.English, language.Japanese).
 		RegisterForModule(language.English, presets.ModelsI18nModuleKey, i18nMessage{
-			CustomersFieldSectionTitle: "Field_section_EN",
-			CustomersSectionTitle:      "Section_EN",
+			CustomersFieldSectionTitle: "Field_sectionEN",
+			CustomersSectionTitle:      "SectionEN",
+			CustomersSectionEN:         "Wrong",
 		}).
 		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, i18nMessage{
-			CustomersFieldSectionTitle: "Field_section_JP",
-			CustomersSectionTitle:      "Section_JP",
+			CustomersFieldSectionTitle: "Field_sectionJP",
+			CustomersSectionTitle:      "SectionJP",
+			CustomersSectionEN:         "Wrong",
 		})
 
 	cust = b.Model(&Customer{})
