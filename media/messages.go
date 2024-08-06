@@ -19,6 +19,8 @@ type Messages struct {
 	Videos                      string
 	Files                       string
 	SampleArgsText              func(id string) string
+	Copy                        string
+	CopyUpdated                 string
 }
 
 var Messages_en_US = &Messages{
@@ -59,6 +61,8 @@ var Messages_zh_CN = &Messages{
 	Images:                      "图片",
 	Videos:                      "视频",
 	Files:                       "文件",
+	Copy:                        "拷贝",
+	CopyUpdated:                 "拷贝成功",
 }
 
 var Messages_ja_JP = &Messages{
