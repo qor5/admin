@@ -290,3 +290,50 @@ func TestPresetsDetailSectionLabel(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailSectionCancel(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailSectionLabel(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "cancel section list",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("detailField", "CreditCards").
+					Query("detailListFieldSaveBtn_CreditCards", "0").
+					Query("id", "12").
+					Query("isCancel", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"mdi-square-edit-outline"},
+			ExpectPortalUpdate0NotContains:     []string{"Save"},
+		},
+		{
+			Name:  "cancel section",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("detailField", "section2").
+					Query("id", "12").
+					Query("isCancel", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"mdi-square-edit-outline"},
+			ExpectPortalUpdate0NotContains:     []string{"Save"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
