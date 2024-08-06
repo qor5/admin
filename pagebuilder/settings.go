@@ -35,6 +35,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			id             uint
 			containerCount int64
 		)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
 		if b.templateModel != nil {
 			isTemplate = strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/")
@@ -67,7 +68,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				end = em.Format("2006-01-02 15:04")
 			}
 			if start != "" || end != "" {
-				se = "Scheduled at: " + start + " ~ " + end
+				se = msgr.ScheduledAt + ": " + start + " ~ " + end
 			}
 		}
 		b.db.Model(&Container{}).
@@ -77,7 +78,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		if p, ok := obj.(publish.StatusInterface); ok {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+"%s"`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
-				onlineHint = VAlert(h.Text("The version cannot be edited directly after it is released. Please copy the version and edit it.")).
+				onlineHint = VAlert(h.Text(msgr.OnlineHit)).
 					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
 				copyURL = fmt.Sprintf(`"%s"`, previewDevelopUrl)
@@ -94,7 +95,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 						h.Div(
 							VCard(
 								VCardTitle(h.RawHTML(previewIframeEmptySvg)).Class("d-flex justify-center"),
-								VCardSubtitle(h.Text("This page has no content yet, start to edit in page builder")).
+								VCardSubtitle(h.Text(msgr.NoContentHit)).
 									Class("d-flex justify-center"),
 							).Flat(true).Class("bg-"+ColorGreyLighten4),
 						).Class("d-flex align-center justify-center", H100, "bg-"+ColorGreyLighten4),
@@ -112,7 +113,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					h.Div(
 						h.Text(se),
 					).Class(fmt.Sprintf("bg-%s", ColorGreyLighten3)),
-					VBtn("Edit Page").AppendIcon("mdi-pencil").Color(ColorBlack).
+					VBtn(msgr.EditPage).AppendIcon("mdi-pencil").Color(ColorBlack).
 						Class("rounded").Height(36).Variant(VariantElevated),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
@@ -174,7 +175,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			c := obj.(*Page)
 			c.Slug = path.Join("/", c.Slug)
-			err = pageValidator(ctx.R.Context(), c, db, b.l10n)
+			err = pageValidator(ctx, c, db, b.l10n)
 			return
 		}).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -188,8 +189,8 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Div(
-				detailingRow("Title", h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
-				detailingRow("Slug", h.Text(p.Slug)),
+				detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
+				detailingRow(msgr.Slug, h.Text(p.Slug)),
 				detailingRow(msgr.Category, h.Text(category.Path)),
 			)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -206,14 +207,14 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return h.Components(
-			detailingRow("Title",
+			detailingRow(msgr.Title,
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
 					Attr(web.VField("Page.Title", p.Title)...).
 					ErrorMessages(vErr.GetFieldErrors("Page.Title")...),
 			),
-			detailingRow("Slug",
+			detailingRow(msgr.Slug,
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).

@@ -552,6 +552,7 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 
 func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		var (
 			db = mb.db
 			id = ctx.Param(ParamMediaIDS)
@@ -571,9 +572,8 @@ func updateDescription(mb *Builder) web.EventFunc {
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
-
+		presets.ShowMessage(&r, msgr.DescriptionUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
-			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())
@@ -598,9 +598,8 @@ func rename(mb *Builder) web.EventFunc {
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
-
+		presets.ShowMessage(&r, "rename success", ColorSuccess)
 		web.AppendRunScripts(&r,
-			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())

@@ -1,7 +1,7 @@
 package pagebuilder
 
 import (
-	"context"
+	"github.com/qor5/x/v3/i18n"
 	"path"
 	"regexp"
 
@@ -23,15 +23,6 @@ FROM page_builder_pages pages
 LEFT JOIN page_builder_categories categories ON category_id = categories.id AND pages.locale_code = categories.locale_code
 WHERE pages.deleted_at IS NULL AND categories.deleted_at IS NULL
 `
-	invalidPathMsg  = "Invalid Path"
-	invalidTitleMsg = "Invalid Title"
-	invalidNameMsg  = "Invalid Name"
-	invalidSlugMsg  = "Invalid Slug"
-	conflictSlugMsg = "Conflicting Slug"
-	conflictPathMsg = "Conflicting Path"
-	existingPathMsg = "Existing Path"
-
-	unableDeleteCategoryMsg = "this category cannot be deleted because it has used with pages"
 )
 
 type pagePathInfo struct {
@@ -42,16 +33,18 @@ type pagePathInfo struct {
 	Slug         string
 }
 
-func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 	if p.Title == "" {
-		err.FieldError("Page.Title", invalidTitleMsg)
+		err.FieldError("Page.Title", msgr.InvalidTitleMsg)
 		return
 	}
 
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
-			err.FieldError("Page.Slug", invalidSlugMsg)
+			err.FieldError("Page.Slug", msgr.InvalidSlugMsg)
 			return
 		}
 	}
@@ -82,7 +75,7 @@ func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder)
 		}
 
 		if generatePublishUrl(localePath, info.CategoryPath, info.Slug) == currentPagePublishUrl {
-			err.FieldError("Page.Slug", conflictSlugMsg)
+			err.FieldError("Page.Slug", msgr.ConflictSlugMsg)
 			return
 		}
 	}
@@ -90,15 +83,16 @@ func pageValidator(_ context.Context, p *Page, db *gorm.DB, l10nB *l10n.Builder)
 	return
 }
 
-func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if category.Name == "" {
-		err.FieldError("Category.Name", invalidNameMsg)
+		err.FieldError("Category.Name", msgr.InvalidNameMsg)
 		return
 	}
 
 	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
-		err.FieldError("Category.Category", invalidPathMsg)
+		err.FieldError("Category.Category", msgr.InvalidPathMsg)
 		return
 	}
 
@@ -123,7 +117,7 @@ func categoryValidator(category *Category, db *gorm.DB, l10nB *l10n.Builder) (er
 			localePath = l10nB.GetLocalePath(c.LocaleCode)
 		}
 		if generatePublishUrl(localePath, c.Path, "") == currentCategoryPathPublishUrl {
-			err.FieldError("Category.Category", existingPathMsg)
+			err.FieldError("Category.Category", msgr.ExistingPathMsg)
 			return
 		}
 	}

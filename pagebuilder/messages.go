@@ -24,8 +24,31 @@ type Messages struct {
 	FilterTabAllVersions           string
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
-	Rename                         string
-	PageOverView                   string
+
+	Rename                    string
+	PageOverView              string
+	Others                    string
+	Add                       string
+	AddComponent              string
+	BuildYourPages            string
+	PlaceAnElementFromLibrary string
+	NewElement                string
+	Title                     string
+	Slug                      string
+	EditPage                  string
+	ScheduledAt               string
+	OnlineHit                 string
+	NoContentHit              string
+	PageBuilder               string
+
+	InvalidPathMsg          string
+	InvalidTitleMsg         string
+	InvalidNameMsg          string
+	InvalidSlugMsg          string
+	ConflictSlugMsg         string
+	ConflictPathMsg         string
+	ExistingPathMsg         string
+	UnableDeleteCategoryMsg string
 }
 
 var Messages_en_US = &Messages{
@@ -48,8 +71,31 @@ var Messages_en_US = &Messages{
 	FilterTabAllVersions:           "All Versions",
 	FilterTabOnlineVersion:         "Online Versions",
 	FilterTabNamedVersions:         "Named Versions",
-	Rename:                         "Rename",
-	PageOverView:                   "Page Overview",
+	PageBuilder:                    "Page Builder",
+
+	Rename:                    "Rename",
+	PageOverView:              "Page Overview",
+	Others:                    "Others",
+	Add:                       "Add",
+	AddComponent:              "Add Component",
+	BuildYourPages:            "Build your pages",
+	PlaceAnElementFromLibrary: "Place an element from  library.",
+	NewElement:                "New Element",
+	Title:                     "Title",
+	Slug:                      "Slug",
+	EditPage:                  "Edit Page",
+	ScheduledAt:               "Scheduled at",
+	OnlineHit:                 "The version cannot be edited directly after it is released. Please copy the version and edit it.",
+	NoContentHit:              "This page has no content yet, start to edit in page builder",
+
+	InvalidPathMsg:          "Invalid Path",
+	InvalidTitleMsg:         "Invalid Title",
+	InvalidNameMsg:          "Invalid Name",
+	InvalidSlugMsg:          "Invalid Slug",
+	ConflictSlugMsg:         "Conflicting Slug",
+	ConflictPathMsg:         "Conflicting Path",
+	ExistingPathMsg:         "Existing Path",
+	UnableDeleteCategoryMsg: "this category cannot be deleted because it has used with pages",
 }
 
 var Messages_zh_CN = &Messages{
