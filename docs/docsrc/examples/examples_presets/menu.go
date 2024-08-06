@@ -1,6 +1,9 @@
 package examples_presets
 
 import (
+	"net/http"
+	"net/url"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetify"
@@ -78,6 +81,11 @@ func PresetsCustomizeMenu(b *presets.Builder, db *gorm.DB) (
 	})
 	mb = b.Model(&book{}).MenuIcon("mdi-book")
 	// @snippet_begin(MenuCustomizeSample)
+	mb.DefaultURLQueryFunc(func(r *http.Request) url.Values {
+		return url.Values{
+			"extra": []string{"abc"},
+		}
+	})
 	mb.MenuItem(mb.DefaultMenuItem(func(evCtx *web.EventContext, isSub bool, menuIcon string, children ...h.HTMLComponent) ([]h.HTMLComponent, error) {
 		return []h.HTMLComponent{
 			h.Iff(menuIcon != "", func() h.HTMLComponent {

@@ -23,7 +23,7 @@ func TestPresetsCustomizeMenu(t *testing.T) {
 					PageURL("/presets-customize-menu").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyContainsInOrder: []string{"Books", "<v-badge :content='1' :dot='true' color='error' class='pe-1'>", "mdi-bell-outline", "Media", "Videos", "Musics"},
+			ExpectPageBodyContainsInOrder: []string{"/books?extra=abc", "Books", "<v-badge :content='1' :dot='true' color='error' class='pe-1'>", "mdi-bell-outline", "Media", "Videos", "Musics"},
 		},
 	}
 
