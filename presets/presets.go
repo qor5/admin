@@ -1068,7 +1068,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							VCard(
 								menu,
 							).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
-						),
+						).Class("menu-wrap"),
 						// VDivider(),
 						profile,
 					).Class("ma-2 border-sm rounded elevation-0").Attr("style",
