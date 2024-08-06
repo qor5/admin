@@ -130,7 +130,7 @@ type Messages_ModelsI18nModuleKey struct {
 	SharedContainers         string
 	DemoContainers           string
 	Templates                string
-	Categories               string
+	PageCategories           string
 	ECManagement             string
 	ECDashboard              string
 	Orders                   string
@@ -282,7 +282,7 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	SharedContainers:         "公用组件",
 	DemoContainers:           "示例组件",
 	Templates:                "模板页面",
-	Categories:               "目录管理",
+	PageCategories:           "目录管理",
 	ECManagement:             "电子商务管理",
 	ECDashboard:              "电子商务仪表盘",
 	Orders:                   "订单管理",
@@ -434,7 +434,7 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	SharedContainers:         "共有コンテナ",
 	DemoContainers:           "デモ用コン店た",
 	Templates:                "テンプレート",
-	Categories:               "カテゴリー",
+	PageCategories:           "カテゴリー",
 	ECManagement:             "ECマネジメント",
 	ECDashboard:              "ECダッシュボード",
 	Orders:                   "注文",

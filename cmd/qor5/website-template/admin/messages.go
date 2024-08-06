@@ -48,7 +48,7 @@ type MessagesModels struct {
 	SharedContainers string
 	DemoContainers   string
 	Templates        string
-	Categories       string
+	PageCategories   string
 	SEO              string
 	Profile          string
 	ActivityLogs     string
@@ -94,7 +94,7 @@ var MessagesModels_zh_CN = &MessagesModels{
 	SharedContainers: "公用组件",
 	DemoContainers:   "示例组件",
 	Templates:        "模板页面",
-	Categories:       "目录管理",
+	PageCategories:   "目录管理",
 	SEO:              "SEO 管理",
 	Profile:          "个人页面",
 	ActivityLogs:     "操作日志",

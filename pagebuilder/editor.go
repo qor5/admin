@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
+	"github.com/qor5/x/v3/i18n"
 	"strings"
 
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -97,6 +98,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 
 			containerDataID = ctx.Param(paramContainerDataID)
 			obj             = m.mb.NewModel()
+			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		)
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
@@ -131,7 +133,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			h.Div(
 				h.Div(VIcon("mdi-exit-to-app").
 					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go())).Style("transform:rotateY(180deg)").Class("mr-4"),
-				VAppBarTitle().Text("Page Builder"),
+				VAppBarTitle().Text(msgr.PageBuilder),
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
 			versionComponent,

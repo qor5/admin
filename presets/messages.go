@@ -57,6 +57,8 @@ type Messages struct {
 	Colon                                      string
 	NotFoundPageNotice                         string
 	ButtonLabelActionsMenu                     string
+	Save                                       string
+	AddRow                                     string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -147,6 +149,8 @@ var Messages_en_US = &Messages{
 	Colon:                                      ":",
 	NotFoundPageNotice:                         "Sorry, the requested page cannot be found. Please check the URL.",
 	ButtonLabelActionsMenu:                     "Actions",
+	Save:                                       "Save",
+	AddRow:                                     "Add Row",
 }
 
 var Messages_zh_CN = &Messages{
@@ -202,6 +206,8 @@ var Messages_zh_CN = &Messages{
 	Colon:                                      "：",
 	NotFoundPageNotice:                         "很抱歉，所请求的页面不存在，请检查URL。",
 	ButtonLabelActionsMenu:                     "菜单",
+	Save:                                       "保存",
+	AddRow:                                     "新增",
 }
 
 var Messages_ja_JP = &Messages{
@@ -256,4 +262,6 @@ var Messages_ja_JP = &Messages{
 	Colon:                                      ":",
 	NotFoundPageNotice:                         "申し訳ありませんが、リクエストされたページは見つかりませんでした。URLを確認してください。",
 	ButtonLabelActionsMenu:                     "メニュー",
+	Save:                                       "Save (need JP translation)",
+	AddRow:                                     "Add Row (need JP translation)",
 }

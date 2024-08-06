@@ -233,7 +233,8 @@ func fileThumb(filename string) h.HTMLComponent {
 func deleteConfirmation(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			msgr  = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 			field = ctx.Param(ParamField)
 			ids   = strings.Split(ctx.Param(ParamMediaIDS), ",")
 
@@ -243,9 +244,9 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, "failed", ColorWarning)
 			return
 		} else if len(ids) == 1 {
-			message = msgr.DeleteConfirmationText(ids[0])
+			message = pMsgr.DeleteConfirmationText(ids[0])
 		} else {
-			message = fmt.Sprintf(`Are you sure you want to delete %v objects`, len(ids))
+			message = msgr.DeleteObjects(len(ids))
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
@@ -254,13 +255,13 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 					VCardTitle(h.Text(message)),
 					VCardActions(
 						VSpacer(),
-						VBtn(msgr.Cancel).
+						VBtn(pMsgr.Cancel).
 							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "vars.mediaLibrary_deleteConfirmation = false"),
 
-						VBtn(msgr.Delete).
-							Color("primary").
+						VBtn(pMsgr.Delete).
+							Color(ColorPrimary).
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
@@ -553,8 +554,9 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			db = mb.db
-			id = ctx.Param(ParamMediaIDS)
+			db   = mb.db
+			id   = ctx.Param(ParamMediaIDS)
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 
 		obj := wrapFirst(mb, ctx, &r)
@@ -571,9 +573,8 @@ func updateDescription(mb *Builder) web.EventFunc {
 		if err = db.Save(&media).Error; err != nil {
 			return
 		}
-
+		presets.ShowMessage(&r, msgr.DescriptionUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
-			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())
@@ -583,7 +584,8 @@ func updateDescription(mb *Builder) web.EventFunc {
 func rename(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			db = mb.db
+			db   = mb.db
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 		obj := wrapFirst(mb, ctx, &r)
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
@@ -598,9 +600,8 @@ func rename(mb *Builder) web.EventFunc {
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
-
+		presets.ShowMessage(&r, msgr.RenameUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
-			`vars.snackbarShow = true;`,
 			web.Plaid().EventFunc(imageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())
@@ -666,7 +667,11 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 func renameDialog(mb *Builder) web.EventFunc {
 
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		obj := wrapFirst(mb, ctx, &r)
+		var (
+			obj   = wrapFirst(mb, ctx, &r)
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		)
 		var fileName string
 		if obj.Folder {
 			fileName = obj.File.FileName
@@ -678,7 +683,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 			Body: web.Scope(
 				VDialog(
 					VCard(
-						web.Slot(h.Text("Rename")).Name("title"),
+						web.Slot(h.Text(msgr.Rename)).Name("title"),
 						web.Slot(
 							VSpacer(),
 							VBtn("").Icon("mdi-close").
@@ -686,11 +691,11 @@ func renameDialog(mb *Builder) web.EventFunc {
 						).Name(VSlotAppend),
 						VTextField().Variant(FieldVariantUnderlined).
 							Class("px-6").
-							Label("Name").Attr(web.VField(ParamName, fileName)...),
+							Label(msgr.Name).Attr(web.VField(ParamName, fileName)...),
 						VCardActions(
 							VSpacer(),
-							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn("Ok").Color(ColorPrimary).
+							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn(pMsgr.OK).Color(ColorPrimary).
 								Attr(":disabled", fmt.Sprintf("!form.%s", ParamName)).
 								Attr("@click",
 									web.Plaid().EventFunc(RenameEvent).
@@ -707,12 +712,17 @@ func renameDialog(mb *Builder) web.EventFunc {
 }
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.RunScript = `vars.searchMsg=""`
+	var (
+		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+	)
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
 			VDialog(
 				VCard(
-					web.Slot(h.Text("New Folder")).Name("title"),
+					web.Slot(h.Text(msgr.NewFolder)).Name("title"),
 					web.Slot(
 						VSpacer(),
 						VBtn("").Icon("mdi-close").
@@ -720,11 +730,11 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 					).Name(VSlotAppend),
 					VTextField().Variant(FieldVariantUnderlined).
 						Class("px-6").
-						Label("Folder Name").Attr(web.VField(ParamName, ctx.Param(ParamName))...),
+						Label(msgr.Name).Attr(web.VField(ParamName, ctx.Param(ParamName))...),
 					VCardActions(
 						VSpacer(),
-						VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-						VBtn("Ok").Color(ColorPrimary).Attr("@click",
+						VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+						VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
 							web.Plaid().EventFunc(CreateFolderEvent).
 								Queries(ctx.Queries()).
 								Go(),
@@ -739,12 +749,16 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 func updateDescriptionDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := wrapFirst(mb, ctx, &r)
+		var (
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: updateDescriptionDialogPortalName,
 			Body: web.Scope(
 				VDialog(
 					VCard(
-						web.Slot(h.Text("Update Description")).Name("title"),
+						web.Slot(h.Text(msgr.UpdateDescription)).Name("title"),
 						web.Slot(
 							VSpacer(),
 							VBtn("").Icon("mdi-close").
@@ -755,8 +769,8 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 							Label("Description").Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
 						VCardActions(
 							VSpacer(),
-							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn("Ok").Color(ColorPrimary).Attr("@click",
+							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
 								web.Plaid().EventFunc(UpdateDescriptionEvent).
 									Queries(ctx.Queries()).
 									Go(),
@@ -773,12 +787,16 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 func moveToFolderDialog(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: moveToFolderDialogPortalName,
 			Body: web.Scope(
 				VDialog(
 					VCard(
-						web.Slot(h.Text("Choose Folder")).Name("title"),
+						web.Slot(h.Text(msgr.ChooseFolder)).Name("title"),
 						web.Slot(
 							VSpacer(),
 							VBtn("").Icon("mdi-close").
@@ -794,8 +812,8 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 
 						VCardActions(
 							VSpacer(),
-							VBtn("Cancel").Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn("Save").Color(ColorPrimary).
+							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
+							VBtn(pMsgr.OK).Color(ColorPrimary).
 								Attr("@click", web.Plaid().
 									EventFunc(MoveToFolderEvent).
 									Queries(ctx.Queries()).
@@ -817,6 +835,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			selectFolderID = ctx.Param(ParamSelectFolderID)
 			field          = ctx.Param(ParamField)
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
+			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 
 		queries := ctx.Queries()
@@ -830,12 +849,12 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			}
 			ids = append(ids, uint(selectID))
 		}
-		presets.ShowMessage(&r, "move failed", ColorWarning)
+		presets.ShowMessage(&r, msgr.MovedFailed, ColorWarning)
 		if len(ids) > 0 {
 			if err = db.Model(media_library.MediaLibrary{}).Where("id in  ?", ids).Update("parent_id", selectFolderID).Error; err != nil {
 				return
 			}
-			presets.ShowMessage(&r, "move success", ColorSuccess)
+			presets.ShowMessage(&r, msgr.MovedSuccess, ColorSuccess)
 		}
 		r.RunScript = web.Plaid().
 			EventFunc(imageJumpPageEvent).
@@ -956,6 +975,8 @@ func copyFile(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.ParamAsInt(ParamMediaIDS)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+
 		if _, err = CopyMediaLiMediaLibrary(db, id); err != nil {
 			return
 		}
@@ -964,7 +985,7 @@ func copyFile(mb *Builder) web.EventFunc {
 				Queries(ctx.Queries()).
 				Go(),
 		)
-		presets.ShowMessage(&r, "copy success", ColorSuccess)
+		presets.ShowMessage(&r, msgr.CopyUpdated, ColorSuccess)
 		return
 	}
 }

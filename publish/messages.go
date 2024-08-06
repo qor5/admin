@@ -201,6 +201,7 @@ var Messages_ja_JP = &Messages{
 	NamedVersions:                           "名付け済みバージョン",
 	RenameVersion:                           "バージョンの名前を変更する",
 	DeleteVersionConfirmationTextTemplate:   "このバージョン {VersionName} を削除してもよろしいですか？",
+	Duplicate:                               "Duplicate(need JP translation)",
 
 	FilterTabAllVersions:   "全てのバージョン",
 	FilterTabOnlineVersion: "オンラインバージョン",

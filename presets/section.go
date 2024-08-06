@@ -20,10 +20,11 @@ import (
 
 const (
 	SectionFieldName = "detailField"
+	SectionIsCancel  = "isCancel"
 
-	detailListFieldEditBtnKey   = "detailListFieldEditBtn"
-	detailListFieldSaveBtnKey   = "detailListFieldSaveBtn"
-	detailListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
+	sectionListFieldEditBtnKey   = "detailListFieldEditBtn"
+	sectionListFieldSaveBtnKey   = "detailListFieldSaveBtn"
+	sectionListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
 
 	detailListFieldEditing = "detailListFieldEditing"
 )
@@ -449,9 +450,18 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
+	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+		Attr("style", "text-transform: none;").
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoSaveDetailingField).
+			Query(SectionFieldName, b.name).
+			Query(ParamID, id).
+			Query(SectionIsCancel, true).
+			Go())
 
 	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	btn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).Disabled(disableEditBtn).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -483,8 +493,11 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 						// detailFields
 						h.Div(b.componentEditFunc(obj, field, ctx)).
 							Class("flex-grow-1"),
-						// save btn
-						h.Div(btn).Class("align-self-end mt-4"),
+						// save saveBtn
+						h.Div(
+							cancelBtn,
+							saveBtn.Class("ml-2"),
+						).Class("align-self-end mt-4"),
 					).Class("d-flex flex-column"),
 				),
 			).Variant(VariantOutlined).Class("mb-6"),
@@ -627,7 +640,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 
 	disableCreateBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	if !b.disableElementCreateBtn && !disableCreateBtn {
-		addBtn := VBtn("Add Row").PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
+		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
 			Attr("@click", web.Plaid().
 				URL(ctx.R.URL.Path).
@@ -655,15 +668,15 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 }
 
 func (b *SectionBuilder) EditBtnKey() string {
-	return fmt.Sprintf("%s_%s", detailListFieldEditBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListFieldEditBtnKey, b.name)
 }
 
 func (b *SectionBuilder) SaveBtnKey() string {
-	return fmt.Sprintf("%s_%s", detailListFieldSaveBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListFieldSaveBtnKey, b.name)
 }
 
 func (b *SectionBuilder) DeleteBtnKey() string {
-	return fmt.Sprintf("%s_%s", detailListFieldDeleteBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListFieldDeleteBtnKey, b.name)
 }
 
 func (b *SectionBuilder) ListElementIsEditing(index int) string {
@@ -741,7 +754,18 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 		h.Div(deleteBtn).Class("d-flex pl-3"),
 	).Class("d-flex justify-space-between mb-4")
 
-	saveBtn := VBtn("Save").Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+		Attr("style", "text-transform: none;").
+		Attr("@click", web.Plaid().
+			URL(ctx.R.URL.Path).
+			EventFunc(actions.DoSaveDetailingListField).
+			Query(SectionFieldName, b.name).
+			Query(SectionIsCancel, true).
+			Query(ParamID, ctx.Param(ParamID)).
+			Query(b.SaveBtnKey(), strconv.Itoa(index)).
+			Go())
+
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -755,7 +779,10 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 		VCardText(
 			h.Div(
 				contentDiv,
-				h.Div(saveBtn).Class("ms-auto"),
+				h.Div(
+					cancelBtn,
+					saveBtn.Class("ml-2"),
+				).Class("ms-auto"),
 			).Class("d-flex flex-column"),
 		),
 		h.Input("").Type("hidden").Attr(web.VField(b.ListElementIsEditing(index), true)...),
