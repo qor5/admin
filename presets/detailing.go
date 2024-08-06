@@ -393,10 +393,18 @@ func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventRe
 
 // SaveDetailField EventFunc: click save button
 func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(SectionFieldName)
-	id := ctx.Queries().Get(ParamID)
+	key := ctx.Param(SectionFieldName)
+	id := ctx.Param(ParamID)
+	isCancel := ctx.ParamAsBool(SectionIsCancel)
 
 	f := b.Section(key)
+
+	field := &FieldContext{
+		ModelInfo: b.mb.modelInfo,
+		FormKey:   f.name,
+		Name:      f.name,
+		Label:     f.label,
+	}
 
 	obj := b.mb.NewModel()
 	obj, err = b.GetFetchFunc()(obj, id, ctx)
@@ -405,6 +413,14 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if isCancel {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: f.FieldPortalName(),
+			Body: f.viewComponent(obj, field, ctx),
+		})
+		return
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -421,24 +437,14 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.editComponent(obj, &FieldContext{
-				ModelInfo: b.mb.modelInfo,
-				FormKey:   f.name,
-				Name:      f.name,
-				Label:     f.label,
-			}, ctx),
+			Body: f.editComponent(obj, field, ctx),
 		})
 		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.viewComponent(obj, &FieldContext{
-			ModelInfo: b.mb.modelInfo,
-			FormKey:   f.name,
-			Name:      f.name,
-			Label:     f.label,
-		}, ctx),
+		Body: f.viewComponent(obj, field, ctx),
 	})
 
 	r.Emit(b.mb.NotifModelsUpdated(), PayloadModelsUpdated{
@@ -496,16 +502,16 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		fieldName string
-		index     int64
+		index     int
+		isCancel  bool
 	)
 
-	fieldName = ctx.Queries().Get(SectionFieldName)
+	isCancel = ctx.ParamAsBool(SectionIsCancel)
+	fieldName = ctx.Param(SectionFieldName)
+
 	f := b.Section(fieldName)
 
-	index, err = strconv.ParseInt(ctx.Queries().Get(f.SaveBtnKey()), 10, 64)
-	if err != nil {
-		return
-	}
+	index = ctx.ParamAsInt(f.SaveBtnKey())
 
 	obj := b.mb.NewModel()
 	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
@@ -514,6 +520,14 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 	if f.setter != nil {
 		f.setter(obj, ctx)
+	}
+
+	if isCancel {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: f.FieldPortalName(),
+			Body: f.listComponent(obj, nil, ctx, -1, -1, index),
+		})
+		return
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -530,14 +544,14 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, nil, ctx, -1, int(index), -1),
+			Body: f.listComponent(obj, nil, ctx, -1, index, -1),
 		})
 		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, -1, -1, int(index)),
+		Body: f.listComponent(obj, nil, ctx, -1, -1, index),
 	})
 
 	return

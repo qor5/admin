@@ -23,6 +23,7 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/qor5/web/v3 v3.0.5-0.20240723094007-d24081129126 h1:LfWbM+CBJbgDqKDyRk8GeYYOoZ8UgQG17t5DwoYUX9o=
 github.com/qor5/web/v3 v3.0.5-0.20240723094007-d24081129126/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/qor5/web/v3 v3.0.5/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
+github.com/qor5/web/v3 v3.0.6-0.20240806032534-6c0e81ec7b12/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
