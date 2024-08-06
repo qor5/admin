@@ -106,7 +106,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
   mask-image: radial-gradient(circle, black 80px, transparent);
 transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					),
-				).Class(W100, H100).Style("overflow:hidden;"),
+				).Class(W100, H100, "overflow-hidden"),
 				h.Div(
 					h.Div(
 						h.Text(se),
