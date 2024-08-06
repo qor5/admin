@@ -551,18 +551,16 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
+				// NoOffsetPart(true).
 				OnSelectPerPage(stateful.ReloadAction(ctx, c,
 					func(target *ListingCompo) {
 						target.Page = 0
 					},
 					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
 				).Go()).
-				OnPrevPage(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-					target.Page = searchParams.Page - 1
-				}).Go()).
-				OnNextPage(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-					target.Page = searchParams.Page + 1
-				}).Go()),
+				OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+					stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+				).Go()),
 		)
 	}
 	return h.Components(dataTable, dataTableAdditions)
