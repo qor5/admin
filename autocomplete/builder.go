@@ -112,6 +112,6 @@ func NewDefaultAutocompleteDataSource(v string) *vx.AutocompleteDataSource {
 		SearchKey:   ParamSearch,
 		ItemsKey:    ResponseItems,
 		Page:        1,
-		PageSize:    20,
+		PageSize:    5,
 	}
 }

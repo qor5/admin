@@ -35,7 +35,7 @@ func PresetsAutoCompleteBasicFilter(b *presets.Builder, ab *autocomplete.Builder
 	// new autocomplete builder
 	abm := ab.Model(&AutoCompletePost{}).SQLCondition("title ilike ? ").
 		Columns("id", "title", "body").Paging(true)
-	remoteUrl := "http://localhost:7800" + abm.JsonHref()
+	remoteUrl := abm.JsonHref()
 
 	// Call FilterDataFunc
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {

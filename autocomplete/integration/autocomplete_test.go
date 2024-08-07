@@ -60,7 +60,7 @@ func Handler(db *gorm.DB) http.Handler {
 	_ = db.AutoMigrate(Category{}, User{})
 	mux := http.NewServeMux()
 	b := autocomplete.New().DB(db).Prefix("/complete")
-	b.Model(&Category{}).Columns("id", "name", "path").PageKey("page").PageSizeKey("pageSize")
+	b.Model(&Category{}).Columns("id", "name", "path")
 	b.Model(&User{}).Columns("id", "name", "age").SQLCondition("name ilike ?")
 	mux.Handle("/complete/", b)
 	b.Build()

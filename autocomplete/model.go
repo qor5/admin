@@ -82,7 +82,7 @@ func (b *ModelBuilder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			W: w,
 		}
 	)
-	if b.sQLCondition != "" {
+	if b.sQLCondition != "" || ctx.Param(ParamSearch) != "" {
 		g = g.Where(b.sQLCondition, fmt.Sprintf("%%%s%%", ctx.Param(ParamSearch)))
 	}
 
