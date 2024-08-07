@@ -364,7 +364,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
 			Class("rounded-sm").
 			Attr("style", "text-transform: none;").
-			Attr("@click", web.Plaid().EventFunc(openFileChooserEvent).
+			Attr("@click", web.Plaid().EventFunc(OpenFileChooserEvent).
 				Query(ParamField, field).
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(ParamSelectIDS, mediaBox.ID).
@@ -575,7 +575,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 		}
 		presets.ShowMessage(&r, msgr.DescriptionUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
-			web.Plaid().EventFunc(imageJumpPageEvent).
+			web.Plaid().EventFunc(ImageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())
 		return
@@ -602,7 +602,7 @@ func rename(mb *Builder) web.EventFunc {
 		}
 		presets.ShowMessage(&r, msgr.RenameUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
-			web.Plaid().EventFunc(imageJumpPageEvent).
+			web.Plaid().EventFunc(ImageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go())
 		return
@@ -631,7 +631,7 @@ func createFolder(mb *Builder) web.EventFunc {
 			return
 		}
 		r.RunScript = web.Plaid().
-			EventFunc(imageJumpPageEvent).
+			EventFunc(ImageJumpPageEvent).
 			Queries(ctx.Queries()).
 			Go()
 		return
@@ -857,7 +857,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, msgr.MovedSuccess, ColorSuccess)
 		}
 		r.RunScript = web.Plaid().
-			EventFunc(imageJumpPageEvent).
+			EventFunc(ImageJumpPageEvent).
 			AfterScript(`vars.searchMsg=""`).
 			Queries(queries).
 			Query(ParamSelectIDS, "").
@@ -981,7 +981,7 @@ func copyFile(mb *Builder) web.EventFunc {
 			return
 		}
 		web.AppendRunScripts(&r,
-			web.Plaid().EventFunc(imageJumpPageEvent).
+			web.Plaid().EventFunc(ImageJumpPageEvent).
 				Queries(ctx.Queries()).
 				Go(),
 		)
