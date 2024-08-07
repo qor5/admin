@@ -262,6 +262,6 @@ var Messages_ja_JP = &Messages{
 	Colon:                                      ":",
 	NotFoundPageNotice:                         "申し訳ありませんが、リクエストされたページは見つかりませんでした。URLを確認してください。",
 	ButtonLabelActionsMenu:                     "メニュー",
-	Save:                                       "Save (need JP translation)",
+	Save:                                       "保存する",
 	AddRow:                                     "Add Row (need JP translation)",
 }
