@@ -49,6 +49,10 @@ type Messages struct {
 	ConflictPathMsg         string
 	ExistingPathMsg         string
 	UnableDeleteCategoryMsg string
+	Versions                string
+	NewComponent            string
+	Settings                string
+	SelectElementMsg        string
 }
 
 var Messages_en_US = &Messages{
@@ -95,7 +99,11 @@ var Messages_en_US = &Messages{
 	ConflictSlugMsg:         "Conflicting Slug",
 	ConflictPathMsg:         "Conflicting Path",
 	ExistingPathMsg:         "Existing Path",
-	UnableDeleteCategoryMsg: "this category cannot be deleted because it has used with pages",
+	UnableDeleteCategoryMsg: "To delete this category you need to remove all association to products first",
+	Versions:                "versions",
+	NewComponent:            "New Component",
+	Settings:                "settings",
+	SelectElementMsg:        "Select an element and change the setting here.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -142,50 +150,58 @@ var Messages_zh_CN = &Messages{
 	ConflictPathMsg:         "冲突的路径",
 	ExistingPathMsg:         "已存在的路径",
 	UnableDeleteCategoryMsg: "这个分类没办法被删除,因为已被页面使用",
+	Versions:                "版本",
+	NewComponent:            "新增组件",
+	Settings:                "设置",
+	SelectElementMsg:        "选择一个组件，这里会变成设置",
 }
 
 var Messages_ja_JP = &Messages{
-	Category:                       "カテゴリー",
+	Category:                       "カテゴリ",
 	Preview:                        "プレビュー",
 	Containers:                     "コンテナ",
-	AddContainers:                  "コンテナを追加する",
+	AddContainers:                  "コンテナの追加",
 	New:                            "新規",
 	Shared:                         "共有",
-	Select:                         "選択する",
+	Select:                         "選択",
 	SelectedTemplateLabel:          "テンプレート",
-	CreateFromTemplate:             "テンプレートから新規作成する",
-	ChangeTemplate:                 "テンプレートを変更する",
-	RelatedOnlinePages:             "関連オンラインページ",
-	RepublishAllRelatedOnlinePages: "すべて再公開",
+	CreateFromTemplate:             "テンプレートから作成",
+	ChangeTemplate:                 "テンプレートの変更",
+	RelatedOnlinePages:             "関連するオンラインページ",
+	RepublishAllRelatedOnlinePages: "すべてを再公開",
 	Unnamed:                        "名前なし",
-	NotDescribed:                   "記述されていません",
+	NotDescribed:                   "説明なし",
 	Blank:                          "空白",
 	NewPage:                        "新しいページ",
-	FilterTabAllVersions:           "全てのバージョン",
+	FilterTabAllVersions:           "すべてのバージョン",
 	FilterTabOnlineVersion:         "オンラインバージョン",
-	FilterTabNamedVersions:         "名付け済みバージョン",
+	FilterTabNamedVersions:         "名前付きバージョン",
 	Rename:                         "名前の変更",
-	PageOverView:                   "ページ概要",
+	PageOverView:                   "ページの概要",
 
-	Others:                    "Others",
-	Add:                       "Add",
-	AddComponent:              "Add Component",
-	BuildYourPages:            "Build your pages",
-	PlaceAnElementFromLibrary: "Place an element from  library.",
-	NewElement:                "New Element",
-	Title:                     "Title",
-	Slug:                      "Slug",
-	EditPage:                  "Edit Page",
-	ScheduledAt:               "Scheduled at",
-	OnlineHit:                 "The version cannot be edited directly after it is released. Please copy the version and edit it.",
-	NoContentHit:              "This page has no content yet, start to edit in page builder",
+	Others:                    "その他",
+	Add:                       "追加",
+	AddComponent:              "コンポーネントの追加",
+	BuildYourPages:            "ページの作成",
+	PlaceAnElementFromLibrary: "ライブラリから要素を配置します。",
+	NewElement:                "新しい要素",
+	Title:                     "タイトル",
+	Slug:                      "スラッグ",
+	EditPage:                  "ページの編集",
+	ScheduledAt:               "スケジュール",
+	OnlineHit:                 "バージョンはリリース後直接に編集できません。バージョンをコピーして編集してください。",
+	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
 
-	InvalidPathMsg:          "Invalid Path",
-	InvalidTitleMsg:         "Invalid Title",
-	InvalidNameMsg:          "Invalid Name",
-	InvalidSlugMsg:          "Invalid Slug",
-	ConflictSlugMsg:         "Conflicting Slug",
-	ConflictPathMsg:         "Conflicting Path",
-	ExistingPathMsg:         "Existing Path",
-	UnableDeleteCategoryMsg: "this category cannot be deleted because it has used with pages",
+	InvalidPathMsg:          "無効なパス",
+	InvalidTitleMsg:         "無効なタイトル",
+	InvalidNameMsg:          "無効な名前",
+	InvalidSlugMsg:          "無効なスラッグ",
+	ConflictSlugMsg:         "競合するスラッグ",
+	ConflictPathMsg:         "競合するパス",
+	ExistingPathMsg:         "既存のパス",
+	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
+	Versions:                "versions",
+	NewComponent:            "New Component",
+	Settings:                "settings",
+	SelectElementMsg:        "Select an element and change the setting here.",
 }

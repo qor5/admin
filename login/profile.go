@@ -23,6 +23,9 @@ import (
 func (b *ProfileBuilder) Install(pb *presets.Builder) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.logoutURL == "" && b.lsb == nil {
+		return errors.Errorf("profile: missing logout URL")
+	}
 	if b.pb != nil {
 		return errors.Errorf("profile: already installed")
 	}
@@ -71,21 +74,36 @@ type ProfileBuilder struct {
 	mu sync.RWMutex
 	pb *presets.Builder
 
-	lsb                *SessionBuilder
-	currentProfileFunc func(ctx context.Context) (*Profile, error)
-	renameCallback     func(ctx context.Context, newName string) error
+	lsb                 *SessionBuilder
+	logoutURL           string
+	disableNotification bool
+	currentProfileFunc  func(ctx context.Context) (*Profile, error)
+	renameCallback      func(ctx context.Context, newName string) error
 }
 
 func NewProfileBuilder(
-	lsb *SessionBuilder,
 	currentProfileFunc func(ctx context.Context) (*Profile, error),
 	renameCallback func(ctx context.Context, newName string) error,
 ) *ProfileBuilder {
 	return &ProfileBuilder{
-		lsb:                lsb,
 		currentProfileFunc: currentProfileFunc,
 		renameCallback:     renameCallback,
 	}
+}
+
+func (b *ProfileBuilder) SessionBuilder(lsb *SessionBuilder) *ProfileBuilder {
+	b.lsb = lsb
+	return b
+}
+
+func (b *ProfileBuilder) LogoutURL(s string) *ProfileBuilder {
+	b.logoutURL = s
+	return b
+}
+
+func (b *ProfileBuilder) DisableNotification(v bool) *ProfileBuilder {
+	b.disableNotification = v
+	return b
 }
 
 func (b *ProfileBuilder) injectorName() string {
@@ -131,25 +149,28 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	return stateful.Actionable(ctx, c, h.Div().Class("d-flex align-center ga-2 pa-3").Children(
-		v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
-			Text(shortName(user.Name)).Children(
-			h.Iff(user.Avatar != "", func() h.HTMLComponent {
-				return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
-			}),
-		),
-		h.Div().Class("d-flex flex-column flex-1-1").Style("max-width: 119px").Children(
-			h.Div().Class("d-flex align-center ga-2 pt-1").Children(
-				h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-2 text-secondary text-truncate"),
-				c.userCompo(ctx, user),
+	showBellCompo := !c.b.disableNotification && len(user.NotifCounts) > 0
+	return stateful.Actionable(ctx, c, web.Scope().VSlot("{ locals: xlocals }").Init("{ userCardVisible: false }").Children(
+		h.Div().Class("d-flex align-center ga-2 pa-3").Children(
+			v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
+				Text(activity.FirstUpperWord(user.Name)).Children(
+				h.Iff(user.Avatar != "", func() h.HTMLComponent {
+					return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
+				}),
 			),
-			h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
-		),
-		h.Iff(len(user.NotifCounts) > 0, func() h.HTMLComponent {
-			return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
-				c.bellCompo(ctx, user.NotifCounts),
-			)
-		}),
+			h.Div().Class("d-flex flex-column flex-1-1").StyleIf("max-width: 119px", showBellCompo).Children(
+				h.Div().Class("d-flex align-center ga-2 pt-1").Children(
+					h.Div().Attr("v-pre", true).Text(user.Name).Class("flex-1-1 text-subtitle-2 text-secondary text-truncate"),
+					c.userCardCompo(ctx, user, "xlocals.userCardVisible"),
+				),
+				h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
+			),
+			h.Iff(showBellCompo, func() h.HTMLComponent {
+				return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
+					c.bellCompo(ctx, user.NotifCounts),
+				)
+			}),
+		).Attr("@click", "xlocals.userCardVisible = !xlocals.userCardVisible"),
 	)).MarshalHTML(ctx)
 }
 
@@ -211,7 +232,7 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	)
 }
 
-func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLComponent {
+func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel string) h.HTMLComponent {
 	_, msgr := c.MustGetEventContext(ctx)
 
 	children := []h.HTMLComponent{}
@@ -221,16 +242,24 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLCompo
 			h.Div().Attr("v-pre", true).Class("text-subtitle-2 font-weight-medium text-grey-darken-4").Text(field.Value),
 		))
 	}
+	var clickLogout string
+	if c.b.lsb != nil {
+		clickLogout = web.Plaid().URL(c.b.lsb.GetLoginBuilder().LogoutURL).Go()
+	} else {
+		clickLogout = web.Plaid().URL(c.b.logoutURL).Go()
+	}
 	children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
-		v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", c.b.lsb.OpenSessionsDialog()),
-		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", web.Plaid().URL(c.b.lsb.GetLoginBuilder().LogoutURL).Go()),
+		h.Iff(c.b.lsb != nil, func() h.HTMLComponent {
+			return v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", c.b.lsb.OpenSessionsDialog())
+		}),
+		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", clickLogout),
 	))
 
 	renameAction := stateful.PostAction(ctx, c,
 		c.Rename, RenameRequest{},
 		stateful.WithAppendFix(`v.request.name = xlocals.name`),
 	).Go()
-	return v.VMenu().CloseOnContentClick(false).Children(
+	compo := v.VMenu().CloseOnContentClick(false).Children(
 		web.Slot().Name("activator").Scope(`{props}`).Children(
 			v.VBtn("").Attr("v-bind", "props").Size(16).Icon(true).Density(v.DensityCompact).Variant(v.VariantText).Children(
 				v.VIcon("mdi-chevron-right").Size(16),
@@ -240,7 +269,7 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLCompo
 			v.VCardText().Class("pa-0").Children(
 				h.Div().Class("d-flex align-center ga-6 pa-6 bg-grey-lighten-4").Children(
 					v.VAvatar().Class("text-h3 font-weight-medium text-primary bg-primary-lighten-2 rounded-lg").Size(80).Density(v.DensityCompact).
-						Text(shortName(user.Name)).Children(
+						Text(activity.FirstUpperWord(user.Name)).Children(
 						h.Iff(user.Avatar != "", func() h.HTMLComponent {
 							return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
 						}),
@@ -276,6 +305,8 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLCompo
 							return v.VChip().Text(user.Status).
 								Attr("style", "height:20px").Class("align-self-start px-1 text-caption").
 								Label(true).Density(v.DensityCompact).Color(v.ColorSuccess)
+						}).Else(func() h.HTMLComponent {
+							return h.Div().Style("height:20px")
 						}),
 					),
 				),
@@ -283,6 +314,10 @@ func (c *ProfileCompo) userCompo(ctx context.Context, user *Profile) h.HTMLCompo
 			),
 		),
 	)
+	if vmodel != "" {
+		compo.Attr("v-model", vmodel)
+	}
+	return compo
 }
 
 type RenameRequest struct {

@@ -137,7 +137,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		}
 	}
 	return web.Scope().VSlot("{ form }").Children(
-		VCard().Elevation(0).Class("ma-n2").Children(
+		VCard().Elevation(0).Children(
 			VCardTitle().Class("d-flex align-center").Children(
 				titleCompo,
 				VSpacer(),
