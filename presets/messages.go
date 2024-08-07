@@ -1,7 +1,11 @@
 package presets
 
 import (
+	"math"
 	"strings"
+	"time"
+
+	"github.com/dustin/go-humanize"
 )
 
 type Messages struct {
@@ -62,6 +66,7 @@ type Messages struct {
 
 	HumanizeTimeAgo       string
 	HumanizeTimeFromNow   string
+	HumanizeTimeNow       string
 	HumanizeTime1Second   string
 	HumanizeTimeSeconds   string
 	HumanizeTime1Minute   string
@@ -172,6 +177,7 @@ var Messages_en_US = &Messages{
 
 	HumanizeTimeAgo:       "ago",
 	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
 	HumanizeTime1Second:   "1 second %s",
 	HumanizeTimeSeconds:   "%d seconds %s",
 	HumanizeTime1Minute:   "1 minute %s",
@@ -187,6 +193,30 @@ var Messages_en_US = &Messages{
 	HumanizeTime1Year:     "1 year %s",
 	HumanizeTimeYears:     "%d years %s",
 	HumanizeTimeLongWhile: "a long while %s",
+}
+
+func (msgr *Messages) HumanizeTime(then time.Time) string {
+	return humanize.CustomRelTime(then, time.Now(),
+		msgr.HumanizeTimeAgo, msgr.HumanizeTimeFromNow,
+		[]humanize.RelTimeMagnitude{
+			{D: time.Second, Format: msgr.HumanizeTimeNow, DivBy: time.Second},
+			{D: 2 * time.Second, Format: msgr.HumanizeTime1Second, DivBy: 1},
+			{D: time.Minute, Format: msgr.HumanizeTimeSeconds, DivBy: time.Second},
+			{D: 2 * time.Minute, Format: msgr.HumanizeTime1Minute, DivBy: 1},
+			{D: time.Hour, Format: msgr.HumanizeTimeMinutes, DivBy: time.Minute},
+			{D: 2 * time.Hour, Format: msgr.HumanizeTime1Hour, DivBy: 1},
+			{D: humanize.Day, Format: msgr.HumanizeTimeHours, DivBy: time.Hour},
+			{D: 2 * humanize.Day, Format: msgr.HumanizeTime1Day, DivBy: 1},
+			{D: humanize.Week, Format: msgr.HumanizeTimeDays, DivBy: humanize.Day},
+			{D: 2 * humanize.Week, Format: msgr.HumanizeTime1Week, DivBy: 1},
+			{D: humanize.Month, Format: msgr.HumanizeTimeWeeks, DivBy: humanize.Week},
+			{D: 2 * humanize.Month, Format: msgr.HumanizeTime1Month, DivBy: 1},
+			{D: humanize.Year, Format: msgr.HumanizeTimeMonths, DivBy: humanize.Month},
+			{D: 18 * humanize.Month, Format: msgr.HumanizeTime1Year, DivBy: 1},
+			// {2 * Year, msgr.HumanizeTime, 1},
+			{D: humanize.LongTime, Format: msgr.HumanizeTimeYears, DivBy: humanize.Year},
+			{D: math.MaxInt64, Format: msgr.HumanizeTimeLongWhile, DivBy: 1},
+		})
 }
 
 var Messages_zh_CN = &Messages{
@@ -247,6 +277,7 @@ var Messages_zh_CN = &Messages{
 
 	HumanizeTimeAgo:       "ago",
 	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
 	HumanizeTime1Second:   "1 second %s",
 	HumanizeTimeSeconds:   "%d seconds %s",
 	HumanizeTime1Minute:   "1 minute %s",
@@ -321,6 +352,7 @@ var Messages_ja_JP = &Messages{
 
 	HumanizeTimeAgo:       "ago",
 	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
 	HumanizeTime1Second:   "1 second %s",
 	HumanizeTimeSeconds:   "%d seconds %s",
 	HumanizeTime1Minute:   "1 minute %s",
