@@ -80,6 +80,7 @@ type Messages struct {
 	HumanizeTime1Month    string
 	HumanizeTimeMonths    string
 	HumanizeTime1Year     string
+	HumanizeTime2Years    string
 	HumanizeTimeYears     string
 	HumanizeTimeLongWhile string
 }
@@ -117,6 +118,30 @@ func (msgr *Messages) BulkActionSelectedIdsProcessNotice(ids string) string {
 func (msgr *Messages) FilterBy(filter string) string {
 	return strings.NewReplacer("{filter}", filter).
 		Replace(msgr.FilterByTemplate)
+}
+
+func (msgr *Messages) HumanizeTime(then time.Time) string {
+	return humanize.CustomRelTime(then, time.Now(),
+		msgr.HumanizeTimeAgo, msgr.HumanizeTimeFromNow,
+		[]humanize.RelTimeMagnitude{
+			{D: time.Second, Format: msgr.HumanizeTimeNow, DivBy: time.Second},
+			{D: 2 * time.Second, Format: msgr.HumanizeTime1Second, DivBy: 1},
+			{D: time.Minute, Format: msgr.HumanizeTimeSeconds, DivBy: time.Second},
+			{D: 2 * time.Minute, Format: msgr.HumanizeTime1Minute, DivBy: 1},
+			{D: time.Hour, Format: msgr.HumanizeTimeMinutes, DivBy: time.Minute},
+			{D: 2 * time.Hour, Format: msgr.HumanizeTime1Hour, DivBy: 1},
+			{D: humanize.Day, Format: msgr.HumanizeTimeHours, DivBy: time.Hour},
+			{D: 2 * humanize.Day, Format: msgr.HumanizeTime1Day, DivBy: 1},
+			{D: humanize.Week, Format: msgr.HumanizeTimeDays, DivBy: humanize.Day},
+			{D: 2 * humanize.Week, Format: msgr.HumanizeTime1Week, DivBy: 1},
+			{D: humanize.Month, Format: msgr.HumanizeTimeWeeks, DivBy: humanize.Week},
+			{D: 2 * humanize.Month, Format: msgr.HumanizeTime1Month, DivBy: 1},
+			{D: humanize.Year, Format: msgr.HumanizeTimeMonths, DivBy: humanize.Month},
+			{D: 18 * humanize.Month, Format: msgr.HumanizeTime1Year, DivBy: 1},
+			{D: 2 * humanize.Year, Format: msgr.HumanizeTime2Years, DivBy: 1},
+			{D: humanize.LongTime, Format: msgr.HumanizeTimeYears, DivBy: humanize.Year},
+			{D: math.MaxInt64, Format: msgr.HumanizeTimeLongWhile, DivBy: 1},
+		})
 }
 
 var Messages_en_US = &Messages{
@@ -191,32 +216,9 @@ var Messages_en_US = &Messages{
 	HumanizeTime1Month:    "1 month %s",
 	HumanizeTimeMonths:    "%d months %s",
 	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
 	HumanizeTimeYears:     "%d years %s",
 	HumanizeTimeLongWhile: "a long while %s",
-}
-
-func (msgr *Messages) HumanizeTime(then time.Time) string {
-	return humanize.CustomRelTime(then, time.Now(),
-		msgr.HumanizeTimeAgo, msgr.HumanizeTimeFromNow,
-		[]humanize.RelTimeMagnitude{
-			{D: time.Second, Format: msgr.HumanizeTimeNow, DivBy: time.Second},
-			{D: 2 * time.Second, Format: msgr.HumanizeTime1Second, DivBy: 1},
-			{D: time.Minute, Format: msgr.HumanizeTimeSeconds, DivBy: time.Second},
-			{D: 2 * time.Minute, Format: msgr.HumanizeTime1Minute, DivBy: 1},
-			{D: time.Hour, Format: msgr.HumanizeTimeMinutes, DivBy: time.Minute},
-			{D: 2 * time.Hour, Format: msgr.HumanizeTime1Hour, DivBy: 1},
-			{D: humanize.Day, Format: msgr.HumanizeTimeHours, DivBy: time.Hour},
-			{D: 2 * humanize.Day, Format: msgr.HumanizeTime1Day, DivBy: 1},
-			{D: humanize.Week, Format: msgr.HumanizeTimeDays, DivBy: humanize.Day},
-			{D: 2 * humanize.Week, Format: msgr.HumanizeTime1Week, DivBy: 1},
-			{D: humanize.Month, Format: msgr.HumanizeTimeWeeks, DivBy: humanize.Week},
-			{D: 2 * humanize.Month, Format: msgr.HumanizeTime1Month, DivBy: 1},
-			{D: humanize.Year, Format: msgr.HumanizeTimeMonths, DivBy: humanize.Month},
-			{D: 18 * humanize.Month, Format: msgr.HumanizeTime1Year, DivBy: 1},
-			// {2 * Year, msgr.HumanizeTime, 1},
-			{D: humanize.LongTime, Format: msgr.HumanizeTimeYears, DivBy: humanize.Year},
-			{D: math.MaxInt64, Format: msgr.HumanizeTimeLongWhile, DivBy: 1},
-		})
 }
 
 var Messages_zh_CN = &Messages{
@@ -291,6 +293,7 @@ var Messages_zh_CN = &Messages{
 	HumanizeTime1Month:    "1 month %s",
 	HumanizeTimeMonths:    "%d months %s",
 	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
 	HumanizeTimeYears:     "%d years %s",
 	HumanizeTimeLongWhile: "a long while %s",
 }
@@ -366,6 +369,7 @@ var Messages_ja_JP = &Messages{
 	HumanizeTime1Month:    "1 month %s",
 	HumanizeTimeMonths:    "%d months %s",
 	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
 	HumanizeTimeYears:     "%d years %s",
 	HumanizeTimeLongWhile: "a long while %s",
 }
