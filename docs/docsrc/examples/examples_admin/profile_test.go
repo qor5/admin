@@ -99,7 +99,7 @@ func TestProfileExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "Change Password", "clicked change password", "Logout"},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "clicked change password", "Change Password", "Logout"},
 		},
 	}
 
