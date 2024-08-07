@@ -1098,7 +1098,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					innerPr.Body,
 				).
 					Class("overflow-y-auto main-container").
-					Attr("style", "height:100vh;  --v-layout-right: 0"),
+					Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
 			),
 		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
