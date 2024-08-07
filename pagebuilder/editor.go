@@ -69,17 +69,19 @@ const (
 	addContainerDialogContentPortal = "addContainerDialogContentPortal"
 )
 
-func (b *Builder) emptyEdit(_ *web.EventContext) h.HTMLComponent {
+func (b *Builder) emptyEdit(ctx *web.EventContext) h.HTMLComponent {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 	return VLayout(
 		VAppBar(
-			VToolbarTitle("").Children(h.Text("Setting")),
+			VToolbarTitle("").Children(h.Text(msgr.Settings)),
 		).Elevation(0),
 		VSpacer(),
 		VMain(
 			VSheet(
 				VCard(
 					VCardText(
-						h.Text("Select an element and change the setting here."),
+						h.Text(msgr.SelectElementMsg),
 					),
 				).Variant(VariantFlat),
 			).Class("pa-2")),
