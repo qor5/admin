@@ -721,7 +721,7 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VBtn("").Children(
-					languageIcon,
+					h.RawHTML(languageIcon),
 					// VIcon("mdi-menu-down"),
 				).Attr("variant", "text").
 					Attr("icon", "").
