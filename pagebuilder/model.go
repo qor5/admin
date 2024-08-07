@@ -77,6 +77,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		status                      = ctx.R.FormValue(paramStatus)
 		isReadonly                  = status != publish.StatusDraft
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
+		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	)
 	wc := map[string]interface{}{
 		"page_model_name": b.name,
@@ -208,7 +209,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			web.Slot(
 				VIcon("mdi-plus-circle-outline"),
 			).Name(VSlotPrepend),
-			h.Span("Add Component").Class("ml-5"),
+			h.Span(msgr.AddComponent).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
@@ -968,7 +969,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHightName).
 				IframeHeight(iframeValue).
-				Width(width).Attr("ref", "scrollIframe")
+				Width(width).Attr("ref", "scrollIframe", "virtual-ele-text", msgr.NewComponent)
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
 				if ctx.Param(paramContainerNew) != "" {

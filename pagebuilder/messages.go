@@ -49,6 +49,10 @@ type Messages struct {
 	ConflictPathMsg         string
 	ExistingPathMsg         string
 	UnableDeleteCategoryMsg string
+	Versions                string
+	NewComponent            string
+	Settings                string
+	SelectElementMsg        string
 }
 
 var Messages_en_US = &Messages{
@@ -96,6 +100,10 @@ var Messages_en_US = &Messages{
 	ConflictPathMsg:         "Conflicting Path",
 	ExistingPathMsg:         "Existing Path",
 	UnableDeleteCategoryMsg: "To delete this category you need to remove all association to products first",
+	Versions:                "versions",
+	NewComponent:            "New Component",
+	Settings:                "settings",
+	SelectElementMsg:        "Select an element and change the setting here.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -142,6 +150,10 @@ var Messages_zh_CN = &Messages{
 	ConflictPathMsg:         "冲突的路径",
 	ExistingPathMsg:         "已存在的路径",
 	UnableDeleteCategoryMsg: "这个分类没办法被删除,因为已被页面使用",
+	Versions:                "版本",
+	NewComponent:            "新增组件",
+	Settings:                "设置",
+	SelectElementMsg:        "选择一个组件，这里会变成设置",
 }
 
 var Messages_ja_JP = &Messages{
@@ -188,4 +200,8 @@ var Messages_ja_JP = &Messages{
 	ConflictPathMsg:         "競合するパス",
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
+	Versions:                "versions",
+	NewComponent:            "New Component",
+	Settings:                "settings",
+	SelectElementMsg:        "Select an element and change the setting here.",
 }
