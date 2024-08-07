@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,7 +21,9 @@ func main() {
 	examples_vuetify.Mux(mux)
 
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	examples_admin.SamplesHandler(im)
+	ab := autocomplete.New().Prefix("/complete")
+	examples_admin.SamplesHandler(im, ab)
+	mux.Handle("/complete/", ab)
 	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(

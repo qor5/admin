@@ -102,7 +102,7 @@ func NewDefaultAutocompleteDataSource(v string) *vx.AutocompleteDataSource {
 	return &vx.AutocompleteDataSource{
 		RemoteURL:   v,
 		IsPaging:    true,
-		ItemText:    "title",
+		ItemTitle:   "title",
 		ItemValue:   "id",
 		PageKey:     ParamPage,
 		PageSizeKey: ParamPageSize,

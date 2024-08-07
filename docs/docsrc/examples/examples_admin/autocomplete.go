@@ -1,13 +1,15 @@
-package examples_autocompelte
+package examples_admin
 
-// @snippet_begin(PresetsAutoCompleteBasicFilter)
 import (
+	"gorm.io/gorm"
+	"net/http"
+
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/ui/vuetifyx"
+
 	"github.com/qor5/admin/v3/autocomplete"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetifyx"
-	"gorm.io/gorm"
 )
 
 type AutoCompletePost struct {
@@ -17,12 +19,8 @@ type AutoCompletePost struct {
 	Status string
 }
 
-func PresetsAutoCompleteBasicFilter(b *presets.Builder, ab *autocomplete.Builder, db *gorm.DB) (
-	mb *presets.ModelBuilder,
-	cl *presets.ListingBuilder,
-	ce *presets.EditingBuilder,
-	dp *presets.DetailingBuilder,
-) {
+func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder, db *gorm.DB) http.Handler {
+	// Setup the project name, ORM and Homepage
 	b.DataOperator(gorm2op.DataOperator(db))
 	err := db.AutoMigrate(&AutoCompletePost{})
 	if err != nil {
@@ -65,7 +63,5 @@ func PresetsAutoCompleteBasicFilter(b *presets.Builder, ab *autocomplete.Builder
 			},
 		}
 	})
-	return
+	return b
 }
-
-// @snippet_end
