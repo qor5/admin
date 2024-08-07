@@ -308,7 +308,14 @@ func fileComponent(
 		Attr(web.VField("name", f.File.FileName)...).
 		Readonly(true).Variant(VariantPlain)
 	if !inMediaLibrary {
-		fileNameComp.Attr("@click", clickEvent)
+		fileNameComp.Attr("@click.stop", clickEvent)
+		*event = web.Plaid().
+			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
+			EventFunc(chooseFileEvent).
+			Query(ParamField, field).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamCfg, h.JSONString(cfg)).
+			Go()
 	}
 	title = h.Div(
 		h.If(
@@ -326,14 +333,7 @@ func fileComponent(
 		).Else(
 			fileThumb(f.File.FileName),
 		),
-	).AttrIf("role", "button", field != mediaLibraryListField).
-		AttrIf("@click", web.Plaid().
-			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-			EventFunc(chooseFileEvent).
-			Query(ParamField, field).
-			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-			Query(ParamCfg, h.JSONString(cfg)).
-			Go(), field != mediaLibraryListField).
+	).
 		AttrIf("@click", imgClickVars, field == mediaLibraryListField)
 
 	content = h.Components(
