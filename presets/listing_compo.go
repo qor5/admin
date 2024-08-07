@@ -129,7 +129,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			h.Div(
 				c.tabsFilter(ctx),
 			).Class("px-2"),
-				c.toolbarSearch(ctx),
+			c.toolbarSearch(ctx),
 			VCardText().Class("pt-2 px-2").Children(
 				c.dataTable(ctx),
 			),
@@ -549,7 +549,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
-				// NoOffsetPart(true).
+				NoOffsetPart(true).
 				OnSelectPerPage(stateful.ReloadAction(ctx, c,
 					func(target *ListingCompo) {
 						target.Page = 0
