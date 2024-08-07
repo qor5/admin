@@ -1550,7 +1550,6 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(paramMoveDirection, web.Var("msg_type")).
 		Query(paramModelID, web.Var("model_id")).
 		Query(paramStatus, ctx.Param(paramStatus)).
-		Query(paramContainerDataID, ctx.Param(paramContainerDataID)).
 		Go()
 	return fmt.Sprintf(`
 function(e){

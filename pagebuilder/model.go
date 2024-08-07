@@ -269,7 +269,8 @@ func (b *ModelBuilder) moveContainer(ctx *web.EventContext) (r web.EventResponse
 					EventFunc(ShowSortedContainerDrawerEvent).
 					MergeQuery(true).
 					Query(paramStatus,
-						ctx.Param(paramStatus)).Go()).
+						ctx.Param(paramStatus)).
+					Go()).
 			MergeQuery(true).Go(),
 	)
 	return
@@ -311,8 +312,7 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 	})
 	web.AppendRunScripts(&r,
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
-		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).
-			Query(paramContainerDataID, ctx.Param(paramContainerDataID)).Go(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 	)
 	return
 }
@@ -577,7 +577,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		}
 	}
 	web.AppendRunScripts(&r,
-		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
 	)
 	return
