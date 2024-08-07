@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -80,6 +83,10 @@ var currentProfileUser = &ProfileUser{
 
 func ProfileExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	return profileExample(b, db, currentProfileUser, func(pb *plogin.ProfileBuilder) {
-		pb.DisableNotification(true).LogoutURL("auth/logout")
+		pb.DisableNotification(true).LogoutURL("auth/logout").CustomizeButtons(func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error) {
+			return slices.Concat([]h.HTMLComponent{
+				v.VBtn("Change Password").Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", "console.log('clicked change password')"),
+			}, buttons), nil
+		})
 	})
 }
