@@ -409,29 +409,31 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	content := h.Div()
 	if b.label != "" && !b.disableLabel {
 		content.AppendChildren(
-			h.Div(h.Span(field.Label).Style("fontSize:16px; font-weight:500;")).Class("mb-2"),
+			h.Div(h.Span(field.Label).Style("fontSize:16px; font-weight:500;")).Class("mb-2 px-2"),
 		)
 	}
 
 	showComponent := b.componentViewFunc(obj, field, ctx)
 	if showComponent != nil {
 		content.AppendChildren(
-			VHover(
-				web.Slot(
-					VCard(
-						VCardText(
-							h.Div(
-								// detailFields
-								h.Div(showComponent).
-									Class("flex-grow-1 pr-3"),
-								// edit btn
-								h.Div(btn).Style("width:32px;"),
-							).Class("d-flex justify-space-between"),
-						),
-					).Class("mb-6").Variant(VariantOutlined).Hover(b.componentHoverFunc(obj, ctx)).
-						Attr("v-bind", "props"),
-				).Name("default").Scope("{ isHovering, props }"),
-			),
+			h.Div(
+				VHover(
+					web.Slot(
+						VCard(
+							VCardText(
+								h.Div(
+									// detailFields
+									h.Div(showComponent).
+										Class("flex-grow-1 pr-3"),
+									// edit btn
+									h.Div(btn).Style("width:32px;"),
+								).Class("d-flex justify-space-between"),
+							),
+						).Class("mb-6").Variant(VariantOutlined).Hover(b.componentHoverFunc(obj, ctx)).
+							Attr("v-bind", "props"),
+					).Name("default").Scope("{ isHovering, props }"),
+				),
+			).Class("px-2"),
 		)
 	}
 
