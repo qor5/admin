@@ -434,53 +434,61 @@ const (
 	subMenuFontWeight = "400"
 )
 
-func (b *Builder) menuItem(ctx *web.EventContext, m *ModelBuilder, isSub bool) (r h.HTMLComponent) {
-	menuIcon := m.menuIcon
-	// fontWeight := subMenuFontWeight
-	if isSub {
-		// menuIcon = ""
-	} else {
-		// fontWeight = menuFontWeight
-		if menuIcon == "" {
-			menuIcon = defaultMenuIcon(m.label)
+func (m *ModelBuilder) DefaultMenuItem(
+	customizeChildren func(evCtx *web.EventContext, isSub bool, menuIcon string, children ...h.HTMLComponent) ([]h.HTMLComponent, error),
+) func(evCtx *web.EventContext, isSub bool) (h.HTMLComponent, error) {
+	return func(evCtx *web.EventContext, isSub bool) (h.HTMLComponent, error) {
+		menuIcon := m.menuIcon
+		// fontWeight := subMenuFontWeight
+		if isSub {
+			// menuIcon = ""
+		} else {
+			// fontWeight = menuFontWeight
+			if menuIcon == "" {
+				menuIcon = defaultMenuIcon(m.label)
+			}
 		}
-	}
-	href := m.Info().ListingHref()
-	if m.link != "" {
-		href = m.link
-	}
-	if m.defaultURLQueryFunc != nil {
-		href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(ctx.R).Encode())
-	}
-	item := VListItem(
-		// VRow(
-		// 	VCol(h.If(menuIcon != "", VIcon(menuIcon))).Cols(2),
-		// 	VCol(h.Text(m.Info().LabelName(ctx, false))).Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 16px;", fontWeight))),
+		href := m.Info().ListingHref()
+		if m.link != "" {
+			href = m.link
+		}
+		if m.defaultURLQueryFunc != nil {
+			href = fmt.Sprintf("%s?%s", href, m.defaultURLQueryFunc(evCtx.R).Encode())
+		}
 
-		h.If(menuIcon != "", web.Slot(VIcon(menuIcon)).Name("prepend")),
-		VListItemTitle(
-			h.Text(m.Info().LabelName(ctx, false)),
-		),
-	).Class("rounded").
-		Value(m.label)
-	// .ActiveClass("bg-red")
-	// Attr("color", "primary")
+		children := []h.HTMLComponent{
+			h.Iff(menuIcon != "", func() h.HTMLComponent {
+				return web.Slot(VIcon(menuIcon)).Name(VSlotPrepend)
+			}),
+			VListItemTitle(
+				h.Text(m.Info().LabelName(evCtx, false)),
+			),
+		}
+		if customizeChildren != nil {
+			var err error
+			children, err = customizeChildren(evCtx, isSub, menuIcon, children...)
+			if err != nil {
+				return nil, err
+			}
+		}
+		item := VListItem().Rounded(true).Value(m.label).Children(children...)
 
-	item.Href(href)
-	if strings.HasPrefix(href, "/") {
-		funcStr := fmt.Sprintf(`(e) => {
+		item.Href(href)
+		if strings.HasPrefix(href, "/") {
+			funcStr := fmt.Sprintf(`(e) => {
 	if (e.metaKey || e.ctrlKey) { return; }
 	e.stopPropagation();
 	e.preventDefault();
 	%s;
 }
 `, web.Plaid().PushStateURL(href).Go())
-		item.Attr("@click", funcStr)
+			item.Attr("@click", funcStr)
+		}
+		// if b.isMenuItemActive(ctx, m) {
+		//	item = item.Class("v-list-item--active text-primary")
+		// }
+		return item, nil
 	}
-	// if b.isMenuItemActive(ctx, m) {
-	//	item = item.Class("v-list-item--active text-primary")
-	// }
-	return item
 }
 
 func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool {
@@ -557,7 +565,11 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
 					continue
 				}
-				subMenus = append(subMenus, b.menuItem(ctx, m, true))
+				menuItem, err := m.menuItem(ctx, true)
+				if err != nil {
+					panic(err)
+				}
+				subMenus = append(subMenus, menuItem)
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
 				if b.isMenuItemActive(ctx, m) {
@@ -591,7 +603,10 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if m.notInMenu {
 				continue
 			}
-			menuItem := b.menuItem(ctx, m, false)
+			menuItem, err := m.menuItem(ctx, false)
+			if err != nil {
+				panic(err)
+			}
 			menus = append(menus, menuItem)
 			inOrderMap[m.uriName] = struct{}{}
 
@@ -618,7 +633,11 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 		if b.isMenuItemActive(ctx, m) {
 			selection = m.label
 		}
-		menus = append(menus, b.menuItem(ctx, m, false))
+		menuItem, err := m.menuItem(ctx, false)
+		if err != nil {
+			panic(err)
+		}
+		menus = append(menus, menuItem)
 	}
 
 	r = h.Div(
@@ -674,20 +693,17 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 			).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, supportLanguages[0].String()).Go()),
 		)
 	}
-
-	matcher := language.NewMatcher(supportLanguages)
-
+	languageIcon := EnLanguageIcon
 	lang := ctx.R.FormValue(queryName)
 	if lang == "" {
 		lang = b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
 	}
-
-	accept := ctx.R.Header.Get("Accept-Language")
-
-	var displayLanguage language.Tag
-	_, i := language.MatchStrings(matcher, lang, accept)
-	displayLanguage = supportLanguages[i]
-
+	switch lang {
+	case language.SimplifiedChinese.String():
+		languageIcon = ZhLanguageIcon
+	case language.Japanese.String():
+		languageIcon = JPIcon
+	}
 	var languages []h.HTMLComponent
 	for _, tag := range supportLanguages {
 		languages = append(languages,
@@ -701,32 +717,12 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		)
 	}
 
-	oldIcon := VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
-			h.Div(
-				VList(
-					VListItem(
-						VListItemTitle(
-							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
-						).Class("text-subtitle-2 font-weight-regular"),
-						web.Slot(
-							VIcon("mdi-translate-variant").Size(SizeSmall).Class(""),
-						).Name("append"),
-					).Class("pa-0").Density(DensityCompact),
-				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("v-bind", "props"),
-		),
-		VList(
-			languages...,
-		).Density(DensityCompact),
-	)
-	_ = oldIcon
 	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VBtn("").Children(
-					languageSwitchIcon,
-					//VIcon("mdi-menu-down"),
+					h.RawHTML(languageIcon),
+					// VIcon("mdi-menu-down"),
 				).Attr("variant", "text").
 					Attr("icon", "").
 					Class("i18n-switcher-btn"),
@@ -1022,7 +1018,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 		if !ok {
 			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
-
 		} else {
 			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
@@ -1068,7 +1063,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							VCard(
 								menu,
 							).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
-						),
+						).Class("menu-wrap"),
 						// VDivider(),
 						profile,
 					).Class("ma-2 border-sm rounded elevation-0").Attr("style",

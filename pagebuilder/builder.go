@@ -465,7 +465,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
-		err = pageValidator(ctx.R.Context(), c, db, b.l10n)
+		err = pageValidator(ctx, c, db, b.l10n)
 		return
 	})
 	eb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -724,13 +724,14 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
 		ID := cs["id"]
 		Locale := cs[l10n.SlugLocaleCode]
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		var count int64
 		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
-			err = errors.New(unableDeleteCategoryMsg)
+			err = errors.New(msgr.UnableDeleteCategoryMsg)
 			return
 		}
 		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
@@ -741,7 +742,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Category)
-		err = categoryValidator(c, db, b.l10n)
+		err = categoryValidator(ctx, c, db, b.l10n)
 		return
 	})
 

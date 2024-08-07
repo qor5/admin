@@ -32,6 +32,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsBrandFunc)
 	addExample(mux, db, PresetsProfile)
 	addExample(mux, db, PresetsOrderMenu)
+	addExample(mux, db, PresetsCustomizeMenu)
 	addExample(mux, db, PresetsGroupMenu)
 	addExample(mux, db, PresetsConfirmDialog)
 	addExample(mux, db, PresetsEditingCustomizationTabs)

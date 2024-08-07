@@ -394,12 +394,17 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 }
 
 func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	paramID := ctx.R.FormValue(paramContainerID)
-	name := ctx.R.FormValue(paramContainerName)
-	okAction := web.Plaid().
-		URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
-		EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
-	portalName := dialogPortalName
+	var (
+		paramID  = ctx.R.FormValue(paramContainerID)
+		name     = ctx.R.FormValue(paramContainerName)
+		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		pMsgr    = presets.MustGetMessages(ctx.R)
+		okAction = web.Plaid().
+				URL(fmt.Sprintf("%s/%s-editors", b.builder.prefix, b.name)).
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+		portalName = dialogPortalName
+	)
+
 	if ctx.R.FormValue("portal") == "presets" {
 		portalName = presets.DialogPortalName
 	}
@@ -408,19 +413,19 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		Body: web.Scope(
 			VDialog(
 				VCard(
-					VCardTitle(h.Text("Rename")),
+					VCardTitle(h.Text(msgr.Rename)),
 					VCardText(
 						VTextField().Attr(web.VField("DisplayName", name)...).Variant(FieldVariantUnderlined),
 					),
 					VCardActions(
 						VSpacer(),
-						VBtn("Cancel").
+						VBtn(pMsgr.Cancel).
 							Variant(VariantFlat).
 							Class("ml-2").
 							On("click", "locals.renameDialog = false"),
 
-						VBtn("OK").
-							Color("primary").
+						VBtn(pMsgr.OK).
+							Color(ColorPrimary).
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", okAction),
@@ -456,7 +461,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		groupName := group[0].group
 		if groupName == "" {
-			groupName = "Others"
+			groupName = msgr.Others
 		}
 		if b.builder.expendContainers {
 			groupsNames = append(groupsNames, groupName)
@@ -473,7 +478,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 					web.Slot(
 						VListItem(
 							VListItemTitle(h.Text(containerName)),
-							web.Slot(VBtn("Add").Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+							web.Slot(VBtn(msgr.Add).Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
 						).Attr("v-bind", "props", ":active", "isHovering").
 							Class("cursor-pointer").
 							Attr("@click", fmt.Sprintf(`isHovering?%s:null`, addContainerEvent)).
@@ -801,6 +806,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
+	var msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
 		if b.builder.seoBuilder != nil {
@@ -977,7 +983,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 								VCardTitle(h.Text("Start building a page")).Class("d-flex justify-center"),
 								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
 								VCardActions(
-									VBtn("Add Component").Color(ColorPrimary).Variant(VariantElevated).
+									VBtn(msgr.AddComponent).Color(ColorPrimary).Variant(VariantElevated).
 										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
 								).Class("d-flex justify-center"),
 							).Flat(true),
@@ -1352,16 +1358,19 @@ func (b *ModelBuilder) ExistedL10n() bool {
 }
 
 func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponent {
-	containers := b.renderContainersList(ctx)
+	var (
+		containers = b.renderContainersList(ctx)
+		msgr       = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	)
 	emptyContent := VCard(
 		VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
-		VCardTitle(h.Text("Build your pages")).Class("d-flex justify-center"),
-		VCardSubtitle(h.Text("Place an element from QOR5 library.")).Class("d-flex justify-center"),
+		VCardTitle(h.Text(msgr.BuildYourPages)).Class("d-flex justify-center"),
+		VCardSubtitle(h.Text(msgr.PlaceAnElementFromLibrary)).Class("d-flex justify-center"),
 	).Flat(true).Tile(true).Color(ColorGreyLighten3)
 	return VSheet(
 		VSheet(
 			VCard(
-				VCardTitle(h.Text("New Element")),
+				VCardTitle(h.Text(msgr.NewElement)),
 				VCardText(containers),
 			).Elevation(0),
 		).Class(W50).Class("pa-4", "overflow-y-auto"),

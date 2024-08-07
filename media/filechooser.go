@@ -89,7 +89,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
 			Attr("v-model", "vars.snackbarShow").
 			Location("top").
-			Color("primary").
+			Color(ColorPrimary).
 			Timeout(5000),
 		mediaLibraryContent(mb, field, ctx, cfg),
 		VOverlay(
@@ -279,7 +279,7 @@ func fileComponent(
 
 	src := f.File.URL()
 	*menus = append(*menus,
-		VListItem(h.Text("Copy")).Attr("@click", web.Plaid().
+		VListItem(h.Text(msgr.Copy)).Attr("@click", web.Plaid().
 			EventFunc(CopyFileEvent).
 			Query(ParamField, field).
 			Query(paramTab, tab).
@@ -308,7 +308,14 @@ func fileComponent(
 		Attr(web.VField("name", f.File.FileName)...).
 		Readonly(true).Variant(VariantPlain)
 	if !inMediaLibrary {
-		fileNameComp.Attr("@click", clickEvent)
+		fileNameComp.Attr("@click.stop", clickEvent)
+		*event = web.Plaid().
+			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
+			EventFunc(chooseFileEvent).
+			Query(ParamField, field).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamCfg, h.JSONString(cfg)).
+			Go()
 	}
 	title = h.Div(
 		h.If(
@@ -326,14 +333,7 @@ func fileComponent(
 		).Else(
 			fileThumb(f.File.FileName),
 		),
-	).AttrIf("role", "button", field != mediaLibraryListField).
-		AttrIf("@click", web.Plaid().
-			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-			EventFunc(chooseFileEvent).
-			Query(ParamField, field).
-			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-			Query(ParamCfg, h.JSONString(cfg)).
-			Go(), field != mediaLibraryListField).
+	).
 		AttrIf("@click", imgClickVars, field == mediaLibraryListField)
 
 	content = h.Components(
@@ -366,7 +366,7 @@ func fileOrFolderComponent(
 		clickCardWithoutMoveEvent = "null"
 	)
 	menus := &[]h.HTMLComponent{
-		VListItem(h.Text("Rename")).Attr("@click", web.Plaid().
+		VListItem(h.Text(msgr.Rename)).Attr("@click", web.Plaid().
 			EventFunc(RenameDialogEvent).
 			Query(ParamField, field).
 			Query(paramTab, tab).
@@ -375,7 +375,7 @@ func fileOrFolderComponent(
 			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
-		VListItem(h.Text("Move to")).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
+		VListItem(h.Text(msgr.MoveTo)).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
 				EventFunc(DeleteConfirmationEvent).
@@ -391,7 +391,7 @@ func fileOrFolderComponent(
 	if f.Folder {
 		title, content = folderComponent(mb, field, ctx, f, msgr)
 		clickCardWithoutMoveEvent = web.Plaid().
-			EventFunc(imageJumpPageEvent).
+			EventFunc(ImageJumpPageEvent).
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
@@ -505,7 +505,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 	}
 
 	clickEvent += web.Plaid().
-		EventFunc(imageJumpPageEvent).
+		EventFunc(ImageJumpPageEvent).
 		Query(paramTab, ctx.Param(paramTab)).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
@@ -625,7 +625,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 			VCol(
 				VCard(
 					VProgressCircular().
-						Color("primary").
+						Color(ColorPrimary).
 						Indeterminate(true),
 				).
 					Class("d-flex align-center justify-center").
@@ -638,7 +638,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 
 	initCroppingVars := []string{fileCroppingVarName(0) + ": false"}
 	clickTabEvent := web.Plaid().
-		EventFunc(imageJumpPageEvent).
+		EventFunc(ImageJumpPageEvent).
 		Query(paramTab, web.Var("$event")).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
@@ -668,7 +668,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					web.Scope(
 						VTabs(
 							VTab(h.Text(msgr.Files)).Value(tabFiles),
-							VTab(h.Text("Folders")).Value(tabFolders),
+							VTab(h.Text(msgr.Folders)).Value(tabFolders),
 						).Attr("v-model", "tabLocals.tab").
 							Attr("@update:model-value",
 								fmt.Sprintf(`$event=="%s"?null:%v`, tab, clickTabEvent),
@@ -685,7 +685,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					}).ItemTitle("Text").ItemValue("Value").
 						Attr(web.VField(paramTypeKey, typeVal)...).
 						Attr("@update:model-value",
-							web.Plaid().EventFunc(imageJumpPageEvent).
+							web.Plaid().EventFunc(ImageJumpPageEvent).
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
@@ -703,7 +703,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					}).ItemTitle("Text").ItemValue("Value").
 						Attr(web.VField(paramOrderByKey, orderByVal)...).
 						Attr("@update:model-value",
-							web.Plaid().EventFunc(imageJumpPageEvent).
+							web.Plaid().EventFunc(ImageJumpPageEvent).
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
@@ -715,7 +715,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 				VCol(
 					h.If(
 						tab == tabFolders,
-						VBtn("New Folder").PrependIcon("mdi-plus").
+						VBtn(msgr.NewFolder).PrependIcon("mdi-plus").
 							Variant(VariantOutlined).Class("mr-2").
 							Attr("@click",
 								web.Plaid().EventFunc(NewFolderDialogEvent).
@@ -727,7 +727,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					),
 					h.If(mb.uploadIsAllowed(ctx.R) == nil,
 						h.Div(
-							VBtn("Upload file").PrependIcon("mdi-upload").Color(ColorSecondary).
+							VBtn(msgr.UploadFile).PrependIcon("mdi-upload").Color(ColorSecondary).
 								Attr("@click", "$refs.uploadInput.click()"),
 							h.Input("").
 								Attr("ref", "uploadInput").
@@ -761,7 +761,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 						ModelValue(int(currentPageInt)).
 						Attr("@update:model-value", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent).
+							EventFunc(ImageJumpPageEvent).
 							Query(paramTab, tab).
 							Query(ParamParentID, parentID).
 							Query(ParamField, field).
@@ -786,7 +786,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							)).Name("label"),
 					)).Cols(2),
 				VCol(
-					VBtn("Move to").Size(SizeSmall).Variant(VariantOutlined).
+					VBtn(msgr.MoveTo).Size(SizeSmall).Variant(VariantOutlined).
 						Attr(":disabled", "locals.select_ids.length==0").
 						Color(ColorSecondary).Class("ml-4").
 						Attr("@click", web.Plaid().EventFunc(MoveToFolderDialogEvent).
@@ -795,7 +795,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
-					VBtn("Delete").Size(SizeSmall).Variant(VariantOutlined).
+					VBtn(msgr.Delete).Size(SizeSmall).Variant(VariantOutlined).
 						Color(ColorWarning).Class("ml-2").
 						Attr("@click", web.Plaid().
 							EventFunc(DeleteConfirmationEvent).
@@ -818,7 +818,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	)
 	clickEvent := web.Plaid().
-		EventFunc(imageSearchEvent).
+		EventFunc(ImageSearchEvent).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Query(searchKeywordName(field), web.Var("vars.searchMsg"))
