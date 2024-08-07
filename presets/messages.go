@@ -1,7 +1,11 @@
 package presets
 
 import (
+	"math"
 	"strings"
+	"time"
+
+	"github.com/dustin/go-humanize"
 )
 
 type Messages struct {
@@ -59,6 +63,26 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+
+	HumanizeTimeAgo       string
+	HumanizeTimeFromNow   string
+	HumanizeTimeNow       string
+	HumanizeTime1Second   string
+	HumanizeTimeSeconds   string
+	HumanizeTime1Minute   string
+	HumanizeTimeMinutes   string
+	HumanizeTime1Hour     string
+	HumanizeTimeHours     string
+	HumanizeTime1Day      string
+	HumanizeTimeDays      string
+	HumanizeTime1Week     string
+	HumanizeTimeWeeks     string
+	HumanizeTime1Month    string
+	HumanizeTimeMonths    string
+	HumanizeTime1Year     string
+	HumanizeTime2Years    string
+	HumanizeTimeYears     string
+	HumanizeTimeLongWhile string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -94,6 +118,30 @@ func (msgr *Messages) BulkActionSelectedIdsProcessNotice(ids string) string {
 func (msgr *Messages) FilterBy(filter string) string {
 	return strings.NewReplacer("{filter}", filter).
 		Replace(msgr.FilterByTemplate)
+}
+
+func (msgr *Messages) HumanizeTime(then time.Time) string {
+	return humanize.CustomRelTime(then, time.Now(),
+		msgr.HumanizeTimeAgo, msgr.HumanizeTimeFromNow,
+		[]humanize.RelTimeMagnitude{
+			{D: time.Second, Format: msgr.HumanizeTimeNow, DivBy: time.Second},
+			{D: 2 * time.Second, Format: msgr.HumanizeTime1Second, DivBy: 1},
+			{D: time.Minute, Format: msgr.HumanizeTimeSeconds, DivBy: time.Second},
+			{D: 2 * time.Minute, Format: msgr.HumanizeTime1Minute, DivBy: 1},
+			{D: time.Hour, Format: msgr.HumanizeTimeMinutes, DivBy: time.Minute},
+			{D: 2 * time.Hour, Format: msgr.HumanizeTime1Hour, DivBy: 1},
+			{D: humanize.Day, Format: msgr.HumanizeTimeHours, DivBy: time.Hour},
+			{D: 2 * humanize.Day, Format: msgr.HumanizeTime1Day, DivBy: 1},
+			{D: humanize.Week, Format: msgr.HumanizeTimeDays, DivBy: humanize.Day},
+			{D: 2 * humanize.Week, Format: msgr.HumanizeTime1Week, DivBy: 1},
+			{D: humanize.Month, Format: msgr.HumanizeTimeWeeks, DivBy: humanize.Week},
+			{D: 2 * humanize.Month, Format: msgr.HumanizeTime1Month, DivBy: 1},
+			{D: humanize.Year, Format: msgr.HumanizeTimeMonths, DivBy: humanize.Month},
+			{D: 18 * humanize.Month, Format: msgr.HumanizeTime1Year, DivBy: 1},
+			{D: 2 * humanize.Year, Format: msgr.HumanizeTime2Years, DivBy: 1},
+			{D: humanize.LongTime, Format: msgr.HumanizeTimeYears, DivBy: humanize.Year},
+			{D: math.MaxInt64, Format: msgr.HumanizeTimeLongWhile, DivBy: 1},
+		})
 }
 
 var Messages_en_US = &Messages{
@@ -151,6 +199,26 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Row",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
 
 var Messages_zh_CN = &Messages{
@@ -208,6 +276,26 @@ var Messages_zh_CN = &Messages{
 	ButtonLabelActionsMenu:                     "菜单",
 	Save:                                       "保存",
 	AddRow:                                     "新增",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
 
 var Messages_ja_JP = &Messages{
@@ -264,4 +352,24 @@ var Messages_ja_JP = &Messages{
 	ButtonLabelActionsMenu:                     "アクション",
 	Save:                                       "保存",
 	AddRow:                                     "行の追加",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
