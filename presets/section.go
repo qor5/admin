@@ -388,11 +388,10 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
-	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	btn := VBtn("").Size(SizeXSmall).Variant("text").
-		Rounded("0").
-		Icon("mdi-square-edit-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
+	// disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Size(SizeXSmall).Variant("text").
+		PrependIcon("mdi-pencil-outline").
+		// Attr("v-show", fmt.Sprintf("isHovering&&%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoEditDetailingField).
@@ -406,10 +405,13 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			hiddenComp.AppendChildren(f(obj, ctx))
 		}
 	}
-	content := h.Div()
+	content := h.Div().Class("section-wrap v-col-11")
 	if b.label != "" && !b.disableLabel {
 		content.AppendChildren(
-			h.Div(h.Span(field.Label).Style("fontSize:16px; font-weight:500;")).Class("mb-2 px-2"),
+			h.Div(
+				h.H2(field.Label).Class("section-title"),
+				h.Div(btn).Class("section-edit-area"),
+			).Class("section-title-wrap"),
 		)
 	}
 
@@ -417,23 +419,17 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	if showComponent != nil {
 		content.AppendChildren(
 			h.Div(
-				VHover(
-					web.Slot(
-						VCard(
-							VCardText(
-								h.Div(
-									// detailFields
-									h.Div(showComponent).
-										Class("flex-grow-1 pr-3"),
-									// edit btn
-									h.Div(btn).Style("width:32px;"),
-								).Class("d-flex justify-space-between"),
-							),
-						).Class("mb-6").Variant(VariantOutlined).Hover(b.componentHoverFunc(obj, ctx)).
-							Attr("v-bind", "props"),
-					).Name("default").Scope("{ isHovering, props }"),
-				),
-			).Class("px-2"),
+					VCard(
+						VCardText(
+							h.Div(
+								// detailFields
+								h.Div(showComponent).
+									Class("flex-grow-1"),
+							).Class("d-flex justify-space-between"),
+						),
+					).Class("mb-6").Variant(VariantFlat).
+						Attr("v-bind", "props"),
+			).Class("section-body border-b"),
 		)
 	}
 
