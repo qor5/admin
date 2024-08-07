@@ -331,7 +331,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configBrand(b)
 
-	profielBuilder := configProfile(db, ab, loginSessionBuilder)
+	profileBuilder := configProfile(db, ab, loginSessionBuilder)
 
 	configInputDemo(b, db)
 
@@ -348,7 +348,7 @@ func NewConfig(db *gorm.DB) Config {
 		l10nBuilder,
 		roleBuilder,
 		loginSessionBuilder,
-		profielBuilder,
+		profileBuilder,
 	)
 
 	if resetAndImportInitialData {
@@ -477,7 +477,6 @@ func configMenuOrder(b *presets.Builder) {
 
 func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder) *plogin.ProfileBuilder {
 	return plogin.NewProfileBuilder(
-		lsb,
 		func(ctx context.Context) (*plogin.Profile, error) {
 			evCtx := web.MustGetEventContext(ctx)
 			u := getCurrentUser(evCtx.R)
@@ -517,7 +516,7 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 			}
 			return nil
 		},
-	)
+	).SessionBuilder(lsb) // .DisableNotification(true).LogoutURL(lsb.GetLoginBuilder().LogoutURL)
 }
 
 func configBrand(b *presets.Builder) {
