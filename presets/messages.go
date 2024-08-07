@@ -59,6 +59,24 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+
+	HumanizeTimeAgo       string
+	HumanizeTimeFromNow   string
+	HumanizeTime1Second   string
+	HumanizeTimeSeconds   string
+	HumanizeTime1Minute   string
+	HumanizeTimeMinutes   string
+	HumanizeTime1Hour     string
+	HumanizeTimeHours     string
+	HumanizeTime1Day      string
+	HumanizeTimeDays      string
+	HumanizeTime1Week     string
+	HumanizeTimeWeeks     string
+	HumanizeTime1Month    string
+	HumanizeTimeMonths    string
+	HumanizeTime1Year     string
+	HumanizeTimeYears     string
+	HumanizeTimeLongWhile string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -151,6 +169,24 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Row",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
 
 var Messages_zh_CN = &Messages{
