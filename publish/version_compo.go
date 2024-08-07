@@ -119,8 +119,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 						publishEvent = config.PublishEvent(obj, field, ctx)
 					}
 					publishBtn = h.Div(
-						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
-							Class("rounded-s ml-2").Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
+						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Class("ml-2").
+							ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+							Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
 					)
 				}
 			case StatusOnline:
@@ -144,8 +145,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
 						}),
 						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-								Class("ml-2").ClassIf("rounded-0 rounded-s", true).Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
+							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).Class("ml-2").
+								ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+								Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
 						}),
 					).Class("d-inline-flex")
 				}
