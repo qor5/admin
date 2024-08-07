@@ -1,14 +1,18 @@
 package examples_admin
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/stretchr/testify/require"
+	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -77,6 +81,25 @@ func TestProfileExample(t *testing.T) {
 			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
 				require.Equal(t, "adminx", currentProfileUser.Name)
 			},
+		},
+		{
+			Name:  "Index Page with CustomizeButtons",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb = presets.New()
+				profileExample(pb, TestDB, currentProfileUser, func(pb *plogin.ProfileBuilder) {
+					pb.DisableNotification(true).LogoutURL("auth/logout").CustomizeButtons(func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error) {
+						return slices.Concat([]h.HTMLComponent{
+							v.VBtn("Change Password").Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", "console.log('clicked change password')"),
+						}, buttons), nil
+					})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "Change Password", "clicked change password", "Logout"},
 		},
 	}
 
