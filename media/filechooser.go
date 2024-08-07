@@ -308,7 +308,14 @@ func fileComponent(
 		Attr(web.VField("name", f.File.FileName)...).
 		Readonly(true).Variant(VariantPlain)
 	if !inMediaLibrary {
-		fileNameComp.Attr("@click", clickEvent)
+		fileNameComp.Attr("@click.stop", clickEvent)
+		*event = web.Plaid().
+			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
+			EventFunc(chooseFileEvent).
+			Query(ParamField, field).
+			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamCfg, h.JSONString(cfg)).
+			Go()
 	}
 	title = h.Div(
 		h.If(
@@ -326,14 +333,7 @@ func fileComponent(
 		).Else(
 			fileThumb(f.File.FileName),
 		),
-	).AttrIf("role", "button", field != mediaLibraryListField).
-		AttrIf("@click", web.Plaid().
-			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
-			EventFunc(chooseFileEvent).
-			Query(ParamField, field).
-			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-			Query(ParamCfg, h.JSONString(cfg)).
-			Go(), field != mediaLibraryListField).
+	).
 		AttrIf("@click", imgClickVars, field == mediaLibraryListField)
 
 	content = h.Components(
@@ -391,7 +391,7 @@ func fileOrFolderComponent(
 	if f.Folder {
 		title, content = folderComponent(mb, field, ctx, f, msgr)
 		clickCardWithoutMoveEvent = web.Plaid().
-			EventFunc(imageJumpPageEvent).
+			EventFunc(ImageJumpPageEvent).
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
@@ -505,7 +505,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 	}
 
 	clickEvent += web.Plaid().
-		EventFunc(imageJumpPageEvent).
+		EventFunc(ImageJumpPageEvent).
 		Query(paramTab, ctx.Param(paramTab)).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
@@ -638,7 +638,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 
 	initCroppingVars := []string{fileCroppingVarName(0) + ": false"}
 	clickTabEvent := web.Plaid().
-		EventFunc(imageJumpPageEvent).
+		EventFunc(ImageJumpPageEvent).
 		Query(paramTab, web.Var("$event")).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
@@ -685,7 +685,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					}).ItemTitle("Text").ItemValue("Value").
 						Attr(web.VField(paramTypeKey, typeVal)...).
 						Attr("@update:model-value",
-							web.Plaid().EventFunc(imageJumpPageEvent).
+							web.Plaid().EventFunc(ImageJumpPageEvent).
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
@@ -703,7 +703,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					}).ItemTitle("Text").ItemValue("Value").
 						Attr(web.VField(paramOrderByKey, orderByVal)...).
 						Attr("@update:model-value",
-							web.Plaid().EventFunc(imageJumpPageEvent).
+							web.Plaid().EventFunc(ImageJumpPageEvent).
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
@@ -761,7 +761,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 						ModelValue(int(currentPageInt)).
 						Attr("@update:model-value", web.Plaid().
 							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(imageJumpPageEvent).
+							EventFunc(ImageJumpPageEvent).
 							Query(paramTab, tab).
 							Query(ParamParentID, parentID).
 							Query(ParamField, field).
@@ -818,7 +818,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	)
 	clickEvent := web.Plaid().
-		EventFunc(imageSearchEvent).
+		EventFunc(ImageSearchEvent).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Query(searchKeywordName(field), web.Var("vars.searchMsg"))

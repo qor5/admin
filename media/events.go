@@ -5,12 +5,12 @@ import (
 )
 
 const (
-	openFileChooserEvent         = "mediaLibrary_OpenFileChooserEvent"
+	OpenFileChooserEvent         = "mediaLibrary_OpenFileChooserEvent"
 	deleteFileEvent              = "mediaLibrary_DeleteFileEvent"
 	cropImageEvent               = "mediaLibrary_CropImageEvent"
 	loadImageCropperEvent        = "mediaLibrary_LoadImageCropperEvent"
-	imageSearchEvent             = "mediaLibrary_ImageSearchEvent"
-	imageJumpPageEvent           = "mediaLibrary_ImageJumpPageEvent"
+	ImageSearchEvent             = "mediaLibrary_ImageSearchEvent"
+	ImageJumpPageEvent           = "mediaLibrary_ImageJumpPageEvent"
 	uploadFileEvent              = "mediaLibrary_UploadFileEvent"
 	chooseFileEvent              = "mediaLibrary_ChooseFileEvent"
 	UpdateDescriptionEvent       = "mediaLibrary_UpdateDescriptionEvent"
@@ -28,12 +28,12 @@ const (
 )
 
 func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
-	hub.RegisterEventFunc(openFileChooserEvent, fileChooser(mb))
+	hub.RegisterEventFunc(OpenFileChooserEvent, fileChooser(mb))
 	hub.RegisterEventFunc(deleteFileEvent, deleteFileField())
 	hub.RegisterEventFunc(cropImageEvent, cropImage(mb))
 	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(mb))
-	hub.RegisterEventFunc(imageSearchEvent, searchFile(mb))
-	hub.RegisterEventFunc(imageJumpPageEvent, jumpPage(mb))
+	hub.RegisterEventFunc(ImageSearchEvent, searchFile(mb))
+	hub.RegisterEventFunc(ImageJumpPageEvent, jumpPage(mb))
 	hub.RegisterEventFunc(uploadFileEvent, uploadFile(mb))
 	hub.RegisterEventFunc(chooseFileEvent, chooseFile(mb))
 	hub.RegisterEventFunc(UpdateDescriptionEvent, updateDescription(mb))

@@ -693,20 +693,17 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 			).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, supportLanguages[0].String()).Go()),
 		)
 	}
-
-	matcher := language.NewMatcher(supportLanguages)
-
+	languageIcon := EnLanguageIcon
 	lang := ctx.R.FormValue(queryName)
 	if lang == "" {
 		lang = b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
 	}
-
-	accept := ctx.R.Header.Get("Accept-Language")
-
-	var displayLanguage language.Tag
-	_, i := language.MatchStrings(matcher, lang, accept)
-	displayLanguage = supportLanguages[i]
-
+	switch lang {
+	case language.SimplifiedChinese.String():
+		languageIcon = ZhLanguageIcon
+	case language.Japanese.String():
+		languageIcon = JPIcon
+	}
 	var languages []h.HTMLComponent
 	for _, tag := range supportLanguages {
 		languages = append(languages,
@@ -720,31 +717,11 @@ func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponen
 		)
 	}
 
-	oldIcon := VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
-			h.Div(
-				VList(
-					VListItem(
-						VListItemTitle(
-							h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(displayLanguage))),
-						).Class("text-subtitle-2 font-weight-regular"),
-						web.Slot(
-							VIcon("mdi-translate-variant").Size(SizeSmall).Class(""),
-						).Name("append"),
-					).Class("pa-0").Density(DensityCompact),
-				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("v-bind", "props"),
-		),
-		VList(
-			languages...,
-		).Density(DensityCompact),
-	)
-	_ = oldIcon
 	return VMenu().Children(
 		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
 			h.Div(
 				VBtn("").Children(
-					languageSwitchIcon,
+					h.RawHTML(languageIcon),
 					// VIcon("mdi-menu-down"),
 				).Attr("variant", "text").
 					Attr("icon", "").
