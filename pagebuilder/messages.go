@@ -63,6 +63,17 @@ type Messages struct {
 	FilterTabAll       string
 	FilterTabFilled    string
 	FilterTabNotFilled string
+
+	ModelLabelPages            string
+	ModelLabelPage             string
+	ModelLabelSharedContainers string
+	ModelLabelSharedContainer  string
+	ModelLabelDemoContainers   string
+	ModelLabelDemoContainer    string
+	ModelLabelTemplates        string
+	ModelLabelTemplate         string
+	ModelLabelPageCategories   string
+	ModelLabelPageCategory     string
 }
 
 var Messages_en_US = &Messages{
@@ -124,6 +135,17 @@ var Messages_en_US = &Messages{
 	FilterTabAll:       "All",
 	FilterTabFilled:    "Filled",
 	FilterTabNotFilled: "Not Filled",
+
+	ModelLabelPages:            "Pages",
+	ModelLabelPage:             "Page",
+	ModelLabelSharedContainers: "Shared Containers",
+	ModelLabelSharedContainer:  "Shared Container",
+	ModelLabelDemoContainers:   "Demo Containers",
+	ModelLabelDemoContainer:    "Demo Container",
+	ModelLabelTemplates:        "Templates",
+	ModelLabelTemplate:         "Template",
+	ModelLabelPageCategories:   "Page Categories",
+	ModelLabelPageCategory:     "Page Category",
 }
 
 var Messages_zh_CN = &Messages{
@@ -184,6 +206,17 @@ var Messages_zh_CN = &Messages{
 	FilterTabAll:       "全部",
 	FilterTabFilled:    "已填写",
 	FilterTabNotFilled: "未填写",
+
+	ModelLabelPages:            "页面管理",
+	ModelLabelPage:             "页面",
+	ModelLabelSharedContainers: "公用组件",
+	ModelLabelSharedContainer:  "公用组件",
+	ModelLabelDemoContainers:   "示例组件",
+	ModelLabelDemoContainer:    "示例组件",
+	ModelLabelTemplates:        "模板页面",
+	ModelLabelTemplate:         "模板页面",
+	ModelLabelPageCategories:   "目录管理",
+	ModelLabelPageCategory:     "目录",
 }
 
 var Messages_ja_JP = &Messages{
@@ -244,4 +277,15 @@ var Messages_ja_JP = &Messages{
 	FilterTabAll:       "すべて",
 	FilterTabFilled:    "入力済み",
 	FilterTabNotFilled: "未入力",
+
+	ModelLabelPages:            "ページ",
+	ModelLabelPage:             "ページ",
+	ModelLabelSharedContainers: "共有コンテナ",
+	ModelLabelSharedContainer:  "共有コンテナ",
+	ModelLabelDemoContainers:   "デモコンテナ",
+	ModelLabelDemoContainer:    "デモコンテナ",
+	ModelLabelTemplates:        "テンプレート",
+	ModelLabelTemplate:         "テンプレート",
+	ModelLabelPageCategories:   "ページカテゴリー",
+	ModelLabelPageCategory:     "ページカテゴリー",
 }

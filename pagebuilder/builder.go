@@ -430,6 +430,13 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		listingFields = append(listingFields, activity.ListFieldNotes)
 	}
 	lb := pm.Listing(listingFields...)
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelPage
+		}
+		return msgr.ModelLabelPages
+	})
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
@@ -670,6 +677,13 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("Name", "Path", "Description")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelPageCategory
+		}
+		return msgr.ModelLabelPageCategories
+	})
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
@@ -1002,6 +1016,13 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelSharedContainer
+		}
+		return msgr.ModelLabelSharedContainers
+	})
 	listing.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
@@ -1054,7 +1075,15 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
+
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelDemoContainer
+		}
+		return msgr.ModelLabelDemoContainers
+	})
 	listing.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
@@ -1152,6 +1181,13 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("ID", "Name", "Description")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelTemplate
+		}
+		return msgr.ModelLabelTemplates
+	})
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
