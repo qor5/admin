@@ -301,7 +301,7 @@ var Messages_zh_CN = &Messages{
 var Messages_ja_JP = &Messages{
 	SuccessfullyUpdated:            "更新に成功しました",
 	Search:                         "検索",
-	New:                            "新規",
+	New:                            "新規作成",
 	Update:                         "更新",
 	Delete:                         "削除",
 	Edit:                           "編集",
