@@ -172,9 +172,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					URL(mb.Info().ListingHref()).Go()
 				if config.Top {
 					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
-						Variant(v.FieldVariantSoloFilled).ModelValue("Schedule Publish Time").
+						Variant(v.FieldVariantSoloFilled).ModelValue(msgr.SchedulePublishTime).
 						BgColor(v.ColorPrimaryLighten2).Readonly(true).
-						Width(600).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
+						Width(500).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
 				} else {
 					scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
 						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).Attr("@click", clickEvent)

@@ -460,6 +460,19 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"1234567", "list-contents", "headers"},
 		},
 		{
+			Name:  "Demo Container List",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo_containers").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"All", "Filled", "Not Filled"},
+		},
+		{
 			Name:  "Add New Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
