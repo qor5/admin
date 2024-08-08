@@ -206,6 +206,17 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			vErr = *ve
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		complete := VAutocomplete().
+			Variant(VariantOutlined).
+			Density(DensityCompact).
+			Multiple(false).Chips(false).
+			Items(categories).ItemTitle("Path").ItemValue("ID").
+			ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...)
+		if p.CategoryID > 0 {
+			complete.Attr(web.VField("Page.CategoryID", p.CategoryID)...)
+		} else {
+			complete.Attr(web.VField("Page.CategoryID", "")...)
+		}
 		return h.Components(
 			detailingRow(msgr.Title,
 				VTextField().
@@ -223,13 +234,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 					ErrorMessages(vErr.GetFieldErrors("Page.Slug")...),
 			),
 			detailingRow(msgr.Category,
-				VAutocomplete().
-					Variant(VariantOutlined).
-					Density(DensityCompact).
-					Attr(web.VField("Page.CategoryID", p.CategoryID)...).
-					Multiple(false).Chips(false).
-					Items(categories).ItemTitle("Path").ItemValue("ID").
-					ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...),
+				complete,
 			),
 		)
 	})
