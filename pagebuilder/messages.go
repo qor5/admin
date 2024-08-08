@@ -53,6 +53,16 @@ type Messages struct {
 	NewComponent            string
 	Settings                string
 	SelectElementMsg        string
+
+	ListHeaderID          string
+	ListHeaderTitle       string
+	ListHeaderName        string
+	ListHeaderPath        string
+	ListHeaderDescription string
+
+	FilterTabAll       string
+	FilterTabFilled    string
+	FilterTabNotFilled string
 }
 
 var Messages_en_US = &Messages{
@@ -104,6 +114,16 @@ var Messages_en_US = &Messages{
 	NewComponent:            "New Component",
 	Settings:                "settings",
 	SelectElementMsg:        "Select an element and change the setting here.",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "Title",
+	ListHeaderName:        "Name",
+	ListHeaderPath:        "Path",
+	ListHeaderDescription: "Description",
+
+	FilterTabAll:       "All",
+	FilterTabFilled:    "Filled",
+	FilterTabNotFilled: "Not Filled",
 }
 
 var Messages_zh_CN = &Messages{
@@ -154,6 +174,16 @@ var Messages_zh_CN = &Messages{
 	NewComponent:            "新增组件",
 	Settings:                "设置",
 	SelectElementMsg:        "选择一个组件，这里会变成设置",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "标题",
+	ListHeaderName:        "名称",
+	ListHeaderPath:        "路径",
+	ListHeaderDescription: "描述",
+
+	FilterTabAll:       "全部",
+	FilterTabFilled:    "已填写",
+	FilterTabNotFilled: "未填写",
 }
 
 var Messages_ja_JP = &Messages{
@@ -204,4 +234,14 @@ var Messages_ja_JP = &Messages{
 	NewComponent:            "New Component",
 	Settings:                "設定",
 	SelectElementMsg:        "コンテナを選択後、設定変更してください",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "タイトル",
+	ListHeaderName:        "名前",
+	ListHeaderPath:        "パス",
+	ListHeaderDescription: "説明",
+
+	FilterTabAll:       "すべて",
+	FilterTabFilled:    "入力済み",
+	FilterTabNotFilled: "未入力",
 }
