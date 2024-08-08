@@ -119,8 +119,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 						publishEvent = config.PublishEvent(obj, field, ctx)
 					}
 					publishBtn = h.Div(
-						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Rounded("0").
-							Class("rounded-s ml-2").Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
+						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Class("ml-2").
+							ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+							Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
 					)
 				}
 			case StatusOnline:
@@ -144,8 +145,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
 						}),
 						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).
-								Class("ml-2").ClassIf("rounded-0 rounded-s", true).Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
+							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).Class("ml-2").
+								ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+								Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
 						}),
 					).Class("d-inline-flex")
 				}
@@ -311,8 +313,17 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				return in(model, params, ctx)
 			}
 		})
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		return cell
+	lb.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			compo := presets.ListingCompoFromEventContext(evCtx)
+			filter := MustFilterQuery(compo)
+			slug := obj.(presets.SlugEncoder).PrimarySlug()
+			filter.Set(filterKeySelected, slug)
+			cell.SetAttr("@click", stateful.ReloadAction(evCtx.R.Context(), compo, func(target *presets.ListingCompo) {
+				target.FilterQuery = filter.Encode()
+			}).Go())
+			return in(evCtx, cell, id, obj)
+		}
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		compo := presets.ListingCompoFromEventContext(ctx)
@@ -322,7 +333,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		filter.Set(filterKeySelected, slug)
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(
-				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@change",
+				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@click.native.stop", true).Attr("@change",
 					stateful.ReloadAction(ctx.R.Context(), compo, func(target *presets.ListingCompo) {
 						target.FilterQuery = filter.Encode()
 					}).Go(),

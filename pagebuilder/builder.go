@@ -620,7 +620,6 @@ func (b *Builder) configDetailLayoutFunc(
 	// change old detail layout
 	pm.Detailing().AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return publish.DefaultVersionBar(db)(obj, ctx)
-
 	})
 	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
 		var pageAppbarContent []h.HTMLComponent
@@ -1008,19 +1007,18 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, r))
-	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		tdbind := cell
-		c := obj.(*Container)
-
-		tdbind.SetAttr("@click.self",
-			web.Plaid().
-				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
-				Query(presets.ParamID, c.ModelID).
-				Query(paramOpenFromSharedContainer, 1).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
-
-		return tdbind
+	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			c := obj.(*Container)
+			cell.SetAttr("@click",
+				web.Plaid().
+					EventFunc(actions.Edit).
+					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
+					Query(presets.ParamID, c.ModelID).
+					Query(paramOpenFromSharedContainer, 1).
+					Go()+fmt.Sprintf(`; locals.current_editing_id=%q"`, id))
+			return in(evCtx, cell, id, obj)
+		}
 	})
 
 	if b.ab != nil {
@@ -1083,18 +1081,17 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		return nil
 	})
 	listing.RowMenu().Empty()
-	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		tdbind := cell
-		c := obj.(*DemoContainer)
-
-		tdbind.SetAttr("@click.self",
-			web.Plaid().
-				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
-				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
-
-		return tdbind
+	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			c := obj.(*DemoContainer)
+			cell.SetAttr("@click",
+				web.Plaid().
+					EventFunc(actions.Edit).
+					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
+					Query(presets.ParamID, c.ModelID).
+					Go()+fmt.Sprintf(`; locals.current_editing_id=%q`, id))
+			return in(evCtx, cell, id, obj)
+		}
 	})
 	if b.ab != nil {
 		pm.Use(b.ab)
