@@ -1,7 +1,11 @@
 package presets
 
 import (
+	"math"
 	"strings"
+	"time"
+
+	"github.com/dustin/go-humanize"
 )
 
 type Messages struct {
@@ -59,6 +63,26 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+
+	HumanizeTimeAgo       string
+	HumanizeTimeFromNow   string
+	HumanizeTimeNow       string
+	HumanizeTime1Second   string
+	HumanizeTimeSeconds   string
+	HumanizeTime1Minute   string
+	HumanizeTimeMinutes   string
+	HumanizeTime1Hour     string
+	HumanizeTimeHours     string
+	HumanizeTime1Day      string
+	HumanizeTimeDays      string
+	HumanizeTime1Week     string
+	HumanizeTimeWeeks     string
+	HumanizeTime1Month    string
+	HumanizeTimeMonths    string
+	HumanizeTime1Year     string
+	HumanizeTime2Years    string
+	HumanizeTimeYears     string
+	HumanizeTimeLongWhile string
 }
 
 func (msgr *Messages) DeleteConfirmationText(id string) string {
@@ -94,6 +118,30 @@ func (msgr *Messages) BulkActionSelectedIdsProcessNotice(ids string) string {
 func (msgr *Messages) FilterBy(filter string) string {
 	return strings.NewReplacer("{filter}", filter).
 		Replace(msgr.FilterByTemplate)
+}
+
+func (msgr *Messages) HumanizeTime(then time.Time) string {
+	return humanize.CustomRelTime(then, time.Now(),
+		msgr.HumanizeTimeAgo, msgr.HumanizeTimeFromNow,
+		[]humanize.RelTimeMagnitude{
+			{D: time.Second, Format: msgr.HumanizeTimeNow, DivBy: time.Second},
+			{D: 2 * time.Second, Format: msgr.HumanizeTime1Second, DivBy: 1},
+			{D: time.Minute, Format: msgr.HumanizeTimeSeconds, DivBy: time.Second},
+			{D: 2 * time.Minute, Format: msgr.HumanizeTime1Minute, DivBy: 1},
+			{D: time.Hour, Format: msgr.HumanizeTimeMinutes, DivBy: time.Minute},
+			{D: 2 * time.Hour, Format: msgr.HumanizeTime1Hour, DivBy: 1},
+			{D: humanize.Day, Format: msgr.HumanizeTimeHours, DivBy: time.Hour},
+			{D: 2 * humanize.Day, Format: msgr.HumanizeTime1Day, DivBy: 1},
+			{D: humanize.Week, Format: msgr.HumanizeTimeDays, DivBy: humanize.Day},
+			{D: 2 * humanize.Week, Format: msgr.HumanizeTime1Week, DivBy: 1},
+			{D: humanize.Month, Format: msgr.HumanizeTimeWeeks, DivBy: humanize.Week},
+			{D: 2 * humanize.Month, Format: msgr.HumanizeTime1Month, DivBy: 1},
+			{D: humanize.Year, Format: msgr.HumanizeTimeMonths, DivBy: humanize.Month},
+			{D: 18 * humanize.Month, Format: msgr.HumanizeTime1Year, DivBy: 1},
+			{D: 2 * humanize.Year, Format: msgr.HumanizeTime2Years, DivBy: 1},
+			{D: humanize.LongTime, Format: msgr.HumanizeTimeYears, DivBy: humanize.Year},
+			{D: math.MaxInt64, Format: msgr.HumanizeTimeLongWhile, DivBy: 1},
+		})
 }
 
 var Messages_en_US = &Messages{
@@ -151,6 +199,26 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Row",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
 
 var Messages_zh_CN = &Messages{
@@ -208,60 +276,100 @@ var Messages_zh_CN = &Messages{
 	ButtonLabelActionsMenu:                     "菜单",
 	Save:                                       "保存",
 	AddRow:                                     "新增",
+
+	HumanizeTimeAgo:       "ago",
+	HumanizeTimeFromNow:   "from now",
+	HumanizeTimeNow:       "now",
+	HumanizeTime1Second:   "1 second %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 minute %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 hour %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 day %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 week %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 month %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 year %s",
+	HumanizeTime2Years:    "2 years %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }
 
 var Messages_ja_JP = &Messages{
 	SuccessfullyUpdated:            "更新に成功しました",
-	Search:                         "検索する",
+	Search:                         "検索",
 	New:                            "新規",
-	Update:                         "更新する",
-	Delete:                         "削除する",
-	Edit:                           "編集する",
+	Update:                         "更新",
+	Delete:                         "削除",
+	Edit:                           "編集",
 	FormTitle:                      "フォーム",
 	OK:                             "OK",
 	Cancel:                         "キャンセル",
 	Create:                         "新規作成",
-	DeleteConfirmationTextTemplate: "ID:{id}のオブジェクトを削除してもよろしいですか?",
-	CreatingObjectTitleTemplate:    "{modelName} を作る",
-	EditingObjectTitleTemplate:     "{modelName} {id} を編集する",
-	ListingObjectTitleTemplate:     "{modelName}リスト",
+	DeleteConfirmationTextTemplate: "ID: {id} を削除してもよろしいですか？",
+	CreatingObjectTitleTemplate:    "新規{modelName}作成",
+	EditingObjectTitleTemplate:     "{modelName} {id}を編集する",
+	ListingObjectTitleTemplate:     "{modelName}のリスト",
 	DetailingObjectTitleTemplate:   "{modelName} {id}",
-	FiltersClear:                   "フィルターをクリアする",
-	FiltersAdd:                     "フィルターを追加する",
-	FilterApply:                    "適用する",
-	FilterByTemplate:               "{filter} でフィルターする",
-	FiltersDateInTheLast:           "がサイト",
-	FiltersDateEquals:              "と同等",
-	FiltersDateBetween:             "の間",
-	FiltersDateIsAfter:             "が後",
-	FiltersDateIsAfterOrOn:         "が同時または後",
-	FiltersDateIsBefore:            "が前",
-	FiltersDateIsBeforeOrOn:        "が前または同時",
-	FiltersDateDays:                "日間",
-	FiltersDateMonths:              "月数",
-	FiltersDateAnd:                 "＆",
-	FiltersDateTo:                  "から",
-	FiltersNumberEquals:            "と同等",
-	FiltersNumberBetween:           "間",
+	FiltersClear:                   "フィルタのクリア",
+	FiltersAdd:                     "フィルタの追加",
+	FilterApply:                    "適用",
+	FilterByTemplate:               "フィルタ",
+	FiltersDateInTheLast:           "最後の",
+	FiltersDateEquals:              "と同様",
+	FiltersDateBetween:             "の間にある",
+	FiltersDateIsAfter:             "の後である",
+	FiltersDateIsAfterOrOn:         "の上または後である",
+	FiltersDateIsBefore:            "は前",
+	FiltersDateIsBeforeOrOn:        "が前か後か",
+	FiltersDateDays:                "日",
+	FiltersDateMonths:              "ヶ月",
+	FiltersDateAnd:                 "と",
+	FiltersDateTo:                  "に",
+	FiltersNumberEquals:            "と同様",
+	FiltersNumberBetween:           "の間",
 	FiltersNumberGreaterThan:       "より大きい",
-	FiltersNumberLessThan:          "より少ない",
-	FiltersNumberAnd:               "＆",
-	FiltersStringEquals:            "と同等",
+	FiltersNumberLessThan:          "より小さい",
+	FiltersNumberAnd:               "と",
+	FiltersStringEquals:            "と同様",
 	FiltersStringContains:          "を含む",
-	FiltersMultipleSelectIn:        "中",
-	FiltersMultipleSelectNotIn:     "以外",
-	PaginationRowsPerPage:          "行 / ページ",
-	ListingNoRecordToShow:          "表示できるデータはありません",
-	ListingSelectedCountNotice:     "{count} レコードが選択されています",
-	ListingClearSelection:          "選択をクリア",
-	BulkActionNoRecordsSelected:    "選択されたレコードがありません",
-	BulkActionNoAvailableRecords:   "この機能はご利用いただけません",
-	BulkActionSelectedIdsProcessNoticeTemplate: "この一部の機能はご利用いただけません: {ids}",
-	ConfirmDialogPromptText:                    "よろしいですか？",
+	FiltersMultipleSelectIn:        "で",
+	FiltersMultipleSelectNotIn:     "でない",
+	PaginationRowsPerPage:          "ページあたりの行数 ",
+	ListingNoRecordToShow:          "表示できるレコードがありません",
+	ListingSelectedCountNotice:     "{count}レコードが選択されています。",
+	ListingClearSelection:          "クリア選択",
+	BulkActionNoRecordsSelected:    "レコードが選択されていません",
+	BulkActionNoAvailableRecords:   "選択されたレコードのいずれも、このアクションでは実行できません。",
+	BulkActionSelectedIdsProcessNoticeTemplate: "部分的に選択されたレコードは、このアクションでは実行できません：{ids}。",
+	ConfirmDialogPromptText:                    "実行してもよろしいですか?",
 	Language:                                   "言語",
 	Colon:                                      ":",
-	NotFoundPageNotice:                         "申し訳ありませんが、リクエストされたページは見つかりませんでした。URLを確認してください。",
-	ButtonLabelActionsMenu:                     "メニュー",
-	Save:                                       "Save (need JP translation)",
-	AddRow:                                     "Add Row (need JP translation)",
+	NotFoundPageNotice:                         "リクエストされたページが見つかりません。URLを確認してください。",
+	ButtonLabelActionsMenu:                     "アクション",
+	Save:                                       "保存する",
+	AddRow:                                     "行の追加",
+
+	HumanizeTimeAgo:       "前",
+	HumanizeTimeFromNow:   "今後",
+	HumanizeTimeNow:       "現在",
+	HumanizeTime1Second:   "1 秒 %s",
+	HumanizeTimeSeconds:   "%d seconds %s",
+	HumanizeTime1Minute:   "1 分 %s",
+	HumanizeTimeMinutes:   "%d minutes %s",
+	HumanizeTime1Hour:     "1 時間 %s",
+	HumanizeTimeHours:     "%d hours %s",
+	HumanizeTime1Day:      "1 日 %s",
+	HumanizeTimeDays:      "%d days %s",
+	HumanizeTime1Week:     "1 週間 %s",
+	HumanizeTimeWeeks:     "%d weeks %s",
+	HumanizeTime1Month:    "1 ヶ月 %s",
+	HumanizeTimeMonths:    "%d months %s",
+	HumanizeTime1Year:     "1 年間 %s",
+	HumanizeTime2Years:    "2 年間 %s",
+	HumanizeTimeYears:     "%d years %s",
+	HumanizeTimeLongWhile: "a long while %s",
 }

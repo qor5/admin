@@ -374,6 +374,70 @@ func TestMedia(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "MediaLibrary Open FileChooser",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose a File"},
+		},
+		{
+			Name:  "MediaLibrary Search",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query(web.EventFuncIDName, media.ImageSearchEvent).
+					Query("media_file_chooser_search_keyword", "test_search2").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test_search2.png"},
+			ExpectPortalUpdate0NotContains:     []string{"test_search1.png"},
+		},
+		{
+			Name:  "MediaLibrary Search file name",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query(web.EventFuncIDName, media.ImageSearchEvent).
+					Query("media_file_chooser_search_keyword", "2").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test_search2.png"},
+			ExpectPortalUpdate0NotContains:     []string{"test_search1.png"},
+		},
+		{
+			Name:  "MediaLibrary Jump",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query("media_file_chooser_current_page", "2").
+					Query(web.EventFuncIDName, media.ImageJumpPageEvent).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0NotContains: []string{"test_search2.png", "test_search1.png"},
+		},
 	}
 
 	for _, c := range cases {

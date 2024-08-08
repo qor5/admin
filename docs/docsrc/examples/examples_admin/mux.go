@@ -42,6 +42,7 @@ func SamplesHandler(mux webexamples.Muxer, ab *autocomplete.Builder) {
 	examples.AddPresetExample(mux, PublishExample)
 	examples.AddPresetExample(mux, SEOExampleBasic)
 	examples.AddPresetExample(mux, ActivityExample)
+	examples.AddPresetExample(mux, ProfileExample)
 	examples.AddPresetExample(mux, PageBuilderExample)
 	examples.AddPresetExample(mux, MediaExample)
 	examples.AddPresetAutocompleteExample(mux, ab, AutoCompleteBasicFilterExample)
