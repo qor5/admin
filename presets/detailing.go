@@ -4,23 +4,28 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"reflect"
-	"strconv"
-
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"reflect"
+	"strconv"
+	"strings"
 )
 
 type DetailingStyle string
+type DetailingLayout string
 
 const (
 	DetailingStylePage   DetailingStyle = "Page"
 	DetailingStyleDrawer DetailingStyle = "Drawer"
 	DetailingStyleDialog DetailingStyle = "Dialog"
+)
+
+const (
+	layoutCenter DetailingLayout = "layout-center"
 )
 
 type DetailingBuilder struct {
@@ -33,6 +38,7 @@ type DetailingBuilder struct {
 	titleFunc          func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 	afterTitleCompFunc ObjectComponentFunc
 	drawer             bool
+	layouts            []DetailingLayout
 	SectionsBuilder
 }
 
@@ -59,6 +65,12 @@ func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 
 func (b *DetailingBuilder) GetDrawer() bool {
 	return b.drawer
+}
+
+// let u easier to adjust the detailing page by each project
+func (b *DetailingBuilder) SetContainerClass(layoutVal DetailingLayout) (r *DetailingBuilder) {
+	b.layouts = append(b.layouts, layoutVal)
+	return b
 }
 
 // string / []string / *FieldsSection
@@ -231,9 +243,14 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
 	}
 
+	layoutClass := make([]string, len(b.layouts))
+	for i, layout := range b.layouts {
+		layoutClass[i] = string(layout)
+	}
+
 	r.Body = VContainer().Children(
 		notice,
-		h.Div().Class("d-flex flex-column ga-10").Children(
+		h.Div().Class("d-flex flex-column ga-10", strings.Join(layoutClass, ", ")).Children(
 			actionButtonsCompo,
 			tabsContent,
 		),
