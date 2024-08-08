@@ -36,6 +36,7 @@ type Messages struct {
 	Folders           string
 	UploadFile        string
 	DeleteObjects     func(v int) string
+	MediaLibrary      string
 }
 
 var Messages_en_US = &Messages{
@@ -73,6 +74,8 @@ var Messages_en_US = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
+
+	MediaLibrary: "Media Library",
 }
 
 var Messages_zh_CN = &Messages{
@@ -110,6 +113,7 @@ var Messages_zh_CN = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`是否删除 %v 个条目`, v)
 	},
+	MediaLibrary: "媒体库",
 }
 
 var Messages_ja_JP = &Messages{
@@ -147,4 +151,5 @@ var Messages_ja_JP = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
+	MediaLibrary: "メディアライブラリ",
 }
