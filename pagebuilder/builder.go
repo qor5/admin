@@ -1077,6 +1077,15 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
 
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	listing.Field("ModelName").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*DemoContainer)
+		modelName := p.ModelName
+		if b.ps.GetI18n() != nil {
+			modelName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+		}
+
+		return h.Td(h.Text(modelName))
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {

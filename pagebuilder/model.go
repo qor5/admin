@@ -461,6 +461,10 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			break
 		}
 		groupName := group[0].group
+
+		if b.builder.ps.GetI18n() != nil && groupName != "" {
+			groupName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, groupName)
+		}
 		if groupName == "" {
 			groupName = msgr.Others
 		}
@@ -469,7 +473,10 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
-			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			containerName := builder.name
+			if b.builder.ps.GetI18n() != nil {
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			}
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 				MergeQuery(true).
 				Query(paramModelName, builder.name).
@@ -519,14 +526,16 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			break
 		}
 		groupName := msgr.Shared
-
 		if b.builder.expendContainers {
 			groupsNames = append(groupsNames, groupName)
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			c := b.builder.ContainerByName(builder.ModelName)
-			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+			containerName := c.name
+			if b.builder.ps.GetI18n() != nil {
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+			}
 			listItems = append(listItems,
 				VListItem(
 					VListItemTitle(h.Text(containerName)).Attr("@click", web.Plaid().
@@ -716,7 +725,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 	}
 	modelID = reflectutils.MustGet(model, "ID").(uint)
 	displayName := modelName
-	if b.builder.l10n != nil {
+	if b.builder.ps.GetI18n() != nil {
 		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 	}
 	container := Container{
