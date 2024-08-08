@@ -469,7 +469,10 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
-			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			containerName := builder.name
+			if b.builder.ps.GetI18n() != nil {
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			}
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 				MergeQuery(true).
 				Query(paramModelName, builder.name).
@@ -716,7 +719,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 	}
 	modelID = reflectutils.MustGet(model, "ID").(uint)
 	displayName := modelName
-	if b.builder.l10n != nil {
+	if b.builder.ps.GetI18n() != nil {
 		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 	}
 	container := Container{
