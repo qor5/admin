@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/web/v3"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -580,8 +582,37 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{"123", "456"},
 		},
+		{
+			Name:  "Page Detail Editing No Category",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/10_2024-05-21-v01_International").
+					Query(web.EventFuncIDName, actions.DoEditDetailingField).
+					Query("detailField", "Page").
+					Query("id", "10_2024-05-21-v01_International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":""`},
+		},
+		{
+			Name:  "Page Detail Editing Has Category",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/1_2024-05-18-v01_International").
+					Query(web.EventFuncIDName, actions.DoEditDetailingField).
+					Query("detailField", "Page").
+					Query("id", "1_2024-05-18-v01_International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":1`},
+		},
 	}
-
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			RunCase(t, c, h)
