@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
@@ -136,6 +135,7 @@ func (b *SessionBuilder) Activity(amb *activity.ModelBuilder) *SessionBuilder {
 	b.amb = amb
 	return b
 }
+
 func (b *SessionBuilder) Secret(v string) *SessionBuilder {
 	b.lb.Secret(v)
 	return b
@@ -357,7 +357,7 @@ type dataTableHeader struct {
 
 func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
-	// presetsMsgr := presets.MustGetMessages(ctx.R)
+	pmsgr := presets.MustGetMessages(ctx.R)
 
 	user := login.GetCurrentUser(ctx.R)
 	if user == nil {
@@ -409,10 +409,11 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 	}
 	now := b.db.NowFunc()
 	wrappers := make([]*sessionWrapper, 0, len(sessions))
+	activeCount := 0
 	for _, v := range sessions {
 		w := &sessionWrapper{
 			LoginSession: v,
-			Time:         humanize.Time(v.CreatedAt),
+			Time:         pmsgr.HumanizeTime(v.CreatedAt),
 			Status:       msgr.SessionStatusActive,
 		}
 		if isPublicUser {
@@ -420,6 +421,8 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		if v.ExpiredAt.Before(now) {
 			w.Status = msgr.SessionStatusExpired
+		} else {
+			activeCount++
 		}
 		if v.TokenHash == currentTokenHash {
 			w.Status = msgr.SessionStatusCurrent
@@ -446,7 +449,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					table,
 				),
 
-				h.Iff(!isPublicUser, func() h.HTMLComponent {
+				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {
 					return v.VCardActions().Class("px-6 pt-0 pb-6").Children(
 						v.VSpacer(),
 						v.VBtn(msgr.ExpireOtherSessions).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorWarning).PrependIcon("mdi-alert-circle-outline").

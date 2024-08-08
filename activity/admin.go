@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -283,6 +282,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			var (
 				log           = obj.(*ActivityLog)
 				msgr          = i18n.MustGetModuleMessages(ctx.R, I18nActivityKey, Messages_en_US).(*Messages)
+				pmsgr         = presets.MustGetMessages(ctx.R)
 				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
 				actionLabel   = getActionLabel(ctx, log.Action)
 			)
@@ -340,7 +340,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 								h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
-										h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
+										h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),
 									)
 								}),
 							),
