@@ -17,7 +17,7 @@ func AutoCompleteDemo(ctx *web.EventContext) (pr web.PageResponse, err error) {
 	fd := vuetifyx.VXAutocomplete().Label("Category").
 		Attr(web.VField("Category", 2)...).
 		Multiple(false).Chips(false).
-		Items(categories).ItemText("Path").ItemValue("ID")
+		Items(categories).ItemTitle("Path").ItemValue("ID")
 
 	pr.Body = VApp(
 		VMain(

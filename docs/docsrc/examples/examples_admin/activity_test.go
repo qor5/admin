@@ -161,6 +161,18 @@ func TestActivity(t *testing.T) {
 			ExpectRunScriptContainsInOrder: []string{"Successfully updated note", "A updated note"},
 		},
 		{
+			Name:  "Activity Model details should have timeline after note updated",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "A updated note", "edited at now"},
+		},
+		{
 			Name:  "Delete Note",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -218,6 +230,48 @@ func TestActivityAdmin(t *testing.T) {
 				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
 			},
+		},
+		{
+			Name:  "Update note",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+{
+	"compo_type": "*activity.TimelineCompo",
+	"compo": {
+		"id": "with-activity-products:13",
+		"model_name": "WithActivityProduct",
+		"model_keys": "13",
+		"model_link": "/examples/activity-example/with-activity-products/13"
+	},
+	"injector": "__activity:with-activity-products__",
+	"sync_query": false,
+	"method": "UpdateNote",
+	"request": {
+		"log_id": 45,
+		"note": "A updated note"
+	}
+}
+`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully updated note", "A updated note"},
+		},
+		{
+			Name:  "Activity log detail after note updated",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=45").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct", "45", "A updated note", "edited at now"},
 		},
 	}
 

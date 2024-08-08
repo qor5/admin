@@ -446,10 +446,12 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 	dp := pm.Detailing(detailList...)
 	dp.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 		var versionBadge *VChipBuilder
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
-			versionBadge = VChip(h.Text(fmt.Sprintf("%d versions", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"])))).
+			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"]), msgr.Versions))).
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
@@ -1547,7 +1549,6 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(paramMoveDirection, web.Var("msg_type")).
 		Query(paramModelID, web.Var("model_id")).
 		Query(paramStatus, ctx.Param(paramStatus)).
-		Query(paramContainerDataID, ctx.Param(paramContainerDataID)).
 		Go()
 	return fmt.Sprintf(`
 function(e){

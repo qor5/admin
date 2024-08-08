@@ -256,6 +256,8 @@ type Messages_ModelsI18nModuleKey struct {
 
 	ActivityActionLogIn         string
 	ActivityActionExtendSession string
+
+	PagesPage string
 }
 
 var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -408,6 +410,8 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 
 	ActivityActionLogIn:         "登录",
 	ActivityActionExtendSession: "延长会话",
+
+	PagesPage: "Page",
 }
 
 var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
@@ -560,4 +564,6 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 
 	ActivityActionLogIn:         "ログイン",
 	ActivityActionExtendSession: "セッション延長",
+
+	PagesPage: "ページ",
 }

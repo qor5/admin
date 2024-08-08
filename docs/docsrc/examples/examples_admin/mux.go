@@ -1,6 +1,7 @@
 package examples_admin
 
 import (
+	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,7 +15,9 @@ func Mux(mux *http.ServeMux) http.Handler {
 	examples_vuetify.Mux(mux)
 
 	im := &webexamples.IndexMux{Mux: http.NewServeMux()}
-	SamplesHandler(im)
+	ab := autocomplete.New().Prefix("/complete")
+	SamplesHandler(im, ab)
+	mux.Handle("/complete/", ab)
 
 	mux.Handle("/examples/",
 		middleware.Logger(
@@ -27,7 +30,7 @@ func Mux(mux *http.ServeMux) http.Handler {
 	return mux
 }
 
-func SamplesHandler(mux webexamples.Muxer) {
+func SamplesHandler(mux webexamples.Muxer, ab *autocomplete.Builder) {
 	examples_vuetify.SamplesHandler(mux)
 	examples_presets.SamplesHandler(mux)
 
@@ -42,4 +45,5 @@ func SamplesHandler(mux webexamples.Muxer) {
 	examples.AddPresetExample(mux, ProfileExample)
 	examples.AddPresetExample(mux, PageBuilderExample)
 	examples.AddPresetExample(mux, MediaExample)
+	examples.AddPresetAutocompleteExample(mux, ab, AutoCompleteBasicFilterExample)
 }

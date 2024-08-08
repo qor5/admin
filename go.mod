@@ -27,7 +27,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20240729105053-88484a799a79
 	github.com/qor5/web/v3 v3.0.6-0.20240808073627-bd2003d12e2c
-	github.com/qor5/x/v3 v3.0.7-0.20240806090036-8f4e3b201ac5
+	github.com/qor5/x/v3 v3.0.7-0.20240808022508-35f1ab5b53fe
 	github.com/samber/lo v1.46.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0

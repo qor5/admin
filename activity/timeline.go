@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -50,6 +49,7 @@ func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventCont
 
 func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forceTextColor string) h.HTMLComponent {
 	evCtx, msgr := c.MustGetEventContext(ctx)
+	pmsgr := presets.MustGetMessages(evCtx.R)
 	switch log.Action {
 	case ActionNote:
 		note := &Note{}
@@ -62,7 +62,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 				h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap").ClassIf(forceTextColor, forceTextColor != ""),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 					return h.Div().Class("text-caption font-italic").Class(lo.If(forceTextColor != "", forceTextColor).Else("text-grey-darken-1")).Children(
-						h.Text(msgr.LastEditedAt(humanize.Time(note.LastEditedAt))),
+						h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),
 					)
 				}),
 			),
@@ -146,6 +146,8 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
+	pmsgr := presets.MustGetMessages(evCtx.R)
+
 	user, err := c.ab.currentUserFunc(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user")
@@ -166,7 +168,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Style("width: 8px; height: 8px;").Class("rounded-circle"),
-				h.Div(h.Text(humanize.Time(log.CreatedAt))).Class(lo.If(i != 0, "text-grey").Else("text-grey-darken-1")),
+				h.Div(h.Text(pmsgr.HumanizeTime(log.CreatedAt))).Class(lo.If(i != 0, "text-grey").Else("text-grey-darken-1")),
 			),
 			h.Div().Class("d-flex flex-row ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),

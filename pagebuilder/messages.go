@@ -49,6 +49,10 @@ type Messages struct {
 	ConflictPathMsg         string
 	ExistingPathMsg         string
 	UnableDeleteCategoryMsg string
+	Versions                string
+	NewComponent            string
+	Settings                string
+	SelectElementMsg        string
 }
 
 var Messages_en_US = &Messages{
@@ -96,6 +100,10 @@ var Messages_en_US = &Messages{
 	ConflictPathMsg:         "Conflicting Path",
 	ExistingPathMsg:         "Existing Path",
 	UnableDeleteCategoryMsg: "To delete this category you need to remove all association to products first",
+	Versions:                "versions",
+	NewComponent:            "New Component",
+	Settings:                "settings",
+	SelectElementMsg:        "Select an element and change the setting here.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -135,13 +143,17 @@ var Messages_zh_CN = &Messages{
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
 
 	InvalidPathMsg:          "无效的路径",
-	InvalidTitleMsg:         "无效的辩题",
+	InvalidTitleMsg:         "无效的标题",
 	InvalidNameMsg:          "无效的名称",
 	InvalidSlugMsg:          "无效的Slug",
 	ConflictSlugMsg:         "冲突的Slug",
 	ConflictPathMsg:         "冲突的路径",
 	ExistingPathMsg:         "已存在的路径",
 	UnableDeleteCategoryMsg: "这个分类没办法被删除,因为已被页面使用",
+	Versions:                "版本",
+	NewComponent:            "新增组件",
+	Settings:                "设置",
+	SelectElementMsg:        "选择一个组件，这里会变成设置",
 }
 
 var Messages_ja_JP = &Messages{
@@ -149,14 +161,14 @@ var Messages_ja_JP = &Messages{
 	Preview:                        "プレビュー",
 	Containers:                     "コンテナ",
 	AddContainers:                  "コンテナの追加",
-	New:                            "新規",
+	New:                            "新規作成",
 	Shared:                         "共有",
 	Select:                         "選択",
 	SelectedTemplateLabel:          "テンプレート",
 	CreateFromTemplate:             "テンプレートから作成",
 	ChangeTemplate:                 "テンプレートの変更",
 	RelatedOnlinePages:             "関連するオンラインページ",
-	RepublishAllRelatedOnlinePages: "すべてを再公開",
+	RepublishAllRelatedOnlinePages: "すべてを再公開する",
 	Unnamed:                        "名前なし",
 	NotDescribed:                   "説明なし",
 	Blank:                          "空白",
@@ -176,7 +188,7 @@ var Messages_ja_JP = &Messages{
 	Title:                     "タイトル",
 	Slug:                      "スラッグ",
 	EditPage:                  "ページの編集",
-	ScheduledAt:               "スケジュール",
+	ScheduledAt:               "公開開始日時",
 	OnlineHit:                 "バージョンはリリース後直接に編集できません。バージョンをコピーして編集してください。",
 	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
 
@@ -188,4 +200,8 @@ var Messages_ja_JP = &Messages{
 	ConflictPathMsg:         "競合するパス",
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
+	Versions:                "バージョン",
+	NewComponent:            "New Component",
+	Settings:                "設定",
+	SelectElementMsg:        "コンテナを選択後、設定変更してください",
 }
