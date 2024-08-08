@@ -231,13 +231,18 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 }
 
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VTextField().
+	return h.Div(
+		h.Span(field.Label).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
+		VTextField().
+		Density(DensityComfortable).
+		Class("section-field").
 		Type("text").
-		Variant(FieldVariantUnderlined).
+		Variant(FieldVariantOutlined).
+		BgColor(ColorBackground).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-		Label(field.Label).
 		ErrorMessages(field.Errors...).
-		Disabled(field.Disabled)
+		Disabled(field.Disabled),
+	).Class("section-field-wrap")
 }
 
 func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
