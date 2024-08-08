@@ -16,6 +16,7 @@ type (
 		uriName      string
 		model        any
 		sQLCondition string
+		orderBy      string
 		modelType    reflect.Type
 		paging       bool
 		columns      []string
@@ -51,6 +52,10 @@ func (b *ModelBuilder) SQLCondition(v string) *ModelBuilder {
 
 func (b *ModelBuilder) UriName(v string) *ModelBuilder {
 	b.uriName = v
+	return b
+}
+func (b *ModelBuilder) OrderBy(v string) *ModelBuilder {
+	b.orderBy = v
 	return b
 }
 func (b *ModelBuilder) Paging(v bool) *ModelBuilder {
@@ -89,23 +94,25 @@ func (b *ModelBuilder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := g.Count(&response.Total).Error; err != nil {
 		return
 	}
-	if b.paging {
-		pageSize := ctx.ParamAsInt(ParamPageSize)
-		page := ctx.ParamAsInt(ParamPage)
-		if pageSize != 0 {
-			if page == 0 {
-				page = 1
-			}
-			g = g.Offset((page - 1) * pageSize).Limit(pageSize)
-			response.Current = int64(page * pageSize)
-			if response.Current > response.Total {
-				response.Current = response.Total
-			}
-			response.Pages = int(math.Ceil(float64(response.Total) / float64(pageSize)))
-		}
-
+	page := ctx.ParamAsInt(ParamPage)
+	if page == 0 {
+		page = 1
 	}
-
+	pageSize := ctx.ParamAsInt(ParamPageSize)
+	if pageSize == 0 {
+		pageSize = 20
+	}
+	g = g.Offset((page - 1) * pageSize).Limit(pageSize)
+	if b.paging {
+		response.Pages = int(math.Ceil(float64(response.Total) / float64(pageSize)))
+	}
+	response.Current = int64(page * pageSize)
+	if response.Current > response.Total {
+		response.Current = response.Total
+	}
+	if b.orderBy != "" {
+		g = g.Order(b.orderBy)
+	}
 	if err := g.Select(strings.Join(b.columns, ",")).Find(&response.Data).Error; err != nil {
 		return
 	}
