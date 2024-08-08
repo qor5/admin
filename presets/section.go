@@ -405,11 +405,12 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			hiddenComp.AppendChildren(f(obj, ctx))
 		}
 	}
-	content := h.Div().Class("section-wrap v-col-11")
+	content := h.Div().Class("section-wrap")
 	if b.label != "" && !b.disableLabel {
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
 		content.AppendChildren(
 			h.Div(
-				h.H2(field.Label).Class("section-title"),
+				h.H2(lb).Class("section-title"),
 				h.Div(btn).Class("section-edit-area"),
 			).Class("section-title-wrap"),
 		)
@@ -419,16 +420,16 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	if showComponent != nil {
 		content.AppendChildren(
 			h.Div(
-					VCard(
-						VCardText(
-							h.Div(
-								// detailFields
-								h.Div(showComponent).
-									Class("flex-grow-1"),
-							).Class("d-flex justify-space-between"),
-						),
-					).Class("mb-6").Variant(VariantFlat).
-						Attr("v-bind", "props"),
+				VCard(
+					VCardText(
+						h.Div(
+							// detailFields
+							h.Div(showComponent).
+								Class("flex-grow-1"),
+						).Class("d-flex justify-space-between"),
+					),
+				).Variant(VariantFlat).
+					Attr("v-bind", "props"),
 			).Class("section-body border-b"),
 		)
 	}
@@ -448,7 +449,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
-	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -459,7 +460,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).Disabled(disableEditBtn).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -475,30 +476,35 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
-	content := h.Div()
+	content := h.Div().Class("section-wrap edit-view")
 
 	if b.label != "" && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
-		label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
-		content.AppendChildren(label)
+		// label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
+		content.AppendChildren(
+			h.Div(
+				h.H2(lb).Class("section-title"),
+				h.Div(
+					cancelBtn,
+					saveBtn.Class("ml-4"),
+				).Class("section-edit-area"),
+			).Class("section-title-wrap"),
+		)
 	}
 
 	if b.componentEditFunc != nil {
 		content.AppendChildren(
-			VCard(
-				VCardText(
-					h.Div(
-						// detailFields
-						h.Div(b.componentEditFunc(obj, field, ctx)).
-							Class("flex-grow-1"),
-						// save saveBtn
+			h.Div(
+				VCard(
+					VCardText(
 						h.Div(
-							cancelBtn,
-							saveBtn.Class("ml-2"),
-						).Class("align-self-end mt-4"),
-					).Class("d-flex flex-column"),
-				),
-			).Variant(VariantOutlined).Class("mb-6"),
+							// detailFields
+							h.Div(b.componentEditFunc(obj, field, ctx)).
+								Class("flex-grow-1"),
+						).Class("d-flex flex-column"),
+					),
+				).Variant(VariantOutlined),
+			).Class("section-body border-b"),
 		)
 	}
 
