@@ -285,8 +285,8 @@ func configureDialogCustomerSelector(db *gorm.DB, pb *presets.Builder) {
 	lb := b.Listing().DialogWidth("900px")
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		return cell
+	lb.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return in
 	})
 	lb.BulkAction("Confirm").ButtonCompFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return VBtn("Confirm").Attr("@click", web.Plaid().

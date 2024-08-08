@@ -129,7 +129,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			h.Div(
 				c.tabsFilter(ctx),
 			).Class("px-2"),
-				c.toolbarSearch(ctx),
+			c.toolbarSearch(ctx),
 			VCardText().Class("pt-2 px-2").Children(
 				c.dataTable(ctx),
 			),
@@ -331,7 +331,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 }
 
 func (c *ListingCompo) defaultCellWrapperFunc(_ context.Context) func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
-	return func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
+	return func(cell h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
 		if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
 			cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
 			return cell
@@ -348,7 +348,7 @@ func (c *ListingCompo) defaultCellWrapperFunc(_ context.Context) func(cell h.Mut
 		if c.ParentID != "" {
 			onClick.Query(ParamParentID, c.ParentID)
 		}
-		cell.SetAttr("@click", fmt.Sprintf(`%s; locals.current_editing_id = "%s-%s";`, onClick.Go(), dataTableID, id))
+		cell.SetAttr("@click", fmt.Sprintf(`%s; locals.current_editing_id = %q;`, onClick.Go(), id))
 		return cell
 	}
 }
@@ -499,19 +499,29 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 					),
 				)
 		}).
-		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
+		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
 			// TODO: how to cancel active if not using vars.presetsRightDrawer
 			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.current_editing_id === "%s-%s",
-				}`, dataTableID, id,
+					"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.current_editing_id === %q,
+				}`, id,
 			))
 			return row
 		}).
 		RowMenuHead(btnConfigColumns).
 		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
-		CellWrapperFunc(
-			lo.If(c.lb.cellWrapperFunc != nil, c.lb.cellWrapperFunc).Else(c.defaultCellWrapperFunc(ctx)),
-		)
+		CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+			if c.lb.cellProcessor != nil {
+				compo, err := c.lb.cellProcessor(evCtx, cell, id, obj)
+				if err != nil {
+					panic(err)
+				}
+				return compo
+			}
+			if c.lb.cellWrapperFunc != nil {
+				return c.lb.cellWrapperFunc(cell, id, obj, dataTableID)
+			}
+			return c.defaultCellWrapperFunc(ctx)(cell, id, obj, dataTableID)
+		})
 
 	if len(c.lb.bulkActions) > 0 {
 		syncQuery := ""
@@ -549,7 +559,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
-				// NoOffsetPart(true).
+				NoOffsetPart(true).
 				OnSelectPerPage(stateful.ReloadAction(ctx, c,
 					func(target *ListingCompo) {
 						target.Page = 0
