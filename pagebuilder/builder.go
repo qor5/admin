@@ -728,7 +728,8 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label(field.Label).
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().Label(msgr.ListHeaderName).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, field.Value(obj))...).
 			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
@@ -740,7 +741,8 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label(field.Label).
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().Label(msgr.ListHeaderPath).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
@@ -749,6 +751,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		m := obj.(*Category)
 		m.Path = path.Join("/", m.Path)
 		return nil
+	})
+
+	eb.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().
+			Type("text").
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(msgr.ListHeaderDescription).
+			ErrorMessages(field.Errors...).
+			Disabled(field.Disabled)
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {

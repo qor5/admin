@@ -807,7 +807,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
-	var msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
 		if b.builder.seoBuilder != nil {
@@ -981,8 +981,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 						h.Div(
 							VCard(
 								VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
-								VCardTitle(h.Text("Start building a page")).Class("d-flex justify-center"),
-								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
+								VCardTitle(h.Text(msgr.StartBuildingMsg)).Class("d-flex justify-center"),
+								VCardSubtitle(h.Text(msgr.StartBuildingSubMsg)).Class("d-flex justify-center"),
 								VCardActions(
 									VBtn(msgr.AddComponent).Color(ColorPrimary).Variant(VariantElevated).
 										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
