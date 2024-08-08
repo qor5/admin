@@ -25,6 +25,7 @@ import (
 )
 
 type Builder struct {
+	containerClassName                    string
 	prefix                                string
 	models                                []*ModelBuilder
 	handler                               http.Handler
@@ -111,6 +112,11 @@ func New() *Builder {
 	r.detailLayoutFunc = r.defaultLayout
 	stateful.Install(r.builder, r.dc)
 	return r
+}
+
+func (b *Builder) SetContainerClass(name string) {
+	b.containerClassName = name
+	return
 }
 
 func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {
@@ -1103,7 +1109,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
 navDrawer: true
-}`)...)
+}`)...).Class(b.containerClassName)
 
 		return
 	}
