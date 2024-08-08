@@ -264,7 +264,7 @@ var Messages_ja_JP = &Messages{
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
 	Versions:                "バージョン",
-	NewComponent:            "New Component",
+	NewComponent:            "New Component(JP)",
 	Settings:                "設定",
 	SelectElementMsg:        "コンテナを選択後、設定変更してください",
 

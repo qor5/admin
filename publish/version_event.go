@@ -97,24 +97,27 @@ func duplicateVersionAction(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc
 
 func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		utilMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, Messages_en_US).(*utils.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+
 		versionName := ctx.R.FormValue(paramVersionName)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DialogPortalName,
 			Body: web.Scope(
 				v.VDialog(
 					v.VCard(
-						v.VCardTitle(h.Text("Version")),
+						v.VCardTitle(h.Text(msgr.RenameVersion)),
 						v.VCardText(
 							v.VTextField().Attr(web.VField("VersionName", versionName)...).Variant(v.FieldVariantUnderlined),
 						),
 						v.VCardActions(
 							v.VSpacer(),
-							v.VBtn("Cancel").
+							v.VBtn(utilMsgr.Cancel).
 								Variant(v.VariantFlat).
 								Class("ml-2").
 								On("click", "locals.renameVersionDialog = false"),
 
-							v.VBtn("OK").
+							v.VBtn(utilMsgr.OK).
 								Color("primary").
 								Variant(v.VariantFlat).
 								Theme(v.ThemeDark).
