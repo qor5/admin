@@ -969,7 +969,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHightName).
 				IframeHeight(iframeValue).
-				Width(width).Attr("ref", "scrollIframe", "virtual-ele-text", msgr.NewComponent)
+				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewComponent)
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
 				if ctx.Param(paramContainerNew) != "" {
