@@ -232,11 +232,11 @@ var Messages_zh_CN = &Messages{
 }
 
 var Messages_ja_JP = &Messages{
-	Activities:   "アクティビティ",
+	Activities:   "作業履歴",
 	ActionAll:    "全て",
 	ActionView:   "表示",
 	ActionEdit:   "編集",
-	ActionCreate: "作成",
+	ActionCreate: "作成する",
 	ActionDelete: "削除",
 	ActionNote:   "ノート",
 
@@ -268,14 +268,14 @@ var Messages_ja_JP = &Messages{
 	LastEditedAtTemplate:          "{desc} に編集",
 	EditedNFieldsTemplate:         "{n}つのフィールドを編集しました",
 	MoreInfo:                      "詳細情報",
-	Created:                       "作成",
+	Created:                       "作成する",
 	Viewed:                        "表示",
 	Deleted:                       "削除",
 	PerformActionNoDetailTemplate: "{action} を実行",
 	PerformActionTemplate:         "{action} を実行し、{detail} を使用",
 	AddNote:                       "ノートを追加",
 	UnknownUser:                   "不明",
-	NoteCannotBeEmpty:             "ノートは空にできません",
+	NoteCannotBeEmpty:             "ノートは必須です",
 	FailedToCreateNote:            "ノートの作成に失敗しました",
 	SuccessfullyCreatedNote:       "ノートの作成に成功しました",
 	FailedToGetCurrentUser:        "現在のユーザーの取得に失敗しました",
@@ -293,8 +293,8 @@ var Messages_ja_JP = &Messages{
 
 	HeaderNotes: "ノート",
 
-	ActivityLogs: "アクティビティ履歴",
-	ActivityLog:  "アクティビティ履歴",
+	ActivityLogs: "作業履歴",
+	ActivityLog:  "作業履歴",
 
 	FilterTabsHasUnreadNotes: "未読ノート",
 }
