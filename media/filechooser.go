@@ -595,7 +595,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	}
 
 	if len(keyword) > 0 {
-		wh = wh.Where("file ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
+		wh = wh.Where("file::json->>'FileName' ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
 
 	var count int64

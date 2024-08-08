@@ -143,7 +143,7 @@ var Messages_zh_CN = &Messages{
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
 
 	InvalidPathMsg:          "无效的路径",
-	InvalidTitleMsg:         "无效的辩题",
+	InvalidTitleMsg:         "无效的标题",
 	InvalidNameMsg:          "无效的名称",
 	InvalidSlugMsg:          "无效的Slug",
 	ConflictSlugMsg:         "冲突的Slug",
