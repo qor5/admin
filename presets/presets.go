@@ -130,6 +130,11 @@ func (b *Builder) ContainerClass(name string) {
 	return
 }
 
+func (b *Builder) SetContainerClass(name string) {
+	b.containerClassName = name
+	return
+}
+
 func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {
 	return b.dc
 }
