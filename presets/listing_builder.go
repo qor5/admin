@@ -23,7 +23,10 @@ const (
 	ListingStyleNested ListingStyle = "Nested"
 )
 
-type ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
+type (
+	ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
+	CellProcessor    func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error)
+)
 
 type OrderableField struct {
 	FieldName string
@@ -42,6 +45,7 @@ type ListingBuilder struct {
 	newBtnFunc      ComponentFunc
 	pageFunc        web.PageFunc
 	cellWrapperFunc vx.CellWrapperFunc
+	cellProcessor   CellProcessor
 	Searcher        SearchFunc
 	searchColumns   []string
 	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
@@ -104,8 +108,20 @@ func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	return b
 }
 
+// Deprecated: Use WrapCell instead.
 func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilder) {
 	b.cellWrapperFunc = cwf
+	return b
+}
+
+func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *ListingBuilder) {
+	if b.cellProcessor == nil {
+		b.cellProcessor = w(func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			return cell, nil
+		})
+	} else {
+		b.cellProcessor = w(b.cellProcessor)
+	}
 	return b
 }
 
@@ -143,12 +159,6 @@ func (b *ListingBuilder) WrapColumns(w func(in ColumnsProcessor) ColumnsProcesso
 	} else {
 		b.columnsProcessor = w(b.columnsProcessor)
 	}
-	return b
-}
-
-// Deprecated: Use WrapColumns instead.
-func (b *ListingBuilder) DisplayColumnsProcessor(f ColumnsProcessor) (r *ListingBuilder) {
-	b.columnsProcessor = f
 	return b
 }
 

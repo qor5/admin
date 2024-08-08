@@ -313,8 +313,17 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				return in(model, params, ctx)
 			}
 		})
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		return cell
+	lb.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			compo := presets.ListingCompoFromEventContext(evCtx)
+			filter := MustFilterQuery(compo)
+			slug := obj.(presets.SlugEncoder).PrimarySlug()
+			filter.Set(filterKeySelected, slug)
+			cell.SetAttr("@click", stateful.ReloadAction(evCtx.R.Context(), compo, func(target *presets.ListingCompo) {
+				target.FilterQuery = filter.Encode()
+			}).Go())
+			return in(evCtx, cell, id, obj)
+		}
 	})
 	lb.Field("Version").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		compo := presets.ListingCompoFromEventContext(ctx)
@@ -324,7 +333,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		filter.Set(filterKeySelected, slug)
 		return h.Td().Children(
 			h.Div().Class("d-inline-flex align-center").Children(
-				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@change",
+				v.VRadio().ModelValue(slug).TrueValue(selected).Attr("@click.native.stop", true).Attr("@change",
 					stateful.ReloadAction(ctx.R.Context(), compo, func(target *presets.ListingCompo) {
 						target.FilterQuery = filter.Encode()
 					}).Go(),

@@ -417,13 +417,15 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 	lb.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent { return nil })
 	lb.RowMenu().Empty()
 	registerSelectFavorPostEvent(db, pb)
-	lb.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		cell.SetAttr("@click.self", web.Plaid().
-			Query("id", strings.Split(id, "_")[0]).
-			EventFunc(eventSelectFavorPost).
-			Go(),
-		)
-		return cell
+	lb.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			cell.SetAttr("@click", web.Plaid().
+				Query("id", strings.Split(id, "_")[0]).
+				EventFunc(eventSelectFavorPost).
+				Go(),
+			)
+			return in(evCtx, cell, id, obj)
+		}
 	})
 	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
 		return []*vx.FilterItem{
