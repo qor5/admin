@@ -53,6 +53,8 @@ type Messages struct {
 	NewComponent            string
 	Settings                string
 	SelectElementMsg        string
+	StartBuildingMsg        string
+	StartBuildingSubMsg     string
 
 	ListHeaderID          string
 	ListHeaderTitle       string
@@ -125,6 +127,8 @@ var Messages_en_US = &Messages{
 	NewComponent:            "New Component",
 	Settings:                "settings",
 	SelectElementMsg:        "Select an element and change the setting here.",
+	StartBuildingMsg:        "Start building a page",
+	StartBuildingSubMsg:     "By Browsing and selecting components from the library",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "Title",
@@ -196,6 +200,8 @@ var Messages_zh_CN = &Messages{
 	NewComponent:            "新增组件",
 	Settings:                "设置",
 	SelectElementMsg:        "选择一个组件，这里会变成设置",
+	StartBuildingMsg:        "开始构建页面",
+	StartBuildingSubMsg:     "从库中选择组件",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "标题",
@@ -264,9 +270,11 @@ var Messages_ja_JP = &Messages{
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
 	Versions:                "バージョン",
-	NewComponent:            "New Component",
+	NewComponent:            "New Component(JP)",
 	Settings:                "設定",
 	SelectElementMsg:        "コンテナを選択後、設定変更してください",
+	StartBuildingMsg:        "Start building a page (JP)",
+	StartBuildingSubMsg:     "By Browsing and selecting components from the library (JP)",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "タイトル",

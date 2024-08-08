@@ -568,6 +568,15 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "View Category Editing Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_categories?__execute_event__=presets_Edit&id=1", nil)
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Editing Page Category 1", "Name", "Path", "Description"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {

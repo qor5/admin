@@ -84,6 +84,8 @@ func (b *ListEditorBuilder) SortListItemsEvent(v string) (r *ListEditorBuilder) 
 
 func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	ctx := web.MustGetEventContext(c)
+	msgr := MustGetMessages(ctx.R)
+
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
 	if b.value != nil {
@@ -188,7 +190,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 			h.Div(
 				form,
 				h.If(!b.fieldContext.Disabled,
-					VBtn("Add row").
+					VBtn(msgr.AddRow).
 						Variant(VariantText).
 						Color("primary").
 						Attr("@click", web.Plaid().
