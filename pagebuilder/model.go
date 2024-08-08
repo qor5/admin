@@ -797,7 +797,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 		isReadonly = true
 	}
 	var comps []h.HTMLComponent
-	comps, err = b.renderContainers(ctx, pageID, pageVersion, locale, isEditor, isReadonly)
+	comps, err = b.renderContainers(ctx, obj, pageID, pageVersion, locale, isEditor, isReadonly)
 	if err != nil {
 		return
 	}
@@ -1006,7 +1006,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 	return
 }
 
-func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
 	err = withLocale(
 		b.builder,
@@ -1025,8 +1025,8 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 		if ec.container.Hidden {
 			continue
 		}
-		obj := ec.builder.NewModel()
-		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
+		containerObj := ec.builder.NewModel()
+		err = b.db.FirstOrCreate(containerObj, "id = ?", ec.container.ModelID).Error
 		if err != nil {
 			return
 		}
@@ -1036,8 +1036,9 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 			Device:      device,
 			ContainerId: ec.container.PrimarySlug(),
 			DisplayName: ec.container.DisplayName,
+			Obj:         obj,
 		}
-		pure := ec.builder.renderFunc(obj, &input, ctx)
+		pure := ec.builder.renderFunc(containerObj, &input, ctx)
 
 		r = append(r, b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, isReadonly, i == 0, i == len(cbs)-1,
 			ec.builder.getContainerDataID(int(ec.container.ModelID)), ec.container.ModelName, &input))

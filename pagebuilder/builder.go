@@ -40,6 +40,7 @@ type RenderInput struct {
 	Device      string
 	ContainerId string
 	DisplayName string
+	Obj         interface{}
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
