@@ -325,6 +325,8 @@ github.com/qor5/x/v3 v3.0.7-0.20240808085055-02376b65a3f9 h1:fuCaJ519NO5SL2LryGK
 github.com/qor5/x/v3 v3.0.7-0.20240808085055-02376b65a3f9/go.mod h1:p8LBZGmJ9pozop2jMACV5tN/1gkpAskteOhlwcfFxpw=
 github.com/qor5/x/v3 v3.0.7-0.20240808103450-13664afa0ba5 h1:GIIq/qk4VzVYHQMDJ++lHwa6L6y1O2yCWzXUX/p6CQw=
 github.com/qor5/x/v3 v3.0.7-0.20240808103450-13664afa0ba5/go.mod h1:p8LBZGmJ9pozop2jMACV5tN/1gkpAskteOhlwcfFxpw=
+github.com/qor5/x/v3 v3.0.7-0.20240809065519-d95284b78343 h1:teAzU+82V7wEje9accu0ulvtidOr5+cgCZFUAO5JmJE=
+github.com/qor5/x/v3 v3.0.7-0.20240809065519-d95284b78343/go.mod h1:p8LBZGmJ9pozop2jMACV5tN/1gkpAskteOhlwcfFxpw=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
