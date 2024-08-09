@@ -606,9 +606,16 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 	for _, builder := range b.builder.containerBuilders {
-		if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
-			cons = append(cons, builder)
+		if builder.onlyPages {
+			if b.name == utils.GetObjectName(&Page{}) {
+				cons = append(cons, builder)
+			}
+		} else {
+			if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
+				cons = append(cons, builder)
+			}
 		}
+
 	}
 	return
 }
@@ -1056,7 +1063,7 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, 
 	return
 }
 
-func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interface{}, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
 	var (
 		modelName       = ctx.Param(paramModelName)
 		sharedContainer = ctx.Param(paramSharedContainer)
@@ -1097,13 +1104,14 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 		Device:      device,
 		ContainerId: "",
 		DisplayName: modelName,
+		Obj:         obj,
 	}
-	obj := containerBuilder.NewModel()
-	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error
+	containerObj := containerBuilder.NewModel()
+	err = b.db.FirstOrCreate(containerObj, "id = ?", modelID).Error
 	if err != nil {
 		return
 	}
-	pure := containerBuilder.renderFunc(obj, &input, ctx)
+	pure := containerBuilder.renderFunc(containerObj, &input, ctx)
 	r = b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, IsReadonly, false, false,
 		containerBuilder.getContainerDataID(modelID), modelName, &input)
 	return
@@ -1420,7 +1428,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		}
 		body = VImg().Src(cover)
 	} else {
-		previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
+		previewContainer, err = b.renderPreviewContainer(ctx, obj, locale, false, true)
 		if err != nil {
 			return
 		}
