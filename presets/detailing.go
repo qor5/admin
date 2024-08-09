@@ -69,7 +69,7 @@ func (b *DetailingBuilder) GetDrawer() bool {
 }
 
 // let u easier to adjust the detailing page by each project
-func (b *DetailingBuilder) SetContainerClass(layoutVal DetailingLayout) (r *DetailingBuilder) {
+func (b *DetailingBuilder) ContainerClass(layoutVal DetailingLayout) (r *DetailingBuilder) {
 	b.layouts = append(b.layouts, layoutVal)
 	return b
 }
