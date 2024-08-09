@@ -125,12 +125,7 @@ func New() *Builder {
 	return b
 }
 
-func (b *Builder) SetContainerClass(name string) {
-	b.containerClassName = name
-	return
-}
-
-func (b *Builder) SetContainerClass(name string) {
+func (b *Builder) ContainerClass(name string) {
 	b.containerClassName = name
 	return
 }
