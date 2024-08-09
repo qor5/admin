@@ -47,9 +47,21 @@ func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder
 		bodyConfig.ItemTitle = "body"
 		return []*vuetifyx.FilterItem{
 			{
+				Key:      "select",
+				Label:    "ID",
+				ItemType: vuetifyx.ItemTypeSelect,
+				// %s is the condition. e.g. >, >=, =, <, <=, like，
+				// ? is the value of selected option
+				SQLCondition: `id %s ?`,
+				Options: []*vuetifyx.SelectItem{
+					{Text: "test001", Value: "1"},
+					{Text: "test002", Value: "2"},
+				},
+			},
+			{
 				Key:      "title",
 				Label:    "Title",
-				ItemType: vuetifyx.ItemTypeSelect,
+				ItemType: vuetifyx.AutoCompleteTypeSelect,
 				// %s is the condition. e.g. >, >=, =, <, <=, like，
 				// ? is the value of selected option
 				SQLCondition:           `title ilike ?`,
@@ -58,7 +70,7 @@ func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder
 			{
 				Key:      "body",
 				Label:    "Body",
-				ItemType: vuetifyx.ItemTypeSelect,
+				ItemType: vuetifyx.AutoCompleteTypeSelect,
 				// %s is the condition. e.g. >, >=, =, <, <=, like，
 				// ? is the value of selected option
 				SQLCondition:           `body ilike ?`,
