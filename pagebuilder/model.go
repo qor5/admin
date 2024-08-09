@@ -606,9 +606,16 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 	for _, builder := range b.builder.containerBuilders {
-		if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
-			cons = append(cons, builder)
+		if builder.onlyPages {
+			if b.name == utils.GetObjectName(&Page{}) {
+				cons = append(cons, builder)
+			}
+		} else {
+			if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
+				cons = append(cons, builder)
+			}
 		}
+
 	}
 	return
 }

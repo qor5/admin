@@ -1320,6 +1320,7 @@ type ContainerBuilder struct {
 	renderFunc   RenderFunc
 	cover        string
 	group        string
+	onlyPages    bool
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -1371,6 +1372,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) OnlyPages(v bool) *ContainerBuilder {
+	b.onlyPages = v
+	return b
+}
 func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 	if b.mb == nil {
 		return b
@@ -1691,8 +1696,9 @@ type (
 	}
 )
 
-func (b *Builder) PreviewDevices(devices ...Device) {
+func (b *Builder) PreviewDevices(devices ...Device) *Builder {
 	b.devices = devices
+	return b
 }
 
 func (b *Builder) getDevices() []Device {
