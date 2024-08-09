@@ -86,6 +86,8 @@ if (payload && payload.ids && payload.ids.length > 0) {
 `
 
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
+	ctx = context.WithValue(ctx, ctxKeyListingCompo{}, c)
+
 	evCtx, _ := c.MustGetEventContext(ctx)
 	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
 
