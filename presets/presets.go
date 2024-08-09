@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -18,6 +17,7 @@ import (
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
@@ -62,6 +62,7 @@ type Builder struct {
 	menuOrder                             []interface{}
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
+	notFoundHandler                       http.Handler
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -82,9 +83,11 @@ const (
 	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
+var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2|js\.map)$`)
+
 func New() *Builder {
 	l, _ := zap.NewDevelopment()
-	r := &Builder{
+	b := &Builder{
 		logger:  l,
 		builder: web.New(),
 		dc:      stateful.NewDependencyCenter(),
@@ -106,11 +109,19 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
-	r.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, r.openConfirmDialog)
-	r.layoutFunc = r.defaultLayout
-	r.detailLayoutFunc = r.defaultLayout
-	stateful.Install(r.builder, r.dc)
-	return r
+	b.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, b.openConfirmDialog)
+	b.layoutFunc = b.defaultLayout
+	b.detailLayoutFunc = b.defaultLayout
+	b.notFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if staticFileRe.MatchString(strings.ToLower(r.URL.Path)) {
+			http.NotFound(w, r)
+			return
+		}
+		b.wrap(nil, b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig)).ServeHTTP(w, r)
+	})
+
+	stateful.Install(b.builder, b.dc)
+	return b
 }
 
 func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {
@@ -1347,19 +1358,19 @@ func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
 }
 
 func (b *Builder) notFound(handler http.Handler) http.Handler {
-	notFoundHandler := b.wrap(
-		nil,
-		b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig),
-	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedResponse := &responseWriterWrapper{w, http.StatusOK}
 		handler.ServeHTTP(capturedResponse, r)
 		if capturedResponse.statusCode == http.StatusNotFound {
 			// If no other handler wrote to the response, assume 404 and write our custom response.
-			notFoundHandler.ServeHTTP(w, r)
+			b.notFoundHandler.ServeHTTP(w, r)
 		}
 		return
 	})
+}
+
+func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)) {
+	b.notFoundHandler = w(b.notFoundHandler)
 }
 
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
@@ -1401,7 +1412,7 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 
 func (b *Builder) Build() {
 	mns := modelNames(b.models)
-	if len(slices.Compact(mns)) != len(mns) {
+	if len(lo.Uniq(mns)) != len(mns) {
 		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
 	b.initMux()
