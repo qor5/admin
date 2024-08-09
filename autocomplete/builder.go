@@ -2,15 +2,17 @@ package autocomplete
 
 import (
 	"fmt"
+	"net/http"
+	"reflect"
+	"strings"
+
+	"github.com/samber/lo"
+
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"net/http"
-	"reflect"
-	"slices"
-	"strings"
 )
 
 type (
@@ -30,6 +32,7 @@ func New() *Builder {
 		logger: l,
 	}
 }
+
 func (b *Builder) NewModelBuilder(model interface{}) (mb *ModelBuilder) {
 	mb = &ModelBuilder{p: b, model: model}
 	mb.modelType = reflect.TypeOf(model)
@@ -48,27 +51,32 @@ func (b *Builder) Model(v interface{}) (r *ModelBuilder) {
 	b.models = append(b.models, r)
 	return r
 }
+
 func (b *Builder) modelNames() (r []string) {
 	for _, m := range b.models {
 		r = append(r, m.uriName)
 	}
 	return
 }
+
 func (b *Builder) DB(v *gorm.DB) *Builder {
 	b.db = v
 	return b
 }
+
 func (b *Builder) Prefix(v string) *Builder {
 	b.prefix = v
 	return b
 }
+
 func (b *Builder) Logger(v *zap.Logger) *Builder {
 	b.logger = v
 	return b
 }
+
 func (b *Builder) Build() {
 	mns := b.modelNames()
-	if len(slices.Compact(mns)) != len(mns) {
+	if len(lo.Uniq(mns)) != len(mns) {
 		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
 	b.initMux()
@@ -88,6 +96,7 @@ func (b *Builder) initMux() {
 	}
 	b.handler = mux
 }
+
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
 		b.Build()

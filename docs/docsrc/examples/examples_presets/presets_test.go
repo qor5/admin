@@ -59,6 +59,19 @@ func TestPresetsCommon(t *testing.T) {
 			},
 		},
 		{
+			Name:  "Not Found Assets",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/assets/vuetify.min.js.map", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"404 page not found"},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				if w.Code != http.StatusNotFound {
+					t.Errorf("Expected HTTP 404, got %v", w.Code)
+				}
+			},
+		},
+		{
 			Name:  "Found",
 			Debug: true,
 			ReqFunc: func() *http.Request {
