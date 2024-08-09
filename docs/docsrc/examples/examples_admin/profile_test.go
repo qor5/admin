@@ -2,6 +2,7 @@ package examples_admin
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -100,6 +101,29 @@ func TestProfileExample(t *testing.T) {
 				return httptest.NewRequest("GET", "/", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "clicked change password", "Change Password", "Logout"},
+		},
+		{
+			Name:  "Index Page with PrependCompos",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb = presets.New()
+				profileExample(pb, TestDB, currentProfileUser, func(pb *plogin.ProfileBuilder) {
+					pb.DisableNotification(true).LogoutURL("auth/logout").
+						PrependCompos(func(ctx context.Context, profileCompo *plogin.ProfileCompo) ([]h.HTMLComponent, error) {
+							profileCompoFromCtx := plogin.ProfileCompoFromContext(ctx)
+
+							return []h.HTMLComponent{
+								h.Div().Text("PrependCompos"),
+								h.Div().Text(fmt.Sprintf("ProfileCompoEquals: %t", profileCompo == profileCompoFromCtx)),
+							}, nil
+						})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "PrependCompos", "ProfileCompoEquals: true"},
 		},
 	}
 

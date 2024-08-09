@@ -80,6 +80,7 @@ type ProfileBuilder struct {
 	currentProfileFunc  func(ctx context.Context) (*Profile, error)
 	renameCallback      func(ctx context.Context, newName string) error
 	customizeButtons    func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error)
+	prependCompos       func(ctx context.Context, profileCompo *ProfileCompo) ([]h.HTMLComponent, error)
 }
 
 func NewProfileBuilder(
@@ -109,6 +110,11 @@ func (b *ProfileBuilder) DisableNotification(v bool) *ProfileBuilder {
 
 func (b *ProfileBuilder) CustomizeButtons(v func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error)) *ProfileBuilder {
 	b.customizeButtons = v
+	return b
+}
+
+func (b *ProfileBuilder) PrependCompos(f func(ctx context.Context, profileCompo *ProfileCompo) ([]h.HTMLComponent, error)) *ProfileBuilder {
+	b.prependCompos = f
 	return b
 }
 
@@ -144,12 +150,28 @@ func (c *ProfileCompo) CompoID() string {
 	return fmt.Sprintf("ProfileCompo:%s", c.ID)
 }
 
+type ctxKeyProfileCompo struct{}
+
+func ProfileCompoFromContext(ctx context.Context) *ProfileCompo {
+	v, _ := ctx.Value(ctxKeyProfileCompo{}).(*ProfileCompo)
+	return v
+}
+
+func ProfileCompoFromEventContext(evCtx *web.EventContext) *ProfileCompo {
+	return ProfileCompoFromContext(evCtx.R.Context())
+}
+
 func (c *ProfileCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
 	evCtx := web.MustGetEventContext(ctx)
 	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 }
 
 func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
+	ctx = context.WithValue(ctx, ctxKeyProfileCompo{}, c)
+
+	evCtx := web.MustGetEventContext(ctx)
+	evCtx.WithContextValue(ctxKeyProfileCompo{}, c)
+
 	user, err := c.b.currentProfileFunc(ctx)
 	if err != nil {
 		return nil, err
@@ -161,27 +183,39 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	return stateful.Actionable(ctx, c, web.Scope().VSlot("{ locals: xlocals }").Init("{ userCardVisible: false }").Children(
-		h.Div().Class("d-flex align-center ga-2 pa-3").Children(
-			v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
-				Text(activity.FirstUpperWord(user.Name)).Children(
-				h.Iff(user.Avatar != "", func() h.HTMLComponent {
-					return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
-				}),
-			),
-			h.Div().Class("d-flex flex-column flex-1-1").StyleIf("max-width: 119px", showBellCompo).Children(
-				h.Div().Class("d-flex align-center ga-2 pt-1").Children(
-					h.Div().Attr("v-pre", true).Text(user.Name).Class("flex-1-1 text-subtitle-2 text-secondary text-truncate"),
-					userCardCompo,
-				),
-				h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
-			),
-			h.Iff(showBellCompo, func() h.HTMLComponent {
-				return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
-					c.bellCompo(ctx, user.NotifCounts),
-				)
+	children := []h.HTMLComponent{}
+	if c.b.prependCompos != nil {
+		prependCompos, err := c.b.prependCompos(ctx, c)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, prependCompos...)
+	}
+	children = append(children, []h.HTMLComponent{
+		v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
+			Text(activity.FirstUpperWord(user.Name)).Children(
+			h.Iff(user.Avatar != "", func() h.HTMLComponent {
+				return v.VImg().Attr("alt", user.Name).Attr("src", user.Avatar)
 			}),
-		).Attr("@click", "xlocals.userCardVisible = !xlocals.userCardVisible"),
+		),
+		h.Div().Class("d-flex flex-column flex-1-1").
+			StyleIf("max-width: 119px", showBellCompo).StyleIf("max-width: 184px", !showBellCompo).Children(
+			h.Div().Class("d-flex align-center ga-2 pt-1").Children(
+				h.Div().Attr("v-pre", true).Text(user.Name).Class("flex-1-1 text-subtitle-2 text-secondary text-truncate"),
+				userCardCompo,
+			),
+			h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
+		),
+		h.Iff(showBellCompo, func() h.HTMLComponent {
+			return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
+				c.bellCompo(ctx, user.NotifCounts),
+			)
+		}),
+	}...)
+	return stateful.Actionable(ctx, c, web.Scope().VSlot("{ locals: xlocals }").Init("{ userCardVisible: false }").Children(
+		h.Div().Class("d-flex align-center ga-2 pa-3").Attr("@click", "xlocals.userCardVisible = !xlocals.userCardVisible").Children(
+			children...,
+		),
 	)).MarshalHTML(ctx)
 }
 
@@ -301,7 +335,7 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 								h.Div().Attr("v-if", "!xlocals.editShow").Class("d-flex align-center ga-2").Children(
 									h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-1 font-weight-medium text-truncate"),
 									v.VBtn("").Size(20).Variant(v.VariantText).Color(v.ColorGreyDarken1).
-										Attr("@click", "xlocals.editShow = true").Children(
+										Attr("@click", fmt.Sprintf("xlocals.editShow = true; xlocals.name = %q", user.Name)).Children(
 										v.VIcon("mdi-pencil-outline"),
 									),
 								),
