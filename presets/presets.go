@@ -394,12 +394,24 @@ type defaultMenuIconRE struct {
 }
 
 var defaultMenuIconREs = []defaultMenuIconRE{
+	// announce
+	{re: regexp.MustCompile(`\bannouncements?\b`), icon: "mdi-bullhorn-variant-outline"},
+	// Campaign
+	{re: regexp.MustCompile(`\bcampaigns?\b`), icon: "mdi-clock-time-three-outline"},
+	// categories
+	{re: regexp.MustCompile(`\bcategories?\b`), icon: "mdi-shape-plus"},
+	// coupon
+	{re: regexp.MustCompile(`\bcoupons?\b`), icon: "mdi-cash-multiple"},
 	// user
 	{re: regexp.MustCompile(`\busers?|members?\b`), icon: "mdi-account"},
 	// store
 	{re: regexp.MustCompile(`\bstores?\b`), icon: "mdi-store"},
 	// order
 	{re: regexp.MustCompile(`\borders?\b`), icon: "mdi-cart"},
+	// featured product
+	{re: regexp.MustCompile(`\bfeatured?\b`), icon: "mdi-creation"},
+	// product
+	{re: regexp.MustCompile(`\bproducts?\b`), icon: "mdi-format-list-bulleted"},
 	// product
 	{re: regexp.MustCompile(`\bproducts?\b`), icon: "mdi-format-list-bulleted"},
 	// post
@@ -415,7 +427,9 @@ var defaultMenuIconREs = []defaultMenuIconRE{
 	// dashboard
 	{re: regexp.MustCompile(`\bdashboard\b`), icon: "mdi-view-dashboard"},
 	// setting
-	{re: regexp.MustCompile(`\bsettings?\b`), icon: "mdi-cog"},
+	{re: regexp.MustCompile(`\bsettings?|config?\b`), icon: "mdi-cog"},
+	// email
+	{re: regexp.MustCompile(`\bemail?\b`), icon: "mdi-email-outline"},
 }
 
 func defaultMenuIcon(mLabel string) string {
