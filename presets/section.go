@@ -391,7 +391,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Size(SizeXSmall).Variant("text").
 		PrependIcon("mdi-pencil-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
+		Attr("v-show", fmt.Sprintf("%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoEditDetailingField).
