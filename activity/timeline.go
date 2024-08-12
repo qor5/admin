@@ -67,18 +67,23 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 				}),
 			),
 			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("flex-grow-1 d-flex flex-column mt-4").Style("position: relative").Children(
-				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label("").Variant(v.VariantOutlined).
+				v.VTextarea().Rows(2).Attr(":row-height", "12").Clearable(false).AutoGrow(true).Label("").Variant(v.VariantOutlined).
+					Color(v.ColorPrimary).Class("text-grey-darken-3 textarea-with-bottom-btns").
 					Attr(web.VField("note", note.Note)...),
-				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
-						Attr("@click", "xlocals.showEditBox = false"),
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-check").
+				h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
+					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
+						Attr("@click", "xlocals.showEditBox = false").Children(
+						v.VIcon("mdi-close").Size(16),
+					),
+					v.VBtn("").Variant(v.VariantText).Color(v.ColorPrimary).Size(16).
 						Attr("@click", stateful.PostAction(ctx, c,
 							c.UpdateNote, UpdateNoteRequest{
 								LogID: log.ID,
 							},
 							stateful.WithAppendFix(`v.request.note = form["note"];`),
-						).Go()),
+						).Go()).Children(
+						v.VIcon("mdi-check").Size(16),
+					),
 				),
 			),
 		)
@@ -126,16 +131,21 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").
 				Attr("@click", "xlocals.showEditBox = true"),
 			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
-				v.VTextarea().Rows(3).Attr("row-height", "12").Clearable(false).AutoGrow(true).Label(msgr.AddNote).Variant(v.VariantOutlined).
+				v.VTextarea().Rows(2).Attr(":row-height", "12").Clearable(false).AutoGrow(true).Label("").Placeholder(msgr.AddNote).Variant(v.VariantOutlined).
+					Color(v.ColorPrimary).Class("text-grey-darken-3 textarea-with-bottom-btns").
 					Attr(web.VField("note", "")...),
-				h.Div().Class("d-flex flex-row ga-1").Style("position: absolute; top: 6px; right: 6px").Children(
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-close").
-						Attr("@click", "xlocals.showEditBox = false"),
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-check").
+				h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
+					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
+						Attr("@click", "xlocals.showEditBox = false").Children(
+						v.VIcon("mdi-close").Size(16),
+					),
+					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
 						Attr("@click", stateful.PostAction(ctx, c,
 							c.CreateNote, CreateNoteRequest{},
 							stateful.WithAppendFix(`v.request.note = form["note"];`),
-						).Go()),
+						).Go()).Children(
+						v.VIcon("mdi-check").Size(16),
+					),
 				),
 			),
 		),
