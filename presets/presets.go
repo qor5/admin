@@ -125,9 +125,9 @@ func New() *Builder {
 	return b
 }
 
-func (b *Builder) ContainerClass(name string) {
+func (b *Builder) ContainerClass(name string) (r *Builder) {
 	b.containerClassName = name
-	return
+	return b
 }
 
 func (b *Builder) GetDependencyCenter() *stateful.DependencyCenter {

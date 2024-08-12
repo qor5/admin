@@ -26,7 +26,7 @@ const (
 )
 
 const (
-	layoutCenter DetailingLayout = "layout-center"
+	LayoutCenter DetailingLayout = "layout-center"
 )
 
 type DetailingBuilder struct {
