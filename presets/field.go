@@ -666,12 +666,14 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			if len(rowsComp) > 0 {
 				var titleComp h.HTMLComponent
 				if t.Title != "" {
-					titleComp = h.Label(i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), t.Title)).Class("v-label theme--light text-caption")
+					titleComp = h.H2(i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), t.Title)).Class("section-title")
 				}
 				comp = h.Div(
-					titleComp,
-					v.VCard(rowsComp...).Variant(v.VariantOutlined).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
-				)
+					h.Div(titleComp).Class("section-title-wrap"),
+					h.Div(
+						v.VCard(rowsComp...).Variant(v.VariantFlat).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4 section-body"),
+					).Class("section-body border-b"),
+				).Class("section-wrap")
 			}
 		default:
 			panic("unknown fields layout, must be string/[]string/*FieldsSection")
