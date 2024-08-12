@@ -139,7 +139,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"<v-text-field type='text' :variant='\"underlined\"' v-model='form[\"name_section.Name\"]' v-assign='[form, {\"name_section.Name\":\"OldName\"}]' label='Name' :disabled='false'></v-text-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :disabled='false' class='section-field'></v-text-field>"},
 			},
 			Role: models.RoleViewer,
 		},
@@ -154,7 +154,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"<v-text-field type='text' :variant='\"underlined\"' v-model='form[\"name_section.Name\"]' v-assign='[form, {\"name_section.Name\":\"OldName\"}]' label='Name' :disabled='false'></v-text-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :disabled='false' class='section-field'></v-text-field>"},
 			},
 			Role: models.RoleEditor,
 		},
@@ -233,7 +233,7 @@ func TestSectionEditPerm(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{":icon='\"mdi-square-edit-outline\"' v-show='isHovering&&true&&true'"},
+				ExpectPortalUpdate0ContainsInOrder: []string{":prepend-icon='\"mdi-pencil-outline\"' v-show='true&&true'"},
 			},
 			Role: models.RoleEditor,
 		},
@@ -248,7 +248,7 @@ func TestSectionEditPerm(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{":icon='\"mdi-square-edit-outline\"' v-show='isHovering&&true&&false'"},
+				ExpectPortalUpdate0ContainsInOrder: []string{":prepend-icon='\"mdi-pencil-outline\"' v-show='true&&false'"},
 			},
 			Role: models.RoleViewer,
 		},
