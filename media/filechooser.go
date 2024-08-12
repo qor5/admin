@@ -753,22 +753,24 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 				VCol(bc),
 			),
 			row,
-			VRow(
-				VCol().Cols(1),
-				VCol(
-					VPagination().
-						Length(pagesCount).
-						ModelValue(int(currentPageInt)).
-						Attr("@update:model-value", web.Plaid().
-							FieldValue(currentPageName(field), web.Var("$event")).
-							EventFunc(ImageJumpPageEvent).
-							Query(paramTab, tab).
-							Query(ParamParentID, parentID).
-							Query(ParamField, field).
-							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
-							Query(ParamCfg, h.JSONString(cfg)).
-							Go()),
-				).Cols(10),
+			h.If(len(files) > 0,
+				VRow(
+					VCol().Cols(1),
+					VCol(
+						VPagination().
+							Length(pagesCount).
+							ModelValue(int(currentPageInt)).
+							Attr("@update:model-value", web.Plaid().
+								FieldValue(currentPageName(field), web.Var("$event")).
+								EventFunc(ImageJumpPageEvent).
+								Query(paramTab, tab).
+								Query(ParamParentID, parentID).
+								Query(ParamField, field).
+								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+								Query(ParamCfg, h.JSONString(cfg)).
+								Go()),
+					).Cols(10),
+				),
 			),
 			VCol().Cols(1),
 			VRow(
@@ -844,6 +846,6 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		Attr("@click:clear", `vars.searchMsg="";`+event).
 		Attr("@keyup.enter", event).
 		Children(
-			web.Slot(VIcon("mdi-magnify")).Name("append-inner"),
+			web.Slot(VIcon("mdi-magnify").Attr("@click", event)).Name("append-inner"),
 		).MaxWidth(320)
 }
