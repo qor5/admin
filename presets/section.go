@@ -480,7 +480,6 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 
 	if b.label != "" && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
-		// label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
 		content.AppendChildren(
 			h.Div(
 				h.H2(lb).Class("section-title"),
