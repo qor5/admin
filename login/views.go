@@ -383,7 +383,9 @@ func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar st
 			),
 		),
 	).MaxWidth("600px").
-		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)),
+		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
+		Persistent(true).
+		NoClickAnimation(true),
 	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
