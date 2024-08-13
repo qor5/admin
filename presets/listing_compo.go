@@ -193,12 +193,27 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	reloadAction := stateful.ReloadAction(ctx, c,
-		func(target *ListingCompo) {
-			target.Page = 0
-		},
-		stateful.WithAppendFix(`v.compo.keyword = xlocals.keyword`),
-	).ThenScript(ListingCompo_JsScrollToTop).Go()
+	newReloadAction := func(clear bool) string {
+		targetKeyword := `xlocals.keyword`
+		if clear {
+			targetKeyword = `""`
+		}
+		return fmt.Sprintf(`
+			if (%s === %q) {
+				return;
+			}
+			%s
+			`,
+			targetKeyword,
+			c.Keyword,
+			stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+				},
+				stateful.WithAppendFix(`v.compo.keyword = `+targetKeyword),
+			).ThenScript(ListingCompo_JsScrollToTop).Go(),
+		)
+	}
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
 		VTextField().
 			Id(c.textFieldSearchID()).
@@ -209,15 +224,12 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Clearable(true).
 			HideDetails(true).
 			SingleLine(true).
-			ModelValue(c.Keyword).
 			Attr("v-model", "xlocals.keyword").
-			Attr("@keyup.enter", reloadAction).
-			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-				target.Page = 0
-				target.Keyword = ""
-			}).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
+			Attr("@keyup.enter", newReloadAction(false)).
+			Attr("@click:clear", newReloadAction(true)).
 			Children(
-				web.Slot(VIcon("mdi-magnify").Attr("@click", reloadAction)).Name("append-inner"),
+				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction(false))).Name("append-inner"),
 			),
 	)
 }
