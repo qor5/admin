@@ -10,6 +10,7 @@ import (
 
 type Messages struct {
 	SuccessfullyUpdated                        string
+	SuccessfullyCreated                        string
 	Search                                     string
 	New                                        string
 	Update                                     string
@@ -146,6 +147,7 @@ func (msgr *Messages) HumanizeTime(then time.Time) string {
 
 var Messages_en_US = &Messages{
 	SuccessfullyUpdated:            "Successfully Updated",
+	SuccessfullyCreated:            "Successfully Created",
 	Search:                         "Search",
 	New:                            "New",
 	Update:                         "Update",
@@ -223,6 +225,7 @@ var Messages_en_US = &Messages{
 
 var Messages_zh_CN = &Messages{
 	SuccessfullyUpdated:            "成功更新了",
+	SuccessfullyCreated:            "成功创建了",
 	Search:                         "搜索",
 	New:                            "新建",
 	Update:                         "更新",
@@ -300,6 +303,7 @@ var Messages_zh_CN = &Messages{
 
 var Messages_ja_JP = &Messages{
 	SuccessfullyUpdated:            "更新に成功しました",
+	SuccessfullyCreated:            "作成に成功しました",
 	Search:                         "検索",
 	New:                            "新規作成",
 	Update:                         "更新",

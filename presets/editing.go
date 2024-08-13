@@ -428,8 +428,10 @@ func (b *EditingBuilder) doUpdate(
 	r *web.EventResponse,
 	// will not close drawer/dialog
 	silent bool,
-) (err error) {
+) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
+	created = id == ""
+
 	usingB := b
 	if b.mb.creating != nil && id == "" {
 		usingB = b.mb.creating
@@ -438,32 +440,32 @@ func (b *EditingBuilder) doUpdate(
 	obj, vErr := usingB.FetchAndUnmarshal(id, true, ctx)
 	if vErr.HaveErrors() {
 		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
-		return &vErr
+		return created, &vErr
 	}
 
 	if len(id) > 0 {
 		if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
-			return perm.PermissionDenied
+			return created, perm.PermissionDenied
 		}
 	} else {
 		if b.mb.Info().Verifier().Do(PermCreate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
-			return perm.PermissionDenied
+			return created, perm.PermissionDenied
 		}
 	}
 
 	if usingB.Validator != nil {
 		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
 			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
-			return &vErr
+			return created, &vErr
 		}
 	}
 
 	err1 := usingB.Saver(obj, id, ctx)
 	if err1 != nil {
 		usingB.UpdateOverlayContent(ctx, r, obj, "", err1)
-		return err1
+		return created, err1
 	}
 
 	if id == "" {
@@ -505,10 +507,14 @@ func (b *EditingBuilder) doUpdate(
 }
 
 func (b *EditingBuilder) defaultUpdate(ctx *web.EventContext) (r web.EventResponse, err error) {
-	uErr := b.doUpdate(ctx, &r, false)
+	created, uErr := b.doUpdate(ctx, &r, false)
 	if uErr == nil {
 		msgr := MustGetMessages(ctx.R)
-		ShowMessage(&r, msgr.SuccessfullyUpdated, "")
+		if created {
+			ShowMessage(&r, msgr.SuccessfullyCreated, "")
+		} else {
+			ShowMessage(&r, msgr.SuccessfullyUpdated, "")
+		}
 	}
 	return r, nil
 }
@@ -517,7 +523,8 @@ func (b *EditingBuilder) SaveOverlayContent(
 	ctx *web.EventContext,
 	r *web.EventResponse,
 ) (err error) {
-	return b.doUpdate(ctx, r, true)
+	_, err = b.doUpdate(ctx, r, true)
+	return err
 }
 
 func (b *EditingBuilder) RunSetterFunc(ctx *web.EventContext, removeDeletedAndSort bool, toObj interface{}) (vErr web.ValidationErrors) {
