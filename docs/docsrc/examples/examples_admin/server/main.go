@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
+
+	"github.com/qor5/admin/v3/autocomplete"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
@@ -13,10 +14,15 @@ import (
 	"github.com/theplant/osenv"
 )
 
-var port = osenv.Get("PORT", "The port to serve on", "7800")
+var (
+	host = osenv.Get("HOST", "The host to serve the admin on", "")
+	port = osenv.Get("PORT", "The port to serve on", "7800")
+)
 
 func main() {
-	fmt.Println("Starting docs at :" + port)
+	addr := host + ":" + port
+	fmt.Println("Starting docs at http://" + addr)
+
 	mux := http.NewServeMux()
 	examples_vuetify.Mux(mux)
 
@@ -33,7 +39,7 @@ func main() {
 	)
 	mux.Handle("/", web.New().Page(im.Page))
 
-	err := http.ListenAndServe(":"+port, mux)
+	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		panic(err)
 	}
