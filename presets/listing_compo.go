@@ -193,12 +193,23 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	reloadAction := stateful.ReloadAction(ctx, c,
-		func(target *ListingCompo) {
-			target.Page = 0
-		},
-		stateful.WithAppendFix(`v.compo.keyword = xlocals.keyword`),
-	).ThenScript(ListingCompo_JsScrollToTop).Go()
+	newReloadAction := func() string {
+		return fmt.Sprintf(`
+			const targetKeyword = xlocals.keyword || "";
+			if (targetKeyword === %q) {
+				return;
+			}
+			%s
+			`,
+			c.Keyword,
+			stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+				},
+				stateful.WithAppendFix(`v.compo.keyword = targetKeyword;`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go(),
+		)
+	}
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
 		VTextField().
 			Id(c.textFieldSearchID()).
@@ -209,15 +220,12 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Clearable(true).
 			HideDetails(true).
 			SingleLine(true).
-			ModelValue(c.Keyword).
 			Attr("v-model", "xlocals.keyword").
-			Attr("@keyup.enter", reloadAction).
-			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-				target.Page = 0
-				target.Keyword = ""
-			}).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
+			Attr("@keyup.enter", newReloadAction()).
+			Attr("@click:clear", newReloadAction()).
 			Children(
-				web.Slot(VIcon("mdi-magnify").Attr("@click", reloadAction)).Name("append-inner"),
+				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction())).Name("append-inner"),
 			),
 	)
 }
@@ -786,8 +794,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	if c.lb.actionsAsMenu {
 		buttons = append([]h.HTMLComponent{buttonNew}, buttons...)
 		return VMenu().OpenOnHover(true).Children(
-			web.Slot().Name("activator").Scope("{ on, props }").Children(
-				VBtn(msgr.ButtonLabelActionsMenu).Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
+			web.Slot().Name("activator").Scope("{ props }").Children(
+				VBtn(msgr.ButtonLabelActionsMenu).Size(SizeSmall).Attr("v-bind", "props"),
 			),
 			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
 				return VListItem(item)
