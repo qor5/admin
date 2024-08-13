@@ -65,7 +65,7 @@ func ContainsVersionBar(body string) bool {
 	return strings.Contains(body, "presets_OpenListingDialog") && strings.Contains(body, "-version-list-dialog")
 }
 
-var reListContent = regexp.MustCompile(`<tr[\s\S]+?<td>[\s\S]+?<v-radio :model-value='([^']+)'\s*:true-value='([^']+)'[\s\S]+?</v-radio>\s*([^<]+)?\s*</div>[\s\S]+?</tr>`)
+var reListContent = regexp.MustCompile(`<tr[\s\S]+?<td[^>]*>[\s\S]+?<v-radio :model-value='([^']+)'\s*:true-value='([^']+)'[\s\S]+?</v-radio>\s*([^<]+)?\s*</div>[\s\S]+?</tr>`)
 
 func EnsureVersionListDisplay(selected string, dislayModels []*examples_admin.WithPublishProduct) testflow.ValidatorFunc {
 	return testflow.Combine(

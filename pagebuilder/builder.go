@@ -40,6 +40,7 @@ type RenderInput struct {
 	Device      string
 	ContainerId string
 	DisplayName string
+	Obj         interface{}
 }
 
 type RenderFunc func(obj interface{}, input *RenderInput, ctx *web.EventContext) h.HTMLComponent
@@ -430,6 +431,21 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		listingFields = append(listingFields, activity.ListFieldNotes)
 	}
 	lb := pm.Listing(listingFields...)
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelPage
+		}
+		return msgr.ModelLabelPages
+	})
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"ID":    msgr.ListHeaderID,
+			"Title": msgr.ListHeaderTitle,
+			"Path":  msgr.ListHeaderPath,
+		}, nil
+	}))
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -620,7 +636,6 @@ func (b *Builder) configDetailLayoutFunc(
 	// change old detail layout
 	pm.Detailing().AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return publish.DefaultVersionBar(db)(obj, ctx)
-
 	})
 	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
 		var pageAppbarContent []h.HTMLComponent
@@ -663,7 +678,21 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("Name", "Path", "Description")
-
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelPageCategory
+		}
+		return msgr.ModelLabelPageCategories
+	})
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"Name":        msgr.ListHeaderName,
+			"Path":        msgr.ListHeaderPath,
+			"Description": msgr.ListHeaderDescription,
+		}, nil
+	}))
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			r, totalCount, err = in(model, params, ctx)
@@ -699,7 +728,8 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label(field.Label).
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().Label(msgr.ListHeaderName).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, field.Value(obj))...).
 			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
@@ -711,7 +741,8 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			vErr = *ve
 		}
 
-		return VTextField().Label(field.Label).
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().Label(msgr.ListHeaderPath).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
@@ -720,6 +751,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		m := obj.(*Category)
 		m.Path = path.Join("/", m.Path)
 		return nil
+	})
+
+	eb.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return VTextField().
+			Type("text").
+			Variant(FieldVariantUnderlined).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(msgr.ListHeaderDescription).
+			ErrorMessages(field.Errors...).
+			Disabled(field.Disabled)
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -988,6 +1030,19 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelSharedContainer
+		}
+		return msgr.ModelLabelSharedContainers
+	})
+	listing.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"DisplayName": msgr.ListHeaderName,
+		}, nil
+	}))
 	listing.RowMenu("Rename").RowMenuItem("Rename").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		c := obj.(*Container)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -1008,19 +1063,18 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, r))
-	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		tdbind := cell
-		c := obj.(*Container)
-
-		tdbind.SetAttr("@click.self",
-			web.Plaid().
-				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
-				Query(presets.ParamID, c.ModelID).
-				Query(paramOpenFromSharedContainer, 1).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
-
-		return tdbind
+	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			c := obj.(*Container)
+			cell.SetAttr("@click",
+				web.Plaid().
+					EventFunc(actions.Edit).
+					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
+					Query(presets.ParamID, c.ModelID).
+					Query(paramOpenFromSharedContainer, 1).
+					Go()+fmt.Sprintf(`; locals.current_editing_id=%q"`, id))
+			return in(evCtx, cell, id, obj)
+		}
 	})
 
 	if b.ab != nil {
@@ -1034,7 +1088,30 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
+
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
+	listing.Field("ModelName").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		p := obj.(*DemoContainer)
+		modelName := p.ModelName
+		if b.ps.GetI18n() != nil {
+			modelName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+		}
+
+		return h.Td(h.Text(modelName))
+	})
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelDemoContainer
+		}
+		return msgr.ModelLabelDemoContainers
+	})
+	listing.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"ModelName": msgr.ListHeaderName,
+		}, nil
+	}))
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 			b.firstOrCreateDemoContainers(ctx)
@@ -1061,18 +1138,19 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		}
 	})
 	listing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return []*presets.FilterTab{
 			{
-				Label: "all",
+				Label: msgr.FilterTabAll,
 				ID:    "all",
 			},
 			{
-				Label: "Filled",
+				Label: msgr.FilterTabFilled,
 				ID:    "Filled",
 				Query: url.Values{"Filled": []string{"true"}},
 			},
 			{
-				Label: "Not Filled",
+				Label: msgr.FilterTabNotFilled,
 				ID:    "NotFilled",
 				Query: url.Values{"NotFilled": []string{"false"}},
 			},
@@ -1083,18 +1161,17 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		return nil
 	})
 	listing.RowMenu().Empty()
-	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-		tdbind := cell
-		c := obj.(*DemoContainer)
-
-		tdbind.SetAttr("@click.self",
-			web.Plaid().
-				EventFunc(actions.Edit).
-				URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
-				Query(presets.ParamID, c.ModelID).
-				Go()+fmt.Sprintf(`; vars.currEditingListItemID="%s-%d"`, dataTableID, c.ModelID))
-
-		return tdbind
+	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
+		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			c := obj.(*DemoContainer)
+			cell.SetAttr("@click",
+				web.Plaid().
+					EventFunc(actions.Edit).
+					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
+					Query(presets.ParamID, c.ModelID).
+					Go()+fmt.Sprintf(`; locals.current_editing_id=%q`, id))
+			return in(evCtx, cell, id, obj)
+		}
 	})
 	if b.ab != nil {
 		pm.Use(b.ab)
@@ -1124,7 +1201,22 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
 	db := b.db
 
-	pm.Listing("ID", "Name", "Description")
+	lb := pm.Listing("ID", "Name", "Description")
+	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelTemplate
+		}
+		return msgr.ModelLabelTemplates
+	})
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"ID":          msgr.ListHeaderID,
+			"Name":        msgr.ListHeaderName,
+			"Description": msgr.ListHeaderDescription,
+		}, nil
+	}))
 
 	dp := pm.Detailing("Overview")
 	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
@@ -1228,6 +1320,7 @@ type ContainerBuilder struct {
 	renderFunc   RenderFunc
 	cover        string
 	group        string
+	onlyPages    bool
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -1279,6 +1372,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) OnlyPages(v bool) *ContainerBuilder {
+	b.onlyPages = v
+	return b
+}
 func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 	if b.mb == nil {
 		return b
@@ -1599,8 +1696,9 @@ type (
 	}
 )
 
-func (b *Builder) PreviewDevices(devices ...Device) {
+func (b *Builder) PreviewDevices(devices ...Device) *Builder {
 	b.devices = devices
+	return b
 }
 
 func (b *Builder) getDevices() []Device {

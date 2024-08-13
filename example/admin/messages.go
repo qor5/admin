@@ -173,6 +173,8 @@ type Messages_ModelsI18nModuleKey struct {
 	WebHeader       string
 	WebHeadersColor string
 	Header          string
+	Navigation      string
+	Content         string
 
 	WebFooter             string
 	WebFootersEnglishUrl  string
@@ -327,6 +329,8 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	WebHeader:       "WebHeader",
 	WebHeadersColor: "WebHeadersColor",
 	Header:          "Header",
+	Navigation:      "Navigation",
+	Content:         "Content",
 
 	WebFooter:             "WebFooter",
 	WebFootersEnglishUrl:  "WebFootersEnglishUrl",
@@ -481,6 +485,8 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	WebHeader:       "ウェブヘッダー",
 	WebHeadersColor: "カラー",
 	Header:          "ヘッダー",
+	Navigation:      "Navigation",
+	Content:         "Content",
 
 	WebFooter:             "ウェブ用フッター",
 	WebFootersEnglishUrl:  "英語用URL",

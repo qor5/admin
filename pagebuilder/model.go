@@ -461,6 +461,10 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			break
 		}
 		groupName := group[0].group
+
+		if b.builder.ps.GetI18n() != nil && groupName != "" {
+			groupName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, groupName)
+		}
 		if groupName == "" {
 			groupName = msgr.Others
 		}
@@ -469,7 +473,10 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
-			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			containerName := builder.name
+			if b.builder.ps.GetI18n() != nil {
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+			}
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 				MergeQuery(true).
 				Query(paramModelName, builder.name).
@@ -519,14 +526,16 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			break
 		}
 		groupName := msgr.Shared
-
 		if b.builder.expendContainers {
 			groupsNames = append(groupsNames, groupName)
 		}
 		var listItems []h.HTMLComponent
 		for _, builder := range group {
 			c := b.builder.ContainerByName(builder.ModelName)
-			containerName := i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+			containerName := c.name
+			if b.builder.ps.GetI18n() != nil {
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
+			}
 			listItems = append(listItems,
 				VListItem(
 					VListItemTitle(h.Text(containerName)).Attr("@click", web.Plaid().
@@ -597,9 +606,16 @@ func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.
 
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 	for _, builder := range b.builder.containerBuilders {
-		if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
-			cons = append(cons, builder)
+		if builder.onlyPages {
+			if b.name == utils.GetObjectName(&Page{}) {
+				cons = append(cons, builder)
+			}
+		} else {
+			if builder.modelBuilder == nil || b.mb == builder.modelBuilder {
+				cons = append(cons, builder)
+			}
 		}
+
 	}
 	return
 }
@@ -716,7 +732,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 	}
 	modelID = reflectutils.MustGet(model, "ID").(uint)
 	displayName := modelName
-	if b.builder.l10n != nil {
+	if b.builder.ps.GetI18n() != nil {
 		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 	}
 	container := Container{
@@ -797,7 +813,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 		isReadonly = true
 	}
 	var comps []h.HTMLComponent
-	comps, err = b.renderContainers(ctx, pageID, pageVersion, locale, isEditor, isReadonly)
+	comps, err = b.renderContainers(ctx, obj, pageID, pageVersion, locale, isEditor, isReadonly)
 	if err != nil {
 		return
 	}
@@ -807,7 +823,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
-	var msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if b.builder.pageLayoutFunc != nil {
 		var seoTags h.HTMLComponent
 		if b.builder.seoBuilder != nil {
@@ -969,7 +985,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHightName).
 				IframeHeight(iframeValue).
-				Width(width).Attr("ref", "scrollIframe", "virtual-ele-text", msgr.NewComponent)
+				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewComponent)
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
 				if ctx.Param(paramContainerNew) != "" {
@@ -981,8 +997,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 						h.Div(
 							VCard(
 								VCardText(h.RawHTML(previewEmptySvg)).Class("d-flex justify-center"),
-								VCardTitle(h.Text("Start building a page")).Class("d-flex justify-center"),
-								VCardSubtitle(h.Text("By Browsing and selecting components from the library")).Class("d-flex justify-center"),
+								VCardTitle(h.Text(msgr.StartBuildingMsg)).Class("d-flex justify-center"),
+								VCardSubtitle(h.Text(msgr.StartBuildingSubMsg)).Class("d-flex justify-center"),
 								VCardActions(
 									VBtn(msgr.AddComponent).Color(ColorPrimary).Variant(VariantElevated).
 										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
@@ -1006,7 +1022,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 	return
 }
 
-func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
 	var cons []*Container
 	err = withLocale(
 		b.builder,
@@ -1025,8 +1041,8 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 		if ec.container.Hidden {
 			continue
 		}
-		obj := ec.builder.NewModel()
-		err = b.db.FirstOrCreate(obj, "id = ?", ec.container.ModelID).Error
+		containerObj := ec.builder.NewModel()
+		err = b.db.FirstOrCreate(containerObj, "id = ?", ec.container.ModelID).Error
 		if err != nil {
 			return
 		}
@@ -1036,8 +1052,9 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 			Device:      device,
 			ContainerId: ec.container.PrimarySlug(),
 			DisplayName: ec.container.DisplayName,
+			Obj:         obj,
 		}
-		pure := ec.builder.renderFunc(obj, &input, ctx)
+		pure := ec.builder.renderFunc(containerObj, &input, ctx)
 
 		r = append(r, b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, isReadonly, i == 0, i == len(cbs)-1,
 			ec.builder.getContainerDataID(int(ec.container.ModelID)), ec.container.ModelName, &input))
@@ -1046,7 +1063,7 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, pageID int, pageV
 	return
 }
 
-func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interface{}, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
 	var (
 		modelName       = ctx.Param(paramModelName)
 		sharedContainer = ctx.Param(paramSharedContainer)
@@ -1087,13 +1104,14 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, locale stri
 		Device:      device,
 		ContainerId: "",
 		DisplayName: modelName,
+		Obj:         obj,
 	}
-	obj := containerBuilder.NewModel()
-	err = b.db.FirstOrCreate(obj, "id = ?", modelID).Error
+	containerObj := containerBuilder.NewModel()
+	err = b.db.FirstOrCreate(containerObj, "id = ?", modelID).Error
 	if err != nil {
 		return
 	}
-	pure := containerBuilder.renderFunc(obj, &input, ctx)
+	pure := containerBuilder.renderFunc(containerObj, &input, ctx)
 	r = b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, IsReadonly, false, false,
 		containerBuilder.getContainerDataID(modelID), modelName, &input)
 	return
@@ -1410,7 +1428,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		}
 		body = VImg().Src(cover)
 	} else {
-		previewContainer, err = b.renderPreviewContainer(ctx, locale, false, true)
+		previewContainer, err = b.renderPreviewContainer(ctx, obj, locale, false, true)
 		if err != nil {
 			return
 		}

@@ -36,6 +36,7 @@ type Messages struct {
 	Folders           string
 	UploadFile        string
 	DeleteObjects     func(v int) string
+	MediaLibrary      string
 }
 
 var Messages_en_US = &Messages{
@@ -73,6 +74,8 @@ var Messages_en_US = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
+
+	MediaLibrary: "Media Library",
 }
 
 var Messages_zh_CN = &Messages{
@@ -110,6 +113,7 @@ var Messages_zh_CN = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`是否删除 %v 个条目`, v)
 	},
+	MediaLibrary: "媒体库",
 }
 
 var Messages_ja_JP = &Messages{
@@ -131,20 +135,21 @@ var Messages_ja_JP = &Messages{
 	Videos:                      "動画",
 	Files:                       "ファイル",
 
-	Copy:              "Copy",
-	CopyUpdated:       "Copy Updated",
-	Rename:            "Rename",
-	RenameUpdated:     "Rename Updated",
-	Name:              "Name",
-	NewFolder:         "New Folder",
-	UpdateDescription: "Update Description",
-	ChooseFolder:      "Choose Folder",
-	MoveTo:            "Move to",
-	MovedFailed:       "Moved Failed",
-	MovedSuccess:      "Moved Success",
+	Copy:              "コピー",
+	CopyUpdated:       "コピーが更新されました",
+	Rename:            "名前を変更する",
+	RenameUpdated:     "名前の変更が成功しました",
+	Name:              "名称",
+	NewFolder:         "新規フォルダ",
+	UpdateDescription: "説明が更新されました",
+	ChooseFolder:      "フォルダを選択",
+	MoveTo:            "移動する",
+	MovedFailed:       "移動に失敗しました",
+	MovedSuccess:      "移動に成功しました",
 	Folders:           "Folders",
-	UploadFile:        "Upload File",
+	UploadFile:        "ファイルをアップロード",
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
+	MediaLibrary: "メディアライブラリ",
 }

@@ -53,6 +53,29 @@ type Messages struct {
 	NewComponent            string
 	Settings                string
 	SelectElementMsg        string
+	StartBuildingMsg        string
+	StartBuildingSubMsg     string
+
+	ListHeaderID          string
+	ListHeaderTitle       string
+	ListHeaderName        string
+	ListHeaderPath        string
+	ListHeaderDescription string
+
+	FilterTabAll       string
+	FilterTabFilled    string
+	FilterTabNotFilled string
+
+	ModelLabelPages            string
+	ModelLabelPage             string
+	ModelLabelSharedContainers string
+	ModelLabelSharedContainer  string
+	ModelLabelDemoContainers   string
+	ModelLabelDemoContainer    string
+	ModelLabelTemplates        string
+	ModelLabelTemplate         string
+	ModelLabelPageCategories   string
+	ModelLabelPageCategory     string
 }
 
 var Messages_en_US = &Messages{
@@ -104,6 +127,29 @@ var Messages_en_US = &Messages{
 	NewComponent:            "New Component",
 	Settings:                "settings",
 	SelectElementMsg:        "Select an element and change the setting here.",
+	StartBuildingMsg:        "Start building a page",
+	StartBuildingSubMsg:     "By Browsing and selecting components from the library",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "Title",
+	ListHeaderName:        "Name",
+	ListHeaderPath:        "Path",
+	ListHeaderDescription: "Description",
+
+	FilterTabAll:       "All",
+	FilterTabFilled:    "Filled",
+	FilterTabNotFilled: "Not Filled",
+
+	ModelLabelPages:            "Pages",
+	ModelLabelPage:             "Page",
+	ModelLabelSharedContainers: "Shared Containers",
+	ModelLabelSharedContainer:  "Shared Container",
+	ModelLabelDemoContainers:   "Demo Containers",
+	ModelLabelDemoContainer:    "Demo Container",
+	ModelLabelTemplates:        "Templates",
+	ModelLabelTemplate:         "Template",
+	ModelLabelPageCategories:   "Page Categories",
+	ModelLabelPageCategory:     "Page Category",
 }
 
 var Messages_zh_CN = &Messages{
@@ -143,7 +189,7 @@ var Messages_zh_CN = &Messages{
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
 
 	InvalidPathMsg:          "无效的路径",
-	InvalidTitleMsg:         "无效的辩题",
+	InvalidTitleMsg:         "无效的标题",
 	InvalidNameMsg:          "无效的名称",
 	InvalidSlugMsg:          "无效的Slug",
 	ConflictSlugMsg:         "冲突的Slug",
@@ -154,6 +200,29 @@ var Messages_zh_CN = &Messages{
 	NewComponent:            "新增组件",
 	Settings:                "设置",
 	SelectElementMsg:        "选择一个组件，这里会变成设置",
+	StartBuildingMsg:        "开始构建页面",
+	StartBuildingSubMsg:     "从库中选择组件",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "标题",
+	ListHeaderName:        "名称",
+	ListHeaderPath:        "路径",
+	ListHeaderDescription: "描述",
+
+	FilterTabAll:       "全部",
+	FilterTabFilled:    "已填写",
+	FilterTabNotFilled: "未填写",
+
+	ModelLabelPages:            "页面管理",
+	ModelLabelPage:             "页面",
+	ModelLabelSharedContainers: "公用组件",
+	ModelLabelSharedContainer:  "公用组件",
+	ModelLabelDemoContainers:   "示例组件",
+	ModelLabelDemoContainer:    "示例组件",
+	ModelLabelTemplates:        "模板页面",
+	ModelLabelTemplate:         "模板页面",
+	ModelLabelPageCategories:   "目录管理",
+	ModelLabelPageCategory:     "目录",
 }
 
 var Messages_ja_JP = &Messages{
@@ -161,14 +230,14 @@ var Messages_ja_JP = &Messages{
 	Preview:                        "プレビュー",
 	Containers:                     "コンテナ",
 	AddContainers:                  "コンテナの追加",
-	New:                            "新規",
+	New:                            "新規作成",
 	Shared:                         "共有",
 	Select:                         "選択",
 	SelectedTemplateLabel:          "テンプレート",
 	CreateFromTemplate:             "テンプレートから作成",
 	ChangeTemplate:                 "テンプレートの変更",
 	RelatedOnlinePages:             "関連するオンラインページ",
-	RepublishAllRelatedOnlinePages: "すべてを再公開",
+	RepublishAllRelatedOnlinePages: "すべてを再公開する",
 	Unnamed:                        "名前なし",
 	NotDescribed:                   "説明なし",
 	Blank:                          "空白",
@@ -188,7 +257,7 @@ var Messages_ja_JP = &Messages{
 	Title:                     "タイトル",
 	Slug:                      "スラッグ",
 	EditPage:                  "ページの編集",
-	ScheduledAt:               "スケジュール",
+	ScheduledAt:               "公開開始日時",
 	OnlineHit:                 "バージョンはリリース後直接に編集できません。バージョンをコピーして編集してください。",
 	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
 
@@ -200,8 +269,31 @@ var Messages_ja_JP = &Messages{
 	ConflictPathMsg:         "競合するパス",
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
-	Versions:                "versions",
-	NewComponent:            "New Component",
-	Settings:                "settings",
-	SelectElementMsg:        "Select an element and change the setting here.",
+	Versions:                "バージョン",
+	NewComponent:            "新しいコンポーネント",
+	Settings:                "設定",
+	SelectElementMsg:        "コンテナを選択後、設定変更してください",
+	StartBuildingMsg:        "ページの構築を開始します",
+	StartBuildingSubMsg:     "ライブラリからコンポーネントを参照して選択する",
+
+	ListHeaderID:          "ID",
+	ListHeaderTitle:       "タイトル",
+	ListHeaderName:        "名前",
+	ListHeaderPath:        "パス",
+	ListHeaderDescription: "説明",
+
+	FilterTabAll:       "すべて",
+	FilterTabFilled:    "入力済み",
+	FilterTabNotFilled: "未入力",
+
+	ModelLabelPages:            "ページ",
+	ModelLabelPage:             "ページ",
+	ModelLabelSharedContainers: "共有コンテナ",
+	ModelLabelSharedContainer:  "共有コンテナ",
+	ModelLabelDemoContainers:   "デモコンテナ",
+	ModelLabelDemoContainer:    "デモコンテナ",
+	ModelLabelTemplates:        "テンプレート",
+	ModelLabelTemplate:         "テンプレート",
+	ModelLabelPageCategories:   "ページカテゴリー",
+	ModelLabelPageCategory:     "ページカテゴリー",
 }

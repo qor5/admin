@@ -55,6 +55,13 @@ type (
 		Text  string
 		Color string
 	}
+
+	PagesContent struct {
+		ID    uint
+		Text  string
+		Color string
+	}
+
 	ProductContent struct {
 		ID   uint
 		Name string
@@ -142,7 +149,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.DataOperator(gorm2op.DataOperator(db))
 	err := db.AutoMigrate(
 		&Campaign{}, &CampaignProduct{}, // models
-		&MyContent{}, &CampaignContent{}, &ProductContent{}, // containers
+		&MyContent{}, &CampaignContent{}, &ProductContent{}, &PagesContent{}, // containers
 
 	)
 	if err != nil {
@@ -170,6 +177,8 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
 		Activity(ab).
 		Publisher(puBuilder).
+		PreviewDevices(pagebuilder.Device{Name: pagebuilder.DevicePhone, Width: "414px", Icon: "mdi-cellphone"}).
+		DefaultDevice(pagebuilder.DevicePhone).
 		WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
 			return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {
 				input.WrapHead = func(comps HTMLComponents) HTMLComponents {
@@ -193,6 +202,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		panic(err)
 	}
 
+	// global containers
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
@@ -201,6 +211,21 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
 	ed.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return vuetify.VTextField().
+			Variant(vuetify.FieldVariantUnderlined).
+			Label(field.Label).
+			Attr(web.VField(field.FormKey, field.Value(obj))...)
+	})
+
+	//only pages view containers set OnlyPages true
+	pc := pb.RegisterContainer("PagesContent").Group("Navigation").OnlyPages(true).
+		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
+			c := obj.(*PagesContent)
+			return Div().Text(c.Text).Class("test-div")
+		}).Cover("https://qor5.com/img/qor-logo.png")
+
+	pce := pc.Model(&PagesContent{}).Editing("Text", "Color")
+	pce.Field("Color").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return vuetify.VTextField().
 			Variant(vuetify.FieldVariantUnderlined).
 			Label(field.Label).

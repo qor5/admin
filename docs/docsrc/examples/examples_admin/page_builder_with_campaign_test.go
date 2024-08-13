@@ -568,6 +568,58 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "View Category Editing Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_categories?__execute_event__=presets_Edit&id=1", nil)
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Editing Page Category 1", "Name", "Path", "Description"},
+		},
+
+		{
+			Name:  "Campaign Editors Demo Containers List ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
+			ExpectPageBodyNotContains:     []string{"ProductContent", "PagesContent"},
+		},
+		{
+			Name:  "Product Editors Demo Containers List ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent"},
+			ExpectPageBodyNotContains:     []string{"CampaignContent", "PagesContent"},
+		},
+		{
+			Name:  "Page Editors Demo Containers List ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent"},
+			ExpectPageBodyNotContains:     []string{"CampaignContent", "ProductContent"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {

@@ -2,6 +2,7 @@ package examples
 
 import (
 	"fmt"
+	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 	"strings"
 
@@ -54,4 +55,11 @@ func AddPresetExample(mux examples.Muxer, f func(*presets.Builder, *gorm.DB) htt
 	fmt.Println("Examples mounting path:", path)
 	p := presets.New().AssetFunc(AddGA).URIPrefix(path)
 	mux.Handle(path, f(p, ExampleDB()))
+}
+
+func AddPresetAutocompleteExample(mux examples.Muxer, ab *autocomplete.Builder, f func(*presets.Builder, *autocomplete.Builder, *gorm.DB) http.Handler) {
+	path := examples.URLPathByFunc(f)
+	fmt.Println("Examples mounting path:", path)
+	p := presets.New().AssetFunc(AddGA).URIPrefix(path)
+	mux.Handle(path, f(p, ab, ExampleDB()))
 }
