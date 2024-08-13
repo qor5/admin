@@ -794,8 +794,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 	if c.lb.actionsAsMenu {
 		buttons = append([]h.HTMLComponent{buttonNew}, buttons...)
 		return VMenu().OpenOnHover(true).Children(
-			web.Slot().Name("activator").Scope("{ on, props }").Children(
-				VBtn(msgr.ButtonLabelActionsMenu).Size(SizeSmall).Attr("v-bind", "props").Attr("v-on", "on"),
+			web.Slot().Name("activator").Scope("{ props }").Children(
+				VBtn(msgr.ButtonLabelActionsMenu).Size(SizeSmall).Attr("v-bind", "props"),
 			),
 			VList(lo.Map(buttons, func(item h.HTMLComponent, _ int) h.HTMLComponent {
 				return VListItem(item)
