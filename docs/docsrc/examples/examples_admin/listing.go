@@ -65,6 +65,12 @@ type Category struct {
 }
 
 func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return listingExample(b, db, nil)
+}
+
+func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder)) http.Handler {
+	db.AutoMigrate(&Post{}, &Category{})
+
 	// Setup the project name, ORM and Homepage
 	b.DataOperator(gorm2op.DataOperator(db))
 
@@ -119,6 +125,10 @@ func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	postModelBuilder.Listing().Field("VirtualField").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Td(h.Text("virtual field"))
 	})
+
+	if customize != nil {
+		customize(postModelBuilder)
+	}
 
 	b.Model(&Category{})
 	// Use m to customize the model, Or config more models here.
