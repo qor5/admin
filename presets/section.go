@@ -430,7 +430,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 					),
 				).Variant(VariantFlat).
 					Attr("v-bind", "props"),
-			).Class("section-body border-b"),
+			).Class("section-body"),
 		)
 	}
 
@@ -503,7 +503,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 						).Class("d-flex flex-column"),
 					),
 				).Variant(VariantOutlined),
-			).Class("section-body border-b"),
+			).Class("section-body"),
 		)
 	}
 
