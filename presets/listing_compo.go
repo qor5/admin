@@ -567,6 +567,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				CustomPerPages([]int64{c.lb.perPage}).
 				PerPageText(msgr.PaginationRowsPerPage).
 				NoOffsetPart(true).
+				TotalVisible(cmp.Or(c.lb.paginationTotalVisible, int64(5))).
 				OnSelectPerPage(stateful.ReloadAction(ctx, c,
 					func(target *ListingCompo) {
 						target.Page = 0

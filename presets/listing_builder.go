@@ -61,7 +61,8 @@ type ListingBuilder struct {
 	// 1. the pagination component will not display on listing page.
 	// 2. the perPage will actually be ignored.
 	// 3. all data will be returned in one page.
-	disablePagination bool
+	disablePagination      bool
+	paginationTotalVisible int64
 
 	orderBy           string
 	orderableFields   []*OrderableField
@@ -71,6 +72,7 @@ type ListingBuilder struct {
 	dialogHeight      string
 	keywordSearchOff  bool
 	columnsProcessor  ColumnsProcessor
+
 	FieldsBuilder
 
 	once                  sync.Once
@@ -127,6 +129,11 @@ func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *Li
 
 func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
 	b.disablePagination = v
+	return b
+}
+
+func (b *ListingBuilder) PaginationTotalVisible(v int64) (r *ListingBuilder) {
+	b.paginationTotalVisible = v
 	return b
 }
 
