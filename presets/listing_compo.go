@@ -127,7 +127,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		h.Tag("Teleport").Attr("to", "#"+c.ActionsComponentTeleportToID()).Children(
 			c.actionsComponent(ctx),
 		),
-		VCard().Elevation(0).Children(
+		h.Div(VCard().Elevation(0).Children(
 			h.Div(
 				c.tabsFilter(ctx),
 			).Class("px-2"),
@@ -138,7 +138,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			h.Div(
 				c.cardActionsFooter(ctx),
 			).Class(("px-4 pb-2")),
-		),
+		)).Class("listing-compo-wrap"),
 	).MarshalHTML(ctx)
 }
 
