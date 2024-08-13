@@ -193,24 +193,20 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	newReloadAction := func(clear bool) string {
-		targetKeyword := `xlocals.keyword`
-		if clear {
-			targetKeyword = `""`
-		}
+	newReloadAction := func() string {
 		return fmt.Sprintf(`
-			if (%s === %q) {
+			const targetKeyword = xlocals.keyword || "";
+			if (targetKeyword === %q) {
 				return;
 			}
 			%s
 			`,
-			targetKeyword,
 			c.Keyword,
 			stateful.ReloadAction(ctx, c,
 				func(target *ListingCompo) {
 					target.Page = 0
 				},
-				stateful.WithAppendFix(`v.compo.keyword = `+targetKeyword),
+				stateful.WithAppendFix(`v.compo.keyword = targetKeyword;`),
 			).ThenScript(ListingCompo_JsScrollToTop).Go(),
 		)
 	}
@@ -226,10 +222,10 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			SingleLine(true).
 			Attr("v-model", "xlocals.keyword").
 			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
-			Attr("@keyup.enter", newReloadAction(false)).
-			Attr("@click:clear", newReloadAction(true)).
+			Attr("@keyup.enter", newReloadAction()).
+			Attr("@click:clear", newReloadAction()).
 			Children(
-				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction(false))).Name("append-inner"),
+				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction())).Name("append-inner"),
 			),
 	)
 }
