@@ -14,8 +14,9 @@ func main() {
 
 	host := osenv.Get("HOST", "The host to serve the admin on", "")
 	port := osenv.Get("PORT", "The port to serve the admin on", "9000")
+	addr := host + ":" + port
 
-	fmt.Println("Served at http://localhost:" + port)
+	fmt.Println("Served at http://" + addr)
 
 	mux := http.NewServeMux()
 	mux.Handle("/",
@@ -25,7 +26,7 @@ func main() {
 			),
 		),
 	)
-	err := http.ListenAndServe(host+":"+port, mux)
+	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		panic(err)
 	}
