@@ -177,7 +177,11 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
 		Activity(ab).
 		Publisher(puBuilder).
-		PreviewDevices(pagebuilder.Device{Name: pagebuilder.DevicePhone, Width: "414px", Icon: "mdi-cellphone"}).
+		PreviewDevices(
+			pagebuilder.Device{Name: pagebuilder.DeviceComputer, Width: "", Icon: "mdi-monitor", Disabled: true},
+			pagebuilder.Device{Name: pagebuilder.DevicePhone, Width: "414px", Icon: "mdi-cellphone"},
+			pagebuilder.Device{Name: pagebuilder.DeviceTablet, Width: "768px", Icon: "mdi-tablet", Disabled: true},
+		).
 		DefaultDevice(pagebuilder.DevicePhone).
 		WrapPageLayout(func(v pagebuilder.PageLayoutFunc) pagebuilder.PageLayoutFunc {
 			return func(body HTMLComponent, input *pagebuilder.PageLayoutInput, ctx *web.EventContext) HTMLComponent {

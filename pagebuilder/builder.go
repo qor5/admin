@@ -1690,9 +1690,10 @@ func defaultSubPageTitle(ctx *web.EventContext) string {
 
 type (
 	Device struct {
-		Name  string
-		Width string
-		Icon  string
+		Name     string
+		Width    string
+		Icon     string
+		Disabled bool
 	}
 )
 
@@ -1729,6 +1730,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		}
 		comps = append(comps,
 			VBtn("").Icon(d.Icon).Color(ColorPrimary).Value(d.Name).
+				Disabled(d.Disabled).
 				BaseColor(ColorPrimary).Variant(VariantText).Class("mr-2"),
 		)
 	}
