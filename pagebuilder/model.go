@@ -347,6 +347,7 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 	var (
 		containerID   = ctx.R.FormValue(paramContainerID)
 		containerName = ctx.R.FormValue(paramContainerName)
+		pMsgr         = presets.MustGetMessages(ctx.R)
 	)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
@@ -357,13 +358,13 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 					VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", containerName))),
 					VCardActions(
 						VSpacer(),
-						VBtn("Cancel").
+						VBtn(pMsgr.Cancel).
 							Variant(VariantFlat).
 							Class("ml-2").
 							Attr("@click", "locals.deleteConfirmation = false"),
 
-						VBtn("Delete").
-							Color("primary").
+						VBtn(pMsgr.Delete).
+							Color(ColorPrimary).
 							Variant(VariantFlat).
 							Theme(ThemeDark).
 							Attr("@click", web.Plaid().
@@ -879,6 +880,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  pointer-event: none;
               position: absolute;
               bottom: -14px;
+              border: 0;
               padding: 4px 0 4px 0;
 			}
 			.wrapper-shadow:hover {
@@ -911,9 +913,12 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			}
    			.editor-bar-buttons{
               height: 24px;
+			
 			}
 			.editor-bar button {
 			  color: #FFFFFF;
+              border: 0;
+              padding: 0;
 			  cursor: pointer;
 			  background-color: #3E63DD; 
               height: 24px;	

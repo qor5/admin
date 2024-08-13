@@ -1,6 +1,9 @@
 package pagebuilder
 
-import "github.com/qor5/x/v3/i18n"
+import (
+	"fmt"
+	"github.com/qor5/x/v3/i18n"
+)
 
 const I18nPageBuilderKey i18n.ModuleKey = "I18nPageBuilderKey"
 
@@ -76,6 +79,7 @@ type Messages struct {
 	ModelLabelTemplate         string
 	ModelLabelPageCategories   string
 	ModelLabelPageCategory     string
+	AreWantDeleteContainer     func(v string) string
 }
 
 var Messages_en_US = &Messages{
@@ -150,6 +154,9 @@ var Messages_en_US = &Messages{
 	ModelLabelTemplate:         "Template",
 	ModelLabelPageCategories:   "Page Categories",
 	ModelLabelPageCategory:     "Page Category",
+	AreWantDeleteContainer: func(v string) string {
+		return fmt.Sprintf("Are you sure you want to delete %v?", v)
+	},
 }
 
 var Messages_zh_CN = &Messages{
@@ -223,6 +230,9 @@ var Messages_zh_CN = &Messages{
 	ModelLabelTemplate:         "模板页面",
 	ModelLabelPageCategories:   "目录管理",
 	ModelLabelPageCategory:     "目录",
+	AreWantDeleteContainer: func(v string) string {
+		return fmt.Sprintf("你确定要删除 %v?", v)
+	},
 }
 
 var Messages_ja_JP = &Messages{
@@ -296,4 +306,7 @@ var Messages_ja_JP = &Messages{
 	ModelLabelTemplate:         "テンプレート",
 	ModelLabelPageCategories:   "ページカテゴリ",
 	ModelLabelPageCategory:     "ページカテゴリ",
+	AreWantDeleteContainer: func(v string) string {
+		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
+	},
 }
