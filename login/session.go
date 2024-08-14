@@ -288,48 +288,72 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}
 			return nil
 		}
-		b.lb.AfterLogin(func(r *http.Request, user any, extraVals ...any) error {
-			return cmp.Or(
-				logAction(r, user, "login"),
-				b.CreateSession(r, presets.MustObjectID(user)),
-			)
+		b.lb.WrapAfterLogin(func(in login.HookFunc) login.HookFunc {
+			return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+				if err := in(r, user, extraVals...); err != nil {
+					return err
+				}
+				return cmp.Or(
+					logAction(r, user, "login"),
+					b.CreateSession(r, presets.MustObjectID(user)),
+				)
+			}
 		}).
-			AfterFailedToLogin(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return logAction(r, user, "login-failed")
+			WrapAfterFailedToLogin(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
+					return logAction(r, user, "login-failed")
+				}
 			}).
-			AfterUserLocked(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return logAction(r, user, "locked")
+			WrapAfterUserLocked(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return logAction(r, user, "locked")
+				}
 			}).
-			AfterLogout(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return cmp.Or(
-					logAction(r, user, "logout"),
-					b.ExpireCurrentSession(r, presets.MustObjectID(user)),
-				)
+			WrapAfterLogout(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return cmp.Or(
+						logAction(r, user, "logout"),
+						b.ExpireCurrentSession(r, presets.MustObjectID(user)),
+					)
+				}
 			}).
-			AfterConfirmSendResetPasswordLink(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
-				return logAction(r, user, "send-reset-password-link")
+			WrapAfterConfirmSendResetPasswordLink(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return logAction(r, user, "send-reset-password-link")
+				}
 			}).
-			AfterResetPassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return cmp.Or(
-					b.ExpireAllSessions(presets.MustObjectID(user)),
-					logAction(r, user, "reset-password"),
-				)
+			WrapAfterResetPassword(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return cmp.Or(
+						b.ExpireAllSessions(presets.MustObjectID(user)),
+						logAction(r, user, "reset-password"),
+					)
+				}
 			}).
-			AfterChangePassword(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return cmp.Or(
-					b.ExpireAllSessions(presets.MustObjectID(user)),
-					logAction(r, user, "change-password"),
-				)
+			WrapAfterChangePassword(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return cmp.Or(
+						b.ExpireAllSessions(presets.MustObjectID(user)),
+						logAction(r, user, "change-password"),
+					)
+				}
 			}).
-			AfterExtendSession(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
-				oldToken := extraVals[0].(string)
-				return cmp.Or(
-					b.ExtendSession(r, presets.MustObjectID(user), oldToken),
-					logAction(r, user, "extend-session"),
-				)
+			WrapAfterExtendSession(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					oldToken := extraVals[0].(string)
+					return cmp.Or(
+						b.ExtendSession(r, presets.MustObjectID(user), oldToken),
+						logAction(r, user, "extend-session"),
+					)
+				}
 			}).
-			AfterTOTPCodeReused(func(r *http.Request, user interface{}, _ ...interface{}) error {
-				return logAction(r, user, "totp-code-reused")
+			WrapAfterTOTPCodeReused(func(in login.HookFunc) login.HookFunc {
+				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					return logAction(r, user, "totp-code-reused")
+				}
 			})
 	})
 	return b

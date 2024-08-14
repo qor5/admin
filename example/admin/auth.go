@@ -79,60 +79,70 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			SiteKey:   recaptchaSiteKey,
 			SecretKey: recaptchaSecret,
 		}).
-		BeforeSetPassword(func(r *http.Request, user interface{}, extraVals ...interface{}) error {
-			u := user.(*models.User)
-			if u.GetAccountName() == loginInitialUserEmail {
-				return &login.NoticeError{
-					Level:   login.NoticeLevel_Error,
-					Message: "Cannot change password for public user",
+		WrapBeforeSetPassword(func(in login.HookFunc) login.HookFunc {
+			return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+				if err := in(r, user, extraVals...); err != nil {
+					return err
 				}
-			}
-			password := extraVals[0].(string)
-			if len(password) < 12 {
-				return &login.NoticeError{
-					Level:   login.NoticeLevel_Error,
-					Message: "Password cannot be less than 12 characters",
+				u := user.(*models.User)
+				if u.GetAccountName() == loginInitialUserEmail {
+					return &login.NoticeError{
+						Level:   login.NoticeLevel_Error,
+						Message: "Cannot change password for public user",
+					}
 				}
-			}
-			return nil
-		}).
-		AfterOAuthComplete(func(r *http.Request, user interface{}, _ ...interface{}) error {
-			u := user.(goth.User)
-			if u.Email == "" {
+				password := extraVals[0].(string)
+				if len(password) < 12 {
+					return &login.NoticeError{
+						Level:   login.NoticeLevel_Error,
+						Message: "Password cannot be less than 12 characters",
+					}
+				}
 				return nil
 			}
-			if err := db.Where("o_auth_provider = ? and o_auth_identifier = ?", u.Provider, u.Email).First(&models.User{}).
-				Error; errors.Is(err, gorm.ErrRecordNotFound) {
-				var name string
-				at := strings.LastIndex(u.Email, "@")
-				if at > 0 {
-					name = u.Email[:at]
-				} else {
-					name = u.Email
+		}).
+		WrapAfterOAuthComplete(func(in login.HookFunc) login.HookFunc {
+			return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+				if err := in(r, user, extraVals...); err != nil {
+					return err
+				}
+				u := user.(goth.User)
+				if u.Email == "" {
+					return nil
+				}
+				if err := db.Where("o_auth_provider = ? and o_auth_identifier = ?", u.Provider, u.Email).First(&models.User{}).
+					Error; errors.Is(err, gorm.ErrRecordNotFound) {
+					var name string
+					at := strings.LastIndex(u.Email, "@")
+					if at > 0 {
+						name = u.Email[:at]
+					} else {
+						name = u.Email
+					}
+
+					user := &models.User{
+						Name:             name,
+						Status:           models.StatusActive,
+						RegistrationDate: time.Now(),
+						OAuthInfo: login.OAuthInfo{
+							OAuthProvider:   u.Provider,
+							OAuthUserID:     u.UserID,
+							OAuthIdentifier: u.Email,
+							OAuthAvatar:     u.AvatarURL,
+						},
+					}
+
+					if err := db.Create(user).Error; err != nil {
+						panic(err)
+					}
+
+					if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
+						panic(err)
+					}
 				}
 
-				user := &models.User{
-					Name:             name,
-					Status:           models.StatusActive,
-					RegistrationDate: time.Now(),
-					OAuthInfo: login.OAuthInfo{
-						OAuthProvider:   u.Provider,
-						OAuthUserID:     u.UserID,
-						OAuthIdentifier: u.Email,
-						OAuthAvatar:     u.AvatarURL,
-					},
-				}
-
-				if err := db.Create(user).Error; err != nil {
-					panic(err)
-				}
-
-				if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
-					panic(err)
-				}
+				return nil
 			}
-
-			return nil
 		}).TOTP(false).MaxRetryCount(0)
 
 	loginBuilder.LoginPageFunc(loginPage(loginBuilder.ViewHelper(), pb))
