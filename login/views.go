@@ -395,29 +395,31 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 		return Div(
 			VCardTitle(Text(msgr.ChangePasswordTitle)),
 			VCardText(
-				Div(
-					DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
-						Label(msgr.ChangePasswordOldLabel).
-						Attr(web.VField("old_password", "")...),
-				),
-				Div(
-					DefaultViewCommon.PasswordInputWithStrengthMeter(
-						DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
-							Label(msgr.ChangePasswordNewLabel).
-							Attr(web.VField("password", "")...),
-						"password", ""),
-				).Class("mt-12"),
-				Div(
-					DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
-						Label(msgr.ChangePasswordNewConfirmLabel).
-						Attr(web.VField("confirm_password", "")...),
-				).Class("mt-12"),
-				If(vh.TOTPEnabled(),
+				Form().Children( // just used to prevent 1password auto submit
 					Div(
-						DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
-							Label(msgr.TOTPValidateCodeLabel).
-							Attr(web.VField("otp", "")...),
+						DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
+							Label(msgr.ChangePasswordOldLabel).
+							Attr(web.VField("old_password", "")...),
+					),
+					Div(
+						DefaultViewCommon.PasswordInputWithStrengthMeter(
+							DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
+								Label(msgr.ChangePasswordNewLabel).
+								Attr(web.VField("password", "")...),
+							"password", ""),
 					).Class("mt-12"),
+					Div(
+						DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
+							Label(msgr.ChangePasswordNewConfirmLabel).
+							Attr(web.VField("confirm_password", "")...),
+					).Class("mt-12"),
+					If(vh.TOTPEnabled(),
+						Div(
+							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
+								Label(msgr.TOTPValidateCodeLabel).
+								Attr(web.VField("otp", "")...),
+						).Class("mt-12"),
+					),
 				),
 			),
 		)
