@@ -27,18 +27,22 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 	return r, nil
 }
 
-func ShowMessage(r *web.EventResponse, msg string, color string) {
+func ShowSnackbarScript(msg string, color string) string {
 	if msg == "" {
+		return ""
+	}
+	if color == "" {
+		color = ColorSuccess
+	}
+	return fmt.Sprintf(`vars.presetsMessage = { show: true, message: %q, color: %q}`, msg, color)
+}
+
+func ShowMessage(r *web.EventResponse, msg string, color string) {
+	script := ShowSnackbarScript(msg, color)
+	if script == "" {
 		return
 	}
-
-	if color == "" {
-		color = "success"
-	}
-
-	web.AppendRunScripts(r, fmt.Sprintf(
-		`vars.presetsMessage = { show: true, message: %s, color: %s}`,
-		h.JSONString(msg), h.JSONString(color)))
+	web.AppendRunScripts(r, script)
 }
 
 func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.Values) []vx.RowMenuItemFunc {
