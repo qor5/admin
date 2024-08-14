@@ -2,6 +2,7 @@ package examples_presets
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -181,6 +182,28 @@ func PresetsEditingValidate(b *presets.Builder, db *gorm.DB) (
 		company := obj.(*Company)
 		if company.Name == "" {
 			err.GlobalError("name must not be empty")
+		}
+		return
+	})
+
+	return
+}
+
+func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	db.AutoMigrate(&Company{})
+	mb = b.Model(&Company{})
+	mb.Listing("ID", "Name")
+	eb := mb.Editing("Name")
+	eb.Field("Name").SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+		c := obj.(*Company)
+		if c.Name == "" {
+			return errors.New("name must not be empty")
 		}
 		return
 	})
