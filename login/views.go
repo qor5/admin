@@ -381,12 +381,17 @@ func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar st
 					Theme(ThemeDark).
 					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
 			),
-		),
+		).
+			Attr("v-run", "(el) => { dialogLocals.refCard = el; }"),
 	).MaxWidth("600px").
 		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
 		Persistent(true).
 		NoClickAnimation(true).
-		Attr("@click.outside", presets.ShowSnackbarScript(pmsgr.LeaveBeforeUnsubmit, ColorWarning)),
+		Attr("@click.outside", fmt.Sprintf(`
+			if (dialogLocals.refCard && !dialogLocals.refCard.contains($event.target)) {
+				%s;
+			}
+		`, presets.ShowSnackbarScript(pmsgr.LeaveBeforeUnsubmit, ColorWarning))),
 	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
