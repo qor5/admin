@@ -240,7 +240,7 @@ var Messages_ja_JP = &Messages{
 	Preview:                        "プレビュー",
 	Containers:                     "コンテナ",
 	AddContainers:                  "コンテナの追加",
-	New:                            "新規作成",
+	New:                            "作成する",
 	Shared:                         "共有",
 	Select:                         "選択",
 	SelectedTemplateLabel:          "テンプレート",
@@ -278,7 +278,7 @@ var Messages_ja_JP = &Messages{
 	ConflictSlugMsg:         "競合するスラッグ",
 	ConflictPathMsg:         "競合するパス",
 	ExistingPathMsg:         "既存のパス",
-	UnableDeleteCategoryMsg: "このカテゴリーを削除するには、まず商品との関連付けをすべて削除する必要があります。",
+	UnableDeleteCategoryMsg: "このカテゴリを削除するには、まず商品との関連付けをすべて削除する必要があります。",
 	Versions:                "バージョン",
 	NewComponent:            "新しいコンポーネント",
 	Settings:                "設定",
@@ -304,8 +304,8 @@ var Messages_ja_JP = &Messages{
 	ModelLabelDemoContainer:    "デモコンテナ",
 	ModelLabelTemplates:        "テンプレート",
 	ModelLabelTemplate:         "テンプレート",
-	ModelLabelPageCategories:   "ページカテゴリー",
-	ModelLabelPageCategory:     "ページカテゴリー",
+	ModelLabelPageCategories:   "ページカテゴリ",
+	ModelLabelPageCategory:     "ページカテゴリ",
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
 	},

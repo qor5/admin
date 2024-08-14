@@ -245,7 +245,7 @@ var Messages_ja_JP = &Messages{
 	ModelAction:    "アクション",
 	ModelUser:      "作成者",
 	ModelKeys:      "キー",
-	ModelName:      "テーブル名",
+	ModelName:      "モデル名",
 	ModelLabel:     "メニュー名",
 	ModelLink:      "リンク",
 	ModelDiffs:     "差分",
