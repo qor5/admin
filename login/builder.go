@@ -99,8 +99,11 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 			return r, nil
 		}
 
-		presets.ShowMessage(&r, msgr.InfoPasswordSuccessfullyChanged, "info")
-		web.AppendRunScripts(&r, fmt.Sprintf("vars.%s = false", showVar))
+		web.AppendRunScripts(&r, fmt.Sprintf(`vars.%s = false; %s; setTimeout(function(){ %s }, 1500)`,
+			showVar,
+			presets.ShowSnackbarScript(msgr.InfoPasswordSuccessfullyChanged, "info"),
+			web.Plaid().URL(b.LogoutURL).Go()),
+		)
 		return r, nil
 	})
 }
