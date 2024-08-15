@@ -560,21 +560,28 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		orderByVal = orderByCreatedAtDESC
 		wh = wh.Order("created_at DESC")
 	}
-
+	var selected_type = ""
 	switch typeVal {
 	case typeImage:
-		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_IMAGE)
+		selected_type = media_library.ALLOW_TYPE_IMAGE
 	case typeVideo:
-		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_VIDEO)
+		selected_type = media_library.ALLOW_TYPE_VIDEO
 	case typeFile:
-		wh = wh.Where("selected_type = ?", media_library.ALLOW_TYPE_FILE)
+		selected_type = media_library.ALLOW_TYPE_FILE
 	default:
 		typeVal = typeAll
 	}
 	if tab == tabFiles {
 		wh = wh.Where("folder = ?", false)
+		if selected_type != "" {
+			wh = wh.Where("selected_type = ?", selected_type)
+		}
+
 	} else {
-		wh = wh.Where("parent_id = ?", parentID)
+		wh = wh.Where("parent_id = ? ", parentID)
+		if selected_type != "" {
+			wh = wh.Where("folder = true or (folder = false and selected_type = ? ) ", selected_type)
+		}
 		items := parentFolders(field, ctx, cfg, mb.db, uint(parentID), uint(parentID), nil, inMediaLibrary)
 		bc = VBreadcrumbs(
 			items...,
@@ -591,7 +598,11 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	}
 
 	if len(cfg.AllowType) > 0 {
-		wh = wh.Where("selected_type = ?", cfg.AllowType)
+		if tab == tabFiles {
+			wh = wh.Where("selected_type = ?", cfg.AllowType)
+		} else {
+			wh = wh.Where("folder = true or (folder = false and selected_type = ? ) ", cfg.AllowType)
+		}
 	}
 
 	if len(keyword) > 0 {

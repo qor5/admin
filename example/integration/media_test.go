@@ -25,6 +25,7 @@ INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (4, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (5, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 4);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (6, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test.png","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (7, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, 'video', '{"FileName":"test.mp4","Url":"","Video":"","SelectedType":"","Description":""}', 888, false, 0);
 
 `, []string{"media_libraries"}))
 
@@ -190,11 +191,11 @@ func TestMedia(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id=1").Count(&count).Error; err != nil {
 					t.Fatalf("delete object err : %v", err)
 					return
 				}
-				if count != 5 {
+				if count != 0 {
 					t.Fatalf("not delete object count : %d", count)
 					return
 				}
@@ -240,7 +241,7 @@ func TestMedia(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id in (1,2,3,4,5,6)").Count(&count).Error; err != nil {
 					t.Fatalf("delete objects err : %v", err)
 					return
 				}
@@ -437,6 +438,41 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0NotContains: []string{"test_search2.png", "test_search1.png"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select Image Type ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "image").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
+			ExpectPageBodyNotContains:     []string{"test.mp4"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow image",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"image"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
+			ExpectPageBodyNotContains:     []string{"test.mp4"},
 		},
 	}
 
