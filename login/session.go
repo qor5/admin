@@ -309,11 +309,17 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			WrapAfterUserLocked(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return logAction(r, user, "locked")
 				}
 			}).
 			WrapAfterLogout(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return cmp.Or(
 						logAction(r, user, "logout"),
 						b.ExpireCurrentSession(r, presets.MustObjectID(user)),
@@ -322,11 +328,17 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			WrapAfterConfirmSendResetPasswordLink(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return logAction(r, user, "send-reset-password-link")
 				}
 			}).
 			WrapAfterResetPassword(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return cmp.Or(
 						b.ExpireAllSessions(presets.MustObjectID(user)),
 						logAction(r, user, "reset-password"),
@@ -335,6 +347,9 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			WrapAfterChangePassword(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return cmp.Or(
 						b.ExpireAllSessions(presets.MustObjectID(user)),
 						logAction(r, user, "change-password"),
@@ -343,6 +358,9 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			WrapAfterExtendSession(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					oldToken := extraVals[0].(string)
 					return cmp.Or(
 						b.ExtendSession(r, presets.MustObjectID(user), oldToken),
@@ -352,6 +370,9 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 			}).
 			WrapAfterTOTPCodeReused(func(in login.HookFunc) login.HookFunc {
 				return func(r *http.Request, user interface{}, extraVals ...interface{}) error {
+					if err := in(r, user, extraVals...); err != nil {
+						return err
+					}
 					return logAction(r, user, "totp-code-reused")
 				}
 			})
