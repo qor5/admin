@@ -1284,8 +1284,6 @@ func (b *Builder) initMux() {
 	mainJSPath := b.prefix + "/assets/main.js"
 	mux.Handle("GET "+mainJSPath,
 		ub.PacksHandler("text/javascript",
-			Vuetify(),
-			JSComponentsPack(),
 			vuetifyx.JSComponentsPack(),
 			web.JSComponentsPack(),
 		),
@@ -1299,7 +1297,7 @@ func (b *Builder) initMux() {
 		),
 	)
 
-	HandleMaterialDesignIcons(b.prefix, mux)
+	vuetifyx.HandleMaterialDesignIcons(b.prefix, mux)
 
 	log.Println("mounted url:", vueJSPath)
 
