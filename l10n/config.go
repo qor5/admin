@@ -66,21 +66,16 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 					Size(SizeSmall),
 			)
 		}
-		menu := lb.localizeMenu(obj, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
+		menu := lb.localizeMenu(obj, chips, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
 			return s == fromLocale
 		}), existLocales)
-		if menu != nil {
-			chips = append(chips, menu)
-		}
 		return h.Td(
-			h.Div(
-				chips...,
-			).Class("d-flex ga-2"),
+			menu,
 		)
 	}
 }
 
-func (b *Builder) localizeMenu(obj interface{}, field *presets.FieldContext, ctx *web.EventContext, allLocales, existLocales []string) h.HTMLComponent {
+func (b *Builder) localizeMenu(obj interface{}, chips h.HTMLComponents, field *presets.FieldContext, ctx *web.EventContext, allLocales, existLocales []string) h.HTMLComponent {
 	if field.ModelInfo.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		return nil
 	}
@@ -112,7 +107,10 @@ func (b *Builder) localizeMenu(obj interface{}, field *presets.FieldContext, ctx
 	return web.Scope(
 		VMenu(
 			web.Slot(
-				VIcon("mdi-menu-down").Attr("v-bind", "props").Disabled(allSelected),
+				h.Div(
+					chips,
+					VIcon("mdi-menu-down"),
+				).Class("d-flex ga-2").AttrIf("v-bind", "props", !allSelected),
 			).Name("activator").Scope(`{props}`),
 			VList(
 				localsListItems...,

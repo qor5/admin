@@ -750,7 +750,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 									"form.NewFiles = [...$event.target.files];"+
 										web.Plaid().
 											BeforeScript("locals.fileChooserUploadingFiles = $event.target.files").
-											EventFunc(uploadFileEvent).
+											EventFunc(UploadFileEvent).
 											Query(paramTab, tab).
 											Query(ParamParentID, parentID).
 											Query(ParamField, field).

@@ -1,6 +1,9 @@
 package integration_test
 
 import (
+	"bytes"
+	"github.com/qor/oss/filesystem"
+	media_oss "github.com/qor5/admin/v3/media/oss"
 	"net/http"
 	"testing"
 
@@ -26,6 +29,7 @@ INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, sele
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (5, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 4);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (6, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test.png","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (7, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, 'video', '{"FileName":"test.mp4","Url":"","Video":"","SelectedType":"","Description":""}', 888, false, 0);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (8, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, 'file', '{"FileName":"test.txt","Url":"","Video":"","SelectedType":"","Description":""}', 888, false, 0);
 
 `, []string{"media_libraries"}))
 
@@ -454,7 +458,7 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
-			ExpectPageBodyNotContains:     []string{"test.mp4"},
+			ExpectPageBodyNotContains:     []string{"test.mp4", "test.txt"},
 		},
 		{
 			Name:  "Pages Folder Tab Cfg Just allow image",
@@ -471,8 +475,126 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
-			ExpectPageBodyNotContains:     []string{"test.mp4"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test.txt"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select Video Type",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "video").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test.mp4"},
+			ExpectPageBodyNotContains:     []string{"test_search1.png", "test_search2.png", "test.txt"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow video",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"video"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test.mp4"},
+			ExpectPortalUpdate0NotContains:     []string{"test_search1.png", "test_search2.png", "test.txt"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select file Type ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "file").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test.txt"},
+			ExpectPageBodyNotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"file"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test.txt"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
+		},
+		{
+			Name:  "MediaLibrary folders Tab upload file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Pages Folder Tab upload file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+				}
+				return
+			},
 		},
 	}
 
