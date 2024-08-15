@@ -42,7 +42,7 @@ func TestPresetsEditingValidate(t *testing.T) {
 
 func TestPresetsEditingSetter(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	PresetsEditingValidate(pb, TestDB)
+	PresetsEditingSetter(pb, TestDB)
 
 	cases := []multipartestutils.TestCase{
 		{
