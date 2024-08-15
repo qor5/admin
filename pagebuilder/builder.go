@@ -431,6 +431,13 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		listingFields = append(listingFields, activity.ListFieldNotes)
 	}
 	lb := pm.Listing(listingFields...)
+	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		liveFilterItem, err := publish.NewLiveFilterItem(ctx.R.Context(), "")
+		if err != nil {
+			panic(liveFilterItem)
+		}
+		return []*vx.FilterItem{liveFilterItem}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
