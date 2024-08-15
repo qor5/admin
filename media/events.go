@@ -11,7 +11,7 @@ const (
 	loadImageCropperEvent        = "mediaLibrary_LoadImageCropperEvent"
 	ImageSearchEvent             = "mediaLibrary_ImageSearchEvent"
 	ImageJumpPageEvent           = "mediaLibrary_ImageJumpPageEvent"
-	uploadFileEvent              = "mediaLibrary_UploadFileEvent"
+	UploadFileEvent              = "mediaLibrary_UploadFileEvent"
 	chooseFileEvent              = "mediaLibrary_ChooseFileEvent"
 	UpdateDescriptionEvent       = "mediaLibrary_UpdateDescriptionEvent"
 	DeleteConfirmationEvent      = "mediaLibrary_DeleteConfirmationEvent"
@@ -34,7 +34,7 @@ func registerEventFuncs(hub web.EventFuncHub, mb *Builder) {
 	hub.RegisterEventFunc(loadImageCropperEvent, loadImageCropper(mb))
 	hub.RegisterEventFunc(ImageSearchEvent, searchFile(mb))
 	hub.RegisterEventFunc(ImageJumpPageEvent, jumpPage(mb))
-	hub.RegisterEventFunc(uploadFileEvent, uploadFile(mb))
+	hub.RegisterEventFunc(UploadFileEvent, uploadFile(mb))
 	hub.RegisterEventFunc(chooseFileEvent, chooseFile(mb))
 	hub.RegisterEventFunc(UpdateDescriptionEvent, updateDescription(mb))
 	hub.RegisterEventFunc(DeleteConfirmationEvent, deleteConfirmation(mb))

@@ -449,7 +449,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	fieldColumn := lo.SliceToMap(columns, func(col *Column) (string, *Column) {
 		return col.Name, col
 	})
-	dataTable := vx.DataTable(objs).
+	dataTable := vx.DataTable(objs).Hover(true).HoverClass("cursor-pointer").
 		HeadCellWrapperFunc(func(_ h.MutableAttrHTMLComponent, field string, title string) (compo h.HTMLComponent) {
 			defer func() {
 				th, ok := compo.(h.MutableAttrHTMLComponent)
