@@ -347,6 +347,7 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 	var (
 		containerID   = ctx.R.FormValue(paramContainerID)
 		containerName = ctx.R.FormValue(paramContainerName)
+		msgr          = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr         = presets.MustGetMessages(ctx.R)
 	)
 
@@ -355,7 +356,7 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 		Body: web.Scope(
 			VDialog(
 				VCard(
-					VCardTitle(h.Text(fmt.Sprintf("Are you sure you want to delete %s?", containerName))),
+					VCardTitle(h.Text(msgr.AreWantDeleteContainer(containerName))),
 					VCardActions(
 						VSpacer(),
 						VBtn(pMsgr.Cancel).
