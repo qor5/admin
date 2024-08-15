@@ -1417,6 +1417,19 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 			return
 		}
 	})
+	p.Wrap(func(in web.PageFunc) web.PageFunc {
+		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			r, err = in(ctx)
+			if err == nil && r.Body != nil {
+				currentVuetifyLocale := strings.ReplaceAll(
+					i18n.LanguageTagFromContext(ctx.R.Context(), language.English).String(),
+					"-", "",
+				)
+				r.Body = VLocaleProvider().Locale(currentVuetifyLocale).FallbackLocale("en").Children(r.Body)
+			}
+			return r, err
+		}
+	})
 
 	handlers := b.GetI18n().EnsureLanguage(
 		p,
