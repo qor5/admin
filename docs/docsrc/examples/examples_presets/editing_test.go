@@ -39,3 +39,29 @@ func TestPresetsEditingValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsEditingSetter(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingSetter(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "default field setterFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("Name", "").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"name must not be empty"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
