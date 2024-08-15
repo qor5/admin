@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"fmt"
+
 	"github.com/qor5/x/v3/i18n"
 )
 
@@ -32,7 +33,7 @@ type Messages struct {
 	PageOverView              string
 	Others                    string
 	Add                       string
-	AddComponent              string
+	AddContainer              string
 	BuildYourPages            string
 	PlaceAnElementFromLibrary string
 	NewElement                string
@@ -53,7 +54,7 @@ type Messages struct {
 	ExistingPathMsg         string
 	UnableDeleteCategoryMsg string
 	Versions                string
-	NewComponent            string
+	NewContainer            string
 	Settings                string
 	SelectElementMsg        string
 	StartBuildingMsg        string
@@ -108,7 +109,7 @@ var Messages_en_US = &Messages{
 
 	Others:                    "Others",
 	Add:                       "Add",
-	AddComponent:              "Add Component",
+	AddContainer:              "Add Container",
 	BuildYourPages:            "Build your pages",
 	PlaceAnElementFromLibrary: "Place an element from  library.",
 	NewElement:                "New Element",
@@ -128,11 +129,11 @@ var Messages_en_US = &Messages{
 	ExistingPathMsg:         "Existing Path",
 	UnableDeleteCategoryMsg: "To delete this category you need to remove all association to products first",
 	Versions:                "versions",
-	NewComponent:            "New Component",
+	NewContainer:            "New Container",
 	Settings:                "settings",
 	SelectElementMsg:        "Select an element and change the setting here.",
 	StartBuildingMsg:        "Start building a page",
-	StartBuildingSubMsg:     "By Browsing and selecting components from the library",
+	StartBuildingSubMsg:     "By Browsing and selecting container from the library",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "Title",
@@ -184,7 +185,7 @@ var Messages_zh_CN = &Messages{
 
 	Others:                    "其他",
 	Add:                       "新增",
-	AddComponent:              "新增组件",
+	AddContainer:              "新增组件",
 	BuildYourPages:            "构建你的页面",
 	PlaceAnElementFromLibrary: "从你的库从选择一个组件",
 	NewElement:                "新的组件",
@@ -204,7 +205,7 @@ var Messages_zh_CN = &Messages{
 	ExistingPathMsg:         "已存在的路径",
 	UnableDeleteCategoryMsg: "这个分类没办法被删除,因为已被页面使用",
 	Versions:                "版本",
-	NewComponent:            "新增组件",
+	NewContainer:            "新增组件",
 	Settings:                "设置",
 	SelectElementMsg:        "选择一个组件，这里会变成设置",
 	StartBuildingMsg:        "开始构建页面",
@@ -260,7 +261,7 @@ var Messages_ja_JP = &Messages{
 
 	Others:                    "その他",
 	Add:                       "追加",
-	AddComponent:              "コンポーネントの追加",
+	AddContainer:              "コンテナの追加",
 	BuildYourPages:            "ページの作成",
 	PlaceAnElementFromLibrary: "ライブラリから要素を配置します。",
 	NewElement:                "新しい要素",
@@ -280,11 +281,11 @@ var Messages_ja_JP = &Messages{
 	ExistingPathMsg:         "既存のパス",
 	UnableDeleteCategoryMsg: "このカテゴリを削除するには、まず商品との関連付けをすべて削除する必要があります。",
 	Versions:                "バージョン",
-	NewComponent:            "新しいコンポーネント",
+	NewContainer:            "新しいコンテナ",
 	Settings:                "設定",
 	SelectElementMsg:        "コンテナを選択後、設定変更してください",
 	StartBuildingMsg:        "ページの構築を開始します",
-	StartBuildingSubMsg:     "ライブラリからコンポーネントを参照して選択する",
+	StartBuildingSubMsg:     "ライブラリからコンテナを参照して選択する",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "タイトル",

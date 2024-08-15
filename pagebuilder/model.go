@@ -209,7 +209,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			web.Slot(
 				VIcon("mdi-plus-circle-outline"),
 			).Name(VSlotPrepend),
-			h.Span(msgr.AddComponent).Class("ml-5"),
+			h.Span(msgr.AddContainer).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
@@ -616,7 +616,6 @@ func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 				cons = append(cons, builder)
 			}
 		}
-
 	}
 	return
 }
@@ -990,7 +989,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHightName).
 				IframeHeight(iframeValue).
-				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewComponent)
+				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
 				if ctx.Param(paramContainerNew) != "" {
@@ -1005,7 +1004,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 								VCardTitle(h.Text(msgr.StartBuildingMsg)).Class("d-flex justify-center"),
 								VCardSubtitle(h.Text(msgr.StartBuildingSubMsg)).Class("d-flex justify-center"),
 								VCardActions(
-									VBtn(msgr.AddComponent).Color(ColorPrimary).Variant(VariantElevated).
+									VBtn(msgr.AddContainer).Color(ColorPrimary).Variant(VariantElevated).
 										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
 								).Class("d-flex justify-center"),
 							).Flat(true),
