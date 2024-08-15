@@ -8,11 +8,13 @@ import (
 	"github.com/markbates/goth/providers/google"
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -160,4 +162,51 @@ func loginPiece5() {
 			return nil
 		})
 	// @snippet_end
+}
+
+func changePasswordExample(b *presets.Builder, db *gorm.DB, mockUser *User) http.Handler {
+	db.AutoMigrate(&User{})
+
+	b.GetI18n().SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)
+	b.DataOperator(gorm2op.DataOperator(db))
+
+	lb := plogin.New(b).
+		DB(db).
+		UserModel(&User{}).
+		Secret("test").
+		OAuthProviders(
+			&login.Provider{
+				Goth: google.New(loginGoogleKey, loginGoogleSecret, baseURL+"/auth/callback?provider=google"),
+				Key:  "google",
+				Text: "Google",
+			},
+			&login.Provider{
+				Goth: github.New(loginGithubKey, loginGithubSecret, baseURL+"/auth/callback?provider=github"),
+				Key:  "github",
+				Text: "Login with Github",
+			},
+		).TOTP(false)
+	b.ProfileFunc(func(ctx *web.EventContext) HTMLComponent {
+		return VBtn("Change Password").OnClick(plogin.OpenChangePasswordDialogEvent)
+	})
+
+	mux := http.NewServeMux()
+	mux.Handle("/", b)
+	lb.Mount(mux)
+	// TODO: need improve
+	return login.MockCurrentUser(mockUser)(mux)
+}
+
+var currentUser = &User{
+	Model:   gorm.Model{ID: 1},
+	Name:    "admin",
+	Address: "admin address",
+	UserPass: login.UserPass{
+		Account:  "qor@theplant.jp",
+		Password: "$2a$10$N7gloPSgJtB23hYTO9Ww8uBqpAcLn7KOGFcYQFkg5IA92EG8LIZFu",
+	},
+}
+
+func ChangePasswordExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return changePasswordExample(b, db, currentUser)
 }

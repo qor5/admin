@@ -84,6 +84,8 @@ type Messages struct {
 	HumanizeTime2Years    string
 	HumanizeTimeYears     string
 	HumanizeTimeLongWhile string
+
+	LeaveBeforeUnsubmit string
 }
 
 func (msgr *Messages) CreatingObjectTitle(modelName string) string {
@@ -216,6 +218,8 @@ var Messages_en_US = &Messages{
 	HumanizeTime2Years:    "2 years %s",
 	HumanizeTimeYears:     "%d years %s",
 	HumanizeTimeLongWhile: "a long while %s",
+
+	LeaveBeforeUnsubmit: "If you leave before submitting the form, you will lose all the unsaved input.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -294,6 +298,8 @@ var Messages_zh_CN = &Messages{
 	HumanizeTime2Years:    "2 年%s",
 	HumanizeTimeYears:     "%d 年%s",
 	HumanizeTimeLongWhile: "很久之%s",
+
+	LeaveBeforeUnsubmit: "如果您在提交表单之前离开，您将丢失所有未保存的输入。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -371,4 +377,6 @@ var Messages_ja_JP = &Messages{
 	HumanizeTime2Years:    "2 年間%s",
 	HumanizeTimeYears:     "%d 年間%s",
 	HumanizeTimeLongWhile: "a long while %s",
+
+	LeaveBeforeUnsubmit: "フォームを送信する前に離れると、すべての未保存の入力が失われます。",
 }
