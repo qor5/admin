@@ -85,6 +85,8 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
+const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	ctx = context.WithValue(ctx, ctxKeyListingCompo{}, c)
 
@@ -95,6 +97,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`function() {
 			locals.dialog = false;
+			locals.document = null;
 			locals.current_editing_id = "";
 			locals.selected_ids = %s || [];
 			let orig = locals.%s;
@@ -108,8 +111,10 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			stateful.LocalsKeyNewAction,
 			stateful.LocalsKeyNewAction,
 		)),
+		h.Div().Attr("v-run", `(el) => locals.document = el.ownerDocument`),
 		h.Iff(c.OnMounted != "", func() h.HTMLComponent {
 			return h.Div().Attr("v-run", fmt.Sprintf(`(el) => {
+				locals.document = el.ownerDocument;
 				%s
 			}`, c.OnMounted))
 		}),
@@ -166,7 +171,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 					target.Page = 0
 					target.ActiveFilterTab = ft.ID
 					target.FilterQuery = encodedQuery
-				}).Go()).
+				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
 				Children(
 					h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
 						return ft.AdvancedLabel
@@ -193,7 +198,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			target.Page = 0
 		},
 		stateful.WithAppendFix(`v.compo.keyword = xlocals.keyword`),
-	).Go()
+	).ThenScript(ListingCompo_JsScrollToTop).Go()
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
 		VTextField().
 			Id(c.textFieldSearchID()).
@@ -210,7 +215,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Attr("@click:clear", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
 				target.Keyword = ""
-			}).Go()).
+			}).ThenScript(ListingCompo_JsScrollToTop).Go()).
 			Children(
 				web.Slot(VIcon("mdi-magnify").Attr("@click", reloadAction)).Name("append-inner"),
 			),
@@ -299,7 +304,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		vx.VXFilter(fd).Translations(ft).
 			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
-			}, opts...).Go()).
+			}, opts...).ThenScript(ListingCompo_JsScrollToTop).Go()).
 			Attr("v-run", fmt.Sprintf(`(el) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
 			}`, c.textFieldSearchID())),
@@ -490,7 +495,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 					} else {
 						target.OrderBys = append(target.OrderBys, orderBy)
 					}
-				}).Go()).
+				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
 				Children(
 					h.Div().Style("cursor: pointer; white-space: nowrap;").Children(
 						h.Span(title).Style("text-decoration: underline;"),
@@ -567,10 +572,10 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 						target.Page = 0
 					},
 					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-				).Go()).
+				).ThenScript(ListingCompo_JsScrollToTop).Go()).
 				OnSelectPage(stateful.ReloadAction(ctx, c, nil,
 					stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-				).Go()),
+				).ThenScript(ListingCompo_JsScrollToTop).Go()),
 		)
 	}
 	return h.Components(dataTable, dataTableAdditions)
