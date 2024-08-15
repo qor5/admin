@@ -500,8 +500,10 @@ func (b *FieldsBuilder) getFieldOrDefault(name string) (r *FieldBuilder) {
 		}
 
 		ft := b.defaults.fieldTypeByTypeOrCreate(fType)
-		r.ComponentFunc(ft.compFunc).
-			SetterFunc(ft.setterFunc)
+		r.ComponentFunc(ft.compFunc)
+		if r.setterFunc == nil {
+			r.SetterFunc(ft.setterFunc)
+		}
 	}
 	return
 }
