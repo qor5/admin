@@ -244,7 +244,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, "failed", ColorWarning)
 			return
 		} else if len(ids) == 1 {
-			message = pMsgr.DeleteConfirmationText(ids[0])
+			message = pMsgr.DeleteConfirmationText
 		} else {
 			message = msgr.DeleteObjects(len(ids))
 		}
@@ -581,6 +581,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 		return
 	}
 }
+
 func rename(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
@@ -664,8 +665,8 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 	}
 	return
 }
-func renameDialog(mb *Builder) web.EventFunc {
 
+func renameDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			obj   = wrapFirst(mb, ctx, &r)
@@ -710,6 +711,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 		return
 	}
 }
+
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.RunScript = `vars.searchMsg=""`
 	var (
@@ -746,6 +748,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	})
 	return
 }
+
 func updateDescriptionDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := wrapFirst(mb, ctx, &r)
@@ -942,7 +945,6 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 }
 
 func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary, err error) {
-
 	if err = db.First(&m, id).Error; err != nil {
 		return
 	}
@@ -950,7 +952,6 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 	if !m.Folder {
 		var fi base.FileInterface
 		fi, err = m.File.Retrieve(m.File.URL())
-
 		if err != nil {
 			return
 		}

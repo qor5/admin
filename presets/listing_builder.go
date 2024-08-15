@@ -348,11 +348,6 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 
 func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := MustGetMessages(evCtx.R)
-	id := evCtx.R.FormValue(ParamID)
-	promptID := id
-	if v := evCtx.R.FormValue("prompt_id"); v != "" {
-		promptID = v
-	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
@@ -360,7 +355,7 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 			VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
 				VCard(
 					VCardTitle(
-						h.Text(msgr.DeleteConfirmationText(promptID)),
+						h.Text(msgr.DeleteConfirmationText),
 					),
 					VCardActions(
 						VSpacer(),
