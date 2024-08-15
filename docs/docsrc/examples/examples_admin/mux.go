@@ -1,8 +1,9 @@
 package examples_admin
 
 import (
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
+
+	"github.com/qor5/admin/v3/autocomplete"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
@@ -34,6 +35,7 @@ func SamplesHandler(mux webexamples.Muxer, ab *autocomplete.Builder) {
 	examples_vuetify.SamplesHandler(mux)
 	examples_presets.SamplesHandler(mux)
 
+	examples.AddPresetExample(mux, ChangePasswordExample)
 	examples.AddPresetExample(mux, ListingExample)
 	examples.AddPresetExample(mux, WorkerExample)
 	examples.AddPresetExample(mux, ActionWorkerExample)
