@@ -675,7 +675,7 @@ func configPost(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
 	sb.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
+		return richeditor.RichEditor(db, field.FormKey).Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 	return m
 }
