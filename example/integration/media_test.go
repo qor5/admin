@@ -554,6 +554,7 @@ func TestMedia(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
 				req := NewMultipartBuilder().
 					PageURL("/media-library").
 					Query(web.EventFuncIDName, media.UploadFileEvent).

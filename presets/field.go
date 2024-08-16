@@ -110,6 +110,9 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.label = b.label
 	r.compFunc = b.compFunc
 	r.setterFunc = b.setterFunc
+	r.nestedFieldsBuilder = b.nestedFieldsBuilder
+	r.context = b.context
+	r.rt = b.rt
 	return r
 }
 
