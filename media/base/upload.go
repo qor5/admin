@@ -3,7 +3,7 @@ package base
 import (
 	"encoding/json"
 	"errors"
-
+	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -81,7 +81,7 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 	return true, nil
 }
 
-func SaveUploadAndCropImage(db *gorm.DB, obj interface{}) (err error) {
+func SaveUploadAndCropImage(db *gorm.DB, obj interface{}, _ string, _ *web.EventContext) (err error) {
 	db = db.Model(obj).Save(obj)
 	err = db.Error
 	if err != nil {

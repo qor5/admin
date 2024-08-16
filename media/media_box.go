@@ -944,7 +944,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 	return
 }
 
-func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary, err error) {
+func CopyMediaLiMediaLibrary(mb *Builder, db *gorm.DB, id int, ctx *web.EventContext) (m media_library.MediaLibrary, err error) {
 	if err = db.First(&m, id).Error; err != nil {
 		return
 	}
@@ -968,7 +968,7 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 		}
 	}
 	m.Model = gorm.Model{ID: 0}
-	err = base.SaveUploadAndCropImage(db, &m)
+	err = mb.saverFunc(db, &m, "", ctx)
 	return
 }
 
@@ -978,7 +978,7 @@ func copyFile(mb *Builder) web.EventFunc {
 		id := ctx.ParamAsInt(ParamMediaIDS)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
-		if _, err = CopyMediaLiMediaLibrary(db, id); err != nil {
+		if _, err = CopyMediaLiMediaLibrary(mb, db, id, ctx); err != nil {
 			return
 		}
 		web.AppendRunScripts(&r,

@@ -1,8 +1,14 @@
 package examples_admin
 
 import (
+	"bytes"
+	"github.com/qor/oss/filesystem"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"net/http"
@@ -85,6 +91,35 @@ func TestMediaExample(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"/system/media_libraries/5/file.png", "Successfully Updated"},
+		},
+		{
+			Name:  "upload file wrap saver",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				simpleMediaDate.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+					return
+				}
+				var mr MediaRole
+				TestDB.Order("id desc").First(&mr)
+				if mr.RoleName != "viewer" {
+					t.Fatalf("except rolename: viewer but got %v", mr.RoleName)
+				}
+				return
+			},
 		},
 	}
 	for _, c := range cases {

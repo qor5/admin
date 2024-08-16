@@ -1,6 +1,7 @@
 package examples_admin
 
 import (
+	"github.com/qor5/admin/v3/media/media_library"
 	"net/http"
 
 	"github.com/qor5/admin/v3/example/models"
@@ -12,8 +13,26 @@ import (
 	"gorm.io/gorm"
 )
 
+type MediaRole struct {
+	gorm.Model
+	RoleName string
+	MediaID  uint
+}
+
 func MediaExample(b *presets.Builder, db *gorm.DB) http.Handler {
-	mediaBuilder := media.New(db).AutoMigrate()
+	db.AutoMigrate(&MediaRole{})
+	mediaBuilder := media.New(db).AutoMigrate().WrapSaverFunc(func(in media.SaverFunc) media.SaverFunc {
+		return func(db *gorm.DB, obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(db, obj, id, ctx); err != nil {
+				return
+			}
+			if id == "" {
+				p := obj.(*media_library.MediaLibrary)
+				db.Save(&MediaRole{MediaID: p.ID, RoleName: "viewer"})
+			}
+			return
+		}
+	})
 	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
 	b.MenuOrder("Default", "Simple", "Media Library")
 	configDefaultMedia(b, db)
