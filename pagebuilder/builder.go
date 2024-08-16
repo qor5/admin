@@ -431,6 +431,13 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		listingFields = append(listingFields, activity.ListFieldNotes)
 	}
 	lb := pm.Listing(listingFields...)
+	lb.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
+		liveFilterItem, err := publish.NewLiveFilterItem(ctx.R.Context(), "")
+		if err != nil {
+			panic(liveFilterItem)
+		}
+		return []*vx.FilterItem{liveFilterItem}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -473,7 +480,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 
 		return h.Div(
 			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-				web.GET().URL(pm.Info().ListingHref()).PushState(true).Go(),
+				fmt.Sprintf(`$event.view.window.history.length <= 2 ? %s : $event.view.window.history.back()`, web.GET().URL(pm.Info().ListingHref()).PushState(true).Go()),
 			),
 			h.H1("{{vars.pageTitle}}").Class("ml-4"),
 			versionBadge.Class("mt-2 ml-2"),
@@ -1376,6 +1383,7 @@ func (b *ContainerBuilder) OnlyPages(v bool) *ContainerBuilder {
 	b.onlyPages = v
 	return b
 }
+
 func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 	if b.mb == nil {
 		return b

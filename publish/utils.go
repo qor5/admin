@@ -1,12 +1,17 @@
 package publish
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
 
 	"github.com/qor/oss"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"gorm.io/gorm"
+
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 const (
@@ -75,4 +80,22 @@ func RunJob(jobName string, interval time.Duration, timeout time.Duration, f fun
 			os.Exit(124)
 		}
 	}
+}
+
+const FilterKeyLive = "live"
+
+func NewLiveFilterItem(ctx context.Context, columnPrefix string) (*vx.FilterItem, error) {
+	evCtx := web.MustGetEventContext(ctx)
+	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
+	return &vx.FilterItem{
+		Key:          FilterKeyLive,
+		Label:        msgr.HeaderLive,
+		ItemType:     vx.ItemTypeSelect,
+		SQLCondition: columnPrefix + `status = ?`,
+		Options: []*vx.SelectItem{
+			{Text: msgr.StatusOnline, Value: StatusOnline},
+			{Text: msgr.StatusOffline, Value: StatusOffline},
+			{Text: msgr.StatusDraft, Value: StatusDraft},
+		},
+	}, nil
 }

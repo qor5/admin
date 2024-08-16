@@ -293,7 +293,11 @@ func NewConfig(db *gorm.DB) Config {
 					if err != nil {
 						panic(err)
 					}
-					return []*vx.FilterItem{item}
+					liveFilterItem, err := publish.NewLiveFilterItem(ctx.R.Context(), "")
+					if err != nil {
+						panic(liveFilterItem)
+					}
+					return []*vx.FilterItem{item, liveFilterItem}
 				})
 
 				pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
