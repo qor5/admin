@@ -51,3 +51,38 @@ func TestPresetsListingCustomizationFields(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsListingCustomizationBulkActionsLabelI18n(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsListingCustomizationBulkActions(pb, TestDB)
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "CN button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=__reload__").
+					Query("lang", "zh-Hans").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`审批`},
+		},
+		{
+			Name:  "EN button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=__reload__").
+					Query("lang", "en").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`Approve`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

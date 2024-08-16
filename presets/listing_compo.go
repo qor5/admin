@@ -744,7 +744,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			continue
 		}
 
-		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
+		label := i18n.PT(evCtx.R, ModelsI18nModuleKey, c.lb.mb.label, c.lb.mb.getLabel(ba.NameLabel))
+		buttons = append(buttons, VBtn(label).
 			Color(cmp.Or(ba.buttonColor, ColorSecondary)).Variant(VariantFlat).Class("ml-2").
 			Attr("@click", stateful.PostAction(ctx, c, c.OpenBulkActionDialog, OpenBulkActionDialogRequest{
 				Name: ba.name,
@@ -762,7 +763,8 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			continue
 		}
 
-		buttons = append(buttons, VBtn(c.lb.mb.getLabel(ba.NameLabel)).
+		label := i18n.PT(evCtx.R, ModelsI18nModuleKey, c.lb.mb.label, c.lb.mb.getLabel(ba.NameLabel))
+		buttons = append(buttons, VBtn(label).
 			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantElevated).Class("ml-2").
 			Attr("@click", stateful.PostAction(ctx, c, c.OpenActionDialog, OpenActionDialogRequest{
 				Name: ba.name,

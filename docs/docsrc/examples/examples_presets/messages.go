@@ -11,6 +11,7 @@ type Messages struct {
 	CustomersID             string
 	CustomersCompany        string
 	CustomersEmail          string
+	CustomersApprove        string
 	Customer                string
 	CustomersFilterCreated  string
 	CustomersFilterApproved string
@@ -29,6 +30,7 @@ var Messages_zh_CN = &Messages{
 	CustomersID:             "ID",
 	CustomersCompany:        "公司",
 	CustomersEmail:          "电子邮件",
+	CustomersApprove:        "审批",
 	Customer:                "客户",
 	CustomersFilterCreated:  "创建日",
 	CustomersFilterApproved: "承认日",
@@ -47,6 +49,7 @@ var Messages_en_US = &Messages{
 	CustomersID:             "ID",
 	CustomersCompany:        "Company",
 	CustomersEmail:          "Email",
+	CustomersApprove:        "Approve",
 	Customer:                "Customer",
 	CustomersFilterCreated:  "Created",
 	CustomersFilterApproved: "Approved",
