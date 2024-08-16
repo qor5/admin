@@ -92,7 +92,8 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 ) {
 	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		RegisterForModule(language.English, presets.ModelsI18nModuleKey, Messages_en_US)
 
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
 
