@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -70,6 +69,15 @@ func (u *Profile) GetFirstRole() string {
 	return role
 }
 
+type (
+	RenameCallback     func(ctx context.Context, newName string) error
+	CustomizeCompoFunc func(ctx context.Context, profileCompo *ProfileCompo, current h.HTMLComponent) (h.HTMLComponent, error)
+)
+
+var NopCustomizeCompoFunc = func(ctx context.Context, profileCompo *ProfileCompo, current h.HTMLComponent) (h.HTMLComponent, error) {
+	return current, nil
+}
+
 type ProfileBuilder struct {
 	mu sync.RWMutex
 	pb *presets.Builder
@@ -78,15 +86,19 @@ type ProfileBuilder struct {
 	logoutURL           string
 	disableNotification bool
 	currentProfileFunc  func(ctx context.Context) (*Profile, error)
-	renameCallback      func(ctx context.Context, newName string) error
+	renameCallback      RenameCallback
 	customizeButtons    func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error)
-	prependCompos       func(ctx context.Context, profileCompo *ProfileCompo) ([]h.HTMLComponent, error)
+	prependCompo        CustomizeCompoFunc
+	subtitleCompo       CustomizeCompoFunc
 }
 
 func NewProfileBuilder(
 	currentProfileFunc func(ctx context.Context) (*Profile, error),
-	renameCallback func(ctx context.Context, newName string) error,
+	renameCallback RenameCallback,
 ) *ProfileBuilder {
+	if currentProfileFunc == nil {
+		panic("profile: missing currentProfileFunc")
+	}
 	return &ProfileBuilder{
 		currentProfileFunc: currentProfileFunc,
 		renameCallback:     renameCallback,
@@ -114,7 +126,39 @@ func (b *ProfileBuilder) CustomizeButtons(v func(ctx context.Context, buttons ..
 }
 
 func (b *ProfileBuilder) PrependCompos(f func(ctx context.Context, profileCompo *ProfileCompo) ([]h.HTMLComponent, error)) *ProfileBuilder {
-	b.prependCompos = f
+	b.prependCompo = func(ctx context.Context, profileCompo *ProfileCompo, current h.HTMLComponent) (h.HTMLComponent, error) {
+		compos, err := f(ctx, profileCompo)
+		if err != nil {
+			return nil, err
+		}
+		return h.Components(compos...), nil
+	}
+	return b
+}
+
+func (b *ProfileBuilder) WrapPrependCompo(w func(in CustomizeCompoFunc) CustomizeCompoFunc) *ProfileBuilder {
+	if b.prependCompo == nil {
+		b.prependCompo = w(NopCustomizeCompoFunc)
+	} else {
+		b.prependCompo = w(b.prependCompo)
+	}
+	return b
+}
+
+func (b *ProfileBuilder) WrapSubtitleCompo(w func(in CustomizeCompoFunc) CustomizeCompoFunc) *ProfileBuilder {
+	if b.subtitleCompo == nil {
+		b.subtitleCompo = w(NopCustomizeCompoFunc)
+	} else {
+		b.subtitleCompo = w(b.subtitleCompo)
+	}
+	return b
+}
+
+func (b *ProfileBuilder) WrapRenameCallback(w func(in RenameCallback) RenameCallback) *ProfileBuilder {
+	if b.renameCallback == nil {
+		panic("profile: missing renameCallback")
+	}
+	b.renameCallback = w(b.renameCallback)
 	return b
 }
 
@@ -184,12 +228,22 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	children := []h.HTMLComponent{}
-	if c.b.prependCompos != nil {
-		prependCompos, err := c.b.prependCompos(ctx, c)
+	if c.b.prependCompo != nil {
+		prependCompo, err := c.b.prependCompo(ctx, c, nil)
 		if err != nil {
 			return nil, err
 		}
-		children = append(children, prependCompos...)
+		if prependCompo != nil {
+			children = append(children, prependCompo)
+		}
+	}
+	var subtitleCompo h.HTMLComponent = h.Div().Class("text-overline text-grey-darken-1 text-truncate").Text(user.GetFirstRole())
+	if c.b.subtitleCompo != nil {
+		var err error
+		subtitleCompo, err = c.b.subtitleCompo(ctx, c, subtitleCompo)
+		if err != nil {
+			return nil, err
+		}
 	}
 	children = append(children, []h.HTMLComponent{
 		v.VAvatar().Class("text-body-1 font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeLarge).Density(v.DensityCompact).Rounded(true).
@@ -204,7 +258,7 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				h.Div().Attr("v-pre", true).Text(user.Name).Class("flex-1-1 text-subtitle-2 text-secondary text-truncate"),
 				userCardCompo,
 			),
-			h.Div().Class("text-overline text-grey-darken-1").Text(strings.ToUpper(user.GetFirstRole())),
+			subtitleCompo,
 		),
 		h.Iff(showBellCompo, func() h.HTMLComponent {
 			return h.Div().Class("d-flex align-center px-4 me-n3 border-s-sm h-50").Children(
@@ -334,10 +388,12 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 							web.Scope().VSlot(`{ locals: xlocals }`).Init(fmt.Sprintf(`{editShow:false, name: %q}`, user.Name)).Children(
 								h.Div().Attr("v-if", "!xlocals.editShow").Class("d-flex align-center ga-2").Children(
 									h.Div().Attr("v-pre", true).Text(user.Name).Class("text-subtitle-1 font-weight-medium text-truncate"),
-									v.VBtn("").Size(20).Variant(v.VariantText).Color(v.ColorGreyDarken1).
-										Attr("@click", fmt.Sprintf("xlocals.editShow = true; xlocals.name = %q", user.Name)).Children(
-										v.VIcon("mdi-pencil-outline"),
-									),
+									h.Iff(c.b.renameCallback != nil, func() h.HTMLComponent {
+										return v.VBtn("").Size(20).Variant(v.VariantText).Color(v.ColorGreyDarken1).
+											Attr("@click", fmt.Sprintf("xlocals.editShow = true; xlocals.name = %q", user.Name)).Children(
+											v.VIcon("mdi-pencil-outline"),
+										)
+									}),
 								),
 								h.Div().Attr("v-else", true).Style("height:24px").Class("d-flex align-center ga-2").Children(
 									v.VTextField().Class("text-subtitle-1 font-weight-medium mt-n2").
