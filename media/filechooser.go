@@ -151,7 +151,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 			if mb.currentUserID != nil {
 				m.UserID = mb.currentUserID(ctx)
 			}
-			err = base.SaveUploadAndCropImage(mb.db, &m)
+			err = mb.saverFunc(mb.db, &m, "", ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
@@ -204,7 +204,7 @@ func chooseFile(mb *Builder) web.EventFunc {
 				return
 			}
 
-			err = base.SaveUploadAndCropImage(db, &m)
+			err = mb.saverFunc(db, &m, strconv.Itoa(id), ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil

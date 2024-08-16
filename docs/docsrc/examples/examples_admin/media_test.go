@@ -1,8 +1,14 @@
 package examples_admin
 
 import (
+	"bytes"
+	"github.com/qor/oss/filesystem"
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
+	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"net/http"
@@ -14,7 +20,7 @@ INSERT INTO public.input_demos (id, text_field1, text_area1, switch1, slider1, s
 
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (5, '2024-07-31 02:28:11.318737 +00:00', '2024-07-31 02:28:12.874616 +00:00', null, 'image', '{"FileName":"截屏2024-07-31 10.28.05.png","Url":"/system/media_libraries/5/file.png","Width":3230,"Height":1908,"FileSizes":{"@qor_preview":11765,"default":1083448,"original":1083448},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"5_desc"}', 0, false, 0);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (6, '2024-07-31 03:18:11.485960 +00:00', '2024-07-31 03:18:12.527071 +00:00', null, 'image', '{"FileName":"截屏2024-07-31 11.18.05.png","Url":"/system/media_libraries/6/file.png","Width":2868,"Height":2090,"FileSizes":{"@qor_preview":14413,"default":1037427,"original":1037427},"Sizes":{"default":{"Width":0,"Height":0,"Padding":false,"Sm":0,"Cols":0}},"Video":"","SelectedType":"","Description":"6_desc"}', 0, false, 0);
-`, []string{"media_libraries", "input_demos"}))
+`, []string{"media_libraries", "input_demos", "media_roles"}))
 
 func TestMediaExample(t *testing.T) {
 	dbr, _ := TestDB.DB()
@@ -85,6 +91,65 @@ func TestMediaExample(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"/system/media_libraries/5/file.png", "Successfully Updated"},
+		},
+		{
+			Name:  "upload file wrap saver",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				simpleMediaDate.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+					return
+				}
+				var mr MediaRole
+				TestDB.Order("id desc").First(&mr)
+				if mr.RoleName != "viewer" {
+					t.Fatalf("except rolename: viewer but got %v", mr.RoleName)
+				}
+				return
+			},
+		},
+		{
+			Name:  "crop file wrap saver",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				simpleMediaDate.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, "mediaLibrary_CropImageEvent").
+					Query(media.ParamField, "media").
+					Query(media.ParamMediaIDS, "5").
+					Query("CropOption", ` {"x":70.40625,"y":23.05859375,"width":267.62109375,"height":323.7265625,"rotate":0,"scaleX":1,"scaleY":1}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m, 5)
+				except := "截屏2024-07-31 10.28.05.png"
+				if m.File.FileName != except {
+					t.Fatalf("except filename: %s but got %v", except, m.File.FileName)
+					return
+				}
+				var mr MediaRole
+				TestDB.Order("id desc").First(&mr)
+				if mr.RoleName != "" {
+					t.Fatalf("except no rolename  but got %v", mr.RoleName)
+				}
+				return
+			},
 		},
 	}
 	for _, c := range cases {

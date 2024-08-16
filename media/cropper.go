@@ -3,6 +3,7 @@ package media
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/qor5/admin/v3/media/base"
 
@@ -98,9 +99,9 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 	}
 }
 
-func cropImage(mb *Builder) web.EventFunc {
+func cropImage(b *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := mb.db
+		db := b.db
 		cropOption := ctx.R.FormValue("CropOption")
 		// log.Println(cropOption, ctx.Event.Params)
 		field, id, thumb, cfg := getParams(ctx)
@@ -139,7 +140,7 @@ func cropImage(mb *Builder) web.EventFunc {
 				return
 			}
 
-			err = base.SaveUploadAndCropImage(db, &m)
+			err = b.saverFunc(db, &m, strconv.Itoa(id), ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
