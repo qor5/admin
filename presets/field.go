@@ -113,6 +113,7 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.nestedFieldsBuilder = b.nestedFieldsBuilder
 	r.context = b.context
 	r.rt = b.rt
+	r.plugins = b.plugins
 	return r
 }
 
