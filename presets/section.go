@@ -314,7 +314,9 @@ func (b *SectionBuilder) ViewComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentViewFunc = v
 	if b.componentEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.viewComponent(obj, field, ctx)
+			return web.Portal(
+				b.viewComponent(obj, field, ctx),
+			).Name(b.FieldPortalName())
 		})
 	}
 	return b
@@ -327,7 +329,9 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentEditFunc = v
 	if b.componentViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.viewComponent(obj, field, ctx)
+			return web.Portal(
+				b.viewComponent(obj, field, ctx),
+			).Name(b.FieldPortalName())
 		})
 	}
 	return b
@@ -351,7 +355,9 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 	b.elementViewFunc = v
 	if b.elementEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.listComponent(obj, field, ctx, -1, -1, -1)
+			return web.Portal(
+				b.listComponent(obj, field, ctx, -1, -1, -1),
+			).Name(b.FieldPortalName())
 		})
 	}
 	return b
@@ -364,7 +370,9 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 	b.elementEditFunc = v
 	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.listComponent(obj, field, ctx, -1, -1, -1)
+			return web.Portal(
+				b.listComponent(obj, field, ctx, -1, -1, -1),
+			).Name(b.FieldPortalName())
 		})
 	}
 	return b
@@ -434,12 +442,12 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 
-	return web.Portal(
+	return h.Div(
 		web.Scope(
 			content,
 		).VSlot("{ form }"),
 		hiddenComp,
-	).Name(b.FieldPortalName())
+	)
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -507,12 +515,12 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 
-	return web.Portal(
+	return h.Div(
 		web.Scope(
 			content,
 			hiddenComp,
 		).VSlot("{ form }"),
-	).Name(b.FieldPortalName())
+	)
 }
 
 func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -661,13 +669,13 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		}
 	}
 
-	return web.Portal(
+	return h.Div(
 		web.Scope(
 			// element and addBtn have mb-2, so the real effect is mb-6
 			h.Div(rows).Class("mb-4"),
 		).VSlot("{ form }"),
 		hiddenComp,
-	).Name(b.FieldPortalName())
+	)
 }
 
 func (b *SectionBuilder) EditBtnKey() string {
