@@ -832,24 +832,46 @@ const (
 func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	overlayType := ctx.Param(ParamOverlay)
 	if overlayType == actions.Dialog {
-		b.dialog(r, comp, width)
+		b.dialog(ctx, r, comp, width)
 		return
 	} else if overlayType == actions.Content {
 		b.contentDrawer(ctx, r, comp, width)
 		return
 	}
-	b.rightDrawer(r, comp, width)
+	b.rightDrawer(ctx, r, comp, width)
 }
 
-func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
+func newActiveWatcher(ctx *web.EventContext, varToWatch string) h.HTMLComponent {
+	varCurrentActive := ctx.R.FormValue(ParamVarCurrentActive)
+	id := ctx.R.FormValue(ParamID)
+	if varCurrentActive == "" || id == "" {
+		return nil
+	}
+	return h.Div().Style("display: none;").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+			%s = %q;
+			watch(() => %s, (value) => {
+				if (!value) {
+					%s = '';
+				}
+			})
+		}`,
+		varCurrentActive, id,
+		varToWatch,
+		varCurrentActive,
+	))
+}
+
+func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
 	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
 			web.GlobalEvents().Attr("@keyup.esc", "vars.presetsRightDrawer = false"),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
+			newActiveWatcher(ctx, "vars.presetsRightDrawer"),
 		).
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
 			Class("v-navigation-drawer--temporary").
@@ -885,13 +907,14 @@ func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, com
 
 // 				Attr("@input", "alert(plaidForm.dirty) && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsDialog = true : vars.presetsDialog = $event").
 
-func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DialogPortalName,
 		Body: web.Scope(
+			newActiveWatcher(ctx, "vars.presetsDialog"),
 			VDialog(
 				web.Portal(comp).Name(dialogContentPortalName),
 			).

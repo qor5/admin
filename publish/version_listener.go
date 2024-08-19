@@ -22,12 +22,15 @@ type PayloadVersionSelected struct {
 	Slug string `json:"slug"`
 }
 
-func NewListenerVersionSelected(mb *presets.ModelBuilder, slug string) h.HTMLComponent {
+func NewListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilder, slug string) h.HTMLComponent {
 	event := actions.Edit
 	if mb.HasDetailing() {
 		event = actions.DetailingDrawer
 	}
-	drawerToSlug := web.Plaid().URL(mb.Info().ListingHref()).EventFunc(event).Query(presets.ParamID, web.Var("payload.slug")).Go()
+	drawerToSlug := web.Plaid().URL(mb.Info().ListingHref()).EventFunc(event).
+		Query(presets.ParamID, web.Var("payload.slug")).
+		Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
+		Go()
 	return web.Listen(NotifVersionSelected(mb), fmt.Sprintf(`
 		if (payload.slug === %q) {
 			return

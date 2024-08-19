@@ -188,7 +188,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		children := []h.HTMLComponent{div}
 		if !config.DisableListeners {
 			children = append(children,
-				NewListenerVersionSelected(mb, slug),
+				NewListenerVersionSelected(ctx, mb, slug),
 				NewListenerModelsDeleted(mb, slug),
 			)
 		}

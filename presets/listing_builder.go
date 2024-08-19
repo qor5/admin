@@ -314,11 +314,12 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		LongStyleSearchBox: true,
 	}
 
-	compo.OnMounted = fmt.Sprintf(`
-	var listingDialogElem = el.ownerDocument.getElementById(%q); 
-	if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
-		listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
-	};`, compo.CompoID())
+	compo.OnMounted = fmt.Sprintf(`({el}) => {
+		var listingDialogElem = el.ownerDocument.getElementById(%q); 
+		if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
+			listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
+		};
+	}`, compo.CompoID())
 
 	content := VCard().Attr("id", compo.CompoID()).Children(
 		VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(

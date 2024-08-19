@@ -16,8 +16,10 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type DetailingStyle string
-type DetailingLayout string
+type (
+	DetailingStyle  string
+	DetailingLayout string
+)
 
 const (
 	DetailingStylePage   DetailingStyle = "Page"
@@ -344,7 +346,7 @@ func (b *DetailingBuilder) openActionDialog(ctx *web.EventContext) (r web.EventR
 		panic("action required")
 	}
 
-	b.mb.p.dialog(&r, b.actionForm(action, ctx), "")
+	b.mb.p.dialog(ctx, &r, b.actionForm(action, ctx), "")
 	return
 }
 

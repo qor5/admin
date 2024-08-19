@@ -3,8 +3,9 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"github.com/qor5/x/v3/i18n"
 	"strings"
+
+	"github.com/qor5/x/v3/i18n"
 
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 
@@ -140,7 +141,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
 			versionComponent,
 			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
-			publish.NewListenerVersionSelected(m.editor, ctx.Param(presets.ParamID)),
+			publish.NewListenerVersionSelected(ctx, m.editor, ctx.Param(presets.ParamID)),
 		)
 		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
 			return
