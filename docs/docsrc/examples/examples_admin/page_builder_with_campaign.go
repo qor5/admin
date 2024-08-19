@@ -176,6 +176,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
 		Activity(ab).
+		DisabledNormalContainersGroup(true).
 		Publisher(puBuilder).
 		PreviewDevices(
 			pagebuilder.Device{Name: pagebuilder.DeviceComputer, Width: "", Icon: "mdi-monitor", Disabled: true},

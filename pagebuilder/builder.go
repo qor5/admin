@@ -70,34 +70,35 @@ type (
 )
 
 type Builder struct {
-	prefix            string
-	wb                *web.Builder
-	db                *gorm.DB
-	containerBuilders []*ContainerBuilder
-	ps                *presets.Builder
-	models            []*ModelBuilder
-	templateModel     *presets.ModelBuilder
-	l10n              *l10n.Builder
-	mediaBuilder      *media.Builder
-	ab                *activity.Builder
-	publisher         *publish.Builder
-	seoBuilder        *seo.Builder
-	pageStyle         h.HTMLComponent
-	pageLayoutFunc    PageLayoutFunc
-	subPageTitleFunc  SubPageTitleFunc
-	images            http.Handler
-	imagesPrefix      string
-	defaultDevice     string
-	publishBtnColor   string
-	duplicateBtnColor string
-	templateEnabled   bool
-	expendContainers  bool
-	pageEnabled       bool
-	previewContainer  bool
-	templateInstall   presets.ModelInstallFunc
-	pageInstall       presets.ModelInstallFunc
-	categoryInstall   presets.ModelInstallFunc
-	devices           []Device
+	prefix                        string
+	wb                            *web.Builder
+	db                            *gorm.DB
+	containerBuilders             []*ContainerBuilder
+	ps                            *presets.Builder
+	models                        []*ModelBuilder
+	templateModel                 *presets.ModelBuilder
+	l10n                          *l10n.Builder
+	mediaBuilder                  *media.Builder
+	ab                            *activity.Builder
+	publisher                     *publish.Builder
+	seoBuilder                    *seo.Builder
+	pageStyle                     h.HTMLComponent
+	pageLayoutFunc                PageLayoutFunc
+	subPageTitleFunc              SubPageTitleFunc
+	images                        http.Handler
+	imagesPrefix                  string
+	defaultDevice                 string
+	publishBtnColor               string
+	duplicateBtnColor             string
+	templateEnabled               bool
+	expendContainers              bool
+	pageEnabled                   bool
+	disabledNormalContainersGroup bool
+	previewContainer              bool
+	templateInstall               presets.ModelInstallFunc
+	pageInstall                   presets.ModelInstallFunc
+	categoryInstall               presets.ModelInstallFunc
+	devices                       []Device
 }
 
 const (
@@ -285,6 +286,10 @@ func (b *Builder) PreviewContainer(v bool) (r *Builder) {
 
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
+	return b
+}
+func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
+	b.disabledNormalContainersGroup = v
 	return b
 }
 
