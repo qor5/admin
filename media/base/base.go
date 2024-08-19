@@ -138,6 +138,10 @@ func (b Base) URL(styles ...string) string {
 	return b.Url
 }
 
+func (b Base) URLUnCached(styles ...string) string {
+	return b.URL(styles...) + "?" + fmt.Sprint(time.Now().Nanosecond())
+}
+
 // String return file's url
 func (b Base) String() string {
 	return b.URL()
