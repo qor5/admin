@@ -452,38 +452,17 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		containerBuilders []*ContainerBuilder
 	)
 	containerBuilders = b.getContainerBuilders()
-	sort.Slice(containerBuilders, func(i, j int) bool {
-		return containerBuilders[i].group != "" && containerBuilders[j].group == ""
-	})
-	groupContainers := utils.GroupBySlice[*ContainerBuilder, string](containerBuilders, func(builder *ContainerBuilder) string {
-		return builder.group
-	})
-	for _, group := range groupContainers {
-		if len(group) == 0 {
-			break
-		}
-		groupName := group[0].group
-
-		if b.builder.ps.GetI18n() != nil && groupName != "" {
-			groupName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, groupName)
-		}
-		if groupName == "" {
-			groupName = msgr.Others
-		}
-		if b.builder.expendContainers {
-			groupsNames = append(groupsNames, groupName)
-		}
-		var listItems []h.HTMLComponent
-		for _, builder := range group {
-			containerName := builder.name
+	if b.builder.disabledNormalContainersGroup {
+		for _, cb := range containerBuilders {
+			containerName := cb.name
 			if b.builder.ps.GetI18n() != nil {
-				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, cb.name)
 			}
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 				MergeQuery(true).
-				Query(paramModelName, builder.name).
+				Query(paramModelName, cb.name).
 				Go()
-			listItems = append(listItems,
+			containers = append(containers,
 				VHover(
 					web.Slot(
 						VListItem(
@@ -496,23 +475,75 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 					).Name("default").Scope(`{isHovering, props }`),
 				).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
 					web.Plaid().EventFunc(ContainerPreviewEvent).
-						Query(paramModelName, builder.name).
+						Query(paramModelName, cb.name).
 						Go(),
 				),
 				),
 			)
-
 		}
-		containers = append(containers, VListGroup(
-			web.Slot(
-				VListItem(
-					VListItemTitle(
-						h.Text(groupName),
+	} else {
+		sort.Slice(containerBuilders, func(i, j int) bool {
+			return containerBuilders[i].group != "" && containerBuilders[j].group == ""
+		})
+		groupContainers := utils.GroupBySlice[*ContainerBuilder, string](containerBuilders, func(builder *ContainerBuilder) string {
+			return builder.group
+		})
+		for _, group := range groupContainers {
+			if len(group) == 0 {
+				break
+			}
+			groupName := group[0].group
+
+			if b.builder.ps.GetI18n() != nil && groupName != "" {
+				groupName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, groupName)
+			}
+			if groupName == "" {
+				groupName = msgr.Others
+			}
+			if b.builder.expendContainers {
+				groupsNames = append(groupsNames, groupName)
+			}
+			var listItems []h.HTMLComponent
+			for _, builder := range group {
+				containerName := builder.name
+				if b.builder.ps.GetI18n() != nil {
+					containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, builder.name)
+				}
+				addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+					MergeQuery(true).
+					Query(paramModelName, builder.name).
+					Go()
+				listItems = append(listItems,
+					VHover(
+						web.Slot(
+							VListItem(
+								VListItemTitle(h.Text(containerName)),
+								web.Slot(VBtn(msgr.Add).Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+							).Attr("v-bind", "props", ":active", "isHovering").
+								Class("cursor-pointer").
+								Attr("@click", fmt.Sprintf(`isHovering?%s:null`, addContainerEvent)).
+								ActiveColor(ColorPrimary),
+						).Name("default").Scope(`{isHovering, props }`),
+					).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
+						web.Plaid().EventFunc(ContainerPreviewEvent).
+							Query(paramModelName, builder.name).
+							Go(),
 					),
-				).Attr("v-bind", "props"),
-			).Name("activator").Scope(" { props}"),
-			h.Components(listItems...),
-		).Value(groupName))
+					),
+				)
+
+			}
+			containers = append(containers, VListGroup(
+				web.Slot(
+					VListItem(
+						VListItemTitle(
+							h.Text(groupName),
+						),
+					).Attr("v-bind", "props"),
+				).Name("activator").Scope(" { props}"),
+				h.Components(listItems...),
+			).Value(groupName))
+		}
 	}
 
 	var cons []*Container

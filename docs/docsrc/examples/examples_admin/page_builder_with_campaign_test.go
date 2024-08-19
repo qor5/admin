@@ -610,7 +610,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Name:  "Page Editors Demo Containers List ",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
+				pageBuilderPageData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages-editors/1_2024-05-20-v01").
 					BuildEventFuncRequest()
@@ -619,6 +619,48 @@ func TestPageBuilderCampaign(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent"},
 			ExpectPageBodyNotContains:     []string{"CampaignContent", "ProductContent"},
+		},
+		{
+			Name:  "Page Editors Demo Containers DisabledNormalContainersGroup",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent"},
+			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`},
+		},
+		{
+			Name:  "Campaign Editors Demo Containers List DisabledNormalContainersGroup",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
+			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`, `v-list-group :value='"Campaign"'`},
+		},
+		{
+			Name:  "Product Editors Demo Containers List DisabledNormalContainersGroup",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent"},
+			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`, `v-list-group :value='"CampaignProduct"'`},
 		},
 	}
 	for _, c := range cases {
