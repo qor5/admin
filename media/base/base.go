@@ -138,7 +138,7 @@ func (b Base) URL(styles ...string) string {
 	return b.Url
 }
 
-func (b Base) URLUnCached(styles ...string) string {
+func (b Base) URLNoCached(styles ...string) string {
 	return b.URL(styles...) + "?" + fmt.Sprint(time.Now().Nanosecond())
 }
 
