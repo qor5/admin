@@ -118,6 +118,26 @@ func TestPresetsDetailing(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Field_sectionEN", "SectionEN"},
 			ExpectPortalUpdate0NotContains:     []string{"Wrong"},
 		},
+		{
+			Name:  "cancel edit section title i18n",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb1
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save"+
+						"&id=12").
+					Query("detailField", "section").
+					Query("isCancel", "true").
+					AddField("section.Name", "name").
+					AddField("section.Email", "email").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"SectionEN"},
+			ExpectPortalUpdate0NotContains:     []string{"Wrong"},
+		},
 	}
 
 	for _, c := range cases {
