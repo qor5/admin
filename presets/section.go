@@ -457,8 +457,8 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
-	onChangeEvent := fmt.Sprintf("vars.%s.section_%s=true;", presetsDataChanged, b.name)
-	cancelChangeEvent := fmt.Sprintf("vars.%s.section_%s=false;", presetsDataChanged, b.name)
+	onChangeEvent := fmt.Sprintf("if (vars.%s ){ vars.%s.section_%s=true };", presetsDataChanged, presetsDataChanged, b.name)
+	cancelChangeEvent := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", presetsDataChanged, presetsDataChanged, b.name)
 
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").

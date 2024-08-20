@@ -251,7 +251,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	id := ctx.R.FormValue(ParamID)
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	isAutoSave := b.onChangeAction != nil && overlayType == actions.Content
-	onChangeEvent := fmt.Sprintf(`vars.%s.editing=true;`, presetsDataChanged)
+	onChangeEvent := fmt.Sprintf(`if (vars.%s) { vars.%s.editing=true };`, presetsDataChanged, presetsDataChanged)
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
