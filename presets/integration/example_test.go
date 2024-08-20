@@ -230,6 +230,32 @@ func TestExample(t *testing.T) {
 				return
 			},
 		},
+
+		{
+			Name: "Create Products Observe Change",
+			ReqFunc: func() *http.Request {
+				productData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/products").
+					EventFunc(actions.New).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+		},
+		{
+			Name: "Edit Products  Observe Change",
+			ReqFunc: func() *http.Request {
+				productData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/products").
+					EventFunc(actions.Edit).
+					Query("id", "12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+		},
 	}
 
 	for _, c := range cases {

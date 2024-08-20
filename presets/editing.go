@@ -251,7 +251,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	id := ctx.R.FormValue(ParamID)
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	isAutoSave := b.onChangeAction != nil && overlayType == actions.Content
-
+	onChangeEvent := fmt.Sprintf(`if (vars.%s) { vars.%s.editing=true };`, presetsDataChanged, presetsDataChanged)
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
@@ -384,11 +384,13 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					VCard(asideContent).Variant(VariantFlat),
 				).Class("pa-2"),
 			),
-		)).VSlot("{ form }")
+		),
+	).VSlot("{ form }")
 	if isAutoSave {
-		scope.OnChange(b.onChangeAction(id, ctx))
+		return scope.OnChange(onChangeEvent + b.onChangeAction(id, ctx))
 	}
-	return scope
+	return scope.OnChange(onChangeEvent).UseDebounce(150)
+
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

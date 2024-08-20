@@ -191,7 +191,7 @@ func flowSchedule_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowSche
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.conformLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),

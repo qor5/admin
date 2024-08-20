@@ -824,7 +824,7 @@ const (
 )
 
 const (
-	CloseRightDrawerVarScript   = "vars.presetsRightDrawer = false"
+	CloseRightDrawerVarScript   = "if(Object.values(vars.presetsDataChanged).some(value => value === true)){vars.conformLeave=true;}else{vars.presetsRightDrawer = false;};"
 	CloseDialogVarScript        = "vars.presetsDialog = false"
 	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
 )
@@ -878,6 +878,8 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 	if width == "" {
 		width = b.rightDrawerWidth
 	}
+	msgr := MustGetMessages(ctx.R)
+	listenChangeEvent := fmt.Sprintf("if(!$event && Object.values(vars.%s).some(value => value === true)) {vars.presetsRightDrawer=true};", presetsDataChanged)
 
 	activeWatcher, err := newActiveWatcher(ctx, "vars.presetsRightDrawer")
 	if err != nil {
@@ -886,16 +888,23 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
+			VDialog(
+				VCard(
+					VCardActions(
+						VBtn(msgr.Cancel).Color(ColorSecondary).Attr("@click", "vars.conformLeave=false"),
+						VBtn(msgr.OK).Color(ColorPrimary).Attr("@click", "vars.conformLeave=false;vars.presetsRightDrawer = false")),
+				).PrependIcon("mdi-alert").Title(msgr.LeaveBeforeUnsubmit),
+			).Persistent(true).Width("auto").Attr("v-model", "vars.conformLeave"),
 			activeWatcher,
-			web.GlobalEvents().Attr("@keyup.esc", "vars.presetsRightDrawer = false"),
+			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.conformLeave=true};", presetsDataChanged)),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
 		).
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
 			Class("v-navigation-drawer--temporary").
 			Attr("v-model", "vars.presetsRightDrawer").
+			Attr("@update:model-value", listenChangeEvent).
 			Location(LocationRight).
 			Temporary(true).
-			Persistent(true).
 			// Fixed(true).
 			Width(width).
 			Attr(":height", `"100%"`),
@@ -904,7 +913,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 		// Floating(true).
 
 	})
-	r.RunScript = "setTimeout(function(){ vars.presetsRightDrawer = true }, 100)"
+	r.RunScript = fmt.Sprintf(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.conformLeave=false,vars.%s = {} }, 100)`, presetsDataChanged)
 }
 
 func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {

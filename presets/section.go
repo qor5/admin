@@ -457,9 +457,12 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			id = slugIf.PrimarySlug()
 		}
 	}
+	onChangeEvent := fmt.Sprintf("if (vars.%s ){ vars.%s.section_%s=true };", presetsDataChanged, presetsDataChanged, b.name)
+	cancelChangeEvent := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", presetsDataChanged, presetsDataChanged, b.name)
+
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().
+		Attr("@click", cancelChangeEvent+web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoSaveDetailingField).
 			Query(SectionFieldName, b.name).
@@ -470,7 +473,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().
+		Attr("@click", cancelChangeEvent+web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoSaveDetailingField).
 			Query(SectionFieldName, b.name).
@@ -514,12 +517,11 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			).Class("section-body"),
 		)
 	}
-
 	return h.Div(
 		web.Scope(
 			content,
 			hiddenComp,
-		).VSlot("{ form }"),
+		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(150),
 	)
 }
 

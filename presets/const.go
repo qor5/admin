@@ -28,6 +28,8 @@ const (
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
 	ParamPortalName               = "portal_name"
 
+	presetsDataChanged = "presetsDataChanged"
+
 	// list editor
 	ParamAddRowFormKey      = "listEditor_AddRowFormKey"
 	ParamRemoveRowFormKey   = "listEditor_RemoveRowFormKey"
