@@ -313,6 +313,7 @@ var Messages_ja_JP = &Messages{
 	FormTitle:                    "フォーム",
 	OK:                           "OK",
 	Cancel:                       "キャンセル",
+	Clear:                        "消去する",
 	Create:                       "作成する",
 	DeleteConfirmationText:       "を削除してもよろしいですか？",
 	CreatingObjectTitleTemplate:  "新規{modelName}作成",
