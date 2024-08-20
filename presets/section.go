@@ -415,10 +415,10 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 	content := h.Div().Class("section-wrap")
 	if b.label != "" {
-		//lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
 		content.AppendChildren(
 			h.Div(
-				h.If(!b.disableLabel, h.H2(field.Label).Class("section-title")),
+				h.If(!b.disableLabel, h.H2(lb).Class("section-title")),
 				h.Div(btn).Class("section-edit-area"),
 			).Class("section-title-wrap"),
 		)
@@ -487,7 +487,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	content := h.Div().Class("section-wrap edit-view")
 
 	if b.label != "" && !b.disableLabel {
-		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, field.Label)
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
 		content.AppendChildren(
 			h.Div(
 				h.H2(lb).Class("section-title"),
