@@ -230,6 +230,32 @@ func TestExample(t *testing.T) {
 				return
 			},
 		},
+
+		{
+			Name: "Create Products New Observe Change",
+			ReqFunc: func() *http.Request {
+				productData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/products").
+					EventFunc(actions.New).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"if(!$event && Object.values(vars.presetsDataChanged).some(value => value === true)){vars.presetsRightDrawer=true};",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+		},
+		{
+			Name: "Create Products Update Observe Change",
+			ReqFunc: func() *http.Request {
+				productData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/products").
+					EventFunc(actions.Edit).
+					Query("id", "12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"if(!$event && Object.values(vars.presetsDataChanged).some(value => value === true)){vars.presetsRightDrawer=true};",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+		},
 	}
 
 	for _, c := range cases {

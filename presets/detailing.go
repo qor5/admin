@@ -279,6 +279,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
+	onChangeEvent := fmt.Sprintf("vars.%s.detailing=true;", presetsDataChanged)
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	closeBtnVarScript := CloseRightDrawerVarScript
@@ -317,7 +318,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 				).Class("pa-2"),
 			),
 		),
-	).VSlot("{ form }")
+	).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(150)
 
 	if b.idCurrentActiveProcessor != nil {
 		ctx.WithContextValue(ctxKeyIdCurrentActiveProcessor{}, b.idCurrentActiveProcessor)

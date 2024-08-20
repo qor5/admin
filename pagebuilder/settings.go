@@ -88,7 +88,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			onlineHint,
 			versionComponent,
 			web.Listen(m.mb.NotifModelsUpdated(),
-				web.Plaid().PushState(true).URL(m.mb.Info().DetailingHref(ps)).Go()),
+				web.Plaid().URL(m.mb.Info().DetailingHref(ps)).Go()),
 			h.Div(
 				h.Div(
 					h.If(containerCount == 0,
