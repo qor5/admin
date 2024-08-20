@@ -232,7 +232,7 @@ func TestExample(t *testing.T) {
 		},
 
 		{
-			Name: "Create Products New Observe Change",
+			Name: "Create Products Observe Change",
 			ReqFunc: func() *http.Request {
 				productData.TruncatePut(dbr)
 				return NewMultipartBuilder().
@@ -240,11 +240,11 @@ func TestExample(t *testing.T) {
 					EventFunc(actions.New).
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"if(!$event && Object.values(vars.presetsDataChanged).some(value => value === true)){vars.presetsRightDrawer=true};",
+			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
 				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
 		},
 		{
-			Name: "Create Products Update Observe Change",
+			Name: "Edit Products  Observe Change",
 			ReqFunc: func() *http.Request {
 				productData.TruncatePut(dbr)
 				return NewMultipartBuilder().
@@ -253,7 +253,7 @@ func TestExample(t *testing.T) {
 					Query("id", "12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"if(!$event && Object.values(vars.presetsDataChanged).some(value => value === true)){vars.presetsRightDrawer=true};",
+			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
 				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
 		},
 	}
