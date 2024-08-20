@@ -1067,11 +1067,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
 			h.Template(
-				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+				VSnackbar(
+					h.Text("{{vars.presetsMessage.message}}")).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
+					Attr("style", "bottom: 48px;").
 					Timeout(2000).
-					Location(LocationTop),
+					Location(LocationBottom),
 			).Attr("v-if", "vars.presetsMessage"),
 			VLayout(
 				web.Portal().Name(RightDrawerPortalName),
