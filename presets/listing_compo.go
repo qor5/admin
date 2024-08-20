@@ -87,6 +87,31 @@ if (payload && payload.ids && payload.ids.length > 0) {
 
 const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
 
+func (c *ListingCompo) VarCurrentActive() string {
+	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
+}
+
+const ListingCompo_CurrentActiveClass = "vx-list-item--active primary--text"
+
+const (
+	ParamVarCurrentActive = "var_current_active"
+)
+
+func ListingCompo_GetVarCurrentActive(evCtx *web.EventContext) string {
+	var varCurrentActive string
+	c := ListingCompoFromEventContext(evCtx)
+	if c != nil {
+		varCurrentActive = c.VarCurrentActive()
+	}
+	if varCurrentActive == "" {
+		varCurrentActive = evCtx.R.FormValue(ParamVarCurrentActive)
+	}
+	if varCurrentActive == "" {
+		panic(errors.New("var_current_active is not set"))
+	}
+	return varCurrentActive
+}
+
 func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	ctx = context.WithValue(ctx, ctxKeyListingCompo{}, c)
 
@@ -95,10 +120,9 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 
 	return stateful.Actionable(ctx, c,
 		// onMounted for selected_ids front-end autonomy
-		web.RunScript(fmt.Sprintf(`function() {
+		web.RunScript(fmt.Sprintf(`({el}) => {
 			locals.dialog = false;
-			locals.document = null;
-			locals.current_editing_id = "";
+			locals.document = el.ownerDocument;
 			locals.selected_ids = %s || [];
 			let orig = locals.%s;
 			locals.%s = function() {
@@ -111,12 +135,8 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			stateful.LocalsKeyNewAction,
 			stateful.LocalsKeyNewAction,
 		)),
-		h.Div().Attr("v-run", `(el) => locals.document = el.ownerDocument`),
 		h.Iff(c.OnMounted != "", func() h.HTMLComponent {
-			return h.Div().Attr("v-run", fmt.Sprintf(`(el) => {
-				locals.document = el.ownerDocument;
-				%s
-			}`, c.OnMounted))
+			return h.Div().Attr("v-on-mounted", c.OnMounted)
 		}),
 		h.Iff(!c.lb.disableModelListeners, func() h.HTMLComponent {
 			return web.Listen(
@@ -313,7 +333,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
 			}, opts...).ThenScript(ListingCompo_JsScrollToTop).Go()).
-			Attr("v-run", fmt.Sprintf(`(el) => { 
+			Attr("v-on-mounted", fmt.Sprintf(`({el}) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
 			}`, c.textFieldSearchID())),
 	)
@@ -363,7 +383,8 @@ func (c *ListingCompo) defaultCellWrapperFunc(_ context.Context) func(cell h.Mut
 		if c.ParentID != "" {
 			onClick.Query(ParamParentID, c.ParentID)
 		}
-		cell.SetAttr("@click", fmt.Sprintf(`%s; locals.current_editing_id = %q;`, onClick.Go(), id))
+		onClick.Query(ParamVarCurrentActive, c.VarCurrentActive())
+		cell.SetAttr("@click", onClick.Go())
 		return cell
 	}
 }
@@ -515,11 +536,14 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				)
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
-			// TODO: how to cancel active if not using vars.presetsRightDrawer
-			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": vars.presetsRightDrawer && locals.current_editing_id === %q,
-				}`, id,
-			))
+			if c.lb.rowProcessor != nil {
+				compo, err := c.lb.rowProcessor(evCtx, row, id, obj)
+				if err != nil {
+					panic(err)
+				}
+				return compo
+			}
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, ListingCompo_CurrentActiveClass, c.VarCurrentActive(), id))
 			return row
 		}).
 		RowMenuHead(btnConfigColumns).

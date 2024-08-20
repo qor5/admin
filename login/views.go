@@ -382,7 +382,7 @@ func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar st
 					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
 			),
 		).
-			Attr("v-run", "(el) => { dialogLocals.refCard = el; }"),
+			Attr("v-on-mounted", "({el}) => { dialogLocals.refCard = el; }"),
 	).MaxWidth("600px").
 		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
 		Persistent(true).

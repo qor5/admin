@@ -1084,7 +1084,8 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 					Query(presets.ParamID, c.ModelID).
 					Query(paramOpenFromSharedContainer, 1).
-					Go()+fmt.Sprintf(`; locals.current_editing_id=%q"`, id))
+					Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
+					Go())
 			return in(evCtx, cell, id, obj)
 		}
 	})
@@ -1181,7 +1182,8 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 					EventFunc(actions.Edit).
 					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 					Query(presets.ParamID, c.ModelID).
-					Go()+fmt.Sprintf(`; locals.current_editing_id=%q`, id))
+					Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
+					Go())
 			return in(evCtx, cell, id, obj)
 		}
 	})

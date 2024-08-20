@@ -832,22 +832,61 @@ const (
 func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	overlayType := ctx.Param(ParamOverlay)
 	if overlayType == actions.Dialog {
-		b.dialog(r, comp, width)
+		b.dialog(ctx, r, comp, width)
 		return
 	} else if overlayType == actions.Content {
 		b.contentDrawer(ctx, r, comp, width)
 		return
 	}
-	b.rightDrawer(r, comp, width)
+	b.rightDrawer(ctx, r, comp, width)
 }
 
-func (b *Builder) rightDrawer(r *web.EventResponse, comp h.HTMLComponent, width string) {
+type (
+	IdCurrentActiveProcessor       func(ctx *web.EventContext, current string) (string, error)
+	ctxKeyIdCurrentActiveProcessor struct{}
+)
+
+func newActiveWatcher(ctx *web.EventContext, varToWatch string) (h.HTMLComponent, error) {
+	varCurrentActive := ctx.R.FormValue(ParamVarCurrentActive)
+	idCurrentActive := ctx.R.FormValue(ParamID)
+	idCurrentActiveProcessor, ok := ctx.R.Context().Value(ctxKeyIdCurrentActiveProcessor{}).(IdCurrentActiveProcessor)
+	if ok {
+		var err error
+		idCurrentActive, err = idCurrentActiveProcessor(ctx, idCurrentActive)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if varCurrentActive == "" || idCurrentActive == "" {
+		return nil, nil
+	}
+	return h.Div().Style("display: none;").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+			vars.%s = %q;
+			watch(() => %s, (value) => {
+				if (!value) {
+					vars.%s = '';
+				}
+			})
+		}`,
+		varCurrentActive, idCurrentActive,
+		varToWatch,
+		varCurrentActive,
+	)), nil
+}
+
+func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
+	}
+
+	activeWatcher, err := newActiveWatcher(ctx, "vars.presetsRightDrawer")
+	if err != nil {
+		panic(err)
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
+			activeWatcher,
 			web.GlobalEvents().Attr("@keyup.esc", "vars.presetsRightDrawer = false"),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
 		).
@@ -885,13 +924,20 @@ func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, com
 
 // 				Attr("@input", "alert(plaidForm.dirty) && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsDialog = true : vars.presetsDialog = $event").
 
-func (b *Builder) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {
+func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	if width == "" {
 		width = b.rightDrawerWidth
 	}
+
+	activeWatcher, err := newActiveWatcher(ctx, "vars.presetsDialog")
+	if err != nil {
+		panic(err)
+	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DialogPortalName,
 		Body: web.Scope(
+			activeWatcher,
 			VDialog(
 				web.Portal(comp).Name(dialogContentPortalName),
 			).
