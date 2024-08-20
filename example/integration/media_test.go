@@ -597,6 +597,37 @@ func TestMedia(t *testing.T) {
 				return
 			},
 		},
+		{
+			Name:  "Pages ChooseFileEvent Dialog no selected image",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[]", "v-checkbox"},
+		},
+		{
+			Name:  "Pages ChooseFileEvent Dialog  selected image",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query(media.ParamSelectIDS, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[1]", "v-checkbox"},
+		},
 	}
 
 	for _, c := range cases {

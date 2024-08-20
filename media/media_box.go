@@ -5,14 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"path"
-	"slices"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
@@ -26,6 +18,12 @@ import (
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+	"io"
+	"path"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type MediaBoxConfigKey int
@@ -183,8 +181,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 		).Class("pb-4").
-			Rounded(true).
-			Attr(web.VAssign("vars", `{showFileChooser: false}`)...),
+			Rounded(true),
 	).MarshalHTML(c)
 }
 
@@ -193,13 +190,13 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
-	url := f.URL(thumb)
+	url := f.URLNoCached(thumb)
 	if thumb == base.DefaultSizeKey {
-		url = f.URL()
+		url = f.URLNoCached()
 	}
 	card := VCard(
 		h.If(base.IsImageFormat(f.FileName),
-			VImg().Src(fmt.Sprintf("%s?%d", url, time.Now().UnixNano())).Height(150),
+			VImg().Src(url).Height(150),
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),

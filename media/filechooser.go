@@ -53,7 +53,7 @@ func fileChooser(mb *Builder) web.EventFunc {
 					Attr("v-model", "vars.showFileChooser"),
 			).VSlot("{form,locals}"),
 		})
-		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true; }, 100)`
+		r.RunScript = `setTimeout(function(){ vars.showFileChooser = true}, 100)`
 		return
 	}
 }
@@ -83,7 +83,10 @@ type selectItem struct {
 func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+	var (
+		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
+	)
 	return h.Div(
 		imageDialog(),
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
@@ -104,7 +107,7 @@ func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
 	).Attr(web.VAssign("vars",
-		`{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false,imagePreview:false,imageSrc:""}`)...)
+		fmt.Sprintf(`{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false,imagePreview:false,imageSrc:"",showFileChooser:%v}`, !inMediaLibrary))...)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
@@ -304,10 +307,9 @@ func fileComponent(
 	if base.IsImageFormat(f.File.FileName) && inMediaLibrary {
 		*event = clickEvent
 	}
-	fileNameComp := VTextField().
-		Attr(web.VField("name", f.File.FileName)...).
-		Readonly(true).Variant(VariantPlain)
+	fileNameComp := h.Span(f.File.FileName).Class("text-body-2")
 	if !inMediaLibrary {
+		fileNameComp.Class("text-"+ColorPrimary, "text-decoration-underline")
 		fileNameComp.Attr("@click.stop", clickEvent)
 		*event = web.Plaid().
 			BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
@@ -361,8 +363,9 @@ func fileOrFolderComponent(
 	inMediaLibrary bool,
 ) h.HTMLComponent {
 	var (
-		title, content            h.HTMLComponent
-		checkEvent                = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, f.ID)
+		title, content h.HTMLComponent
+		checkEvent     = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;if(vars.showFileChooser){locals.select_ids=[find_id]}
+else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);}`, f.ID)
 		clickCardWithoutMoveEvent = "null"
 	)
 	menus := &[]h.HTMLComponent{
@@ -411,7 +414,7 @@ func fileOrFolderComponent(
 			Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
 			Attr("@update:model-value", checkEvent).
 			Attr("style", "z-index:2").
-			Class("position-absolute top-0 right-0").Attr("v-if", "locals.select_ids.length>0"),
+			Class("position-absolute top-0 right-0").Attr("v-if", "vars.showFileChooser||locals.select_ids.length>0"),
 		VCardText(
 			VCard(
 				title,
@@ -436,7 +439,7 @@ func fileOrFolderComponent(
 		).Class("pa-0"),
 	).Class("position-relative").
 		Hover(true).
-		Attr("@click", fmt.Sprintf("if(locals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardWithoutMoveEvent))
+		Attr("@click", fmt.Sprintf("if(vars.showFileChooser||locals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardWithoutMoveEvent))
 }
 
 func folderComponent(
@@ -539,7 +542,9 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		orderByVal     = ctx.Param(paramOrderByKey)
 		typeVal        = ctx.Param(paramTypeKey)
 		parentID       = ctx.ParamAsInt(ParamParentID)
+		selectIDS      = ctx.Param(ParamSelectIDS)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		pMsgr          = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
 		wh             = db.Model(&media_library.MediaLibrary{})
 		files          []*media_library.MediaLibrary
@@ -552,6 +557,10 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		wh = mb.searcher(wh, ctx)
 	} else if mb.currentUserID != nil {
 		wh = wh.Where("user_id = ? ", mb.currentUserID(ctx))
+	}
+	var selectIDInit = "[]"
+	if selectIDS != "" && selectIDS != "0" {
+		selectIDInit = fmt.Sprintf("[%s]", selectIDS)
 	}
 	switch orderByVal {
 	case orderByCreatedAt:
@@ -819,10 +828,24 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
-			).Class("d-flex align-center").Attr("v-if", "(locals.select_ids && locals.select_ids.length>0)"),
+			).Class("d-flex align-center").Attr("v-if", "!vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
+			VRow(
+				VCol(
+					VBtn(pMsgr.Save).Size(SizeSmall).Variant(VariantOutlined).
+						Attr(":disabled", "locals.select_ids.length==0").
+						Color(ColorPrimary).
+						Attr("@click", web.Plaid().
+							BeforeScript(fmt.Sprintf(`locals["fileChooser"+%v+"_cropping"] = true`, web.Var(`locals.select_ids.join(",")`))).
+							EventFunc(chooseFileEvent).
+							Query(ParamField, field).
+							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).
+							Query(ParamCfg, h.JSONString(cfg)).
+							Go()),
+				),
+			).Class("d-flex align-center").Attr("v-if", "vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
 		).Fluid(true),
 	).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
-		VSlot("{ locals,form}").Init(`{select_ids:[]}`)
+		VSlot("{ locals,form}").Init(fmt.Sprintf(`{select_ids:%s}`, selectIDInit))
 }
 
 func searchComponent(ctx *web.EventContext, field string, cfg *media_library.MediaBoxConfig, inMediaLibrary bool) h.HTMLComponent {
