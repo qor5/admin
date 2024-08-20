@@ -200,7 +200,7 @@ var Messages_ja_JP = &Messages{
 	AllVersions:                             "すべてのバージョン",
 	NamedVersions:                           "指定バージョン",
 	RenameVersion:                           "バージョン名の変更",
-	DeleteVersionConfirmationTextTemplate:   "本当にバージョン{バージョン名}を削除しますか？",
+	DeleteVersionConfirmationTextTemplate:   "本当にバージョン{VersionName}を削除しますか？",
 	Duplicate:                               "コピー",
 
 	FilterTabAllVersions:   "すべてのバージョン",
