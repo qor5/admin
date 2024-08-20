@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 
@@ -103,23 +104,23 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 }
 
 func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.ModelBuilder, db *gorm.DB) {
-	ed := mb.Editing()
-	ed.Creating().Except(VersionsPublishBar)
-	// On demand, currently only supported detailing
+	eb := mb.Editing()
+	eb.Creating().Except(VersionsPublishBar)
+	// On demand, currently only supported dp
 	// var fb *presets.FieldBuilder
 	// if !mb.HasDetailing() {
-	// 	fb = ed.GetField(VersionsPublishBar)
+	// 	fb = eb.GetField(VersionsPublishBar)
 	// } else {
 	// 	fb = mb.Detailing().GetField(VersionsPublishBar)
 	// }
-	var detailing *presets.DetailingBuilder
+	var dp *presets.DetailingBuilder
 	if !mb.HasDetailing() {
-		detailing = mb.Detailing().Drawer(true)
+		dp = mb.Detailing().Drawer(true)
 	} else {
-		detailing = mb.Detailing()
+		dp = mb.Detailing()
 	}
 
-	fb := detailing.GetField(VersionsPublishBar)
+	fb := dp.GetField(VersionsPublishBar)
 	if fb != nil && fb.GetCompFunc() == nil {
 		fb.ComponentFunc(DefaultVersionComponentFunc(mb))
 	}
@@ -132,7 +133,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	})
 
 	setter := makeSetVersionSetterFunc(db)
-	ed.WrapSetterFunc(setter)
+	eb.WrapSetterFunc(setter)
 
 	lb.Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
 	lb.Field(ListingFieldLive).ComponentFunc(liveFunc(db))
@@ -143,6 +144,46 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 			ListingFieldLive:       msgr.HeaderLive,
 		}, nil
 	}))
+
+	slugDecoder := mb.NewModel().(presets.SlugDecoder)
+	uniqueWithoutVersion := func(id string) string {
+		kvsWithoutVersion := []string{}
+		for k, v := range slugDecoder.PrimaryColumnValuesBySlug(id) {
+			if k == SlugVersion {
+				continue
+			}
+			kvsWithoutVersion = append(kvsWithoutVersion, fmt.Sprintf(`%s:%s`, k, v))
+		}
+		sort.Strings(kvsWithoutVersion)
+		return strings.Join(kvsWithoutVersion, ",")
+	}
+	wrapIdCurrentActive := func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+		return func(ctx *web.EventContext, current string) (string, error) {
+			current, err := in(ctx, current)
+			if err != nil {
+				return "", err
+			}
+			if current == "" {
+				return "", nil
+			}
+			return uniqueWithoutVersion(current), nil
+		}
+	}
+	eb.WrapIdCurrentActive(wrapIdCurrentActive)
+	eb.Creating().WrapIdCurrentActive(wrapIdCurrentActive)
+	dp.WrapIdCurrentActive(wrapIdCurrentActive)
+	lb.WrapRow(func(in presets.RowProcessor) presets.RowProcessor {
+		return func(evCtx *web.EventContext, row htmlgo.MutableAttrHTMLComponent, id string, obj any) (htmlgo.MutableAttrHTMLComponent, error) {
+			unique := uniqueWithoutVersion(id)
+			if unique == "" {
+				return in(evCtx, row, id, obj)
+			}
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`,
+				presets.ListingCompo_CurrentActiveClass, presets.ListingCompo_GetVarCurrentActive(evCtx), unique,
+			))
+			return in(evCtx, row, id, obj)
+		}
+	})
 	configureVersionListDialog(db, b, pb, mb)
 }
 

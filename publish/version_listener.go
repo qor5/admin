@@ -28,9 +28,11 @@ func NewListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilde
 		event = actions.DetailingDrawer
 	}
 	drawerToSlug := web.Plaid().URL(mb.Info().ListingHref()).EventFunc(event).
-		Query(presets.ParamID, web.Var("payload.slug")).
-		Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
-		Go()
+		Query(presets.ParamID, web.Var("payload.slug"))
+	varCurrentActive := evCtx.R.FormValue(presets.ParamVarCurrentActive)
+	if varCurrentActive != "" {
+		drawerToSlug.Query(presets.ParamVarCurrentActive, varCurrentActive)
+	}
 	return web.Listen(NotifVersionSelected(mb), fmt.Sprintf(`
 		if (payload.slug === %q) {
 			return
@@ -44,7 +46,7 @@ func NewListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilde
 		slug,
 		strings.Join([]string{
 			presets.CloseRightDrawerVarScript,
-			drawerToSlug,
+			drawerToSlug.Go(),
 		}, ";"),
 		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, mb.Info().ListingHref()))).Go(),
 	))

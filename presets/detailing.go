@@ -32,16 +32,17 @@ const (
 )
 
 type DetailingBuilder struct {
-	mb                 *ModelBuilder
-	actions            []*ActionBuilder
-	pageFunc           web.PageFunc
-	fetcher            FetchFunc
-	tabPanels          []TabComponentFunc
-	sidePanel          ObjectComponentFunc
-	titleFunc          func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
-	afterTitleCompFunc ObjectComponentFunc
-	drawer             bool
-	layouts            []DetailingLayout
+	mb                       *ModelBuilder
+	actions                  []*ActionBuilder
+	pageFunc                 web.PageFunc
+	fetcher                  FetchFunc
+	tabPanels                []TabComponentFunc
+	sidePanel                ObjectComponentFunc
+	titleFunc                func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
+	afterTitleCompFunc       ObjectComponentFunc
+	drawer                   bool
+	layouts                  []DetailingLayout
+	idCurrentActiveProcessor IdCurrentActiveProcessor
 	SectionsBuilder
 }
 
@@ -262,6 +263,17 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	return
 }
 
+func (b *DetailingBuilder) WrapIdCurrentActive(w func(IdCurrentActiveProcessor) IdCurrentActiveProcessor) (r *DetailingBuilder) {
+	if b.idCurrentActiveProcessor == nil {
+		b.idCurrentActiveProcessor = w(func(ctx *web.EventContext, current string) (string, error) {
+			return current, nil
+		})
+	} else {
+		b.idCurrentActiveProcessor = w(b.idCurrentActiveProcessor)
+	}
+	return b
+}
+
 func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
@@ -307,6 +319,9 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		),
 	).VSlot("{ form }")
 
+	if b.idCurrentActiveProcessor != nil {
+		ctx.WithContextValue(ctxKeyIdCurrentActiveProcessor{}, b.idCurrentActiveProcessor)
+	}
 	b.mb.p.overlay(ctx, &r, comp, b.mb.rightDrawerWidth)
 	return
 }

@@ -88,10 +88,14 @@ if (payload && payload.ids && payload.ids.length > 0) {
 const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
 
 func (c *ListingCompo) VarCurrentActive() string {
-	return fmt.Sprintf("vars.__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
+	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
 }
 
-const ParamVarCurrentActive = "var_current_active"
+const ListingCompo_CurrentActiveClass = "vx-list-item--active primary--text"
+
+const (
+	ParamVarCurrentActive = "var_current_active"
+)
 
 func ListingCompo_GetVarCurrentActive(evCtx *web.EventContext) string {
 	var varCurrentActive string
@@ -532,10 +536,14 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				)
 		}).
 		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
-			row.SetAttr(":class", fmt.Sprintf(`{
-					"vx-list-item--active primary--text": %s === %q,
-				}`, c.VarCurrentActive(), id,
-			))
+			if c.lb.rowProcessor != nil {
+				compo, err := c.lb.rowProcessor(evCtx, row, id, obj)
+				if err != nil {
+					panic(err)
+				}
+				return compo
+			}
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, ListingCompo_CurrentActiveClass, c.VarCurrentActive(), id))
 			return row
 		}).
 		RowMenuHead(btnConfigColumns).

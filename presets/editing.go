@@ -13,18 +13,19 @@ import (
 )
 
 type EditingBuilder struct {
-	mb               *ModelBuilder
-	Fetcher          FetchFunc
-	Setter           SetterFunc
-	Saver            SaveFunc
-	Deleter          DeleteFunc
-	Validator        ValidateFunc
-	tabPanels        []TabComponentFunc
-	hiddenFuncs      []ObjectComponentFunc
-	sidePanel        ObjectComponentFunc
-	actionsFunc      ObjectComponentFunc
-	editingTitleFunc EditingTitleComponentFunc
-	onChangeAction   OnChangeActionFunc
+	mb                       *ModelBuilder
+	Fetcher                  FetchFunc
+	Setter                   SetterFunc
+	Saver                    SaveFunc
+	Deleter                  DeleteFunc
+	Validator                ValidateFunc
+	tabPanels                []TabComponentFunc
+	hiddenFuncs              []ObjectComponentFunc
+	sidePanel                ObjectComponentFunc
+	actionsFunc              ObjectComponentFunc
+	editingTitleFunc         EditingTitleComponentFunc
+	onChangeAction           OnChangeActionFunc
+	idCurrentActiveProcessor IdCurrentActiveProcessor
 	FieldsBuilder
 }
 
@@ -181,6 +182,17 @@ func (b *EditingBuilder) EditingTitleFunc(v EditingTitleComponentFunc) (r *Editi
 	return b
 }
 
+func (b *EditingBuilder) WrapIdCurrentActive(w func(in IdCurrentActiveProcessor) IdCurrentActiveProcessor) (r *EditingBuilder) {
+	if b.idCurrentActiveProcessor == nil {
+		b.idCurrentActiveProcessor = w(func(ctx *web.EventContext, current string) (string, error) {
+			return current, nil
+		})
+	} else {
+		b.idCurrentActiveProcessor = w(b.idCurrentActiveProcessor)
+	}
+	return b
+}
+
 func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
@@ -192,6 +204,9 @@ func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, er
 		creatingB = b.mb.creating
 	}
 
+	if b.idCurrentActiveProcessor != nil {
+		ctx.WithContextValue(ctxKeyIdCurrentActiveProcessor{}, b.idCurrentActiveProcessor)
+	}
 	b.mb.p.overlay(ctx, &r, creatingB.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return
 }
@@ -200,6 +215,9 @@ func (b *EditingBuilder) formEdit(ctx *web.EventContext) (r web.EventResponse, e
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
+	}
+	if b.idCurrentActiveProcessor != nil {
+		ctx.WithContextValue(ctxKeyIdCurrentActiveProcessor{}, b.idCurrentActiveProcessor)
 	}
 	b.mb.p.overlay(ctx, &r, b.editFormFor(nil, ctx), b.mb.rightDrawerWidth)
 	return

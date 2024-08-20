@@ -26,6 +26,7 @@ const (
 type (
 	ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
 	CellProcessor    func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error)
+	RowProcessor     func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error)
 )
 
 type OrderableField struct {
@@ -46,6 +47,7 @@ type ListingBuilder struct {
 	pageFunc        web.PageFunc
 	cellWrapperFunc vx.CellWrapperFunc
 	cellProcessor   CellProcessor
+	rowProcessor    RowProcessor
 	Searcher        SearchFunc
 	searchColumns   []string
 	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
@@ -123,6 +125,17 @@ func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *Li
 		})
 	} else {
 		b.cellProcessor = w(b.cellProcessor)
+	}
+	return b
+}
+
+func (b *ListingBuilder) WrapRow(w func(in RowProcessor) RowProcessor) (r *ListingBuilder) {
+	if b.rowProcessor == nil {
+		b.rowProcessor = w(func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			return row, nil
+		})
+	} else {
+		b.rowProcessor = w(b.rowProcessor)
 	}
 	return b
 }
