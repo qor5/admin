@@ -323,6 +323,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	}
 	updateBtn := VBtn(buttonLabel).
 		Color("primary").
+		Variant(VariantFlat).
 		Attr("@click", web.Plaid().
 			EventFunc(actions.Update).
 			Queries(queries).
