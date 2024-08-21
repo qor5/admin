@@ -824,10 +824,11 @@ const (
 )
 
 var (
-	CloseRightDrawerVarScript = ConfirmLeaveScript("vars.confirmDrawerLeave=true;", "vars.presetsRightDrawer = false;")
+	CloseRightDrawerVarConfirmScript = ConfirmLeaveScript("vars.confirmDrawerLeave=true;", "vars.presetsRightDrawer = false;")
 )
 
 const (
+	CloseRightDrawerVarScript   = "vars.presetsRightDrawer = false"
 	CloseDialogVarScript        = "vars.presetsDialog = false"
 	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
 )
