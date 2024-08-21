@@ -1127,9 +1127,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			Attr("style", "position: fixed; z-index: 2000;").
 			Attr("v-on-created", `({ watch, window })=> {
 				let timer = null
-				watch(()=>isFetching, (newVal)=>{
+				watch(()=>isReloadingPage, (newVal)=>{
 					vars.grobalProgressBarValue = 20
-						if(!isFetching) {
+						if(!isReloadingPage) {
 							vars.grobalProgressBarValue = 60
 								if(timer) window.clearTimeout(timer)
 								timer = window.setTimeout(()=>{
