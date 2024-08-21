@@ -1,14 +1,16 @@
 package examples_presets
 
 import (
+	"encoding/json"
 	"fmt"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"log"
 
+	"database/sql/driver"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -263,5 +265,46 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 	})
 
 	dp.Field("CreditCards2").Use(ccmb2)
+	return
+}
+
+type UserCreditCard struct {
+	gorm.Model
+	Name        string
+	CreditCards creditCards `gorm:"type:text"`
+}
+type creditCards []*CreditCard
+
+func (creditCard creditCards) Value() (driver.Value, error) {
+	json, err := json.Marshal(creditCard)
+	if err != nil {
+		return nil, err
+	}
+	return json, nil
+}
+
+func (creditCard *creditCards) Scan(data interface{}) (err error) {
+	switch values := data.(type) {
+	case []byte:
+		return json.Unmarshal(values, &creditCard)
+	case string:
+		return creditCard.Scan([]byte(values))
+	}
+	return nil
+}
+
+func PresetsSectionList(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder) {
+	err := db.AutoMigrate(&UserCreditCard{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+	cust = b.Model(&UserCreditCard{})
+	dp = cust.Detailing("CreditCards").Drawer(true)
+	dp.Section("CreditCards").IsList(&CreditCard{}).
+		Editing("Name", "Phone").Viewing("Name", "Phone")
 	return
 }

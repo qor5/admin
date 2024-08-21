@@ -243,6 +243,13 @@ func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
+	if b.isList {
+		if b.elementEditFunc == nil {
+			b.ElementEditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+			})
+		}
+	}
 	b.Viewing(fields...)
 	return
 }
@@ -254,6 +261,13 @@ func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
 		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
+	}
+	if b.isList {
+		if b.elementViewFunc == nil {
+			b.ElementShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+			})
+		}
 	}
 	return
 }
