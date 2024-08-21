@@ -357,7 +357,7 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 	if b.elementEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return web.Portal(
-				b.listComponent(obj, field, ctx, -1, -1, -1),
+				b.listComponent(obj, ctx, -1, -1, -1),
 			).Name(b.FieldPortalName())
 		})
 	}
@@ -372,7 +372,7 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return web.Portal(
-				b.listComponent(obj, field, ctx, -1, -1, -1),
+				b.listComponent(obj, ctx, -1, -1, -1),
 			).Name(b.FieldPortalName())
 		})
 	}
@@ -581,7 +581,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	return
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}

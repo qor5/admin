@@ -528,7 +528,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, int(deleteIndex), int(index), -1),
+		Body: f.listComponent(obj, ctx, int(deleteIndex), int(index), -1),
 	})
 
 	return
@@ -561,7 +561,7 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	if isCancel {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, nil, ctx, -1, -1, index),
+			Body: f.listComponent(obj, ctx, -1, -1, index),
 		})
 		return
 	}
@@ -580,14 +580,14 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, nil, ctx, -1, index, -1),
+			Body: f.listComponent(obj, ctx, -1, index, -1),
 		})
 		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, -1, -1, index),
+		Body: f.listComponent(obj, ctx, -1, -1, index),
 	})
 
 	return
@@ -650,7 +650,7 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, int(index), -1, -1),
+		Body: f.listComponent(obj, ctx, int(index), -1, -1),
 	})
 
 	return
@@ -701,7 +701,7 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, nil, ctx, -1, listLen, -1),
+		Body: f.listComponent(obj, ctx, -1, listLen, -1),
 	})
 
 	return
