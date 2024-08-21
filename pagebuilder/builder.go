@@ -288,6 +288,7 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
 	return b
 }
+
 func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 	b.disabledNormalContainersGroup = v
 	return b
@@ -483,9 +484,17 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
+		listingHref := pm.Info().ListingHref()
 		return h.Div(
 			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-				fmt.Sprintf(`$event.view.window.history.length <= 2 ? %s : $event.view.window.history.back()`, web.GET().URL(pm.Info().ListingHref()).PushState(true).Go()),
+				fmt.Sprintf(`
+					const last = vars.__history.last();
+					if (last && last.url && last.url.startsWith(%q)) {
+						$event.view.window.history.back();
+						return;
+					}
+					%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
+				),
 			),
 			h.H1("{{vars.pageTitle}}").Class("ml-4"),
 			versionBadge.Class("mt-2 ml-2"),
