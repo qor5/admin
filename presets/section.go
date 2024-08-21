@@ -22,6 +22,7 @@ const (
 	SectionFieldName = "detailField"
 	SectionIsCancel  = "isCancel"
 
+	sectionListUnsavedKey        = "unsaved"
 	sectionListFieldEditBtnKey   = "detailListFieldEditBtn"
 	sectionListFieldSaveBtnKey   = "detailListFieldSaveBtn"
 	sectionListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
@@ -630,7 +631,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 			}
 			if editID == sortIndex {
 				// if click edit
-				rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
+				rows.AppendChildren(b.editElement(elementObj, sortIndex, ctx))
 			} else if saveID == sortIndex {
 				// if click save
 				rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
@@ -645,7 +646,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 					if err != nil {
 						panic(err)
 					}
-					rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
+					rows.AppendChildren(b.editElement(elementObj, sortIndex, ctx))
 				}
 			}
 		})
@@ -678,6 +679,10 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 		).VSlot("{ form }"),
 		hiddenComp,
 	)
+}
+
+func (b *SectionBuilder) elementUnsavedKey() string {
+	return fmt.Sprintf("%s_%s", b.name, sectionListUnsavedKey)
 }
 
 func (b *SectionBuilder) EditBtnKey() string {
@@ -742,7 +747,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").
