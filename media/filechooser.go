@@ -848,7 +848,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
-			).Class("d-flex align-center").Attr("v-if", "!vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
+			).Class("d-flex align-center position-sticky bottom-0").Attr("v-if", "!vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
 			VRow(
 				VCol(
 					VBtn(pMsgr.Save).Size(SizeSmall).Variant(VariantOutlined).
@@ -862,7 +862,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamCfg, h.JSONString(cfg)).
 							Go()),
 				),
-			).Class("d-flex align-center").Attr("v-if", "vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
+			).Class("d-flex align-center position-sticky bottom-0").Attr("v-if", "vars.showFileChooser&&(locals.select_ids && locals.select_ids.length>0)"),
 		).Fluid(true),
 	).Init(fmt.Sprintf(`{fileChooserUploadingFiles: [], %s}`, strings.Join(initCroppingVars, ", "))).
 		VSlot("{ locals,form}").Init(fmt.Sprintf(`{select_ids:%s}`, selectIDInit))
