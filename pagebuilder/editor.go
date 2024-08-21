@@ -455,7 +455,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			).Attr("v-if", "vars.presetsMessage"),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
-			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false}`)...)
+			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false,presetsDataChanged:{}}`)...)
 		return
 	}
 }
