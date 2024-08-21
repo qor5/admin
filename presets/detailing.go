@@ -282,7 +282,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	onChangeEvent := fmt.Sprintf("if (vars.%s) { vars.%s.detailing=true };", VarsPresetsDataChanged, VarsPresetsDataChanged)
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
-	closeBtnVarScript := CloseRightDrawerVarScript
+	closeBtnVarScript := CloseRightDrawerVarConfirmScript
 	style := DetailingStyleDrawer
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = CloseDialogVarScript

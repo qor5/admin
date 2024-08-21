@@ -45,7 +45,7 @@ func NewListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilde
 	`,
 		slug,
 		strings.Join([]string{
-			presets.CloseRightDrawerVarScript,
+			presets.CloseRightDrawerVarConfirmScript,
 			drawerToSlug.Go(),
 		}, ";"),
 		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, mb.Info().ListingHref()))).Go(),

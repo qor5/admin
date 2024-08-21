@@ -362,7 +362,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		sidePanel:   b.sidePanel,
 	}, obj, ctx)
 
-	closeBtnVarScript := CloseRightDrawerVarScript
+	closeBtnVarScript := CloseRightDrawerVarConfirmScript
 	if overlayType == actions.Dialog {
 		closeBtnVarScript = CloseDialogVarScript
 	}
