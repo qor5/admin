@@ -152,18 +152,20 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		h.Tag("Teleport").Attr("to", "#"+c.ActionsComponentTeleportToID()).Children(
 			c.actionsComponent(ctx),
 		),
-		h.Div(VCard().Elevation(0).Children(
-			h.Div(
+		VCard().Elevation(0).Children(
+			h.Tag("div").Children(
 				c.tabsFilter(ctx),
-			).Class("px-2"),
-			c.toolbarSearch(ctx),
-			VCardText().Class("pt-2 px-2").Children(
+			).Class("px-6 mb-4"),
+			h.Div(
+				c.toolbarSearch(ctx),
+			).Class(("px-4")),
+			VCardText().Class("px-6 pt-2").Children(
 				c.dataTable(ctx),
 			),
 			h.Div(
 				c.cardActionsFooter(ctx),
 			).Class(("px-4 pb-2")),
-		)).Class("listing-compo-wrap"),
+		).Class("listing-compo-wrap"),
 	).MarshalHTML(ctx)
 }
 
@@ -811,7 +813,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 			onClick.Query(ParamParentID, c.ParentID)
 		}
 		return VBtn(msgr.New).
-			Color(ColorSecondary).
+			Color(ColorPrimary).
 			Variant(VariantElevated).
 			Theme("light").Class("ml-2").
 			Attr("@click", onClick.Go())
