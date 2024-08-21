@@ -1121,6 +1121,27 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			}),
 		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
+			VProgressLinear().
+			Attr(":active", "vars.grobalProgressBarValue !== 100").
+			Attr(":model-value", "vars.grobalProgressBarValue").
+			Attr("style", "position: fixed; z-index: 2000;").
+			Attr("v-on-created", `({ watch, window })=> {
+				let timer = null
+
+				watch(()=>isFetching, (newVal)=>{
+					vars.grobalProgressBarValue = 20
+						if(!isFetching) {
+							vars.grobalProgressBarValue = 60
+								if(timer) window.clearTimeout(timer)
+								timer = window.setTimeout(()=>{
+									vars.grobalProgressBarValue = 100
+								},100)
+							}
+					}, { immediate: true })
+				}`).
+			// Indeterminate(true).
+			Height(2).
+			Color(b.progressBarColor),
 			h.Template(
 				VSnackbar(
 					h.Text("{{vars.presetsMessage.message}}")).
@@ -1131,6 +1152,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Location(LocationBottom),
 			).Attr("v-if", "vars.presetsMessage"),
 			VLayout(
+
 				web.Portal().Name(RightDrawerPortalName),
 
 				// App(true).
@@ -1173,13 +1195,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Elevation(0),
 
 				VMain(
-					VProgressLinear().
-						Attr(":active", "isFetching").
-						Class("ml-4").
-						Attr("style", "position: fixed; z-index: 99;").
-						Indeterminate(true).
-						Height(2).
-						Color(b.progressBarColor),
 					VAppBar(
 						pageTitleComp,
 					).Elevation(0).Attr("height", 100),
