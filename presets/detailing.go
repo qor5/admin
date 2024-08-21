@@ -279,7 +279,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-	onChangeEvent := fmt.Sprintf("if (vars.%s) { vars.%s.detailing=true };", presetsDataChanged, presetsDataChanged)
+	onChangeEvent := fmt.Sprintf("if (vars.%s) { vars.%s.detailing=true };", VarsPresetsDataChanged, VarsPresetsDataChanged)
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	closeBtnVarScript := CloseRightDrawerVarScript

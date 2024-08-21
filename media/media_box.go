@@ -379,6 +379,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 					EventFunc(deleteFileEvent).
 					Query(ParamField, field).
 					Query(ParamCfg, h.JSONString(cfg)).
+					Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 					Go(),
 				).Disabled(disabled),
 		)
@@ -858,7 +859,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		r.RunScript = web.Plaid().
 			EventFunc(ImageJumpPageEvent).
-			AfterScript(`vars.searchMsg=""`).
+			AfterScript(fmt.Sprintf(`vars.searchMsg="";"vars.media_parent_id=%v"`, selectFolderID)).
 			Queries(queries).
 			Query(ParamSelectIDS, "").
 			Query(ParamParentID, selectFolderID).

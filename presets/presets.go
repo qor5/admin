@@ -823,11 +823,18 @@ const (
 	DeleteConfirmPortalName        = "deleteConfirm"
 )
 
+var (
+	CloseRightDrawerVarScript = ConfirmLeaveScript("vars.confirmDrawerLeave=true;", "vars.presetsRightDrawer = false;")
+)
+
 const (
-	CloseRightDrawerVarScript   = "if(Object.values(vars.presetsDataChanged).some(value => value === true)){vars.conformLeave=true;}else{vars.presetsRightDrawer = false;};"
 	CloseDialogVarScript        = "vars.presetsDialog = false"
 	CloseListingDialogVarScript = "vars.presetsListingDialog = false"
 )
+
+func ConfirmLeaveScript(confirmEvent, leaveEvent string) string {
+	return fmt.Sprintf("if(Object.values(vars.presetsDataChanged).some(value => value === true)){%s}else{%s};", confirmEvent, leaveEvent)
+}
 
 func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
 	overlayType := ctx.Param(ParamOverlay)
@@ -879,7 +886,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 		width = b.rightDrawerWidth
 	}
 	msgr := MustGetMessages(ctx.R)
-	listenChangeEvent := fmt.Sprintf("if(!$event && Object.values(vars.%s).some(value => value === true)) {vars.presetsRightDrawer=true};", presetsDataChanged)
+	listenChangeEvent := fmt.Sprintf("if(!$event && Object.values(vars.%s).some(value => value === true)) {vars.presetsRightDrawer=true};", VarsPresetsDataChanged)
 
 	activeWatcher, err := newActiveWatcher(ctx, "vars.presetsRightDrawer")
 	if err != nil {
@@ -891,12 +898,12 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 			VDialog(
 				VCard(
 					VCardActions(
-						VBtn(msgr.Cancel).Color(ColorSecondary).Attr("@click", "vars.conformLeave=false"),
-						VBtn(msgr.OK).Color(ColorPrimary).Attr("@click", "vars.conformLeave=false;vars.presetsRightDrawer = false")),
+						VBtn(msgr.Cancel).Color(ColorSecondary).Attr("@click", "vars.confirmDrawerLeave=false"),
+						VBtn(msgr.OK).Color(ColorPrimary).Attr("@click", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false")),
 				).PrependIcon("mdi-alert").Title(msgr.LeaveBeforeUnsubmit),
-			).Persistent(true).Width("auto").Attr("v-model", "vars.conformLeave"),
+			).Persistent(true).Width("auto").Attr("v-model", "vars.confirmDrawerLeave"),
 			activeWatcher,
-			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.conformLeave=true};", presetsDataChanged)),
+			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.confirmDrawerLeave=true};", VarsPresetsDataChanged)),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
 		).
 			// Attr("@input", "plaidForm.dirty && vars.presetsRightDrawer == false && !confirm('You have unsaved changes on this form. If you close it, you will lose all unsaved changes. Are you sure you want to close it?') ? vars.presetsRightDrawer = true: vars.presetsRightDrawer = $event"). // remove because drawer plaidForm has to be reset when UpdateOverlayContent
@@ -913,7 +920,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 		// Floating(true).
 
 	})
-	r.RunScript = fmt.Sprintf(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.conformLeave=false,vars.%s = {} }, 100)`, presetsDataChanged)
+	r.RunScript = fmt.Sprintf(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.%s = {} }, 100)`, VarsPresetsDataChanged)
 }
 
 func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
@@ -1187,9 +1194,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 					Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
 			),
 		).Attr("id", "vt-app").Elevation(0).
-			Attr(web.VAssign("vars", `{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
-navDrawer: true
-}`)...).Class(b.containerClassName)
+			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
+navDrawer: true,%s:{}
+}`, VarsPresetsDataChanged))...).Class(b.containerClassName)
 
 		return
 	}

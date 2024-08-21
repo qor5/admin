@@ -288,6 +288,7 @@ func fileComponent(
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(ParamParentID, ctx.Param(ParamParentID)).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Go()),
@@ -299,6 +300,7 @@ func fileComponent(
 				Query(paramTab, tab).
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(ParamParentID, ctx.Param(ParamParentID)).
+				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 				Go()),
@@ -367,6 +369,12 @@ func fileOrFolderComponent(
 		checkEvent     = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;if(vars.showFileChooser){locals.select_ids=[find_id]}
 else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);}`, f.ID)
 		clickCardWithoutMoveEvent = "null"
+		moveToEvent               = web.Plaid().EventFunc(MoveToFolderDialogEvent).
+						Query(ParamField, field).
+						Query(paramTab, tab).
+						Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+						Query(ParamCfg, h.JSONString(cfg)).
+						Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()
 	)
 	menus := &[]h.HTMLComponent{
 		VListItem(h.Text(msgr.Rename)).Attr("@click", web.Plaid().
@@ -375,10 +383,11 @@ else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id)
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(ParamParentID, ctx.Param(ParamParentID)).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()),
-		VListItem(h.Text(msgr.MoveTo)).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v)", f.ID)),
+		VListItem(h.Text(msgr.MoveTo)).Attr("@click", fmt.Sprintf("if(vars.showFileChooser){%s}else{locals.select_ids.push(%v)};", moveToEvent, f.ID)),
 		h.If(mb.deleteIsAllowed(ctx.R, f) == nil, VListItem(h.Text(msgr.Delete)).Attr("@click",
 			web.Plaid().
 				EventFunc(DeleteConfirmationEvent).
@@ -387,6 +396,7 @@ else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id)
 				Query(ParamCfg, h.JSONString(cfg)).
 				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 				Go())),
 	}
@@ -399,6 +409,7 @@ else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id)
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
 		if inMediaLibrary {
 			clickCardWithoutMoveEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamParentID, f.ID).RunPushState()
@@ -414,7 +425,7 @@ else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id)
 			Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
 			Attr("@update:model-value", checkEvent).
 			Attr("style", "z-index:2").
-			Class("position-absolute top-0 right-0").Attr("v-if", "vars.showFileChooser||locals.select_ids.length>0"),
+			Class("position-absolute top-0 right-0").Attr("v-if", fmt.Sprintf("vars.showFileChooser&& %v || (!vars.showFileChooser &&locals.select_ids.length>0)", !f.Folder)),
 		VCardText(
 			VCard(
 				title,
@@ -439,7 +450,7 @@ else{arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id)
 		).Class("pa-0"),
 	).Class("position-relative").
 		Hover(true).
-		Attr("@click", fmt.Sprintf("if(vars.showFileChooser||locals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardWithoutMoveEvent))
+		Attr("@click", fmt.Sprintf("if(vars.showFileChooser && %v || (!vars.showFileChooser && locals.select_ids.length>0)){%s}else{%s}", !f.Folder, checkEvent, clickCardWithoutMoveEvent))
 }
 
 func folderComponent(
@@ -512,7 +523,9 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 		Query(paramTab, ctx.Param(paramTab)).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 		Query(ParamParentID, currentID).
+		AfterScript(fmt.Sprintf("vars.media_parent_id=%v", currentID)).
 		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 		Go()
 
@@ -662,6 +675,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Query(paramTab, web.Var("$event")).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 		Go()
 	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
@@ -709,6 +723,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
+								Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 								Query(paramTypeKey, web.Var("$event")).
 								Go(),
@@ -727,6 +742,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTab, tab).
 								Query(ParamField, field).
 								Query(ParamCfg, h.JSONString(cfg)).
+								Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 								Query(paramOrderByKey, web.Var("$event")).Go(),
 						).
@@ -742,6 +758,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 									Query(paramTab, tab).
 									Query(ParamField, field).
 									Query(ParamCfg, h.JSONString(cfg)).
+									Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 									Query(ParamParentID, ctx.Param(ParamParentID)).
 									Go()),
 					),
@@ -764,6 +781,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 											Query(ParamParentID, parentID).
 											Query(ParamField, field).
 											Query(ParamCfg, h.JSONString(cfg)).
+											Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 											Go()),
 						),
 					),
@@ -786,6 +804,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 								Query(paramTab, tab).
 								Query(ParamParentID, parentID).
 								Query(ParamField, field).
+								Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 								Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 								Query(ParamCfg, h.JSONString(cfg)).
 								Go()),
@@ -824,6 +843,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 							Query(ParamField, field).
 							Query(ParamParentID, parentID).
 							Query(paramTab, tab).
+							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
@@ -857,6 +877,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		EventFunc(ImageSearchEvent).
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 		Query(searchKeywordName(field), web.Var("vars.searchMsg"))
 	if inMediaLibrary {
 		clickEvent = clickEvent.MergeQuery(true)
