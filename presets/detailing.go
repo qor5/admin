@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -500,6 +498,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 	fieldName = ctx.Queries().Get(SectionFieldName)
 	f := b.Section(fieldName)
 
+	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
 	if err != nil {
 		return
@@ -521,6 +520,12 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 		f.setter(obj, ctx)
 	}
 
+	if unsaved {
+		if _, err := f.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
@@ -528,7 +533,7 @@ func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.Eve
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, int(deleteIndex), int(index), -1),
+		Body: f.listComponent(obj, ctx, int(deleteIndex), int(index), -1, unsaved),
 	})
 
 	return
@@ -547,6 +552,7 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 
 	f := b.Section(fieldName)
 
+	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
 	index = ctx.ParamAsInt(f.SaveBtnKey())
 
 	obj := b.mb.NewModel()
@@ -559,9 +565,22 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	if isCancel {
+		var listLen int
+		if unsaved {
+			if listLen, err = f.appendElement(obj); err != nil {
+				panic(err)
+			}
+		}
+		if listLen-1 == index {
+			if err = f.removeElement(obj, index); err != nil {
+				panic(err)
+			}
+			index = -1
+		}
+
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, ctx, -1, -1, index),
+			Body: f.listComponent(obj, ctx, -1, -1, index, unsaved),
 		})
 		return
 	}
@@ -577,17 +596,23 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 		return r, nil
 	}
 
+	if ctx.ParamAsBool(f.elementUnsavedKey()) {
+		if _, err := f.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, ctx, -1, index, -1),
+			Body: f.listComponent(obj, ctx, -1, index, -1, unsaved),
 		})
 		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, -1, -1, index),
+		Body: f.listComponent(obj, ctx, -1, -1, index, unsaved),
 	})
 
 	return
@@ -603,6 +628,7 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 	fieldName = ctx.Queries().Get(SectionFieldName)
 	f := b.Section(fieldName)
 
+	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
 	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
 	if err != nil {
 		return
@@ -622,24 +648,10 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		return
 	}
 
-	// delete from slice
-	var list any
-	if list, err = reflectutils.Get(obj, f.name); err != nil {
-		return
-	}
-	listValue := reflect.ValueOf(list)
-	if listValue.Kind() != reflect.Slice {
-		err = errors.New("field is not a slice")
-		return
-	}
-	newList := reflect.MakeSlice(reflect.TypeOf(list), 0, 0)
-	for i := 0; i < listValue.Len(); i++ {
-		if i != int(index) {
-			newList = reflect.Append(newList, listValue.Index(i))
-		}
-	}
-	if err = reflectutils.Set(obj, f.name, newList.Interface()); err != nil {
-		return
+	err = f.removeElement(obj, int(index))
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
 	}
 
 	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
@@ -648,9 +660,15 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		return r, nil
 	}
 
+	if unsaved {
+		if _, err := f.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, int(index), -1, -1),
+		Body: f.listComponent(obj, ctx, int(index), -1, -1, unsaved),
 	})
 
 	return
@@ -675,33 +693,16 @@ func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.E
 		return
 	}
 
-	var list any
-	if list, err = reflectutils.Get(obj, f.name); err != nil {
-		return
-	}
-
-	listLen := 0
-	if list != nil {
-		listValue := reflect.ValueOf(list)
-		if listValue.Kind() != reflect.Slice {
-			err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
-			return
+	var listLen int
+	if ctx.ParamAsBool(f.elementUnsavedKey()) {
+		if listLen, err = f.appendElement(obj); err != nil {
+			panic(err)
 		}
-		listLen = listValue.Len()
-	}
-
-	if err = reflectutils.Set(obj, f.name+"[]", f.editingFB.model); err != nil {
-		return
-	}
-
-	if err = f.saver(obj, ctx.Queries().Get(ParamID), ctx); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, -1, listLen, -1),
+		Body: f.listComponent(obj, ctx, -1, listLen-1, -1, true),
 	})
 
 	return
