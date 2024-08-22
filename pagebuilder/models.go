@@ -65,14 +65,14 @@ func primarySlugWithoutVersion(v interface{}) string {
 
 func primaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) > 3 {
-		panic("wrong slug")
-	}
 	if len(segs) == 2 {
 		return map[string]string{
 			"id":                segs[0],
 			publish.SlugVersion: segs[1],
 		}
+	}
+	if len(segs) != 3 {
+		panic("wrong slug")
 	}
 	return map[string]string{
 		"id":                segs[0],
@@ -83,13 +83,13 @@ func primaryColumnValuesBySlug(slug string) map[string]string {
 
 func primaryColumnValuesBySlugWithoutVersion(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) > 2 {
-		panic("wrong slug")
-	}
 	if len(segs) == 1 {
 		return map[string]string{
 			"id": segs[0],
 		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
 	}
 	return map[string]string{
 		"id":                segs[0],
