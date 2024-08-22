@@ -424,8 +424,8 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		compo := presets.ListingCompoFromEventContext(ctx)
 		selected := MustFilterQuery(compo).Get(filterKeySelected)
 
-		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantTonal).Size(v.SizeSmall).
-			Class("text-none text-caption font-weight-regular bg-secondary text-on-secondary").Attr("@click",
+		return v.VBtn(utilsMsgr.OK).Disabled(selected == "").Variant(v.VariantFlat).Size(v.SizeSmall).Color(v.ColorPrimary).
+			Class("text-none text-caption font-weight-regular").Attr("@click",
 			fmt.Sprintf(`%s;%s;`,
 				presets.CloseListingDialogVarScript,
 				web.Emit(NotifVersionSelected(mb), PayloadVersionSelected{Slug: selected}),

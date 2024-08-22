@@ -764,7 +764,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					),
 					h.If(mb.uploadIsAllowed(ctx.R) == nil,
 						h.Div(
-							VBtn(msgr.UploadFile).PrependIcon("mdi-upload").Color(ColorSecondary).
+							VBtn(msgr.UploadFile).PrependIcon("mdi-upload").Color(ColorPrimary).
 								Attr("@click", "$refs.uploadInput.click()"),
 							h.Input("").
 								Attr("ref", "uploadInput").

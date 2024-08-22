@@ -74,7 +74,7 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 				Modifier:     vuetifyx.ModifierEquals,
 				SQLCondition: `body = ?`,
 				Options:      options,
-				WarpInput: func(val string) string {
+				WrapInput: func(val string) interface{} {
 					return val + "wrap"
 				},
 			},
