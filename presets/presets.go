@@ -823,9 +823,7 @@ const (
 	DeleteConfirmPortalName        = "deleteConfirm"
 )
 
-var (
-	CloseRightDrawerVarConfirmScript = ConfirmLeaveScript("vars.confirmDrawerLeave=true;", "vars.presetsRightDrawer = false;")
-)
+var CloseRightDrawerVarConfirmScript = ConfirmLeaveScript("vars.confirmDrawerLeave=true;", "vars.presetsRightDrawer = false;")
 
 const (
 	CloseRightDrawerVarScript   = "vars.presetsRightDrawer = false"
@@ -1123,17 +1121,19 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				Attr("v-if", "!vars.navDrawer").
 				On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 			innerPageTitleCompo,
-			VSpacer(),
 			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
-				return h.Div().Id(actionsComponentTeleportToID)
+				return h.Components(
+					VSpacer(),
+					h.Div().Id(actionsComponentTeleportToID),
+				)
 			}),
 		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
 			VProgressLinear().
-			Attr(":active", "vars.grobalProgressBarValue !== 100").
-			Attr(":model-value", "vars.grobalProgressBarValue").
-			Attr("style", "position: fixed; z-index: 2000;").
-			Attr("v-on-created", `({ watch, window })=> {
+				Attr(":active", "vars.grobalProgressBarValue !== 100").
+				Attr(":model-value", "vars.grobalProgressBarValue").
+				Attr("style", "position: fixed; z-index: 2000;").
+				Attr("v-on-created", `({ watch, window })=> {
 				let timer = null
 				watch(()=>isReloadingPage, (newVal)=>{
 					vars.grobalProgressBarValue = 20
@@ -1147,9 +1147,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 							}
 					}, { immediate: true })
 				}`).
-			// Indeterminate(true).
-			Height(2).
-			Color(b.progressBarColor),
+				// Indeterminate(true).
+				Height(2).
+				Color(b.progressBarColor),
 			h.Template(
 				VSnackbar(
 					h.Text("{{vars.presetsMessage.message}}")).
