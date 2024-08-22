@@ -391,7 +391,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					Query("__execute_event__", "presets_Detailing_List_Field_Create").
 					Query("section", "CreditCards").
 					Query("id", "1").
-					Query("CreditCards_sectionListUnsaved", "true").
+					Query("sectionListUnsaved_CreditCards", "true").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Phone", "Cancel", "Save"},
@@ -405,7 +405,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
 					Query("__execute_event__", "presets_Detailing_List_Field_Save").
-					Query("CreditCards_sectionListUnsaved", "false").
+					Query("sectionListUnsaved_CreditCards", "false").
 					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "1").
@@ -425,7 +425,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
 					Query("__execute_event__", "presets_Detailing_List_Field_Save").
-					Query("CreditCards_sectionListUnsaved", "false").
+					Query("sectionListUnsaved_CreditCards", "false").
 					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "1").
@@ -443,7 +443,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
 					Query("__execute_event__", "presets_Detailing_List_Field_Delete").
-					Query("CreditCards_sectionListUnsaved", "false").
+					Query("sectionListUnsaved_CreditCards", "false").
 					Query("section", "CreditCards").
 					Query("sectionListDeleteBtn_CreditCards", "0").
 					Query("id", "1").
@@ -463,7 +463,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
 					Query("__execute_event__", "presets_Detailing_List_Field_Delete").
-					Query("CreditCards_sectionListUnsaved", "true").
+					Query("sectionListUnsaved_CreditCards", "true").
 					Query("section", "CreditCards").
 					Query("sectionListDeleteBtn_CreditCards", "0").
 					Query("id", "2").
@@ -486,7 +486,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
 					Query("__execute_event__", "presets_Detailing_List_Field_Save").
-					Query("CreditCards_sectionListUnsaved", "true").
+					Query("sectionListUnsaved_CreditCards", "true").
 					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "2").

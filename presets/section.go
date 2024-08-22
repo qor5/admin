@@ -710,7 +710,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 }
 
 func (b *SectionBuilder) elementUnsavedKey() string {
-	return fmt.Sprintf("%s_%s", b.name, sectionListUnsavedKey)
+	return fmt.Sprintf("%s_%s", sectionListUnsavedKey, b.name)
 }
 
 func (b *SectionBuilder) EditBtnKey() string {
