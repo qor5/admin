@@ -2,16 +2,16 @@ package integration_test
 
 import (
 	"embed"
-	"github.com/qor5/admin/v3/media"
-	"github.com/qor5/web/v3"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/qor/oss/filesystem"
+	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
@@ -177,14 +177,21 @@ func TestCopy(t *testing.T) {
 
 }
 func TestUnCachedURL(t *testing.T) {
-	b := media_library.MediaBox{
-		Url: "test.jpg",
+	b := media_library.MediaBox{}
+	if b.URLNoCached() != "" {
+		t.Fatalf("set uncached url error %v", b.URLNoCached())
+		return
 	}
+	b.Url = "test.jpg"
 	if !strings.Contains(b.URLNoCached(), "test.jpg?") {
 		t.Fatalf("set uncached url error %v", b.URLNoCached())
 		return
 	}
 	m := media_library.MediaLibrary{}
+	if m.File.URLNoCached() != "" {
+		t.Fatalf("set uncached url error %v", m.File.URLNoCached())
+		return
+	}
 	m.File.Url = "test2.jpg"
 	if !strings.Contains(m.File.URLNoCached(), "test2.jpg?") {
 		t.Fatalf("set uncached url error %v", m.File.URLNoCached())

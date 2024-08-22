@@ -83,7 +83,11 @@ func (mediaBox *MediaBox) URL(styles ...string) string {
 	return mediaBox.Url
 }
 func (mediaBox *MediaBox) URLNoCached(styles ...string) string {
-	return mediaBox.URL(styles...) + "?" + fmt.Sprint(time.Now().Nanosecond())
+	url := mediaBox.URL(styles...)
+	if url != "" {
+		url = fmt.Sprintf("%s?%d", url, time.Now().Nanosecond())
+	}
+	return url
 }
 
 func (mediaBox MediaBox) WebpURL(styles ...string) string {

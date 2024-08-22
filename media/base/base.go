@@ -139,7 +139,11 @@ func (b Base) URL(styles ...string) string {
 }
 
 func (b Base) URLNoCached(styles ...string) string {
-	return b.URL(styles...) + "?" + fmt.Sprint(time.Now().Nanosecond())
+	url := b.URL(styles...)
+	if url != "" {
+		url = fmt.Sprintf("%s?%d", url, time.Now().Nanosecond())
+	}
+	return url
 }
 
 // String return file's url
