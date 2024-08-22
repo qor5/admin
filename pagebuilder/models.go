@@ -65,7 +65,7 @@ func primarySlugWithoutVersion(v interface{}) string {
 
 func primaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) > 3 {
+	if len(segs) != 2 && len(segs) != 3 {
 		panic("wrong slug")
 	}
 	if len(segs) == 2 {
