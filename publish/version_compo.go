@@ -444,7 +444,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 			{
 				Key:          "online_versions",
 				Invisible:    true,
-				SQLCondition: `status = 'online'`,
+				SQLCondition: fmt.Sprintf(`status = '%s'`, StatusOnline),
 			},
 			{
 				Key:          "named_versions",
