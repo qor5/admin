@@ -134,8 +134,16 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
-				h.Div(VIcon("mdi-exit-to-app").
-					Attr("@click", web.Plaid().URL(exitHref).PushState(true).Go())).Style("transform:rotateY(180deg)").Class("mr-4"),
+				h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
+					VIcon("mdi-exit-to-app").Attr("@click", fmt.Sprintf(`
+						const last = vars.__history.last();
+						if (last && last.url && last.url === %q) {
+							$event.view.window.history.back();
+							return;
+						}
+						%s`, exitHref, web.GET().URL(exitHref).PushState(true).Go(),
+					)),
+				),
 				VAppBarTitle().Text(msgr.PageBuilder),
 			).Class("d-inline-flex align-center"),
 			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
