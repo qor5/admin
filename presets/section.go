@@ -27,7 +27,7 @@ const (
 	sectionListFieldSaveBtnKey   = "detailListFieldSaveBtn"
 	sectionListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
 
-	detailListFieldEditing = "detailListFieldEditing"
+	sectionListFieldEditing = "sectionListFieldEditing"
 )
 
 type SectionsBuilder struct {
@@ -726,7 +726,7 @@ func (b *SectionBuilder) DeleteBtnKey() string {
 }
 
 func (b *SectionBuilder) ListElementIsEditing(index int) string {
-	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, detailListFieldEditing)
+	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
 }
 
 func (b *SectionBuilder) ListElementPortalName(index int) string {

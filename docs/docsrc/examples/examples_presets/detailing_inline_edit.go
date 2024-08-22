@@ -293,7 +293,7 @@ func (creditCard *creditCards) Scan(data interface{}) (err error) {
 	return nil
 }
 
-func PresetsSectionList(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
+func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder) {
@@ -304,7 +304,7 @@ func PresetsSectionList(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBui
 	b.DataOperator(gorm2op.DataOperator(db))
 	cust = b.Model(&UserCreditCard{})
 	dp = cust.Detailing("CreditCards").Drawer(true)
-	dp.Section("CreditCards").IsList(&CreditCard{}).
+	dp.Section("CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
 	return
 }
