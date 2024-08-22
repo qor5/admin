@@ -896,11 +896,12 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 		Body: VNavigationDrawer(
 			VDialog(
 				VCard(
+					VCardTitle(h.Text(msgr.LeaveBeforeUnsubmit)).Class("pa-6"),
 					VCardActions(
-						VBtn(msgr.Cancel).Color(ColorSecondary).Attr("@click", "vars.confirmDrawerLeave=false"),
-						VBtn(msgr.OK).Color(ColorPrimary).Attr("@click", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false")),
-				).PrependIcon("mdi-alert").Title(msgr.LeaveBeforeUnsubmit),
-			).Persistent(true).Width("auto").Attr("v-model", "vars.confirmDrawerLeave"),
+						VBtn(msgr.Cancel).Variant(VariantOutlined).Color(ColorSecondary).Size(SizeSmall).Attr("@click", "vars.confirmDrawerLeave=false"),
+						VBtn(msgr.OK).Variant(VariantFlat).Color(ColorPrimary).Size(SizeSmall).Attr("@click", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false")).Class("pb-6 px-6"),
+				),
+			).Persistent(true).Class("common-dialog").Width("400").Attr("v-model", "vars.confirmDrawerLeave"),
 			activeWatcher,
 			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.confirmDrawerLeave=true};", VarsPresetsDataChanged)),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
@@ -1027,22 +1028,24 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 		Name: portal,
 		Body: web.Scope(VDialog(
 			VCard(
-				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
+				VCardTitle(h.Text(promptText)).Class("pa-6"),
 				VCardActions(
 					VSpacer(),
 					VBtn(cancelText).
-						Variant(VariantFlat).
+						Size(SizeSmall).
+						Variant(VariantOutlined).
 						Class("ml-2").
 						On("click", "locals.show = false"),
 
 					VBtn(okText).
+						Size(SizeSmall).
 						Color("primary").
 						Variant(VariantFlat).
-						Theme(ThemeDark).
+						Theme(ThemeLight).
 						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
-				),
+				).Class("pb-6 px-6"),
 			),
-		).MaxWidth("600px").
+		).MaxWidth("400px").Class("common-dialog").
 			Attr("v-model", "locals.show"),
 		).VSlot("{ locals }").Init("{show: true}"),
 	})
