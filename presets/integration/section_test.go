@@ -158,12 +158,6 @@ func TestDetailFieldBuilder(t *testing.T) {
 						Description: "desc1",
 						DisplayName: "name1",
 					},
-					{
-						Path:        "",
-						ValType:     "",
-						Description: "",
-						DisplayName: "",
-					},
 				},
 			},
 		},
