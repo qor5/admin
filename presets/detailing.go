@@ -565,17 +565,10 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	if isCancel {
-		var listLen int
 		if unsaved {
-			if listLen, err = f.appendElement(obj); err != nil {
+			if _, err = f.appendElement(obj); err != nil {
 				panic(err)
 			}
-		}
-		if listLen-1 == index {
-			if err = f.removeElement(obj, index); err != nil {
-				panic(err)
-			}
-			index = -1
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
