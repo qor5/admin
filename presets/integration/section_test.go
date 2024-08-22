@@ -158,12 +158,6 @@ func TestDetailFieldBuilder(t *testing.T) {
 						Description: "desc1",
 						DisplayName: "name1",
 					},
-					{
-						Path:        "",
-						ValType:     "",
-						Description: "",
-						DisplayName: "",
-					},
 				},
 			},
 		},
@@ -177,7 +171,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 					EventFunc(actions.DoSaveDetailingListField).
 					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
-					Query("detailListFieldSaveBtn_FormSetting", "0").
+					Query("sectionListSaveBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
 					AddField("FormSetting[0].DisplayName", "newName").
 					AddField("FormSetting[0].Description", "newDesc").
@@ -213,7 +207,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 					EventFunc(actions.DoDeleteDetailingListField).
 					Query(presets.SectionFieldName, "FormSetting").
 					Query(presets.ParamID, "1").
-					Query("detailListFieldDeleteBtn_FormSetting", "0").
+					Query("sectionListDeleteBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
 					AddField("FormSetting[0].DisplayName", "newName").
 					AddField("FormSetting[0].Description", "newDesc").

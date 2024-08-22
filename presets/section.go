@@ -19,14 +19,15 @@ import (
 )
 
 const (
-	SectionFieldName = "detailField"
+	SectionFieldName = "section"
 	SectionIsCancel  = "isCancel"
 
-	sectionListFieldEditBtnKey   = "detailListFieldEditBtn"
-	sectionListFieldSaveBtnKey   = "detailListFieldSaveBtn"
-	sectionListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
+	sectionListUnsavedKey        = "sectionListUnsaved"
+	sectionListEditBtnKey        = "sectionListEditBtn"
+	sectionListSaveBtnKey        = "sectionListSaveBtn"
+	sectionListFieldDeleteBtnKey = "sectionListDeleteBtn"
 
-	detailListFieldEditing = "detailListFieldEditing"
+	sectionListFieldEditing = "sectionListEditing"
 )
 
 type SectionsBuilder struct {
@@ -99,12 +100,12 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 
 type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-func (d *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
+func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
-	d.componentEditBtnFunc = v
-	return d
+	b.componentEditBtnFunc = v
+	return b
 }
 
 func (b *SectionBuilder) WrapComponentEditBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
@@ -112,12 +113,12 @@ func (b *SectionBuilder) WrapComponentEditBtnFunc(w func(in ObjectBoolFunc) Obje
 	return b
 }
 
-func (d *SectionBuilder) ComponentHoverFunc(v ObjectBoolFunc) *SectionBuilder {
+func (b *SectionBuilder) ComponentHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
-	d.componentHoverFunc = v
-	return d
+	b.componentHoverFunc = v
+	return b
 }
 
 func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
@@ -125,22 +126,22 @@ func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) Object
 	return b
 }
 
-func (d *SectionBuilder) DisableElementDeleteBtn() *SectionBuilder {
-	d.disableElementDeleteBtn = true
-	return d
+func (b *SectionBuilder) DisableElementDeleteBtn() *SectionBuilder {
+	b.disableElementDeleteBtn = true
+	return b
 }
 
-func (d *SectionBuilder) DisableElementCreateBtn() *SectionBuilder {
-	d.disableElementCreateBtn = true
-	return d
+func (b *SectionBuilder) DisableElementCreateBtn() *SectionBuilder {
+	b.disableElementCreateBtn = true
+	return b
 }
 
-func (d *SectionBuilder) ElementEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
+func (b *SectionBuilder) ElementEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
-	d.elementEditBtnFunc = v
-	return d
+	b.elementEditBtnFunc = v
+	return b
 }
 
 func (b *SectionBuilder) WrapElementEditBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
@@ -148,12 +149,12 @@ func (b *SectionBuilder) WrapElementEditBtnFunc(w func(in ObjectBoolFunc) Object
 	return b
 }
 
-func (d *SectionBuilder) ElementHoverFunc(v ObjectBoolFunc) *SectionBuilder {
+func (b *SectionBuilder) ElementHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
 	}
-	d.elementHoverFunc = v
-	return d
+	b.elementHoverFunc = v
+	return b
 }
 
 func (b *SectionBuilder) WrapElementHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
@@ -161,9 +162,9 @@ func (b *SectionBuilder) WrapElementHoverFunc(w func(in ObjectBoolFunc) ObjectBo
 	return b
 }
 
-func (d *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
-	d.alwaysShowListLabel = true
-	return d
+func (b *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
+	b.alwaysShowListLabel = true
+	return b
 }
 
 // SectionBuilder
@@ -242,6 +243,13 @@ func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
 	}
+	if b.isList {
+		if b.elementEditFunc == nil {
+			b.ElementEditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+			})
+		}
+	}
 	b.Viewing(fields...)
 	return
 }
@@ -253,6 +261,13 @@ func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
 		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
 		})
+	}
+	if b.isList {
+		if b.elementViewFunc == nil {
+			b.ElementShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+			})
+		}
 	}
 	return
 }
@@ -270,6 +285,11 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.saver = v
+	return b
+}
+
+func (b *SectionBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *SectionBuilder) {
+	b.setter = w(b.setter)
 	return b
 }
 
@@ -355,9 +375,11 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 	b.elementViewFunc = v
 	if b.elementEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.listComponent(obj, field, ctx, -1, -1, -1),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.listComponent(obj, ctx, -1, -1, -1, false),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ locals }").Init("{show:true}")
 		})
 	}
 	return b
@@ -371,7 +393,7 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return web.Portal(
-				b.listComponent(obj, field, ctx, -1, -1, -1),
+				b.listComponent(obj, ctx, -1, -1, -1, false),
 			).Name(b.FieldPortalName())
 		})
 	}
@@ -561,6 +583,10 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	}
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	if listObj.Len() == int(index) {
+		b.appendElement(obj)
+		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	}
 	elementObj := listObj.Index(int(index)).Interface()
 	formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
@@ -580,7 +606,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	return
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *web.EventContext, deletedID, editID, saveID int) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved bool) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
@@ -602,6 +628,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 	if err != nil {
 		panic(err)
 	}
+	listLen := reflect.ValueOf(list).Len()
 
 	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
 	label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
@@ -630,7 +657,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 			}
 			if editID == sortIndex {
 				// if click edit
-				rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
+				rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, ctx))
 			} else if saveID == sortIndex {
 				// if click save
 				rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
@@ -645,19 +672,21 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 					if err != nil {
 						panic(err)
 					}
-					rows.AppendChildren(b.editElement(elementObj, sortIndex, fromIndex, ctx))
+					rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, ctx))
 				}
 			}
 		})
 	}
 
 	disableCreateBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	disableCreateBtn = disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey()))
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2").
-			Attr("@click", web.Plaid().
+			Attr("@click", "locals.show=false;"+web.Plaid().
 				URL(ctx.R.URL.Path).
 				EventFunc(actions.DoCreateDetailingListField).
+				Query(b.elementUnsavedKey(), true).
 				Query(SectionFieldName, b.name).
 				Query(ParamID, id).
 				Go())
@@ -680,12 +709,16 @@ func (b *SectionBuilder) listComponent(obj interface{}, _ *FieldContext, ctx *we
 	)
 }
 
+func (b *SectionBuilder) elementUnsavedKey() string {
+	return fmt.Sprintf("%s_%s", sectionListUnsavedKey, b.name)
+}
+
 func (b *SectionBuilder) EditBtnKey() string {
-	return fmt.Sprintf("%s_%s", sectionListFieldEditBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListEditBtnKey, b.name)
 }
 
 func (b *SectionBuilder) SaveBtnKey() string {
-	return fmt.Sprintf("%s_%s", sectionListFieldSaveBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListSaveBtnKey, b.name)
 }
 
 func (b *SectionBuilder) DeleteBtnKey() string {
@@ -693,7 +726,7 @@ func (b *SectionBuilder) DeleteBtnKey() string {
 }
 
 func (b *SectionBuilder) ListElementIsEditing(index int) string {
-	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, detailListFieldEditing)
+	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
 }
 
 func (b *SectionBuilder) ListElementPortalName(index int) string {
@@ -712,6 +745,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoEditDetailingListField).
+			Query(b.elementUnsavedKey(), ctx.Param(b.elementUnsavedKey())).
 			Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
@@ -742,18 +776,30 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	).Name(b.ListElementPortalName(index))
 }
 
-func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContext) h.HTMLComponent {
+// If you have created this element but not save, isCreated = true
+func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *web.EventContext) h.HTMLComponent {
+	showAddBtn := "locals.show=true;"
+	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
+	if isCreated {
+		unsaved = false
+	}
+
+	deleteEvent := web.Plaid().
+		URL(ctx.R.URL.Path).
+		EventFunc(actions.DoDeleteDetailingListField).
+		Query(SectionFieldName, b.name).
+		Query(ParamID, ctx.Param(ParamID)).
+		Query(b.elementUnsavedKey(), unsaved).
+		Query(b.DeleteBtnKey(), index).
+		Go()
+	if isCreated {
+		deleteEvent = showAddBtn + deleteEvent
+	}
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").
 		Attr("v-show", fmt.Sprintf("%t", !b.disableElementDeleteBtn)).
-		Attr("@click", web.Plaid().
-			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoDeleteDetailingListField).
-			Query(SectionFieldName, b.name).
-			Query(ParamID, ctx.Param(ParamID)).
-			Query(b.DeleteBtnKey(), index).
-			Go())
+		Attr("@click", deleteEvent)
 
 	contentDiv := h.Div(
 		h.Div(
@@ -767,26 +813,36 @@ func (b *SectionBuilder) editElement(obj any, index, _ int, ctx *web.EventContex
 		h.Div(deleteBtn).Class("d-flex pl-3"),
 	).Class("d-flex justify-space-between mb-4")
 
+	cancelEvent := web.Plaid().
+		URL(ctx.R.URL.Path).
+		EventFunc(actions.DoSaveDetailingListField).
+		Query(SectionFieldName, b.name).
+		Query(b.elementUnsavedKey(), unsaved).
+		Query(SectionIsCancel, true).
+		Query(ParamID, ctx.Param(ParamID)).
+		Query(b.SaveBtnKey(), strconv.Itoa(index)).
+		Go()
+	if isCreated {
+		cancelEvent = showAddBtn + cancelEvent
+	}
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().
-			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoSaveDetailingListField).
-			Query(SectionFieldName, b.name).
-			Query(SectionIsCancel, true).
-			Query(ParamID, ctx.Param(ParamID)).
-			Query(b.SaveBtnKey(), strconv.Itoa(index)).
-			Go())
+		Attr("@click", cancelEvent)
 
+	saveEvent := web.Plaid().
+		URL(ctx.R.URL.Path).
+		EventFunc(actions.DoSaveDetailingListField).
+		Query(SectionFieldName, b.name).
+		Query(b.elementUnsavedKey(), unsaved).
+		Query(ParamID, ctx.Param(ParamID)).
+		Query(b.SaveBtnKey(), strconv.Itoa(index)).
+		Go()
+	if isCreated {
+		saveEvent = showAddBtn + saveEvent
+	}
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
-		Attr("@click", web.Plaid().
-			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoSaveDetailingListField).
-			Query(SectionFieldName, b.name).
-			Query(ParamID, ctx.Param(ParamID)).
-			Query(b.SaveBtnKey(), strconv.Itoa(index)).
-			Go())
+		Attr("@click", saveEvent)
 
 	card := VCard(
 		VCardText(
@@ -854,4 +910,49 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 		}
 		return nil
 	}
+}
+
+func (b *SectionBuilder) appendElement(obj interface{}) (listLen int, err error) {
+	if !b.isList {
+		return
+	}
+	if reflect.ValueOf(obj).Kind() != reflect.Ptr {
+		return 0, errors.New(fmt.Sprintf("obj %#+v must be pointer", obj))
+	}
+	var list any
+	if list, err = reflectutils.Get(obj, b.name); err != nil {
+		return
+	}
+
+	if list != nil {
+		listValue := reflect.ValueOf(list)
+		if listValue.Kind() != reflect.Slice {
+			err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
+			return
+		}
+		listLen = listValue.Len()
+	}
+
+	return listLen + 1, reflectutils.Set(obj, b.name+"[]", b.editingFB.model)
+}
+
+func (b *SectionBuilder) removeElement(obj interface{}, index int) (err error) {
+	// delete from slice
+	var list any
+	if list, err = reflectutils.Get(obj, b.name); err != nil {
+		return
+	}
+	listValue := reflect.ValueOf(list)
+	if listValue.Kind() != reflect.Slice {
+		err = errors.New("field is not a slice")
+		return
+	}
+	newList := reflect.MakeSlice(reflect.TypeOf(list), 0, 0)
+	for i := 0; i < listValue.Len(); i++ {
+		if i != int(index) {
+			newList = reflect.Append(newList, listValue.Index(i))
+		}
+	}
+
+	return reflectutils.Set(obj, b.name, newList.Interface())
 }
