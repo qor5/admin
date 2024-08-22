@@ -382,7 +382,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 			VCardActions(
 				VSpacer(),
 				VBtn(msgr.Update).
-					Theme("dark").
+					Theme("light").
 					Color(ColorPrimary).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.DoAction).

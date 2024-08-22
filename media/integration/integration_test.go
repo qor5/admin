@@ -184,10 +184,20 @@ func TestUnCachedURL(t *testing.T) {
 		t.Fatalf("set uncached url error %v", b.URLNoCached())
 		return
 	}
+	b.Url = ""
+	if b.URLNoCached() != "" {
+		t.Fatalf("set uncached url empty error %v", b.URLNoCached())
+		return
+	}
 	m := media_library.MediaLibrary{}
 	m.File.Url = "test2.jpg"
 	if !strings.Contains(m.File.URLNoCached(), "test2.jpg?") {
 		t.Fatalf("set uncached url error %v", m.File.URLNoCached())
+		return
+	}
+	m.File.Url = ""
+	if m.File.URLNoCached() != "" {
+		t.Fatalf("set uncached url empty error %v", m.File.URLNoCached())
 		return
 	}
 }
