@@ -19,15 +19,15 @@ import (
 )
 
 const (
-	SectionFieldName = "detailField"
+	SectionFieldName = "section"
 	SectionIsCancel  = "isCancel"
 
-	sectionListUnsavedKey        = "unsaved"
-	sectionListFieldEditBtnKey   = "detailListFieldEditBtn"
-	sectionListFieldSaveBtnKey   = "detailListFieldSaveBtn"
-	sectionListFieldDeleteBtnKey = "detailListFieldDeleteBtn"
+	sectionListUnsavedKey        = "sectionListUnsaved"
+	sectionListEditBtnKey        = "sectionListEditBtn"
+	sectionListSaveBtnKey        = "sectionListSaveBtn"
+	sectionListFieldDeleteBtnKey = "sectionListDeleteBtn"
 
-	sectionListFieldEditing = "sectionListFieldEditing"
+	sectionListFieldEditing = "sectionListEditing"
 )
 
 type SectionsBuilder struct {
@@ -714,11 +714,11 @@ func (b *SectionBuilder) elementUnsavedKey() string {
 }
 
 func (b *SectionBuilder) EditBtnKey() string {
-	return fmt.Sprintf("%s_%s", sectionListFieldEditBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListEditBtnKey, b.name)
 }
 
 func (b *SectionBuilder) SaveBtnKey() string {
-	return fmt.Sprintf("%s_%s", sectionListFieldSaveBtnKey, b.name)
+	return fmt.Sprintf("%s_%s", sectionListSaveBtnKey, b.name)
 }
 
 func (b *SectionBuilder) DeleteBtnKey() string {
