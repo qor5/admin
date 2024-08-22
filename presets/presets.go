@@ -1029,22 +1029,24 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 		Name: portal,
 		Body: web.Scope(VDialog(
 			VCard(
-				VCardTitle(VIcon("warning").Class("red--text mr-4"), h.Text(promptText)),
+				VCardTitle(h.Text(promptText)).Class("pa-6"),
 				VCardActions(
 					VSpacer(),
 					VBtn(cancelText).
-						Variant(VariantFlat).
+						Size(SizeSmall).
+						Variant(VariantOutlined).
 						Class("ml-2").
 						On("click", "locals.show = false"),
 
 					VBtn(okText).
+						Size(SizeSmall).
 						Color("primary").
 						Variant(VariantFlat).
-						Theme(ThemeDark).
+						Theme(ThemeLight).
 						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
-				),
+				).Class("pb-6 px-6"),
 			),
-		).MaxWidth("600px").
+		).MaxWidth("400px").Class("common-dialog").
 			Attr("v-model", "locals.show"),
 		).VSlot("{ locals }").Init("{show: true}"),
 	})
