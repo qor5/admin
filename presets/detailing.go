@@ -256,7 +256,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 			actionButtonsCompo,
 			tabsContent,
 		),
-	).Fluid(true).Class("px-0 pt-0")
+	).Fluid(true).Class("px-0 pt-0 detailing-page-wrap")
 
 	return
 }
@@ -305,7 +305,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	comp := web.Scope(
 		VLayout(
 			VAppBar(
-				VAppBarTitle(header).Class("pl-2"),
+				VAppBarTitle(header).Class("pl-2 drawer-title"),
 				VBtn("").Icon("mdi-close").
 					Attr("@click.stop", closeBtnVarScript),
 			).Color("white").Elevation(0),

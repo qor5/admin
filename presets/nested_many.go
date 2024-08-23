@@ -119,7 +119,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		return r, err
 	}
 	if titleCompo == nil {
-		titleCompo = h.Div().Attr("v-pre", true).Text(title)
+		titleCompo = h.H2(title).Attr("v-pre", true).Class("section-title")
 	}
 
 	evCtx.WithContextValue(ctxInDialog, true)
@@ -137,8 +137,8 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		}
 	}
 	return web.Scope().VSlot("{ form }").Children(
-		VCard().Elevation(0).Children(
-			VCardTitle().Class("d-flex align-center").Children(
+		h.Div(
+			h.Div().Class("d-flex align-center section-title-wrap mb-0").Children(		
 				titleCompo,
 				VSpacer(),
 				h.Div().Id(compo.ActionsComponentTeleportToID()),
