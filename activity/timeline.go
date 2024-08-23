@@ -72,7 +72,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 					Attr(web.VField("note", note.Note)...),
 				h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
-						Attr("@click", "xlocals.showEditBox = false").Children(
+						Attr("@click", "xlocals.showEditBox = false; toplocals.editing = false ").Children(
 						v.VIcon("mdi-close").Size(16),
 					),
 					v.VBtn("").Variant(v.VariantText).Color(v.ColorPrimary).Size(16).
@@ -126,17 +126,17 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 
 	children := []h.HTMLComponent{
 		h.Div().Class("text-h6 mb-8").Text(msgr.Activities),
-		web.Scope().VSlot("{locals: xlocals,form}").Init("{showEditBox:false}").Children(
-			v.VBtn(msgr.AddNote).Attr("v-if", "!xlocals.showEditBox").
+		web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
+			v.VBtn(msgr.AddNote).Attr("v-if", "!xlocals.showEditBox").Attr(":disabled", "toplocals.editing").
 				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").
-				Attr("@click", "xlocals.showEditBox = true"),
+				Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
 			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
 				v.VTextarea().Rows(2).Attr(":row-height", "12").Clearable(false).AutoGrow(true).Label("").Placeholder(msgr.AddNote).Variant(v.VariantOutlined).
 					Color(v.ColorPrimary).Class("text-grey-darken-3 textarea-with-bottom-btns").
 					Attr(web.VField("note", "")...),
 				h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
-						Attr("@click", "xlocals.showEditBox = false").Children(
+						Attr("@click", "xlocals.showEditBox = false; toplocals.editing = false").Children(
 						v.VIcon("mdi-close").Size(16),
 					),
 					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
@@ -203,10 +203,10 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				v.VHover().Disabled(log.UserID != user.ID).Children(
 					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
-							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox").Class("d-flex flex-row ga-1").
+							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox && !toplocals.editing").Class("d-flex flex-row ga-1").
 								Style("position: absolute; top: 21px; right: 16px").Children(
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
-									Attr("@click", "xlocals.showEditBox = true"),
+									Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
 								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
 									Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %d`, log.ID)),
 							),
@@ -239,7 +239,16 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			`, stateful.ReloadAction(ctx, c, nil).Go()),
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
-		web.Scope().VSlot("{locals: toplocals, form}").Init(`{ deletingLogID: -1 }`).Children(
+		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: -1, editing: false }`).Children(
+			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					watch(() => toplocals.editing, (val) => {
+						if (vars.%s) {
+							vars.%s.__activity_editing__ = val
+						}
+					})
+				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged)).Children(
+				children...,
+			),
 			v.VDialog().MaxWidth("520px").
 				Attr(":model-value", `toplocals.deletingLogID !== -1`).
 				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
@@ -257,9 +266,6 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 							).Go()),
 					),
 				),
-			),
-			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Children(
-				children...,
 			),
 		),
 	).MarshalHTML(ctx)
