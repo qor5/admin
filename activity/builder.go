@@ -33,7 +33,7 @@ type Builder struct {
 	permPolicy              *perm.PolicyBuilder      // permission policy
 	currentUserFunc         func(ctx context.Context) (*User, error)
 	findUsersFunc           func(ctx context.Context, ids []string) (map[string]*User, error)
-	findLogsForTimelineFunc func(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error)
+	findLogsForTimelineFunc func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*ActivityLog, error)
 }
 
 // @snippet_end
@@ -58,7 +58,7 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 	return ab
 }
 
-func (ab *Builder) FindLogsForTimelineFunc(v func(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error)) *Builder {
+func (ab *Builder) FindLogsForTimelineFunc(v func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*ActivityLog, error)) *Builder {
 	ab.findLogsForTimelineFunc = v
 	return ab
 }
@@ -224,7 +224,7 @@ func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
 
 func (ab *Builder) findLogsForTimeline(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {
 	if ab.findLogsForTimelineFunc != nil {
-		logs, err := ab.findLogsForTimelineFunc(ctx, modelName, modelKeys)
+		logs, err := ab.findLogsForTimelineFunc(ctx, ab.db, modelName, modelKeys)
 		if err != nil {
 			return nil, err
 		}

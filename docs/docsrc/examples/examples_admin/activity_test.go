@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	"gorm.io/gorm"
 )
 
 var activityData = gofixtures.Data(gofixtures.Sql(`
@@ -79,9 +80,9 @@ func TestActivity(t *testing.T) {
 			HandlerMaker: func() http.Handler {
 				pb := presets.New()
 				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
-					ab.FindLogsForTimelineFunc(func(ctx context.Context, modelName, modelKeys string) ([]*activity.ActivityLog, error) {
+					ab.FindLogsForTimelineFunc(func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*activity.ActivityLog, error) {
 						var logs []*activity.ActivityLog
-						err := TestDB.Where("hidden = FALSE AND model_name = ? AND model_keys = ? AND action = ?", modelName, modelKeys, activity.ActionNote).
+						err := db.Where("hidden = FALSE AND model_name = ? AND model_keys = ? AND action = ?", modelName, modelKeys, activity.ActionNote).
 							Order("created_at DESC").Find(&logs).Error
 						if err != nil {
 							return nil, err
