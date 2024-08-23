@@ -100,6 +100,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return detail
 		}).
 		Editing("Name", "Price")
+	dp.AfterTitleCompFunc(publish.DefaultVersionBar(db))
 
 	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
