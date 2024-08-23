@@ -444,6 +444,16 @@ func (mb *ModelBuilder) modelLink(v any) string {
 	return ""
 }
 
+type ctxKeyScope struct{}
+
+func ContextWithScope(ctx context.Context, scope string) context.Context {
+	return context.WithValue(ctx, ctxKeyScope{}, scope)
+}
+
+func ScopeWithOwner(owner string) string {
+	return fmt.Sprintf(",owner:%s,", owner)
+}
+
 func (mb *ModelBuilder) create(
 	ctx context.Context,
 	action string,
@@ -469,6 +479,24 @@ func (mb *ModelBuilder) create(
 		}
 	}
 
+	scope, _ := ctx.Value(ctxKeyScope{}).(string)
+	if scope == "" {
+		if action == ActionCreate {
+			scope = ScopeWithOwner(user.ID)
+		} else {
+			createdLog := &ActivityLog{}
+			if err := mb.ab.db.Where("model_name = ? AND model_keys = ? AND action = ? ", modelName, modelKeys, ActionCreate).
+				Order("created_at ASC").First(&createdLog).Error; err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, errors.Wrap(err, "failed to find created log")
+				}
+			}
+			if createdLog.ID != 0 && createdLog.UserID != "" {
+				scope = createdLog.Scope
+			}
+		}
+	}
+
 	log := &ActivityLog{
 		UserID:     user.ID,
 		Action:     action,
@@ -476,6 +504,7 @@ func (mb *ModelBuilder) create(
 		ModelKeys:  modelKeys,
 		ModelLabel: "",
 		ModelLink:  modelLink,
+		Scope:      scope,
 	}
 	if mb.presetModel != nil {
 		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)

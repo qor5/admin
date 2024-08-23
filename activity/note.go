@@ -24,7 +24,7 @@ type NoteCount struct {
 	TotalNotesCount  int64
 }
 
-func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName string, modelKeyses []string) ([]*NoteCount, error) {
+func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName string, modelKeyses []string, conditions ...presets.SQLCondition) ([]*NoteCount, error) {
 	if uid == "" {
 		return nil, errors.New("uid is required")
 	}
@@ -49,6 +49,13 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 		args = append(args, modelKeyses)
 	}
 
+	if len(conditions) > 0 {
+		for _, cond := range conditions {
+			explictWhere += " AND " + cond.Query
+			args = append(args, cond.Args...)
+		}
+	}
+
 	args = append(args, ActionLastView, uid)
 
 	if modelName != "" {
@@ -56,6 +63,11 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 	}
 	if len(modelKeyses) > 0 {
 		args = append(args, modelKeyses)
+	}
+	if len(conditions) > 0 {
+		for _, cond := range conditions {
+			args = append(args, cond.Args...)
+		}
 	}
 
 	args = append(args, uid)
@@ -78,13 +90,15 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 		n.model_name,
 		n.model_keys,
 		MAX(n.model_label) AS model_label,
+		MIN(n.created_at) AS min_created_at,
 		COUNT(CASE WHEN n.user_id <> ? AND (lva.last_viewed_at IS NULL OR n.created_at > lva.last_viewed_at) THEN 1 END) AS unread_notes_count,
 		COUNT(*) AS total_notes_count
 	FROM NoteRecords n
 	LEFT JOIN LastViewedAts lva
 		ON n.model_name = lva.model_name
 		AND n.model_keys = lva.model_keys
-	GROUP BY n.model_name, n.model_keys;`, tableName, explictWhere, tableName, explictWhere)
+	GROUP BY n.model_name, n.model_keys
+	ORDER BY min_created_at ASC;`, tableName, explictWhere, tableName, explictWhere)
 
 	counts := []*NoteCount{}
 	if err := db.Raw(raw, args...).Scan(&counts).Error; err != nil {
@@ -184,12 +198,12 @@ func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, uid string, mod
     )`, a, tableName, ActionNote, modelName, tableName, ActionLastView, uid, modelName, b, uid), nil
 }
 
-func (ab *Builder) GetNotesCounts(ctx context.Context, modelName string, modelKeyses []string) ([]*NoteCount, error) {
+func (ab *Builder) GetNotesCounts(ctx context.Context, modelName string, modelKeyses []string, conditions ...presets.SQLCondition) ([]*NoteCount, error) {
 	user, err := ab.currentUserFunc(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return getNotesCounts(ab.db, ab.tablePrefix, user.ID, modelName, modelKeyses)
+	return getNotesCounts(ab.db, ab.tablePrefix, user.ID, modelName, modelKeyses, conditions...)
 }
 
 func (ab *Builder) MarkAllNotesAsRead(ctx context.Context) error {
