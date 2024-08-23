@@ -151,7 +151,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		),
 	}
 
-	logs, err := c.ab.getActivityLogs(ctx, c.ModelName, c.ModelKeys)
+	logs, err := c.ab.findLogsForTimeline(ctx, c.ModelName, c.ModelKeys)
 	if err != nil {
 		return nil, err
 	}

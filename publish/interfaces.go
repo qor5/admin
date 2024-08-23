@@ -36,7 +36,7 @@ type Schedule struct {
 // @snippet_end
 
 // @snippet_begin(PublishStatus)
-const (
+var (
 	StatusDraft   = "draft"
 	StatusOnline  = "online"
 	StatusOffline = "offline"
