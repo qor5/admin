@@ -446,7 +446,7 @@ func (mb *ModelBuilder) modelLink(v any) string {
 
 type ctxKeyScope struct{}
 
-func WithScope(ctx context.Context, scope string) context.Context {
+func ContextWithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, ctxKeyScope{}, scope)
 }
 

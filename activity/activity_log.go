@@ -42,7 +42,7 @@ type ActivityLog struct {
 	ModelLabel string `gorm:"not null;"`
 	ModelLink  string `gorm:"not null;"`
 	Detail     string `gorm:"not null;"`
-	Scope      string `gorm:"index;not null;"`
+	Scope      string `gorm:"index;"`
 }
 
 func (v *ActivityLog) AfterMigrate(tx *gorm.DB, tablePrefix string) error {
