@@ -450,7 +450,7 @@ func ContextWithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, ctxKeyScope{}, scope)
 }
 
-func ScopeWithOwnerID(owner string) string {
+func ScopeWithOwner(owner string) string {
 	return fmt.Sprintf(",owner:%s,", owner)
 }
 
@@ -482,7 +482,7 @@ func (mb *ModelBuilder) create(
 	scope, _ := ctx.Value(ctxKeyScope{}).(string)
 	if scope == "" {
 		if action == ActionCreate {
-			scope = ScopeWithOwnerID(user.ID)
+			scope = ScopeWithOwner(user.ID)
 		} else {
 			createdLog := &ActivityLog{}
 			if err := mb.ab.db.Where("model_name = ? AND model_keys = ? AND action = ? ", modelName, modelKeys, ActionCreate).

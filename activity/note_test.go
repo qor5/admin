@@ -121,7 +121,7 @@ func TestGetNotesCounts(t *testing.T) {
 			presets.SQLCondition{
 				// only fetch notes owned by currentUser
 				Query: "scope LIKE ?",
-				Args:  []any{fmt.Sprintf("%%%s%%", ScopeWithOwnerID(currentUser.ID))},
+				Args:  []any{fmt.Sprintf("%%%s%%", ScopeWithOwner(currentUser.ID))},
 				// Query: "scope = ?",
 				// Args:  []any{ScopeWithOwnerID(currentUser.ID)},
 			},

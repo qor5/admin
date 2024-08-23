@@ -284,7 +284,7 @@ func TestScope(t *testing.T) {
 	}
 	{
 		_, err := builder.OnCreate(
-			ContextWithScope(ctx, fmt.Sprintf(",role:editor%s", ScopeWithOwnerID(currentUser.ID))),
+			ContextWithScope(ctx, fmt.Sprintf(",role:editor%s", ScopeWithOwner(currentUser.ID))),
 			Page{ID: 2, VersionName: "v1", Title: "test"},
 		)
 		require.NoError(t, err)
