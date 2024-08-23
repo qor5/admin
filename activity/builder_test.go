@@ -65,7 +65,19 @@ var currentUser = &User{
 	Avatar: "https://i.pravatar.cc/300",
 }
 
+var anotherUser = &User{
+	ID:     "2",
+	Name:   "Sam",
+	Avatar: "https://i.pravatar.cc/300",
+}
+
+type ctxKeyCurrentUser struct{}
+
 func testCurrentUser(ctx context.Context) (*User, error) {
+	u, ok := ctx.Value(ctxKeyCurrentUser{}).(*User)
+	if ok {
+		return u, nil
+	}
 	return currentUser, nil
 }
 
@@ -241,13 +253,46 @@ func TestUser(t *testing.T) {
 	resetDB()
 
 	ctx := context.Background()
-	builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	_, err := builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+	require.NoError(t, err)
+
 	record := &ActivityLog{}
-	if err := db.First(record).Error; err != nil {
-		t.Fatal(err)
+	err = db.First(record).Error
+	require.NoError(t, err)
+	require.Equal(t, "1", record.UserID)
+}
+
+func TestScope(t *testing.T) {
+	pb := presets.New()
+	pageModel := pb.Model(&Page{})
+
+	builder := New(db, testCurrentUser)
+	builder.Install(pb)
+
+	builder.RegisterModel(pageModel)
+	resetDB()
+
+	ctx := context.Background()
+	{
+		_, err := builder.OnCreate(ctx, Page{ID: 1, VersionName: "v1", Title: "test"})
+		require.NoError(t, err)
+
+		record := &ActivityLog{}
+		err = db.Order("created_at DESC").First(record).Error
+		require.NoError(t, err)
+		require.Equal(t, record.Scope, ",owner:1,")
 	}
-	if record.UserID != "1" {
-		t.Errorf("want the user id %v, but got %v", "1", record.UserID)
+	{
+		_, err := builder.OnCreate(
+			WithScope(ctx, fmt.Sprintf(",role:editor%s", ScopeWithOwnerID(currentUser.ID))),
+			Page{ID: 2, VersionName: "v1", Title: "test"},
+		)
+		require.NoError(t, err)
+
+		record := &ActivityLog{}
+		err = db.Order("created_at DESC").First(record).Error
+		require.NoError(t, err)
+		require.Equal(t, ",role:editor,owner:1,", record.Scope)
 	}
 }
 
@@ -270,7 +315,11 @@ func TestGetActivityLogs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
-	_, err = builder.OnEdit(ctx, Page{ID: 1, VersionName: "v1", Title: "test1"}, Page{ID: 1, VersionName: "v1", Title: "test2"})
+	_, err = builder.OnEdit(
+		context.WithValue(ctx, ctxKeyCurrentUser{}, anotherUser),
+		Page{ID: 1, VersionName: "v1", Title: "test1"},
+		Page{ID: 1, VersionName: "v1", Title: "test2"},
+	)
 	if err != nil {
 		t.Fatalf("failed to add edit record: %v", err)
 	}
@@ -295,7 +344,12 @@ func TestGetActivityLogs(t *testing.T) {
 		if log.ModelKeys != "1:v1" {
 			t.Errorf("expected model keys '1:v1', but got %s", log.ModelKeys)
 		}
-		require.Equal(t, log.UserID, currentUser.ID)
+		if i == 0 {
+			require.Equal(t, log.UserID, anotherUser.ID)
+		} else {
+			require.Equal(t, log.UserID, currentUser.ID)
+		}
+		require.Equal(t, log.Scope, ",owner:1,")
 	}
 }
 
