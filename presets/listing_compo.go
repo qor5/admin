@@ -155,11 +155,11 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 		VCard().Elevation(0).Children(
 			h.Tag("div").Children(
 				c.tabsFilter(ctx),
-			).Class("px-6 mb-4"),
+			).Class("px-2"),
 			h.Div(
 				c.toolbarSearch(ctx),
-			).Class(("px-4")),
-			VCardText().Class("px-6 pt-2").Children(
+			),
+			VCardText().Class("px-2 pt-2").Children(
 				c.dataTable(ctx),
 			),
 			h.Div(
