@@ -83,6 +83,14 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	}
 
 	if _, ok := obj.(StatusInterface); ok {
+		m.Editing().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+				if status := EmbedStatus(obj); status.Status == "" {
+					status.Status = StatusDraft
+				}
+				return in(obj, id, ctx)
+			}
+		})
 		if m.HasDetailing() {
 			detailFields := m.Detailing().GetSections()
 			for _, detailField := range detailFields {

@@ -486,7 +486,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/campaigns/2_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&id=2_2024-05-20-v01").
-					Query("detailField", "CampaignDetail").
+					Query("section", "CampaignDetail").
 					AddField("CampaignDetail.Title", "").
 					BuildEventFuncRequest()
 			},
@@ -498,7 +498,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderPageData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/pages/1_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&detailField=Page&id=1_2024-05-20-v01").
+					PageURL("/pages/1_2024-05-20-v01?__execute_event__=presets_Detailing_Field_Save&section=Page&id=1_2024-05-20-v01").
 					AddField("Page.Title", "123").
 					AddField("Page.Slug", "/123").
 					AddField("Page.CategoryID", "2").

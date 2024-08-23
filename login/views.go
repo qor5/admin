@@ -371,19 +371,22 @@ func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar st
 			VCardActions(
 				VSpacer(),
 				VBtn(pmsgr.Cancel).
-					Variant(VariantFlat).
+					Size(SizeSmall).
+					Variant(VariantOutlined).
 					Class("ml-2").
 					On("click", fmt.Sprintf("dialogLocals.%s = false", showVar)),
 
 				VBtn(pmsgr.OK).
 					Color("primary").
+					Size(SizeSmall).
 					Variant(VariantFlat).
-					Theme(ThemeDark).
+					Theme(ThemeLight).
 					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
-			),
+			).Class("pa-6"),
 		).
 			Attr("v-on-mounted", "({el}) => { dialogLocals.refCard = el; }"),
-	).MaxWidth("600px").
+	).MaxWidth("400px").
+		Class("common-dialog").
 		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
 		Persistent(true).
 		NoClickAnimation(true).
@@ -399,7 +402,7 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 	return func(ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(
-			VCardTitle(Text(msgr.ChangePasswordTitle)),
+			VCardTitle(Text(msgr.ChangePasswordTitle)).Class("pa-6"),
 			VCardText(
 				Form().Children( // just used to prevent 1password auto submit
 					Div(
@@ -413,21 +416,21 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 								Label(msgr.ChangePasswordNewLabel).
 								Attr(web.VField("password", "")...),
 							"password", ""),
-					).Class("mt-12"),
+					).Class("mt-6"),
 					Div(
 						DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
 							Label(msgr.ChangePasswordNewConfirmLabel).
 							Attr(web.VField("confirm_password", "")...),
-					).Class("mt-12"),
+					).Class("mt-6"),
 					If(vh.TOTPEnabled(),
 						Div(
 							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
 								Label(msgr.TOTPValidateCodeLabel).
 								Attr(web.VField("otp", "")...),
-						).Class("mt-12"),
+						).Class("mt-6"),
 					),
 				),
-			),
+			).Class("pb-0 px-6"),
 		)
 	}
 }
