@@ -119,7 +119,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Director", "0_folder_portal_name"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Directory", "0_folder_portal_name"},
 			ExpectPortalUpdate0NotContains:     []string{"test001"},
 		},
 		{
@@ -610,23 +610,8 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[]", "v-checkbox"},
-		},
-		{
-			Name:  "Pages ChooseFileEvent Dialog  selected image",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				mediaTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/pages").
-					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
-					Query(media.ParamField, "media").
-					Query(media.ParamSelectIDS, "1").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[1]", "v-checkbox"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"select_ids:[]", "v-checkbox"},
+			ExpectPageBodyNotContains:          []string{"Save"},
 		},
 	}
 

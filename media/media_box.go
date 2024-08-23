@@ -223,7 +223,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 
 func fileThumb(filename string) h.HTMLComponent {
 	return h.Div(
-		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
+		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", cardTitleHeight).Class("pt-4"),
 	).Class("d-flex align-center justify-center")
 }
 
@@ -587,7 +587,7 @@ func rename(mb *Builder) web.EventFunc {
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 		obj := wrapFirst(mb, ctx, &r)
-		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
+		if err = mb.updateNameIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 		if obj.Folder {
@@ -615,6 +615,9 @@ func createFolder(mb *Builder) web.EventFunc {
 			parentID = ctx.ParamAsInt(ParamParentID)
 			m        = &media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
 		)
+		if err = mb.newFolderIsAllowed(ctx.R); err != nil {
+			return
+		}
 		if dirName == "" {
 			presets.ShowMessage(&r, "folder name can`t be empty", ColorWarning)
 			return
@@ -626,7 +629,7 @@ func createFolder(mb *Builder) web.EventFunc {
 		}
 		m.UserID = uid
 		m.ParentId = uint(parentID)
-		if err = mb.db.Save(&m).Error; err != nil {
+		if err = mb.saverFunc(mb.db, m, "", ctx); err != nil {
 			return
 		}
 		r.RunScript = web.Plaid().
@@ -838,7 +841,9 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
-
+		if err = mb.moveToIsAllowed(ctx.R); err != nil {
+			return
+		}
 		queries := ctx.Queries()
 		delete(queries, searchKeywordName(field))
 		var ids []uint
@@ -901,7 +906,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 			Folder: true,
 		}
 		item.ID = 0
-		item.File.FileName = "Root Director"
+		item.File.FileName = "Root Directory"
 		records = append(records, item)
 	} else {
 		db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
@@ -975,7 +980,9 @@ func copyFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.ParamAsInt(ParamMediaIDS)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-
+		if err = mb.copyIsAllowed(ctx.R); err != nil {
+			return
+		}
 		if _, err = CopyMediaLiMediaLibrary(mb, db, id, ctx); err != nil {
 			return
 		}
