@@ -28,7 +28,12 @@ func MediaExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			}
 			if id == "" {
 				p := obj.(*media_library.MediaLibrary)
-				db.Save(&MediaRole{MediaID: p.ID, RoleName: "viewer"})
+				roleName := "viewer"
+				if p.Folder {
+					roleName = "viewer_folder"
+				}
+				db.Save(&MediaRole{MediaID: p.ID, RoleName: roleName})
+
 			}
 			return
 		}

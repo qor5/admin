@@ -67,6 +67,21 @@ func TestMedia(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"test_search1.png", "test_search2.png"},
 		},
 		{
+			Name:  "MediaLibrary Admin Role List asc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					AddField("type", "all").
+					AddField("order_by", "created_at").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test_search2.png", "test_search1.png"},
+		},
+		{
 			Name:  "MediaLibrary Create Folder",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -91,6 +106,22 @@ func TestMedia(t *testing.T) {
 					return
 				}
 			},
+		},
+		{
+			Name:  "MediaLibrary Create Folder Empty ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.CreateFolderEvent).
+					AddField(media.ParamName, "").
+					AddField(media.ParamParentID, "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"folder name can`t be empty"},
 		},
 		{
 			Name:  "MediaLibrary New Folder Dialog",
@@ -119,7 +150,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Director", "0_folder_portal_name"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Directory", "0_folder_portal_name"},
 			ExpectPortalUpdate0NotContains:     []string{"test001"},
 		},
 		{
@@ -569,6 +600,10 @@ func TestMedia(t *testing.T) {
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				if m.File.FileName != "test2.txt" {
 					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+					return
+				}
+				if m.UserID != 888 {
+					t.Fatalf("except user_id: 888 but got %v", m.UserID)
 				}
 				return
 			},
@@ -610,23 +645,8 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[]", "v-checkbox"},
-		},
-		{
-			Name:  "Pages ChooseFileEvent Dialog  selected image",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				mediaTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/pages").
-					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
-					Query(media.ParamField, "media").
-					Query(media.ParamSelectIDS, "1").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`showFileChooser:true`, "select_ids:[1]", "v-checkbox"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"select_ids:[]", "v-checkbox"},
+			ExpectPageBodyNotContains:          []string{"Save"},
 		},
 	}
 

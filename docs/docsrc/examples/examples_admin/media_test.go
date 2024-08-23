@@ -151,6 +151,33 @@ func TestMediaExample(t *testing.T) {
 				return
 			},
 		},
+		{
+			Name:  "create folder wrap saver",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				simpleMediaDate.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.CreateFolderEvent).
+					Query(media.ParamName, "folder_test").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				if m.File.FileName != "folder_test" {
+					t.Fatalf("except filename: folder_test but got %v", m.File.FileName)
+					return
+				}
+				var mr MediaRole
+				TestDB.Order("id desc").First(&mr)
+				if mr.RoleName != "viewer_folder" {
+					t.Fatalf("except rolename: viewer_folder but got %v", mr.RoleName)
+				}
+				return
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
