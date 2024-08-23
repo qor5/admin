@@ -240,6 +240,15 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: -1, editing: false }`).Children(
+			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					watch(() => toplocals.editing, (val) => {
+						if (vars.%s) {
+							vars.%s.__activity_editing__ = val
+						}
+					})
+				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged)).Children(
+				children...,
+			),
 			v.VDialog().MaxWidth("520px").
 				Attr(":model-value", `toplocals.deletingLogID !== -1`).
 				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
@@ -257,9 +266,6 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 							).Go()),
 					),
 				),
-			),
-			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Children(
-				children...,
 			),
 		),
 	).MarshalHTML(ctx)

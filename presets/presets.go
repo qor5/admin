@@ -832,7 +832,7 @@ const (
 )
 
 func ConfirmLeaveScript(confirmEvent, leaveEvent string) string {
-	return fmt.Sprintf("if(Object.values(vars.presetsDataChanged).some(value => value === true)){%s}else{%s};", confirmEvent, leaveEvent)
+	return fmt.Sprintf("if(Object.values(vars.%s).some(value => value === true)){%s}else{%s};", VarsPresetsDataChanged, confirmEvent, leaveEvent)
 }
 
 func (b *Builder) overlay(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
