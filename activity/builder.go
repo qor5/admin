@@ -26,13 +26,14 @@ type Builder struct {
 	installedPresets  sync.Map        // installed presets builders for admin
 	calledAutoMigrate atomic.Bool     // auto migrate flag
 
-	dbPrimitive     *gorm.DB // primitive db
-	db              *gorm.DB // global db with table prefix scope
-	tablePrefix     string
-	logModelInstall presets.ModelInstallFunc // admin preset install
-	permPolicy      *perm.PolicyBuilder      // permission policy
-	currentUserFunc func(ctx context.Context) (*User, error)
-	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
+	dbPrimitive             *gorm.DB // primitive db
+	db                      *gorm.DB // global db with table prefix scope
+	tablePrefix             string
+	logModelInstall         presets.ModelInstallFunc // admin preset install
+	permPolicy              *perm.PolicyBuilder      // permission policy
+	currentUserFunc         func(ctx context.Context) (*User, error)
+	findUsersFunc           func(ctx context.Context, ids []string) (map[string]*User, error)
+	findLogsForTimelineFunc func(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error)
 }
 
 // @snippet_end
@@ -54,6 +55,11 @@ func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 
 func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[string]*User, error)) *Builder {
 	ab.findUsersFunc = v
+	return ab
+}
+
+func (ab *Builder) FindLogsForTimelineFunc(v func(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error)) *Builder {
+	ab.findLogsForTimelineFunc = v
 	return ab
 }
 
@@ -214,6 +220,27 @@ func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
 		}
 	}
 	return nil
+}
+
+func (ab *Builder) findLogsForTimeline(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {
+	if ab.findLogsForTimelineFunc != nil {
+		logs, err := ab.findLogsForTimelineFunc(ctx, modelName, modelKeys)
+		if err != nil {
+			return nil, err
+		}
+		userAllFilled := lo.EveryBy(logs, func(log *ActivityLog) bool {
+			return log.User.ID != ""
+		})
+		if userAllFilled {
+			return logs, nil
+		}
+		if err := ab.supplyUsers(ctx, logs); err != nil {
+			return nil, err
+		}
+		return logs, nil
+	}
+
+	return ab.getActivityLogs(ctx, modelName, modelKeys)
 }
 
 func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {

@@ -1,10 +1,12 @@
 package examples_admin
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
@@ -64,13 +66,40 @@ func TestActivity(t *testing.T) {
 			Name:  "Activity Model details should have timeline",
 			Debug: true,
 			ReqFunc: func() *http.Request {
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.", "John", "Created"},
+		},
+		{
+			Name:  "timeline without non-note logs",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					ab.FindLogsForTimelineFunc(func(ctx context.Context, modelName, modelKeys string) ([]*activity.ActivityLog, error) {
+						var logs []*activity.ActivityLog
+						err := TestDB.Where("hidden = FALSE AND model_name = ? AND model_keys = ? AND action = ?", modelName, modelKeys, activity.ActionNote).
+							Order("created_at DESC").Find(&logs).Error
+						if err != nil {
+							return nil, err
+						}
+						return logs, nil
+					})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+			ExpectPortalUpdate0NotContains:     []string{"Created"},
 		},
 		{
 			Name:  "Create note",

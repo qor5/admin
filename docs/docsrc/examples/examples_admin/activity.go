@@ -14,6 +14,10 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return activityExample(b, db, nil)
+}
+
+func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder, ab *activity.Builder)) http.Handler {
 	b.GetI18n().SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)
 
 	// @snippet_begin(NewActivitySample)
@@ -28,7 +32,7 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}).
 		// TablePrefix("cms_"). // multitentant if needed
 		AutoMigrate()
-	b.Use(ab)
+	defer b.Use(ab)
 
 	// @snippet_end
 
@@ -55,5 +59,8 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	})
 	// @snippet_end
 
+	if customize != nil {
+		customize(mb, ab)
+	}
 	return b
 }
