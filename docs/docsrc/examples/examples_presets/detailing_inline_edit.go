@@ -270,8 +270,9 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 type UserCreditCard struct {
 	gorm.Model
-	Name        string
-	CreditCards creditCards `gorm:"type:text"`
+	Name         string
+	CreditCards  creditCards `gorm:"type:text"`
+	CreditCards2 creditCards `gorm:"type:text"`
 }
 type creditCards []*CreditCard
 
@@ -303,8 +304,17 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 	}
 	b.DataOperator(gorm2op.DataOperator(db))
 	cust = b.Model(&UserCreditCard{})
-	dp = cust.Detailing("CreditCards").Drawer(true)
+	dp = cust.Detailing("CreditCards", "CreditCards2").Drawer(true)
 	dp.Section("CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
+
+	dp.Section("CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+	dp.Section("CreditCards2").SetterFunc(func(obj interface{}, ctx *web.EventContext) {
+		us := obj.(*UserCreditCard)
+		if len(us.CreditCards2) == 0 {
+			us.CreditCards2 = creditCards{}
+		}
+	})
 	return
 }

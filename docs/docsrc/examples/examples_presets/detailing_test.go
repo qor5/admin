@@ -359,8 +359,8 @@ func TestPresetsDetailSectionCancel(t *testing.T) {
 }
 
 var userCreditCardsData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards) VALUES (1, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:18:34.044182 +00:00', null, 'empty date', '[]');
-INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards) VALUES (2, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:29:30.597570 +00:00', null, 'one card', '[{"ID":0,"CustomerID":0,"Number":"","ExpireYearMonth":"","Name":"terry","Type":"","Phone":"188","Email":""}]');
+INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards,credit_cards2) VALUES (1, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:18:34.044182 +00:00', null, 'empty date', '[]','[]');
+INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards,credit_cards2) VALUES (2, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:29:30.597570 +00:00', null, 'one card', '[{"ID":0,"CustomerID":0,"Number":"","ExpireYearMonth":"","Name":"terry","Type":"","Phone":"188","Email":""}]','[]');
 `, []string{"user_credit_cards"}))
 
 func TestPresetsDetailListSection(t *testing.T) {
