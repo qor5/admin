@@ -364,6 +364,7 @@ func fileOrFolderComponent(
 		title, content            h.HTMLComponent
 		menus                     []h.HTMLComponent
 		checkEvent                = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, f.ID)
+		moveToEvent               = fmt.Sprintf(`let arr=locals.select_ids;let find_id=%v;if(!arr.includes(find_id)){arr.push(find_id)};`, f.ID)
 		clickCardWithoutMoveEvent = "null"
 	)
 	if mb.updateNameIsAllowed(ctx.R, f) == nil {
@@ -380,7 +381,7 @@ func fileOrFolderComponent(
 	}
 
 	if mb.moveToIsAllowed(ctx.R) == nil {
-		menus = append(menus, VListItem(h.Text(msgr.MoveTo)).Attr("@click", fmt.Sprintf("locals.select_ids.push(%v);", f.ID)))
+		menus = append(menus, VListItem(h.Text(msgr.MoveTo)).Attr("@click", moveToEvent))
 	}
 	if mb.deleteIsAllowed(ctx.R, f) == nil {
 		menus = append(menus, VListItem(h.Text(msgr.Delete)).Attr("@click",
