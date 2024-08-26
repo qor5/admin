@@ -30,7 +30,6 @@ const (
 
 func fileChooser(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 		portalName := mainPortalName(field)
@@ -39,17 +38,6 @@ func fileChooser(mb *Builder) web.EventFunc {
 			Body: web.Scope(
 				VDialog(
 					VCard(
-						VAppBar(
-							VToolbarTitle(msgr.ChooseAFile),
-							VSpacer(),
-							searchComponent(ctx, field, cfg, false),
-							VBtn("").
-								Icon("mdi-close").
-								Theme(ThemeDark).
-								Attr("@click", "vars.showFileChooser = false"),
-						).Color(ColorBackground).
-							// MaxHeight(64).
-							Flat(true).Class("position-sticky top-0", W100),
 						web.Portal(
 							fileChooserDialogContent(mb, field, ctx, cfg),
 						).Name(dialogContentPortalName(field)),
@@ -57,7 +45,6 @@ func fileChooser(mb *Builder) web.EventFunc {
 				).Width(chooseFileDialogWidth).Class("pa-6").
 					// HideOverlay(true).
 					Transition("dialog-bottom-transition").
-					// Scrollable(true).
 					Attr("v-model", "vars.showFileChooser"),
 			).VSlot("{form,locals}"),
 		})
@@ -703,6 +690,16 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		web.Portal().Name(updateDescriptionDialogPortalName),
 		VContainer(
 			VRow(
+				h.If(!inMediaLibrary,
+					VCol(
+						h.Div(VAppBarTitle().Text(msgr.ChooseFile),
+							searchComponent(ctx, field, cfg, false),
+							VBtn("").
+								Icon("mdi-close").
+								Variant(VariantText).
+								Attr("@click", "vars.showFileChooser = false")).Class("d-flex justify-space-between align-center"),
+					).Cols(12),
+				),
 				VCol(
 					h.Div(
 						h.If(mb.listFoldersIsAllowed(ctx.R) == nil,
