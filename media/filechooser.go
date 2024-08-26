@@ -49,7 +49,7 @@ func fileChooser(mb *Builder) web.EventFunc {
 								Attr("@click", "vars.showFileChooser = false"),
 						).Color(ColorBackground).
 							// MaxHeight(64).
-							Flat(true).Class("position-sticky top-0"),
+							Flat(true).Class("position-sticky top-0", W100),
 						web.Portal(
 							fileChooserDialogContent(mb, field, ctx, cfg),
 						).Name(dialogContentPortalName(field)),
