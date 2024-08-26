@@ -458,8 +458,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 								Class("flex-grow-1"),
 						).Class("d-flex justify-space-between"),
 					),
-				).Variant(VariantFlat).
-					Attr("v-bind", "props"),
+				).Variant(VariantFlat),
 			).Class("section-body"),
 		)
 	}
