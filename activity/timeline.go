@@ -243,19 +243,14 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: -1, editing: false }`).Children(
 			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").
 				Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
-					if (vars.%s) {
-						watch(() => toplocals.editing, (val) => {
-							vars.%s.%s = val
-						}, { immediate: true })
-					}
-				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged, varEditing)).
-				Attr("v-on-unmounted", fmt.Sprintf(`() => {
-					if (vars.%s) {
-						vars.%s.%s = false
-					}
-				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged, varEditing)).Children(
-				children...,
-			),
+					watch(() => toplocals.editing, (val) => {
+						vars.%s.%s = val
+					}, { immediate: true })
+				}`, presets.VarsPresetsDataChanged, varEditing)).
+				Attr("v-on-unmounted", fmt.Sprintf(`() => { delete(vars.%s.%s) }`, presets.VarsPresetsDataChanged, varEditing)).
+				Children(
+					children...,
+				),
 			v.VDialog().MaxWidth("520px").
 				Attr(":model-value", `toplocals.deletingLogID !== -1`).
 				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
