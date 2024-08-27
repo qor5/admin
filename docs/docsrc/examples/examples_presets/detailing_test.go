@@ -379,7 +379,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					Query("id", "1").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Row", "cards2", "Add Row"},
 		},
 		{
 			Name:  "click Add Row button",
@@ -501,6 +501,42 @@ func TestPresetsDetailListSection(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "tom", "199", "Cancel", "Save"},
 			ExpectPortalUpdate0NotContains:     []string{"joy", "177", "Add Row"},
+		},
+		{
+			Name:  "click Add Row button 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_Detailing_List_Field_Create").
+					Query("section", "CreditCards2").
+					Query("id", "1").
+					Query("sectionListUnsaved_CreditCards2", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Phone", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Row"},
+		},
+		{
+			Name:  "save created section 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("sectionListUnsaved_CreditCards2", "false").
+					Query("section", "CreditCards2").
+					Query("sectionListSaveBtn_CreditCards2", "0").
+					Query("id", "1").
+					AddField("CreditCards2[0].Name", "terry").
+					AddField("CreditCards2[0].Phone", "188").
+					AddField("__Deleted_CreditCards2[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 	}
 

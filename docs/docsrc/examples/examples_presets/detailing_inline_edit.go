@@ -305,16 +305,20 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 	b.DataOperator(gorm2op.DataOperator(db))
 	cust = b.Model(&UserCreditCard{})
 	dp = cust.Detailing("CreditCards", "CreditCards2").Drawer(true)
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			o, _ := in(obj, id, ctx)
+			us := o.(*UserCreditCard)
+			if len(us.CreditCards2) == 0 {
+				us.CreditCards2 = nil
+			}
+			return us, nil
+		}
+	})
 	dp.Section("CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
 
 	dp.Section("CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
-	dp.Section("CreditCards2").SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		us := obj.(*UserCreditCard)
-		if len(us.CreditCards2) == 0 {
-			us.CreditCards2 = creditCards{}
-		}
-	})
 	return
 }
