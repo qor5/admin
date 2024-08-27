@@ -582,7 +582,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 	}
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	if listObj.Len() == int(index) {
+	if !listObj.IsValid() || listObj.Len() == int(index) {
 		b.appendElement(obj)
 		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	}
@@ -627,7 +627,10 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 	if err != nil {
 		panic(err)
 	}
-	listLen := reflect.ValueOf(list).Len()
+	listLen := 0
+	if list != nil {
+		listLen = reflect.ValueOf(list).Len()
+	}
 
 	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
 	label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
