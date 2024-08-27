@@ -223,6 +223,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		children = append(children, h.Div().Class("text-body-2 text-grey align-self-center mb-4").Text(msgr.NoActivitiesYet))
 	}
 
+	varEditing := fmt.Sprintf(`__activity_editing_of_%s__`, stateful.MurmurHash3(c.CompoID()))
 	return stateful.Actionable(ctx, c,
 		web.Listen(
 			presets.NotifModelsCreated(&ActivityLog{}), fmt.Sprintf(`
@@ -240,13 +241,19 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: -1, editing: false }`).Children(
-			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
-					watch(() => toplocals.editing, (val) => {
-						if (vars.%s) {
-							vars.%s.__activity_editing__ = val
-						}
-					})
-				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged)).Children(
+			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").
+				Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					if (vars.%s) {
+						watch(() => toplocals.editing, (val) => {
+							vars.%s.%s = val
+						}, { immediate: true })
+					}
+				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged, varEditing)).
+				Attr("v-on-unmounted", fmt.Sprintf(`() => {
+					if (vars.%s) {
+						vars.%s.%s = false
+					}
+				}`, presets.VarsPresetsDataChanged, presets.VarsPresetsDataChanged, varEditing)).Children(
 				children...,
 			),
 			v.VDialog().MaxWidth("520px").

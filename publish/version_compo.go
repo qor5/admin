@@ -85,6 +85,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				h.Text(`{{ xlocals.versionName }}`),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:36px;").
+				Attr(":disabled", presets.PhraseHasPresetsDataChanged).
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, slug).
@@ -104,6 +105,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
+					Attr(":disabled", presets.PhraseHasPresetsDataChanged).
 					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
@@ -119,7 +121,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 						publishEvent = config.PublishEvent(obj, field, ctx)
 					}
 					publishBtn = h.Div(
-						v.VBtn(msgr.Publish).Attr("@click", publishEvent).Class("ml-2").
+						v.VBtn(msgr.Publish).
+							Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+							Attr("@click", publishEvent).Class("ml-2").
 							ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
 							Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
 					)
@@ -141,11 +145,15 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				if unPublishEvent != "" || rePublishEvent != "" {
 					publishBtn = h.Div(
 						h.Iff(unPublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Unpublish).Attr("@click", unPublishEvent).
+							return v.VBtn(msgr.Unpublish).
+								Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+								Attr("@click", unPublishEvent).
 								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
 						}),
 						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Republish).Attr("@click", rePublishEvent).Class("ml-2").
+							return v.VBtn(msgr.Republish).
+								Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+								Attr("@click", rePublishEvent).Class("ml-2").
 								ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
 								Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
 						}),
@@ -177,7 +185,9 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 						Width(500).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
 				} else {
 					scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
-						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).Attr("@click", clickEvent)
+						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).
+						Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+						Attr("@click", clickEvent)
 				}
 				div.AppendChildren(scheduleBtn)
 				// SchedulePublishDialog
