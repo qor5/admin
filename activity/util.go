@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -81,35 +82,105 @@ func ParseSchemaWithDB(db *gorm.DB, v any) (*schema.Schema, error) {
 	return stmt.Schema, nil
 }
 
-func parsePrimaryKeys(t reflect.Type) (keys []string) {
+type StructField struct {
+	reflect.StructField
+	BindNames  []string
+	Attachment any
+}
+
+func unwrapPtrType(rv reflect.Value) reflect.Value {
+	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+		rv = rv.Elem()
+	}
+	return rv
+}
+
+func CollectStructFields(v any, bindNames []string, preprocess func(f *StructField) (valid bool)) []*StructField {
+	return collectStructFields(unwrapPtrType(reflect.ValueOf(v)).Type(), bindNames, preprocess)
+}
+
+func collectStructFields(t reflect.Type, bindNames []string, preprocess func(f *StructField) (valid bool)) (fields []*StructField) {
 	if t.Kind() != reflect.Struct {
-		return
+		panic(fmt.Sprintf("%v is not a struct, it's %v", t.Name(), t.Kind()))
 	}
 
 	for i := 0; i < t.NumField(); i++ {
-		if strings.Contains(t.Field(i).Tag.Get("gorm"), "primary") {
-			keys = append(keys, t.Field(i).Name)
+		field := &StructField{StructField: t.Field(i)}
+		field.BindNames = slices.Concat(bindNames, []string{field.Name})
+		if preprocess != nil && !preprocess(field) {
+			continue
+		}
+		fields = append(fields, field)
+
+		if !field.Anonymous {
 			continue
 		}
 
-		if t.Field(i).Type.Kind() == reflect.Ptr && t.Field(i).Anonymous {
-			keys = append(keys, parsePrimaryKeys(t.Field(i).Type.Elem())...)
-		}
-
-		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Anonymous {
-			keys = append(keys, parsePrimaryKeys(t.Field(i).Type)...)
+		newBindNames := append(bindNames, field.Name)
+		switch field.Type.Kind() {
+		case reflect.Struct:
+			fields = append(fields, collectStructFields(field.Type, newBindNames, preprocess)...)
+		case reflect.Ptr:
+			fields = append(fields, collectStructFields(field.Type.Elem(), newBindNames, preprocess)...)
 		}
 	}
 	return
 }
 
-func ParsePrimaryKeys(v any) []string {
+func parsePrimaryKeys(v any, useBindName bool) (keys []string) {
+	fields := CollectStructFields(v, nil, func(f *StructField) (valid bool) {
+		if !f.IsExported() {
+			return false
+		}
+		tagGorm := strings.TrimSpace(f.Tag.Get("gorm"))
+		if tagGorm == "-" {
+			return false
+		}
+		f.Attachment = tagGorm
+		return true
+	})
+	primaryFields := lo.Filter(fields, func(f *StructField, _ int) bool {
+		primary := strings.Contains(f.Attachment.(string), "primaryKey")
+		if !primary {
+			return false
+		}
+		if f.Anonymous {
+			panic(fmt.Sprintf("anonymous field %v is not supported for primary", f.Name))
+		}
+		return true
+	})
+	fieldsByName := lo.PartitionBy(primaryFields, func(f *StructField) string {
+		if f.Anonymous {
+			return ""
+		}
+		return f.Name
+	})
+	return lo.FilterMap(fieldsByName, func(fs []*StructField, _ int) (string, bool) {
+		if fs[0].Anonymous {
+			return "", false
+		}
+		f := lo.MinBy(fs, func(a *StructField, b *StructField) bool {
+			return len(a.BindNames) < len(b.BindNames)
+		})
+		if useBindName {
+			return strings.Join(f.BindNames, "."), true
+		}
+		return f.Name, true
+	})
+}
+
+func ParsePrimaryKeys(v any, useBindName bool) []string {
 	s, err := ParseSchema(v)
 	if err == nil {
-		return lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string { return f.Name })
+		return lo.Map(s.PrimaryFields, func(f *schema.Field, _ int) string {
+			if useBindName {
+				return f.BindName()
+			}
+			return f.Name
+		})
 	}
 	// parsePrimaryKeys is more compatible if some of the model's fields do not obey sql.Driver very well
-	return parsePrimaryKeys(reflect.Indirect(reflect.ValueOf(v)).Type())
+	return parsePrimaryKeys(v, useBindName)
 }
 
 const dbKeyTablePrefix = "__table_prefix__"
@@ -195,12 +266,10 @@ func FetchOld(db *gorm.DB, ref any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, dbName := range s.DBNames {
-		if field := s.LookUpField(dbName); field != nil && field.PrimaryKey {
-			if value, isZero := field.ValueOf(db.Statement.Context, rtRef); !isZero {
-				sqls = append(sqls, fmt.Sprintf("%v = ?", dbName))
-				vars = append(vars, value)
-			}
+	for _, field := range s.PrimaryFields {
+		if value, isZero := field.ValueOf(db.Statement.Context, rtRef); !isZero {
+			sqls = append(sqls, fmt.Sprintf("%v = ?", field.DBName))
+			vars = append(vars, value)
 		}
 	}
 

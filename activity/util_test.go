@@ -244,42 +244,144 @@ func TestParsePrimaryKeys(t *testing.T) {
 	}
 
 	type NestedModel struct {
-		EmbeddedModel
+		*EmbeddedModel
 		Version string `gorm:"primaryKey"`
 	}
 
+	type Version struct {
+		Version     string `gorm:"primaryKey"`
+		VersionName string
+	}
+
+	type WithVersion struct {
+		ID uint `gorm:"primaryKey"`
+		Version
+	}
+
+	type WithVersionAndIgnore struct {
+		ID      uint `gorm:"primaryKey"`
+		Version `gorm:"-"`
+	}
+
+	type EmbeddedVersion struct {
+		Version     string `gorm:"primaryKey"`
+		VersionName string
+	}
+
+	type WithEmbeddedVersion struct {
+		ID      uint   `gorm:"primaryKey"`
+		Version string `gorm:"primaryKey"`
+		EmbeddedVersion
+	}
+
+	type WithEmbeddedVersionAndIgnore struct {
+		ID      uint   `gorm:"primaryKey"`
+		Version string `gorm:"-"`
+		EmbeddedVersion
+	}
+
 	tests := []struct {
-		Name     string
-		Model    any
-		Expected []string
+		Name        string
+		Model       any
+		UseBindName bool
+		Expected    []string
 	}{
 		{
-			Name:     "TestModel",
-			Model:    TestModel{},
-			Expected: []string{"ID"},
+			Name:        "TestModel",
+			Model:       TestModel{},
+			UseBindName: true,
+			Expected:    []string{"ID"},
 		},
 		{
-			Name:     "EmbeddedModel",
-			Model:    EmbeddedModel{},
-			Expected: []string{"ID"},
+			Name:        "TestModel",
+			Model:       TestModel{},
+			UseBindName: false,
+			Expected:    []string{"ID"},
 		},
 		{
-			Name:     "NestedModel",
-			Model:    NestedModel{},
-			Expected: []string{"ID", "Version"},
+			Name:        "EmbeddedModel",
+			Model:       EmbeddedModel{},
+			UseBindName: true,
+			Expected:    []string{"TestModel.ID"},
+		},
+		{
+			Name:        "EmbeddedModel",
+			Model:       EmbeddedModel{},
+			UseBindName: false,
+			Expected:    []string{"ID"},
+		},
+		{
+			Name:        "NestedModel",
+			Model:       NestedModel{},
+			UseBindName: true,
+			Expected:    []string{"EmbeddedModel.TestModel.ID", "Version"},
+		},
+		{
+			Name:        "NestedModel",
+			Model:       NestedModel{},
+			UseBindName: false,
+			Expected:    []string{"ID", "Version"},
+		},
+		{
+			Name:        "WithVersion",
+			Model:       WithVersion{},
+			UseBindName: true,
+			Expected:    []string{"ID", "Version.Version"},
+		},
+		{
+			Name:        "WithVersion",
+			Model:       WithVersion{},
+			UseBindName: false,
+			Expected:    []string{"ID", "Version"},
+		},
+		{
+			Name:        "WithVersionAndIgnore",
+			Model:       WithVersionAndIgnore{},
+			UseBindName: true,
+			Expected:    []string{"ID"},
+		},
+		{
+			Name:        "WithVersionAndIgnore",
+			Model:       WithVersionAndIgnore{},
+			UseBindName: false,
+			Expected:    []string{"ID"},
+		},
+		{
+			Name:        "WithEmbeddedVersion",
+			Model:       WithEmbeddedVersion{},
+			UseBindName: true,
+			Expected:    []string{"ID", "Version"},
+		},
+		{
+			Name:        "WithEmbeddedVersion",
+			Model:       WithEmbeddedVersion{},
+			UseBindName: false,
+			Expected:    []string{"ID", "Version"},
+		},
+		{
+			Name:        "WithEmbeddedVersionAndIgnore",
+			Model:       WithEmbeddedVersionAndIgnore{},
+			UseBindName: true,
+			Expected:    []string{"ID", "EmbeddedVersion.Version"},
+		},
+		{
+			Name:        "WithEmbeddedVersionAndIgnore",
+			Model:       WithEmbeddedVersionAndIgnore{},
+			UseBindName: false,
+			Expected:    []string{"ID", "Version"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			{
-				keys := activity.ParsePrimaryKeys(test.Model)
+				keys := activity.ParsePrimaryKeys(test.Model, test.UseBindName)
 				if !reflect.DeepEqual(keys, test.Expected) {
 					t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
 				}
 			}
 			{ // ptr test
-				keys := activity.ParsePrimaryKeys(&(test.Model))
+				keys := activity.ParsePrimaryKeys(&(test.Model), test.UseBindName)
 				if !reflect.DeepEqual(keys, test.Expected) {
 					t.Errorf("Expected primary fields %v, but got %v", test.Expected, keys)
 				}

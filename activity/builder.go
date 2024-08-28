@@ -119,9 +119,8 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 		ab:  ab,
 	}
 
-	primaryKeys := ParsePrimaryKeys(model)
-	amb.Keys(primaryKeys...)
-	amb.IgnoredFields(primaryKeys...)
+	amb.Keys(ParsePrimaryKeys(model, false)...)
+	amb.IgnoredFields(ParsePrimaryKeys(model, true)...)
 
 	if mb, ok := m.(*presets.ModelBuilder); ok {
 		amb.installPresetModelBuilder(mb)
