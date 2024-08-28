@@ -96,8 +96,6 @@ func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.
 				),
 			)
 		})
-	postModelBuilder.Listing().ActionsAsMenu(true)
-	postModelBuilder.Listing().Action("Action0")
 
 	postModelBuilder.Editing().Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		categories := []Category{}

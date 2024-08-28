@@ -893,6 +893,14 @@ func (c *ListingCompo) fetchBulkAction(ctx context.Context, name string) (*BulkA
 		return nil, errors.New("cannot find requested bulk action")
 	}
 
+	if bulk.updateFunc == nil {
+		return nil, errors.New("bulk.updateFunc not set")
+	}
+
+	if bulk.compFunc == nil {
+		return nil, errors.New("bulk.compFunc not set")
+	}
+
 	evCtx, msgr := c.MustGetEventContext(ctx)
 	err := c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, name).WithReq(evCtx.R).IsAllowed()
 	if err != nil {
@@ -1015,6 +1023,14 @@ func (c *ListingCompo) fetchAction(evCtx *web.EventContext, name string) (*Actio
 	})
 	if !exists {
 		return nil, errors.New("cannot find requested action")
+	}
+
+	if action.updateFunc == nil {
+		return nil, errors.New("action.updateFunc not set")
+	}
+
+	if action.compFunc == nil {
+		return nil, errors.New("action.compFunc not set")
 	}
 
 	err := c.lb.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(evCtx.R).IsAllowed()

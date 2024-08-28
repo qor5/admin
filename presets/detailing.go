@@ -339,6 +339,14 @@ func (b *DetailingBuilder) fetchAction(ctx *web.EventContext, name string) (*Act
 		return nil, errors.New("cannot find requested action")
 	}
 
+	if action.updateFunc == nil {
+		return nil, errors.New("action.updateFunc not set")
+	}
+
+	if action.compFunc == nil {
+		return nil, errors.New("action.compFunc not set")
+	}
+
 	err := b.mb.Info().Verifier().SnakeDo(permActions, name).WithReq(ctx.R).IsAllowed()
 	if err != nil {
 		return nil, err

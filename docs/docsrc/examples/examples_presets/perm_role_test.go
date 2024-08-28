@@ -177,7 +177,7 @@ func TestBulkActionPerm(t *testing.T) {
 	cases := []Case{
 		{
 			TestCase: multipartestutils.TestCase{
-				Name:  "Show order detail",
+				Name:  "Show order list",
 				Debug: true,
 				ReqFunc: func() *http.Request {
 					admin.OrdersExampleData.TruncatePut(dbr)
@@ -192,7 +192,7 @@ func TestBulkActionPerm(t *testing.T) {
 		},
 		{
 			TestCase: multipartestutils.TestCase{
-				Name:  "Show order detail",
+				Name:  "Show order list",
 				Debug: true,
 				ReqFunc: func() *http.Request {
 					admin.OrdersExampleData.TruncatePut(dbr)
