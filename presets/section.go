@@ -797,6 +797,20 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 	if isCreated {
 		deleteEvent = showAddBtn + deleteEvent
 	}
+	cancelEvent := web.Plaid().
+		URL(ctx.R.URL.Path).
+		EventFunc(actions.DoSaveDetailingListField).
+		Query(SectionFieldName, b.name).
+		Query(b.elementUnsavedKey(), unsaved).
+		Query(SectionIsCancel, true).
+		Query(ParamID, ctx.Param(ParamID)).
+		Query(b.SaveBtnKey(), strconv.Itoa(index)).
+		Go()
+	if isCreated {
+		cancelEvent = showAddBtn + cancelEvent
+		deleteEvent = cancelEvent
+	}
+
 	deleteBtn := VBtn("").Size(SizeXSmall).Variant("text").
 		Rounded("0").
 		Icon("mdi-delete-outline").
@@ -815,18 +829,6 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 		h.Div(deleteBtn).Class("d-flex pl-3"),
 	).Class("d-flex justify-space-between mb-4")
 
-	cancelEvent := web.Plaid().
-		URL(ctx.R.URL.Path).
-		EventFunc(actions.DoSaveDetailingListField).
-		Query(SectionFieldName, b.name).
-		Query(b.elementUnsavedKey(), unsaved).
-		Query(SectionIsCancel, true).
-		Query(ParamID, ctx.Param(ParamID)).
-		Query(b.SaveBtnKey(), strconv.Itoa(index)).
-		Go()
-	if isCreated {
-		cancelEvent = showAddBtn + cancelEvent
-	}
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
 		Attr("style", "text-transform: none;").
 		Attr("@click", cancelEvent)
