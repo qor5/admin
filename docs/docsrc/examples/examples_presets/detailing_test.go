@@ -227,6 +227,28 @@ func TestPresetsDetailActionsComponent(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{`<v-checkbox`, `label='Agree the terms'></v-checkbox>`},
 		},
 		{
+			Name:  "click action not exists",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12?__execute_event__=presets_Action&action=NotExists&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`cannot find requested action`},
+		},
+		{
+			Name:  "do action not exists",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12?__execute_event__=presets_DoAction&action=NotExists&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`cannot find requested action`},
+		},
+		{
 			Name:  "agree terms",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -237,6 +259,18 @@ func TestPresetsDetailActionsComponent(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{`emit("PresetsNotifModelsUpdatedexamplesPresetsCustomer"`, `["12"]`},
+		},
+		{
+			Name:  "agree terms with false",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/12?__execute_event__=presets_DoAction&action=AgreeTerms&id=12").
+					AddField("Agree", "false").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`You must agree the terms`},
 		},
 	}
 
