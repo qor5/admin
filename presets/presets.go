@@ -1135,24 +1135,9 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
 		pr.Body = VCard(
 			VProgressLinear().
-				Attr(":active", "vars.grobalProgressBarValue !== 100").
-				Attr(":model-value", "vars.grobalProgressBarValue").
+				Attr(":active", "vars.globalProgressBar.show").
+				Attr(":model-value", "vars.globalProgressBar.value").
 				Attr("style", "position: fixed; z-index: 2000;").
-				Attr("v-on-created", `({ watch, window })=> {
-				let timer = null
-				watch(()=>isReloadingPage, (newVal)=>{
-					vars.grobalProgressBarValue = 20
-						if(!isReloadingPage) {
-							vars.grobalProgressBarValue = 60
-								if(timer) window.clearTimeout(timer)
-								timer = window.setTimeout(()=>{
-									vars.grobalProgressBarValue = 100
-									timer = null
-								},100)
-							}
-					}, { immediate: true })
-				}`).
-				// Indeterminate(true).
 				Height(2).
 				Color(b.progressBarColor),
 			h.Template(
@@ -1510,7 +1495,16 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 					i18n.LanguageTagFromContext(ctx.R.Context(), language.English).String(),
 					"-", "",
 				)
-				r.Body = VLocaleProvider().Locale(currentVuetifyLocale).FallbackLocale("en").Children(r.Body)
+				r.Body = 
+				h.Div(
+					VProgressLinear().
+					Attr(":active", "vars.globalProgressBar.show").
+					Attr(":model-value", "vars.globalProgressBar.value").
+					Attr("style", "position: fixed; z-index: 2000;").
+					Height(2).
+					Color(b.progressBarColor),
+					VLocaleProvider().Locale(currentVuetifyLocale).FallbackLocale("en").Children(r.Body),
+				)
 			}
 			return r, err
 		}
