@@ -185,6 +185,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
 		if err == nil {
 			r.Emit(presets.NotifModelsUpdated(&Customer{}), presets.PayloadModelsUpdated{Ids: []string{id}})
+			presets.ShowMessage(r, "Terms agreed", ColorSuccess)
 		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
@@ -201,7 +202,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		return h.Components(
 			alert,
-			VCheckbox().Attr(web.VField("Agree", agreedAt != nil && agreedAt.IsZero())...).Label("Agree the terms"),
+			VCheckbox().Attr(web.VField("Agree", agreedAt != nil && !agreedAt.IsZero())...).Label("Agree the terms"),
 		)
 	})
 	return

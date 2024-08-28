@@ -333,11 +333,27 @@ func getPageTitle(obj interface{}, id string) string {
 	return title
 }
 
-func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *DetailingBuilder) fetchAction(ctx *web.EventContext, name string) (*ActionBuilder, error) {
 	action := getAction(b.actions, ctx.R.FormValue(ParamAction))
 	if action == nil {
-		panic("action required")
+		return nil, errors.New("cannot find requested action")
 	}
+
+	err := b.mb.Info().Verifier().SnakeDo(permActions, name).WithReq(ctx.R).IsAllowed()
+	if err != nil {
+		return nil, err
+	}
+
+	return action, nil
+}
+
+func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse, err error) {
+	action, err := b.fetchAction(ctx, ctx.R.FormValue(ParamAction))
+	if err != nil {
+		ShowMessage(&r, err.Error(), ColorError)
+		return r, nil
+	}
+
 	id := ctx.R.FormValue(ParamID)
 	if err := action.updateFunc(id, ctx, &r); err != nil || ctx.Flash != nil {
 		if ctx.Flash == nil {
@@ -345,7 +361,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: RightDrawerContentPortalName,
+			Name: dialogContentPortalName,
 			Body: b.actionForm(action, ctx),
 		})
 		return r, nil
@@ -355,9 +371,10 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 }
 
 func (b *DetailingBuilder) openActionDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	action := getAction(b.actions, ctx.R.FormValue(ParamAction))
-	if action == nil {
-		panic("action required")
+	action, err := b.fetchAction(ctx, ctx.R.FormValue(ParamAction))
+	if err != nil {
+		ShowMessage(&r, err.Error(), ColorError)
+		return r, nil
 	}
 
 	b.mb.p.dialog(ctx, &r, b.actionForm(action, ctx), "")
