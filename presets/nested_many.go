@@ -146,6 +146,6 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 			VCardText().Class("pa-0").Children(
 				b.mb.p.dc.MustInject(injectorName, compo),
 			),
-		),
+		).Class("section-wrap"),
 	), nil
 }
