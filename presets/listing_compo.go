@@ -12,7 +12,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
@@ -861,7 +860,7 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 				}
 				notice = msgr.BulkActionSelectedIdsProcessNotice(ids)
 			}
-			alertCompo = VAlert(h.Text(notice)).Type("warning")
+			alertCompo = VAlert(h.Text(notice)).Type(ColorWarning)
 		}
 	}
 
@@ -887,17 +886,25 @@ func (c *ListingCompo) bulkPanel(ctx context.Context, bulk *BulkActionBuilder, s
 }
 
 func (c *ListingCompo) fetchBulkAction(ctx context.Context, name string) (*BulkActionBuilder, error) {
-	evCtx, msgr := c.MustGetEventContext(ctx)
-
-	if c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, name).WithReq(evCtx.R).IsAllowed() != nil {
-		return nil, perm.PermissionDenied
-	}
-
 	bulk, exists := lo.Find(c.lb.bulkActions, func(ba *BulkActionBuilder) bool {
 		return ba.name == name
 	})
 	if !exists {
 		return nil, errors.New("cannot find requested bulk action")
+	}
+
+	if bulk.updateFunc == nil {
+		return nil, errors.New("bulk.updateFunc not set")
+	}
+
+	if bulk.compFunc == nil {
+		return nil, errors.New("bulk.compFunc not set")
+	}
+
+	evCtx, msgr := c.MustGetEventContext(ctx)
+	err := c.lb.mb.Info().Verifier().SnakeDo(permBulkActions, name).WithReq(evCtx.R).IsAllowed()
+	if err != nil {
+		return nil, err
 	}
 
 	if len(c.SelectedIds) == 0 {
@@ -916,7 +923,7 @@ func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkAct
 
 	bulk, err := c.fetchBulkAction(ctx, req.Name)
 	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+		ShowMessage(&r, err.Error(), ColorError)
 		return r, nil
 	}
 
@@ -929,9 +936,9 @@ func (c *ListingCompo) OpenBulkActionDialog(ctx context.Context, req OpenBulkAct
 		// if no actionable ids, skip dialog
 		if len(actionableIds) == 0 {
 			if bulk.selectedIdsProcessorNoticeFunc != nil {
-				ShowMessage(&r, bulk.selectedIdsProcessorNoticeFunc(c.SelectedIds, actionableIds, c.SelectedIds), "warning")
+				ShowMessage(&r, bulk.selectedIdsProcessorNoticeFunc(c.SelectedIds, actionableIds, c.SelectedIds), ColorError)
 			} else {
-				ShowMessage(&r, msgr.BulkActionNoAvailableRecords, "warning")
+				ShowMessage(&r, msgr.BulkActionNoAvailableRecords, ColorError)
 			}
 			return r, nil
 		}
@@ -950,7 +957,7 @@ func (c *ListingCompo) DoBulkAction(ctx context.Context, req DoBulkActionRequest
 
 	bulk, err := c.fetchBulkAction(ctx, req.Name)
 	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+		ShowMessage(&r, err.Error(), ColorError)
 		return r, nil
 	}
 
@@ -1018,8 +1025,17 @@ func (c *ListingCompo) fetchAction(evCtx *web.EventContext, name string) (*Actio
 		return nil, errors.New("cannot find requested action")
 	}
 
-	if c.lb.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(evCtx.R).IsAllowed() != nil {
-		return nil, perm.PermissionDenied
+	if action.updateFunc == nil {
+		return nil, errors.New("action.updateFunc not set")
+	}
+
+	if action.compFunc == nil {
+		return nil, errors.New("action.compFunc not set")
+	}
+
+	err := c.lb.mb.Info().Verifier().SnakeDo(permDoListingAction, action.name).WithReq(evCtx.R).IsAllowed()
+	if err != nil {
+		return nil, err
 	}
 
 	return action, nil
@@ -1034,7 +1050,7 @@ func (c *ListingCompo) OpenActionDialog(ctx context.Context, req OpenBulkActionD
 
 	action, err := c.fetchAction(evCtx, req.Name)
 	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+		ShowMessage(&r, err.Error(), ColorError)
 		return r, nil
 	}
 
@@ -1051,7 +1067,7 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 
 	action, err := c.fetchAction(evCtx, req.Name)
 	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+		ShowMessage(&r, err.Error(), ColorError)
 		return r, nil
 	}
 

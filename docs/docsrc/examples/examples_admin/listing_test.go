@@ -1,13 +1,16 @@
 package examples_admin
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	h "github.com/theplant/htmlgo"
 )
 
 var dataSeedForListing = gofixtures.Data(gofixtures.Sql(`
@@ -83,6 +86,588 @@ func TestListingExample(t *testing.T) {
 			},
 			ExpectPageBodyNotContains:     []string{"No records to show"},
 			ExpectPageBodyContainsInOrder: []string{"v-pagination", ":total-visible='2'"},
+		},
+
+		{
+			Name:  "show action button",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample")
+					}).UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/posts", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"ActionExample"},
+		},
+
+		{
+			Name:  "click action not exist",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample")
+					}).UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenActionDialog",
+			"request": {
+				"name": "ActionNotExists"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"cannot find requested action"},
+		},
+
+		{
+			Name:  "click action",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample Content")
+					}).UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenActionDialog",
+			"request": {
+				"name": "ActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"ActionExample Content"},
+		},
+
+		{
+			Name:  "click action with no updateFunc",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample Content")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenActionDialog",
+			"request": {
+				"name": "ActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"action.updateFunc not set"},
+		},
+
+		{
+			Name:  "click action with no compFunc",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenActionDialog",
+			"request": {
+				"name": "ActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"action.compFunc not set"},
+		},
+
+		{
+			Name:  "do action not exist",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample")
+					}).UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "DoAction",
+			"request": {
+				"name": "ActionNotExists"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"cannot find requested action"},
+		},
+
+		{
+			Name:  "do action",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().Action("ActionExample").ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
+						return h.Div().Text("ActionExample Content")
+					}).UpdateFunc(func(id string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+						return errors.New("not implemented")
+					})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "DoAction",
+			"request": {
+				"name": "ActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"not implemented"},
+		},
+
+		{
+			Name:  "show bulk action button",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample")
+						}).
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/posts", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"BulkActionExample"},
+		},
+
+		{
+			Name:  "click bulk action not exist",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample")
+						}).
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenBulkActionDialog",
+			"request": {
+				"name": "BulkActionNotExists"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"cannot find requested bulk action"},
+		},
+
+		{
+			Name:  "click bulk action",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample Content")
+						}).
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": ["1"],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenBulkActionDialog",
+			"request": {
+				"name": "BulkActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"BulkActionExample Content"},
+		},
+
+		{
+			Name:  "click bulk action with no updateFunc",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+{
+	"compo_type": "*presets.ListingCompo",
+	"compo": {
+		"id": "posts_page",
+		"popup": false,
+		"long_style_search_box": false,
+		"selected_ids": [],
+		"keyword": "",
+		"order_bys": null,
+		"page": 0,
+		"per_page": 0,
+		"display_columns": null,
+		"active_filter_tab": "",
+		"filter_query": "",
+		"on_mounted": ""
+	},
+	"injector": "posts",
+	"sync_query": true,
+	"method": "OpenBulkActionDialog",
+	"request": {
+		"name": "BulkActionExample"
+	}
+}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"bulk.updateFunc not set"},
+		},
+
+		{
+			Name:  "click bulk action with no compFunc",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "OpenBulkActionDialog",
+			"request": {
+				"name": "BulkActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"bulk.compFunc not set"},
+		},
+
+		{
+			Name:  "do bulk action not exist",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample")
+						}).
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": [],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "DoBulkAction",
+			"request": {
+				"name": "BulkActionNotExists"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"cannot find requested bulk action"},
+		},
+
+		{
+			Name:  "do bulk action",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+					mb.Listing().BulkAction("BulkActionExample").
+						ComponentFunc(func(selectedIds []string, ctx *web.EventContext) h.HTMLComponent {
+							return h.Div().Text("BulkActionExample")
+						}).
+						UpdateFunc(func(selectedIds []string, ctx *web.EventContext, r *web.EventResponse) (err error) {
+							return errors.New("not implemented")
+						})
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/posts?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*presets.ListingCompo",
+			"compo": {
+				"id": "posts_page",
+				"popup": false,
+				"long_style_search_box": false,
+				"selected_ids": ["1"],
+				"keyword": "",
+				"order_bys": null,
+				"page": 0,
+				"per_page": 0,
+				"display_columns": null,
+				"active_filter_tab": "",
+				"filter_query": "",
+				"on_mounted": ""
+			},
+			"injector": "posts",
+			"sync_query": true,
+			"method": "DoBulkAction",
+			"request": {
+				"name": "BulkActionExample"
+			}
+		}`).
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"not implemented"},
 		},
 	}
 
