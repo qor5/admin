@@ -1,5 +1,7 @@
 package presets
 
+import "fmt"
+
 const (
 	PermModule          = "presets"
 	PermList            = "presets:list"
@@ -37,3 +39,5 @@ const (
 	ParamSortSectionFormKey = "listEditor_SortSectionFormKey"
 	ParamSortResultFormKey  = "listEditor_SortResultFormKey"
 )
+
+var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s).some(value => value === true)", VarsPresetsDataChanged)

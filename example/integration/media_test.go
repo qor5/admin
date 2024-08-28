@@ -2,23 +2,28 @@ package integration_test
 
 import (
 	"bytes"
-	"github.com/qor/oss/filesystem"
-	media_oss "github.com/qor5/admin/v3/media/oss"
 	"net/http"
 	"testing"
 
+	"github.com/qor/oss/filesystem"
+
+	media_oss "github.com/qor5/admin/v3/media/oss"
+
 	"github.com/qor5/admin/v3/media/media_library"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/media"
+
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
-	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/example/admin"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+
+	"github.com/qor5/admin/v3/example/admin"
 )
 
 var mediaTestData = gofixtures.Data(gofixtures.Sql(`
@@ -422,7 +427,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose a File"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose File"},
 		},
 		{
 			Name:  "MediaLibrary Search",

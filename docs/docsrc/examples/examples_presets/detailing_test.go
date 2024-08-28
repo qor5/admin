@@ -359,8 +359,8 @@ func TestPresetsDetailSectionCancel(t *testing.T) {
 }
 
 var userCreditCardsData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards) VALUES (1, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:18:34.044182 +00:00', null, 'empty date', '[]');
-INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards) VALUES (2, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:29:30.597570 +00:00', null, 'one card', '[{"ID":0,"CustomerID":0,"Number":"","ExpireYearMonth":"","Name":"terry","Type":"","Phone":"188","Email":""}]');
+INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards,credit_cards2) VALUES (1, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:18:34.044182 +00:00', null, 'empty date', '[]','[]');
+INSERT INTO public.user_credit_cards (id, created_at, updated_at, deleted_at, name, credit_cards,credit_cards2) VALUES (2, '2024-08-21 07:14:43.822238 +00:00', '2024-08-22 03:29:30.597570 +00:00', null, 'one card', '[{"ID":0,"CustomerID":0,"Number":"","ExpireYearMonth":"","Name":"terry","Type":"","Phone":"188","Email":""}]','[]');
 `, []string{"user_credit_cards"}))
 
 func TestPresetsDetailListSection(t *testing.T) {
@@ -379,7 +379,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					Query("id", "1").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Row", "cards2", "Add Row"},
 		},
 		{
 			Name:  "click Add Row button",
@@ -501,6 +501,42 @@ func TestPresetsDetailListSection(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "tom", "199", "Cancel", "Save"},
 			ExpectPortalUpdate0NotContains:     []string{"joy", "177", "Add Row"},
+		},
+		{
+			Name:  "click Add Row button 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_Detailing_List_Field_Create").
+					Query("section", "CreditCards2").
+					Query("id", "1").
+					Query("sectionListUnsaved_CreditCards2", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Phone", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Row"},
+		},
+		{
+			Name:  "save created section 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("sectionListUnsaved_CreditCards2", "false").
+					Query("section", "CreditCards2").
+					Query("sectionListSaveBtn_CreditCards2", "0").
+					Query("id", "1").
+					AddField("CreditCards2[0].Name", "terry").
+					AddField("CreditCards2[0].Phone", "188").
+					AddField("__Deleted_CreditCards2[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 	}
 
