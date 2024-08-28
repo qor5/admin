@@ -150,22 +150,16 @@ func parsePrimaryKeys(v any, useBindName bool) (keys []string) {
 		return true
 	})
 	fieldsByName := lo.PartitionBy(primaryFields, func(f *StructField) string {
-		if f.Anonymous {
-			return ""
-		}
 		return f.Name
 	})
-	return lo.FilterMap(fieldsByName, func(fs []*StructField, _ int) (string, bool) {
-		if fs[0].Anonymous {
-			return "", false
-		}
+	return lo.Map(fieldsByName, func(fs []*StructField, _ int) string {
 		f := lo.MinBy(fs, func(a *StructField, b *StructField) bool {
 			return len(a.BindNames) < len(b.BindNames)
 		})
 		if useBindName {
-			return strings.Join(f.BindNames, "."), true
+			return strings.Join(f.BindNames, ".")
 		}
-		return f.Name, true
+		return f.Name
 	})
 }
 
