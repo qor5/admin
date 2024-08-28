@@ -33,7 +33,7 @@ func MustFilterQuery(compo *presets.ListingCompo) url.Values {
 	return qs
 }
 
-const versionListDialogURISuffix = "-version-list-dialog"
+const VersionListDialogURISuffix = "-version-list-dialog"
 
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
@@ -79,7 +79,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.Class("pb-4")
 		}
 
-		urlSuffix := field.ModelInfo.URIName() + versionListDialogURISuffix
+		urlSuffix := field.ModelInfo.URIName() + VersionListDialogURISuffix
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
 				h.Text(`{{ xlocals.versionName }}`),
@@ -272,11 +272,11 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
 	mb := b.Model(pm.NewModel()).
-		URIName(pm.Info().URIName() + versionListDialogURISuffix).
+		URIName(pm.Info().URIName() + VersionListDialogURISuffix).
 		InMenu(false)
 
 	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+versionListDialogURISuffix))),
+		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+VersionListDialogURISuffix))),
 	)
 
 	listingHref := mb.Info().ListingHref()
