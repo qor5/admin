@@ -319,7 +319,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 
 	queries := ctx.Queries()
 	if b.mb.singleton {
-		queries.Add(ParamID, id)
+		queries.Set(ParamID, id)
 	}
 	updateBtn := VBtn(buttonLabel).
 		Color("primary").
@@ -391,7 +391,6 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		return scope.OnChange(onChangeEvent + b.onChangeAction(id, ctx))
 	}
 	return scope.OnChange(onChangeEvent).UseDebounce(150)
-
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

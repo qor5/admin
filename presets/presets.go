@@ -955,7 +955,9 @@ func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTM
 		Body: web.Scope(
 			activeWatcher,
 			VDialog(
-				web.Portal(comp).Name(dialogContentPortalName),
+				h.Div().Class("overflow-y-auto").Children(
+					web.Portal(comp).Name(dialogContentPortalName),
+				),
 			).
 				Attr("v-model", "vars.presetsDialog").
 				Width(width),
