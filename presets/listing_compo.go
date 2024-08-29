@@ -163,7 +163,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			),
 			h.Div(
 				c.cardActionsFooter(ctx),
-			).Class(("px-4 pb-2")),
+			).Class(("pb-2")),
 		).Class("listing-compo-wrap"),
 	).MarshalHTML(ctx)
 }
