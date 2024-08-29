@@ -305,6 +305,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
+		OrderBy("created_at DESC").
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
 				compo := presets.ListingCompoFromEventContext(ctx)
@@ -318,7 +319,6 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					}
 					params.SQLConditions = append(params.SQLConditions, &con)
 				}
-				params.OrderBy = "created_at DESC"
 
 				return in(model, params, ctx)
 			}
