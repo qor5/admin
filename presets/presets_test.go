@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/qor5/web/v3"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsMenuItemActive(t *testing.T) {
@@ -60,4 +61,28 @@ func TestIsMenuItemActive(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLookUpModelBuilder(t *testing.T) {
+	type Order struct {
+		ID      uint
+		Product string
+	}
+	type Customer struct {
+		ID   uint
+		Name string
+	}
+
+	pb := New()
+	mb0 := pb.Model(&Order{})
+	mb1 := pb.Model(&Customer{})
+	assert.Equal(t, mb0, pb.LookUpModelBuilder(mb0.Info().URIName()))
+	assert.Equal(t, mb1, pb.LookUpModelBuilder(mb1.Info().URIName()))
+
+	mb3 := pb.Model(&Customer{})
+	assert.PanicsWithValue(t, `Duplicated model names registered "customers"`, func() {
+		pb.LookUpModelBuilder(mb3.Info().URIName())
+	})
+	mb3.URIName(mb3.Info().URIName() + "-version-list-dialog")
+	assert.Equal(t, mb3, pb.LookUpModelBuilder(mb3.Info().URIName()))
 }

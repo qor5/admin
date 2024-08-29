@@ -1528,6 +1528,19 @@ func (b *Builder) Build() {
 	b.initMux()
 }
 
+func (b *Builder) LookUpModelBuilder(uriName string) *ModelBuilder {
+	mbs := lo.Filter(b.models, func(mb *ModelBuilder, _ int) bool {
+		return mb.uriName == uriName
+	})
+	if len(mbs) > 1 {
+		panic(fmt.Sprintf("Duplicated model names registered %q", uriName))
+	}
+	if len(mbs) == 0 {
+		return nil
+	}
+	return mbs[0]
+}
+
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
 		b.Build()
