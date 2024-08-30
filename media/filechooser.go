@@ -292,7 +292,7 @@ func fileComponent(
 					Go()),
 		),
 	)
-	clickEvent := fmt.Sprintf(`vars.imageSrc="%s";vars.imagePreview=true;`, src)
+	clickEvent := fmt.Sprintf(`vars.imageSrc=%q;vars.imagePreview=true;`, src)
 	if base.IsImageFormat(f.File.FileName) && inMediaLibrary {
 		*event = clickEvent
 	}
@@ -711,9 +711,9 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 										VTab(h.Text(msgr.Folders)).Value(tabFolders),
 									).Attr("v-model", "tabLocals.tab").
 										Attr("@update:model-value",
-											fmt.Sprintf(`$event=="%s"?null:%v`, tab, clickTabEvent),
+											fmt.Sprintf(`$event==%q?null:%v`, tab, clickTabEvent),
 										),
-								).VSlot(`{locals:tabLocals}`).Init(fmt.Sprintf(`{tab:"%s"}`, tab)),
+								).VSlot(`{locals:tabLocals}`).Init(fmt.Sprintf(`{tab:%q}`, tab)),
 							),
 						),
 					),
@@ -891,7 +891,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		HideDetails(true).
 		SingleLine(true).
 		Attr("v-model", "vars.searchMsg").
-		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:"%s"}`, ctx.Param(searchKeywordName(field))))...).
+		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(searchKeywordName(field))))...).
 		Attr("@click:clear", `vars.searchMsg="";`+event).
 		Attr("@keyup.enter", event).
 		Children(

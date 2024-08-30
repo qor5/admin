@@ -1321,7 +1321,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Attr("v-model", "toggleLocals.activeDevice").
 			Attr("@update:model-value", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
 				PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, device))
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
 }
 
 func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
