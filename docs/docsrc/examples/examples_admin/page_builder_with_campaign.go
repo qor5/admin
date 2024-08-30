@@ -6,21 +6,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/qor5/admin/v3/activity"
-
-	"github.com/qor5/admin/v3/media/media_library"
-
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
 )
 
 // models
@@ -39,6 +38,20 @@ type (
 		publish.Status
 		publish.Schedule
 		publish.Version
+	}
+)
+
+// templates
+type (
+	CampaignTemplate struct {
+		gorm.Model
+		Name        string
+		Description string
+	}
+	CampaignProductTemplate struct {
+		gorm.Model
+		Title string
+		Desc  string
 	}
 )
 
@@ -67,6 +80,39 @@ type (
 		Name string
 	}
 )
+
+func (b *CampaignProductTemplate) GetName(ctx *web.EventContext) string {
+	return b.Title
+}
+func (b *CampaignProductTemplate) GetDescription(ctx *web.EventContext) string {
+	return b.Desc
+}
+func (p *CampaignTemplate) PrimarySlug() string {
+	return fmt.Sprintf("%v", p.ID)
+}
+
+func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 1 {
+		panic("wrong slug")
+	}
+	return map[string]string{
+		presets.ParamID: segs[0],
+	}
+}
+func (p *CampaignProductTemplate) PrimarySlug() string {
+	return fmt.Sprintf("%v", p.ID)
+}
+
+func (p *CampaignProductTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 1 {
+		panic("wrong slug")
+	}
+	return map[string]string{
+		presets.ParamID: segs[0],
+	}
+}
 
 func (b *Campaign) GetTitle() string {
 	return b.Title
@@ -150,7 +196,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	err := db.AutoMigrate(
 		&Campaign{}, &CampaignProduct{}, // models
 		&MyContent{}, &CampaignContent{}, &ProductContent{}, &PagesContent{}, // containers
-
+		&CampaignTemplate{}, &CampaignProductTemplate{},
 	)
 	if err != nil {
 		panic(err)
@@ -239,6 +285,9 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	// Campaigns Menu
 	campaignModelBuilder := b.Model(&Campaign{})
+	ct := b.Model(&CampaignTemplate{})
+	campaignModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Title")
+	pb.RegisterModelBuilderTemplate(campaignModelBuilder, ct)
 	campaignModelBuilder.Listing("Title")
 	detail := campaignModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,
@@ -263,6 +312,9 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	// Products Menu
 	productModelBuilder := b.Model(&CampaignProduct{})
+	cpt := b.Model(&CampaignProductTemplate{})
+	productModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Name")
+	pb.RegisterModelBuilderTemplate(productModelBuilder, cpt)
 	productModelBuilder.Listing("Name")
 
 	detail2 := productModelBuilder.Detailing(
